@@ -26,7 +26,7 @@ import { exists, ensureDir, writeFileSafe } from '../utils/file.js';
 import type { ComplexityLevel } from '../engine/state-machine.js';
 import { createDefaultState } from '../engine/state-machine.js';
 import { loadTemplate } from '../utils/file.js';
-import { detectProject, formatProjectInfo, type ProjectInfo } from '../utils/detect.js';
+import { detectProject, formatProjectInfo, detectMonorepo, type ProjectInfo } from '../utils/detect.js';
 
 interface InitOptions {
   cwd?: string;
@@ -53,7 +53,17 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   console.log('\n🔍  检测项目信息...\n');
   const projectInfo = await detectProject(cwd);
   console.log(formatProjectInfo(projectInfo));
-  console.log();
+
+  // ── Monorepo 检测 ──
+  const monorepo = await detectMonorepo(cwd);
+  if (monorepo.isMonorepo) {
+    console.log(`\n📦  检测到 Monorepo (${monorepo.type || 'generic'})\n`);
+    for (const sub of monorepo.subProjects) {
+      console.log(`  ├── ${sub.name}/`);
+      console.log(`  │     类型: ${sub.info.type} | 框架: ${sub.info.framework || '—'} | 语言: ${sub.info.language}`);
+    }
+    console.log();
+  }
 
   // 如果用户没指定 level，用检测到的复杂度
   const level: ComplexityLevel = options.level || String(projectInfo.complexity) as ComplexityLevel;

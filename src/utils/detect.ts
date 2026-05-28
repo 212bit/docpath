@@ -10,7 +10,7 @@
 
 import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, statSync, readFileSync } from 'node:fs';
 
 export interface ProjectInfo {
   name: string;
@@ -20,6 +20,18 @@ export interface ProjectInfo {
   complexity: number;     // 0-3 based on project size
   description?: string;
   detectedAt: string;     // ISO timestamp
+}
+
+export interface SubProject {
+  name: string;           // 子项目名 (如 "frontend", "backend")
+  path: string;           // 相对路径
+  info: ProjectInfo;      // 检测到的项目信息
+}
+
+export interface MonorepoInfo {
+  isMonorepo: boolean;
+  type?: 'workspaces' | 'pnpm-workspace' | 'turborepo' | 'nx' | 'generic';
+  subProjects: SubProject[];
 }
 
 // ─── 核心检测函数 ───
@@ -356,6 +368,144 @@ function countSourceFiles(dir: string, extensions: string[]): number {
   } catch {}
 
   return count;
+}
+
+// ─── Monorepo 检测 ───
+
+const COMMON_SUB_DIRS = [
+  'frontend', 'backend', 'web', 'api', 'client', 'server',
+  'apps', 'packages', 'services', 'libs', 'shared', 'common',
+];
+
+export async function detectMonorepo(cwd: string): Promise<MonorepoInfo> {
+  const result: MonorepoInfo = {
+    isMonorepo: false,
+    subProjects: [],
+  };
+
+  // 1. 检测 workspaces 感知的 monorepo
+  const wsType = detectWorkspacesType(cwd);
+  if (wsType) {
+    result.isMonorepo = true;
+    result.type = wsType;
+    const wsPaths = await getWorkspacePaths(cwd, wsType);
+    for (const wsPath of wsPaths) {
+      const fullPath = join(cwd, wsPath);
+      if (existsSync(fullPath)) {
+        try {
+          const info = await detectProject(fullPath);
+          result.subProjects.push({
+            name: wsPath.split('/').pop() || wsPath,
+            path: wsPath,
+            info,
+          });
+        } catch {}
+      }
+    }
+    return result;
+  }
+
+  // 2. 通用目录名扫描
+  const entries = readdirSync(cwd, { withFileTypes: true });
+  const foundDirs: string[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+
+    // 检查是否是常见子项目目录
+    if (COMMON_SUB_DIRS.includes(entry.name.toLowerCase())) {
+      foundDirs.push(entry.name);
+    } else if (hasProjectFiles(join(cwd, entry.name))) {
+      // 检查子目录是否有项目文件
+      foundDirs.push(entry.name);
+    }
+  }
+
+  // 如果找到 2+ 个子项目目录，视为 monorepo
+  if (foundDirs.length >= 2) {
+    result.isMonorepo = true;
+    result.type = 'generic';
+
+    for (const dir of foundDirs) {
+      try {
+        const info = await detectProject(join(cwd, dir));
+        result.subProjects.push({
+          name: dir,
+          path: dir,
+          info,
+        });
+      } catch {}
+    }
+  }
+
+  return result;
+}
+
+function detectWorkspacesType(cwd: string): MonorepoInfo['type'] | undefined {
+  // pnpm-workspace.yaml
+  if (existsSync(join(cwd, 'pnpm-workspace.yaml'))) return 'pnpm-workspace';
+
+  // turbo.json
+  if (existsSync(join(cwd, 'turbo.json'))) return 'turborepo';
+
+  // nx.json
+  if (existsSync(join(cwd, 'nx.json'))) return 'nx';
+
+  // package.json workspaces
+  try {
+    const pkgPath = join(cwd, 'package.json');
+    const raw = readFileSync(pkgPath, 'utf-8');
+    const pkg = JSON.parse(raw);
+    if (pkg.workspaces) return 'workspaces';
+  } catch {}
+
+  return undefined;
+}
+
+async function getWorkspacePaths(cwd: string, wsType: MonorepoInfo['type']): Promise<string[]> {
+  const paths: string[] = [];
+
+  if (wsType === 'pnpm-workspace') {
+    try {
+      const raw = await readFile(join(cwd, 'pnpm-workspace.yaml'), 'utf-8');
+      // 简单解析 packages: 段
+      const match = raw.match(/packages:\s*\n((?:\s*-\s*.+\n?)*)/);
+      if (match) {
+        const lines = match[1].split('\n').filter(l => l.trim().startsWith('-'));
+        for (const line of lines) {
+          const p = line.replace(/.*-\s*/, '').trim().replace(/['"]/g, '');
+          if (p && !p.startsWith('!')) paths.push(p.replace('/*', ''));
+        }
+      }
+    } catch {}
+  } else if (wsType === 'workspaces') {
+    try {
+      const pkg = JSON.parse(await readFile(join(cwd, 'package.json'), 'utf-8'));
+      const ws = pkg.workspaces;
+      if (Array.isArray(ws)) {
+        for (const p of ws) {
+          if (typeof p === 'string') paths.push(p.replace('/*', ''));
+        }
+      } else if (ws?.packages) {
+        for (const p of ws.packages) {
+          if (typeof p === 'string') paths.push(p.replace('/*', ''));
+        }
+      }
+    } catch {}
+  }
+
+  return paths;
+}
+
+function hasProjectFiles(dir: string): boolean {
+  return (
+    existsSync(join(dir, 'package.json')) ||
+    existsSync(join(dir, 'Cargo.toml')) ||
+    existsSync(join(dir, 'go.mod')) ||
+    existsSync(join(dir, 'pyproject.toml')) ||
+    existsSync(join(dir, 'pom.xml'))
+  );
 }
 
 // ─── 格式化输出 ───
