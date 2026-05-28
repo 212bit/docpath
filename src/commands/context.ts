@@ -24,6 +24,8 @@ interface ContextOptions {
   withPlan?: boolean;
   /** 输出到文件 */
   output?: string;
+  /** Agent 可读 YAML 输出 */
+  agent?: boolean;
 }
 
 /**
@@ -108,6 +110,14 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
 
   // ── 组装输出 ──
   const fullContext = sections.join('\n\n---\n\n');
+
+  // --agent: 输出机器可读 YAML
+  if (options.agent) {
+    const { generateAgentOutput } = await import('../utils/agent-output.js');
+    process.stdout.write(await generateAgentOutput(cwd));
+    return;
+  }
+
   const tokenEst = estimateTokens(fullContext);
 
   if (format === 'raw') {

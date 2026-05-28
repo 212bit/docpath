@@ -300,7 +300,8 @@ cli.command('context', '生成 Claude Code 可消费的上下文包')
   .option('--no-spec', '不包含 spec')
   .option('--no-plan', '不包含 plan')
   .option('--output <file>', '保存到文件')
-  .action(async (options: { cwd?: string; 'max-tokens'?: string; format?: string; spec?: boolean; plan?: boolean; output?: string }) => {
+  .option('--agent', '输出 Agent 可读 YAML 状态')
+  .action(async (options: { cwd?: string; 'max-tokens'?: string; format?: string; spec?: boolean; plan?: boolean; output?: string; agent?: boolean }) => {
     await contextCommand({
       cwd: options.cwd || process.cwd(),
       maxTokens: options['max-tokens'] ? parseInt(options['max-tokens'], 10) : undefined,
@@ -308,6 +309,7 @@ cli.command('context', '生成 Claude Code 可消费的上下文包')
       withSpec: options.spec !== false,
       withPlan: options.plan !== false,
       output: options.output,
+      agent: !!options.agent,
     });
   });
 
@@ -328,10 +330,12 @@ cli.command('export', '导出工作流状态为可分享的 standalone markdown'
 cli.command('stats', '项目统计面板')
   .option('--cwd <path>', '项目目录')
   .option('--format <format>', '输出格式: table(默认) | json')
-  .action(async (options: { cwd?: string; format?: string }) => {
+  .option('--agent', '输出 Agent 可读 YAML 状态')
+  .action(async (options: { cwd?: string; format?: string; agent?: boolean }) => {
     await statsCommand({
       cwd: options.cwd || process.cwd(),
       format: options.format as 'table' | 'json' | undefined,
+      agent: !!options.agent,
     });
   });
 

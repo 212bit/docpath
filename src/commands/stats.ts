@@ -17,6 +17,8 @@ interface StatsOptions {
   cwd: string;
   /** 输出格式：table(默认) | json */
   format?: 'table' | 'json';
+  /** Agent 可读 YAML 输出 */
+  agent?: boolean;
 }
 
 interface ProjectStats {
@@ -91,6 +93,13 @@ function progressBar(ratio: number, width: number = 20): string {
 
 export async function statsCommand(options: StatsOptions): Promise<void> {
   const { cwd } = options;
+
+  if (options.agent) {
+    const { generateAgentOutput } = await import('../utils/agent-output.js');
+    process.stdout.write(await generateAgentOutput(cwd));
+    return;
+  }
+
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
