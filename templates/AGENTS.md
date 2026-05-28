@@ -53,6 +53,7 @@
 3. Always update `current.md` after state changes
 4. Always write breadcrumb after each sub-task
 5. Run `docpath check` before marking tasks complete
+6. **After completing each sub-task, immediately check off the corresponding item in `current.md` checklist (`[ ]` → `[x]`)**
 
 ---
 

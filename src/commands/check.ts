@@ -343,19 +343,54 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
     // 5. DocPath plan.md 验收条件检查
     const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
+    let planDoneCount = 0;
+    let planTotalCount = 0;
     if (existsSync(planPath)) {
       const planContent = await readFile(planPath, 'utf-8');
-      const doneCount = (planContent.match(/- \[x\]/gi) || []).length;
-      const totalCount = (planContent.match(/- \[[ x]\]/gi) || []).length;
-      if (totalCount > 0) {
-        const passed = doneCount === totalCount;
+      planDoneCount = (planContent.match(/- \[x\]/gi) || []).length;
+      planTotalCount = (planContent.match(/- \[[ x]\]/gi) || []).length;
+      if (planTotalCount > 0) {
+        const passed = planDoneCount === planTotalCount;
         results.push({
-          name: `子任务完成度 (${doneCount}/${totalCount})`,
+          name: `子任务完成度 (${planDoneCount}/${planTotalCount})`,
           passed,
-          output: passed ? '所有子任务已完成' : `还有 ${totalCount - doneCount} 个子任务未完成`,
+          output: passed ? '所有子任务已完成' : `还有 ${planTotalCount - planDoneCount} 个子任务未完成`,
           category: 'plan',
         });
       }
+    }
+
+    // 5b. current.md checklist 独立检查 + 与 plan.md 一致性检查
+    const currentMdPath = join(docpathDir, 'workspace', 'current.md');
+    if (existsSync(currentMdPath)) {
+      try {
+        const currentContent = await readFile(currentMdPath, 'utf-8');
+        // 提取 "执行检查清单" 区块
+        const checklistMatch = currentContent.match(/##[^\n]*?执行检查清单\s*\n([\s\S]*?)(?=\n##|\n---|\n```|$)/);
+        if (checklistMatch) {
+          const checklistBlock = checklistMatch[1];
+          const currentDoneCount = (checklistBlock.match(/- \[x\]/gi) || []).length;
+          const currentTotalCount = (checklistBlock.match(/- \[[ x]\]/gi) || []).length;
+
+          // 只有 plan.md 有 checkbox 且 100% 完成时才做交叉一致性检查
+          const planFullyDone = planTotalCount > 0 && planDoneCount === planTotalCount;
+          if (currentTotalCount > 0 && planFullyDone && currentDoneCount < currentTotalCount) {
+            results.push({
+              name: `⚠️  Checklist 同步 (${currentDoneCount}/${currentTotalCount})`,
+              passed: false,
+              output: `plan.md 全部完成但 current.md checklist 仍有 ${currentTotalCount - currentDoneCount} 项未勾选，请同步更新`,
+              category: 'plan',
+            });
+          } else if (currentTotalCount > 0) {
+            results.push({
+              name: `Checklist 同步 (${currentDoneCount}/${currentTotalCount})`,
+              passed: true,
+              output: planFullyDone ? 'current.md checklist 与执行状态一致' : 'checklist 已记录 (plan.md 未全部完成，暂不交叉校验)',
+              category: 'plan',
+            });
+          }
+        }
+      } catch { /* skip */ }
     }
   }
 

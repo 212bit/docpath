@@ -173,6 +173,7 @@ states:
 - ✅ 每次工具调用前先读 `current.md` 确认状态
 - ✅ 每个子任务完成后更新 `breadcrumb.md`
 - ✅ 状态推进后更新 `current.md`
+- ✅ **每完成一个子任务，立即勾选 `current.md` 中对应的 checklist 项（`[ ]` → `[x]`）**
 - ✅ 先写文档再写代码（Level 1 以上）
 
 ### 禁止做
