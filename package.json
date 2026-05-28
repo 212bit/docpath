@@ -1,0 +1,35 @@
+{
+  "name": "docpath",
+  "version": "0.1.0",
+  "description": "\u6587\u5f84 DocPath \u2014 \u6e10\u8fdb\u5f0f\u6587\u6863\u9a71\u52a8\u5de5\u4f5c\u6d41 (Document as Finite State Machine)",
+  "type": "module",
+  "bin": {
+    "docpath": "./bin/docpath.js"
+  },
+  "files": [
+    "dist/",
+    "templates/"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --clean --out-dir dist",
+    "dev": "tsup src/index.ts --format esm --watch --out-dir dist",
+    "prepublishOnly": "pnpm build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cac": "^6.7.14",
+    "@clack/prompts": "^0.10.0",
+    "yaml": "^2.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.3"
+  },
+  "license": "MIT",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+.docpath/journal/
+.docpath/tasks/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
