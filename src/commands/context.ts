@@ -10,6 +10,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
+import { resolveDocpathDir } from '../utils/file.js';
 
 interface ContextOptions {
   cwd: string;

@@ -11,6 +11,7 @@ import { join } from 'path';
 import { readCurrentMd, updateCurrentState, readWorkspaceMeta } from '../utils/workspace.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { callLLM } from '../llm/client.js';
+import { resolveDocpathDir } from '../utils/file.js';
 
 interface JournalOptions {
   cwd: string;

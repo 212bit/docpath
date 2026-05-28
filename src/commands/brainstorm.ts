@@ -16,6 +16,7 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { askQuestion, readCurrentMd, updateCurrentState } from '../utils/workspace.js';
 import { callLLM } from '../llm/client.js';
+import { resolveDocpathDir } from '../utils/file.js';
 
 interface BrainstormOptions {
   /** 项目根目录 */

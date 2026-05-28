@@ -81,7 +81,7 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   }
 
   // 如果用户没指定 level，用检测到的复杂度
-  const level: ComplexityLevel = options.level || String(projectInfo.complexity) as ComplexityLevel;
+  const level: ComplexityLevel = options.level || (String(projectInfo.complexity) as unknown as ComplexityLevel);
 
   // ── 创建目录结构 ──
   console.log('\n📁  初始化 DocPath 工作流...\n');

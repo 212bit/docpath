@@ -14,7 +14,6 @@ import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
-import { resolveDocpathDir } from '../utils/file.js';
 
 interface CheckOptions {
   cwd: string;
@@ -91,6 +90,7 @@ function parseHarnessRules(content: string): HarnessRule[] {
 // ─── Harness 规则检查 ───
 
 async function runHarnessChecks(cwd: string, options: CheckOptions): Promise<CheckResult[]> {
+  const docpathDir = await resolveDocpathDir(cwd);
   const harnessPath = join(docpathDir, 'harness.md');
   if (!existsSync(harnessPath)) {
     return [{

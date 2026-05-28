@@ -12,6 +12,7 @@ import { execSync } from 'child_process';
 import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { callLLM } from '../llm/client.js';
+import { resolveDocpathDir } from '../utils/file.js';
 
 interface ReviewOptions {
   cwd: string;

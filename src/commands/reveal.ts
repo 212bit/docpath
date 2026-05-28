@@ -99,12 +99,13 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
   }
 
   const sections: string[] = [];
-  const budget: Record<string, number> = {
+  const budgets: Record<number, number> = {
     0: 100,
     1: 500,
     2: 2000,
     3: 8000,
-  }[level];
+  };
+  const budget = budgets[level] ?? budgets[1];
 
   // ══════════════════════════════════════════
   // Level 0 — Micro: 项目 + 任务 + 下一步

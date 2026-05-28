@@ -6,12 +6,12 @@
 
 ```yaml
 level: 1                  # 当前复杂度级别 (0|1|2|3)
-state: check_fail         # 当前状态
+state: check_pass         # 当前状态
 task_id: T-20260528-link  # 当前任务 ID
 task_title: "docpath init --link 关联项目功能"
 phase: brainstorm         # Phase 名
 started_at: 2026-05-28
-updated_at: 2026-05-28T13:22
+updated_at: 2026-05-28T14:14
 ```
 
 ## 当前任务摘要

@@ -15,6 +15,7 @@ import { join } from 'path';
 import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
 import { getLatestEntry } from '../engine/breadcrumb.js';
 import { evaluateEscalation } from '../engine/escalation.js';
+import { resolveDocpathDir } from '../utils/file.js';
 
 interface ContinueOptions {
   cwd: string;
@@ -24,7 +25,7 @@ interface ContinueOptions {
 /**
  * 从断点恢复上下文
  */
-async function resumeContext(cwd: string): Promise<void> {
+async function resumeContext(cwd: string, docpathDir: string): Promise<void> {
   const breadcrumbPath = join(docpathDir, 'workspace', 'breadcrumb.md');
 
   console.log('🔄  恢复断点上下文...\n');
@@ -113,7 +114,7 @@ export async function continueCommand(options: ContinueOptions): Promise<void> {
   }
 
   // 1. 恢复上下文
-  await resumeContext(cwd);
+  await resumeContext(cwd, docpathDir);
 
   // 2. 检查是否需要升级
   const current = await readCurrentMd(cwd);

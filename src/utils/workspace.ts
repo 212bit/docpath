@@ -141,6 +141,7 @@ export async function askQuestion(prompt: string): Promise<string> {
  * 读取 workspace 元数据 (.docpath/workspace.json)
  */
 export async function readWorkspaceMeta(cwd: string): Promise<Record<string, unknown> | null> {
+  const docpathDir = await resolveDocpathDir(cwd);
   const metaPath = join(docpathDir, 'workspace.json');
   try {
     const content = await readFile(metaPath, 'utf-8');

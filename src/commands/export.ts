@@ -11,6 +11,7 @@ import { join } from 'path';
 import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { LEVEL_NAMES, type ComplexityLevel } from '../engine/state-machine.js';
+import { resolveDocpathDir } from '../utils/file.js';
 
 interface ExportOptions {
   cwd: string;
