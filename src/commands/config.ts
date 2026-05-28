@@ -12,7 +12,7 @@
  *   docpath config set harness.mode balanced # 设置 harness 模式
  */
 
-import { readFileSafe } from '../utils/file.js';
+import { readFileSafe, resolveDocpathDir} from '../utils/file.js';
 import { join } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 
@@ -137,7 +137,7 @@ function toYamlSimple(obj: Record<string, any>, indent = 0): string {
 }
 
 export async function configCommand(options: ConfigOptions): Promise<void> {
-  const configDir = join(options.cwd, '.docpath');
+  const configDir = await resolveDocpathDir(options.cwd);
   const configPath = join(configDir, 'config.yaml');
 
   // List all config

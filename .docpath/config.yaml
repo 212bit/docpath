@@ -1,9 +1,9 @@
 # DocPath 项目配置
-# 由 docpath:init 自动生成
+# 由 docpath:init 自动生成 (2026-05-28)
 
 # 默认复杂度级别 (0|1|2|3)
 # 0=即时响应, 1=轻量任务, 2=标准任务, 3=复杂任务
-default_level: 2
+default_level: 0
 
 # 工作流设置
 workflow:
@@ -16,10 +16,13 @@ workflow:
   # 强制 Code Review (Phase 3 实现)
   enforce_review: false
 
-# 项目元信息
+# 项目元信息 (自动检测)
 project:
-  name: ""
-  description: ""
+  name: "docpath"
+  description: "文径 DocPath — 渐进式文档驱动工作流 (Document as Finite State Machine)"
+  type: "node"
+  language: "TypeScript"
+  framework: ""
   created_at: "2026-05-28"
 
 # 路径门禁 (不可修改，由引擎维护)

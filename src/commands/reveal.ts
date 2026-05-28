@@ -18,6 +18,7 @@ import { readFile, readdir } from 'fs/promises';
 import { join } from 'path';
 import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
+import { resolveDocpathDir } from '../utils/file.js';
 
 interface RevealOptions {
   cwd: string;
@@ -85,7 +86,7 @@ function planSummary(text: string): string {
 
 export async function revealCommand(options: RevealOptions): Promise<void> {
   const { cwd, level = 1, format = 'text', output } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');

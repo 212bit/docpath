@@ -3,7 +3,7 @@
  */
 
 import { readFile, writeFile, mkdir, access, constants } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve, isAbsolute, relative } from 'node:path';
 
 /** 确保目录存在 */
 export async function ensureDir(dirPath: string): Promise<void> {
@@ -51,4 +51,88 @@ export function generateTaskId(): string {
 /** 获取当前日期 YYYY-MM-DD */
 export function today(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+interface LinkInfo {
+  linkedTo: string;
+  createdAt: string;
+}
+
+/**
+ * 解析 .docpath/ 目录路径
+ * 如果 .docpath/docpath.json 存在且有 linkedTo 字段，则解析为链接目标
+ * 否则返回本地 .docpath/ 路径
+ */
+export async function resolveDocpathDir(cwd: string): Promise<string> {
+  const localDocpath = join(cwd, '.docpath');
+  const linkFile = join(localDocpath, 'docpath.json');
+
+  const linkContent = await readFileSafe(linkFile);
+  if (linkContent) {
+    try {
+      const info: LinkInfo = JSON.parse(linkContent);
+      if (info.linkedTo) {
+        const targetDir = isAbsolute(info.linkedTo)
+          ? info.linkedTo
+          : resolve(cwd, info.linkedTo);
+        if (await exists(join(targetDir, '.docpath', 'config.yaml'))) {
+          return join(targetDir, '.docpath');
+        }
+        console.warn(`⚠️  链接目标 ${targetDir} 的 .docpath/ 不存在，使用本地配置`);
+      }
+    } catch {
+      // JSON 解析失败，忽略链接
+    }
+  }
+
+  return localDocpath;
+}
+
+/**
+ * 创建项目链接
+ * @param cwd 当前项目目录
+ * @param targetPath 链接目标项目路径
+ */
+export async function createLink(cwd: string, targetPath: string): Promise<void> {
+  const targetDocpath = join(targetPath, '.docpath');
+  if (!await exists(join(targetPath, '.docpath', 'config.yaml'))) {
+    throw new Error(`目标项目 ${targetPath} 未初始化 DocPath（缺少 .docpath/config.yaml）`);
+  }
+
+  const localDocpath = join(cwd, '.docpath');
+  await ensureDir(localDocpath);
+
+  const absoluteTarget = resolve(cwd, targetPath);
+  const relativePath = relative(localDocpath, absoluteTarget).replace(/\\/g, '/');
+  const info: LinkInfo = {
+    linkedTo: relativePath,
+    createdAt: new Date().toISOString(),
+  };
+
+  await writeFile(join(localDocpath, 'docpath.json'), JSON.stringify(info, null, 2), 'utf-8');
+}
+
+/**
+ * 删除文件
+ */
+export async function rmFile(filePath: string): Promise<void> {
+  const { unlink } = await import('node:fs/promises');
+  try {
+    await unlink(filePath);
+  } catch {
+    // 文件不存在，忽略
+  }
+}
+
+/**
+ * 解除项目链接
+ */
+export async function removeLink(cwd: string): Promise<void> {
+  const linkFile = join(cwd, '.docpath', 'docpath.json');
+  const { unlink } = await import('node:fs/promises');
+  try {
+    await unlink(linkFile);
+  } catch {
+    // 文件不存在，忽略
+  }
 }

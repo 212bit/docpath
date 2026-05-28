@@ -22,7 +22,7 @@
  */
 
 import { join } from 'node:path';
-import { exists, ensureDir, writeFileSafe } from '../utils/file.js';
+import { exists, ensureDir, writeFileSafe, createLink } from '../utils/file.js';
 import type { ComplexityLevel } from '../engine/state-machine.js';
 import { createDefaultState } from '../engine/state-machine.js';
 import { loadTemplate } from '../utils/file.js';
@@ -32,6 +32,7 @@ interface InitOptions {
   cwd?: string;
   level?: ComplexityLevel;
   force?: boolean;
+  link?: string;
 }
 
 const TEMPLATES_DIR = join(
@@ -42,6 +43,20 @@ const TEMPLATES_DIR = join(
 export async function initCommand(options: InitOptions = {}): Promise<void> {
   const cwd = options.cwd || process.cwd();
   const docpathDir = join(cwd, '.docpath');
+
+  // ── --link 模式：关联已有项目 ──
+  if (options.link) {
+    const targetPath = options.link;
+    if (!(await exists(join(targetPath, '.docpath')))) {
+      console.log('❌  目标项目未找到 .docpath/ 目录');
+      return;
+    }
+    await ensureDir(docpathDir);
+    await createLink(cwd, targetPath);
+    console.log('🔗  已关联项目: ' + targetPath);
+    console.log('    所有 docpath 命令将使用目标项目的 .docpath/\n');
+    return;
+  }
 
   // 检查是否已存在
   if (!options.force && await exists(docpathDir)) {

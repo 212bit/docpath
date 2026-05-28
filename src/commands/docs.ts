@@ -8,6 +8,7 @@
 import { existsSync } from 'fs';
 import { readFile, readdir, writeFile, stat } from 'fs/promises';
 import { join, relative, extname, basename } from 'path';
+import { resolveDocpathDir } from '../utils/file.js';
 
 interface DocsOptions {
   cwd: string;
@@ -167,7 +168,7 @@ function generateDocsMd(entries: DocEntry[]): string {
 
 /** docs scan — 扫描文档生成索引 */
 async function docsScan(cwd: string): Promise<void> {
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
@@ -215,7 +216,8 @@ async function docsScan(cwd: string): Promise<void> {
 
 /** docs list — 列出所有注册文档 */
 async function docsList(cwd: string): Promise<void> {
-  const docsMdPath = join(cwd, '.docpath', 'docs.md');
+  const docpathDir = await resolveDocpathDir(cwd);
+  const docsMdPath = join(docpathDir, 'docs.md');
 
   if (!existsSync(docsMdPath)) {
     console.error('❌  未找到 docs.md。请先运行 `docpath docs scan`');
@@ -236,7 +238,8 @@ async function docsAdd(cwd: string, args: string[]): Promise<void> {
 
   const [docPath, kind, scope = 'project', level = '0'] = args;
 
-  const docsMdPath = join(cwd, '.docpath', 'docs.md');
+  const docpathDir = await resolveDocpathDir(cwd);
+  const docsMdPath = join(docpathDir, 'docs.md');
 
   if (!existsSync(docsMdPath)) {
     console.error('❌  未找到 docs.md。请先运行 `docpath docs scan`');

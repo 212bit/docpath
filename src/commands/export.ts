@@ -52,7 +52,7 @@ function excerpt(text: string, maxLen: number): string {
 
 export async function exportCommand(options: ExportOptions): Promise<void> {
   const { cwd } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');

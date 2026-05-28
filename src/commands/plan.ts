@@ -10,6 +10,7 @@
 import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { resolveDocpathDir } from '../utils/file.js';
 import { updateCurrentState } from '../utils/workspace.js';
 import { callLLM } from '../llm/client.js';
 
@@ -50,7 +51,7 @@ S1 → S3 → S5
 
 export async function planCommand(options: PlanOptions): Promise<void> {
   const { cwd } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
   const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
   const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
 

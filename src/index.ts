@@ -13,7 +13,7 @@
  */
 
 import { cac } from 'cac';
-import { readFileSafe } from './utils/file.js';
+import { readFileSafe, resolveDocpathDir } from './utils/file.js';
 import { join } from 'node:path';
 import { initCommand } from './commands/init.js';
 import { brainstormCommand } from './commands/brainstorm.js';
@@ -30,6 +30,7 @@ import { learnCommand } from './commands/learn.js';
 import { contextCommand } from './commands/context.js';
 import { exportCommand } from './commands/export.js';
 import { statsCommand } from './commands/stats.js';
+import { unlinkCommand } from './commands/unlink.js';
 import { docsCommand } from './commands/docs.js';
 import { revealCommand } from './commands/reveal.js';
 import { readFile } from 'node:fs/promises';
@@ -50,10 +51,12 @@ cli.help();
 cli.command('init', '初始化 .docpath/ 工作流目录')
   .option('--force', '强制重新生成')
   .option('--level <level>', '初始复杂度级别 (0|1|2|3)')
-  .action(async (options: { force?: boolean; level?: string }) => {
+  .option('--link <path>', '关联已初始化的项目路径')
+  .action(async (options: { force?: boolean; level?: string; link?: string }) => {
     await initCommand({
       force: !!options.force,
       level: options.level ? parseInt(options.level, 10) as any : undefined,
+      link: options.link,
     });
   });
 
@@ -103,6 +106,19 @@ cli.command('status', '查看当前工作流状态')
         if (subTaskMatch) console.log(`     子任务: ${subTaskMatch[1]}`);
       }
     }
+
+    // ── 显示关联项目 ──
+    try {
+      const docpathDir = await resolveDocpathDir(cwd);
+      const infoRaw = await readFileSafe(join(docpathDir, 'docpath.json'));
+      if (infoRaw) {
+        const info = JSON.parse(infoRaw);
+        if (info.linkedTo) {
+          const target = join(cwd, info.linkedTo);
+          console.log(`  🔗  已关联: ${info.linkedTo} (${target})`);
+        }
+      }
+    } catch { /* no link */ }
 
     console.log('');
   });
@@ -356,6 +372,13 @@ cli.command('reveal', '渐进式上下文披露 — 按 level 0-3 输出上下�
       format: (options.format || getArg('--format') || 'text') as 'text' | 'raw',
       output: options.output || getArg('--output'),
     });
+  });
+
+// ─── docpath:unlink ───
+cli.command('unlink', '取消项目关联')
+  .option('--cwd <path>', '项目目录')
+  .action(async (options: { cwd?: string }) => {
+    await unlinkCommand({ cwd: options.cwd || process.cwd() });
   });
 
 // ─── 解析并执行 ───

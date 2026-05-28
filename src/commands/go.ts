@@ -13,6 +13,7 @@ import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
+import { resolveDocpathDir } from '../utils/file.js';
 
 interface GoOptions {
   cwd: string;
@@ -92,7 +93,7 @@ function parseSubTasks(planContent: string): Array<{
 
 export async function goCommand(options: GoOptions): Promise<void> {
   const { cwd, step, dryRun } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
   const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
 
   if (!existsSync(docpathDir)) {

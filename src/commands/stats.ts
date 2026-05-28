@@ -9,6 +9,7 @@ import { existsSync } from 'fs';
 import { readFile, readdir } from 'fs/promises';
 import { join } from 'path';
 import { readCurrentMd } from '../utils/workspace.js';
+import { resolveDocpathDir } from '../utils/file.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { LEVEL_NAMES, type ComplexityLevel } from '../engine/state-machine.js';
 
@@ -53,9 +54,9 @@ interface ProjectStats {
 }
 
 /** 从 journal 文件中统计条目数 */
-async function countJournalEntries(cwd: string): Promise<{ entries: number; totalChars: number }> {
-  const journalDir = join(cwd, '.docpath', 'workspace', 'journal');
-  const journalFile = join(cwd, '.docpath', 'workspace', 'journal.md');
+async function countJournalEntries(cwd: string, docpathDir: string): Promise<{ entries: number; totalChars: number }> {
+  const journalDir = join(docpathDir, 'workspace', 'journal');
+  const journalFile = join(docpathDir, 'workspace', 'journal.md');
 
   let totalChars = 0;
   let entries = 0;
@@ -90,7 +91,7 @@ function progressBar(ratio: number, width: number = 20): string {
 
 export async function statsCommand(options: StatsOptions): Promise<void> {
   const { cwd } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
@@ -100,7 +101,7 @@ export async function statsCommand(options: StatsOptions): Promise<void> {
   // ── 收集数据 ──
   const state = await readCurrentMd(cwd);
   const bc = await readBreadcrumb(cwd);
-  const journal = await countJournalEntries(cwd);
+  const journal = await countJournalEntries(cwd, docpathDir);
 
   const hasSpec = existsSync(join(docpathDir, 'tasks', 'current', 'spec.md'));
   const hasPlan = existsSync(join(docpathDir, 'tasks', 'current', 'plan.md'));
@@ -154,6 +155,18 @@ export async function statsCommand(options: StatsOptions): Promise<void> {
   console.log(`│  状态:    ${stats.current.state.padEnd(28)}       │`);
   console.log(`│  任务:    ${stats.current.taskTitle.slice(0, 28).padEnd(28)}       │`);
   console.log(`└────────────────────────────────────────┘`);
+
+  // 链接状态
+  try {
+    const configPath = join(docpathDir, 'config.yaml');
+    if (existsSync(configPath)) {
+      const configContent = await readFile(configPath, 'utf-8');
+      const match = configContent.match(/^linkedTo:\s*(.+)$/m);
+      if (match) {
+        console.log(`\n🔗  已关联: ${match[1].trim()}`);
+      }
+    }
+  } catch { /* no linked project */ }
 
   // 完成率
   const completionRate = bc.total > 0 ? bc.done / bc.total : 0;

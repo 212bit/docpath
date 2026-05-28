@@ -3,7 +3,7 @@
  * 读取 breadcrumb + current state → 跳到上次中断点
  */
 
-import { readFileSafe } from '../utils/file.js';
+import { readFileSafe, resolveDocpathDir} from '../utils/file.js';
 import { join } from 'node:path';
 
 interface ResumeOptions {

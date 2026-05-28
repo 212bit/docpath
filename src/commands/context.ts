@@ -52,7 +52,7 @@ function compressMarkdown(text: string, maxChars: number): string {
 
 export async function contextCommand(options: ContextOptions): Promise<void> {
   const { cwd, format = 'prompt', maxTokens = 8000 } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');

@@ -29,7 +29,7 @@ interface TaskSummary {
 
 export async function journalCommand(options: JournalOptions): Promise<void> {
   const { cwd, skipAi } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
   const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
 
   if (!existsSync(docpathDir)) {

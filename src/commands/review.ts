@@ -40,7 +40,7 @@ function getGitDiff(scope: string, cwd: string): string {
 
 export async function reviewCommand(options: ReviewOptions): Promise<void> {
   const { cwd, scope = 'staged', useAi = true } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');

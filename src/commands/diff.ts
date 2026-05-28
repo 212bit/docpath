@@ -3,7 +3,7 @@
  * git diff 或文件快照对比
  */
 
-import { readFileSafe } from '../utils/file.js';
+import { readFileSafe, resolveDocpathDir} from '../utils/file.js';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';

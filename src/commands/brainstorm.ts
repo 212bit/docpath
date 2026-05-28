@@ -65,7 +65,7 @@ acceptance_criteria:
  */
 export async function brainstormCommand(options: BrainstormOptions): Promise<void> {
   const { cwd, input, dryRun } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
 
   // 1. 检测 .docpath/
   if (!existsSync(docpathDir)) {

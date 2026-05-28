@@ -3,7 +3,7 @@
  * Superpower 学习闭环：把踩过的坑变成自动检查
  */
 
-import { readFileSafe } from '../utils/file.js';
+import { readFileSafe, resolveDocpathDir} from '../utils/file.js';
 import { join } from 'node:path';
 import { writeFile, mkdir } from 'node:fs/promises';
 

@@ -11,8 +11,10 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
+import { resolveDocpathDir } from '../utils/file.js';
 
 interface CheckOptions {
   cwd: string;
@@ -89,7 +91,7 @@ function parseHarnessRules(content: string): HarnessRule[] {
 // ─── Harness 规则检查 ───
 
 async function runHarnessChecks(cwd: string, options: CheckOptions): Promise<CheckResult[]> {
-  const harnessPath = join(cwd, '.docpath', 'harness.md');
+  const harnessPath = join(docpathDir, 'harness.md');
   if (!existsSync(harnessPath)) {
     return [{
       name: 'Harness 规则',
@@ -136,7 +138,7 @@ async function runHarnessChecks(cwd: string, options: CheckOptions): Promise<Che
       // Pre-flight 规则
       case 'pre_project_setup': {
         // 检查 .docpath/ 目录和必要文件
-        const docpathDir = join(cwd, '.docpath');
+        const docpathDir = await resolveDocpathDir(cwd);
         const currentMd = join(docpathDir, 'workspace', 'current.md');
         const specDir = join(docpathDir, 'spec');
         passed = existsSync(docpathDir) && existsSync(currentMd) && existsSync(specDir);
@@ -146,7 +148,7 @@ async function runHarnessChecks(cwd: string, options: CheckOptions): Promise<Che
 
       case 'pre_file_structure': {
         // 检查文件结构
-        const docsMd = join(cwd, '.docpath', 'docs.md');
+        const docsMd = join(docpathDir, 'docs.md');
         passed = existsSync(docsMd);
         output = passed ? 'docs.md 存在' : '缺少 docs.md，请运行 `docpath docs scan`';
         break;
@@ -197,7 +199,7 @@ async function runHarnessChecks(cwd: string, options: CheckOptions): Promise<Che
         // 检查范围控制
         try {
           const current = await readCurrentMd(cwd);
-          const planPath = join(cwd, '.docpath', 'tasks', 'current', 'plan.md');
+          const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
           if (existsSync(planPath)) {
             const planContent = await readFile(planPath, 'utf-8');
             const taskCount = (planContent.match(/- \[[ x]\]/gi) || []).length;
@@ -245,7 +247,7 @@ async function runHarnessChecks(cwd: string, options: CheckOptions): Promise<Che
 
       case 'post_spec_ref': {
         // 检查规范引用
-        const docsMd = join(cwd, '.docpath', 'docs.md');
+        const docsMd = join(docpathDir, 'docs.md');
         passed = existsSync(docsMd);
         output = passed ? 'docs.md 存在' : '缺少 docs.md，请运行 `docpath docs scan`';
         break;
@@ -271,7 +273,7 @@ async function runHarnessChecks(cwd: string, options: CheckOptions): Promise<Che
 
 export async function checkCommand(options: CheckOptions): Promise<void> {
   const { cwd, skipTests, skipLint } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');

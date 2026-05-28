@@ -25,7 +25,7 @@ interface ContinueOptions {
  * 从断点恢复上下文
  */
 async function resumeContext(cwd: string): Promise<void> {
-  const breadcrumbPath = join(cwd, '.docpath', 'workspace', 'breadcrumb.md');
+  const breadcrumbPath = join(docpathDir, 'workspace', 'breadcrumb.md');
 
   console.log('🔄  恢复断点上下文...\n');
 
@@ -105,7 +105,7 @@ function parseBreadcrumbEntries(content: string): Array<{
 
 export async function continueCommand(options: ContinueOptions): Promise<void> {
   const { cwd, verbose } = options;
-  const docpathDir = join(cwd, '.docpath');
+  const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');

@@ -6,6 +6,7 @@ import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import * as readline from 'readline';
+import { resolveDocpathDir } from './file.js';
 
 /**
  * 读取 .docpath/workspace/current.md 的状态块
@@ -19,7 +20,8 @@ export async function readCurrentMd(cwd: string): Promise<{
   started_at: string;
   updated_at: string;
 } | null> {
-  const currentPath = join(cwd, '.docpath', 'workspace', 'current.md');
+  const docpathDir = await resolveDocpathDir(cwd);
+  const currentPath = join(docpathDir, 'workspace', 'current.md');
   try {
     const content = await readFile(currentPath, 'utf-8');
     const yamlMatch = content.match(/```yaml\n([\s\S]*?)```/);
@@ -53,7 +55,8 @@ export async function updateCurrentState(
   newState: string,
   extraFields?: Record<string, string>,
 ): Promise<void> {
-  const currentPath = join(cwd, '.docpath', 'workspace', 'current.md');
+  const docpathDir = await resolveDocpathDir(cwd);
+  const currentPath = join(docpathDir, 'workspace', 'current.md');
   let content: string;
 
   try {
@@ -97,7 +100,8 @@ export async function updateCurrentChecklist(
   taskId: string,
   completed: boolean,
 ): Promise<void> {
-  const currentPath = join(cwd, '.docpath', 'workspace', 'current.md');
+  const docpathDir = await resolveDocpathDir(cwd);
+  const currentPath = join(docpathDir, 'workspace', 'current.md');
   let content: string;
 
   try {
@@ -137,7 +141,7 @@ export async function askQuestion(prompt: string): Promise<string> {
  * 读取 workspace 元数据 (.docpath/workspace.json)
  */
 export async function readWorkspaceMeta(cwd: string): Promise<Record<string, unknown> | null> {
-  const metaPath = join(cwd, '.docpath', 'workspace.json');
+  const metaPath = join(docpathDir, 'workspace.json');
   try {
     const content = await readFile(metaPath, 'utf-8');
     return JSON.parse(content);
