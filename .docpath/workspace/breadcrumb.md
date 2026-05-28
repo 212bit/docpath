@@ -13,3 +13,9 @@
 
 - **状态**: done
 - **上下文**: 质量检查通过 (2 项)
+
+### ✅ S1+S2 [T-20260528-agent-integration] — 2026-05-28T17:10:00.000Z
+
+- **状态**: done
+- **产出**: install.ts + AGENTS.md + 5 workflow templates
+- **下一步**: S3 skills 模板

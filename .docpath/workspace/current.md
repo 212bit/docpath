@@ -1,24 +1,25 @@
-# DocPath 当前状态
-
-> ⚡ 此文件是状态机的核心寄存器。每次状态变更必须更新。
-
-## 状态寄存器
+# 📍 当前工作流状态
 
 ```yaml
-level: 1                  # 当前复杂度级别 (0|1|2|3)
-state: check_pass         # 当前状态
-task_id: T-20260528-link  # 当前任务 ID
-task_title: "docpath init --link 关联项目功能"
-phase: brainstorm         # 工作流阶段
-current_step: null        # 当前子任务 ID；非执行中为 null
-started_at: 2026-05-28
-updated_at: 2026-05-28T14:14
+level: 2                    # 任务复杂度级别
+state: executing        # 当前状态
+task_id: T-20260528-agent-integration
+task_title: Agent Integration (Phase 1+2)
+phase: executing        # 当前阶段
+current_step: S4 — 入口协议与 Slash 命令模板
+started_at: 2026-05-28T16:30:00.000Z
+updated_at: 2026-05-28T17:10:00.000Z
 ```
 
-## 当前任务摘要
+> 📖 规约: [spec.md](../tasks/T-20260528-agent-integration/spec.md)
+> 📋 计划: [plan.md](../tasks/T-20260528-agent-integration/plan.md)
 
-实现 `docpath init --link <path>` 命令，允许当前项目关联另一个项目的 `.docpath/` 目录，支持 monorepo 和微服务场景。
+## ✅ 执行检查清单
 
-## 状态机映射
-
-<!-- Plan Phase: 详细实现计划已生成，见 tasks/T-20260528-link/plan.md -->
+- [x] S1: 新增 install 命令框架 ✅
+- [x] S2: 工作流文档模板 ✅
+- [x] S3: Skills 文档模板 ✅
+- [x] S4: 入口协议与 Slash 命令模板 ✅
+- [ ] S5: install 命令完整实现
+- [ ] S6: Agent 指令输出增强
+- [ ] S7: 验证与文档

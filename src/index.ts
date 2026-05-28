@@ -33,6 +33,7 @@ import { statsCommand } from './commands/stats.js';
 import { unlinkCommand } from './commands/unlink.js';
 import { docsCommand } from './commands/docs.js';
 import { revealCommand } from './commands/reveal.js';
+import { installCommand } from './commands/install.js';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
@@ -379,6 +380,19 @@ cli.command('unlink', '取消项目关联')
   .option('--cwd <path>', '项目目录')
   .action(async (options: { cwd?: string }) => {
     await unlinkCommand({ cwd: options.cwd || process.cwd() });
+  });
+
+// ─── docpath:install ───
+cli.command('install', '安装 Agent 协议文件到项目')
+  .option('--cwd <path>', '项目目录')
+  .option('--target <type>', '目标类型: claude | opencode | universal (默认 universal)')
+  .option('--force', '覆盖已有文件')
+  .action(async (options: { cwd?: string; target?: string; force?: boolean }) => {
+    await installCommand({
+      cwd: options.cwd || process.cwd(),
+      target: options.target,
+      force: !!options.force,
+    });
   });
 
 // ─── 解析并执行 ───
