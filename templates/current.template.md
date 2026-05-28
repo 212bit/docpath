@@ -9,7 +9,8 @@ level: 1                  # 当前复杂度级别 (0|1|2|3)
 state: idle               # 当前状态
 task_id: null             # 当前任务 ID (T-YYYYMMDD-xxx)
 task_title: ""            # 任务标题
-phase: null               # Phase 名 (plan/execute/finish)
+phase: null               # 工作流阶段 (brainstorm/plan/execute/check/finish)
+current_step: null        # 当前子任务 ID；非执行中为 null
 started_at: null          # 任务开始时间
 updated_at: null          # 上次状态更新时间
 ```

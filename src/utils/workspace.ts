@@ -17,6 +17,7 @@ export async function readCurrentMd(cwd: string): Promise<{
   task_id: string;
   task_title: string;
   phase: string;
+  current_step: string;
   started_at: string;
   updated_at: string;
 } | null> {
@@ -28,9 +29,34 @@ export async function readCurrentMd(cwd: string): Promise<{
     if (!yamlMatch) return null;
 
     const yamlBlock = yamlMatch[1];
+    const stripInlineComment = (value: string): string => {
+      let inSingle = false;
+      let inDouble = false;
+
+      for (let i = 0; i < value.length; i++) {
+        const char = value[i];
+        const prev = value[i - 1];
+
+        if (char === '"' && !inSingle && prev !== '\\') inDouble = !inDouble;
+        if (char === "'" && !inDouble && prev !== '\\') inSingle = !inSingle;
+        if (char === '#' && !inSingle && !inDouble && (i === 0 || /\s/.test(prev))) {
+          return value.slice(0, i).trim();
+        }
+      }
+
+      return value.trim();
+    };
+    const unquote = (value: string): string => {
+      const trimmed = stripInlineComment(value);
+      if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+        return trimmed.slice(1, -1);
+      }
+      return trimmed;
+    };
     const get = (key: string): string => {
-      const m = yamlBlock.match(new RegExp(`${key}:\\s*(.+)`));
-      return m ? m[1].trim().replace(/"/g, '') : '';
+      const m = yamlBlock.match(new RegExp(`^${key}:\\s*(.*)$`, 'm'));
+      return m ? unquote(m[1]) : '';
     };
 
     return {
@@ -39,6 +65,7 @@ export async function readCurrentMd(cwd: string): Promise<{
       task_id: get('task_id'),
       task_title: get('task_title'),
       phase: get('phase'),
+      current_step: get('current_step'),
       started_at: get('started_at'),
       updated_at: get('updated_at'),
     };
@@ -79,12 +106,14 @@ export async function updateCurrentState(
     `updated_at: ${now}`,
   );
 
-  // 替换额外字段
+  // 替换额外字段；字段不存在时插入到 YAML 状态块末尾，保持向后兼容
   if (extraFields) {
     for (const [key, value] of Object.entries(extraFields)) {
-      const regex = new RegExp(`${key}: .+`);
+      const regex = new RegExp(`^${key}:.*$`, 'm');
       if (regex.test(content)) {
         content = content.replace(regex, `${key}: ${value}`);
+      } else {
+        content = content.replace(/```\n/, `${key}: ${value}\n\`\`\`\n`);
       }
     }
   }

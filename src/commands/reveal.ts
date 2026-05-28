@@ -116,7 +116,7 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
     sections.push(
       header('📍', '当前状态') + '\n' +
       `项目: ${projectName}\n` +
-      `状态: ${current.state} | 阶段: ${current.phase}\n` +
+      `状态: ${current.state} | 阶段: ${current.phase || 'null'}${current.current_step ? ` | 子任务: ${current.current_step}` : ''}\n` +
       `任务: ${current.task_id} — ${current.task_title}\n` +
       `级别: Level ${current.level}`
     );

@@ -175,9 +175,9 @@ export async function goCommand(options: GoOptions): Promise<void> {
     context: `开始执行: ${target.name}`,
   });
 
-  // 更新 current.md
+  // 更新 current.md：phase 表示工作流阶段，current_step 表示正在执行的子任务
   await updateCurrentState(cwd, 'executing', {
-    phase: target.id,
+    current_step: target.id,
   });
 
   console.log('─── Claude Code 指令 ───');
