@@ -99,7 +99,16 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
     }
   }
 
-  // ── 5. Style 规则 ──
+  // ── 5. Check 证据 ──
+  const lastCheckPath = join(docpathDir, 'workspace', 'last-check.md');
+  if (existsSync(lastCheckPath)) {
+    const checkContent = await readFile(lastCheckPath, 'utf-8');
+    if (checkContent.trim()) {
+      sections.push(`## 质量检查证据 (last-check.md)\n${compressMarkdown(checkContent, Math.floor(maxChars * 0.1))}`);
+    }
+  }
+
+  // ── 6. Style 规则 ──
   const stylePath = join(docpathDir, 'workspace', 'style.md');
   if (existsSync(stylePath)) {
     const style = await readFile(stylePath, 'utf-8');

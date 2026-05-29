@@ -8,7 +8,7 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -303,8 +303,27 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     const cargoPath = join(cwd, 'Cargo.toml');
     const goModPath = join(cwd, 'go.mod');
 
+    // 检测包管理器
+    const hasPnpmLock = existsSync(join(cwd, 'pnpm-lock.yaml'));
+    const hasYarnLock = existsSync(join(cwd, 'yarn.lock'));
+    const pkgRunner = hasPnpmLock ? 'pnpm' : hasYarnLock ? 'yarn' : 'npm';
+    const runCmd = hasPnpmLock ? 'pnpm run' : hasYarnLock ? 'yarn' : 'npm run';
+
     if (existsSync(tsconfigPath)) {
-      results.push(runCheck('TypeScript 编译', 'npx tsc --noEmit 2>&1', cwd));
+      // 优先使用项目定义的 typecheck 脚本
+      let typecheckCmd = 'npx tsc --noEmit 2>&1';
+      if (existsSync(pkgPath)) {
+        try {
+          const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
+          const scripts = pkg.scripts || {};
+          if (scripts.typecheck) {
+            typecheckCmd = `${runCmd} typecheck 2>&1`;
+          } else if (scripts['type-check']) {
+            typecheckCmd = `${runCmd} type-check 2>&1`;
+          }
+        } catch { /* use default */ }
+      }
+      results.push(runCheck('TypeScript 编译', typecheckCmd, cwd, 'compile'));
     } else if (existsSync(cargoPath)) {
       results.push(runCheck('Rust 编译', 'cargo check 2>&1', cwd));
     } else if (existsSync(goModPath)) {
@@ -316,7 +335,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
       try {
         const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
         if (pkg.scripts?.build) {
-          results.push(runCheck('构建', 'npm run build 2>&1', cwd));
+          results.push(runCheck('构建', `${runCmd} build 2>&1`, cwd, 'compile'));
         }
       } catch { /* skip */ }
     }
@@ -326,7 +345,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
       try {
         const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
         if (pkg.scripts?.test) {
-          results.push(runCheck('测试', 'npm test 2>&1', cwd));
+          results.push(runCheck('测试', `${pkgRunner} test 2>&1`, cwd, 'test'));
         }
       } catch { /* skip */ }
     }
@@ -336,7 +355,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
       try {
         const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
         if (pkg.scripts?.lint) {
-          results.push(runCheck('Lint', 'npm run lint 2>&1', cwd));
+          results.push(runCheck('Lint', `${runCmd} lint 2>&1`, cwd, 'lint'));
         }
       } catch { /* skip */ }
     }
@@ -443,6 +462,19 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   // 更新状态
   const newState = allPassed ? 'check_pass' : 'check_fail';
   await updateCurrentState(cwd, newState);
+
+  // [Harness Lite] 写入 last-check.md
+  const lastCheckPath = join(cwd, '.docpath', 'workspace', 'last-check.md');
+  const checkLines: string[] = ['# Last Check Evidence', ''];
+  checkLines.push(`**时间**: ${new Date().toISOString()}`);
+  checkLines.push(`**结果**: ${allPassed ? '✅ PASS' : '❌ FAIL'}`);
+  checkLines.push(`**检查项**: ${results.length}`);
+  checkLines.push('');
+  for (const r of results) {
+    checkLines.push(`- ${r.passed ? '✅' : '❌'} ${r.name}`);
+  }
+  checkLines.push('');
+  await writeFile(lastCheckPath, checkLines.join('\n'), 'utf-8');
 
   // 写入 breadcrumb
   const taskId = current?.task_id || 'unknown';
