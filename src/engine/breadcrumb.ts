@@ -75,12 +75,15 @@ const STATUS_EMOJI: Record<BreadcrumbEntry['status'], string> = {
  * ```
  */
 function yamlEscape(value: string): string {
-  // 需要引号的场景：含冒号/方括号/引号/换行/以特殊字符开头/为空
-  if (
+  // 需要引号的场景：
+  // 1. 空值  2. 含特殊字符  3. 整个值是 YAML 关键字/布尔/数字  4. 首字符是 YAML 特殊前缀
+  const needsQuote =
     !value ||
-    /[:\[\]{}#&*!|>'",\n]/.test(value) ||
-    /^\s|~|true|false|null|\d+(\.\d+)?$/i.test(value)
-  ) {
+    /[:\[\]{}&*!|>'",\n]/.test(value) ||
+    /^(~|true|false|null|yes|no|on|off)$/i.test(value.trim()) ||
+    /^[\d.]/.test(value) ||
+    /^\s|\s$/.test(value);
+  if (needsQuote) {
     return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
   }
   return value;
@@ -91,7 +94,7 @@ function formatEntry(entry: BreadcrumbEntry): string {
   const emoji = STATUS_EMOJI[entry.status] || '⏭️';
   return [
     '',
-    `### ${emoji} ${yamlEscape(entry.step)} [${yamlEscape(entry.taskId)}] — ${ts}`,
+    `### ${emoji} ${entry.step} [${entry.taskId || '—'}] — ${ts}`,
     '',
     '---',
     `taskId: ${yamlEscape(entry.taskId)}`,
