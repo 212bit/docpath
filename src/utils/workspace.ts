@@ -4,7 +4,7 @@
  * 方案 B：state.json 为唯一状态真源，current.md 为只读渲染产物
  */
 
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, rename } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import * as readline from 'readline';
@@ -69,16 +69,33 @@ export async function readCurrentState(cwd: string): Promise<CurrentState | null
   return null;
 }
 
+// ── 状态值白名单（防止垃圾值写入 state.json） ──
+const VALID_STATES = new Set([
+  'uninitialized', 'drafting', 'planning_done', 'ready', 'in_progress',
+  'executing', 'checking', 'check_pass', 'check_fail',
+  'reviewing', 'review_pass', 'build_pass', 'completed',
+]);
+
 /**
  * 写入 state.json + 重建 current.md（方案 B：唯一写入路径）
  */
 export async function writeCurrentState(cwd: string, state: CurrentState): Promise<void> {
+  // 状态值校验：拒绝非法值，防止状态机污染
+  if (!VALID_STATES.has(state.state)) {
+    const validList = [...VALID_STATES].join(', ');
+    throw new Error(
+      `[docpath] Invalid state "${state.state}". Must be one of: ${validList}`
+    );
+  }
+
   const docpathDir = await resolveDocpathDir(cwd);
   const statePath = join(docpathDir, 'workspace', 'state.json');
   const currentPath = join(docpathDir, 'workspace', 'current.md');
 
-  // 写入 state.json
-  await writeFile(statePath, JSON.stringify(state, null, 2), 'utf-8');
+  // 写入 state.json（原子写入：先写 .tmp 再 rename，防止崩溃导致文件损坏）
+  const stateTmpPath = statePath + '.tmp';
+  await writeFile(stateTmpPath, JSON.stringify(state, null, 2), 'utf-8');
+  await rename(stateTmpPath, statePath);
 
   // 重建 current.md
   const planContent = await readOptionalFile(join(docpathDir, 'tasks', 'current', 'plan.md'));

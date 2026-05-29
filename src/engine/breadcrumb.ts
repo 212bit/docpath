@@ -75,8 +75,6 @@ const STATUS_EMOJI: Record<BreadcrumbEntry['status'], string> = {
  * ```
  */
 function yamlEscape(value: string): string {
-  // 需要引号的场景：
-  // 1. 空值  2. 含特殊字符  3. 整个值是 YAML 关键字/布尔/数字  4. 首字符是 YAML 特殊前缀
   const needsQuote =
     !value ||
     /[:\[\]{}&*!|>'",\n]/.test(value) ||
@@ -87,6 +85,14 @@ function yamlEscape(value: string): string {
     return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
   }
   return value;
+}
+
+function yamlUnquote(value: string): string {
+  const v = value.trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    return v.slice(1, -1).replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  }
+  return v;
 }
 
 function formatEntry(entry: BreadcrumbEntry): string {
@@ -225,14 +231,14 @@ function parseEntryBlock(block: string): BreadcrumbEntry | null {
   const yamlMatch = block.match(/^---\s*\n([\s\S]*?)^---\s*$/m);
   if (yamlMatch) {
     const yamlBlock = yamlMatch[1];
-    const status = yamlBlock.match(/^status:\s*(.+)$/m)?.[1]?.trim() as BreadcrumbEntry['status'] | undefined;
+    const status = yamlUnquote(yamlBlock.match(/^status:\s*(.+)$/m)?.[1] || '') as BreadcrumbEntry['status'] | undefined;
     const context = block.match(/^- \*\*上下文\*\*:\s*(.+)$/m)?.[1]?.trim() || '';
     return {
-      taskId: yamlBlock.match(/^taskId:\s*(.+)$/m)?.[1]?.trim() || taskId,
-      step: yamlBlock.match(/^step:\s*(.+)$/m)?.[1]?.trim() || step,
+      taskId: yamlUnquote(yamlBlock.match(/^taskId:\s*(.+)$/m)?.[1] || '') || taskId,
+      step: yamlUnquote(yamlBlock.match(/^step:\s*(.+)$/m)?.[1] || '') || step,
       status: status || 'done',
       context,
-      timestamp: yamlBlock.match(/^timestamp:\s*(.+)$/m)?.[1]?.trim() || timestamp,
+      timestamp: yamlUnquote(yamlBlock.match(/^timestamp:\s*(.+)$/m)?.[1] || '') || timestamp,
     };
   }
 

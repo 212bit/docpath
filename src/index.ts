@@ -34,6 +34,8 @@ import { unlinkCommand } from './commands/unlink.js';
 import { docsCommand } from './commands/docs.js';
 import { revealCommand } from './commands/reveal.js';
 import { installCommand } from './commands/install.js';
+import { tddCommand } from './commands/tdd.js';
+import { disclosureCommand } from './utils/disclosure.js';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
@@ -400,4 +402,32 @@ cli.command('install', '安装 Agent 协议文件到项目')
   });
 
 // ─── 解析并执行 ───
+
+// ─── docpath:tdd ── (Stage 1: TDD Skill 循环)
+cli.command('tdd', 'TDD 工作流 — start/spec/plan/act/check/done')
+  .option('--cwd <path>', '项目目录')
+  .option('--action <action>', 'TDD 动作: start|next|done')
+  .option('--dry-run', '仅预览')
+  .action(async (options: { cwd?: string; action?: string; 'dry-run'?: boolean }) => {
+    await tddCommand({
+      cwd: options.cwd || process.cwd(),
+      action: (options.action as any) || 'next',
+      dryRun: options['dry-run'],
+    });
+  });
+
+// ─── docpath:disclosure ── (Stage 4: Progressive Disclosure)
+cli.command('disclosure', '渐进式信息展示 — summary|detail|debug')
+  .option('--cwd <path>', '项目目录')
+  .option('--level <level>', '展示层级: summary|detail|debug')
+  .action(async (options: { cwd?: string; level?: string }) => {
+    await disclosureCommand({
+      cwd: options.cwd || process.cwd(),
+      level: options.level,
+    });
+  });
+
+// ─── journal 命令扩展: 添加 --optional-archive 选项 ──
+// (在已有 journal 命令注册处添加选项)
+
 cli.parse();

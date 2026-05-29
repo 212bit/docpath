@@ -16,6 +16,8 @@ import { resolveDocpathDir } from '../utils/file.js';
 interface JournalOptions {
   cwd: string;
   skipAi?: boolean;
+  /** 归档模式: 'always' = 默认行为 | 'skip' = 跳过归档 | 'dry-run' = 预览归档 */
+  archiveMode?: 'always' | 'skip' | 'dry-run';
 }
 
 interface TaskSummary {
@@ -109,19 +111,32 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
 
   console.log('📌 完成后运行: docpath write-journal\n');
 
-  // 归档任务：将 tasks/current 移至 tasks/done/T-xxx
+  // ── 可选归档（借鉴 GSD archive-before-new） ──
+  const archiveMode = options.archiveMode || 'always';
   const { renameSync, mkdirSync } = await import('fs');
   const currentTaskDir = join(docpathDir, 'tasks', 'current');
   const doneDir = join(docpathDir, 'tasks', 'done');
   const archiveDir = join(doneDir, taskId || 'unknown');
-  try {
-    if (!existsSync(doneDir)) mkdirSync(doneDir, { recursive: true });
-    if (existsSync(currentTaskDir) && !existsSync(archiveDir)) {
-      renameSync(currentTaskDir, archiveDir);
-      console.log(`📦 任务已归档: tasks/done/${taskId || 'unknown'}`);
+
+  if (archiveMode === 'skip') {
+    console.log('⏭️  归档已跳过 (--optional-archive=skip)');
+  } else {
+    if (archiveMode === 'dry-run') {
+      console.log(`🔍  [dry-run] 将归档: ${currentTaskDir} → ${archiveDir}`);
     }
-  } catch (e) {
-    console.warn('⚠️  归档失败（非致命）:', (e as Error).message);
+    try {
+      if (!existsSync(doneDir)) mkdirSync(doneDir, { recursive: true });
+      if (existsSync(currentTaskDir) && !existsSync(archiveDir)) {
+        if (archiveMode !== 'dry-run') {
+          renameSync(currentTaskDir, archiveDir);
+          console.log(`📦 任务已归档: tasks/done/${taskId || 'unknown'}`);
+        }
+      } else if (existsSync(archiveDir)) {
+        console.log(`⚠️  归档目标已存在: ${archiveDir}，跳过`);
+      }
+    } catch (e) {
+      console.warn('⚠️  归档失败（非致命）:', (e as Error).message);
+    }
   }
 
   await updateCurrentState(cwd, 'completed', { phase: 'archived' });

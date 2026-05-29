@@ -3,16 +3,16 @@
 ```yaml
 level: 3
 state: check_pass         # 当前状态
-task_id: T-20260528-harness-lite
-task_title: Harness Lite for DocPath
+task_id: T-20260529-p3
+task_title: Phase 3: Agent Superpowers — 借鉴 Superpowers/Trellis/GSD 的 5 项改进
 phase: checking
 current_step: 质量检查通过 (3 项)，下一步: docpath review
-started_at: 2026-05-29T10:00:00.000Z
-updated_at: 2026-05-29T10:05
+started_at: 2026-05-29T13:30:00Z
+updated_at: 2026-05-29T11:32
 ```
 
-> 📖 规约: [spec.md](../tasks/T-20260528-harness-lite/spec.md)
-> 📋 计划: [plan.md](../tasks/T-20260528-harness-lite/plan.md)
+> 📖 规约: [spec.md](../tasks/T-20260529-p3/spec.md)
+> 📋 计划: [plan.md](../tasks/T-20260529-p3/plan.md)
 
 ## ✅ 执行检查清单
 
@@ -20,8 +20,8 @@ updated_at: 2026-05-29T10:05
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 3 项 · 2026-05-29T10:05:36.812Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ check [T-20260528-harness-lite] — 2026-05-29T10:05:36.812Z · 状态: done · 质量检查通过 (3 项)
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 3 项 · 2026-05-29T11:32:39.836Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ check [T-20260529-p3] — 2026-05-29T11:32:39.837Z · 状态: done · 质量检查通过 (3 项)
 
 ## 🔄 同步说明
 
