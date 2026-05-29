@@ -66,27 +66,34 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
   console.log(`📝  Diff 行数: ${diff.split('\n').length}\n`);
 
   // [Agent Mode] 输出结构化审查 prompt
-  const prompt = emitPrompt('review', {
-    systemPrompt: '你是代码审查专家。请审查代码变更，输出结构化报告。',
-    context: `## 项目规约\n${spec.slice(0, 2000)}\n\n## 任务计划\n${plan.slice(0, 2000)}\n\n## 代码变更 (diff)\n\`\`\`\n${diff.slice(0, 8000)}\n\`\`\``,
-    instructions: `请按以下格式输出审查报告：
-
-### 📋 审查摘要
-(一句话总结)
-
-### ✅ 通过项
-- (好的实践)
-
-### ⚠️ 需关注
-- (潜在问题)
-
-### 🔧 建议修复
-- (具体建议)
-
-### 📊 评分
-通过率: X/10
-
-${level >= 2 ? '完成后将审查记录追加到 spec.md: docpath write-review' : ''}`,
+  const prompt = emitPrompt({
+    task: 'review',
+    system: '你是代码审查专家。请审查代码变更，输出结构化报告。',
+    context: {
+      '项目规约': spec.slice(0, 2000),
+      '任务计划': plan.slice(0, 2000),
+      '代码变更 (diff)': '```\n' + diff.slice(0, 8000) + '\n```',
+    },
+    instructions: [
+      '请按以下格式输出审查报告：',
+      '',
+      '### 📋 审查摘要',
+      '(一句话总结)',
+      '',
+      '### ✅ 通过项',
+      '- (好的实践)',
+      '',
+      '### ⚠️ 需关注',
+      '- (潜在问题)',
+      '',
+      '### 🔧 建议修复',
+      '- (具体建议)',
+      '',
+      '### 📊 评分',
+      '通过率: X/10',
+      '',
+      level >= 2 ? '完成后将审查记录追加到 spec.md: docpath write-review' : '',
+    ],
   });
 
   console.log(prompt);

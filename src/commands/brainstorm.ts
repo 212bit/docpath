@@ -12,7 +12,7 @@
  */
 
 import { existsSync } from 'fs';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { updateCurrentState } from '../utils/workspace.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
@@ -80,6 +80,10 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
 
   // 3. 构建初始上下文
   const projectContext = await readFile(join(docpathDir, 'config.yaml'), 'utf-8');
+
+  // 收集现有 spec（如果有）
+  const existingSpec = await readTaskFile(cwd, 'spec.md');
+
   let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
   // 添加系统 Prompt
@@ -102,35 +106,37 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
   // [Agent Mode] 输出结构化 prompt，由宿主 Agent 执行推理
   const userMsg = input || '（未提供需求描述）';
 
-  // 收集现有 spec（如果有）
-  const existingSpec = await readTaskFile(cwd, 'spec.md');
-
-  const prompt = emitPrompt('brainstorm', {
-    systemPrompt,
-    userInput: userMsg,
-    context: existingSpec
-      ? `已有 spec.md（可能不完整）：\n\`\`\`markdown\n${existingSpec}\n\`\`\`\n请在此基础上完善。`
-      : '这是全新需求，无现有 spec。',
-    instructions: `请通过苏格拉底式提问逐步澄清需求，最终输出完整的 spec.md。
-
-**执行方式**：
-1. 分析用户输入，识别模糊点和缺失信息
-2. 逐一提问澄清（每次只问 1-2 个关键问题）
-3. 需求清晰后，生成结构化 spec.md
-4. 使用 \`docpath write-spec\` 写入结果
-
-**spec.md 格式要求**：
-\`\`\`yaml
-title: "项目标题"
-background: |
-  背景描述
-functional_requirements:
-  - id: FR-1
-    description: "功能描述"
-constraints: []
-acceptance_criteria:
-  - "验收条件"
-\`\`\``,
+  const prompt = emitPrompt({
+    task: 'brainstorm',
+    system: systemPrompt,
+    context: {
+      '用户需求': userMsg,
+      '现有spec': existingSpec
+        ? `已有 spec.md（可能不完整）：\n\`\`\`markdown\n${existingSpec}\n\`\`\`\n请在此基础上完善。`
+        : '这是全新需求，无现有 spec。',
+    },
+    instructions: [
+      '请通过苏格拉底式提问逐步澄清需求，最终输出完整的 spec.md。',
+      '',
+      '**执行方式**：',
+      '1. 分析用户输入，识别模糊点和缺失信息',
+      '2. 逐一提问澄清（每次只问 1-2 个关键问题）',
+      '3. 需求清晰后，生成结构化 spec.md',
+      '4. 使用 `docpath write-spec` 写入结果',
+      '',
+      '**spec.md 格式要求**：',
+      '```yaml',
+      'title: "项目标题"',
+      'background: |',
+      '  背景描述',
+      'functional_requirements:',
+      '  - id: FR-1',
+      '    description: "功能描述"',
+      'constraints: []',
+      'acceptance_criteria:',
+      '  - "验收条件"',
+      '```',
+    ],
   });
 
   console.log(prompt);

@@ -45,7 +45,12 @@ export function emitPrompt(block: PromptBlock): void {
   for (const inst of block.instructions) {
     console.log(`  - ${inst}`);
   }
-  console.log(`output_format: ${block.output_format}`);
+  if (block.output_format) {
+    console.log(`output_format: |`);
+    for (const line of block.output_format.split('\n')) {
+      console.log(`  ${line}`);
+    }
+  }
   console.log('```\n');
 }
 

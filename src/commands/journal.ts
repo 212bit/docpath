@@ -64,24 +64,35 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
   console.log(`⏱️  耗时: ${summary.duration}\n`);
 
   // [Agent Mode] 输出归档 prompt，由宿主 Agent 填充知识记录后写入 spec.md
-  const prompt = emitPrompt('journal', {
-    systemPrompt: '你是知识管理专家。请从以下开发任务中提炼结构化知识记录。',
-    context: `## 原始规约\n${spec.slice(0, 3000)}\n\n## 执行计划\n${plan.slice(0, 2000)}\n\n## 面包屑历史 (全部)\n${breadcrumb.entries.map(e => `- [${e.status}] ${e.step}: ${e.context}`).join('\n')}\n\n## 任务统计\n- 总步数: ${summary.totalSteps}\n- 完成: ${summary.completedSteps}\n- 阻塞: ${summary.blockedSteps}`,
-    instructions: `请输出知识记录：
-
-### 📝 任务摘要
-(一句话)
-
-### 🏗️ 架构决策
-- 决策1: 原因
-
-### 💡 经验教训
-- 教训1
-
-### 🔮 后续改进
-- 改进1
-
-完成后写入 spec.md: docpath write-journal`,
+  const prompt = emitPrompt({
+    task: 'journal',
+    system: '你是知识管理专家。请从以下开发任务中提炼结构化知识记录。',
+    context: {
+      '原始规约': spec.slice(0, 3000),
+      '执行计划': plan.slice(0, 2000),
+      '面包屑历史': breadcrumb.entries
+        .filter(e => e.taskId === taskId)
+        .map(e => `- [${e.status}] ${e.step}: ${e.context}`)
+        .join('\n'),
+      '任务统计': `总步数: ${summary.totalSteps}, 完成: ${summary.completedSteps}, 阻塞: ${summary.blockedSteps}`,
+    },
+    instructions: [
+      '请输出知识记录：',
+      '',
+      '### 📝 任务摘要',
+      '(一句话)',
+      '',
+      '### 🏗️ 架构决策',
+      '- 决策1: 原因',
+      '',
+      '### 💡 经验教训',
+      '- 教训1',
+      '',
+      '### 🔮 后续改进',
+      '- 改进1',
+      '',
+      '完成后写入 spec.md: docpath write-journal',
+    ],
   });
 
   console.log(prompt);
