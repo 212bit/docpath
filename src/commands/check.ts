@@ -461,7 +461,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
   // 更新状态
   const newState = allPassed ? 'check_pass' : 'check_fail';
-  await updateCurrentState(cwd, newState);
+  await updateCurrentState(cwd, newState, { phase: 'checking' });
 
   // [Harness Lite] 写入 last-check.md
   const lastCheckPath = join(cwd, '.docpath', 'workspace', 'last-check.md');

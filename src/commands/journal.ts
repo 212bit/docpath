@@ -101,7 +101,22 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
 
   console.log('📌 完成后运行: docpath write-journal\n');
 
-  await updateCurrentState(cwd, 'complete');
+  // 归档任务：将 tasks/current 移至 tasks/done/T-xxx
+  const { renameSync, mkdirSync } = await import('fs');
+  const currentTaskDir = join(docpathDir, 'tasks', 'current');
+  const doneDir = join(docpathDir, 'tasks', 'done');
+  const archiveDir = join(doneDir, taskId || 'unknown');
+  try {
+    if (!existsSync(doneDir)) mkdirSync(doneDir, { recursive: true });
+    if (existsSync(currentTaskDir) && !existsSync(archiveDir)) {
+      renameSync(currentTaskDir, archiveDir);
+      console.log(`📦 任务已归档: tasks/done/${taskId || 'unknown'}`);
+    }
+  } catch (e) {
+    console.warn('⚠️  归档失败（非致命）:', (e as Error).message);
+  }
+
+  await updateCurrentState(cwd, 'completed', { phase: 'archived' });
 
   await writeBreadcrumb(cwd, {
     taskId,

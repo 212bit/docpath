@@ -94,7 +94,9 @@ function parseSubTasks(planContent: string): Array<{
 export async function goCommand(options: GoOptions): Promise<void> {
   const { cwd, step, dryRun } = options;
   const docpathDir = await resolveDocpathDir(cwd);
-  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
+  const tasksDir = join(docpathDir, 'tasks', 'current');
+  const planPath = join(tasksDir, 'plan.md');
+  const specPath = join(tasksDir, 'spec.md');
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
@@ -104,6 +106,20 @@ export async function goCommand(options: GoOptions): Promise<void> {
   if (!existsSync(planPath)) {
     console.error('❌  未找到 plan.md。请先运行 `docpath:plan` 生成计划。');
     process.exit(1);
+  }
+
+  // 从 spec.md 提取 task_id 和 task_title，同步到 current.md
+  const extraFields: Record<string, string> = {};
+  if (existsSync(specPath)) {
+    const specContent = await readFile(specPath, 'utf-8');
+    const idMatch = specContent.match(/^#\s+(T-\S+)/m);
+    if (idMatch) {
+      extraFields.task_id = idMatch[1];
+    }
+    const titleMatch = specContent.match(/^#\s+T-\S+\s*[-—:]\s*(.+)/m);
+    if (titleMatch) {
+      extraFields.task_title = titleMatch[1].trim();
+    }
   }
 
   const planContent = await readFile(planPath, 'utf-8');
@@ -177,7 +193,9 @@ export async function goCommand(options: GoOptions): Promise<void> {
 
   // 更新 current.md：phase 表示工作流阶段，current_step 表示正在执行的子任务
   await updateCurrentState(cwd, 'executing', {
+    phase: 'executing',
     current_step: target.id,
+    ...extraFields,
   });
 
   console.log('─── Claude Code 指令 ───');
