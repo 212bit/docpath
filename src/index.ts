@@ -39,6 +39,7 @@ import { installCommand } from './commands/install.js';
 import { tddCommand } from './commands/tdd.js';
 import { debugCommand } from './commands/debug.js';
 import { runCommand, compactCommand, discoverCommand, nextCommand } from './commands/runtime.js';
+import { agentCommand } from './commands/agent.js';
 import { disclosureCommand } from './utils/disclosure.js';
 import { generateAgentOutput } from './utils/agent-output.js';
 import { readFile } from 'node:fs/promises';
@@ -401,6 +402,34 @@ cli.command('run <action>', 'Agent runtime lifecycle: start | end | recover')
       step: options.step,
       note: options.note,
       status: options.status,
+    });
+  });
+
+
+cli.command('agent <action>', 'Agent lifecycle enforcement: enter | step | done | handoff')
+  .option('--cwd <path>', '项目目录')
+  .option('--step <step>', '当前步骤/子任务')
+  .option('--note <note>', '事件备注')
+  .option('--status <status>', '状态: done | blocked | skipped')
+  .option('--skip-check', 'done 时跳过 docpath check')
+  .option('--skip-review', 'done 时跳过 docpath review')
+  .option('--skip-tests', 'check 时跳过 tests')
+  .option('--skip-lint', 'check 时跳过 lint')
+  .option('--approve-review', 'review 时手动批准')
+  .option('--max-entries <n>', 'handoff 压缩时保留 breadcrumb 条数')
+  .action(async (action: 'enter' | 'step' | 'done' | 'handoff', options: { cwd?: string; step?: string; note?: string; status?: 'done' | 'blocked' | 'skipped'; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; maxEntries?: string; 'max-entries'?: string }) => {
+    await agentCommand({
+      cwd: options.cwd || process.cwd(),
+      action,
+      step: options.step,
+      note: options.note,
+      status: options.status,
+      skipCheck: !!(options.skipCheck || options['skip-check']),
+      skipReview: !!(options.skipReview || options['skip-review']),
+      skipTests: !!(options.skipTests || options['skip-tests']),
+      skipLint: !!(options.skipLint || options['skip-lint']),
+      approveReview: !!(options.approveReview || options['approve-review']),
+      maxEntries: options.maxEntries || options['max-entries'] ? parseInt((options.maxEntries || options['max-entries'])!, 10) : undefined,
     });
   });
 

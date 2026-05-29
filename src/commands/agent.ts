@@ -1,0 +1,140 @@
+/**
+ * docpath agent — lifecycle commands for coding agents.
+ *
+ * These commands are the enforceable bridge for Codex / Claude Code / OpenCode:
+ * enter   -> load state and mark execution start
+ * step    -> record progress for a sub-task
+ * done    -> run quality gates and mark completion/blocked
+ * handoff -> persist compact context for session transfer
+ */
+
+import { checkCommand } from './check.js';
+import { reviewCommand } from './review.js';
+import { compactCommand, nextCommand, runCommand } from './runtime.js';
+import { generateAgentOutput } from '../utils/agent-output.js';
+
+type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
+
+type AgentOptions = {
+  cwd: string;
+  action: AgentAction;
+  step?: string;
+  note?: string;
+  status?: 'done' | 'blocked' | 'skipped';
+  skipCheck?: boolean;
+  skipReview?: boolean;
+  skipTests?: boolean;
+  skipLint?: boolean;
+  approveReview?: boolean;
+  maxEntries?: number;
+};
+
+function requireStep(action: AgentAction, step?: string): string {
+  if (!step || !step.trim()) {
+    throw new Error(`docpath agent ${action} requires --step <step>`);
+  }
+  return step.trim();
+}
+
+export async function agentCommand(options: AgentOptions): Promise<void> {
+  const cwd = options.cwd;
+  const action = options.action;
+
+  if (!['enter', 'step', 'done', 'handoff'].includes(action)) {
+    throw new Error(`Unsupported agent action: ${action}. Expected enter | step | done | handoff`);
+  }
+
+  if (action === 'enter') {
+    await runCommand({
+      cwd,
+      action: 'start',
+      step: options.step || 'agent-session',
+      note: options.note || 'agent-enter: session started; state loaded',
+    });
+    console.log('\n# agent_context');
+    console.log(await generateAgentOutput(cwd));
+    return;
+  }
+
+  if (action === 'step') {
+    const step = requireStep(action, options.step);
+    await runCommand({
+      cwd,
+      action: 'end',
+      step,
+      status: options.status || 'done',
+      note: options.note || `agent-step: ${step}`,
+    });
+    await runCommand({
+      cwd,
+      action: 'start',
+      step,
+      note: 'agent-step: ready for next action',
+    });
+    return;
+  }
+
+  if (action === 'done') {
+    const step = options.step || 'agent-task';
+    let finalStatus: 'done' | 'blocked' | 'skipped' = options.status || 'done';
+
+    if (!options.skipCheck) {
+      try {
+        await checkCommand({
+          cwd,
+          skipTests: !!options.skipTests,
+          skipLint: !!options.skipLint,
+        });
+      } catch (error) {
+        finalStatus = 'blocked';
+        await runCommand({
+          cwd,
+          action: 'end',
+          step,
+          status: 'blocked',
+          note: `agent-done: check failed — ${error instanceof Error ? error.message : String(error)}`,
+        });
+        throw error;
+      }
+    }
+
+    if (!options.skipReview) {
+      try {
+        await reviewCommand({
+          cwd,
+          useAi: false,
+          approve: !!options.approveReview,
+        });
+      } catch (error) {
+        finalStatus = 'blocked';
+        await runCommand({
+          cwd,
+          action: 'end',
+          step,
+          status: 'blocked',
+          note: `agent-done: review failed — ${error instanceof Error ? error.message : String(error)}`,
+        });
+        throw error;
+      }
+    }
+
+    await runCommand({
+      cwd,
+      action: 'end',
+      step,
+      status: finalStatus,
+      note: options.note || `agent-done: ${finalStatus}`,
+    });
+    await nextCommand({ cwd, agent: true });
+    return;
+  }
+
+  await compactCommand({
+    cwd,
+    maxEntries: options.maxEntries,
+  });
+  await runCommand({
+    cwd,
+    action: 'recover',
+  });
+}

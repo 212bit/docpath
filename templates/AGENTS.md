@@ -24,6 +24,25 @@
 
 ---
 
+
+
+## Agent Lifecycle Commands
+
+For Codex / Claude Code / OpenCode, prefer these enforceable lifecycle commands over manual file edits:
+
+```bash
+docpath agent enter                         # start: load state + print agent context
+docpath agent step --step "<sub-task>"      # after each meaningful step
+docpath agent done --step "<task>"          # run check/review + record completion
+docpath agent handoff                       # compact context before session switch
+```
+
+Rules:
+- Run `docpath agent enter` before changing code.
+- Run `docpath agent step` after each sub-task or major decision.
+- Run `docpath agent done` before claiming completion.
+- Run `docpath agent handoff` when context is getting long or another agent may resume.
+
 ## Commands
 
 | Command | Description |
