@@ -13,8 +13,7 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
-import { updateCurrentState } from '../engine/state-machine.js';
-import { appendDecision } from '../engine/decisions.js';
+import { updateCurrentState } from '../utils/workspace.js';
 import { appendDecision } from '../governance/decisions.js';
 
 interface ReviewOptions {
@@ -141,7 +140,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
       `**状态**: ✅ 手动批准 (跳过自动检查)`,
     ].join('\n'), 'utf-8');
     // 更新状态机 → reviewed
-    await updateCurrentState(opts.cwd, { state: 'reviewed', phase: 'reviewing' });
+    await updateCurrentState(opts.cwd, 'reviewed', { phase: 'reviewing' });
     return;
   }
 
