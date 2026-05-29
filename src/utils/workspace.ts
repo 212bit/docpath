@@ -123,6 +123,10 @@ function relativeTaskLink(taskId: string, file: string): string {
   return `../tasks/${taskId}/${file}`;
 }
 
+function workspaceLink(file: string): string {
+  return `./${file}`;
+}
+
 async function readOptionalFile(path: string): Promise<string> {
   try {
     return await readFile(path, 'utf-8');
@@ -131,19 +135,63 @@ async function readOptionalFile(path: string): Promise<string> {
   }
 }
 
+function firstNonEmptyLineAfterHeading(content: string, heading: string): string {
+  const lines = content.split('\n');
+  const headingIndex = lines.findIndex(line => line.trim() === heading);
+  if (headingIndex === -1) return '';
+
+  for (const line of lines.slice(headingIndex + 1)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith('#')) break;
+    return trimmed;
+  }
+
+  return '';
+}
+
+function extractLastCheckSummary(content: string): string {
+  const time = content.match(/^\*\*时间\*\*:\s*(.+)$/m)?.[1]?.trim();
+  const result = content.match(/^\*\*结果\*\*:\s*(.+)$/m)?.[1]?.trim();
+  const count = content.match(/^\*\*检查项\*\*:\s*(.+)$/m)?.[1]?.trim();
+  if (!time && !result && !count) return '暂无 last-check.md 证据';
+  return [result, count ? `${count} 项` : '', time].filter(Boolean).join(' · ');
+}
+
+function extractLatestBreadcrumbSummary(content: string): string {
+  const lines = content.split('\n');
+  const headingIndexes = lines
+    .map((line, index) => /^###\s+/.test(line.trim()) ? index : -1)
+    .filter(index => index !== -1);
+  const headingIndex = headingIndexes.at(-1);
+  if (headingIndex === undefined) return '暂无 breadcrumb.md 记录';
+
+  const nextHeadingIndex = lines.findIndex((line, index) => index > headingIndex && /^###\s+/.test(line.trim()));
+  const blockEnd = nextHeadingIndex === -1 ? lines.length : nextHeadingIndex;
+  const heading = lines[headingIndex].replace(/^###\s+/, '').trim();
+  const block = lines.slice(headingIndex + 1, blockEnd).join('\n');
+  const status = block.match(/^-\s+\*\*状态\*\*:\s*(.+)$/m)?.[1]?.trim();
+  const context = block.match(/^-\s+\*\*上下文\*\*:\s*(.+)$/m)?.[1]?.trim();
+  return [heading, status ? `状态: ${status}` : '', context].filter(Boolean).join(' · ');
+}
+
 async function collectCurrentStateFields(
   cwd: string,
   newState: string,
   extraFields?: Record<string, string>,
-): Promise<{ fields: CurrentStateFields; planContent: string; taskDirName: string }> {
+): Promise<{ fields: CurrentStateFields; planContent: string; taskDirName: string; lastCheckSummary: string; breadcrumbSummary: string }> {
   const docpathDir = await resolveDocpathDir(cwd);
   const currentPath = join(docpathDir, 'workspace', 'current.md');
   const existing = await readOptionalFile(currentPath);
   const previous = await readCurrentMd(cwd);
   const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
   const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
+  const lastCheckPath = join(docpathDir, 'workspace', 'last-check.md');
+  const breadcrumbPath = join(docpathDir, 'workspace', 'breadcrumb.md');
   const specContent = await readOptionalFile(specPath);
   const planContent = await readOptionalFile(planPath);
+  const lastCheckContent = await readOptionalFile(lastCheckPath);
+  const breadcrumbContent = await readOptionalFile(breadcrumbPath);
 
   const specTaskId = parseFrontMatterLine(specContent, 'Task ID');
   const planTaskId = parseFrontMatterLine(planContent, 'Task ID');
@@ -174,10 +222,22 @@ async function collectCurrentStateFields(
   }
 
   const existingTaskLink = existing.match(/\.\.\/tasks\/([^/)]+)\/(?:spec|plan)\.md/);
-  return { fields, planContent, taskDirName: taskId !== 'unknown' ? taskId : (existingTaskLink?.[1] || 'current') };
+  return {
+    fields,
+    planContent,
+    taskDirName: taskId !== 'unknown' ? taskId : (existingTaskLink?.[1] || 'current'),
+    lastCheckSummary: extractLastCheckSummary(lastCheckContent),
+    breadcrumbSummary: extractLatestBreadcrumbSummary(breadcrumbContent),
+  };
 }
 
-function renderCurrentDocument(fields: CurrentStateFields, planContent: string, taskDirName: string): string {
+function renderCurrentDocument(
+  fields: CurrentStateFields,
+  planContent: string,
+  taskDirName: string,
+  lastCheckSummary: string,
+  breadcrumbSummary: string,
+): string {
   const checklist = extractPlanChecklist(planContent);
   const checklistBlock = checklist.length > 0
     ? checklist.join('\n')
@@ -203,9 +263,14 @@ updated_at: ${fields.updated_at}
 
 ${checklistBlock}
 
+## 🧾 最近验证证据
+
+- Last Check: [last-check.md](${workspaceLink('last-check.md')}) — ${lastCheckSummary}
+- Breadcrumb: [breadcrumb.md](${workspaceLink('breadcrumb.md')}) — ${breadcrumbSummary}
+
 ## 🔄 同步说明
 
-本文件由 DocPath CLI 根据 \`.docpath/tasks/current/spec.md\` 与 \`.docpath/tasks/current/plan.md\` 重建。
+本文件由 DocPath CLI 根据 \`.docpath/tasks/current/spec.md\`、\`.docpath/tasks/current/plan.md\` 与 workspace 证据重建。
 状态变化请通过 \`docpath go/check/journal\` 等命令推进，避免手工修改后与任务文档漂移。
 `;
 }
@@ -226,8 +291,8 @@ export async function updateCurrentState(
     return;
   }
 
-  const { fields, planContent, taskDirName } = await collectCurrentStateFields(cwd, newState, extraFields);
-  await writeFile(currentPath, renderCurrentDocument(fields, planContent, taskDirName), 'utf-8');
+  const { fields, planContent, taskDirName, lastCheckSummary, breadcrumbSummary } = await collectCurrentStateFields(cwd, newState, extraFields);
+  await writeFile(currentPath, renderCurrentDocument(fields, planContent, taskDirName, lastCheckSummary, breadcrumbSummary), 'utf-8');
 }
 
 /**

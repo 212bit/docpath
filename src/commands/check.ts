@@ -12,7 +12,7 @@ import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
-import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
+import { readCurrentMd, updateCurrentState, syncCurrentDocument } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 
 interface CheckOptions {
@@ -494,6 +494,9 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
       ? `质量检查通过 (${results.length} 项)`
       : `质量检查失败: ${results.filter(r => !r.passed).map(r => r.name).join(', ')}`,
   });
+
+  // last-check.md 与 breadcrumb.md 写入后，再同步 current.md 的证据区块。
+  await syncCurrentDocument(cwd);
 
   if (!allPassed) {
     console.log('请修复失败项后重新运行 `docpath:check`\n');
