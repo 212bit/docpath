@@ -1,5 +1,7 @@
 /**
  * Workspace 工具函数 — .docpath/ 状态读写
+ *
+ * 方案 B：state.json 为唯一状态真源，current.md 为只读渲染产物
  */
 
 import { readFile, writeFile } from 'fs/promises';
@@ -8,10 +10,9 @@ import { existsSync } from 'fs';
 import * as readline from 'readline';
 import { resolveDocpathDir } from './file.js';
 
-/**
- * 读取 .docpath/workspace/current.md 的状态块
- */
-export async function readCurrentMd(cwd: string): Promise<{
+// ── state.json schema ──
+
+interface CurrentState {
   level: number;
   state: string;
   task_id: string;
@@ -20,7 +21,83 @@ export async function readCurrentMd(cwd: string): Promise<{
   current_step: string;
   started_at: string;
   updated_at: string;
-} | null> {
+}
+
+// ── 核心读写函数 ──
+
+/**
+ * 读取 .docpath/workspace/state.json（方案 B：唯一状态真源）
+ * 如果 state.json 不存在但 current.md 存在，自动迁移并写入 state.json
+ */
+export async function readCurrentState(cwd: string): Promise<CurrentState | null> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const statePath = join(docpathDir, 'workspace', 'state.json');
+  const currentPath = join(docpathDir, 'workspace', 'current.md');
+
+  // 优先读 state.json
+  if (existsSync(statePath)) {
+    try {
+      const content = await readFile(statePath, 'utf-8');
+      return JSON.parse(content) as CurrentState;
+    } catch {
+      // state.json 损坏，回退到 current.md 迁移
+    }
+  }
+
+  // 迁移逻辑：从 current.md 读取并写入 state.json
+  if (existsSync(currentPath)) {
+    const legacy = await readLegacyCurrentMd(cwd);
+    if (legacy) {
+      await writeFile(statePath, JSON.stringify(legacy, null, 2), 'utf-8');
+      return legacy;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * 写入 state.json + 重建 current.md（方案 B：唯一写入路径）
+ */
+export async function writeCurrentState(cwd: string, state: CurrentState): Promise<void> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const statePath = join(docpathDir, 'workspace', 'state.json');
+  const currentPath = join(docpathDir, 'workspace', 'current.md');
+
+  // 写入 state.json
+  await writeFile(statePath, JSON.stringify(state, null, 2), 'utf-8');
+
+  // 重建 current.md
+  const planContent = await readOptionalFile(join(docpathDir, 'tasks', 'current', 'plan.md'));
+  const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
+  const breadcrumbContent = await readOptionalFile(join(docpathDir, 'workspace', 'breadcrumb.md'));
+
+  const rendered = renderCurrentDocument(
+    convertStateToFields(state),
+    planContent,
+    state.task_id || 'current',
+    extractLastCheckSummary(lastCheckContent),
+    extractLatestBreadcrumbSummary(breadcrumbContent),
+  );
+  await writeFile(currentPath, rendered, 'utf-8');
+}
+
+// ── 兼容别名（保持现有调用者不变） ──
+
+/**
+ * 读取 .docpath/workspace/current.md 的状态块
+ * @deprecated 请使用 readCurrentState()，此函数仅为兼容保留
+ */
+export async function readCurrentMd(cwd: string): Promise<CurrentState | null> {
+  return readCurrentState(cwd);
+}
+
+// ── 内部辅助函数 ──
+
+/**
+ * 从旧版 current.md YAML 块读取状态（迁移用）
+ */
+async function readLegacyCurrentMd(cwd: string): Promise<CurrentState | null> {
   const docpathDir = await resolveDocpathDir(cwd);
   const currentPath = join(docpathDir, 'workspace', 'current.md');
   try {
@@ -175,15 +252,25 @@ function extractLatestBreadcrumbSummary(content: string): string {
   return [heading, status ? `状态: ${status}` : '', context].filter(Boolean).join(' · ');
 }
 
+function convertStateToFields(state: CurrentState): CurrentStateFields {
+  return {
+    level: String(state.level),
+    state: state.state,
+    task_id: state.task_id,
+    task_title: state.task_title,
+    phase: state.phase,
+    current_step: state.current_step,
+    started_at: state.started_at,
+    updated_at: state.updated_at,
+  };
+}
+
 async function collectCurrentStateFields(
   cwd: string,
   newState: string,
   extraFields?: Record<string, string>,
 ): Promise<{ fields: CurrentStateFields; planContent: string; taskDirName: string; lastCheckSummary: string; breadcrumbSummary: string }> {
   const docpathDir = await resolveDocpathDir(cwd);
-  const currentPath = join(docpathDir, 'workspace', 'current.md');
-  const existing = await readOptionalFile(currentPath);
-  const previous = await readCurrentMd(cwd);
   const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
   const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
   const lastCheckPath = join(docpathDir, 'workspace', 'last-check.md');
@@ -193,6 +280,7 @@ async function collectCurrentStateFields(
   const lastCheckContent = await readOptionalFile(lastCheckPath);
   const breadcrumbContent = await readOptionalFile(breadcrumbPath);
 
+  const previous = await readCurrentState(cwd);
   const specTaskId = parseFrontMatterLine(specContent, 'Task ID');
   const planTaskId = parseFrontMatterLine(planContent, 'Task ID');
   const taskId = extraFields?.task_id || specTaskId || planTaskId || previous?.task_id || 'unknown';
@@ -221,11 +309,10 @@ async function collectCurrentStateFields(
     }
   }
 
-  const existingTaskLink = existing.match(/\.\.\/tasks\/([^/)]+)\/(?:spec|plan)\.md/);
   return {
     fields,
     planContent,
-    taskDirName: taskId !== 'unknown' ? taskId : (existingTaskLink?.[1] || 'current'),
+    taskDirName: taskId !== 'unknown' ? taskId : 'current',
     lastCheckSummary: extractLastCheckSummary(lastCheckContent),
     breadcrumbSummary: extractLatestBreadcrumbSummary(breadcrumbContent),
   };
@@ -270,13 +357,13 @@ ${checklistBlock}
 
 ## 🔄 同步说明
 
-本文件由 DocPath CLI 根据 \`.docpath/tasks/current/spec.md\`、\`.docpath/tasks/current/plan.md\` 与 workspace 证据重建。
+本文件由 DocPath CLI 根据 \`.docpath/workspace/state.json\` 自动重建。
 状态变化请通过 \`docpath go/check/journal\` 等命令推进，避免手工修改后与任务文档漂移。
 `;
 }
 
 /**
- * 更新 current.md 的状态字段，并从 tasks/current 重建正文，避免 current.md 与 spec/plan 漂移
+ * 更新状态（方案 B：写入 state.json + 重建 current.md）
  */
 export async function updateCurrentState(
   cwd: string,
@@ -292,62 +379,61 @@ export async function updateCurrentState(
   }
 
   const { fields, planContent, taskDirName, lastCheckSummary, breadcrumbSummary } = await collectCurrentStateFields(cwd, newState, extraFields);
-  await writeFile(currentPath, renderCurrentDocument(fields, planContent, taskDirName, lastCheckSummary, breadcrumbSummary), 'utf-8');
+  
+  // 转换为 CurrentState 并写入
+  const state: CurrentState = {
+    level: parseInt(fields.level, 10) || 0,
+    state: fields.state,
+    task_id: fields.task_id,
+    task_title: fields.task_title,
+    phase: fields.phase,
+    current_step: fields.current_step,
+    started_at: fields.started_at,
+    updated_at: fields.updated_at,
+  };
+  
+  await writeCurrentState(cwd, state);
 }
 
 /**
  * 重建 current.md 正文但保持当前状态字段；用于修复/同步已有工作区
  */
 export async function syncCurrentDocument(cwd: string): Promise<void> {
-  const current = await readCurrentMd(cwd);
-  if (!current) return;
-  await updateCurrentState(cwd, current.state || 'unknown', {
-    phase: current.phase,
-    current_step: current.current_step,
-    task_id: current.task_id,
-    task_title: current.task_title,
-  });
-}
-
-/**
- * 更新 current.md 的 checklist 项（checkbox 状态）
- */
-export async function updateCurrentChecklist(
-  cwd: string,
-  taskId: string,
-  completed: boolean,
-): Promise<void> {
-  const docpathDir = await resolveDocpathDir(cwd);
-  const currentPath = join(docpathDir, 'workspace', 'current.md');
-  let content: string;
-
-  try {
-    content = await readFile(currentPath, 'utf-8');
-  } catch {
+  const current = await readCurrentState(cwd);
+  if (!current) {
+    console.error('⚠️  state.json 和 current.md 均不存在，请先运行 docpath:init');
     return;
   }
+  
+  // 直接重建 current.md
+  const docpathDir = await resolveDocpathDir(cwd);
+  const planContent = await readOptionalFile(join(docpathDir, 'tasks', 'current', 'plan.md'));
+  const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
+  const breadcrumbContent = await readOptionalFile(join(docpathDir, 'workspace', 'breadcrumb.md'));
 
-  // 替换 [ ] ↔ [✓]
-  if (completed) {
-    content = content.replace('[ ]', '[✓]');
-  } else {
-    content = content.replace('[✓]', '[ ]');
-  }
-
-  await writeFile(currentPath, content, 'utf-8');
+  const rendered = renderCurrentDocument(
+    convertStateToFields(current),
+    planContent,
+    current.task_id || 'current',
+    extractLastCheckSummary(lastCheckContent),
+    extractLatestBreadcrumbSummary(breadcrumbContent),
+  );
+  
+  const currentPath = join(docpathDir, 'workspace', 'current.md');
+  await writeFile(currentPath, rendered, 'utf-8');
 }
 
 /**
- * 交互式问答（CLI 模式）
+ * 交互询问
  */
-export async function askQuestion(prompt: string): Promise<string> {
+export async function ask(question: string): Promise<string> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
   return new Promise((resolve) => {
-    rl.question(prompt, (answer) => {
+    rl.question(question, (answer) => {
       rl.close();
       resolve(answer.trim());
     });
