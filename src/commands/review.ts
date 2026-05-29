@@ -36,10 +36,21 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   // 1. 收集变更文件
   let changedFiles: string[] = [];
   try {
-    const diff = execSync('git diff --name-only HEAD~1', { cwd: opts.cwd, encoding: 'utf-8', timeout: 10000 });
-    changedFiles = diff.trim().split('\n').filter(f => f.endsWith('.ts') || f.endsWith('.js'));
+    // 多策略 git diff：优先 HEAD~1，fallback 到 --cached，最后 git show HEAD
+    const strategies = [
+      'git diff --name-only HEAD~1',
+      'git diff --name-only --cached',
+      'git show --name-only --format="" HEAD',
+    ];
+    for (const cmd of strategies) {
+      try {
+        const diff = execSync(cmd, { cwd: opts.cwd, encoding: 'utf-8', timeout: 10000 });
+        changedFiles = diff.trim().split('\n').filter(f => f.endsWith('.ts') || f.endsWith('.js') || f.endsWith('.json'));
+        if (changedFiles.length > 0) break;
+      } catch { /* try next strategy */ }
+    }
   } catch {
-    // 可能没有 git 或没有提交
+    // 可能没有 git 仓库
   }
 
   if (changedFiles.length === 0) {

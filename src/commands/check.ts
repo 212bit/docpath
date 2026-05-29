@@ -12,7 +12,7 @@ import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
-import { readCurrentMd, updateCurrentState, syncCurrentDocument } from '../utils/workspace.js';
+import { readCurrentMd, updateCurrentState, syncCurrentDocument, readOptionalFile, parsePlanTasks } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 
 interface CheckOptions {

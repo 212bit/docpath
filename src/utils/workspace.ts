@@ -235,7 +235,29 @@ function workspaceLink(file: string): string {
   return `./${file}`;
 }
 
-async function readOptionalFile(path: string): Promise<string> {
+export function parsePlanTasks(planContent: string): { id: string; title: string; done: boolean }[] {
+  const lines = planContent.split('\n');
+  const tasks: { id: string; title: string; done: boolean }[] = [];
+
+  for (const line of lines) {
+    const match = line.match(/^[\s]*-\s*\[([ xX])\]\s*(.+)/);
+    if (!match) continue;
+
+    const done = match[1] !== ' ';
+    const raw = match[2].trim();
+
+    // Extract task ID prefix: "T1:", "T-xxx:", or numeric
+    const idMatch = raw.match(/^(T[\w-]*|S\d+):\s*/i);
+    const id = idMatch ? idMatch[1] : `T${tasks.length + 1}`;
+    const title = idMatch ? raw.slice(idMatch[0].length) : raw;
+
+    tasks.push({ id, title, done });
+  }
+
+  return tasks;
+}
+
+export async function readOptionalFile(path: string): Promise<string> {
   try {
     return await readFile(path, 'utf-8');
   } catch {
@@ -256,6 +278,27 @@ function firstNonEmptyLineAfterHeading(content: string, heading: string): string
   }
 
   return '';
+}
+
+/**
+ * 从 spec/plan 标题生成可读的 task ID
+ * e.g. "实现 hello 函数" → "T-实现-hello-函数" (截取前 30 字符)
+ */
+function generateTaskId(specContent: string, planContent: string): string {
+  const heading = firstHeading(specContent) || firstHeading(planContent) || 'task';
+  const slug = heading
+    .replace(/[^a-zA-Z0-9\u4e00-\u9fff]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 30);
+  return `T-${slug}`;
+}
+
+/** 判断状态转移是否应该重置 started_at */
+function shouldResetStartedAt(prev: string | undefined, next: string): boolean {
+  if (!prev) return true;
+  // executing/reviewing/completed/journal 归档时，重新计时
+  const resetTriggers = ['executing', 'reviewing', 'completed', 'journal'];
+  return resetTriggers.includes(next) && prev !== next;
 }
 
 function extractLastCheckSummary(content: string): string {
@@ -314,7 +357,7 @@ async function collectCurrentStateFields(
   const previous = await readCurrentState(cwd);
   const specTaskId = parseFrontMatterLine(specContent, 'Task ID');
   const planTaskId = parseFrontMatterLine(planContent, 'Task ID');
-  const taskId = extraFields?.task_id || specTaskId || planTaskId || previous?.task_id || 'unknown';
+  const taskId = extraFields?.task_id || specTaskId || planTaskId || previous?.task_id || generateTaskId(specContent, planContent);
   const title = extraFields?.task_title ||
     normalizeTaskTitle(firstHeading(specContent) || firstHeading(planContent)) ||
     previous?.task_title ||
@@ -328,7 +371,7 @@ async function collectCurrentStateFields(
     task_title: title,
     phase: extraFields?.phase || previous?.phase || newState,
     current_step: extraFields?.current_step || previous?.current_step || '待确认下一步',
-    started_at: previous?.started_at || new Date().toISOString(),
+    started_at: shouldResetStartedAt(previous?.state, newState) ? new Date().toISOString() : (previous?.started_at || new Date().toISOString()),
     updated_at: now,
   };
 

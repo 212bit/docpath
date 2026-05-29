@@ -8,7 +8,7 @@
 import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd, updateCurrentState, readWorkspaceMeta } from '../utils/workspace.js';
+import { readCurrentMd, updateCurrentState, readWorkspaceMeta, readOptionalFile, parsePlanTasks } from '../utils/workspace.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { emitPrompt } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -59,8 +59,13 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
   const plan = existsSync(planPath) ? await readFile(planPath, 'utf-8') : '';
 
   const taskId = current?.task_id || 'unknown';
-  const totalSteps = breadcrumb.entries.filter(e => e.taskId === taskId).length;
-  const completedSteps = breadcrumb.entries.filter(e => e.taskId === taskId && e.status === 'done').length;
+  // 步骤统计从 plan.md 子任务计数，而非 breadcrumb entries
+  const planContent = await readOptionalFile(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'));
+  const planTasks = planContent ? parsePlanTasks(planContent) : [];
+  const totalSteps = planTasks.length || breadcrumb.entries.filter(e => e.taskId === taskId).length || 1;
+  const completedSteps = planTasks.length > 0
+    ? planTasks.filter(t => t.done).length
+    : breadcrumb.entries.filter(e => e.taskId === taskId && e.status === 'done').length;
   const blockedSteps = breadcrumb.entries.filter(e => e.taskId === taskId && e.status === 'blocked').length;
 
   const summary: TaskSummary = {

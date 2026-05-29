@@ -221,6 +221,7 @@ export async function goCommand(options: GoOptions): Promise<void> {
   await updateCurrentState(cwd, 'executing', {
     phase: 'executing',
     current_step: target.id,
+    started_at: new Date().toISOString(),
     ...extraFields,
   });
 
