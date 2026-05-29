@@ -71,9 +71,9 @@ export async function readCurrentState(cwd: string): Promise<CurrentState | null
 
 // ── 状态值白名单（防止垃圾值写入 state.json） ──
 const VALID_STATES = new Set([
-  'uninitialized', 'drafting', 'planning_done', 'ready', 'in_progress',
-  'executing', 'checking', 'check_pass', 'check_fail',
-  'reviewing', 'review_pass', 'build_pass', 'completed',
+  'idle', 'uninitialized', 'drafting', 'brainstorming', 'planning_done',
+  'ready', 'in_progress', 'executing', 'checking', 'check_pass', 'check_fail',
+  'reviewing', 'review_pass', 'build_pass', 'completed', 'archived',
 ]);
 
 /**
