@@ -9,8 +9,8 @@
  * **截断轮转**：超过 MAX_ENTRIES（默认 50）时自动裁剪最旧记录。
  */
 
-import { join } from 'path';
-import { readFile, appendFile, writeFile } from 'fs/promises';
+import { join, dirname } from 'path';
+import { readFile, appendFile, writeFile, mkdir } from 'fs/promises';
 
 /** 面包屑最大保留条数 */
 export const MAX_ENTRIES = 50;
@@ -26,6 +26,8 @@ export interface BreadcrumbEntry {
   context: string;
   /** 时间戳 (ISO) */
   timestamp?: string;
+  /** 升级类型 */
+  escalation?: string;
 }
 
 export interface BreadcrumbSummary {
@@ -74,7 +76,8 @@ const STATUS_EMOJI: Record<BreadcrumbEntry['status'], string> = {
  * - **上下文**: 完成了 X 模块
  * ```
  */
-function yamlEscape(value: string): string {
+function yamlEscape(value: string | undefined | null): string {
+  if (value == null) value = "";
   const needsQuote =
     !value ||
     /[:\[\]{}&*!|>'",\n]/.test(value) ||
@@ -107,6 +110,7 @@ function formatEntry(entry: BreadcrumbEntry): string {
     `step: ${yamlEscape(entry.step)}`,
     `status: ${entry.status}`,
     `timestamp: ${ts}`,
+    ...(entry.escalation ? [`escalation: ${yamlEscape(entry.escalation)}`] : []),
     '---',
     '',
     `- **状态**: ${entry.status}`,
@@ -134,6 +138,7 @@ export async function truncateBreadcrumb(projectRoot: string): Promise<number> {
 
   const body = keep.map((e) => formatEntry(e)).join('');
   const newContent = BREADCRUMB_HEADER + body;
+  await mkdir(dirname(breadcrumbPath), { recursive: true });
   await writeFile(breadcrumbPath, newContent, 'utf-8');
 
   return trimmedCount;
@@ -159,6 +164,7 @@ export async function writeBreadcrumb(
     // 检查文件是否存在，不存在则写入 header
     await readFile(breadcrumbPath, 'utf-8');
   } catch {
+    await mkdir(dirname(breadcrumbPath), { recursive: true });
     await writeFile(breadcrumbPath, BREADCRUMB_HEADER, 'utf-8');
   }
 
@@ -239,6 +245,7 @@ function parseEntryBlock(block: string): BreadcrumbEntry | null {
       status: status || 'done',
       context,
       timestamp: yamlUnquote(yamlBlock.match(/^timestamp:\s*(.+)$/m)?.[1] || '') || timestamp,
+      ...(yamlBlock.match(/^escalation:\s*(.+)$/m)?.[1] ? { escalation: yamlUnquote(yamlBlock.match(/^escalation:\s*(.+)$/m)?.[1]!) } : {}),
     };
   }
 
@@ -252,6 +259,7 @@ function parseEntryBlock(block: string): BreadcrumbEntry | null {
     status: (statusLine as BreadcrumbEntry['status']) || 'done',
     context: contextLine,
     timestamp,
+    ...(block.match(/^[-*] \*\*升级\*\*:\s*(.+)$/m)?.[1] ? { escalation: block.match(/^[-*] \*\*升级\*\*:\s*(.+)$/m)![1].trim() } : {}),
   };
 }
 

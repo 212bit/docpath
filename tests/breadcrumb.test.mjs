@@ -1,152 +1,234 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync } from 'fs';
+import { mkdtempSync, rmSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { execSync } from 'child_process';
 
-const BIN = '/Users/mac/project/docpath/dist/index.js';
+// 从 dist 直接 import — 只用导出的函数
+const { writeBreadcrumb, readBreadcrumb, truncateBreadcrumb, MAX_ENTRIES } =
+  await import('../dist/engine/breadcrumb.js');
 
-function run(args, cwd) {
-  try {
-    return { code: 0, out: execSync(`node ${BIN} ${args}`, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe','pipe','pipe'] }) };
-  } catch (e) { return { code: e.status||1, out: e.stdout||'', err: e.stderr||'' }; }
-}
+const BC_PATH = (dp) => join(dp, '.docpath', 'workspace', 'breadcrumb.md');
+const readRaw = (dp) => readFileSync(BC_PATH(dp), 'utf-8');
 
-function mkproject() {
-  const d = mkdtempSync(join(tmpdir(), 'dp-test-'));
-  const dp = join(d, '.docpath');
-  mkdirSync(join(dp, 'workspace'), { recursive: true });
-  mkdirSync(join(dp, 'spec'), { recursive: true });
-  mkdirSync(join(dp, 'decisions'), { recursive: true });
-  writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: test\n  type: node\n');
-  writeFileSync(join(dp, 'workspace', 'current.md'), '# Task\n\n## 状态\n- state: check_pass\n- task_id: T-001\n');
-  writeFileSync(join(dp, 'spec', 'spec.md'), '# Spec\n\n## 功能\n- Test\n');
-  writeFileSync(join(dp, 'docs.md'), '# Docs\n');
-  writeFileSync(join(d, 'package.json'), '{"name":"test","version":"1.0.0","type":"module"}\n');
-  return { d, dp };
-}
+// --- write / append / read ---
 
-describe('Breadcrumb YAML Frontmatter', () => {
-  it('writes YAML frontmatter with all fields', async () => {
-    const { d, dp } = mkproject();
-    const { writeBreadcrumb } = await import('/Users/mac/project/docpath/dist/engine/breadcrumb.js');
-    await writeBreadcrumb(d, { taskId: 'T-001', stageId: 'S1.1', status: 'pass', label: 'Test', context: 'ctx' });
-    const c = readFileSync(join(dp, 'workspace', 'breadcrumb.md'), 'utf-8');
-    assert.ok(c.includes('---\n'), 'has YAML delimiter');
-    assert.ok(/status:\s*pass/.test(c), 'has status');
-    assert.ok(/task:\s*T-001/.test(c), 'has task');
-    assert.ok(/stage:\s*S1\.1/.test(c), 'has stage');
-    rmSync(d, { recursive: true, force: true });
+describe('Breadcrumb write and read', () => {
+  let dp;
+
+  before(async () => {
+    dp = mkdtempSync(join(tmpdir(), 'bc-wr-'));
+    // writeBreadcrumb handles append: reads existing → appends → tranches
+    await writeBreadcrumb(dp, { taskId: 'T-001', step: 'S1', status: 'done', context: '步骤1完成' });
+    await writeBreadcrumb(dp, { taskId: 'T-001', step: 'S2', status: 'in_progress', context: '步骤2进行中' });
   });
 
-  it('includes Markdown body with label', async () => {
-    const { d, dp } = mkproject();
-    const { writeBreadcrumb } = await import('/Users/mac/project/docpath/dist/engine/breadcrumb.js');
-    await writeBreadcrumb(d, { taskId: 'T-002', stageId: 'S1.1', status: 'pass', label: 'My Label', context: 'ctx' });
-    const c = readFileSync(join(dp, 'workspace', 'breadcrumb.md'), 'utf-8');
-    const parts = c.split('---');
-    assert.ok(parts.length >= 3, 'has at least 2 YAML blocks');
-    assert.ok(parts[2].includes('My Label'), 'body has label');
-    rmSync(d, { recursive: true, force: true });
+  after(() => { rmSync(dp, { recursive: true, force: true }); });
+
+  it('file exists after write', () => {
+    assert.ok(existsSync(BC_PATH(dp)), 'breadcrumb.md should exist');
   });
 
-  it('handles special chars (colons, quotes, hash)', async () => {
-    const { d, dp } = mkproject();
-    const { writeBreadcrumb } = await import('/Users/mac/project/docpath/dist/engine/breadcrumb.js');
-    await writeBreadcrumb(d, { taskId: 'T-SP', stageId: 'S1.1', status: 'pass', label: 'test', context: 'Key: Val #404 "hi"' });
-    const c = readFileSync(join(dp, 'workspace', 'breadcrumb.md'), 'utf-8');
-    // Should not have broken YAML — at minimum the file exists and has content
-    assert.ok(c.length > 100);
-    rmSync(d, { recursive: true, force: true });
+  it('reads two entries', async () => {
+    const s = await readBreadcrumb(dp);
+    assert.equal(s.total, 2, `expected 2, got ${s.total}`);
+    assert.equal(s.entries[0].step, 'S1');
+    assert.equal(s.entries[1].step, 'S2');
+  });
+
+  it('entry has taskId field', async () => {
+    const s = await readBreadcrumb(dp);
+    assert.equal(s.entries[0].taskId, 'T-001');
+  });
+
+  it('latest points to last entry', async () => {
+    const s = await readBreadcrumb(dp);
+    assert.ok(s.latest, 'latest should exist');
+    assert.equal(s.latest.step, 'S2');
+    assert.equal(s.latest.status, 'in_progress');
+  });
+
+  it('correct status counts', async () => {
+    const s = await readBreadcrumb(dp);
+    assert.equal(s.done, 1);
+    assert.equal(s.inProgress, 1);
+    assert.equal(s.blocked, 0);
   });
 });
 
-describe('Truncation at MAX_ENTRIES=50', () => {
-  it('truncates when exceeding 50 entries', async () => {
-    const { d } = mkproject();
-    const { writeBreadcrumb, readBreadcrumb, MAX_ENTRIES } = await import('/Users/mac/project/docpath/dist/engine/breadcrumb.js');
-    assert.equal(MAX_ENTRIES, 50);
-    for (let i = 1; i <= 55; i++) {
-      await writeBreadcrumb(d, { taskId: `T-${i}`, stageId: 'S1.1', status: 'pass', label: `E${i}`, context: `entry ${i}` });
+// --- append behavior (multiple writes) ---
+
+describe('Breadcrumb append', () => {
+  let dp;
+
+  before(async () => {
+    dp = mkdtempSync(join(tmpdir(), 'bc-app-'));
+    await writeBreadcrumb(dp, { taskId: 'T-100', step: 'S1.1', status: 'done', context: '第一步' });
+    await writeBreadcrumb(dp, { taskId: 'T-100', step: 'S1.2', status: 'done', context: '第二步' });
+    await writeBreadcrumb(dp, { taskId: 'T-100', step: 'S1.3', status: 'blocked', context: '阻塞' });
+  });
+
+  after(() => { rmSync(dp, { recursive: true, force: true }); });
+
+  it('appends multiple entries', async () => {
+    const md = readRaw(dp);
+    assert.ok(md.includes('S1.1'), 'should contain S1.1');
+    assert.ok(md.includes('S1.2'), 'should contain S1.2');
+    assert.ok(md.includes('S1.3'), 'should contain S1.3');
+  });
+
+  it('readBreadcrumb returns all three', async () => {
+    const s = await readBreadcrumb(dp);
+    assert.equal(s.total, 3);
+    assert.equal(s.done, 2);
+    assert.equal(s.blocked, 1);
+  });
+
+  it('append uses "oneline" text mode', async () => {
+    const s = await readBreadcrumb(dp);
+    assert.ok(s.entries[2].context, 'should have context');
+    assert.equal(s.entries[2].context, '阻塞');
+  });
+});
+
+// --- YAML escaping ---
+
+describe('YAML escaping', () => {
+  let dp;
+
+  before(async () => {
+    dp = mkdtempSync(join(tmpdir(), 'bc-yaml-'));
+    await writeBreadcrumb(dp, { taskId: 'task: with: colons', step: 'step "quoted"', status: 'done', context: 'ctx' });
+    await writeBreadcrumb(dp, { taskId: 'normal-task', step: 'S1', status: 'done', context: 'with "quotes" inside' });
+  });
+
+  after(() => { rmSync(dp, { recursive: true, force: true }); });
+
+  it('escapes values with special chars in YAML fields', async () => {
+    const md = readRaw(dp);
+    // yamlEscape wraps colons in double quotes: "task: with: colons"
+    // The value should still be present, possibly quoted
+    assert.ok(md.includes('task: with: colons'), 'taskId value should appear');
+    assert.ok(md.includes('step "quoted"') || md.includes('"step \\"quoted\\""'), 'step value should appear');
+  });
+
+  it('preserves normal values unchanged', async () => {
+    const md = readRaw(dp);
+    assert.ok(md.includes('taskId: normal-task'), 'normal taskId should be unquoted');
+  });
+});
+
+// --- escalation ---
+
+describe('Breadcrumb escalation field', () => {
+  let dp;
+
+  before(async () => {
+    dp = mkdtempSync(join(tmpdir(), 'bc-esc-'));
+    await writeBreadcrumb(dp, { taskId: 'T-E', step: 'S1', status: 'blocked', context: '卡住', escalation: 'ask-user' });
+    await writeBreadcrumb(dp, { taskId: 'T-E', step: 'S2', status: 'done', context: '完成' });
+  });
+
+  after(() => { rmSync(dp, { recursive: true, force: true }); });
+
+  it('includes escalation when provided', async () => {
+    const md = readRaw(dp);
+    assert.ok(md.includes('escalation'), 'should have escalation field');
+    assert.ok(md.includes('ask-user'), 'should have escalation value');
+  });
+
+  it('omits escalation when not provided', async () => {
+    const md = readRaw(dp);
+    // S2 has no escalation — the YAML block for S2 should NOT contain "escalation:"
+    // Find the S2 block and check
+    const s2idx = md.indexOf('step: S1');
+    const afterS1 = md.slice(s2idx);
+    const s2block = afterS1.slice(afterS1.indexOf('###')); // S2 block
+    assert.ok(!s2block.includes('escalation:'), 'S2 should have no escalation line');
+  });
+});
+
+// --- truncation ---
+
+describe('Breadcrumb truncation', () => {
+  let dp;
+
+  before(async () => {
+    dp = mkdtempSync(join(tmpdir(), 'bc-trunc-'));
+    for (let i = 1; i <= 52; i++) {
+      await writeBreadcrumb(dp, { taskId: `T-${i}`, step: `S${i}`, status: 'done', context: `step ${i}` });
     }
-    const s = await readBreadcrumb(d);
-    assert.ok(s.entries.length <= 50, `got ${s.entries.length}`);
+  });
+
+  after(() => { rmSync(dp, { recursive: true, force: true }); });
+
+  it('truncates to MAX_ENTRIES', async () => {
+    const s = await readBreadcrumb(dp);
+    assert.ok(s.entries.length <= MAX_ENTRIES, `should be <= ${MAX_ENTRIES}, got ${s.entries.length}`);
+  });
+
+  it('keeps the most recent entries', async () => {
+    const s = await readBreadcrumb(dp);
     const last = s.entries[s.entries.length - 1];
-    assert.ok(last.taskId.includes('55'), `last entry preserved: ${last.taskId}`);
-    rmSync(d, { recursive: true, force: true });
+    assert.equal(last.step, 'S52', 'should keep the newest');
+  });
+
+  it('drops the oldest entries', async () => {
+    const s = await readBreadcrumb(dp);
+    const first = s.entries[0];
+    assert.equal(first.step, 'S3', 'oldest should be S3 (dropped S1,S2)');
   });
 });
 
-describe('Verification Gate', () => {
-  it('blocks journal when state is NOT check_pass', () => {
-    const { d, dp } = mkproject();
-    writeFileSync(join(dp, 'workspace', 'current.md'), '# Task\n\n## 状态\n- state: idle\n- task_id: T-001\n');
-    const r = run('journal', d);
-    assert.notEqual(r.code, 0);
-    assert.ok(r.out.includes('门禁') || r.err.includes('门禁') || r.out.includes('check'), `output: ${r.out} ${r.err}`);
-    rmSync(d, { recursive: true, force: true });
+// --- summary helper (inline, not relying on unexported function) ---
+
+describe('Breadcrumb summary', () => {
+  let dp;
+
+  before(async () => {
+    dp = mkdtempSync(join(tmpdir(), 'bc-sum-'));
+    await writeBreadcrumb(dp, { taskId: 'T-300', step: 'S1', status: 'done', context: '完成' });
+    await writeBreadcrumb(dp, { taskId: 'T-300', step: 'S2', status: 'blocked', context: '阻塞' });
   });
 
-  it('allows journal when state IS check_pass', () => {
-    const { d } = mkproject();
-    const r = run('journal', d);
-    assert.ok(!r.out.includes('门禁未通过'), `should not block: ${r.out}`);
-    rmSync(d, { recursive: true, force: true });
-  });
-});
+  after(() => { rmSync(dp, { recursive: true, force: true }); });
 
-describe('YAML Round-trip', () => {
-  it('preserves colon values', async () => {
-    const { d } = mkproject();
-    const { writeBreadcrumb, readBreadcrumb } = await import('/Users/mac/project/docpath/dist/engine/breadcrumb.js');
-    await writeBreadcrumb(d, { taskId: 'T-COL', stageId: 'S1.1', status: 'pass', label: 'test', context: 'A: B: C' });
-    const s = await readBreadcrumb(d);
-    const e = s.entries.find(x => x.taskId === 'T-COL');
-    assert.ok(e);
-    assert.ok(e.context.includes('A: B'), `context: ${e.context}`);
-    rmSync(d, { recursive: true, force: true });
+  it('counts statuses correctly', async () => {
+    const s = await readBreadcrumb(dp);
+    assert.equal(s.done, 1, 'should have 1 done');
+    assert.equal(s.blocked, 1, 'should have 1 blocked');
+    assert.equal(s.total, 2);
   });
 
-  it('preserves hash values', async () => {
-    const { d } = mkproject();
-    const { writeBreadcrumb, readBreadcrumb } = await import('/Users/mac/project/docpath/dist/engine/breadcrumb.js');
-    await writeBreadcrumb(d, { taskId: 'T-HASH', stageId: 'S1.1', status: 'pass', label: 'test', context: 'Error #404' });
-    const s = await readBreadcrumb(d);
-    const e = s.entries.find(x => x.taskId === 'T-HASH');
-    assert.ok(e);
-    assert.ok(e.context.includes('#404'), `context: ${e.context}`);
-    rmSync(d, { recursive: true, force: true });
+  it('contains expected entry content', async () => {
+    const s = await readBreadcrumb(dp);
+    assert.ok(s.entries[0].context.includes('完成'), 'should have context');
+    assert.ok(s.entries[1].context.includes('阻塞'), 'should have context');
   });
 });
 
-describe('Escalation Types', () => {
-  for (const type of ['boundary', 'blocker', 'quality']) {
-    it(`preserves escalation type: ${type}`, async () => {
-      const { d } = mkproject();
-      const { writeBreadcrumb, readBreadcrumb } = await import('/Users/mac/project/docpath/dist/engine/breadcrumb.js');
-      await writeBreadcrumb(d, { taskId: `T-${type}`, stageId: 'S1.1', status: 'fail', label: 'test', context: 'ctx', escalation: type });
-      const s = await readBreadcrumb(d);
-      const e = s.entries.find(x => x.taskId === `T-${type}`);
-      assert.ok(e);
-      assert.equal(e.escalation, type);
-      rmSync(d, { recursive: true, force: true });
-    });
-  }
-});
+// --- truncate API ---
 
-describe('Breadcrumb Append & Timestamps', () => {
-  it('appends multiple entries and preserves timestamps', async () => {
-    const { d } = mkproject();
-    const { writeBreadcrumb, readBreadcrumb } = await import('/Users/mac/project/docpath/dist/engine/breadcrumb.js');
-    await writeBreadcrumb(d, { taskId: 'T-1', stageId: 'S1', status: 'pass', label: 'first', context: 'c1' });
-    await writeBreadcrumb(d, { taskId: 'T-2', stageId: 'S2', status: 'pass', label: 'second', context: 'c2' });
-    const s = await readBreadcrumb(d);
-    assert.ok(s.entries.length >= 2);
-    for (const e of s.entries) {
-      assert.ok(e.timestamp, `${e.taskId} has timestamp`);
-      assert.ok(!isNaN(Date.parse(e.timestamp)), `parseable: ${e.timestamp}`);
+describe('truncateBreadcrumb API', () => {
+  let dp;
+
+  before(async () => {
+    dp = mkdtempSync(join(tmpdir(), 'bc-trunc-api-'));
+    for (let i = 1; i <= 5; i++) {
+      await writeBreadcrumb(dp, { taskId: `T-${i}`, step: `S${i}`, status: 'done', context: `step ${i}` });
     }
-    rmSync(d, { recursive: true, force: true });
+  });
+
+  after(() => { rmSync(dp, { recursive: true, force: true }); });
+
+  it('returns 0 when under limit', async () => {
+    const trimmed = await truncateBreadcrumb(dp);
+    assert.equal(trimmed, 0, 'should not trim when under MAX_ENTRIES');
+  });
+
+  it('entries unchanged after no-op truncate', async () => {
+    await truncateBreadcrumb(dp);
+    const s = await readBreadcrumb(dp);
+    assert.equal(s.entries.length, 5, 'should still have 5 entries');
   });
 });

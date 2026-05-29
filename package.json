@@ -11,8 +11,8 @@
     "templates/"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --clean --out-dir dist",
-    "dev": "tsup src/index.ts --format esm --watch --out-dir dist",
+    "build": "tsup src/index.ts src/engine/breadcrumb.ts --format esm --clean --out-dir dist",
+    "dev": "tsup src/index.ts src/engine/breadcrumb.ts --format esm --watch --out-dir dist",
     "prepublishOnly": "pnpm build",
     "typecheck": "tsc --noEmit"
   },
