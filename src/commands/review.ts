@@ -1,8 +1,8 @@
 /**
  * docpath:review — 结构化代码审查
  *
- * 收集 git diff + spec.md + plan.md，通过 LLM 输出结构化审查报告。
- * Level 2+ 将审查结果写入 spec.md 追加记录。
+ * 收集 git diff + spec.md + plan.md，输出结构化审查 prompt。
+ * 由宿主 Agent 执行审查，结果可追加到 spec.md。
  */
 
 import { existsSync } from 'fs';
@@ -11,15 +11,13 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
-import { callLLM } from '../llm/client.js';
+import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
 
 interface ReviewOptions {
   cwd: string;
   /** 审查范围: 未提交 / 最近一次提交 / 全部分支 */
   scope?: 'staged' | 'last_commit' | 'all';
-  /** 是否使用 LLM 深度审查 (默认 true) */
-  useAi?: boolean;
 }
 
 function getGitDiff(scope: string, cwd: string): string {
@@ -40,7 +38,7 @@ function getGitDiff(scope: string, cwd: string): string {
 }
 
 export async function reviewCommand(options: ReviewOptions): Promise<void> {
-  const { cwd, scope = 'staged', useAi = true } = options;
+  const { cwd, scope = 'staged' } = options;
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
@@ -67,22 +65,11 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
   console.log(`📊  审查范围: ${scope === 'staged' ? '未提交' : scope === 'last_commit' ? '最近提交' : '全部分支'}`);
   console.log(`📝  Diff 行数: ${diff.split('\n').length}\n`);
 
-  if (useAi) {
-    try {
-      const result = await callLLM({
-        system: '你是代码审查专家。请审查代码变更，输出结构化报告。',
-        messages: [{ role: 'user', content: `## 项目规约
-${spec.slice(0, 2000)}
-
-## 任务计划
-${plan.slice(0, 2000)}
-
-## 代码变更 (diff)
-\`\`\`
-${diff.slice(0, 8000)}
-\`\`\`
-
-请按以下格式输出：
+  // [Agent Mode] 输出结构化审查 prompt
+  const prompt = emitPrompt('review', {
+    systemPrompt: '你是代码审查专家。请审查代码变更，输出结构化报告。',
+    context: `## 项目规约\n${spec.slice(0, 2000)}\n\n## 任务计划\n${plan.slice(0, 2000)}\n\n## 代码变更 (diff)\n\`\`\`\n${diff.slice(0, 8000)}\n\`\`\``,
+    instructions: `请按以下格式输出审查报告：
 
 ### 📋 审查摘要
 (一句话总结)
@@ -97,30 +84,12 @@ ${diff.slice(0, 8000)}
 - (具体建议)
 
 ### 📊 评分
-通过率: X/10` }],
-        maxTokens: 2000,
-      });
+通过率: X/10
 
-      console.log('─── 审查报告 ───\n');
-      console.log(result.content);
-      console.log('');
+${level >= 2 ? '完成后将审查记录追加到 spec.md: docpath write-review' : ''}`,
+  });
 
-      // Level 2+ 追加到 spec.md
-      if (level >= 2 && existsSync(specPath)) {
-        const timestamp = new Date().toISOString().slice(0, 16);
-        const record = `\n\n## 代码审查记录 (${timestamp})\n\n${result.content}\n`;
-        await appendFile(specPath, record, 'utf-8');
-        console.log('📝  审查记录已追加到 spec.md');
-      }
-    } catch (err: any) {
-      console.error(`⚠️  LLM 审查失败: ${err.message}`);
-      console.log('\n─── Diff 摘要 (手动审查) ───\n');
-      console.log(diff.slice(0, 3000));
-    }
-  } else {
-    console.log('─── Diff 摘要 (手动审查) ───\n');
-    console.log(diff.slice(0, 3000));
-  }
+  console.log(prompt);
 
   await updateCurrentState(cwd, 'reviewing');
 
@@ -129,8 +98,8 @@ ${diff.slice(0, 8000)}
     taskId,
     step: 'review',
     status: 'done',
-    context: `代码审查完成 (${scope})`,
+    context: `代码审查 prompt 已输出 (${scope})`,
   });
 
-  console.log('\n下一步: `docpath:journal` 归档知识\n');
+  console.log('\n📌 完成后运行: docpath write-review\n');
 }

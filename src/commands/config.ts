@@ -6,8 +6,6 @@
  * 
  * 用法:
  *   docpath config                          # 列出全部配置
- *   docpath config get llm.model            # 读取配置项
- *   docpath config set llm.model gpt-4o     # 设置配置项
  *   docpath config get harness.mode         # 读取 harness 模式
  *   docpath config set harness.mode balanced # 设置 harness 模式
  */
@@ -25,13 +23,6 @@ interface ConfigOptions {
 }
 
 const DEFAULT_CONFIG = {
-  // LLM 配置
-  llm: {
-    provider: 'openai',
-    endpoint: 'https://api.openai.com/v1',
-    model: 'gpt-4o',
-    apiKey: '',
-  },
   // 模板配置
   templates: {
     path: 'templates',
@@ -146,7 +137,7 @@ export async function configCommand(options: ConfigOptions): Promise<void> {
     if (!raw) {
       console.log('\n⚙️  未找到配置文件。使用默认配置:\n');
       console.log(toYamlSimple(DEFAULT_CONFIG));
-      console.log('运行 `docpath config set llm.model gpt-4o` 初始化配置\n');
+      console.log('运行 `docpath config set harness.mode balanced` 初始化配置\n');
       return;
     }
     console.log('\n⚙️  DocPath 配置\n');

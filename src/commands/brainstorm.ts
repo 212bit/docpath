@@ -1,21 +1,21 @@
 /**
  * docpath:brainstorm — 苏格拉底式需求拷问
  *
- * 通过 LLM 驱动的渐进式提问，帮助用户将模糊需求逐步澄清为结构化 spec.md。
+ * 输出结构化 prompt，由宿主 Agent 执行苏格拉底式提问，将模糊需求澄清为 spec.md。
  *
  * 流程：
  *   1. 检测 .docpath/ 是否存在（不存在则提示 docpath:init）
  *   2. 读取现有 spec.md（若有）作为上下文
- *   3. 调用 LLM 发起苏格拉底式提问
- *   4. 用户回答后，LLM 总结 → 写入 spec.md
- *   5. 更新 current.md 状态为 spec_written
+ *   3. 输出 brainstorm prompt（系统提示 + 上下文 + 指令）
+ *   4. 宿主 Agent 执行推理 → 使用 docpath write-spec 写入结果
+ *   5. 更新 current.md 状态为 drafting
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
-import { askQuestion, readCurrentMd, updateCurrentState } from '../utils/workspace.js';
-import { callLLM } from '../llm/client.js';
+import { updateCurrentState } from '../utils/workspace.js';
+import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
 
 interface BrainstormOptions {
@@ -76,15 +76,7 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
 
   console.log('\n🧠  需求拷问模式启动...\n');
 
-  // 2. 读取现有 spec（若存在）
-  const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
-  let existingSpec = '';
-  try {
-    existingSpec = await readFile(specPath, 'utf-8');
-    console.log('📄  已加载现有 spec.md，将基于此继续深化。\n');
-  } catch {
-    // spec 不存在，从零开始
-  }
+  // 2. 读取现有 spec（延迟到 prompt 构建时）
 
   // 3. 构建初始上下文
   const projectContext = await readFile(join(docpathDir, 'config.yaml'), 'utf-8');
@@ -107,105 +99,43 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
   await mkdir(tasksCurrentDir, { recursive: true });
 
   // 3.5 单次模式：不进入交互循环，直接从 input 生成 spec
-  if (options.noInteractive) {
-    const userMsg = input || '（未提供需求描述）';
-    console.log(`👤  需求描述: ${userMsg}\n`);
+  // [Agent Mode] 输出结构化 prompt，由宿主 Agent 执行推理
+  const userMsg = input || '（未提供需求描述）';
 
-    try {
-      conversationHistory.push({ role: 'user', content: userMsg });
-      const llmResponse = await callLLM({
-        system: systemPrompt,
-        messages: conversationHistory,
-      });
-      const reply = llmResponse.content;
+  // 收集现有 spec（如果有）
+  const existingSpec = await readTaskFile(cwd, 'spec.md');
 
-      // 尝试提取 YAML spec
-      const yamlMatch = reply.match(/```yaml\n([\s\S]*?)```/);
-      if (yamlMatch) {
-        await writeFile(specPath, `# 规约: ${userMsg}\n\n${yamlMatch[1]}`, 'utf-8');
-        console.log(`✅  Spec 已写入 ${specPath}`);
-      } else {
-        // 没有 YAML 块，直接写 LLM 输出
-        await writeFile(specPath, `# 规约: ${userMsg}\n\n${reply}`, 'utf-8');
-        console.log(`✅  Spec 已写入 ${specPath}（原始输出）`);
-      }
-    } catch {
-      // LLM 失败 → 从输入生成模板 spec
-      console.log('⚠️  LLM 不可用，使用模板生成 spec...');
-      const templateSpec = [
-        `title: "${userMsg.slice(0, 60)}"`,
-        `background: |`,
-        `  ${userMsg}`,
-        `functional_requirements:`,
-        `  - id: FR-1`,
-        `    description: "${userMsg}"`,
-        `constraints: []`,
-        `acceptance_criteria:`,
-        `  - 核心功能可正常运行`,
-      ].join('\n');
-      await writeFile(specPath, `# 规约: ${userMsg}\n\n${templateSpec}`, 'utf-8');
-      console.log(`✅  模板 Spec 已写入 ${specPath}`);
-    }
+  const prompt = emitPrompt('brainstorm', {
+    systemPrompt,
+    userInput: userMsg,
+    context: existingSpec
+      ? `已有 spec.md（可能不完整）：\n\`\`\`markdown\n${existingSpec}\n\`\`\`\n请在此基础上完善。`
+      : '这是全新需求，无现有 spec。',
+    instructions: `请通过苏格拉底式提问逐步澄清需求，最终输出完整的 spec.md。
 
-    await updateCurrentState(cwd, 'spec_written');
-    console.log('✅  状态已更新为 spec_written');
-    console.log('\n✨  需求生成完成！下一步：`docpath:plan`\n');
-    return;
-  }
+**执行方式**：
+1. 分析用户输入，识别模糊点和缺失信息
+2. 逐一提问澄清（每次只问 1-2 个关键问题）
+3. 需求清晰后，生成结构化 spec.md
+4. 使用 \`docpath write-spec\` 写入结果
 
-  // 4. 发起第一轮提问
-  const userFirstMsg = input || '（等待输入需求描述）';
-  console.log(`👤  需求描述: ${userFirstMsg}\n`);
+**spec.md 格式要求**：
+\`\`\`yaml
+title: "项目标题"
+background: |
+  背景描述
+functional_requirements:
+  - id: FR-1
+    description: "功能描述"
+constraints: []
+acceptance_criteria:
+  - "验收条件"
+\`\`\``,
+  });
 
-  conversationHistory.push({ role: 'user', content: userFirstMsg });
+  console.log(prompt);
 
-  // 进入交互循环（简化版：最多 5 轮问答）
-  let specComplete = false;
-  let round = 0;
-  const MAX_ROUNDS = 5;
-
-  while (!specComplete && round < MAX_ROUNDS) {
-    round++;
-    console.log(`\n--- 第 ${round} 轮 ---\n`);
-
-    // 调用 LLM 提问
-    const llmResponse = await callLLM({
-      system: systemPrompt,
-      messages: conversationHistory,
-    });
-
-    const reply = llmResponse.content;
-    conversationHistory.push({ role: 'assistant', content: reply });
-
-    // 检查是否输出了 SPEC_COMPLETE
-    if (reply.includes('SPEC_COMPLETE')) {
-      specComplete = true;
-      console.log(`🤖  AI:\n${reply}\n`);
-
-      // 提取 YAML spec 部分
-      const yamlMatch = reply.match(/```yaml\n([\s\S]*?)```/);
-      if (yamlMatch) {
-        const specContent = yamlMatch[1];
-        await writeFile(specPath, `# 规约: ${input || 'Untitled'}\n\n${specContent}`, 'utf-8');
-        console.log(`✅  Spec 已写入 ${specPath}`);
-      }
-
-      // 更新 current.md 状态
-      await updateCurrentState(cwd, 'spec_written');
-      console.log('✅  状态已更新为 spec_written');
-      break;
-    }
-
-    // AI 提问，等待用户回答
-    console.log(`🤖  AI:\n${reply}\n`);
-    const userAnswer = await askQuestion('👤  你的回答: ');
-    conversationHistory.push({ role: 'user', content: userAnswer });
-  }
-
-  if (!specComplete) {
-    console.log('\n⚠️  已达到最大提问轮次，需求仍不完全清晰。');
-    console.log('请手动编辑 spec.md 后，运行 `docpath:plan` 生成计划。\n');
-  }
-
-  console.log('\n✨  需求拷问完成！下一步：`docpath:plan`\n');
+  await updateCurrentState(cwd, 'drafting', { substep: 'agent-brainstorm' });
+  console.log('\n✅ 状态已更新为 drafting');
+  console.log('📌 完成后运行: docpath write-spec\n');
 }

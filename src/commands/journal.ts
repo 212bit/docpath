@@ -10,13 +10,11 @@ import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { readCurrentMd, updateCurrentState, readWorkspaceMeta } from '../utils/workspace.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
-import { callLLM } from '../llm/client.js';
+import { emitPrompt } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
 
 interface JournalOptions {
   cwd: string;
-  /** 跳过 LLM，直接写入模板 */
-  skipAi?: boolean;
 }
 
 interface TaskSummary {
@@ -65,86 +63,30 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
   console.log(`📊  步骤: ${summary.completedSteps}/${summary.totalSteps} 完成, ${summary.blockedSteps} 阻塞`);
   console.log(`⏱️  耗时: ${summary.duration}\n`);
 
-  let journalEntry = '';
-
-  if (!skipAi) {
-    try {
-      const result = await callLLM({
-        system: '你是知识管理专家。请从以下开发任务中提炼结构化知识记录。',
-        messages: [{
-          role: 'user',
-          content: `## 原始规约
-${spec.slice(0, 3000)}
-
-## 执行计划
-${plan.slice(0, 2000)}
-
-## 面包屑历史 (全部)
-${breadcrumb.entries.map(e => `- [${e.status}] ${e.step}: ${e.context}`).join('\n')}
-
-## 任务统计
-- 总步数: ${summary.totalSteps}
-- 完成: ${summary.completedSteps}
-- 阻塞: ${summary.blockedSteps}
-
-请输出：
+  // [Agent Mode] 输出归档 prompt，由宿主 Agent 填充知识记录后写入 spec.md
+  const prompt = emitPrompt('journal', {
+    systemPrompt: '你是知识管理专家。请从以下开发任务中提炼结构化知识记录。',
+    context: `## 原始规约\n${spec.slice(0, 3000)}\n\n## 执行计划\n${plan.slice(0, 2000)}\n\n## 面包屑历史 (全部)\n${breadcrumb.entries.map(e => `- [${e.status}] ${e.step}: ${e.context}`).join('\n')}\n\n## 任务统计\n- 总步数: ${summary.totalSteps}\n- 完成: ${summary.completedSteps}\n- 阻塞: ${summary.blockedSteps}`,
+    instructions: `请输出知识记录：
 
 ### 📝 任务摘要
 (一句话)
 
 ### 🏗️ 架构决策
 - 决策1: 原因
-- 决策2: 原因
 
 ### 💡 经验教训
 - 教训1
-- 教训2
 
 ### 🔮 后续改进
 - 改进1
-- 改进2`
-        }],
-        maxTokens: 1500,
-      });
 
-      journalEntry = result.content;
-      console.log('─── 知识记录 ───\n');
-      console.log(journalEntry);
-    } catch (err: any) {
-      console.warn(`⚠️  LLM 归档失败: ${err.message}，使用模板归档`);
-    }
-  }
+完成后写入 spec.md: docpath write-journal`,
+  });
 
-  // Fallback: 模板
-  if (!journalEntry) {
-    journalEntry = `### 📝 任务摘要
-任务 ${summary.taskId} 完成 ${summary.completedSteps}/${summary.totalSteps} 步。
+  console.log(prompt);
 
-### 🏗️ 架构决策
-(待补充)
-
-### 💡 经验教训
-(待补充)
-
-### 🔮 后续改进
-(待补充)`;
-  }
-
-  // 写入 spec.md
-  if (existsSync(specPath)) {
-    const timestamp = new Date().toISOString().slice(0, 16);
-    const record = `\n\n## 开发记录: ${summary.taskId} (${timestamp})\n\n${journalEntry}\n`;
-    let updatedSpec = spec;
-    if (!updatedSpec.includes('## 项目概述')) {
-      updatedSpec = `# 项目架构规范\n\n## 项目概述\n\n(自动生成)\n\n${record}`;
-    } else {
-      updatedSpec += record;
-    }
-    await writeFile(specPath, updatedSpec, 'utf-8');
-    console.log('✅  知识已归档到 spec.md\n');
-  } else {
-    console.log('⚠️  spec.md 不存在，跳过归档\n');
-  }
+  console.log('📌 完成后运行: docpath write-journal\n');
 
   await updateCurrentState(cwd, 'complete');
 

@@ -1,18 +1,16 @@
 /**
  * docpath:plan — 根据 spec.md 生成执行计划
  *
- * 读取 .docpath/tasks/current/spec.md，通过 LLM 将需求分解为
- * 可独立验收的子任务列表，写入 .docpath/tasks/current/plan.md。
+ * 输出结构化 prompt，由宿主 Agent 将需求分解为子任务列表，写入 plan.md。
  *
  * Level 2+ 自动写入 checkpoint + breadcrumb。
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { updateCurrentState } from '../utils/workspace.js';
-import { callLLM } from '../llm/client.js';
+import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 
 interface PlanOptions {
   cwd: string;
@@ -67,26 +65,50 @@ export async function planCommand(options: PlanOptions): Promise<void> {
 
   console.log('\n📋  生成执行计划...\n');
 
-  const spec = await readFile(specPath, 'utf-8');
+  const spec = await readTaskFile(cwd, 'spec.md');
 
   if (options.dryRun) {
     console.log('📝  [dry-run] Spec 内容预览：');
-    console.log(spec.slice(0, 500));
+    console.log(spec!.slice(0, 500));
     console.log('---');
     return;
   }
 
-  const planResponse = await callLLM({
-    system: PLAN_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: `请根据以下规约生成执行计划：\n\n${spec}` }],
+  // [Agent Mode] 输出结构化 prompt，由宿主 Agent 执行推理
+  const prompt = emitPrompt('plan', {
+    systemPrompt: PLAN_SYSTEM_PROMPT,
+    context: `## Spec.md 内容\n\n${spec}`,
+    instructions: `请根据 spec.md 生成执行计划，写入 plan.md。
+
+**执行方式**：
+1. 分析 spec 中的功能需求、约束和验收条件
+2. 分解为可独立验收的子任务（每个 15-60 分钟）
+3. 定义子任务间的依赖关系
+4. 使用 \`docpath write-plan\` 写入结果
+
+**plan.md 格式要求**：
+\`\`\`markdown
+## 执行计划
+
+### S1: [子任务名]
+- **描述**: xxx
+- **验收条件**: xxx
+- **依赖**: 无
+
+### S2: [子任务名]
+- **描述**: xxx
+- **验收条件**: xxx
+- **依赖**: S1
+
+## 依赖关系图
+S1 → S2 → S4
+S1 → S3 → S5
+\`\`\``,
   });
 
-  const planContent = planResponse.content;
+  console.log(prompt);
 
-  await writeFile(planPath, planContent, 'utf-8');
-  console.log(`✅  计划已写入 ${planPath}`);
-
-  await updateCurrentState(cwd, 'planning_done');
-  console.log('✅  状态已更新为 planning_done');
-  console.log('\n✨  计划生成完成！下一步：执行第一个子任务，完成后运行 `docpath:continue`\n');
+  await updateCurrentState(cwd, 'drafting', { substep: 'agent-plan' });
+  console.log('\n✅ 状态已更新为 drafting');
+  console.log('📌 完成后运行: docpath write-plan\n');
 }
