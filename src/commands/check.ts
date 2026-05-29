@@ -380,6 +380,9 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     }
 
     // 5b. current.md checklist 独立检查 + 与 plan.md 一致性检查
+    // 先根据最新 plan/spec 重建 current.md，避免检查到上一轮缓存。
+    await updateCurrentState(cwd, current?.state || 'checking', { phase: 'checking' });
+
     const currentMdPath = join(docpathDir, 'workspace', 'current.md');
     if (existsSync(currentMdPath)) {
       try {
@@ -461,7 +464,12 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
   // 更新状态
   const newState = allPassed ? 'check_pass' : 'check_fail';
-  await updateCurrentState(cwd, newState, { phase: 'checking' });
+  await updateCurrentState(cwd, newState, {
+    phase: 'checking',
+    current_step: allPassed
+      ? `质量检查通过 (${results.length} 项)，下一步: docpath review`
+      : `质量检查失败: ${results.filter(r => !r.passed).map(r => r.name).join(', ')}`,
+  });
 
   // [Harness Lite] 写入 last-check.md
   const lastCheckPath = join(cwd, '.docpath', 'workspace', 'last-check.md');

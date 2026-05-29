@@ -4,11 +4,11 @@
 level: 3
 state: check_pass         # 当前状态
 task_id: T-20260528-harness-lite
-task_title: Harness Lite - 轻量证明机制
+task_title: Harness Lite for DocPath
 phase: checking
-current_step: P4 — 验证通过 ✅ typecheck+build+check 全部通过
+current_step: 质量检查通过 (4 项)，下一步: docpath review
 started_at: 2026-05-29T10:00:00.000Z
-updated_at: 2026-05-29T04:02
+updated_at: 2026-05-29T05:00
 ```
 
 > 📖 规约: [spec.md](../tasks/T-20260528-harness-lite/spec.md)
@@ -16,20 +16,13 @@ updated_at: 2026-05-29T04:02
 
 ## ✅ 执行检查清单
 
-- [x] P1: 添加 typecheck 检测（pnpm/yarn/npm 包管理器支持）✅
-- [x] P2: check.ts 写入 last-check.md ✅
-- [x] P3: context.ts 显示 check 证据 ✅
-- [x] P4: 验证 typecheck+build+check 全部通过 ✅
+- [x] `pnpm typecheck` 通过
+- [x] `pnpm build` 通过
+- [x] `node dist/index.js check` 通过 (检测到 typecheck)
+- [x] `.docpath/workspace/last-check.md` 被正确写入
+- [x] `node dist/index.js context` 显示 check 证据
 
-## 📦 已提交
+## 🔄 同步说明
 
-```text
-016ff84 feat(harness-lite): add typecheck detection, last-check.md, and context evidence
-```
-
-## 📋 待办任务
-
-| 任务 | 状态 | 优先级 |
-|------|------|--------|
-| T-20260528-link | 待开始 | 高（实现量小） |
-| T-20260528-p2 | 待开始 | 中（涉及 LLM 集成） |
+本文件由 DocPath CLI 根据 `.docpath/tasks/current/spec.md` 与 `.docpath/tasks/current/plan.md` 重建。
+状态变化请通过 `docpath go/check/journal` 等命令推进，避免手工修改后与任务文档漂移。
