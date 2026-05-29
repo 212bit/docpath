@@ -12,6 +12,17 @@ import { resolveDocpathDir } from './file.js';
 
 // ── state.json schema ──
 
+interface EscalationInfo {
+  /** 最近评估的推荐级别 (0-3) */
+  recommended_level: number;
+  /** 评估时间 */
+  evaluated_at: string;
+  /** 触发的规则名称 */
+  triggered_rule?: string;
+  /** 置信度 0.0-1.0 */
+  confidence?: number;
+}
+
 interface CurrentState {
   level: number;
   state: string;
@@ -21,6 +32,8 @@ interface CurrentState {
   current_step: string;
   started_at: string;
   updated_at: string;
+  /** Escalation 引擎评估结果（可选） */
+  escalation?: EscalationInfo;
 }
 
 // ── 核心读写函数 ──
@@ -78,6 +91,7 @@ export async function writeCurrentState(cwd: string, state: CurrentState): Promi
     state.task_id || 'current',
     extractLastCheckSummary(lastCheckContent),
     extractLatestBreadcrumbSummary(breadcrumbContent),
+    state.escalation,
   );
   await writeFile(currentPath, rendered, 'utf-8');
 }
@@ -324,6 +338,7 @@ function renderCurrentDocument(
   taskDirName: string,
   lastCheckSummary: string,
   breadcrumbSummary: string,
+  escalation?: EscalationInfo,
 ): string {
   const checklist = extractPlanChecklist(planContent);
   const checklistBlock = checklist.length > 0
@@ -355,7 +370,14 @@ ${checklistBlock}
 - Last Check: [last-check.md](${workspaceLink('last-check.md')}) — ${lastCheckSummary}
 - Breadcrumb: [breadcrumb.md](${workspaceLink('breadcrumb.md')}) — ${breadcrumbSummary}
 
-## 🔄 同步说明
+${escalation ? `## 📈 Escalation 评估
+
+- **推荐级别**: ${escalation.recommended_level}
+${escalation.triggered_rule ? `- **触发规则**: ${escalation.triggered_rule}` : ''}
+${escalation.confidence !== undefined ? `- **置信度**: ${escalation.confidence.toFixed(2)}` : ''}
+- **评估时间**: ${escalation.evaluated_at}
+
+` : ''}## 🔄 同步说明
 
 本文件由 DocPath CLI 根据 \`.docpath/workspace/state.json\` 自动重建。
 状态变化请通过 \`docpath go/check/journal\` 等命令推进，避免手工修改后与任务文档漂移。
@@ -380,7 +402,9 @@ export async function updateCurrentState(
 
   const { fields, planContent, taskDirName, lastCheckSummary, breadcrumbSummary } = await collectCurrentStateFields(cwd, newState, extraFields);
   
-  // 转换为 CurrentState 并写入
+  // 保留已有 escalation 字段（不会被 extraFields 覆盖）
+  const existingState = await readCurrentState(cwd);
+
   const state: CurrentState = {
     level: parseInt(fields.level, 10) || 0,
     state: fields.state,
@@ -390,6 +414,7 @@ export async function updateCurrentState(
     current_step: fields.current_step,
     started_at: fields.started_at,
     updated_at: fields.updated_at,
+    escalation: existingState?.escalation,
   };
   
   await writeCurrentState(cwd, state);
@@ -417,6 +442,7 @@ export async function syncCurrentDocument(cwd: string): Promise<void> {
     current.task_id || 'current',
     extractLastCheckSummary(lastCheckContent),
     extractLatestBreadcrumbSummary(breadcrumbContent),
+    current.escalation,
   );
   
   const currentPath = join(docpathDir, 'workspace', 'current.md');

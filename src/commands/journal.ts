@@ -39,6 +39,16 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
 
   console.log('\n📚  知识归档...\n');
 
+  // ─── P0: verification 门禁 ───
+  // 必须先运行 docpath:check 且状态为 check_pass 才允许归档
+  const { readCurrentState: readStateForGate } = await import('../utils/workspace.js');
+  const gateState = await readStateForGate(cwd);
+  if (!gateState || (gateState.state !== 'check_pass' && gateState.state !== 'completed')) {
+    console.error('❌  归档门禁未通过：当前状态为', gateState?.state || 'null');
+    console.error('   请先运行 `docpath:check` 通过质量门禁，再执行归档。');
+    process.exit(1);
+  }
+
   const current = await readCurrentMd(cwd);
   const meta = await readWorkspaceMeta(cwd);
   const breadcrumb = await readBreadcrumb(cwd);
@@ -65,7 +75,7 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
   console.log(`⏱️  耗时: ${summary.duration}\n`);
 
   // [Agent Mode] 输出归档 prompt，由宿主 Agent 填充知识记录后写入 spec.md
-  const prompt = emitPrompt({
+  emitPrompt({
     task: 'journal',
     system: '你是知识管理专家。请从以下开发任务中提炼结构化知识记录。',
     context: {
@@ -96,8 +106,6 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
     ],
     output_format: 'knowledge record (markdown)',
   });
-
-  console.log(prompt);
 
   console.log('📌 完成后运行: docpath write-journal\n');
 
@@ -131,6 +139,39 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
     const metaPath = join(docpathDir, 'workspace.json');
     const { writeFile: wf } = await import('fs/promises');
     await wf(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
+  }
+
+  // ─── P1: 决策日志写入 ───
+  // 归档时自动将本次任务的关键决策追加到 workspace/decisions.md
+  try {
+    const decisionsPath = join(docpathDir, 'workspace', 'decisions.md');
+    const now = new Date().toISOString();
+    const decisionLines = [
+      ``,
+      `## ${taskId} — ${now}`,
+      '',
+      `**任务统计**:`,
+      `- 完成: ${summary.completedSteps}/${summary.totalSteps} 步`,
+    ];
+    if (summary.blockedSteps > 0) decisionLines.push(`- 阻塞: ${summary.blockedSteps} 步`);
+    decisionLines.push('', '**关键决策**:');
+    for (const d of summary.keyDecisions) {
+      if (d.trim()) decisionLines.push(`- ${d}`);
+    }
+    decisionLines.push('', '---', '');
+
+    const decisionsContent = decisionLines.join('\n');
+
+    if (existsSync(decisionsPath)) {
+      const { appendFile } = await import('fs/promises');
+      await appendFile(decisionsPath, decisionsContent, 'utf-8');
+    } else {
+      const header = '# 决策日志 — DocPath 自动归档\n\n> 每次 journal 归档时自动追加任务的关键决策记录。\n\n---\n';
+      await writeFile(decisionsPath, header + decisionsContent, 'utf-8');
+    }
+    console.log('📝  决策日志已更新: workspace/decisions.md');
+  } catch (e) {
+    console.warn('⚠️  决策日志写入失败（非致命）:', (e as Error).message);
   }
 
   console.log('─── 完成 ───');

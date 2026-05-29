@@ -9,6 +9,22 @@
 
 export type ComplexityLevel = 0 | 1 | 2 | 3;
 
+/** Escalation 决策状态 */
+export interface EscalationState {
+  /** 当前推荐级别 */
+  recommendedLevel: ComplexityLevel;
+  /** 决策原因 */
+  reason: string;
+  /** 触发信号类型 */
+  signals: string[];
+  /** 建议动作 */
+  action: 'auto_escalate' | 'prompt_user' | 'none';
+  /** 评估时间 */
+  evaluatedAt: string;
+}
+
+
+
 /** Level 0 状态 — 即时响应 */
 export type L0State = 'idle' | 'executing' | 'completed';
 
@@ -41,6 +57,8 @@ export interface StateRegister {
   phase: string | null;
   started_at: string | null;
   updated_at: string | null;
+  /** Escalation 评估状态（由 escalation engine 填充） */
+  escalation?: EscalationState;
 }
 
 /** 状态转移规则 */

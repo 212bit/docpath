@@ -2,13 +2,13 @@
 
 ```yaml
 level: 3
-state: completed          # 当前状态
+state: check_pass         # 当前状态
 task_id: T-20260528-harness-lite
 task_title: Harness Lite for DocPath
-phase: archived
-current_step: 质量检查通过 (4 项)，下一步: docpath review
+phase: checking
+current_step: 质量检查通过 (3 项)，下一步: docpath review
 started_at: 2026-05-29T10:00:00.000Z
-updated_at: 2026-05-29T09:13
+updated_at: 2026-05-29T10:05
 ```
 
 > 📖 规约: [spec.md](../tasks/T-20260528-harness-lite/spec.md)
@@ -20,8 +20,8 @@ updated_at: 2026-05-29T09:13
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 4 项 · 2026-05-29T07:59:48.526Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260528-harness-lite] — 2026-05-29T09:13:11.507Z · 状态: done · 代码审查 prompt 已输出 (last_commit)
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 3 项 · 2026-05-29T10:05:36.812Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ check [T-20260528-harness-lite] — 2026-05-29T10:05:36.812Z · 状态: done · 质量检查通过 (3 项)
 
 ## 🔄 同步说明
 

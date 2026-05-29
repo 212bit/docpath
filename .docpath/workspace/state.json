@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "state": "completed",
+  "state": "check_pass",
   "task_id": "T-20260528-harness-lite",
   "task_title": "Harness Lite for DocPath",
-  "phase": "archived",
-  "current_step": "质量检查通过 (4 项)，下一步: docpath review",
+  "phase": "checking",
+  "current_step": "质量检查通过 (3 项)，下一步: docpath review",
   "started_at": "2026-05-29T10:00:00.000Z",
-  "updated_at": "2026-05-29T09:13"
+  "updated_at": "2026-05-29T10:05"
 }
