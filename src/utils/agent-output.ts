@@ -7,10 +7,8 @@
 
 import { stringify } from 'yaml';
 import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { readCurrentMd } from './workspace.js';
-import { readBreadcrumb, type BreadcrumbSummary } from '../engine/breadcrumb.js';
+import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
 
 export interface AgentOutput {
@@ -43,6 +41,33 @@ export interface AgentOutput {
   };
   /** 时间戳 */
   generated_at: string;
+}
+
+function summarizeCurrentTaskBreadcrumbs(
+  bc: BreadcrumbSummary,
+  taskId: string,
+): BreadcrumbSummary {
+  if (!taskId) return bc;
+
+  const latestByStep = new Map<string, BreadcrumbEntry>();
+  for (const entry of bc.entries) {
+    if (entry.taskId !== taskId) continue;
+    latestByStep.set(entry.step, entry);
+  }
+
+  const entries = Array.from(latestByStep.values());
+  const done = entries.filter((e) => e.status === 'done').length;
+  const inProgress = entries.filter((e) => e.status === 'in_progress').length;
+  const blocked = entries.filter((e) => e.status === 'blocked').length;
+
+  return {
+    total: entries.length,
+    done,
+    inProgress,
+    blocked,
+    latest: entries.length > 0 ? entries[entries.length - 1] : null,
+    entries,
+  };
 }
 
 /**
@@ -147,7 +172,8 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
   }
 
   const state = await readCurrentMd(cwd);
-  const bc = await readBreadcrumb(cwd);
+  const rawBreadcrumb = await readBreadcrumb(cwd);
+  const bc = summarizeCurrentTaskBreadcrumbs(rawBreadcrumb, state?.task_id || '');
   const inferred = inferNextAction(state, bc);
 
   const output: AgentOutput = {

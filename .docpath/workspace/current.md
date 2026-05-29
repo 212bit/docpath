@@ -2,13 +2,13 @@
 
 ```yaml
 level: 3
-state: check_pass         # 当前状态
+state: completed          # 当前状态
 task_id: T-20260529-p3
 task_title: Phase 3: Agent Superpowers — 借鉴 Superpowers/Trellis/GSD 的 5 项改进
-phase: checking
+phase: archived
 current_step: 质量检查通过 (3 项)，下一步: docpath review
-started_at: 2026-05-29T13:30:00Z
-updated_at: 2026-05-29T11:39
+started_at: 2026-05-29T14:02:01.583Z
+updated_at: 2026-05-29T14:02
 ```
 
 > 📖 规约: [spec.md](../tasks/T-20260529-p3/spec.md)
@@ -20,8 +20,8 @@ updated_at: 2026-05-29T11:39
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 3 项 · 2026-05-29T11:39:24.066Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ check [T-20260529-p3] — 2026-05-29T11:39:24.066Z · 状态: done · 质量检查通过 (3 项)
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 3 项 · 2026-05-29T13:55:22.679Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260529-p3] — 2026-05-29T13:55:22.778Z · 状态: done · 代码审查: 0 错误, 43 警告, 1 提示
 
 ## 🔄 同步说明
 

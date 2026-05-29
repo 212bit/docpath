@@ -13,7 +13,7 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
-import { updateCurrentState } from '../utils/workspace.js';
+import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
 import { appendDecision } from '../governance/decisions.js';
 
 interface ReviewOptions {
@@ -123,12 +123,15 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     infos.forEach(f => console.log(`  [f.file] ${f.message}`));
   }
 
+  const current = await readCurrentMd(opts.cwd);
+  const taskId = current?.task_id || 'review';
+
   // 如果 --approve，跳过所有检查直接批准
   if (opts.approve) {
     console.log('\n✅ 审查已手动批准 (跳过自动检查)');
     await appendDecision(opts.cwd, 'review', '手动批准: 跳过自动检查');
     await writeBreadcrumb(opts.cwd, {
-      taskId: 'review',
+      taskId,
       step: 'review',
       status: 'done',
       context: '手动批准',
@@ -139,8 +142,8 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
       `**时间**: ${new Date().toISOString()}`,
       `**状态**: ✅ 手动批准 (跳过自动检查)`,
     ].join('\n'), 'utf-8');
-    // 更新状态机 → reviewed
-    await updateCurrentState(opts.cwd, 'reviewed', { phase: 'reviewing' });
+    // 更新状态机 → review_pass
+    await updateCurrentState(opts.cwd, 'review_pass', { phase: 'reviewing' });
     return;
   }
 
@@ -153,11 +156,15 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
 
   // 写入 breadcrumb
   await writeBreadcrumb(opts.cwd, {
-    taskId: 'review',
+    taskId,
     step: 'review',
     status: approved ? 'done' : 'blocked',
     context: `代码审查: ${errors.length} 错误, ${warns.length} 警告, ${infos.length} 提示`,
   });
+
+  if (approved) {
+    await updateCurrentState(opts.cwd, 'review_pass', { phase: 'reviewing' });
+  }
 
   // 写入 review.md
   const reviewPath = join(docpathDir, 'workspace', 'review.md');

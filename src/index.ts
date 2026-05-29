@@ -37,7 +37,9 @@ import { revealCommand } from './commands/reveal.js';
 import { installCommand } from './commands/install.js';
 import { tddCommand } from './commands/tdd.js';
 import { debugCommand } from './commands/debug.js';
+import { runCommand, compactCommand, discoverCommand, nextCommand } from './commands/runtime.js';
 import { disclosureCommand } from './utils/disclosure.js';
+import { generateAgentOutput } from './utils/agent-output.js';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
@@ -68,8 +70,14 @@ cli.command('init', '初始化 .docpath/ 工作流目录')
 // ─── docpath:status ───
 cli.command('status', '查看当前工作流状态')
   .option('--cwd <path>', '项目目录')
-  .action(async (options: { cwd?: string }) => {
+  .option('--agent', '输出 agent 友好的 YAML 状态')
+  .action(async (options: { cwd?: string; agent?: boolean }) => {
     const cwd = options.cwd || process.cwd();
+    if (options.agent) {
+      console.log(await generateAgentOutput(cwd));
+      return;
+    }
+
     const statePath = join(cwd, '.docpath/workspace/current.md');
     const breadcrumbPath = join(cwd, '.docpath/workspace/breadcrumb.md');
 
@@ -242,10 +250,13 @@ cli.command('review', '结构化代码审查 (可选 LLM 深度审查)')
 cli.command('journal', '知识归档 — 从完成任务中提炼经验')
   .option('--cwd <path>', '项目目录')
   .option('--skip-ai', '跳过 LLM，直接写模板')
-  .action(async (options: { cwd?: string; 'skip-ai'?: boolean }) => {
+  .option('--optional-archive <mode>', '归档模式: always|skip|dry-run')
+  .option('--dry-run', '预览归档，不写入状态、breadcrumb 或决策日志')
+  .action(async (options: { cwd?: string; 'skip-ai'?: boolean; skipAi?: boolean; 'optional-archive'?: 'always' | 'skip' | 'dry-run'; optionalArchive?: 'always' | 'skip' | 'dry-run'; 'dry-run'?: boolean; dryRun?: boolean }) => {
     await journalCommand({
       cwd: options.cwd || process.cwd(),
-      skipAi: options['skip-ai'],
+      skipAi: options['skip-ai'] ?? options.skipAi,
+      archiveMode: (options.dryRun || options['dry-run']) ? 'dry-run' : (options['optional-archive'] ?? options.optionalArchive),
     });
   });
 
@@ -356,6 +367,52 @@ cli.command('stats', '项目统计面板')
       format: options.format as 'table' | 'json' | undefined,
       agent: !!options.agent,
     });
+  });
+
+
+// ─── docpath:runtime (Phase4) ───
+cli.command('run <action>', 'Agent runtime lifecycle: start | end | recover')
+  .option('--cwd <path>', '项目目录')
+  .option('--step <step>', '当前步骤/子任务')
+  .option('--note <note>', '事件备注')
+  .option('--status <status>', 'end 状态: done | blocked | skipped')
+  .action(async (action: 'start' | 'end' | 'recover', options: { cwd?: string; step?: string; note?: string; status?: 'done' | 'blocked' | 'skipped' }) => {
+    await runCommand({
+      cwd: options.cwd || process.cwd(),
+      action,
+      step: options.step,
+      note: options.note,
+      status: options.status,
+    });
+  });
+
+cli.command('compact', '持久化压缩运行上下文到 workspace/compact-context.md')
+  .option('--cwd <path>', '项目目录')
+  .option('--max-entries <n>', '保留最近 breadcrumb 条数 (默认 20)')
+  .option('--dry-run', '只输出，不写文件')
+  .action(async (options: { cwd?: string; 'max-entries'?: string; maxEntries?: string; dryRun?: boolean; 'dry-run'?: boolean }) => {
+    await compactCommand({
+      cwd: options.cwd || process.cwd(),
+      maxEntries: options.maxEntries || options['max-entries'] ? parseInt((options.maxEntries || options['max-entries'])!, 10) : undefined,
+      dryRun: !!(options.dryRun || options['dry-run']),
+    });
+  });
+
+cli.command('discover', '发现 DocPath 关键上下文文件')
+  .option('--cwd <path>', '项目目录')
+  .option('--format <format>', 'text(默认) | json')
+  .action(async (options: { cwd?: string; format?: string }) => {
+    await discoverCommand({
+      cwd: options.cwd || process.cwd(),
+      format: options.format as 'text' | 'json' | undefined,
+    });
+  });
+
+cli.command('next', '输出下一步建议')
+  .option('--cwd <path>', '项目目录')
+  .option('--agent', '输出 Agent YAML')
+  .action(async (options: { cwd?: string; agent?: boolean }) => {
+    await nextCommand({ cwd: options.cwd || process.cwd(), agent: !!options.agent });
   });
 
 // ─── docpath:docs ───

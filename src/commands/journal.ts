@@ -32,7 +32,6 @@ interface TaskSummary {
 export async function journalCommand(options: JournalOptions): Promise<void> {
   const { cwd, skipAi } = options;
   const docpathDir = await resolveDocpathDir(cwd);
-  const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
@@ -42,31 +41,44 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
   console.log('\n📚  知识归档...\n');
 
   // ─── P0: verification 门禁 ───
-  // 必须先运行 docpath:check 且状态为 check_pass 才允许归档
+  // 必须先运行 docpath:check/review 且状态为 check_pass/review_pass/completed 才允许归档
   const { readCurrentState: readStateForGate } = await import('../utils/workspace.js');
   const gateState = await readStateForGate(cwd);
-  if (!gateState || (gateState.state !== 'check_pass' && gateState.state !== 'completed')) {
+  const allowedStates = new Set(['check_pass', 'review_pass', 'completed']);
+  if (!gateState || !allowedStates.has(gateState.state)) {
     console.error('❌  归档门禁未通过：当前状态为', gateState?.state || 'null');
     console.error('   请先运行 `docpath:check` 通过质量门禁，再执行归档。');
     process.exit(1);
   }
 
   const current = await readCurrentMd(cwd);
+  const taskId = current?.task_id || gateState.task_id || 'unknown';
+  const taskDirName = taskId !== 'unknown' ? taskId : 'current';
+  const taskDir = existsSync(join(docpathDir, 'tasks', taskDirName))
+    ? join(docpathDir, 'tasks', taskDirName)
+    : join(docpathDir, 'tasks', 'current');
+  const specPath = join(taskDir, 'spec.md');
+  const planPath = join(taskDir, 'plan.md');
   const meta = await readWorkspaceMeta(cwd);
   const breadcrumb = await readBreadcrumb(cwd);
-  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
   const spec = existsSync(specPath) ? await readFile(specPath, 'utf-8') : '';
   const plan = existsSync(planPath) ? await readFile(planPath, 'utf-8') : '';
 
-  const taskId = current?.task_id || 'unknown';
-  // 步骤统计从 plan.md 子任务计数，而非 breadcrumb entries
-  const planContent = await readOptionalFile(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'));
+  // 步骤统计：优先使用 plan checklist；若 checklist 尚未维护，则回退到当前任务每个 step 的最新 breadcrumb 状态
+  const planContent = await readOptionalFile(planPath);
   const planTasks = planContent ? parsePlanTasks(planContent) : [];
-  const totalSteps = planTasks.length || breadcrumb.entries.filter(e => e.taskId === taskId).length || 1;
-  const completedSteps = planTasks.length > 0
-    ? planTasks.filter(t => t.done).length
-    : breadcrumb.entries.filter(e => e.taskId === taskId && e.status === 'done').length;
-  const blockedSteps = breadcrumb.entries.filter(e => e.taskId === taskId && e.status === 'blocked').length;
+  const latestByStep = new Map<string, (typeof breadcrumb.entries)[number]>();
+  for (const entry of breadcrumb.entries.filter(e => e.taskId === taskId)) {
+    latestByStep.set(entry.step, entry);
+  }
+  const latestEntries = Array.from(latestByStep.values());
+  const planDoneCount = planTasks.filter(t => t.done).length;
+  const usePlanChecklist = planTasks.length > 0 && planDoneCount > 0;
+  const totalSteps = usePlanChecklist ? planTasks.length : (latestEntries.length || planTasks.length || 1);
+  const completedSteps = usePlanChecklist
+    ? planDoneCount
+    : latestEntries.filter(e => e.status === 'done').length;
+  const blockedSteps = latestEntries.filter(e => e.status === 'blocked').length;
 
   const summary: TaskSummary = {
     taskId,
@@ -119,7 +131,7 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
   // ── 可选归档（借鉴 GSD archive-before-new） ──
   const archiveMode = options.archiveMode || 'always';
   const { renameSync, mkdirSync } = await import('fs');
-  const currentTaskDir = join(docpathDir, 'tasks', 'current');
+  const currentTaskDir = taskDir;
   const doneDir = join(docpathDir, 'tasks', 'done');
   const archiveDir = join(doneDir, taskId || 'unknown');
 
@@ -142,6 +154,13 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
     } catch (e) {
       console.warn('⚠️  归档失败（非致命）:', (e as Error).message);
     }
+  }
+
+  if (archiveMode === 'dry-run') {
+    console.log('🔍  [dry-run] 不写入状态、breadcrumb 或决策日志');
+    console.log('─── 完成 ───');
+    console.log('dry-run 完成，未修改任务状态。\n');
+    return;
   }
 
   await updateCurrentState(cwd, 'completed', { phase: 'archived' });
