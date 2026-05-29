@@ -1,115 +1,135 @@
 /**
- * docpath:review — 结构化代码审查
+ * docpath:review — 结构化代码审查流程
  *
- * 收集 git diff + spec.md + plan.md，输出结构化审查 prompt。
- * 由宿主 Agent 执行审查，结果可追加到 spec.md。
+ * 借鉴 Superpowers 的 code-review:
+ * 1. collect — 收集变更文件
+ * 2. analyze — 逐文件分析 (复杂度/安全/性能)
+ * 3. approve/request-changes — 结论
  */
 
 import { existsSync } from 'fs';
-import { readFile, appendFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
-import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
-import { writeBreadcrumb } from '../engine/breadcrumb.js';
-import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { writeBreadcrumb } from '../engine/breadcrumb.js';
+import { appendDecision } from '../governance/decisions.js';
 
 interface ReviewOptions {
   cwd: string;
-  /** 审查范围: 未提交 / 最近一次提交 / 全部分支 */
-  scope?: 'staged' | 'last_commit' | 'all';
-  /** 是否使用 LLM 进行深度审查 */
+  output?: string;
+  scope?: string;
   useAi?: boolean;
 }
 
-function getGitDiff(scope: string, cwd: string): string {
-  try {
-    switch (scope) {
-      case 'staged':
-        return execSync('git diff --cached 2>/dev/null || git diff', { cwd, encoding: 'utf-8', timeout: 10000 });
-      case 'last_commit':
-        return execSync('git diff HEAD~1..HEAD 2>/dev/null || echo "no commits"', { cwd, encoding: 'utf-8', timeout: 10000 });
-      case 'all':
-        return execSync('git diff origin/main..HEAD 2>/dev/null || git log --oneline -20', { cwd, encoding: 'utf-8', timeout: 10000 });
-      default:
-        return execSync('git diff', { cwd, encoding: 'utf-8', timeout: 10000 });
-    }
-  } catch {
-    return '(git diff 不可用)';
-  }
+interface ReviewFinding {
+  file: string;
+  severity: 'info' | 'warn' | 'error';
+  message: string;
 }
 
-export async function reviewCommand(options: ReviewOptions): Promise<void> {
-  const { cwd, scope = 'staged' } = options;
-  const docpathDir = await resolveDocpathDir(cwd);
+export async function reviewCommand(opts: ReviewOptions): Promise<void> {
+  const docpathDir = await resolveDocpathDir(opts.cwd);
 
-  if (!existsSync(docpathDir)) {
-    console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
-    process.exit(1);
+  console.log('🔍 代码审查开始...');
+
+  // 1. 收集变更文件
+  let changedFiles: string[] = [];
+  try {
+    const diff = execSync('git diff --name-only HEAD~1', { cwd: opts.cwd, encoding: 'utf-8', timeout: 10000 });
+    changedFiles = diff.trim().split('\n').filter(f => f.endsWith('.ts') || f.endsWith('.js'));
+  } catch {
+    // 可能没有 git 或没有提交
   }
 
-  console.log('\n🔍  代码审查...\n');
-
-  const current = await readCurrentMd(cwd);
-  const level = current?.level || 0;
-  const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
-  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-
-  const spec = existsSync(specPath) ? await readFile(specPath, 'utf-8') : '';
-  const plan = existsSync(planPath) ? await readFile(planPath, 'utf-8') : '';
-  const diff = getGitDiff(scope, cwd);
-
-  if (!diff.trim() || diff.includes('not available')) {
-    console.log('⚠️  无代码变更可审查。请先完成开发任务。\n');
+  if (changedFiles.length === 0) {
+    console.log('⚠️  未发现变更文件');
     return;
   }
 
-  console.log(`📊  审查范围: ${scope === 'staged' ? '未提交' : scope === 'last_commit' ? '最近提交' : '全部分支'}`);
-  console.log(`📝  Diff 行数: ${diff.split('\n').length}\n`);
+  console.log(`📋 审查 ${changedFiles.length} 个文件...`);
 
-  // [Agent Mode] 输出结构化审查 prompt
-  const prompt = emitPrompt({
-    task: 'review',
-    system: '你是代码审查专家。请审查代码变更，输出结构化报告。',
-    context: {
-      '项目规约': spec.slice(0, 2000),
-      '任务计划': plan.slice(0, 2000),
-      '代码变更 (diff)': '```\n' + diff.slice(0, 8000) + '\n```',
-    },
-    instructions: [
-      '请按以下格式输出审查报告：',
-      '',
-      '### 📋 审查摘要',
-      '(一句话总结)',
-      '',
-      '### ✅ 通过项',
-      '- (好的实践)',
-      '',
-      '### ⚠️ 需关注',
-      '- (潜在问题)',
-      '',
-      '### 🔧 建议修复',
-      '- (具体建议)',
-      '',
-      '### 📊 评分',
-      '通过率: X/10',
-      '',
-      level >= 2 ? '完成后将审查记录追加到 spec.md: docpath write-review' : '',
-    ],
-    output_format: 'review report (markdown)',
-  });
+  const findings: ReviewFinding[] = [];
 
-  console.log(prompt);
+  for (const file of changedFiles) {
+    const fullPath = join(opts.cwd, file);
+    if (!existsSync(fullPath)) continue;
 
-  await updateCurrentState(cwd, 'reviewing');
+    const content = await readFile(fullPath, 'utf-8');
+    const lines = content.split('\n');
 
-  const taskId = current?.task_id || 'unknown';
-  await writeBreadcrumb(cwd, {
-    taskId,
+    // 基础静态分析
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      // TODO 未处理
+      if (/\/\/\s*TODO/i.test(line)) {
+        findings.push({ file, severity: 'info', message: `L${i + 1}: 未处理的 TODO: ${line.trim().slice(0, 80)}` });
+      }
+      // console.log 遗留
+      if (/console\.(log|debug)\(/.test(line) && !file.includes('test')) {
+        findings.push({ file, severity: 'warn', message: `L${i + 1}: 生产代码中的 console.log` });
+      }
+      // any 类型
+      if (/:\s*any\b/.test(line)) {
+        findings.push({ file, severity: 'warn', message: `L${i + 1}: 使用了 any 类型` });
+      }
+      // 硬编码路径
+      if (/['"]\/(Users|home|tmp)\//.test(line)) {
+        findings.push({ file, severity: 'error', message: `L${i + 1}: 硬编码绝对路径` });
+      }
+    }
+
+    // 复杂度检查 (函数行数 > 50)
+    const funcMatches = content.match(/(?:export\s+)?(?:async\s+)?function\s+\w+[^{]*\{[\s\S]*?\n\}/g);
+    if (funcMatches) {
+      for (const func of funcMatches) {
+        const funcLines = func.split('\n').length;
+        if (funcLines > 50) {
+          const funcName = func.match(/function\s+(\w+)/)?.[1] || 'unknown';
+          findings.push({ file, severity: 'warn', message: `函数 ${funcName} 过长 (${funcLines} 行)，建议拆分` });
+        }
+      }
+    }
+  }
+
+  // 输出报告
+  const errors = findings.filter(f => f.severity === 'error');
+  const warns = findings.filter(f => f.severity === 'warn');
+  const infos = findings.filter(f => f.severity === 'info');
+
+  if (errors.length > 0) {
+    console.log(`\n❌ ${errors.length} 个错误:`);
+    errors.forEach(f => console.log(`  [${f.file}] ${f.message}`));
+  }
+  if (warns.length > 0) {
+    console.log(`\n⚠️  ${warns.length} 个警告:`);
+    warns.forEach(f => console.log(`  [${f.file}] ${f.message}`));
+  }
+  if (infos.length > 0) {
+    console.log(`\n💡 ${infos.length} 个提示:`);
+    infos.forEach(f => console.log(`  [f.file] ${f.message}`));
+  }
+
+  const approved = errors.length === 0;
+  console.log(`\n${approved ? '✅ 审查通过' : '❌ 需要修改'} (${errors.length} 错误, ${warns.length} 警告)`);
+
+  // 记录决策
+  await appendDecision(opts.cwd, 'review',
+    `${approved ? '通过' : '需修改'}: ${errors.length} 错误, ${warns.length} 警告`);
+
+  // 写入 breadcrumb
+  await writeBreadcrumb(opts.cwd, {
+    taskId: 'review',
     step: 'review',
-    status: 'done',
-    context: `代码审查 prompt 已输出 (${scope})`,
+    status: approved ? 'done' : 'blocked',
+    context: `代码审查: ${errors.length} 错误, ${warns.length} 警告, ${infos.length} 提示`,
   });
 
-  console.log('\n📌 完成后运行: docpath write-review\n');
+  // 写入 review.md
+  const reviewPath = join(docpathDir, 'workspace', 'review.md');
+  const lines = ['# Code Review Report', '', `**时间**: ${new Date().toISOString()}`, `**文件**: ${changedFiles.length}`, ''];
+  for (const f of findings) {
+    lines.push(`- [${f.severity.toUpperCase()}] ${f.file}: ${f.message}`);
+  }
+  await writeFile(reviewPath, lines.join('\n'), 'utf-8');
 }

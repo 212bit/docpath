@@ -35,6 +35,7 @@ import { docsCommand } from './commands/docs.js';
 import { revealCommand } from './commands/reveal.js';
 import { installCommand } from './commands/install.js';
 import { tddCommand } from './commands/tdd.js';
+import { debugCommand } from './commands/debug.js';
 import { disclosureCommand } from './utils/disclosure.js';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -425,6 +426,19 @@ cli.command('disclosure', '渐进式信息展示 — summary|detail|debug')
       cwd: options.cwd || process.cwd(),
       level: options.level,
     });
+  });
+
+// ─── docpath:debug ── (Systematic Debugging Workflow)
+cli.command('debug', '系统化调试工作流 — reproduce/isolate/hypothesize/verify/fix')
+  .option('--cwd <path>', '项目目录')
+  .action(async (options: { cwd?: string }) => {
+    const cwd = options.cwd || process.cwd();
+    const sub = cli.args[0];
+    if (!sub || !['reproduce', 'isolate', 'hypothesize', 'verify', 'fix'].includes(sub)) {
+      console.log('用法: docpath debug <reproduce|isolate|hypothesize|verify|fix>');
+      return;
+    }
+    await debugCommand({ cwd, action: sub as any });
   });
 
 // ─── journal 命令扩展: 添加 --optional-archive 选项 ──

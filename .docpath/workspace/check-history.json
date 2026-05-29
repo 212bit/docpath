@@ -1,0 +1,14 @@
+[
+  {
+    "timestamp": "2026-05-29T11:38:06.181Z",
+    "passed": false,
+    "failedChecks": [
+      "TypeScript 编译"
+    ]
+  },
+  {
+    "timestamp": "2026-05-29T11:39:24.068Z",
+    "passed": true,
+    "failedChecks": []
+  }
+]

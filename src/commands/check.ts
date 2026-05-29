@@ -498,6 +498,34 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   // last-check.md 与 breadcrumb.md 写入后，再同步 current.md 的证据区块。
   await syncCurrentDocument(cwd);
 
+  
+
+  // ── 7. Regression Awareness (回归检测) ──
+  const regressionPath = join(docpathDir, 'workspace', 'check-history.json');
+  type CheckHistoryEntry = { timestamp: string; passed: boolean; failedChecks: string[] };
+  let history: CheckHistoryEntry[] = [];
+  if (existsSync(regressionPath)) {
+    try { history = JSON.parse(await readFile(regressionPath, 'utf-8')); } catch { history = []; }
+  }
+
+  const currentFailed = results.filter(r => !r.passed).map(r => r.name);
+  history.push({ timestamp: new Date().toISOString(), passed: allPassed, failedChecks: currentFailed });
+  // 只保留最近 20 条
+  if (history.length > 20) history = history.slice(-20);
+  await writeFile(regressionPath, JSON.stringify(history, null, 2), 'utf-8');
+
+  // 检测回归: 上次通过这次失败 = 回归
+  if (history.length >= 2) {
+    const prev = history[history.length - 2];
+    if (prev.passed && !allPassed) {
+      const newFailures = currentFailed.filter(f => !prev.failedChecks.includes(f));
+      if (newFailures.length > 0) {
+        console.log(`\n🚨 回归检测: ${newFailures.length} 项新增失败!`);
+        newFailures.forEach(f => console.log(`  ↩️  ${f}`));
+      }
+    }
+  }
+
   if (!allPassed) {
     console.log('请修复失败项后重新运行 `docpath:check`\n');
   } else {
