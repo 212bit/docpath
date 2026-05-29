@@ -34,3 +34,23 @@
 
 - **状态**: done
 - **上下文**: 质量检查通过 (4 项)
+
+### 🚫 check [T-20260528-agent-integration] — 2026-05-29T01:43:22.948Z
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: TypeScript 编译
+
+### 🚫 check [T-20260528-agent-integration] — 2026-05-29T01:43:46.977Z
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: TypeScript 编译
+
+### 🚫 check [T-20260528-agent-integration] — 2026-05-29T01:44:21.974Z
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: TypeScript 编译
+
+### ✅ check [T-20260528-agent-integration] — 2026-05-29T01:49:41.229Z
+
+- **状态**: done
+- **上下文**: 质量检查通过 (4 项)

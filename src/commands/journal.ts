@@ -15,6 +15,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 
 interface JournalOptions {
   cwd: string;
+  skipAi?: boolean;
 }
 
 interface TaskSummary {
@@ -93,6 +94,7 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
       '',
       '完成后写入 spec.md: docpath write-journal',
     ],
+    output_format: 'knowledge record (markdown)',
   });
 
   console.log(prompt);

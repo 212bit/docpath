@@ -18,6 +18,8 @@ interface ReviewOptions {
   cwd: string;
   /** 审查范围: 未提交 / 最近一次提交 / 全部分支 */
   scope?: 'staged' | 'last_commit' | 'all';
+  /** 是否使用 LLM 进行深度审查 */
+  useAi?: boolean;
 }
 
 function getGitDiff(scope: string, cwd: string): string {
@@ -94,6 +96,7 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
       '',
       level >= 2 ? '完成后将审查记录追加到 spec.md: docpath write-review' : '',
     ],
+    output_format: 'review report (markdown)',
   });
 
   console.log(prompt);

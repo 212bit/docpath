@@ -137,6 +137,7 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
       '  - "验收条件"',
       '```',
     ],
+    output_format: 'spec.md (YAML format)',
   });
 
   console.log(prompt);

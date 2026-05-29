@@ -75,35 +75,39 @@ export async function planCommand(options: PlanOptions): Promise<void> {
   }
 
   // [Agent Mode] 输出结构化 prompt，由宿主 Agent 执行推理
-  const prompt = emitPrompt('plan', {
-    systemPrompt: PLAN_SYSTEM_PROMPT,
-    context: `## Spec.md 内容\n\n${spec}`,
-    instructions: `请根据 spec.md 生成执行计划，写入 plan.md。
-
-**执行方式**：
-1. 分析 spec 中的功能需求、约束和验收条件
-2. 分解为可独立验收的子任务（每个 15-60 分钟）
-3. 定义子任务间的依赖关系
-4. 使用 \`docpath write-plan\` 写入结果
-
-**plan.md 格式要求**：
-\`\`\`markdown
-## 执行计划
-
-### S1: [子任务名]
-- **描述**: xxx
-- **验收条件**: xxx
-- **依赖**: 无
-
-### S2: [子任务名]
-- **描述**: xxx
-- **验收条件**: xxx
-- **依赖**: S1
-
-## 依赖关系图
-S1 → S2 → S4
-S1 → S3 → S5
-\`\`\``,
+  const prompt = emitPrompt({
+    task: 'plan',
+    system: PLAN_SYSTEM_PROMPT,
+    context: { 'Spec.md 内容': spec },
+    instructions: [
+      '请根据 spec.md 生成执行计划，写入 plan.md。',
+      '',
+      '**执行方式**：',
+      '1. 分析 spec 中的功能需求、约束和验收条件',
+      '2. 分解为可独立验收的子任务（每个 15-60 分钟）',
+      '3. 定义子任务间的依赖关系',
+      '4. 使用 `docpath write-plan` 写入结果',
+      '',
+      '**plan.md 格式要求**：',
+      '```markdown',
+      '## 执行计划',
+      '',
+      '### S1: [子任务名]',
+      '- **描述**: xxx',
+      '- **验收条件**: xxx',
+      '- **依赖**: 无',
+      '',
+      '### S2: [子任务名]',
+      '- **描述**: xxx',
+      '- **验收条件**: xxx',
+      '- **依赖**: S1',
+      '',
+      '## 依赖关系图',
+      'S1 → S2 → S4',
+      'S1 → S3 → S5',
+      '```',
+    ],
+    output_format: 'plan.md (markdown)',
   });
 
   console.log(prompt);

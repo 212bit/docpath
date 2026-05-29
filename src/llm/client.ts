@@ -60,23 +60,8 @@ class DeprecatedLLM implements LLMClient {
 }
 
 // ────────────────────────────────────────────
-// OpenAI-compatible LLM — 真实 API 接入
+// OpenAI-compatible LLM — 真实 API 接入（已废弃，保留占位）
 // ────────────────────────────────────────────
-
-// ────────────────────────────────────────────
-// ⚠️ DEPRECATED — 以下实现已被 prompt-only 模式替代
-// 保留类型导出以维持 API 兼容
-// ────────────────────────────────────────────
-
-class DeprecatedLLM implements LLMClient {
-  name = 'deprecated';
-
-  async chat(_request: LLMRequest): Promise<LLMResponse> {
-    return {
-      content: '⚠️  DocPath CLI 已改为 prompt-only 模式。LLM 推理由宿主 Agent (Claude Code / Cursor / Copilot) 完成。',
-    };
-  }
-}
 
 // ────────────────────────────────────────────
 // 全局客户端管理 — ⚠️ DEPRECATED STUB
