@@ -20,6 +20,7 @@ interface ReviewOptions {
   output?: string;
   scope?: string;
   useAi?: boolean;
+  approve?: boolean;
 }
 
 interface ReviewFinding {
@@ -119,6 +120,25 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   if (infos.length > 0) {
     console.log(`\n💡 ${infos.length} 个提示:`);
     infos.forEach(f => console.log(`  [f.file] ${f.message}`));
+  }
+
+  // 如果 --approve，跳过所有检查直接批准
+  if (opts.approve) {
+    console.log('\n✅ 审查已手动批准 (跳过自动检查)');
+    await appendDecision(opts.cwd, 'review', '手动批准: 跳过自动检查');
+    await writeBreadcrumb(opts.cwd, {
+      taskId: 'review',
+      step: 'review',
+      status: 'done',
+      context: '手动批准',
+    });
+    const reviewPath = join(docpathDir, 'workspace', 'review.md');
+    await writeFile(reviewPath, [
+      '# Code Review Report', '',
+      `**时间**: ${new Date().toISOString()}`,
+      `**状态**: ✅ 手动批准 (跳过自动检查)`,
+    ].join('\n'), 'utf-8');
+    return;
   }
 
   const approved = errors.length === 0;

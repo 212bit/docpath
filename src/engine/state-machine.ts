@@ -142,11 +142,11 @@ export function createDefaultState(): StateRegister {
   return {
     level: 0,
     state: 'idle',
-    task_id: null,
+    task_id: '',
     task_title: '',
-    phase: null,
-    started_at: null,
-    updated_at: null,
+    phase: 'idle',
+    started_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 }
 

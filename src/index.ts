@@ -228,11 +228,13 @@ cli.command('review', '结构化代码审查 (可选 LLM 深度审查)')
   .option('--cwd <path>', '项目目录')
   .option('--scope <scope>', '审查范围: staged|last_commit|all')
   .option('--no-ai', '跳过 LLM 审查')
-  .action(async (options: { cwd?: string; scope?: string; ai?: boolean }) => {
+  .option('--approve', '直接批准（跳过自动检查）')
+  .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean }) => {
     await reviewCommand({
       cwd: options.cwd || process.cwd(),
       scope: (options.scope as any) || 'staged',
       useAi: options.ai !== false,
+      approve: options.approve ?? false,
     });
   });
 
