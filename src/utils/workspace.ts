@@ -357,7 +357,8 @@ async function collectCurrentStateFields(
   const previous = await readCurrentState(cwd);
   const specTaskId = parseFrontMatterLine(specContent, 'Task ID');
   const planTaskId = parseFrontMatterLine(planContent, 'Task ID');
-  const taskId = extraFields?.task_id || specTaskId || planTaskId || previous?.task_id || generateTaskId(specContent, planContent);
+  const rawTaskId = extraFields?.task_id || specTaskId || planTaskId || previous?.task_id;
+  const taskId = (rawTaskId && rawTaskId !== 'null') ? rawTaskId : generateTaskId(specContent, planContent);
   const title = extraFields?.task_title ||
     normalizeTaskTitle(firstHeading(specContent) || firstHeading(planContent)) ||
     previous?.task_title ||
