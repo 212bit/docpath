@@ -164,7 +164,10 @@ async function readLegacyCurrentMd(cwd: string): Promise<CurrentState | null> {
     };
     const get = (key: string): string => {
       const m = yamlBlock.match(new RegExp(`^${key}:\\s*(.*)$`, 'm'));
-      return m ? unquote(m[1]) : '';
+      if (!m) return '';
+      const val = unquote(m[1]);
+      // YAML null → empty string (not the literal string "null")
+      return val === 'null' ? '' : val;
     };
 
     return {
