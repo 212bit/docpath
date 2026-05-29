@@ -17,6 +17,7 @@ import { readFileSafe, resolveDocpathDir } from './utils/file.js';
 import { join } from 'node:path';
 import { initCommand } from './commands/init.js';
 import { brainstormCommand } from './commands/brainstorm.js';
+import { writeSpecCommand } from './commands/write-spec.js';
 import { planCommand } from './commands/plan.js';
 import { continueCommand } from './commands/continue.js';
 import { goCommand } from './commands/go.js';
@@ -139,6 +140,19 @@ cli.command('brainstorm', '苏格拉底式需求拷问 — 从模糊需求到结
       input: options.input,
       dryRun: options['dry-run'],
       noInteractive: options['oneShot'],
+    });
+  });
+
+// ─── docpath:write-spec ───
+cli.command('write-spec', '从 brainstorm 结果写入 spec.md')
+  .option('--cwd <path>', '项目目录')
+  .option('--content <content>', 'spec 内容（YAML/Markdown）')
+  .option('--stdin', '从 stdin 读取内容')
+  .action(async (options: { cwd?: string; content?: string; stdin?: boolean }) => {
+    await writeSpecCommand({
+      cwd: options.cwd || process.cwd(),
+      content: options.content,
+      stdin: options.stdin,
     });
   });
 
