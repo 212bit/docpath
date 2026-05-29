@@ -17,6 +17,7 @@ import { readFileSafe, resolveDocpathDir } from './utils/file.js';
 import { join } from 'node:path';
 import { initCommand } from './commands/init.js';
 import { brainstormCommand } from './commands/brainstorm.js';
+import { refineCommand } from './commands/refine.js';
 import { writeSpecCommand } from './commands/write-spec.js';
 import { planCommand } from './commands/plan.js';
 import { continueCommand } from './commands/continue.js';
@@ -148,6 +149,23 @@ cli.command('brainstorm', '苏格拉底式需求拷问 — 从模糊需求到结
       input: options.input,
       dryRun: options['dry-run'],
       noInteractive: options['oneShot'],
+    });
+  });
+
+// ─── docpath:refine ───
+cli.command('refine', '需求梳理 — 从需求文档生成标准 spec.md')
+  .option('--cwd <path>', '项目目录')
+  .option('--file <path>', '需求文档路径')
+  .option('--content <content>', '需求文档内容')
+  .option('--stdin', '从 stdin 读取需求文档')
+  .option('--dry-run', '只预览输入，不更新状态')
+  .action(async (options: { cwd?: string; file?: string; content?: string; stdin?: boolean; 'dry-run'?: boolean; dryRun?: boolean }) => {
+    await refineCommand({
+      cwd: options.cwd || process.cwd(),
+      file: options.file,
+      content: options.content,
+      stdin: options.stdin,
+      dryRun: options['dry-run'] || options.dryRun,
     });
   });
 
