@@ -465,7 +465,7 @@ cli.command('unlink', '取消项目关联')
 // ─── docpath:install ───
 cli.command('install', '安装 Agent 协议文件到项目')
   .option('--cwd <path>', '项目目录')
-  .option('--target <type>', '目标类型: claude | opencode | universal (默认 universal)')
+  .option('--target <type>', '目标类型: codex | claude | opencode | universal (默认 universal)')
   .option('--force', '覆盖已有文件')
   .action(async (options: { cwd?: string; target?: string; force?: boolean }) => {
     await installCommand({

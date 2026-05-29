@@ -2,10 +2,10 @@
  * docpath install — 安装 Agent 协议文件
  *
  * S5: 完整实现
- * - --target claude|opencode|universal (默认 universal)
+ * - --target codex|claude|opencode|universal (默认 universal)
  * - --force 覆盖已有文件
  * - 项目检测 (复用 detect.ts)
- * - 生成 .claude/commands/ 或 .opencode/commands/
+ * - 生成 Codex/Claude Code/OpenCode 可消费的协议与命令配置
  */
 
 import { join, resolve, basename } from 'node:path';
@@ -13,7 +13,7 @@ import { readFile, readdir, mkdir, copyFile } from 'node:fs/promises';
 import { exists, writeFileSafe } from '../utils/file.js';
 import { detectProject, type ProjectInfo } from '../utils/detect.js';
 
-type Target = 'claude' | 'opencode' | 'universal';
+type Target = 'codex' | 'claude' | 'opencode' | 'universal';
 
 interface InstallOptions {
   cwd?: string;
@@ -73,6 +73,10 @@ async function copyDir(
 export async function installCommand(options: InstallOptions = {}): Promise<void> {
   const cwd = options.cwd || process.cwd();
   const target = (options.target || 'universal') as Target;
+  const validTargets: Target[] = ['codex', 'claude', 'opencode', 'universal'];
+  if (!validTargets.includes(target)) {
+    throw new Error(`未知 target: ${target}. 可选: ${validTargets.join(' | ')}`);
+  }
   const force = !!options.force;
   const targetDir = cwd;
   const docpathDir = join(targetDir, '.docpath');
@@ -97,9 +101,17 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
   console.log(`📦  安装 Agent 协议文件到: ${targetDir}`);
   console.log(`    目标: ${target} | 项目: ${detected}\n`);
 
-  // ─── 1. 入口协议文件 (universal 模式: root 目录) ───
+  // ─── 1. 入口协议文件 ───
   if (target === 'universal') {
     await installProtocolFile(targetDir, 'CLAUDE.md', projectName, force);
+    await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
+    await installProtocolFile(targetDir, 'CODEX.md', projectName, force);
+  } else if (target === 'codex') {
+    await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
+    await installProtocolFile(targetDir, 'CODEX.md', projectName, force);
+  } else if (target === 'claude') {
+    await installProtocolFile(targetDir, 'CLAUDE.md', projectName, force);
+  } else if (target === 'opencode') {
     await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
   }
 
@@ -129,18 +141,22 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
   );
 
   // ─── 3. Agent-specific 目录 ───
-  if (target === 'claude') {
+  if (target === 'claude' || target === 'universal') {
     // .claude/commands/ — Claude Code slash commands
     await installAgentCommands(
       targetDir, '.claude', 'commands', 'docpath',
       force, 'Claude Code slash 命令'
     );
-  } else if (target === 'opencode') {
+  }
+  if (target === 'opencode' || target === 'universal') {
     // .opencode/commands/ — OpenCode commands
     await installAgentCommands(
       targetDir, '.opencode', 'commands', 'docpath',
       force, 'OpenCode 命令'
     );
+  }
+  if (target === 'codex' || target === 'universal') {
+    await installCodexConfig(targetDir, force);
   }
 
   // ─── 4. 写入安装元数据 ───
@@ -156,11 +172,13 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
 
   console.log(`\n🎉  Agent 协议安装完成 (target: ${target})！`);
   if (target === 'claude') {
-    console.log('    在 Claude Code 中输入 /docpath-workflow 开始使用。');
+    console.log('    CLAUDE.md 和 .claude/commands/ 已就绪，在 Claude Code 中输入 /docpath-status 开始使用。');
   } else if (target === 'opencode') {
-    console.log('    在 OpenCode 中输入 /docpath-workflow 开始使用。');
+    console.log('    AGENTS.md 和 .opencode/commands/ 已就绪，可在 OpenCode 中调用 DocPath 命令。');
+  } else if (target === 'codex') {
+    console.log('    AGENTS.md / CODEX.md / .codex/config.toml 已就绪，可在 Codex 中读取项目协议。');
   } else {
-    console.log('    CLAUDE.md / AGENTS.md 已就绪，支持 Claude Code 和通用 Agent。');
+    console.log('    CODEX.md / CLAUDE.md / AGENTS.md 及三端配置已就绪。');
   }
 }
 
@@ -218,4 +236,36 @@ async function installAgentCommands(
   } else {
     console.log(`⏭️  ${label} 已存在，跳过`);
   }
+}
+
+
+async function installCodexConfig(targetDir: string, force: boolean): Promise<void> {
+  const codexDir = join(targetDir, '.codex');
+  await mkdir(codexDir, { recursive: true });
+  const configPath = join(codexDir, 'config.toml');
+  if (!force && (await exists(configPath))) {
+    console.log('⏭️  Codex 配置已存在，跳过');
+    return;
+  }
+  const content = `# DocPath adapter for Codex CLI / Codex-style coding agents
+# Keep repository instructions in AGENTS.md and CODEX.md.
+
+[docpath]
+protocol = "CODEX.md"
+fallback_protocol = "AGENTS.md"
+state = ".docpath/workspace/current.md"
+breadcrumb = ".docpath/workspace/breadcrumb.md"
+commands = ".docpath/commands"
+
+[docpath.commands]
+status = "docpath status --agent"
+context = "docpath context --agent"
+next = "docpath next --agent"
+check = "docpath check"
+review = "docpath review"
+journal = "docpath journal"
+compact = "docpath compact"
+`;
+  await writeFileSafe(configPath, content);
+  console.log('✅  Codex 配置已生成 → .codex/config.toml');
 }
