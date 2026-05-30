@@ -1,5 +1,9 @@
 /**
- * docpath:continue — 断线重连 + 子任务推进
+ * docpath:continue — 断线重连 + 子任务推进（面向人类/agent 断线恢复）
+ *
+ * 与 `agent enter` 的分工：
+ * - **continue**: 人类或 agent 断线后恢复上下文，读 breadcrumb + current.md 给出建议，不改变状态
+ * - **agent enter**: agent 生命周期入口，加载 state.json 标记执行开始，会修改运行时状态
  *
  * 核心流程：
  *   1. 读取 breadcrumb.md 最后一条记录，恢复上下文

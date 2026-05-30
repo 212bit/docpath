@@ -1,7 +1,11 @@
 /**
  * docpath agent — lifecycle commands for coding agents.
  *
- * These commands are the enforceable bridge for Codex / Claude Code / OpenCode:
+ * These commands are the enforceable bridge for Codex / Claude Code / OpenCode.
+ * 与 `continue` 的分工：
+ * - **agent enter**: agent 生命周期入口，加载 state.json 标记执行开始，会修改运行时状态
+ * - **continue**: 断线恢复，只读 breadcrumb + current.md 给建议，不改变状态
+ *
  * enter   -> load state and mark execution start
  * step    -> record progress for a sub-task
  * done    -> run quality gates and mark completion/blocked
