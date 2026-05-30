@@ -81,7 +81,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
         findings.push({ file, severity: 'info', message: `L${i + 1}: 未处理的 TODO: ${line.trim().slice(0, 80)}` });
       }
       // console.log 遗留
-      if (/console\.(log|debug)\(/.test(line) && !file.includes('test')) {
+      if (/console\.(log|debug)\(/.test(line) && !file.includes('test') && !file.includes('src/commands/')) {
         findings.push({ file, severity: 'warn', message: `L${i + 1}: 生产代码中的 console.log` });
       }
       // any 类型
