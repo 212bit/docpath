@@ -36,6 +36,7 @@ type AgentOptions = {
   approveReview?: boolean;
   maxEntries?: number;
   autoNext?: boolean;
+  enforce?: boolean;
 };
 
 function requireStep(action: AgentAction, step?: string): string {
@@ -93,6 +94,9 @@ export async function agentCommand(options: AgentOptions): Promise<void> {
     let finalStatus: 'done' | 'blocked' | 'skipped' = options.status || 'done';
 
     if (options.skipCheck) {
+      if (options.enforce) {
+        throw new Error('docpath agent done --enforce: --skip-check not allowed');
+      }
       await recordSkipReason(cwd, 'check', options.note || 'agent done --skip-check');
     } else {
       try {
@@ -115,6 +119,9 @@ export async function agentCommand(options: AgentOptions): Promise<void> {
     }
 
     if (options.skipReview) {
+      if (options.enforce) {
+        throw new Error('docpath agent done --enforce: --skip-review not allowed');
+      }
       await recordSkipReason(cwd, 'review', options.note || 'agent done --skip-review');
     } else {
       try {

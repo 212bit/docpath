@@ -108,22 +108,22 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(TEMPLATE_COMMANDS_DIR, 'docpath-link.md')), false);
   });
 
-  it('opencode target installs AGENTS.md, commands, and OpenCode config only', () => {
+  it('opencode target installs OPENCODE.md, commands, and OpenCode config only', () => {
     const cwd = mkWorkspace();
     run(`install --cwd ${cwd} --target opencode`, cwd);
 
-    assert.equal(existsSync(join(cwd, 'AGENTS.md')), true);
+    assert.equal(existsSync(join(cwd, 'OPENCODE.md')), true);
     assert.equal(existsSync(join(cwd, 'CLAUDE.md')), false);
     assert.equal(existsSync(join(cwd, 'CODEX.md')), false);
     assert.equal(existsSync(join(cwd, '.opencode', 'commands')), true);
     assert.equal(existsSync(join(cwd, '.opencode', 'docpath.json')), true);
 
-    const agents = readFileSync(join(cwd, 'AGENTS.md'), 'utf-8');
+    const agents = readFileSync(join(cwd, 'OPENCODE.md'), 'utf-8');
     assert.match(agents, /docpath status --agent/);
     assert.match(agents, /docpath next --agent/);
 
     const opencode = JSON.parse(readFileSync(join(cwd, '.opencode', 'docpath.json'), 'utf-8'));
-    assert.equal(opencode.protocol, 'AGENTS.md');
+    assert.equal(opencode.protocol, 'OPENCODE.md');
     assert.equal(opencode.commands.next, 'docpath next --agent');
     assert.equal(opencode.commands.status, 'docpath status --agent');
     rmSync(cwd, { recursive: true, force: true });
@@ -149,17 +149,17 @@ describe('install agent adapters', () => {
 
   it('does not overwrite existing protocol files without --force and prints a diff hint', () => {
     const cwd = mkWorkspace();
-    writeFileSync(join(cwd, 'AGENTS.md'), '# Custom Agent Rules\n\nDo not overwrite.\n');
+    writeFileSync(join(cwd, 'OPENCODE.md'), '# Custom Agent Rules\n\nDo not overwrite.\n');
 
     const output = run(`install --cwd ${cwd} --target opencode`, cwd);
-    const unchanged = readFileSync(join(cwd, 'AGENTS.md'), 'utf-8');
+    const unchanged = readFileSync(join(cwd, 'OPENCODE.md'), 'utf-8');
 
     assert.match(output, /差异预览/);
     assert.match(output, /使用 --force 覆盖/);
     assert.equal(unchanged, '# Custom Agent Rules\n\nDo not overwrite.\n');
 
     run(`install --cwd ${cwd} --target opencode --force`, cwd);
-    const overwritten = readFileSync(join(cwd, 'AGENTS.md'), 'utf-8');
+    const overwritten = readFileSync(join(cwd, 'OPENCODE.md'), 'utf-8');
     assert.match(overwritten, /docpath next --agent/);
     assert.doesNotMatch(overwritten, /Do not overwrite/);
     rmSync(cwd, { recursive: true, force: true });

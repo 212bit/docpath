@@ -175,7 +175,7 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
   } else if (target === 'claude') {
     await installProtocolFile(targetDir, 'CLAUDE.md', projectName, force);
   } else if (target === 'opencode') {
-    await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
+    await installProtocolFile(targetDir, 'OPENCODE.md', projectName, force);
   }
 
   // ─── 2. .docpath/ 内容 (所有 target 都装) ───
@@ -331,7 +331,7 @@ async function installOpenCodeConfig(targetDir: string, force: boolean): Promise
   await mkdir(opencodeDir, { recursive: true });
   const configPath = join(opencodeDir, 'docpath.json');
   const content = JSON.stringify({
-    protocol: 'AGENTS.md',
+    protocol: 'OPENCODE.md',
     state: '.docpath/workspace/current.md',
     breadcrumb: '.docpath/workspace/breadcrumb.md',
     commands: {
