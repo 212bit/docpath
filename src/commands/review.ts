@@ -23,6 +23,8 @@ interface ReviewOptions {
   scope?: string;
   useAi?: boolean;
   approve?: boolean;
+  /** 强制执行，即使不在 agent 会话中 */
+  force?: boolean;
 }
 
 interface ReviewFinding {
@@ -106,6 +108,15 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     }
   }
 
+  const current = await readCurrentMd(opts.cwd);
+
+  // P0.2: bypass protection — 警告无 agent 会话
+  if (!current?.task_id && !opts.force) {
+    console.warn('\n⚠️  当前无活跃 agent 会话 (current.md 无 task_id)');
+    console.warn('   审查通常应在 agent 流程内执行 (docpath:agent done)');
+    console.warn('   如需独立运行，添加 --force 标志\n');
+  }
+
   // 输出报告
   const errors = findings.filter(f => f.severity === 'error');
   const warns = findings.filter(f => f.severity === 'warn');
@@ -124,7 +135,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     infos.forEach(f => console.log(`  [f.file] ${f.message}`));
   }
 
-  const current = await readCurrentMd(opts.cwd);
+  // 读取 agent 会话状态 (已提前用于 bypass 检查)
   const taskId = current?.task_id || 'review';
 
   // 如果 --approve，跳过所有检查直接批准

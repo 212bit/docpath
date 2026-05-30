@@ -33,6 +33,8 @@ interface CheckOptions {
   pattern?: boolean;
   /** 只运行 harness 检查，跳过编译/测试/lint */
   onlyHarness?: boolean;
+  /** 强制执行，即使不在 agent 会话中 */
+  force?: boolean;
 }
 
 interface CheckResult {
@@ -283,9 +285,17 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     process.exit(1);
   }
 
-  console.log('\n🔍  质量检查...\n');
-
   const current = await readCurrentMd(cwd);
+
+  // P0.2: bypass protection — 警告无 agent 会话
+  if (!current?.task_id && !options.force) {
+    console.warn('⚠️  当前无活跃 agent 会话 (current.md 无 task_id)');
+    console.warn('   这些检查通常应在 agent 流程内执行 (docpath:agent done)');
+    console.warn('   如需独立运行，添加 --force 标志');
+    console.warn('');
+  }
+
+  console.log('\n🔍  质量检查...\n');
   const results: CheckResult[] = [];
 
   // 当 --only-harness 时，自动启用 harness 检查并跳过常规检查

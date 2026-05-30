@@ -12,6 +12,7 @@ import { checkCommand } from './check.js';
 import { journalCommand } from './journal.js';
 import { reviewCommand } from './review.js';
 import { compactCommand, nextCommand, runCommand } from './runtime.js';
+import { goCommand } from './go.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { recordSkipReason } from '../engine/policy.js';
 import { markPlanStep } from '../utils/plan-sync.js';
@@ -30,6 +31,7 @@ type AgentOptions = {
   skipLint?: boolean;
   approveReview?: boolean;
   maxEntries?: number;
+  autoNext?: boolean;
 };
 
 function requireStep(action: AgentAction, step?: string): string {
@@ -75,6 +77,9 @@ export async function agentCommand(options: AgentOptions): Promise<void> {
         step,
         note: 'agent-step: ready for next action',
       });
+    } else if (options.autoNext) {
+      console.log('\n─── 自动加载下一个任务 ───\n');
+      await goCommand({ cwd, dryRun: true });
     }
     return;
   }
