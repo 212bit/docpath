@@ -5,7 +5,20 @@
 
 ## 命令
 ```bash
-docpath check
+if [ -x ./.docpath/bin/docpath ]; then
+  ./.docpath/bin/docpath check
+elif command -v docpath >/dev/null 2>&1; then
+  docpath check
+elif [ -x ./node_modules/.bin/docpath ]; then
+  ./node_modules/.bin/docpath check
+elif [ -f ./bin/docpath.js ]; then
+  node ./bin/docpath.js check
+elif [ -f ./dist/index.js ]; then
+  node ./dist/index.js check
+else
+  echo "DocPath CLI not found. Install it or run from the DocPath project root."
+  exit 127
+fi
 ```
 
 ## 检查项

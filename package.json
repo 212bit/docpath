@@ -11,9 +11,10 @@
     "templates/"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/engine/breadcrumb.ts --format esm --clean --out-dir dist",
-    "dev": "tsup src/index.ts src/engine/breadcrumb.ts --format esm --watch --out-dir dist",
+    "build": "tsup src/index.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/governance/decisions.ts --format esm --clean --out-dir dist",
+    "dev": "tsup src/index.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/governance/decisions.ts --format esm --watch --out-dir dist",
     "prepublishOnly": "pnpm build",
+    "test": "pnpm build && node --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

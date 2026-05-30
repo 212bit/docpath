@@ -9,6 +9,13 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import * as readline from 'readline';
 import { resolveDocpathDir } from './file.js';
+import {
+  normalizeWorkflowSnapshot,
+  snapshotFromState,
+  type GateStatus,
+  type RuntimeWorkflowState,
+  type WorkflowPhase,
+} from '../engine/state-machine.js';
 
 // ── state.json schema ──
 
@@ -23,12 +30,14 @@ interface EscalationInfo {
   confidence?: number;
 }
 
-interface CurrentState {
+export interface CurrentState {
   level: number;
-  state: string;
+  /** 兼容旧调用方的派生状态；新写入路径以 phase/gate 为准。 */
+  state: RuntimeWorkflowState;
   task_id: string;
   task_title: string;
-  phase: string;
+  phase: WorkflowPhase;
+  gate: GateStatus;
   current_step: string;
   started_at: string;
   updated_at: string;
@@ -51,7 +60,9 @@ export async function readCurrentState(cwd: string): Promise<CurrentState | null
   if (existsSync(statePath)) {
     try {
       const content = await readFile(statePath, 'utf-8');
-      return JSON.parse(content) as CurrentState;
+      const parsed = JSON.parse(content) as Partial<CurrentState> & { state?: string; phase?: string; gate?: string };
+      const normalized = normalizeStoredState(parsed);
+      if (normalized) return normalized;
     } catch {
       // state.json 损坏，回退到 current.md 迁移
     }
@@ -69,24 +80,15 @@ export async function readCurrentState(cwd: string): Promise<CurrentState | null
   return null;
 }
 
-// ── 状态值白名单（防止垃圾值写入 state.json） ──
-const VALID_STATES = new Set([
-  'idle', 'uninitialized', 'drafting', 'brainstorming', 'planning_done',
-  'ready', 'in_progress', 'executing', 'checking', 'check_pass', 'check_fail',
-  'reviewing', 'review_pass', 'build_pass', 'completed', 'archived',
-]);
-
 /**
  * 写入 state.json + 重建 current.md（方案 B：唯一写入路径）
  */
 export async function writeCurrentState(cwd: string, state: CurrentState): Promise<void> {
-  // 状态值校验：拒绝非法值，防止状态机污染
-  if (!VALID_STATES.has(state.state)) {
-    const validList = [...VALID_STATES].join(', ');
-    throw new Error(
-      `[docpath] Invalid state "${state.state}". Must be one of: ${validList}`
-    );
+  const normalized = normalizeStoredState(state);
+  if (!normalized) {
+    throw new Error(`[docpath] Invalid workflow snapshot: state=${state.state}, phase=${state.phase}, gate=${state.gate}`);
   }
+  state = normalized;
 
   const docpathDir = await resolveDocpathDir(cwd);
   const statePath = join(docpathDir, 'workspace', 'state.json');
@@ -94,7 +96,8 @@ export async function writeCurrentState(cwd: string, state: CurrentState): Promi
 
   // 写入 state.json（原子写入：先写 .tmp 再 rename，防止崩溃导致文件损坏）
   const stateTmpPath = statePath + '.tmp';
-  await writeFile(stateTmpPath, JSON.stringify(state, null, 2), 'utf-8');
+  const { state: _derivedState, ...persistedState } = state;
+  await writeFile(stateTmpPath, JSON.stringify(persistedState, null, 2), 'utf-8');
   await rename(stateTmpPath, statePath);
 
   // 重建 current.md
@@ -124,6 +127,28 @@ export async function readCurrentMd(cwd: string): Promise<CurrentState | null> {
 }
 
 // ── 内部辅助函数 ──
+
+function normalizeStoredState(raw: Partial<CurrentState> & { state?: string; phase?: string; gate?: string }): CurrentState | null {
+  const snapshot = normalizeWorkflowSnapshot({
+    state: raw.state,
+    phase: raw.phase,
+    gate: raw.gate,
+  });
+  if (!snapshot) return null;
+
+  return {
+    level: raw.level || 0,
+    state: snapshot.state,
+    task_id: raw.task_id || '',
+    task_title: raw.task_title || '',
+    phase: snapshot.phase,
+    gate: snapshot.gate,
+    current_step: raw.current_step || '待确认下一步',
+    started_at: raw.started_at || new Date().toISOString(),
+    updated_at: raw.updated_at || new Date().toISOString(),
+    escalation: raw.escalation,
+  };
+}
 
 /**
  * 从旧版 current.md YAML 块读取状态（迁移用）
@@ -170,12 +195,19 @@ async function readLegacyCurrentMd(cwd: string): Promise<CurrentState | null> {
       return val === 'null' ? '' : val;
     };
 
+    const snapshot = normalizeWorkflowSnapshot({
+      state: get('state'),
+      phase: get('phase'),
+      gate: get('gate'),
+    }) || snapshotFromState('idle')!;
+
     return {
       level: parseInt(get('level'), 10) || 0,
-      state: get('state'),
+      state: snapshot.state,
       task_id: get('task_id'),
       task_title: get('task_title'),
-      phase: get('phase'),
+      phase: snapshot.phase,
+      gate: snapshot.gate,
       current_step: get('current_step'),
       started_at: get('started_at'),
       updated_at: get('updated_at'),
@@ -187,10 +219,11 @@ async function readLegacyCurrentMd(cwd: string): Promise<CurrentState | null> {
 
 type CurrentStateFields = {
   level: string;
-  state: string;
+  state: RuntimeWorkflowState;
   task_id: string;
   task_title: string;
-  phase: string;
+  phase: WorkflowPhase;
+  gate: GateStatus;
   current_step: string;
   started_at: string;
   updated_at: string;
@@ -336,6 +369,7 @@ function convertStateToFields(state: CurrentState): CurrentStateFields {
     task_id: state.task_id,
     task_title: state.task_title,
     phase: state.phase,
+    gate: state.gate,
     current_step: state.current_step,
     started_at: state.started_at,
     updated_at: state.updated_at,
@@ -368,12 +402,22 @@ async function collectCurrentStateFields(
     taskId;
   const now = new Date().toISOString().slice(0, 16);
 
+  const snapshot = normalizeWorkflowSnapshot({
+    state: newState,
+    phase: extraFields?.phase || previous?.phase,
+    gate: extraFields?.gate || previous?.gate,
+  });
+  if (!snapshot) {
+    throw new Error(`[docpath] Invalid workflow snapshot: state=${newState}, phase=${extraFields?.phase || previous?.phase}, gate=${extraFields?.gate || previous?.gate}`);
+  }
+
   const fields: CurrentStateFields = {
     level: String(previous?.level || 3),
-    state: newState,
+    state: snapshot.state,
     task_id: taskId,
     task_title: title,
-    phase: extraFields?.phase || previous?.phase || newState,
+    phase: snapshot.phase,
+    gate: snapshot.gate,
     current_step: extraFields?.current_step || previous?.current_step || '待确认下一步',
     started_at: shouldResetStartedAt(previous?.state, newState) ? new Date().toISOString() : (previous?.started_at || new Date().toISOString()),
     updated_at: now,
@@ -382,7 +426,46 @@ async function collectCurrentStateFields(
   if (extraFields) {
     for (const [key, value] of Object.entries(extraFields)) {
       if (key in fields) {
-        fields[key as keyof CurrentStateFields] = value;
+        if (key === 'state') {
+          const normalizedExtra = normalizeWorkflowSnapshot({ state: value, phase: fields.phase, gate: fields.gate });
+          if (!normalizedExtra) {
+            throw new Error(`[docpath] Invalid workflow snapshot: state=${value}, phase=${fields.phase}, gate=${fields.gate}`);
+          }
+          fields.state = normalizedExtra.state;
+          fields.phase = normalizedExtra.phase;
+          fields.gate = normalizedExtra.gate;
+          continue;
+        }
+        switch (key) {
+          case 'level':
+          case 'task_id':
+          case 'task_title':
+          case 'current_step':
+          case 'started_at':
+          case 'updated_at':
+            fields[key] = value;
+            break;
+          case 'phase': {
+            const normalizedExtra = normalizeWorkflowSnapshot({ state: fields.state, phase: value, gate: fields.gate });
+            if (!normalizedExtra) {
+              throw new Error(`[docpath] Invalid workflow snapshot: state=${fields.state}, phase=${value}, gate=${fields.gate}`);
+            }
+            fields.state = normalizedExtra.state;
+            fields.phase = normalizedExtra.phase;
+            fields.gate = normalizedExtra.gate;
+            break;
+          }
+          case 'gate': {
+            const normalizedExtra = normalizeWorkflowSnapshot({ state: fields.state, phase: fields.phase, gate: value });
+            if (!normalizedExtra) {
+              throw new Error(`[docpath] Invalid workflow snapshot: state=${fields.state}, phase=${fields.phase}, gate=${value}`);
+            }
+            fields.state = normalizedExtra.state;
+            fields.phase = normalizedExtra.phase;
+            fields.gate = normalizedExtra.gate;
+            break;
+          }
+        }
       }
     }
   }
@@ -417,6 +500,7 @@ state: ${fields.state.padEnd(19)}# 当前状态
 task_id: ${fields.task_id}
 task_title: ${fields.task_title}
 phase: ${fields.phase}
+gate: ${fields.gate}
 current_step: ${fields.current_step}
 started_at: ${fields.started_at}
 updated_at: ${fields.updated_at}
@@ -475,6 +559,7 @@ export async function updateCurrentState(
     task_id: fields.task_id,
     task_title: fields.task_title,
     phase: fields.phase,
+    gate: fields.gate,
     current_step: fields.current_step,
     started_at: fields.started_at,
     updated_at: fields.updated_at,

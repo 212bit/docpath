@@ -5,8 +5,20 @@
 
 ## 命令
 ```bash
-docpath status
-docpath status --agent   # YAML 格式输出
+if [ -x ./.docpath/bin/docpath ]; then
+  ./.docpath/bin/docpath status --agent
+elif command -v docpath >/dev/null 2>&1; then
+  docpath status --agent
+elif [ -x ./node_modules/.bin/docpath ]; then
+  ./node_modules/.bin/docpath status --agent
+elif [ -f ./bin/docpath.js ]; then
+  node ./bin/docpath.js status --agent
+elif [ -f ./dist/index.js ]; then
+  node ./dist/index.js status --agent
+else
+  echo "DocPath CLI not found. Install it or run from the DocPath project root."
+  exit 127
+fi
 ```
 
 ## 输出内容

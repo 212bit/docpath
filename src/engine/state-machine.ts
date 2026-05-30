@@ -48,10 +48,172 @@ export type L3State = L2State | 'researching' | 'designing' | 'subagent_coordina
 
 export type WorkflowState = L0State | L1State | L2State | L3State;
 
+/** 工作流阶段：描述任务当前处于生命周期的哪一段。 */
+export type WorkflowPhase =
+  | 'idle'
+  | 'drafting'
+  | 'planning'
+  | 'executing'
+  | 'checking'
+  | 'reviewing'
+  | 'journaling'
+  | 'completed';
+
+/** 门禁状态：描述最近一次质量/审查/阻塞证据。 */
+export type GateStatus =
+  | 'none'
+  | 'check_pass'
+  | 'check_fail'
+  | 'review_pass'
+  | 'review_fail'
+  | 'blocked';
+
+/** 新版状态快照。state 仅作为旧调用方兼容字段。 */
+export interface WorkflowSnapshot {
+  phase: WorkflowPhase;
+  gate: GateStatus;
+  state: RuntimeWorkflowState;
+}
+
+/**
+ * DocPath 持久化状态集合。
+ *
+ * WorkflowState 描述规约状态机的主干状态；RuntimeWorkflowState 是 CLI
+ * 实际写入 state.json 的状态全集，包含检查/审查等门禁结果状态。
+ */
+export type RuntimeWorkflowState =
+  | WorkflowState
+  | 'uninitialized'
+  | 'drafting'
+  | 'planning_done'
+  | 'ready'
+  | 'in_progress'
+  | 'check_pass'
+  | 'check_fail'
+  | 'review_pass'
+  | 'build_pass'
+  | 'archived';
+
+export const VALID_WORKFLOW_STATES = new Set<RuntimeWorkflowState>([
+  'idle',
+  'uninitialized',
+  'drafting',
+  'task_created',
+  'brainstorming',
+  'spec_written',
+  'planning',
+  'planning_done',
+  'ready',
+  'in_progress',
+  'executing',
+  'verifying',
+  'checking',
+  'check_pass',
+  'check_fail',
+  'reviewing',
+  'review_pass',
+  'build_pass',
+  'journaling',
+  'completed',
+  'archived',
+  'researching',
+  'designing',
+  'subagent_coordinating',
+]);
+
+const STATE_ALIASES: Record<string, RuntimeWorkflowState> = {
+  spec_generated: 'spec_written',
+  plan_approved: 'planning_done',
+  peer_reviewed: 'review_pass',
+  defined: 'drafting',
+};
+
+/** 将旧版或外部协议状态归一化为持久化状态全集中的值。 */
+export function normalizeWorkflowState(state: string): RuntimeWorkflowState | null {
+  const normalized = STATE_ALIASES[state] || state;
+  return VALID_WORKFLOW_STATES.has(normalized as RuntimeWorkflowState)
+    ? normalized as RuntimeWorkflowState
+    : null;
+}
+
+const STATE_TO_SNAPSHOT: Record<RuntimeWorkflowState, WorkflowSnapshot> = {
+  idle: { phase: 'idle', gate: 'none', state: 'idle' },
+  uninitialized: { phase: 'idle', gate: 'none', state: 'uninitialized' },
+  drafting: { phase: 'drafting', gate: 'none', state: 'drafting' },
+  task_created: { phase: 'drafting', gate: 'none', state: 'task_created' },
+  brainstorming: { phase: 'drafting', gate: 'none', state: 'brainstorming' },
+  spec_written: { phase: 'drafting', gate: 'none', state: 'spec_written' },
+  planning: { phase: 'planning', gate: 'none', state: 'planning' },
+  planning_done: { phase: 'planning', gate: 'none', state: 'planning_done' },
+  ready: { phase: 'planning', gate: 'none', state: 'ready' },
+  in_progress: { phase: 'executing', gate: 'none', state: 'in_progress' },
+  executing: { phase: 'executing', gate: 'none', state: 'executing' },
+  verifying: { phase: 'checking', gate: 'none', state: 'verifying' },
+  checking: { phase: 'checking', gate: 'none', state: 'checking' },
+  check_pass: { phase: 'checking', gate: 'check_pass', state: 'check_pass' },
+  check_fail: { phase: 'checking', gate: 'check_fail', state: 'check_fail' },
+  reviewing: { phase: 'reviewing', gate: 'check_pass', state: 'reviewing' },
+  review_pass: { phase: 'reviewing', gate: 'review_pass', state: 'review_pass' },
+  build_pass: { phase: 'checking', gate: 'check_pass', state: 'build_pass' },
+  journaling: { phase: 'journaling', gate: 'review_pass', state: 'journaling' },
+  completed: { phase: 'completed', gate: 'review_pass', state: 'completed' },
+  archived: { phase: 'completed', gate: 'review_pass', state: 'archived' },
+  researching: { phase: 'drafting', gate: 'none', state: 'researching' },
+  designing: { phase: 'planning', gate: 'none', state: 'designing' },
+  subagent_coordinating: { phase: 'executing', gate: 'none', state: 'subagent_coordinating' },
+};
+
+const PHASE_GATE_TO_STATE: Record<WorkflowPhase, Partial<Record<GateStatus, RuntimeWorkflowState>>> = {
+  idle: { none: 'idle', blocked: 'check_fail' },
+  drafting: { none: 'drafting', blocked: 'check_fail' },
+  planning: { none: 'planning_done', blocked: 'check_fail' },
+  executing: { none: 'executing', blocked: 'check_fail' },
+  checking: { none: 'checking', check_pass: 'check_pass', check_fail: 'check_fail', blocked: 'check_fail' },
+  reviewing: { none: 'reviewing', check_pass: 'reviewing', review_pass: 'review_pass', review_fail: 'check_fail', blocked: 'check_fail' },
+  journaling: { none: 'journaling', review_pass: 'journaling', blocked: 'check_fail' },
+  completed: { none: 'completed', check_pass: 'completed', review_pass: 'completed' },
+};
+
+export function snapshotFromState(state: string): WorkflowSnapshot | null {
+  const normalized = normalizeWorkflowState(state);
+  return normalized ? STATE_TO_SNAPSHOT[normalized] : null;
+}
+
+export function normalizeWorkflowPhase(phase: string): WorkflowPhase | null {
+  const valid: WorkflowPhase[] = ['idle', 'drafting', 'planning', 'executing', 'checking', 'reviewing', 'journaling', 'completed'];
+  return valid.includes(phase as WorkflowPhase) ? phase as WorkflowPhase : null;
+}
+
+export function normalizeGateStatus(gate: string): GateStatus | null {
+  const valid: GateStatus[] = ['none', 'check_pass', 'check_fail', 'review_pass', 'review_fail', 'blocked'];
+  return valid.includes(gate as GateStatus) ? gate as GateStatus : null;
+}
+
+export function stateFromPhaseGate(phase: WorkflowPhase, gate: GateStatus): RuntimeWorkflowState {
+  return PHASE_GATE_TO_STATE[phase][gate] || PHASE_GATE_TO_STATE[phase].none || phase;
+}
+
+export function normalizeWorkflowSnapshot(input: {
+  state?: string;
+  phase?: string;
+  gate?: string;
+}): WorkflowSnapshot | null {
+  const phase = input.phase ? normalizeWorkflowPhase(input.phase) : null;
+  const gate = input.gate ? normalizeGateStatus(input.gate) : null;
+
+  if (phase) {
+    const normalizedGate = gate || snapshotFromState(input.state || '')?.gate || 'none';
+    return { phase, gate: normalizedGate, state: stateFromPhaseGate(phase, normalizedGate) };
+  }
+
+  if (input.state) return snapshotFromState(input.state);
+  return null;
+}
+
 /** 状态寄存器 — 持久化在 current.md 中 */
 export interface StateRegister {
   level: ComplexityLevel;
-  state: WorkflowState;
+  state: RuntimeWorkflowState;
   task_id: string | null;
   task_title: string;
   phase: string | null;

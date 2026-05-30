@@ -13,8 +13,9 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
-import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
+import { readCurrentMd } from '../utils/workspace.js';
 import { appendDecision } from '../governance/decisions.js';
+import { transitionWorkflow } from '../engine/transitions.js';
 
 interface ReviewOptions {
   cwd: string;
@@ -142,8 +143,8 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
       `**时间**: ${new Date().toISOString()}`,
       `**状态**: ✅ 手动批准 (跳过自动检查)`,
     ].join('\n'), 'utf-8');
-    // 更新状态机 → review_pass
-    await updateCurrentState(opts.cwd, 'review_pass', { phase: 'reviewing' });
+    // 更新状态机 → review.passed
+    await transitionWorkflow(opts.cwd, 'review.passed', { currentStep: '审查通过，下一步: docpath journal' });
     return;
   }
 
@@ -163,7 +164,9 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   });
 
   if (approved) {
-    await updateCurrentState(opts.cwd, 'review_pass', { phase: 'reviewing' });
+    await transitionWorkflow(opts.cwd, 'review.passed', { currentStep: '审查通过，下一步: docpath journal' });
+  } else {
+    await transitionWorkflow(opts.cwd, 'review.failed', { currentStep: `审查失败: ${errors.length} 错误, ${warns.length} 警告` });
   }
 
   // 写入 review.md

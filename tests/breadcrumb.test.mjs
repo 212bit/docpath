@@ -1,8 +1,9 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, readFileSync, existsSync } from 'fs';
+import { mkdtempSync, rmSync, readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { execSync } from 'child_process';
 
 // 从 dist 直接 import — 只用导出的函数
 const { writeBreadcrumb, readBreadcrumb, truncateBreadcrumb, MAX_ENTRIES } =
@@ -10,6 +11,56 @@ const { writeBreadcrumb, readBreadcrumb, truncateBreadcrumb, MAX_ENTRIES } =
 
 const BC_PATH = (dp) => join(dp, '.docpath', 'workspace', 'breadcrumb.md');
 const readRaw = (dp) => readFileSync(BC_PATH(dp), 'utf-8');
+const BIN = new URL('../dist/index.js', import.meta.url).pathname;
+
+function mkDocpathProject(state = 'check_pass') {
+  const d = mkdtempSync(join(tmpdir(), 'dp-test-'));
+  const dp = join(d, '.docpath');
+  mkdirSync(join(dp, 'workspace'), { recursive: true });
+  mkdirSync(join(dp, 'spec'), { recursive: true });
+  mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
+  writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: test\n  type: node\n');
+  writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
+    level: 1,
+    state,
+    task_id: 'T-001',
+    task_title: 'Test',
+    phase: 'S1',
+    current_step: 'S1.1',
+    started_at: '2026-05-29T00:00:00.000Z',
+    updated_at: '2026-05-29T00:00:00.000Z',
+  }, null, 2));
+  writeFileSync(join(dp, 'workspace', 'current.md'), `# Task\n\n## 状态\n- state: ${state}\n- task_id: T-001\n`);
+  writeFileSync(join(dp, 'workspace', 'breadcrumb.md'), '# Breadcrumb\n');
+  writeFileSync(join(dp, 'workspace', 'last-check.md'), [
+    '# Last Check Evidence',
+    '',
+    '**时间**: 2026-05-29T00:00:00.000Z',
+    `**结果**: ${state === 'in_progress' ? '❌ FAIL' : '✅ PASS'}`,
+    '**检查项**: 1',
+    '',
+  ].join('\n'));
+  writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), '# Spec\n\n## 功能\n- Test\n');
+  writeFileSync(join(dp, 'tasks', 'current', 'plan.md'), '# Plan\n\n- [x] S1: Test\n');
+  writeFileSync(join(d, 'package.json'), '{"name":"test","version":"1.0.0","type":"module"}\n');
+  return d;
+}
+
+function runDocpath(args, cwd) {
+  try {
+    return {
+      code: 0,
+      out: execSync(`node ${BIN} ${args}`, { cwd, encoding: 'utf-8', timeout: 10000 }),
+      err: '',
+    };
+  } catch (error) {
+    return {
+      code: error.status || 1,
+      out: error.stdout || '',
+      err: error.stderr || '',
+    };
+  }
+}
 
 // --- write / append / read ---
 
@@ -230,5 +281,44 @@ describe('truncateBreadcrumb API', () => {
     await truncateBreadcrumb(dp);
     const s = await readBreadcrumb(dp);
     assert.equal(s.entries.length, 5, 'should still have 5 entries');
+  });
+});
+
+// --- verification gate ---
+
+describe('Journal verification gate', () => {
+  it('blocks journal when state is not check_pass/review_pass/completed', () => {
+    const dp = mkDocpathProject('in_progress');
+    const result = runDocpath('journal', dp);
+    assert.notEqual(result.code, 0, 'journal should be blocked');
+    const combined = result.out + result.err;
+    assert.match(combined, /归档门禁|check|质量门禁/);
+    rmSync(dp, { recursive: true, force: true });
+  });
+
+  it('allows journal when state is check_pass', () => {
+    const dp = mkDocpathProject('check_pass');
+    const result = runDocpath('journal --optional-archive skip', dp);
+    assert.equal(result.code, 0, result.err || result.out);
+    assert.ok(!result.out.includes('归档门禁未通过'));
+    rmSync(dp, { recursive: true, force: true });
+  });
+
+  it('migrates legacy state into phase/gate fields on write', () => {
+    const dp = mkDocpathProject('check_pass');
+    const result = runDocpath('journal --optional-archive skip', dp);
+    assert.equal(result.code, 0, result.err || result.out);
+
+    const statePath = join(dp, '.docpath', 'workspace', 'state.json');
+    const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    assert.equal(Object.hasOwn(state, 'state'), false, 'new state.json should not persist legacy state');
+    assert.equal(state.phase, 'completed');
+    assert.equal(state.gate, 'review_pass');
+
+    const currentMd = readFileSync(join(dp, '.docpath', 'workspace', 'current.md'), 'utf-8');
+    assert.match(currentMd, /^state: completed/m);
+    assert.match(currentMd, /^phase: completed$/m);
+    assert.match(currentMd, /^gate: review_pass$/m);
+    rmSync(dp, { recursive: true, force: true });
   });
 });

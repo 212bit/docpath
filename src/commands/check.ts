@@ -12,8 +12,10 @@ import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
-import { readCurrentMd, updateCurrentState, syncCurrentDocument, readOptionalFile, parsePlanTasks } from '../utils/workspace.js';
+import { readCurrentMd, syncCurrentDocument, readOptionalFile, parsePlanTasks } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
+import { transitionWorkflow } from '../engine/transitions.js';
+import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 
 interface CheckOptions {
   cwd: string;
@@ -82,6 +84,7 @@ function parseHarnessRules(content: string): HarnessRule[] {
         enforced: match[5]?.trim() || undefined,
       });
     }
+
   }
 
   return rules;
@@ -381,7 +384,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
     // 5b. current.md checklist 独立检查 + 与 plan.md 一致性检查
     // 先根据最新 plan/spec 重建 current.md，避免检查到上一轮缓存。
-    await updateCurrentState(cwd, current?.state || 'checking', { phase: 'checking' });
+    await syncCurrentDocument(cwd);
 
     const currentMdPath = join(docpathDir, 'workspace', 'current.md');
     if (existsSync(currentMdPath)) {
@@ -413,6 +416,23 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
           }
         }
       } catch { /* skip */ }
+    }
+
+    const drift = await detectPlanBreadcrumbDrift(cwd);
+    if (drift.planDoneWithoutBreadcrumb.length > 0 || drift.breadcrumbDoneWithoutPlan.length > 0) {
+      results.push({
+        name: 'Plan/Breadcrumb 漂移检查',
+        passed: false,
+        output: [
+          drift.planDoneWithoutBreadcrumb.length > 0
+            ? `plan 已完成但缺少 done breadcrumb: ${drift.planDoneWithoutBreadcrumb.join(', ')}`
+            : '',
+          drift.breadcrumbDoneWithoutPlan.length > 0
+            ? `breadcrumb done 但 plan 未勾选: ${drift.breadcrumbDoneWithoutPlan.join(', ')}`
+            : '',
+        ].filter(Boolean).join('; '),
+        category: 'plan',
+      });
     }
   }
 
@@ -463,10 +483,8 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   console.log(`\n${allPassed ? '✅  全部通过' : '❌  存在失败项'}\n`);
 
   // 更新状态
-  const newState = allPassed ? 'check_pass' : 'check_fail';
-  await updateCurrentState(cwd, newState, {
-    phase: 'checking',
-    current_step: allPassed
+  await transitionWorkflow(cwd, allPassed ? 'check.passed' : 'check.failed', {
+    currentStep: allPassed
       ? `质量检查通过 (${results.length} 项)，下一步: docpath review`
       : `质量检查失败: ${results.filter(r => !r.passed).map(r => r.name).join(', ')}`,
   });

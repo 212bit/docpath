@@ -21,10 +21,13 @@ interface DocsOptions {
 /** 文档条目 */
 interface DocEntry {
   path: string;
+  type: string;
   kind: string;
   scope: string;
   level: string;
   title: string;
+  summary: string;
+  updated_at: string;
   lastModified: string;
   size: number;
 }
@@ -33,11 +36,11 @@ interface DocEntry {
 function inferKind(filePath: string): string {
   const normalized = filePath.replace(/\\/g, '/');
 
-  if (normalized.includes('/spec/')) return 'reference';
-  if (normalized.includes('/tasks/')) return 'runbook';
-  if (normalized.includes('/workspace/')) return 'index';
-  if (normalized.includes('/journal/')) return 'log';
-  if (normalized.includes('/templates/')) return 'template';
+  if (normalized.startsWith('spec/') || normalized.includes('/spec/')) return 'reference';
+  if (normalized.startsWith('tasks/') || normalized.includes('/tasks/')) return 'runbook';
+  if (normalized.startsWith('workspace/') || normalized.includes('/workspace/')) return 'index';
+  if (normalized.startsWith('journal/') || normalized.includes('/journal/')) return 'log';
+  if (normalized.startsWith('templates/') || normalized.includes('/templates/')) return 'template';
 
   // 根据文件名推断
   const name = basename(filePath).toLowerCase();
@@ -53,11 +56,11 @@ function inferKind(filePath: string): string {
 function inferScope(filePath: string): string {
   const normalized = filePath.replace(/\\/g, '/');
 
-  if (normalized.includes('/spec/backend/')) return 'backend';
-  if (normalized.includes('/spec/frontend/')) return 'frontend';
-  if (normalized.includes('/spec/infra/')) return 'infra';
-  if (normalized.includes('/spec/shared/')) return 'shared';
-  if (normalized.includes('/tasks/current/')) return 'task';
+  if (normalized.startsWith('spec/backend/') || normalized.includes('/spec/backend/')) return 'backend';
+  if (normalized.startsWith('spec/frontend/') || normalized.includes('/spec/frontend/')) return 'frontend';
+  if (normalized.startsWith('spec/infra/') || normalized.includes('/spec/infra/')) return 'infra';
+  if (normalized.startsWith('spec/shared/') || normalized.includes('/spec/shared/')) return 'shared';
+  if (normalized.startsWith('tasks/current/') || normalized.includes('/tasks/current/')) return 'task';
 
   return 'project';
 }
@@ -67,13 +70,13 @@ function inferLevel(filePath: string): string {
   const normalized = filePath.replace(/\\/g, '/');
 
   // 任务级文档默认 level 1
-  if (normalized.includes('/tasks/')) return '1';
+  if (normalized.startsWith('tasks/') || normalized.includes('/tasks/')) return '1';
 
   // 规范文档默认 level 2
-  if (normalized.includes('/spec/')) return '2';
+  if (normalized.startsWith('spec/') || normalized.includes('/spec/')) return '2';
 
   // 工作区文档默认 level 0
-  if (normalized.includes('/workspace/')) return '0';
+  if (normalized.startsWith('workspace/') || normalized.includes('/workspace/')) return '0';
 
   return '0';
 }
@@ -92,6 +95,21 @@ async function extractTitle(filePath: string): Promise<string> {
 
     // 没有标题，使用文件名
     return basename(filePath, extname(filePath));
+  } catch {
+    return basename(filePath, extname(filePath));
+  }
+}
+
+/** 从 markdown 中提取简短摘要 */
+async function extractSummary(filePath: string): Promise<string> {
+  try {
+    const content = await readFile(filePath, 'utf-8');
+    const lines = content
+      .replace(/^---[\s\S]*?---\s*\n?/, '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('#') && !line.startsWith('|') && !line.startsWith('>'));
+    return (lines[0] || basename(filePath, extname(filePath))).replace(/\s+/g, ' ').slice(0, 180);
   } catch {
     return basename(filePath, extname(filePath));
   }
@@ -144,23 +162,24 @@ function generateDocsMd(entries: DocEntry[]): string {
     '',
     '## 文档列表',
     '',
-    '| 路径 | kind | scope | level | 用途 | 最后修改 | 大小 |',
+    '| 路径 | type | scope | level | 标题 | 摘要 | 更新时间 | 大小 |',
     '|------|------|-------|-------|------|----------|------|',
   ];
 
   for (const entry of entries) {
     lines.push(
-      `| ${entry.path} | ${entry.kind} | ${entry.scope} | ${entry.level} | ${entry.title} | ${entry.lastModified} | ${entry.size} |`
+      `| ${entry.path} | ${entry.type} | ${entry.scope} | ${entry.level} | ${entry.title} | ${entry.summary} | ${entry.updated_at} | ${entry.size} |`
     );
   }
 
   lines.push('');
   lines.push('## 用途说明');
   lines.push('');
-  lines.push('- **kind**: 文档类型 (reference|runbook|template|index|log)');
+  lines.push('- **type**: 文档类型 (reference|runbook|template|index|log)');
   lines.push('- **scope**: 作用域 (project|task|backend|frontend|infra|shared)');
   lines.push('- **level**: 渐进式披露层级 (0|1|2|3)');
   lines.push('- **title**: 文档标题或用途');
+  lines.push('- **summary**: 文档首段摘要');
   lines.push('');
 
   return lines.join('\n');
@@ -192,12 +211,17 @@ async function docsScan(cwd: string): Promise<void> {
     const fullPath = join(docpathDir, file);
     const fileStat = await stat(fullPath);
 
+    const kind = inferKind(file);
+    const updated = fileStat.mtime.toISOString();
     entries.push({
       path: file,
-      kind: inferKind(file),
+      type: kind,
+      kind,
       scope: inferScope(file),
       level: inferLevel(file),
       title: await extractTitle(fullPath),
+      summary: await extractSummary(fullPath),
+      updated_at: updated,
       lastModified: formatDate(fileStat.mtime),
       size: fileStat.size,
     });
@@ -206,10 +230,12 @@ async function docsScan(cwd: string): Promise<void> {
   // 生成 docs.md
   const docsMdContent = generateDocsMd(entries);
   const docsMdPath = join(docpathDir, 'docs.md');
+  const docsIndexPath = join(docpathDir, 'docs-index.json');
 
   await writeFile(docsMdPath, docsMdContent, 'utf-8');
+  await writeFile(docsIndexPath, JSON.stringify({ generated_at: new Date().toISOString(), entries }, null, 2), 'utf-8');
 
-  console.log(`✅  已生成 docs.md (${entries.length} 个文档)`);
+  console.log(`✅  已生成 docs.md / docs-index.json (${entries.length} 个文档)`);
   console.log(`📁  位置: ${docsMdPath}`);
   console.log('');
 }

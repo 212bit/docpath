@@ -19,11 +19,25 @@ import { join } from 'path';
 import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { getRecentDecisions } from '../governance/decisions.js';
+
+interface DocsIndexEntry {
+  path: string;
+  type?: string;
+  kind?: string;
+  scope?: string;
+  level?: string;
+  title?: string;
+  summary?: string;
+  updated_at?: string;
+}
 
 interface RevealOptions {
   cwd: string;
   /** 披露级别 0-3（默认 1） */
   level?: number;
+  /** 按文档 path/title/summary/scope/type 过滤 */
+  topic?: string;
   /** 输出格式：text（默认）| raw */
   format?: 'text' | 'raw';
   /** 输出到文件 */
@@ -82,10 +96,45 @@ function planSummary(text: string): string {
   return summary;
 }
 
+async function readDocsIndex(docpathDir: string): Promise<DocsIndexEntry[]> {
+  const indexPath = join(docpathDir, 'docs-index.json');
+  if (!existsSync(indexPath)) return [];
+  try {
+    const parsed = JSON.parse(await readFile(indexPath, 'utf-8')) as { entries?: DocsIndexEntry[] };
+    return Array.isArray(parsed.entries) ? parsed.entries : [];
+  } catch {
+    return [];
+  }
+}
+
+function renderDocsIndex(entries: DocsIndexEntry[], maxEntries: number): string {
+  return entries.slice(0, maxEntries).map((entry) => [
+    `- path: ${entry.path}`,
+    `  type: ${entry.type || entry.kind || 'unknown'}`,
+    `  scope: ${entry.scope || 'project'}`,
+    `  title: ${entry.title || ''}`,
+    `  summary: ${entry.summary || ''}`,
+    `  updated_at: ${entry.updated_at || ''}`,
+  ].join('\n')).join('\n');
+}
+
+function filterDocsByTopic(entries: DocsIndexEntry[], topic?: string): DocsIndexEntry[] {
+  const q = topic?.trim().toLowerCase();
+  if (!q) return entries;
+  return entries.filter((entry) => [
+    entry.path,
+    entry.type,
+    entry.kind,
+    entry.scope,
+    entry.title,
+    entry.summary,
+  ].filter(Boolean).join(' ').toLowerCase().includes(q));
+}
+
 // ── 核心命令 ──
 
 export async function revealCommand(options: RevealOptions): Promise<void> {
-  const { cwd, level = 1, format = 'text', output } = options;
+  const { cwd, level = 1, topic, format = 'text', output } = options;
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
@@ -180,7 +229,7 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
   // ══════════════════════════════════════════
   if (level >= 2) {
     // Style 规则
-    const stylePath = join(docpathDir, 'workspace', 'style.md');
+    const stylePath = join(docpathDir, 'spec', 'style.md');
     if (existsSync(stylePath)) {
       const style = await safeRead(stylePath);
       if (style.trim()) {
@@ -192,7 +241,7 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
     }
 
     // Architecture（如果存在）
-    const archPath = join(cwd, 'spec', 'architecture.md');
+    const archPath = join(docpathDir, 'spec', 'architecture.md');
     if (existsSync(archPath)) {
       const arch = await safeRead(archPath);
       if (arch.trim()) {
@@ -203,9 +252,16 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
       }
     }
 
-    // 文档索引 (docs.md)
-    const docsPath = join(docpathDir, 'docs.md');
-    if (existsSync(docsPath)) {
+    // 结构化文档索引
+    const docsIndex = filterDocsByTopic(await readDocsIndex(docpathDir), topic);
+    if (docsIndex.length > 0) {
+      sections.push(
+        header('📚', topic ? `文档索引 (docs-index: ${topic})` : '文档索引 (docs-index)') + '\n' +
+        renderDocsIndex(docsIndex, level >= 3 ? 20 : 10)
+      );
+    } else {
+      const docsPath = join(docpathDir, 'docs.md');
+      if (existsSync(docsPath)) {
       const docs = await safeRead(docsPath);
       if (docs.trim()) {
         sections.push(
@@ -213,6 +269,15 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
           docs.trim()
         );
       }
+      }
+    }
+
+    const decisions = await getRecentDecisions(cwd, 5);
+    if (decisions.length > 0) {
+      sections.push(
+        header('🧭', '相关决策 (decisions)') + '\n' +
+        decisions.join('\n\n')
+      );
     }
   }
 

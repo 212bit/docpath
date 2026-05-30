@@ -226,6 +226,7 @@ export async function goCommand(options: GoOptions): Promise<void> {
   });
 
   console.log('─── Claude Code 指令 ───');
-  console.log(`请执行子任务 ${target.id}，完成后标记 plan.md 中对应项为 [x]，`);
-  console.log('然后运行 `docpath:continue` 推进到下一步。\n');
+  console.log('请执行子任务 ' + target.id + '，完成后运行 docpath:agent-step 让 agent-step 自动标记 plan checklist 为 [x]，');
+
+  console.log('然后运行 `docpath:agent-step` 记录完成，再运行 `docpath:next` 查看下一步。\n');
 }

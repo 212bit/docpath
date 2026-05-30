@@ -1,9 +1,32 @@
-# docpath-agent-handoff
+# /docpath-agent-handoff
 
-Persist compact handoff context for the next session/agent.
+Persist a compact handoff package for the next Claude Code session.
+
+## Run
 
 ```bash
-docpath agent handoff
+if [ -x ./.docpath/bin/docpath ]; then
+  ./.docpath/bin/docpath agent handoff
+elif command -v docpath >/dev/null 2>&1; then
+  docpath agent handoff
+elif [ -x ./node_modules/.bin/docpath ]; then
+  ./node_modules/.bin/docpath agent handoff
+elif [ -f ./bin/docpath.js ]; then
+  node ./bin/docpath.js agent handoff
+elif [ -f ./dist/index.js ]; then
+  node ./dist/index.js agent handoff
+else
+  echo "DocPath CLI not found. Install it or run from the DocPath project root."
+  exit 127
+fi
 ```
 
-Use this before ending a long session or switching agents. It writes compact context and recovery guidance.
+## Follow-up
+
+1. Confirm `.docpath/workspace/compact-context.md` was written.
+2. Summarize the `recommended_command` from the embedded `Next Agent Route`.
+3. Tell the next session to read `compact-context.md`, `current.md`, then run `/docpath-next`.
+
+## Expected Result
+
+Claude should produce a short handoff summary with blockers, recent failure evidence, and next command.

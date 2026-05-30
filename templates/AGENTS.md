@@ -7,10 +7,11 @@
 
 ## First Thing You Do
 
-1. Read `.docpath/workspace/current.md` to know the current state
-2. Read `.docpath/workspace/breadcrumb.md` to understand progress
-3. **Follow the state**: the `state` field tells you what to do
-4. **Update state after each step**: modify `current.md` and `breadcrumb.md`
+1. Run `docpath status --agent` or read `.docpath/workspace/current.md` to know the current state.
+2. Run `docpath next --agent` to choose the next safe action.
+3. Read `.docpath/workspace/breadcrumb.md` to understand recent progress.
+4. **Follow the route**: the `recommended_command` from `next --agent` is the default next step.
+5. **Update state after each step**: use DocPath lifecycle commands instead of manual state edits.
 
 ---
 
@@ -48,6 +49,8 @@ Rules:
 | Command | Description |
 |---------|-------------|
 | `docpath status` | View workflow state |
+| `docpath status --agent` | Machine-readable workflow state |
+| `docpath next --agent` | Machine-readable next-action route |
 | `docpath go` | Execute next step from plan |
 | `docpath continue` | Resume from breadcrumb |
 | `docpath check` | Run quality gates |

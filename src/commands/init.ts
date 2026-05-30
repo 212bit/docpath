@@ -27,6 +27,7 @@ import type { ComplexityLevel } from '../engine/state-machine.js';
 import { createDefaultState } from '../engine/state-machine.js';
 import { loadTemplate } from '../utils/file.js';
 import { detectProject, formatProjectInfo, detectMonorepo, type ProjectInfo } from '../utils/detect.js';
+import { writeCurrentState, type CurrentState } from '../utils/workspace.js';
 
 interface InitOptions {
   cwd?: string;
@@ -104,14 +105,24 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   await writeFileSafe(join(cwd, '.docpath/config.yaml'), generateConfig(level, projectInfo));
   console.log('  ✓  config.yaml (已填充项目信息)');
 
-  // ── 写入 workspace/current.md (状态寄存器) ──
+  // ── 写入 workspace/state.json + 渲染 current.md (状态寄存器) ──
   const defaultState = createDefaultState();
   if (options.level !== undefined) {
     defaultState.level = options.level;
   }
-  const currentContent = await loadTemplate(join(TEMPLATES_DIR, 'current.template.md'));
-  await writeFileSafe(join(cwd, '.docpath/workspace/current.md'), currentContent);
-  console.log('  ✓  workspace/current.md (状态寄存器)');
+  const state: CurrentState = {
+    level: defaultState.level,
+    state: defaultState.state,
+    task_id: defaultState.task_id || '',
+    task_title: defaultState.task_title,
+    phase: 'idle',
+    gate: 'none',
+    current_step: '等待下一步',
+    started_at: defaultState.started_at || new Date().toISOString(),
+    updated_at: defaultState.updated_at || new Date().toISOString(),
+  };
+  await writeCurrentState(cwd, state);
+  console.log('  ✓  workspace/state.json + current.md (状态寄存器)');
 
   // ── 写入 workspace/breadcrumb.md ──
   const breadcrumbContent = await loadTemplate(join(TEMPLATES_DIR, 'breadcrumb.template.md'));

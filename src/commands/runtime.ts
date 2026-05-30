@@ -5,10 +5,12 @@
 
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
-import { readCurrentState, writeCurrentState } from '../utils/workspace.js';
+import { parse as parseYaml } from 'yaml';
+import { readCurrentState, readOptionalFile } from '../utils/workspace.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
+import { transitionWorkflow } from '../engine/transitions.js';
 
 type RuntimeState = NonNullable<Awaited<ReturnType<typeof readCurrentState>>>;
 
@@ -40,14 +42,6 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function withState(state: RuntimeState, patch: Partial<RuntimeState>): RuntimeState {
-  return {
-    ...state,
-    ...patch,
-    updated_at: nowIso(),
-  };
-}
-
 function fallbackState(cwd: string): RuntimeState {
   const taskTitle = cwd.split('/').filter(Boolean).pop() || 'DocPath task';
   const ts = nowIso();
@@ -56,7 +50,8 @@ function fallbackState(cwd: string): RuntimeState {
     state: 'idle',
     task_id: 'runtime',
     task_title: taskTitle,
-    phase: 'runtime',
+    phase: 'idle',
+    gate: 'none',
     current_step: '等待下一步',
     started_at: ts,
     updated_at: ts,
@@ -90,13 +85,7 @@ export async function runCommand(options: RunOptions): Promise<void> {
   const note = options.note || '';
 
   if (options.action === 'start') {
-    const next = withState(state, {
-      state: 'executing',
-      phase: 'runtime',
-      current_step: step,
-      started_at: state.started_at || nowIso(),
-    });
-    await writeCurrentState(cwd, next);
+    const next = await transitionWorkflow(cwd, 'step.started', { currentStep: step });
     await appendRuntimeEvent(cwd, next, step, 'in_progress', note || 'run-start: agent execution started');
     console.log(`▶️  run-start: ${step}`);
     return;
@@ -104,13 +93,7 @@ export async function runCommand(options: RunOptions): Promise<void> {
 
   if (options.action === 'end') {
     const status = options.status || 'done';
-    const nextState = status === 'blocked' ? 'check_fail' : 'check_pass';
-    const next = withState(state, {
-      state: nextState,
-      phase: 'runtime',
-      current_step: step,
-    });
-    await writeCurrentState(cwd, next);
+    const next = await transitionWorkflow(cwd, 'step.completed', { currentStep: step });
     await appendRuntimeEvent(cwd, next, step, status, note || `run-end: ${status}`);
     console.log(`⏹️  run-end: ${step} (${status})`);
     return;
@@ -126,19 +109,122 @@ export async function runCommand(options: RunOptions): Promise<void> {
   }
 }
 
-function renderCompactedContext(state: RuntimeState, breadcrumb: Awaited<ReturnType<typeof readBreadcrumb>>, keepEntries: number): string {
+function uniqueLatestByStep(entries: Awaited<ReturnType<typeof readBreadcrumb>>['entries']) {
+  const latest = new Map<string, (typeof entries)[number]>();
+  for (const entry of entries) latest.set(entry.step, entry);
+  return Array.from(latest.values());
+}
+
+function extractScalarFromAgentYaml(agentOutput: string, key: string): string {
+  try {
+    const parsed = parseYaml(agentOutput) as Record<string, unknown> | null;
+    const value = parsed?.[key];
+    return typeof value === 'string' ? value : '';
+  } catch {
+    const match = agentOutput.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
+    return match?.[1]?.trim().replace(/^['"]|['"]$/g, '') || '';
+  }
+}
+
+function extractRequiredFiles(agentOutput: string): string[] {
+  try {
+    const parsed = parseYaml(agentOutput) as { required_files?: unknown } | null;
+    if (Array.isArray(parsed?.required_files)) {
+      return parsed.required_files.filter((item): item is string => typeof item === 'string');
+    }
+  } catch { /* fallback below */ }
+
+  const match = agentOutput.match(/^required_files:\s*\n([\s\S]*?)(?=^\S|$)/m);
+  if (!match) return [];
+  return match[1]
+    .split('\n')
+    .map((line) => line.match(/^\s*-\s+(.+)\s*$/)?.[1]?.trim().replace(/^['"]|['"]$/g, '') || '')
+    .filter(Boolean);
+}
+
+function summarizeLastCheck(lastCheckContent: string): string {
+  if (!lastCheckContent.trim()) return '未找到 last-check.md';
+  const result = lastCheckContent.match(/^\*\*结果\*\*:\s*(.+)$/m)?.[1]?.trim() || '未知';
+  const time = lastCheckContent.match(/^\*\*时间\*\*:\s*(.+)$/m)?.[1]?.trim() || '未知时间';
+  const failedItems = lastCheckContent
+    .split('\n')
+    .filter((line) => /^-\s*❌/.test(line.trim()))
+    .map((line) => line.replace(/^-\s*/, '').trim());
+  return failedItems.length > 0
+    ? `${result} (${time}); 失败项: ${failedItems.join(', ')}`
+    : `${result} (${time})`;
+}
+
+function renderCompactedContext(
+  state: RuntimeState,
+  breadcrumb: Awaited<ReturnType<typeof readBreadcrumb>>,
+  keepEntries: number,
+  agentOutput: string,
+  lastCheckContent: string,
+): string {
   const entries = breadcrumb.entries.slice(-keepEntries);
+  const latestEntries = uniqueLatestByStep(breadcrumb.entries);
+  const completedSteps = latestEntries.filter((e) => e.status === 'done');
+  const blockedSteps = latestEntries.filter((e) => e.status === 'blocked');
+  const recommendedCommand = extractScalarFromAgentYaml(agentOutput, 'recommended_command') || 'docpath next --agent';
+  const nextAction = extractScalarFromAgentYaml(agentOutput, 'next_action') || '运行 docpath next --agent';
+  const requiredFiles = extractRequiredFiles(agentOutput);
   return [
     '# Compact Context',
     '',
     `> Generated: ${nowIso()}`,
+    '',
+    '## Resume Protocol',
+    '',
+    '1. 先读 `.docpath/workspace/current.md`。',
+    '2. 再读本文件中的 `Next Agent Route`。',
+    '3. 按 `recommended_command` 执行下一步，除非当前工作区状态已经变化。',
+    '',
+    '## Current Goal',
+    '',
+    `- task_id: ${state.task_id || 'unknown'}`,
+    `- task_title: ${state.task_title || '未命名任务'}`,
+    `- current_step: ${state.current_step || '待确认'}`,
+    `- next_action: ${nextAction}`,
+    `- recommended_command: ${recommendedCommand}`,
     '',
     '## Current State',
     '',
     `- task_id: ${state.task_id}`,
     `- state: ${state.state}`,
     `- phase: ${state.phase}`,
+    `- gate: ${state.gate}`,
     `- current_step: ${state.current_step}`,
+    `- updated_at: ${state.updated_at}`,
+    '',
+    '## Completed Steps',
+    '',
+    ...(completedSteps.length > 0
+      ? completedSteps.map((e) => `- ${e.step}: ${e.context || 'done'}`)
+      : ['- 无已完成 breadcrumb 记录']),
+    '',
+    '## Current Blockers',
+    '',
+    ...(blockedSteps.length > 0
+      ? blockedSteps.map((e) => `- ${e.step}: ${e.context || 'blocked'}`)
+      : ['- 无阻塞 breadcrumb 记录']),
+    '',
+    '## Verification Evidence',
+    '',
+    `- last_check: ${summarizeLastCheck(lastCheckContent)}`,
+    `- breadcrumb_events_kept: ${entries.length}`,
+    '',
+    '## Required Files Before Resume',
+    '',
+    ...(requiredFiles.length > 0
+      ? requiredFiles.map((file) => `- ${file}`)
+      : ['- .docpath/workspace/current.md']),
+    '',
+    '## Next Agent Route',
+    '',
+    '```yaml',
+    agentOutput.trim(),
+    '```',
     '',
     '## Recent Breadcrumbs',
     '',
@@ -153,7 +239,9 @@ export async function compactCommand(options: CompactOptions): Promise<void> {
   const state = await getState(cwd);
   const breadcrumb = await readBreadcrumb(cwd);
   const keepEntries = Math.max(1, options.maxEntries || 20);
-  const content = renderCompactedContext(state, breadcrumb, keepEntries);
+  const agentOutput = await generateAgentOutput(cwd);
+  const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
+  const content = renderCompactedContext(state, breadcrumb, keepEntries, agentOutput, lastCheckContent);
   const output = join(docpathDir, 'workspace', 'compact-context.md');
 
   if (options.dryRun) {

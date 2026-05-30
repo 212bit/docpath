@@ -12,6 +12,18 @@ import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
 
+interface DocsIndexEntry {
+  path: string;
+  type?: string;
+  kind?: string;
+  scope?: string;
+  level?: string;
+  title?: string;
+  summary?: string;
+  updated_at?: string;
+  size?: number;
+}
+
 interface ContextOptions {
   cwd: string;
   /** 输出格式：prompt（默认）| raw */
@@ -51,6 +63,67 @@ function compressMarkdown(text: string, maxChars: number): string {
     result = result.slice(0, maxChars) + '\n\n... [截断，使用 --max-tokens 调整]';
   }
   return result;
+}
+
+async function readDocsIndex(docpathDir: string): Promise<DocsIndexEntry[]> {
+  const indexPath = join(docpathDir, 'docs-index.json');
+  if (!existsSync(indexPath)) return [];
+
+  try {
+    const parsed = JSON.parse(await readFile(indexPath, 'utf-8')) as { entries?: DocsIndexEntry[] };
+    return Array.isArray(parsed.entries) ? parsed.entries : [];
+  } catch {
+    return [];
+  }
+}
+
+function docPriority(entry: DocsIndexEntry): number {
+  let score = 0;
+  const path = entry.path.replace(/\\/g, '/');
+  const level = parseInt(entry.level || '3', 10);
+
+  if (entry.scope === 'task') score += 100;
+  if (path.includes('tasks/current/')) score += 90;
+  if (path.includes('workspace/current.md')) score += 80;
+  if (path.includes('workspace/breadcrumb.md')) score += 70;
+  if (path.includes('workspace/last-check.md')) score += 60;
+  if (path.includes('spec/style.md') || path.includes('spec/architecture.md')) score += 50;
+  if (entry.type === 'runbook' || entry.kind === 'runbook') score += 20;
+  if (!Number.isNaN(level)) score += Math.max(0, 10 - level);
+
+  return score;
+}
+
+async function renderIndexedDocs(docpathDir: string, maxChars: number): Promise<string[]> {
+  const entries = await readDocsIndex(docpathDir);
+  if (entries.length === 0) return [];
+
+  const sections: string[] = [];
+  const sorted = entries
+    .filter((entry) => entry.path && entry.path.endsWith('.md'))
+    .sort((a, b) => docPriority(b) - docPriority(a));
+
+  let remaining = Math.max(1200, Math.floor(maxChars * 0.25));
+  for (const entry of sorted) {
+    if (remaining <= 0) break;
+    const fullPath = join(docpathDir, entry.path);
+    if (!existsSync(fullPath)) continue;
+    const content = await readFile(fullPath, 'utf-8');
+    if (!content.trim()) continue;
+    const slice = compressMarkdown(content, Math.min(remaining, 1600));
+    sections.push([
+      `## 相关文档: ${entry.title || entry.path}`,
+      `- path: ${entry.path}`,
+      `- type: ${entry.type || entry.kind || 'unknown'}`,
+      `- scope: ${entry.scope || 'project'}`,
+      `- summary: ${entry.summary || ''}`,
+      '',
+      slice,
+    ].join('\n'));
+    remaining -= slice.length;
+  }
+
+  return sections;
 }
 
 export async function contextCommand(options: ContextOptions): Promise<void> {
@@ -109,13 +182,17 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
   }
 
   // ── 6. Style 规则 ──
-  const stylePath = join(docpathDir, 'workspace', 'style.md');
+  const stylePath = join(docpathDir, 'spec', 'style.md');
   if (existsSync(stylePath)) {
     const style = await readFile(stylePath, 'utf-8');
     if (style.trim()) {
       sections.push(`## 编码规范 (style.md)\n${compressMarkdown(style, Math.floor(maxChars * 0.2))}`);
     }
   }
+
+  // ── 7. 结构化文档索引：小预算下优先保留当前任务相关文档 ──
+  const indexedDocs = await renderIndexedDocs(docpathDir, maxChars);
+  sections.push(...indexedDocs);
 
   // ── 组装输出 ──
   const fullContext = sections.join('\n\n---\n\n');

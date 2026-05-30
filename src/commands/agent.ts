@@ -9,9 +9,12 @@
  */
 
 import { checkCommand } from './check.js';
+import { journalCommand } from './journal.js';
 import { reviewCommand } from './review.js';
 import { compactCommand, nextCommand, runCommand } from './runtime.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
+import { recordSkipReason } from '../engine/policy.js';
+import { markPlanStep } from '../utils/plan-sync.js';
 
 type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
 
@@ -45,12 +48,7 @@ export async function agentCommand(options: AgentOptions): Promise<void> {
   }
 
   if (action === 'enter') {
-    await runCommand({
-      cwd,
-      action: 'start',
-      step: options.step || 'agent-session',
-      note: options.note || 'agent-enter: session started; state loaded',
-    });
+
     console.log('\n# agent_context');
     console.log(await generateAgentOutput(cwd));
     return;
@@ -58,19 +56,26 @@ export async function agentCommand(options: AgentOptions): Promise<void> {
 
   if (action === 'step') {
     const step = requireStep(action, options.step);
+    const status = options.status || 'done';
     await runCommand({
       cwd,
       action: 'end',
       step,
-      status: options.status || 'done',
+      status,
       note: options.note || `agent-step: ${step}`,
     });
-    await runCommand({
-      cwd,
-      action: 'start',
-      step,
-      note: 'agent-step: ready for next action',
-    });
+    if (status === 'done') {
+      const sync = await markPlanStep(cwd, step, true);
+      if (!sync.updated) console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
+    }
+    if (status !== 'done') {
+      await runCommand({
+        cwd,
+        action: 'start',
+        step,
+        note: 'agent-step: ready for next action',
+      });
+    }
     return;
   }
 
@@ -78,7 +83,9 @@ export async function agentCommand(options: AgentOptions): Promise<void> {
     const step = options.step || 'agent-task';
     let finalStatus: 'done' | 'blocked' | 'skipped' = options.status || 'done';
 
-    if (!options.skipCheck) {
+    if (options.skipCheck) {
+      await recordSkipReason(cwd, 'check', options.note || 'agent done --skip-check');
+    } else {
       try {
         await checkCommand({
           cwd,
@@ -98,7 +105,9 @@ export async function agentCommand(options: AgentOptions): Promise<void> {
       }
     }
 
-    if (!options.skipReview) {
+    if (options.skipReview) {
+      await recordSkipReason(cwd, 'review', options.note || 'agent done --skip-review');
+    } else {
       try {
         await reviewCommand({
           cwd,
@@ -125,6 +134,15 @@ export async function agentCommand(options: AgentOptions): Promise<void> {
       status: finalStatus,
       note: options.note || `agent-done: ${finalStatus}`,
     });
+
+    if (finalStatus === 'done') {
+      await journalCommand({
+        cwd,
+        skipAi: true,
+        archiveMode: 'skip',
+      });
+    }
+
     await nextCommand({ cwd, agent: true });
     return;
   }

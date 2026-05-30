@@ -1,16 +1,30 @@
-# /docpath-go — 开始新任务
+# /docpath-go
 
-## 用途
-初始化新任务，创建或更新 workspace 状态文件。
+Start or continue execution from the current DocPath plan.
 
-## 命令
+## Run
+
 ```bash
-docpath go "任务描述"
+if [ -x ./.docpath/bin/docpath ]; then
+  ./.docpath/bin/docpath go --step "$ARGUMENTS"
+elif command -v docpath >/dev/null 2>&1; then
+  docpath go --step "$ARGUMENTS"
+elif [ -x ./node_modules/.bin/docpath ]; then
+  ./node_modules/.bin/docpath go --step "$ARGUMENTS"
+elif [ -f ./bin/docpath.js ]; then
+  node ./bin/docpath.js go --step "$ARGUMENTS"
+elif [ -f ./dist/index.js ]; then
+  node ./dist/index.js go --step "$ARGUMENTS"
+else
+  echo "DocPath CLI not found. Install it or run from the DocPath project root."
+  exit 127
+fi
 ```
 
-## 执行步骤
-1. 读取 `.docpath/workspace/current.md`
-2. 如果有进行中的任务，提示确认或先完成
-3. 创建新任务记录到 tasks/
-4. 更新 current.md: state=planning, task_title, task_id
-5. 追加 breadcrumb: 新任务开始记录
+If `$ARGUMENTS` is empty, run the next pending step from `plan.md`.
+
+## Follow-up
+
+1. Read the command output and any listed required files.
+2. Implement only the selected step.
+3. Record progress with `/docpath-agent-step`, then route with `/docpath-next`.
