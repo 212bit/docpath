@@ -251,7 +251,10 @@ export async function compactCommand(options: CompactOptions): Promise<void> {
 
   await mkdir(join(docpathDir, 'workspace'), { recursive: true });
   await writeFile(output, content, 'utf-8');
-  console.log(`🧩 compact: saved ${relative(cwd, output)} (${Math.min(breadcrumb.entries.length, keepEntries)} events)`);
+  // 裁剪 breadcrumb：只保留最近 keepEntries 条
+  const trimmedEntries = breadcrumb.entries.slice(-keepEntries);
+  await writeBreadcrumb(cwd, { entries: trimmedEntries });
+  console.log(`🧩 compact: saved ${relative(cwd, output)} (${trimmedEntries.length} events, pruned ${breadcrumb.entries.length - trimmedEntries.length})`);
 }
 
 async function existsFile(path: string): Promise<boolean> {

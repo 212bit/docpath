@@ -29,7 +29,7 @@ export interface EscalationState {
 export type L0State = 'idle' | 'executing' | 'completed';
 
 /** @deprecated L1 状态仅供入门示例，新流程应使用 L2/L3。保留兼容但不再用于新逻辑。 */
-export type L1State = 'idle' | 'task_created' | 'executing' | 'verifying' | 'completed';
+export type L1State = 'idle' | 'executing' | 'completed';
 
 /** Level 2 状态 — 标准任务 */
 export type L2State =
@@ -262,14 +262,9 @@ export const LEVEL_TRANSITIONS: Record<ComplexityLevel, Transition[]> = {
     { from: ['completed'], to: 'idle', description: '重置到空闲' },
   ],
 
-  // Level 1: 轻量任务 — task.md 驱动
+  // Level 1: 轻量任务 — task.md 驱动（已无 deprecated 状态）
   1: [
-    { from: ['idle'], to: 'task_created', description: '[deprecated] 创建 task.md' },
-    { from: ['task_created'], to: 'executing', description: '[deprecated] 开始执行任务' },
-    { from: ['executing'], to: 'verifying', description: '[deprecated] 执行完毕，进入验证' },
-    { from: ['verifying'], to: 'completed', description: '[deprecated] 验证通过，任务完成' },
     { from: ['executing'], to: 'idle', description: '执行中止，回到空闲', guard: '用户取消或任务废弃' },
-    { from: ['verifying'], to: 'executing', description: '[deprecated] 验证失败，继续执行', guard: '验证不通过需要修复' },
     { from: ['completed'], to: 'idle', description: '归档后重置' },
   ],
 

@@ -21,7 +21,6 @@ interface ReviewOptions {
   cwd: string;
   output?: string;
   scope?: string;
-  useAi?: boolean;
   approve?: boolean;
   /** 强制执行，即使不在 agent 会话中 */
   force?: boolean;
@@ -37,13 +36,6 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const docpathDir = await resolveDocpathDir(opts.cwd);
 
   console.log('🔍 代码审查开始...');
-
-  // AI review 模式：输出 LLM prompt 供 agent 使用
-  if (opts.useAi) {
-    console.log('🤖 AI review 模式：生成 LLM 审查 prompt...');
-    console.log('\n⚠️  AI review 需要配置 LLM key。当前为 prompt 输出模式。');
-    console.log('   如需完整 AI review，请使用 docpath agent done --approve-review\n');
-  }
 
   // 1. 收集变更文件
   let changedFiles: string[] = [];
