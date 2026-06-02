@@ -6,10 +6,14 @@
  */
 
 import { existsSync } from 'fs';
-import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
-import { updateCurrentState } from '../utils/workspace.js';
+import { transitionWorkflow } from '../engine/transitions.js';
+import { nextCommand } from './runtime.js';
+import { validateSpecContent } from '../utils/doc-parser.js';
+import { writeActiveTaskFile } from '../utils/task-files.js';
+import { readCurrentState } from '../utils/workspace.js';
+import { canonicalTaskDir, currentTaskDir } from '../utils/task-files.js';
 
 interface WriteSpecOptions {
   cwd: string;
@@ -43,20 +47,40 @@ export async function writeSpecCommand(options: WriteSpecOptions): Promise<void>
     process.exit(1);
   }
 
-  // 确保 tasks/current 目录存在
-  const tasksCurrentDir = join(docpathDir, 'tasks', 'current');
-  await mkdir(tasksCurrentDir, { recursive: true });
+  const validation = validateSpecContent(specContent);
+  if (!validation.ok) {
+    const current = await readCurrentState(cwd);
+    const taskId = current?.task_id || 'current';
+    const canonicalPath = join(canonicalTaskDir(docpathDir, taskId), 'spec.md');
+    const currentPath = join(currentTaskDir(docpathDir), 'spec.md');
+    console.error('❌  spec.md 结构校验失败：');
+    console.error(`   实际目标: ${canonicalPath}`);
+    console.error(`   current 视图: ${currentPath}`);
+    for (const issue of validation.issues) {
+      console.error(`   - ${formatValidationIssue(issue)}`);
+    }
+    process.exit(1);
+  }
 
-  // 写入 spec.md
-  const specPath = join(tasksCurrentDir, 'spec.md');
-  await writeFile(specPath, specContent, 'utf-8');
+  const current = await readCurrentState(cwd);
+  const taskId = current?.task_id || 'current';
+  const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'spec.md', specContent);
 
-  console.log(`✅  spec.md 已写入: ${specPath}`);
+  console.log(`✅  spec.md 已写入: ${canonicalPath}`);
 
   // 更新状态为 drafting → planning（brainstorm 完成）
-  await updateCurrentState(cwd, 'drafting', { substep: 'spec-written' });
+  await transitionWorkflow(cwd, 'task.created', { currentStep: 'spec 已写入，下一步: docpath plan' });
   console.log('📌  状态已更新为 drafting (spec-written)');
-  console.log('📌  下一步运行: docpath plan\n');
+  await nextCommand({ cwd });
+}
+
+function formatValidationIssue(issue: { message: string; line?: number; section?: string; field?: string }): string {
+  const details = [
+    issue.line ? `line ${issue.line}` : '',
+    issue.section ? `section ${issue.section}` : '',
+    issue.field ? `field ${issue.field}` : '',
+  ].filter(Boolean);
+  return details.length > 0 ? `${issue.message} (${details.join(', ')})` : issue.message;
 }
 
 /**

@@ -76,16 +76,23 @@ describe('agent handoff package', () => {
     execSync(`node ${BIN} agent handoff --cwd ${cwd} --max-entries 5`, { cwd, encoding: 'utf-8', timeout: 20000 });
 
     const handoff = readFileSync(join(cwd, '.docpath', 'workspace', 'compact-context.md'), 'utf-8');
+    assert.match(handoff, /# Context Handoff — T-HANDOFF/);
+    assert.match(handoff, /## Current State: executing \/ check_fail/);
+    assert.match(handoff, /## Goal: Handoff package/);
+    assert.match(handoff, /## Progress: 1\/2/);
+    assert.match(handoff, /## Recent Failures/);
+    assert.match(handoff, /S2: compiler failure/);
+    assert.match(handoff, /## Next Action/);
+    assert.match(handoff, /recommended_command: docpath debug reproduce/);
+    assert.match(handoff, /## Required Reading/);
+    assert.match(handoff, /.docpath\/workspace\/last-check.md/);
     assert.match(handoff, /## Resume Protocol/);
     assert.match(handoff, /## Current Goal/);
-    assert.match(handoff, /recommended_command: docpath debug reproduce/);
     assert.match(handoff, /## Current Blockers/);
-    assert.match(handoff, /S2: compiler failure/);
     assert.match(handoff, /## Verification Evidence/);
     assert.match(handoff, /❌ FAIL/);
     assert.match(handoff, /TypeScript 编译/);
     assert.match(handoff, /## Required Files Before Resume/);
-    assert.match(handoff, /.docpath\/workspace\/last-check.md/);
     assert.match(handoff, /## Next Agent Route/);
     assert.match(handoff, /```yaml/);
     rmSync(cwd, { recursive: true, force: true });

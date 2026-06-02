@@ -45,7 +45,9 @@ export interface BreadcrumbSummary {
   entries: BreadcrumbEntry[];
 }
 
-const BREADCRUMB_HEADER = `# 面包屑 — 上下文恢复索引
+export type BreadcrumbReporter = (message: string) => void;
+
+export const BREADCRUMB_HEADER = `# 面包屑 — 上下文恢复索引
 
 > 此文件由 DocPath 自动生成。每完成一个子任务追加一条记录。
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
@@ -98,7 +100,7 @@ function yamlUnquote(value: string): string {
   return v;
 }
 
-function formatEntry(entry: BreadcrumbEntry): string {
+export function formatEntry(entry: BreadcrumbEntry): string {
   const ts = entry.timestamp || new Date().toISOString();
   const emoji = STATUS_EMOJI[entry.status] || '⏭️';
   return [
@@ -155,6 +157,7 @@ export async function truncateBreadcrumb(projectRoot: string): Promise<number> {
 export async function writeBreadcrumb(
   projectRoot: string,
   entry: BreadcrumbEntry,
+  reporter: BreadcrumbReporter = (message) => process.stdout.write(`${message}\n`),
 ): Promise<void> {
   const breadcrumbPath = join(projectRoot, '.docpath', 'workspace', 'breadcrumb.md');
   const ts = entry.timestamp || new Date().toISOString();
@@ -173,7 +176,7 @@ export async function writeBreadcrumb(
   // 截断轮转：超过 MAX_ENTRIES 时裁剪最旧记录
   const trimmed = await truncateBreadcrumb(projectRoot);
   if (trimmed > 0) {
-    console.log(`🔄 面包屑轮转: 裁剪了 ${trimmed} 条旧记录（保留最近 ${MAX_ENTRIES} 条）`);
+    reporter(`🔄 面包屑轮转: 裁剪了 ${trimmed} 条旧记录（保留最近 ${MAX_ENTRIES} 条）`);
   }
 }
 

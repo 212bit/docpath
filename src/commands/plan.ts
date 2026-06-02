@@ -9,12 +9,20 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
-import { updateCurrentState } from '../utils/workspace.js';
+import { transitionWorkflow } from '../engine/transitions.js';
+import { nextCommand } from './runtime.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
+import { readCurrentState } from '../utils/workspace.js';
+import { writeActiveTaskFile } from '../utils/task-files.js';
 
 interface PlanOptions {
   cwd: string;
   dryRun?: boolean;
+}
+
+interface PlanContext {
+  docpathDir: string;
+  spec: string;
 }
 
 const PLAN_SYSTEM_PROMPT = `你是一个项目计划专家。根据用户提供的 spec.md，将需求分解为可执行的子任务。
@@ -47,11 +55,56 @@ S1 → S3 → S5
 \`\`\`
 `;
 
-export async function planCommand(options: PlanOptions): Promise<void> {
-  const { cwd } = options;
+function extractFirstMatch(content: string, pattern: RegExp): string | null {
+  const match = content.match(pattern);
+  return match?.[1]?.trim() || null;
+}
+
+function extractChecklistItems(content: string, prefix: string): string[] {
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`^- \\[[ xX]\\] (${escaped}-\\d+):\\s*(.+)$`, 'gm');
+  const items: string[] = [];
+  for (const match of content.matchAll(pattern)) {
+    const text = match[2]?.trim();
+    if (text) items.push(text);
+  }
+  return items;
+}
+
+function renderDraftPlan(spec: string): string {
+  const title = extractFirstMatch(spec, /^#\s+(.+)$/m) || '当前任务';
+  const features = extractChecklistItems(spec, 'FR');
+  const acceptances = extractChecklistItems(spec, 'AC');
+  const primaryFeature = features[0] || title.replace(/^T-\d{8}-[a-z0-9-]+\s+-\s+/, '');
+  const primaryAcceptance = acceptances[0] || 'plan.md 已生成并可进入执行';
+
+  return [
+    '## 执行计划',
+    '',
+    `### S1: 梳理 ${primaryFeature}`,
+    `- **描述**: 根据 spec 明确 ${primaryFeature} 的实现边界和验收口径。`,
+    `- **验收条件**: ${primaryAcceptance}`,
+    '- **依赖**: 无',
+    '',
+    `### S2: 实现 ${primaryFeature}`,
+    `- **描述**: 在现有架构内完成 ${primaryFeature} 的代码与文档更新。`,
+    `- **验收条件**: ${primaryFeature} 已实现，并保持现有工作流兼容。`,
+    '- **依赖**: S1',
+    '',
+    '### S3: 验证门禁并归档',
+    '- **描述**: 运行相关测试、docpath check/review/journal，完成任务归档。',
+    '- **验收条件**: 质量门禁通过，任务状态进入 completed。',
+    '- **依赖**: S2',
+    '',
+    '## 依赖关系图',
+    'S1 → S2 → S3',
+    '',
+  ].join('\n');
+}
+
+async function loadPlanContext(cwd: string): Promise<PlanContext> {
   const docpathDir = await resolveDocpathDir(cwd);
   const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
-  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
@@ -63,19 +116,20 @@ export async function planCommand(options: PlanOptions): Promise<void> {
     process.exit(1);
   }
 
-  console.log('\n📋  生成执行计划...\n');
+  return {
+    docpathDir,
+    spec: await readTaskFile(cwd, 'spec.md'),
+  };
+}
 
-  const spec = await readTaskFile(cwd, 'spec.md');
+function printDryRun(spec: string): void {
+  console.log('📝  [dry-run] Spec 内容预览：');
+  console.log(spec.slice(0, 500));
+  console.log('---');
+}
 
-  if (options.dryRun) {
-    console.log('📝  [dry-run] Spec 内容预览：');
-    console.log(spec!.slice(0, 500));
-    console.log('---');
-    return;
-  }
-
-  // [Agent Mode] 输出结构化 prompt，由宿主 Agent 执行推理
-  const prompt = emitPrompt({
+function emitPlanPrompt(spec: string): void {
+  emitPrompt({
     task: 'plan',
     system: PLAN_SYSTEM_PROMPT,
     context: { 'Spec.md 内容': spec },
@@ -109,10 +163,35 @@ export async function planCommand(options: PlanOptions): Promise<void> {
     ],
     output_format: 'plan.md (markdown)',
   });
+}
 
-  console.log(prompt);
+async function writeGeneratedPlan(cwd: string, docpathDir: string, spec: string): Promise<string> {
+  const current = await readCurrentState(cwd);
+  const existingPlan = await readTaskFile(cwd, 'plan.md');
+  const planContent = existingPlan.trim() ? existingPlan : renderDraftPlan(spec || '');
+  const taskId = current?.task_id || 'current';
+  const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'plan.md', planContent);
+  return canonicalPath;
+}
 
-  await updateCurrentState(cwd, 'drafting', { substep: 'agent-plan' });
-  console.log('\n✅ 状态已更新为 drafting');
-  console.log('📌 完成后运行: docpath write-plan\n');
+export async function planCommand(options: PlanOptions): Promise<void> {
+  const { cwd } = options;
+  const { docpathDir, spec } = await loadPlanContext(cwd);
+
+  console.log('\n📋  生成执行计划...\n');
+
+  if (options.dryRun) {
+    printDryRun(spec);
+    return;
+  }
+
+  emitPlanPrompt(spec);
+
+  // 已有计划时同步 active alias；无计划时生成保守草案，避免 planning 状态缺 plan.md。
+  const canonicalPath = await writeGeneratedPlan(cwd, docpathDir, spec);
+  console.log(`✅  plan.md 已写入: ${canonicalPath}`);
+
+  await transitionWorkflow(cwd, 'plan.ready', { currentStep: '计划已生成，下一步: docpath go' });
+  console.log('\n✅ 状态已更新为 planning');
+  await nextCommand({ cwd });
 }

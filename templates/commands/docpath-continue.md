@@ -6,15 +6,15 @@
 ## 命令
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
-  ./.docpath/bin/docpath continue
+  ./.docpath/bin/docpath continue $ARGUMENTS
 elif command -v docpath >/dev/null 2>&1; then
-  docpath continue
+  docpath continue $ARGUMENTS
 elif [ -x ./node_modules/.bin/docpath ]; then
-  ./node_modules/.bin/docpath continue
+  ./node_modules/.bin/docpath continue $ARGUMENTS
 elif [ -f ./bin/docpath.js ]; then
-  node ./bin/docpath.js continue
+  node ./bin/docpath.js continue $ARGUMENTS
 elif [ -f ./dist/index.js ]; then
-  node ./dist/index.js continue
+  node ./dist/index.js continue $ARGUMENTS
 else
   echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127

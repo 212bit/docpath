@@ -3,16 +3,17 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260529-p3
-task_title: Phase 3: Agent Superpowers — 借鉴 Superpowers/Trellis/GSD 的 5 项改进
-phase: archived
-current_step: 质量检查通过 (3 项)，下一步: docpath review
-started_at: 2026-05-29T14:02:01.583Z
-updated_at: 2026-05-29T14:02
+task_id: T-20260601-review-todo
+task_title: 清理 review TODO 自触发提示
+phase: completed
+gate: review_pass
+current_step: 知识归档完成
+started_at: 2026-06-01T16:39:27.432Z
+updated_at: 2026-06-01T16:39:27.431Z
 ```
 
-> 📖 规约: [spec.md](../tasks/T-20260529-p3/spec.md)
-> 📋 计划: [plan.md](../tasks/T-20260529-p3/plan.md)
+> 📖 规约: [spec.md](../tasks/current/spec.md)
+> 📋 计划: [plan.md](../tasks/current/plan.md)
 
 ## ✅ 执行检查清单
 
@@ -20,8 +21,8 @@ updated_at: 2026-05-29T14:02
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 3 项 · 2026-05-29T13:55:22.679Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260529-p3] — 2026-05-29T13:55:22.778Z · 状态: done · 代码审查: 0 错误, 43 警告, 1 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-01T16:39:05.738Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260601-review-todo] — 2026-06-01T16:39:20.628Z · 状态: done · 代码审查: 0 错误, 0 警告, 0 提示
 
 ## 🔄 同步说明
 

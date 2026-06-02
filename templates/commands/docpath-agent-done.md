@@ -6,15 +6,15 @@ Close the active DocPath task through quality gates.
 
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
-  ./.docpath/bin/docpath agent done --step "$ARGUMENTS"
+  ./.docpath/bin/docpath agent done $ARGUMENTS
 elif command -v docpath >/dev/null 2>&1; then
-  docpath agent done --step "$ARGUMENTS"
+  docpath agent done $ARGUMENTS
 elif [ -x ./node_modules/.bin/docpath ]; then
-  ./node_modules/.bin/docpath agent done --step "$ARGUMENTS"
+  ./node_modules/.bin/docpath agent done $ARGUMENTS
 elif [ -f ./bin/docpath.js ]; then
-  node ./bin/docpath.js agent done --step "$ARGUMENTS"
+  node ./bin/docpath.js agent done $ARGUMENTS
 elif [ -f ./dist/index.js ]; then
-  node ./dist/index.js agent done --step "$ARGUMENTS"
+  node ./dist/index.js agent done $ARGUMENTS
 else
   echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127

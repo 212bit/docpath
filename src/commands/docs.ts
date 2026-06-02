@@ -61,6 +61,7 @@ function inferScope(filePath: string): string {
   if (normalized.startsWith('spec/infra/') || normalized.includes('/spec/infra/')) return 'infra';
   if (normalized.startsWith('spec/shared/') || normalized.includes('/spec/shared/')) return 'shared';
   if (normalized.startsWith('tasks/current/') || normalized.includes('/tasks/current/')) return 'task';
+  if (/^tasks\/T-[^/]+\//.test(normalized) || /\/tasks\/T-[^/]+\//.test(normalized)) return 'task';
 
   return 'project';
 }
@@ -185,8 +186,7 @@ function generateDocsMd(entries: DocEntry[]): string {
   return lines.join('\n');
 }
 
-/** docs scan — 扫描文档生成索引 */
-async function docsScan(cwd: string): Promise<void> {
+async function ensureDocpathDir(cwd: string): Promise<string> {
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
@@ -194,23 +194,15 @@ async function docsScan(cwd: string): Promise<void> {
     process.exit(1);
   }
 
-  console.log('\n🔍  扫描文档...\n');
+  return docpathDir;
+}
 
-  // 扫描所有 .md 文件
-  const mdFiles = await scanDirectory(docpathDir, docpathDir);
-
-  if (mdFiles.length === 0) {
-    console.log('📭  未找到任何 .md 文件');
-    return;
-  }
-
-  // 生成文档条目
+async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<DocEntry[]> {
   const entries: DocEntry[] = [];
 
   for (const file of mdFiles) {
     const fullPath = join(docpathDir, file);
     const fileStat = await stat(fullPath);
-
     const kind = inferKind(file);
     const updated = fileStat.mtime.toISOString();
     entries.push({
@@ -227,13 +219,34 @@ async function docsScan(cwd: string): Promise<void> {
     });
   }
 
-  // 生成 docs.md
-  const docsMdContent = generateDocsMd(entries);
+  return entries;
+}
+
+async function writeDocsIndexes(docpathDir: string, entries: DocEntry[]): Promise<string> {
   const docsMdPath = join(docpathDir, 'docs.md');
   const docsIndexPath = join(docpathDir, 'docs-index.json');
 
-  await writeFile(docsMdPath, docsMdContent, 'utf-8');
+  await writeFile(docsMdPath, generateDocsMd(entries), 'utf-8');
   await writeFile(docsIndexPath, JSON.stringify({ generated_at: new Date().toISOString(), entries }, null, 2), 'utf-8');
+
+  return docsMdPath;
+}
+
+/** docs scan — 扫描文档生成索引 */
+async function docsScan(cwd: string): Promise<void> {
+  const docpathDir = await ensureDocpathDir(cwd);
+
+  console.log('\n🔍  扫描文档...\n');
+
+  const mdFiles = await scanDirectory(docpathDir, docpathDir);
+
+  if (mdFiles.length === 0) {
+    console.log('📭  未找到任何 .md 文件');
+    return;
+  }
+
+  const entries = await buildDocEntries(docpathDir, mdFiles);
+  const docsMdPath = await writeDocsIndexes(docpathDir, entries);
 
   console.log(`✅  已生成 docs.md / docs-index.json (${entries.length} 个文档)`);
   console.log(`📁  位置: ${docsMdPath}`);

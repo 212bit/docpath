@@ -81,7 +81,15 @@ describe('transitionWorkflow', () => {
     const cwd = mkWorkspace({ phase: 'executing', gate: 'none' });
     await assert.rejects(
       () => transitionWorkflow(cwd, 'journal.archived'),
-      /Illegal workflow transition/,
+      /Illegal workflow transition: journal\.archived cannot run from phase=executing/,
+    );
+    await assert.rejects(
+      () => transitionWorkflow(cwd, 'journal.archived'),
+      /允许来源: checking, reviewing, journaling, completed/,
+    );
+    await assert.rejects(
+      () => transitionWorkflow(cwd, 'journal.archived'),
+      /建议下一步: docpath check 或 docpath review/,
     );
     rmSync(cwd, { recursive: true, force: true });
   });

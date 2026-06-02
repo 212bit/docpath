@@ -1,63 +1,70 @@
 # DocPath OpenCode Protocol
 
-## Overview
-This file provides OpenCode-specific integration with DocPath's workflow engine. OpenCode is an AI coding agent that operates in your terminal.
+> This project uses **DocPath** as the shared workflow engine for OpenCode sessions.
+> Treat `.docpath/` as the single source of truth for task state, recent progress, and next-step routing.
 
-## Project Structure
-- `.docpath/` — DocPath workspace (state, breadcrumb, tasks)
-- `.docpath/workspace/current.md` — Current task context
-- `.docpath/workspace/breadcrumb.md` — Execution trace
-- `.docpath/tasks/current/plan.md` — Task plan with sub-tasks
+## First Thing You Do
 
-## Commands
+1. Run `docpath status --agent` or read `.docpath/workspace/current.md`.
+2. Run `docpath next --agent` to choose the next safe action.
+3. Read `.docpath/workspace/breadcrumb.md` for recent progress and blockers.
+4. Follow the `recommended_command` from `next --agent` instead of guessing the next step.
+5. After each meaningful step, record progress with `docpath agent step`.
+
+## Core Files
+
+- `.docpath/workspace/current.md` — active task state and checklist
+- `.docpath/workspace/breadcrumb.md` — execution trace for resume/handoff
+- `.docpath/tasks/current/spec.md` — active task spec
+- `.docpath/tasks/current/plan.md` — active task plan
+
+## Agent Lifecycle Commands
 
 ```bash
-docpath status --agent   # Show current state + next recommended action
-docpath next --agent     # Get next recommended command
-docpath go               # Load next sub-task from plan
-docpath agent step --step S1 --auto-next  # Mark step done, auto-advance
-docpath agent done       # Run quality gates, mark completion
-docpath check            # Quality gate (compile + test + lint)
-docpath review           # Code review (static analysis)
-docpath agent handoff    # Persist compact context for session transfer
-docpath continue         # Resume from breadcrumb after disconnect
-```
-
-## Workflow Protocol
-
-### 1. Task Start
-```bash
-docpath agent enter --step S1
-```
-
-### 2. Per Sub-task
-```bash
-docpath go               # Load next sub-task context
-# ... do work ...
-docpath agent step --step S1 --status done --auto-next
-```
-
-### 3. Task Complete
-```bash
-docpath agent done
-```
-
-### 4. Session Resume (after disconnect)
-```bash
+docpath agent enter                         # load current state and print agent context
+docpath go --step S1                        # load the selected sub-task from the active plan
+docpath agent step --step "S1" --status done
+docpath check
+docpath agent done --step "<task>"
+docpath agent handoff
 docpath continue
 ```
 
-## Quality Gates
+## OpenCode Workflow
 
-`docpath agent done` runs:
-1. **check** — compile + test + lint (block on failure)
-2. **review** — static code analysis (block on failure)
-3. **journal** — archive knowledge on success
-
-Use `--enforce` to require all gates pass (no skip allowed):
+### 1. Start or Resume
 ```bash
-docpath agent done --enforce
+docpath agent enter
+docpath next --agent
 ```
 
+### 2. Execute a Sub-task
+```bash
+docpath go --step S1
+# ... do work ...
+docpath agent step --step "S1" --status done
+```
+
+### 3. Complete the Task
+```bash
+docpath check
+docpath agent done --step "<task>"
+```
+
+### 4. Handoff or Resume Later
+```bash
+docpath agent handoff
+docpath continue
+```
+
+## Rules
+
+- Do not act from memory alone; read DocPath state first.
+- Do not hand-edit `state.json` or workflow fields in `current.md`.
+- Use `docpath next --agent` when the route is unclear.
+- Run `docpath check` before claiming completion.
+- Use `docpath agent handoff` when another session may resume the task.
+
 ## Config
+
 Config: `.docpath/config.yaml`

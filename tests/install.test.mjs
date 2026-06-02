@@ -41,6 +41,8 @@ const CLAUDE_EXPOSED_COMMANDS = [
   'status',
   'tdd',
   'unlink',
+  'write-journal',
+  'write-plan',
   'write-spec',
 ];
 
@@ -108,6 +110,24 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(TEMPLATE_COMMANDS_DIR, 'docpath-link.md')), false);
   });
 
+  it('claude protocol references current lifecycle commands and no removed commands', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target claude`, cwd);
+
+    const installedClaude = readFileSync(join(cwd, 'CLAUDE.md'), 'utf-8');
+    const protocolClaude = readFileSync(join(cwd, '.docpath', 'protocols', 'CLAUDE.md'), 'utf-8');
+
+    for (const content of [installedClaude, protocolClaude]) {
+      assert.match(content, /docpath status --agent/);
+      assert.match(content, /docpath next --agent/);
+      assert.match(content, /docpath agent done/);
+      assert.doesNotMatch(content, /docpath link\b/);
+      assert.doesNotMatch(content, /docpath archive\b/);
+    }
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('opencode target installs OPENCODE.md, commands, and OpenCode config only', () => {
     const cwd = mkWorkspace();
     run(`install --cwd ${cwd} --target opencode`, cwd);
@@ -121,11 +141,45 @@ describe('install agent adapters', () => {
     const agents = readFileSync(join(cwd, 'OPENCODE.md'), 'utf-8');
     assert.match(agents, /docpath status --agent/);
     assert.match(agents, /docpath next --agent/);
+    assert.match(agents, /docpath agent done --step/);
+    assert.doesNotMatch(agents, /agent enter --step/);
+    assert.doesNotMatch(agents, /--auto-next/);
 
     const opencode = JSON.parse(readFileSync(join(cwd, '.opencode', 'docpath.json'), 'utf-8'));
     assert.equal(opencode.protocol, 'OPENCODE.md');
     assert.equal(opencode.commands.next, 'docpath next --agent');
     assert.equal(opencode.commands.status, 'docpath status --agent');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('codex target installs Codex protocol files and config only', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+
+    assert.equal(existsSync(join(cwd, 'AGENTS.md')), true);
+    assert.equal(existsSync(join(cwd, 'CODEX.md')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'config.toml')), true);
+    assert.equal(existsSync(join(cwd, 'CLAUDE.md')), false);
+    assert.equal(existsSync(join(cwd, 'OPENCODE.md')), false);
+    assert.equal(existsSync(join(cwd, '.claude', 'commands')), false);
+    assert.equal(existsSync(join(cwd, '.opencode', 'docpath.json')), false);
+
+    const agents = readFileSync(join(cwd, 'AGENTS.md'), 'utf-8');
+    const codexProtocol = readFileSync(join(cwd, 'CODEX.md'), 'utf-8');
+    const codexConfig = readFileSync(join(cwd, '.codex', 'config.toml'), 'utf-8');
+    const protocolAgents = readFileSync(join(cwd, '.docpath', 'protocols', 'AGENTS.md'), 'utf-8');
+
+    for (const content of [agents, protocolAgents]) {
+      assert.match(content, /docpath status --agent/);
+      assert.match(content, /docpath next --agent/);
+      assert.match(content, /docpath agent done/);
+      assert.doesNotMatch(content, /docpath archive\b/);
+    }
+    assert.match(codexProtocol, /docpath next --agent/);
+    assert.match(codexConfig, /protocol = "CODEX\.md"/);
+    assert.match(codexConfig, /fallback_protocol = "AGENTS\.md"/);
+    assert.match(codexConfig, /next = "docpath next --agent"/);
+    assert.match(codexConfig, /status = "docpath status --agent"/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -142,8 +196,14 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(cwd, '.opencode', 'docpath.json')), true);
 
     const codex = readFileSync(join(cwd, '.codex', 'config.toml'), 'utf-8');
+    const protocolAgents = readFileSync(join(cwd, '.docpath', 'protocols', 'AGENTS.md'), 'utf-8');
+
     assert.match(codex, /next = "docpath next --agent"/);
     assert.match(codex, /status = "docpath status --agent"/);
+    assert.match(protocolAgents, /docpath status --agent/);
+    assert.match(protocolAgents, /docpath next --agent/);
+    assert.match(protocolAgents, /docpath agent done/);
+    assert.doesNotMatch(protocolAgents, /docpath archive\b/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -161,6 +221,8 @@ describe('install agent adapters', () => {
     run(`install --cwd ${cwd} --target opencode --force`, cwd);
     const overwritten = readFileSync(join(cwd, 'OPENCODE.md'), 'utf-8');
     assert.match(overwritten, /docpath next --agent/);
+    assert.match(overwritten, /docpath agent done --step/);
+    assert.doesNotMatch(overwritten, /agent enter --step/);
     assert.doesNotMatch(overwritten, /Do not overwrite/);
     rmSync(cwd, { recursive: true, force: true });
   });

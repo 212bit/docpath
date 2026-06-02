@@ -30,10 +30,25 @@ interface TransitionTarget {
   from: WorkflowPhase[];
 }
 
+const EVENT_RECOVERY_COMMAND: Record<WorkflowEvent, string> = {
+  'task.created': 'docpath refine 或 docpath plan',
+  'plan.ready': 'docpath go --step S1',
+  'step.started': 'docpath next --agent',
+  'step.completed': 'docpath next --agent',
+  'check.passed': 'docpath review',
+  'check.failed': 'docpath check',
+  'review.passed': 'docpath journal',
+  'review.failed': 'docpath review',
+  'journal.archived': 'docpath check 或 docpath review',
+};
+
 const EVENT_TARGETS: Record<WorkflowEvent, TransitionTarget> = {
-  'task.created': { phase: 'drafting', gate: 'none', from: ['idle', 'drafting'] },
-  'plan.ready': { phase: 'planning', gate: 'none', from: ['drafting', 'planning'] },
-  'step.started': { phase: 'executing', gate: 'none', from: ['idle', 'planning', 'executing', 'checking'] },
+  // 起草类事件：放宽 from，允许从 idle/草稿/计划/执行中（重）创建或细化，且不破坏门禁保护。
+  // 这样新项目与历史漂移状态都能正常推进，而不会抛非法转移。
+  'task.created': { phase: 'drafting', gate: 'none', from: ['idle', 'drafting', 'planning', 'executing', 'completed'] },
+  'plan.ready': { phase: 'planning', gate: 'none', from: ['idle', 'drafting', 'planning', 'executing'] },
+  'step.started': { phase: 'executing', gate: 'none', from: ['idle', 'drafting', 'planning', 'executing', 'checking'] },
+  // 门禁类事件：保持严格 from，禁止跳过验证/审查直达完成。
   'step.completed': { phase: 'executing', gate: 'none', from: ['executing', 'checking'] },
   'check.passed': { phase: 'checking', gate: 'check_pass', from: ['executing', 'checking'] },
   'check.failed': { phase: 'checking', gate: 'check_fail', from: ['executing', 'checking', 'reviewing'] },
@@ -85,7 +100,12 @@ export async function transitionWorkflow(
 
   const previous = await readCurrentState(cwd) || fallbackState();
   if (!target.from.includes(previous.phase)) {
-    throw new Error(`[docpath] Illegal workflow transition: ${event} cannot run from phase=${previous.phase}`);
+    const allowedFrom = target.from.join(', ');
+    const suggested = EVENT_RECOVERY_COMMAND[event] || 'docpath next --agent';
+    throw new Error(
+      `[docpath] Illegal workflow transition: ${event} cannot run from phase=${previous.phase}` +
+      `（允许来源: ${allowedFrom}；建议下一步: ${suggested}）`,
+    );
   }
 
   const snapshot = normalizeWorkflowSnapshot({ phase: target.phase, gate: target.gate });

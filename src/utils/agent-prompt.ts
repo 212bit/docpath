@@ -9,6 +9,8 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
+import { readCurrentState } from './workspace.js';
+import { readActiveTaskFile } from './task-files.js';
 
 export interface PromptBlock {
   task: string;
@@ -18,40 +20,46 @@ export interface PromptBlock {
   output_format: string;
 }
 
+export type PromptWriter = (content: string) => void;
+
+export function renderPrompt(block: PromptBlock): string {
+  const lines: string[] = ['', '```yaml'];
+  lines.push(`task: ${block.task}`);
+  lines.push('system: |');
+  for (const line of block.system.split('\n')) {
+    lines.push(`  ${line}`);
+  }
+  lines.push('context:');
+  for (const [key, value] of Object.entries(block.context)) {
+    if (!value) continue;
+    lines.push(`  ${key}: |`);
+    const contextLines = value.split('\n');
+    const truncated = contextLines.length > 100
+      ? [...contextLines.slice(0, 100), `... (${contextLines.length - 100} lines truncated)`]
+      : contextLines;
+    for (const line of truncated) {
+      lines.push(`    ${line}`);
+    }
+  }
+  lines.push('instructions:');
+  for (const inst of block.instructions) {
+    lines.push(`  - ${inst}`);
+  }
+  if (block.output_format) {
+    lines.push('output_format: |');
+    for (const line of block.output_format.split('\n')) {
+      lines.push(`  ${line}`);
+    }
+  }
+  lines.push('```', '', '');
+  return lines.join('\n');
+}
+
 /**
  * 输出结构化 prompt 到 stdout（YAML 格式，供宿主 Agent 消费）
  */
-export function emitPrompt(block: PromptBlock): void {
-  console.log('\n```yaml');
-  console.log(`task: ${block.task}`);
-  console.log(`system: |`);
-  // 缩进 system prompt
-  for (const line of block.system.split('\n')) {
-    console.log(`  ${line}`);
-  }
-  console.log('context:');
-  for (const [key, value] of Object.entries(block.context)) {
-    if (!value) continue;
-    console.log(`  ${key}: |`);
-    const lines = value.split('\n');
-    const truncated = lines.length > 100
-      ? [...lines.slice(0, 100), `... (${lines.length - 100} lines truncated)`]
-      : lines;
-    for (const line of truncated) {
-      console.log(`    ${line}`);
-    }
-  }
-  console.log('instructions:');
-  for (const inst of block.instructions) {
-    console.log(`  - ${inst}`);
-  }
-  if (block.output_format) {
-    console.log(`output_format: |`);
-    for (const line of block.output_format.split('\n')) {
-      console.log(`  ${line}`);
-    }
-  }
-  console.log('```\n');
+export function emitPrompt(block: PromptBlock, writer: PromptWriter = (content) => process.stdout.write(content)): void {
+  writer(renderPrompt(block));
 }
 
 /**
@@ -59,6 +67,16 @@ export function emitPrompt(block: PromptBlock): void {
  */
 export async function readTaskFile(cwd: string, relativePath: string): Promise<string> {
   const docpathDir = await resolveDocpathDir(cwd);
+  const current = await readCurrentState(cwd);
+  if (relativePath === 'spec.md' || relativePath === 'plan.md') {
+    return readActiveTaskFile(docpathDir, current?.task_id, relativePath);
+  }
+  if (relativePath === 'tasks/current/spec.md') {
+    return readActiveTaskFile(docpathDir, current?.task_id, 'spec.md');
+  }
+  if (relativePath === 'tasks/current/plan.md') {
+    return readActiveTaskFile(docpathDir, current?.task_id, 'plan.md');
+  }
   const filePath = join(docpathDir, relativePath);
   if (!existsSync(filePath)) return '';
   return readFile(filePath, 'utf-8');

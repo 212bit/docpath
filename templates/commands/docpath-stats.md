@@ -6,15 +6,15 @@ Show DocPath project statistics.
 
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
-  ./.docpath/bin/docpath stats --agent $ARGUMENTS
+  ./.docpath/bin/docpath stats
 elif command -v docpath >/dev/null 2>&1; then
-  docpath stats --agent $ARGUMENTS
+  docpath stats
 elif [ -x ./node_modules/.bin/docpath ]; then
-  ./node_modules/.bin/docpath stats --agent $ARGUMENTS
+  ./node_modules/.bin/docpath stats
 elif [ -f ./bin/docpath.js ]; then
-  node ./bin/docpath.js stats --agent $ARGUMENTS
+  node ./bin/docpath.js stats
 elif [ -f ./dist/index.js ]; then
-  node ./dist/index.js stats --agent $ARGUMENTS
+  node ./dist/index.js stats
 else
   echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127

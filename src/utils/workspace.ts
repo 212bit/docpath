@@ -9,6 +9,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import * as readline from 'readline';
 import { resolveDocpathDir } from './file.js';
+import { resolveActiveTaskDocPath } from './task-files.js';
 import {
   normalizeWorkflowSnapshot,
   snapshotFromState,
@@ -16,6 +17,7 @@ import {
   type RuntimeWorkflowState,
   type WorkflowPhase,
 } from '../engine/state-machine.js';
+import { parsePlanSteps, renderPlanChecklist } from './doc-parser.js';
 
 // ── state.json schema ──
 
@@ -101,19 +103,37 @@ export async function writeCurrentState(cwd: string, state: CurrentState): Promi
   await rename(stateTmpPath, statePath);
 
   // 重建 current.md
-  const planContent = await readOptionalFile(join(docpathDir, 'tasks', 'current', 'plan.md'));
+  const activePlanPath = resolveActiveTaskDocPath(docpathDir, state.task_id || '', 'plan.md');
+  const activeSpecPath = resolveActiveTaskDocPath(docpathDir, state.task_id || '', 'spec.md');
+  const planContent = await readOptionalFile(activePlanPath);
   const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
   const breadcrumbContent = await readOptionalFile(join(docpathDir, 'workspace', 'breadcrumb.md'));
+  const specLink = `../${activeSpecPath.slice(docpathDir.length + 1).replace(/\\/g, '/')}`;
+  const planLink = `../${activePlanPath.slice(docpathDir.length + 1).replace(/\\/g, '/')}`;
 
   const rendered = renderCurrentDocument(
     convertStateToFields(state),
     planContent,
-    state.task_id || 'current',
+    specLink,
+    planLink,
     extractLastCheckSummary(lastCheckContent),
     extractLatestBreadcrumbSummary(breadcrumbContent),
     state.escalation,
   );
   await writeFile(currentPath, rendered, 'utf-8');
+}
+
+/**
+ * 仅更新复杂度 level，不改动工作流 phase/gate。
+ * 用于 escalation 自动升级等「非阶段」变更——其余状态变更一律走 transitionWorkflow()。
+ */
+export async function updateLevel(cwd: string, level: number): Promise<void> {
+  const current = await readCurrentState(cwd);
+  if (!current) {
+    console.error('⚠️  current.md 不存在，请先运行 docpath:init');
+    return;
+  }
+  await writeCurrentState(cwd, { ...current, level, updated_at: new Date().toISOString() });
 }
 
 // ── 兼容别名（保持现有调用者不变） ──
@@ -150,6 +170,65 @@ function normalizeStoredState(raw: Partial<CurrentState> & { state?: string; pha
   };
 }
 
+function extractLegacyYamlBlock(content: string): string | null {
+  return content.match(/```yaml\n([\s\S]*?)```/)?.[1] ?? null;
+}
+
+function stripYamlInlineComment(value: string): string {
+  let inSingle = false;
+  let inDouble = false;
+
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+    const prev = value[i - 1];
+
+    if (char === '"' && !inSingle && prev !== '\\') inDouble = !inDouble;
+    if (char === "'" && !inDouble && prev !== '\\') inSingle = !inSingle;
+    if (char === '#' && !inSingle && !inDouble && (i === 0 || /\s/.test(prev))) {
+      return value.slice(0, i).trim();
+    }
+  }
+
+  return value.trim();
+}
+
+function unquoteYamlScalar(value: string): string {
+  const trimmed = stripYamlInlineComment(value);
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function readLegacyYamlValue(yamlBlock: string, key: string): string {
+  const match = yamlBlock.match(new RegExp(`^${key}:\\s*(.*)$`, 'm'));
+  if (!match) return '';
+  const value = unquoteYamlScalar(match[1]);
+  return value === 'null' ? '' : value;
+}
+
+function legacyStateFromYamlBlock(yamlBlock: string): CurrentState {
+  const get = (key: string): string => readLegacyYamlValue(yamlBlock, key);
+  const snapshot = normalizeWorkflowSnapshot({
+    state: get('state'),
+    phase: get('phase'),
+    gate: get('gate'),
+  }) || snapshotFromState('idle')!;
+
+  return {
+    level: parseInt(get('level'), 10) || 0,
+    state: snapshot.state,
+    task_id: get('task_id'),
+    task_title: get('task_title'),
+    phase: snapshot.phase,
+    gate: snapshot.gate,
+    current_step: get('current_step'),
+    started_at: get('started_at'),
+    updated_at: get('updated_at'),
+  };
+}
+
 /**
  * 从旧版 current.md YAML 块读取状态（迁移用）
  */
@@ -158,60 +237,8 @@ async function readLegacyCurrentMd(cwd: string): Promise<CurrentState | null> {
   const currentPath = join(docpathDir, 'workspace', 'current.md');
   try {
     const content = await readFile(currentPath, 'utf-8');
-    const yamlMatch = content.match(/```yaml\n([\s\S]*?)```/);
-    if (!yamlMatch) return null;
-
-    const yamlBlock = yamlMatch[1];
-    const stripInlineComment = (value: string): string => {
-      let inSingle = false;
-      let inDouble = false;
-
-      for (let i = 0; i < value.length; i++) {
-        const char = value[i];
-        const prev = value[i - 1];
-
-        if (char === '"' && !inSingle && prev !== '\\') inDouble = !inDouble;
-        if (char === "'" && !inDouble && prev !== '\\') inSingle = !inSingle;
-        if (char === '#' && !inSingle && !inDouble && (i === 0 || /\s/.test(prev))) {
-          return value.slice(0, i).trim();
-        }
-      }
-
-      return value.trim();
-    };
-    const unquote = (value: string): string => {
-      const trimmed = stripInlineComment(value);
-      if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-          (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-        return trimmed.slice(1, -1);
-      }
-      return trimmed;
-    };
-    const get = (key: string): string => {
-      const m = yamlBlock.match(new RegExp(`^${key}:\\s*(.*)$`, 'm'));
-      if (!m) return '';
-      const val = unquote(m[1]);
-      // YAML null → empty string (not the literal string "null")
-      return val === 'null' ? '' : val;
-    };
-
-    const snapshot = normalizeWorkflowSnapshot({
-      state: get('state'),
-      phase: get('phase'),
-      gate: get('gate'),
-    }) || snapshotFromState('idle')!;
-
-    return {
-      level: parseInt(get('level'), 10) || 0,
-      state: snapshot.state,
-      task_id: get('task_id'),
-      task_title: get('task_title'),
-      phase: snapshot.phase,
-      gate: snapshot.gate,
-      current_step: get('current_step'),
-      started_at: get('started_at'),
-      updated_at: get('updated_at'),
-    };
+    const yamlBlock = extractLegacyYamlBlock(content);
+    return yamlBlock ? legacyStateFromYamlBlock(yamlBlock) : null;
   } catch {
     return null;
   }
@@ -252,15 +279,7 @@ function normalizeTaskTitle(title: string): string {
 }
 
 function extractPlanChecklist(plan: string): string[] {
-  const items: string[] = [];
-  for (const line of plan.split('\n')) {
-    const match = line.match(/^\s*-\s*\[( |x|X|✓)\]\s+(.+?)\s*$/);
-    if (!match) continue;
-    const checked = match[1] !== ' ';
-    const text = match[2].replace(/\s+/g, ' ').trim();
-    items.push(`- [${checked ? 'x' : ' '}] ${text}`);
-  }
-  return items;
+  return renderPlanChecklist(parsePlanSteps(plan));
 }
 
 function relativeTaskLink(taskId: string, file: string): string {
@@ -271,26 +290,52 @@ function workspaceLink(file: string): string {
   return `./${file}`;
 }
 
+function renderCurrentStateYaml(fields: CurrentStateFields): string {
+  return `\`\`\`yaml
+level: ${fields.level}
+state: ${fields.state.padEnd(19)}# 当前状态
+task_id: ${fields.task_id}
+task_title: ${fields.task_title}
+phase: ${fields.phase}
+gate: ${fields.gate}
+current_step: ${fields.current_step}
+started_at: ${fields.started_at}
+updated_at: ${fields.updated_at}
+\`\`\``;
+}
+
+function renderExecutionChecklist(planContent: string): string {
+  const checklist = extractPlanChecklist(planContent);
+  return checklist.length > 0
+    ? checklist.join('\n')
+    : '- [ ] 暂无 plan.md checklist，请补充 `.docpath/tasks/current/plan.md`';
+}
+
+function renderEvidenceBlock(lastCheckSummary: string, breadcrumbSummary: string): string {
+  return [
+    `- Last Check: [last-check.md](${workspaceLink('last-check.md')}) — ${lastCheckSummary}`,
+    `- Breadcrumb: [breadcrumb.md](${workspaceLink('breadcrumb.md')}) — ${breadcrumbSummary}`,
+  ].join('\n');
+}
+
+function renderEscalationBlock(escalation?: EscalationInfo): string {
+  if (!escalation) return '';
+  return `## 📈 Escalation 评估
+
+- **推荐级别**: ${escalation.recommended_level}
+${escalation.triggered_rule ? `- **触发规则**: ${escalation.triggered_rule}` : ''}
+${escalation.confidence !== undefined ? `- **置信度**: ${escalation.confidence.toFixed(2)}` : ''}
+- **评估时间**: ${escalation.evaluated_at}
+
+`;
+}
+
 export function parsePlanTasks(planContent: string): { id: string; title: string; done: boolean }[] {
-  const lines = planContent.split('\n');
-  const tasks: { id: string; title: string; done: boolean }[] = [];
-
-  for (const line of lines) {
-    const match = line.match(/^[\s]*-\s*\[([ xX])\]\s*(.+)/);
-    if (!match) continue;
-
-    const done = match[1] !== ' ';
-    const raw = match[2].trim();
-
-    // Extract task ID prefix: "T1:", "T-xxx:", or numeric
-    const idMatch = raw.match(/^(T[\w-]*|S\d+):\s*/i);
-    const id = idMatch ? idMatch[1] : `T${tasks.length + 1}`;
-    const title = idMatch ? raw.slice(idMatch[0].length) : raw;
-
-    tasks.push({ id, title, done });
-  }
-
-  return tasks;
+  return parsePlanSteps(planContent).map((step) => ({
+    id: step.id,
+    title: step.name,
+    done: step.done,
+  }));
 }
 
 export async function readOptionalFile(path: string): Promise<string> {
@@ -376,198 +421,46 @@ function convertStateToFields(state: CurrentState): CurrentStateFields {
   };
 }
 
-async function collectCurrentStateFields(
-  cwd: string,
-  newState: string,
-  extraFields?: Record<string, string>,
-): Promise<{ fields: CurrentStateFields; planContent: string; taskDirName: string; lastCheckSummary: string; breadcrumbSummary: string }> {
-  const docpathDir = await resolveDocpathDir(cwd);
-  const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
-  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-  const lastCheckPath = join(docpathDir, 'workspace', 'last-check.md');
-  const breadcrumbPath = join(docpathDir, 'workspace', 'breadcrumb.md');
-  const specContent = await readOptionalFile(specPath);
-  const planContent = await readOptionalFile(planPath);
-  const lastCheckContent = await readOptionalFile(lastCheckPath);
-  const breadcrumbContent = await readOptionalFile(breadcrumbPath);
+// collectCurrentStateFields() 已随 updateCurrentState() 一并移除 (D-P0.2 / G2)。
+// 旧的「读多源文件 + 合并 extraFields + 推断 state」逻辑不再需要：
+// transitionWorkflow() 直接给出 phase/gate，writeCurrentState() 负责落盘与重建 current.md。
+// 注：parseFrontMatterLine/firstHeading/normalizeTaskTitle/shouldResetStartedAt 现已无引用，留待后续清理。
 
-  const previous = await readCurrentState(cwd);
-  const specTaskId = parseFrontMatterLine(specContent, 'Task ID');
-  const planTaskId = parseFrontMatterLine(planContent, 'Task ID');
-  const rawTaskId = extraFields?.task_id || specTaskId || planTaskId || previous?.task_id;
-  const taskId = (rawTaskId && rawTaskId !== 'null') ? rawTaskId : generateTaskId(specContent, planContent);
-  const title = extraFields?.task_title ||
-    normalizeTaskTitle(firstHeading(specContent) || firstHeading(planContent)) ||
-    previous?.task_title ||
-    taskId;
-  const now = new Date().toISOString().slice(0, 16);
-
-  const snapshot = normalizeWorkflowSnapshot({
-    state: newState,
-    phase: extraFields?.phase || previous?.phase,
-    gate: extraFields?.gate || previous?.gate,
-  });
-  if (!snapshot) {
-    throw new Error(`[docpath] Invalid workflow snapshot: state=${newState}, phase=${extraFields?.phase || previous?.phase}, gate=${extraFields?.gate || previous?.gate}`);
-  }
-
-  const fields: CurrentStateFields = {
-    level: String(previous?.level || 3),
-    state: snapshot.state,
-    task_id: taskId,
-    task_title: title,
-    phase: snapshot.phase,
-    gate: snapshot.gate,
-    current_step: extraFields?.current_step || previous?.current_step || '待确认下一步',
-    started_at: shouldResetStartedAt(previous?.state, newState) ? new Date().toISOString() : (previous?.started_at || new Date().toISOString()),
-    updated_at: now,
-  };
-
-  if (extraFields) {
-    for (const [key, value] of Object.entries(extraFields)) {
-      if (key in fields) {
-        if (key === 'state') {
-          const normalizedExtra = normalizeWorkflowSnapshot({ state: value, phase: fields.phase, gate: fields.gate });
-          if (!normalizedExtra) {
-            throw new Error(`[docpath] Invalid workflow snapshot: state=${value}, phase=${fields.phase}, gate=${fields.gate}`);
-          }
-          fields.state = normalizedExtra.state;
-          fields.phase = normalizedExtra.phase;
-          fields.gate = normalizedExtra.gate;
-          continue;
-        }
-        switch (key) {
-          case 'level':
-          case 'task_id':
-          case 'task_title':
-          case 'current_step':
-          case 'started_at':
-          case 'updated_at':
-            fields[key] = value;
-            break;
-          case 'phase': {
-            const normalizedExtra = normalizeWorkflowSnapshot({ state: fields.state, phase: value, gate: fields.gate });
-            if (!normalizedExtra) {
-              throw new Error(`[docpath] Invalid workflow snapshot: state=${fields.state}, phase=${value}, gate=${fields.gate}`);
-            }
-            fields.state = normalizedExtra.state;
-            fields.phase = normalizedExtra.phase;
-            fields.gate = normalizedExtra.gate;
-            break;
-          }
-          case 'gate': {
-            const normalizedExtra = normalizeWorkflowSnapshot({ state: fields.state, phase: fields.phase, gate: value });
-            if (!normalizedExtra) {
-              throw new Error(`[docpath] Invalid workflow snapshot: state=${fields.state}, phase=${fields.phase}, gate=${value}`);
-            }
-            fields.state = normalizedExtra.state;
-            fields.phase = normalizedExtra.phase;
-            fields.gate = normalizedExtra.gate;
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  return {
-    fields,
-    planContent,
-    taskDirName: taskId !== 'unknown' ? taskId : 'current',
-    lastCheckSummary: extractLastCheckSummary(lastCheckContent),
-    breadcrumbSummary: extractLatestBreadcrumbSummary(breadcrumbContent),
-  };
-}
 
 function renderCurrentDocument(
   fields: CurrentStateFields,
   planContent: string,
-  taskDirName: string,
+  taskSpecLink: string,
+  taskPlanLink: string,
   lastCheckSummary: string,
   breadcrumbSummary: string,
   escalation?: EscalationInfo,
 ): string {
-  const checklist = extractPlanChecklist(planContent);
-  const checklistBlock = checklist.length > 0
-    ? checklist.join('\n')
-    : '- [ ] 暂无 plan.md checklist，请补充 `.docpath/tasks/current/plan.md`';
-
   return `# 📍 当前工作流状态
 
-\`\`\`yaml
-level: ${fields.level}
-state: ${fields.state.padEnd(19)}# 当前状态
-task_id: ${fields.task_id}
-task_title: ${fields.task_title}
-phase: ${fields.phase}
-gate: ${fields.gate}
-current_step: ${fields.current_step}
-started_at: ${fields.started_at}
-updated_at: ${fields.updated_at}
-\`\`\`
+${renderCurrentStateYaml(fields)}
 
-> 📖 规约: [spec.md](${relativeTaskLink(taskDirName, 'spec.md')})
-> 📋 计划: [plan.md](${relativeTaskLink(taskDirName, 'plan.md')})
+> 📖 规约: [spec.md](${taskSpecLink})
+> 📋 计划: [plan.md](${taskPlanLink})
 
 ## ✅ 执行检查清单
 
-${checklistBlock}
+${renderExecutionChecklist(planContent)}
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](${workspaceLink('last-check.md')}) — ${lastCheckSummary}
-- Breadcrumb: [breadcrumb.md](${workspaceLink('breadcrumb.md')}) — ${breadcrumbSummary}
+${renderEvidenceBlock(lastCheckSummary, breadcrumbSummary)}
 
-${escalation ? `## 📈 Escalation 评估
-
-- **推荐级别**: ${escalation.recommended_level}
-${escalation.triggered_rule ? `- **触发规则**: ${escalation.triggered_rule}` : ''}
-${escalation.confidence !== undefined ? `- **置信度**: ${escalation.confidence.toFixed(2)}` : ''}
-- **评估时间**: ${escalation.evaluated_at}
-
-` : ''}## 🔄 同步说明
+${renderEscalationBlock(escalation)}## 🔄 同步说明
 
 本文件由 DocPath CLI 根据 \`.docpath/workspace/state.json\` 自动重建。
 状态变化请通过 \`docpath go/check/journal\` 等命令推进，避免手工修改后与任务文档漂移。
 `;
 }
 
-/**
- * 更新状态（方案 B：写入 state.json + 重建 current.md）
- */
-export async function updateCurrentState(
-  cwd: string,
-  newState: string,
-  extraFields?: Record<string, string>,
-): Promise<void> {
-  const docpathDir = await resolveDocpathDir(cwd);
-  const currentPath = join(docpathDir, 'workspace', 'current.md');
-
-  if (!existsSync(currentPath)) {
-    console.error('⚠️  current.md 不存在，请先运行 docpath:init');
-    return;
-  }
-
-  const { fields, planContent, taskDirName, lastCheckSummary, breadcrumbSummary } = await collectCurrentStateFields(cwd, newState, extraFields);
-  
-  // 保留已有 escalation 字段（不会被 extraFields 覆盖）
-  const existingState = await readCurrentState(cwd);
-
-  const state: CurrentState = {
-    level: parseInt(fields.level, 10) || 0,
-    state: fields.state,
-    task_id: fields.task_id,
-    task_title: fields.task_title,
-    phase: fields.phase,
-    gate: fields.gate,
-    current_step: fields.current_step,
-    started_at: fields.started_at,
-    updated_at: fields.updated_at,
-    escalation: existingState?.escalation,
-  };
-  
-  await writeCurrentState(cwd, state);
-}
+// updateCurrentState() 已移除 (D-P0.2 / G2)：
+// 工作流状态写入的唯一入口是 transitionWorkflow()（phase/gate 事件）与 updateLevel()（仅 level），
+// 二者都落到 writeCurrentState()。命令层不再直接拼装状态字段，杜绝 phase/state 漂移。
 
 /**
  * 重建 current.md 正文但保持当前状态字段；用于修复/同步已有工作区
@@ -581,14 +474,19 @@ export async function syncCurrentDocument(cwd: string): Promise<void> {
   
   // 直接重建 current.md
   const docpathDir = await resolveDocpathDir(cwd);
-  const planContent = await readOptionalFile(join(docpathDir, 'tasks', 'current', 'plan.md'));
+  const activePlanPath = resolveActiveTaskDocPath(docpathDir, current.task_id || '', 'plan.md');
+  const activeSpecPath = resolveActiveTaskDocPath(docpathDir, current.task_id || '', 'spec.md');
+  const planContent = await readOptionalFile(activePlanPath);
   const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
   const breadcrumbContent = await readOptionalFile(join(docpathDir, 'workspace', 'breadcrumb.md'));
+  const specLink = `../${activeSpecPath.slice(docpathDir.length + 1).replace(/\\/g, '/')}`;
+  const planLink = `../${activePlanPath.slice(docpathDir.length + 1).replace(/\\/g, '/')}`;
 
   const rendered = renderCurrentDocument(
     convertStateToFields(current),
     planContent,
-    current.task_id || 'current',
+    specLink,
+    planLink,
     extractLastCheckSummary(lastCheckContent),
     extractLatestBreadcrumbSummary(breadcrumbContent),
     current.escalation,

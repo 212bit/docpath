@@ -9,88 +9,31 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
+import { readCurrentMd } from '../utils/workspace.js';
+import { transitionWorkflow } from '../engine/transitions.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { parsePlanSteps, type PlanStep } from '../utils/doc-parser.js';
+import { markPlanStep, type PlanStepStatus } from '../utils/plan-sync.js';
+import { runCommand } from './runtime.js';
 
 interface GoOptions {
   cwd: string;
   /** 指定子任务编号 (e.g. S1)，不指定则自动找下一个 */
   step?: string;
+  /** 收尾状态；不传时表示进入执行态 */
+  status?: 'done' | 'skipped' | 'blocked';
   /** 仅输出上下文，不更新状态 */
   dryRun?: boolean;
 }
 
-/**
- * 解析 plan.md 中的子任务列表
- * 支持格式: ### S1: 名称 / - [ ] 任务 / - [x] 已完成
- */
-function parseSubTasks(planContent: string): Array<{
-  id: string;
-  name: string;
-  description: string;
-  acceptance: string;
-  dependencies: string;
-  done: boolean;
-}> {
-  const tasks: Array<{
-    id: string;
-    name: string;
-    description: string;
-    acceptance: string;
-    dependencies: string;
-    done: boolean;
-  }> = [];
-
-  // 匹配 ### S1: 名称 格式
-  const sectionRegex = /^###\s+(S\d+(?:\.\d+)?)[：:]\s*(.+)$/gm;
-  let match: RegExpExecArray | null;
-  const sections: Array<{ index: number; id: string; name: string }> = [];
-
-  while ((match = sectionRegex.exec(planContent)) !== null) {
-    sections.push({ index: match.index, id: match[1], name: match[2].trim() });
-  }
-
-  for (let i = 0; i < sections.length; i++) {
-    const sec = sections[i];
-    const blockEnd = i + 1 < sections.length ? sections[i + 1].index : planContent.length;
-    const block = planContent.slice(sec.index, blockEnd);
-
-    const descMatch = block.match(/- \*\*描述\*\*[:：]\s*(.+)/);
-    const accMatch = block.match(/- \*\*验收条件\*\*[:：]\s*(.+)/);
-    const depMatch = block.match(/- \*\*依赖\*\*[:：]\s*(.+)/);
-    const doneMatch = block.match(/- \[x\]/i);
-
-    tasks.push({
-      id: sec.id,
-      name: sec.name,
-      description: descMatch?.[1]?.trim() || '',
-      acceptance: accMatch?.[1]?.trim() || '',
-      dependencies: depMatch?.[1]?.trim() || '无',
-      done: !!doneMatch,
-    });
-  }
-
-  // Fallback: 匹配 - [ ] / - [x] 格式
-  if (tasks.length === 0) {
-    const checkboxRegex = /^- \[([ x])\]\s*(?:\*\*(S\d+(?:\.\d+)?)\*\*[:：]?\s*)?(.+)$/gmi;
-    while ((match = checkboxRegex.exec(planContent)) !== null) {
-      tasks.push({
-        id: match[2] || `T${tasks.length + 1}`,
-        name: match[3].trim(),
-        description: match[3].trim(),
-        acceptance: '',
-        dependencies: '无',
-        done: match[1].toLowerCase() === 'x',
-      });
-    }
-  }
-
-  return tasks;
+interface GoContext {
+  docpathDir: string;
+  planPath: string;
+  specPath: string;
 }
-
 
 // ── Verification Gate: 防止跳过 check 直接标记完成 ──
 
@@ -117,62 +60,68 @@ async function verifyBeforeCompletion(cwd: string, docpathDir: string): Promise<
   return { allowed: true, reason: 'check_pass' };
 }
 
-export async function goCommand(options: GoOptions): Promise<void> {
-  const { cwd, step, dryRun } = options;
+async function resolveGoContext(cwd: string): Promise<GoContext> {
   const docpathDir = await resolveDocpathDir(cwd);
   const tasksDir = join(docpathDir, 'tasks', 'current');
-  const planPath = join(tasksDir, 'plan.md');
-  const specPath = join(tasksDir, 'spec.md');
-
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
     process.exit(1);
   }
 
+  return {
+    docpathDir,
+    planPath: join(tasksDir, 'plan.md'),
+    specPath: join(tasksDir, 'spec.md'),
+  };
+}
+
+async function readSpecFields(specPath: string): Promise<Record<string, string>> {
+  const extraFields: Record<string, string> = {};
+  if (!existsSync(specPath)) return extraFields;
+
+  const specContent = await readFile(specPath, 'utf-8');
+  const idMatch = specContent.match(/^#\s+(T-\S+)/m);
+  if (idMatch) {
+    extraFields.task_id = idMatch[1];
+  }
+  const titleMatch = specContent.match(/^#\s+T-\S+\s*[-—:]\s*(.+)/m);
+  if (titleMatch) {
+    extraFields.task_title = titleMatch[1].trim();
+  }
+  return extraFields;
+}
+
+async function readPlanSteps(planPath: string): Promise<PlanStep[]> {
   if (!existsSync(planPath)) {
     console.error('❌  未找到 plan.md。请先运行 `docpath:plan` 生成计划。');
     process.exit(1);
   }
 
-  // 从 spec.md 提取 task_id 和 task_title，同步到 current.md
-  const extraFields: Record<string, string> = {};
-  if (existsSync(specPath)) {
-    const specContent = await readFile(specPath, 'utf-8');
-    const idMatch = specContent.match(/^#\s+(T-\S+)/m);
-    if (idMatch) {
-      extraFields.task_id = idMatch[1];
-    }
-    const titleMatch = specContent.match(/^#\s+T-\S+\s*[-—:]\s*(.+)/m);
-    if (titleMatch) {
-      extraFields.task_title = titleMatch[1].trim();
-    }
-  }
-
   const planContent = await readFile(planPath, 'utf-8');
-  const tasks = parseSubTasks(planContent);
-
+  const tasks = parsePlanSteps(planContent);
   if (tasks.length === 0) {
     console.error('❌  plan.md 中未找到子任务。格式须为 `### S1: 名称` 或 `- [ ] 任务`');
     process.exit(1);
   }
+  return tasks;
+}
 
-  // 找到目标子任务
-  let target = step
-    ? tasks.find(t => t.id.toLowerCase() === step.toLowerCase())
-    : tasks.find(t => !t.done);
+function selectTargetStep(
+  tasks: PlanStep[],
+  step: string | undefined,
+  status: GoOptions['status'],
+  currentStep?: string,
+): PlanStep | undefined {
+  const normalizedStep = step?.trim();
+  const implicitStep = status ? currentStep : undefined;
+  return normalizedStep
+    ? tasks.find(t => t.id.toLowerCase() === normalizedStep.toLowerCase())
+    : implicitStep
+      ? tasks.find(t => t.id.toLowerCase() === implicitStep.toLowerCase())
+      : tasks.find(t => !t.done);
+}
 
-  if (!target) {
-    if (tasks.every(t => t.done)) {
-      console.log('🎉  所有子任务已完成！运行 `docpath:check` 进行质量检查。\n');
-      return;
-    }
-    console.error(`❌  未找到子任务: ${step}`);
-    process.exit(1);
-  }
-
-  const current = await readCurrentMd(cwd);
-  const level = current?.level || 0;
-
+async function renderExecutionContext(cwd: string, tasks: PlanStep[], target: PlanStep, level: number): Promise<void> {
   // Level 0-1: 简单输出
   // Level 2+: 结构化上下文 + breadcrumb 历史
   console.log('\n🚀  执行子任务\n');
@@ -203,30 +152,81 @@ export async function goCommand(options: GoOptions): Promise<void> {
     }
     console.log('');
   }
+}
 
-  if (dryRun) {
-    console.log('📝  [dry-run] 仅预览，不更新状态\n');
-    return;
+async function finalizeStep(cwd: string, target: PlanStep, status: NonNullable<GoOptions['status']>): Promise<void> {
+  await runCommand({
+    cwd,
+    action: 'end',
+    step: target.id,
+    status,
+    note: `go-status: ${target.id} -> ${status}`,
+  });
+
+  const syncStatus: PlanStepStatus = status === 'done' ? 'done' : status === 'skipped' ? 'skipped' : 'blocked';
+  const sync = await markPlanStep(cwd, target.id, syncStatus);
+  if (!sync.updated) {
+    console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
   }
 
-  // 更新 breadcrumb
+  console.log(`✅  已记录步骤状态: ${target.id} -> ${status}`);
+  console.log('💡  下一步可运行 `docpath next --agent` 或 `docpath go` 继续推进。\n');
+}
+
+async function startStep(
+  cwd: string,
+  target: PlanStep,
+  taskId: string | undefined,
+  extraFields: Record<string, string>,
+): Promise<void> {
   await writeBreadcrumb(cwd, {
-    taskId: current?.task_id || 'unknown',
+    taskId: taskId || 'unknown',
     step: target.id,
     status: 'in_progress',
     context: `开始执行: ${target.name}`,
   });
 
   // 更新 current.md：phase 表示工作流阶段，current_step 表示正在执行的子任务
-  await updateCurrentState(cwd, 'executing', {
-    phase: 'executing',
-    current_step: target.id,
-    started_at: new Date().toISOString(),
-    ...extraFields,
+  await transitionWorkflow(cwd, 'step.started', {
+    currentStep: target.id,
+    taskId: extraFields.task_id,
+    taskTitle: extraFields.task_title,
   });
 
   console.log('─── Claude Code 指令 ───');
   console.log('请执行子任务 ' + target.id + '，完成后运行 `docpath:agent step --step ' + target.id + ' --auto-next` 自动标记完成并加载下一个任务。');
 
   console.log('');
+}
+
+export async function goCommand(options: GoOptions): Promise<void> {
+  const { cwd, step, status, dryRun } = options;
+  const { planPath, specPath } = await resolveGoContext(cwd);
+  const extraFields = await readSpecFields(specPath);
+  const tasks = await readPlanSteps(planPath);
+  const current = await readCurrentMd(cwd);
+  const target = selectTargetStep(tasks, step, status, current?.current_step);
+  if (!target) {
+    if (tasks.every(t => t.done)) {
+      console.log('🎉  所有子任务已完成！运行 `docpath:check` 进行质量检查。\n');
+      return;
+    }
+    const normalizedStep = step?.trim();
+    const implicitStep = status ? current?.current_step : undefined;
+    console.error(`❌  未找到子任务: ${normalizedStep || implicitStep || '(自动选择失败)'}`);
+    process.exit(1);
+  }
+
+  await renderExecutionContext(cwd, tasks, target, current?.level || 0);
+  if (dryRun) {
+    console.log('📝  [dry-run] 仅预览，不更新状态\n');
+    return;
+  }
+
+  if (status) {
+    await finalizeStep(cwd, target, status);
+    return;
+  }
+
+  await startStep(cwd, target, current?.task_id, extraFields);
 }

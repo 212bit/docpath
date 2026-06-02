@@ -6,15 +6,15 @@ Enter a DocPath-managed Claude Code session.
 
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
-  ./.docpath/bin/docpath agent enter
+  ./.docpath/bin/docpath agent enter $ARGUMENTS
 elif command -v docpath >/dev/null 2>&1; then
-  docpath agent enter
+  docpath agent enter $ARGUMENTS
 elif [ -x ./node_modules/.bin/docpath ]; then
-  ./node_modules/.bin/docpath agent enter
+  ./node_modules/.bin/docpath agent enter $ARGUMENTS
 elif [ -f ./bin/docpath.js ]; then
-  node ./bin/docpath.js agent enter
+  node ./bin/docpath.js agent enter $ARGUMENTS
 elif [ -f ./dist/index.js ]; then
-  node ./dist/index.js agent enter
+  node ./dist/index.js agent enter $ARGUMENTS
 else
   echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127

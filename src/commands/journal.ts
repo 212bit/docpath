@@ -6,15 +6,24 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, rename, rm } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd, readWorkspaceMeta, readOptionalFile, parsePlanTasks } from '../utils/workspace.js';
+import { readCurrentMd, readWorkspaceMeta, readOptionalFile, parsePlanTasks, type CurrentState } from '../utils/workspace.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { emitPrompt } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { evaluateCompletionPolicy } from '../engine/policy.js';
 import { appendDecision } from '../governance/decisions.js';
+import { listBacklogItems, setBacklogStatus } from '../engine/backlog.js';
+import {
+  archivedTaskDir,
+  canonicalTaskDir,
+  canonicalTaskRelativePath,
+  clearCurrentTaskAlias,
+  readActiveTaskFile,
+  resolveActiveTaskDocPath,
+} from '../utils/task-files.js';
 
 interface JournalOptions {
   cwd: string;
@@ -32,6 +41,60 @@ interface TaskSummary {
   duration: string;
 }
 
+interface JournalContext {
+  docpathDir: string;
+  current: CurrentState | null;
+  taskId: string;
+  taskDirName: string;
+  taskDir: string;
+  planPath: string;
+  spec: string;
+  plan: string;
+  breadcrumb: Awaited<ReturnType<typeof readBreadcrumb>>;
+  meta: Record<string, unknown> | null;
+}
+
+interface ArchiveResult {
+  currentTaskDir: string;
+  archivedTaskDir: string;
+  taskDirName: string;
+}
+
+function extractArchitectureDecisionCandidates(lines: string[]): Array<{
+  title: string;
+  decision: string;
+  context: string;
+}> {
+  const candidates: Array<{ title: string; decision: string; context: string }> = [];
+  const seen = new Set<string>();
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const looksArchitectural = /架构|architecture|边界|模块|接口|数据模型|状态机/i.test(line);
+    const looksDecision = /决策|采用|改为|统一|使用|保留|拆分/i.test(line);
+    if (!looksArchitectural || !looksDecision) continue;
+
+    const title = line
+      .replace(/^[\-\*\d\.\s]+/, '')
+      .replace(/^[✅🏗️📌]+\s*/, '')
+      .slice(0, 48)
+      .trim() || '架构决策';
+    const key = title.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    candidates.push({
+      title,
+      decision: line,
+      context: rawLine,
+    });
+  }
+
+  return candidates;
+}
+
 export async function journalCommand(options: JournalOptions): Promise<void> {
   const { cwd, skipAi } = options;
   const docpathDir = await resolveDocpathDir(cwd);
@@ -43,32 +106,62 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
 
   console.log('\n📚  知识归档...\n');
 
-  // ─── P0: verification 门禁 ───
+  await assertJournalGate(cwd);
+
+  const context = await loadJournalContext(cwd, docpathDir);
+  const summary = await buildTaskSummary(context);
+
+  console.log(`📌  任务: ${summary.taskId}`);
+  console.log(`📊  步骤: ${summary.completedSteps}/${summary.totalSteps} 完成, ${summary.blockedSteps} 阻塞`);
+  console.log(`⏱️  耗时: ${summary.duration}\n`);
+
+  emitJournalPrompt(context, summary);
+
+  console.log('📌 完成后运行: docpath write-journal\n');
+
+  const archiveMode = options.archiveMode || 'always';
+  const archive = await archiveCurrentTask(docpathDir, context.taskId, context.taskDir, archiveMode);
+  if (archiveMode === 'dry-run') {
+    printJournalDryRunComplete();
+    return;
+  }
+
+  await finalizeJournal(cwd, context, archive, summary);
+}
+
+async function assertJournalGate(cwd: string): Promise<void> {
   const gateVerdict = await evaluateCompletionPolicy(cwd);
   if (!gateVerdict.allowed) {
     console.error('❌  归档门禁未通过');
     for (const reason of gateVerdict.reasons) console.error(`   - ${reason}`);
     process.exit(1);
   }
+}
 
+async function loadJournalContext(cwd: string, docpathDir: string): Promise<JournalContext> {
   const current = await readCurrentMd(cwd);
   const taskId = current?.task_id || 'unknown';
   const taskDirName = taskId !== 'unknown' ? taskId : 'current';
-  const taskDir = existsSync(join(docpathDir, 'tasks', taskDirName))
-    ? join(docpathDir, 'tasks', taskDirName)
-    : join(docpathDir, 'tasks', 'current');
-  const specPath = join(taskDir, 'spec.md');
-  const planPath = join(taskDir, 'plan.md');
-  const meta = await readWorkspaceMeta(cwd);
-  const breadcrumb = await readBreadcrumb(cwd);
-  const spec = existsSync(specPath) ? await readFile(specPath, 'utf-8') : '';
-  const plan = existsSync(planPath) ? await readFile(planPath, 'utf-8') : '';
+  const planPath = resolveActiveTaskDocPath(docpathDir, current?.task_id, 'plan.md');
+  return {
+    docpathDir,
+    current,
+    taskId,
+    taskDirName,
+    taskDir: canonicalTaskDir(docpathDir, taskDirName),
+    planPath,
+    spec: await readActiveTaskFile(docpathDir, current?.task_id, 'spec.md'),
+    plan: await readActiveTaskFile(docpathDir, current?.task_id, 'plan.md'),
+    breadcrumb: await readBreadcrumb(cwd),
+    meta: await readWorkspaceMeta(cwd),
+  };
+}
 
-  // 步骤统计：优先使用 plan checklist；若 checklist 尚未维护，则回退到当前任务每个 step 的最新 breadcrumb 状态
-  const planContent = await readOptionalFile(planPath);
+async function buildTaskSummary(context: JournalContext): Promise<TaskSummary> {
+  const planContent = await readOptionalFile(context.planPath);
   const planTasks = planContent ? parsePlanTasks(planContent) : [];
-  const latestByStep = new Map<string, (typeof breadcrumb.entries)[number]>();
-  for (const entry of breadcrumb.entries.filter(e => e.taskId === taskId)) {
+  const latestByStep = new Map<string, (typeof context.breadcrumb.entries)[number]>();
+  for (const entry of context.breadcrumb.entries.filter(e => e.taskId === context.taskId)) {
     latestByStep.set(entry.step, entry);
   }
   const latestEntries = Array.from(latestByStep.values());
@@ -79,29 +172,25 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
     ? planDoneCount
     : latestEntries.filter(e => e.status === 'done').length;
   const blockedSteps = latestEntries.filter(e => e.status === 'blocked').length;
-
-  const summary: TaskSummary = {
-    taskId,
+  return {
+    taskId: context.taskId,
     totalSteps,
     completedSteps,
     blockedSteps,
-    keyDecisions: breadcrumb.entries.filter(e => e.taskId === taskId).map(e => e.context),
+    keyDecisions: context.breadcrumb.entries.filter(e => e.taskId === context.taskId).map(e => e.context),
     duration: totalSteps > 0 ? `${totalSteps} 步` : 'N/A',
   };
+}
 
-  console.log(`📌  任务: ${summary.taskId}`);
-  console.log(`📊  步骤: ${summary.completedSteps}/${summary.totalSteps} 完成, ${summary.blockedSteps} 阻塞`);
-  console.log(`⏱️  耗时: ${summary.duration}\n`);
-
-  // [Agent Mode] 输出归档 prompt，由宿主 Agent 填充知识记录后写入 spec.md
+function emitJournalPrompt(context: JournalContext, summary: TaskSummary): void {
   emitPrompt({
     task: 'journal',
     system: '你是知识管理专家。请从以下开发任务中提炼结构化知识记录。',
     context: {
-      '原始规约': spec.slice(0, 3000),
-      '执行计划': plan.slice(0, 2000),
-      '面包屑历史': breadcrumb.entries
-        .filter(e => e.taskId === taskId)
+      '原始规约': context.spec.slice(0, 3000),
+      '执行计划': context.plan.slice(0, 2000),
+      '面包屑历史': context.breadcrumb.entries
+        .filter(e => e.taskId === context.taskId)
         .map(e => `- [${e.status}] ${e.step}: ${e.context}`)
         .join('\n'),
       '任务统计': `总步数: ${summary.totalSteps}, 完成: ${summary.completedSteps}, 阻塞: ${summary.blockedSteps}`,
@@ -125,53 +214,87 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
     ],
     output_format: 'knowledge record (markdown)',
   });
+}
 
-  console.log('📌 完成后运行: docpath write-journal\n');
+function printJournalDryRunComplete(): void {
+  console.log('🔍  [dry-run] 不写入状态、breadcrumb 或决策日志');
+  console.log('─── 完成 ───');
+  console.log('dry-run 完成，未修改任务状态。\n');
+}
 
-  // ── 可选归档（借鉴 GSD archive-before-new） ──
-  const archiveMode = options.archiveMode || 'always';
-  const { renameSync, mkdirSync } = await import('fs');
-  const currentTaskDir = taskDir;
+async function finalizeJournal(
+  cwd: string,
+  context: JournalContext,
+  archive: ArchiveResult,
+  summary: TaskSummary,
+): Promise<void> {
+  await transitionWorkflow(cwd, 'journal.archived', { currentStep: '知识归档完成' });
+  await completeLinkedBacklog(cwd, context.taskId);
+  await writeBreadcrumb(cwd, {
+    taskId: context.taskId,
+    step: 'journal',
+    status: 'done',
+    context: `知识归档完成 (${summary.completedSteps}/${summary.totalSteps} 步)`,
+  });
+  await writeLessonCandidate(context.docpathDir, context.taskId, summary);
+  await updateWorkspaceMeta(context.docpathDir, context.meta);
+  await writeJournalDecisions(cwd, archive.taskDirName, summary);
+  console.log('─── 完成 ───');
+  console.log('所有步骤已归档。运行 `docpath:init` 开始新任务。\n');
+}
+
+async function archiveCurrentTask(
+  docpathDir: string,
+  taskId: string,
+  currentTaskDir: string,
+  archiveMode: NonNullable<JournalOptions['archiveMode']>,
+): Promise<ArchiveResult> {
   const doneDir = join(docpathDir, 'tasks', 'done');
-  const archiveDir = join(doneDir, taskId || 'unknown');
-
+  const archiveDir = archivedTaskDir(docpathDir, taskId || 'unknown');
   if (archiveMode === 'skip') {
     console.log('⏭️  归档已跳过 (--optional-archive=skip)');
   } else {
-    if (archiveMode === 'dry-run') {
-      console.log(`🔍  [dry-run] 将归档: ${currentTaskDir} → ${archiveDir}`);
-    }
+    if (archiveMode === 'dry-run') console.log(`🔍  [dry-run] 将归档: ${currentTaskDir} → ${archiveDir}`);
     try {
-      if (!existsSync(doneDir)) mkdirSync(doneDir, { recursive: true });
-      if (existsSync(currentTaskDir) && !existsSync(archiveDir)) {
-        if (archiveMode !== 'dry-run') {
-          renameSync(currentTaskDir, archiveDir);
-          console.log(`📦 任务已归档: tasks/done/${taskId || 'unknown'}`);
-        }
+      if (!existsSync(doneDir)) {
+        const { mkdirSync } = await import('fs');
+        mkdirSync(doneDir, { recursive: true });
+      }
+      if (existsSync(currentTaskDir) && !existsSync(archiveDir) && archiveMode !== 'dry-run') {
+        await rename(currentTaskDir, archiveDir);
+        await clearCurrentTaskAlias(docpathDir);
+        console.log(`📦 任务已归档: tasks/done/${taskId || 'unknown'}`);
       } else if (existsSync(archiveDir)) {
         console.log(`⚠️  归档目标已存在: ${archiveDir}，跳过`);
+        if (archiveMode !== 'dry-run') await clearCurrentTaskAlias(docpathDir);
       }
     } catch (e) {
       console.warn('⚠️  归档失败（非致命）:', (e as Error).message);
     }
   }
+  return {
+    currentTaskDir,
+    archivedTaskDir: archiveDir,
+    taskDirName: taskId !== 'unknown' ? taskId : 'current',
+  };
+}
 
-  if (archiveMode === 'dry-run') {
-    console.log('🔍  [dry-run] 不写入状态、breadcrumb 或决策日志');
-    console.log('─── 完成 ───');
-    console.log('dry-run 完成，未修改任务状态。\n');
-    return;
+async function completeLinkedBacklog(cwd: string, taskId: string): Promise<void> {
+  try {
+    const linkedBacklog = (await listBacklogItems(cwd)).find((item) =>
+      item.links.task === taskId
+      || (item.links.task === 'current' && item.status === 'active')
+    );
+    if (linkedBacklog && linkedBacklog.status !== 'done') {
+      await setBacklogStatus(cwd, linkedBacklog.id, 'done');
+      console.log(`🔁  backlog 已自动回填完成: ${linkedBacklog.id}`);
+    }
+  } catch (e) {
+    console.warn('⚠️  backlog 自动回填失败（非致命）:', (e as Error).message);
   }
+}
 
-  await transitionWorkflow(cwd, 'journal.archived', { currentStep: '知识归档完成' });
-
-  await writeBreadcrumb(cwd, {
-    taskId,
-    step: 'journal',
-    status: 'done',
-    context: `知识归档完成 (${summary.completedSteps}/${summary.totalSteps} 步)`,
-  });
-
+async function writeLessonCandidate(docpathDir: string, taskId: string, summary: TaskSummary): Promise<void> {
   try {
     const lessonsPath = join(docpathDir, 'workspace', 'lesson-candidates.md');
     const now = new Date().toISOString();
@@ -204,35 +327,51 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
   } catch (e) {
     console.warn('⚠️  Lesson 候选写入失败（非致命）:', (e as Error).message);
   }
+}
 
-  // 更新 workspace meta 计数
+async function updateWorkspaceMeta(docpathDir: string, meta: Record<string, unknown> | null): Promise<void> {
   if (meta) {
     meta.lastActive = new Date().toISOString();
     const metaPath = join(docpathDir, 'workspace.json');
     const { writeFile: wf } = await import('fs/promises');
     await wf(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
   }
+}
 
-  // ─── P2.1: 决策日志写入 ───
-  // 归档时自动将本次任务摘要追加为结构化 ADR decision。
+async function writeJournalDecisions(cwd: string, taskDirName: string, summary: TaskSummary): Promise<void> {
   try {
-    await appendDecision(cwd, 'journal.archive', `归档任务 ${taskId}`, `完成 ${summary.completedSteps}/${summary.totalSteps} 步，阻塞 ${summary.blockedSteps} 步`, {
-      taskId,
+    await appendDecision(cwd, 'journal.archive', `归档任务 ${summary.taskId}`, `完成 ${summary.completedSteps}/${summary.totalSteps} 步，阻塞 ${summary.blockedSteps} 步`, {
+      taskId: summary.taskId,
       context: summary.keyDecisions.filter((d) => d.trim()).join('\n') || '任务完成后由 journal 自动归档。',
       impact: `任务进入归档状态；完成 ${summary.completedSteps}/${summary.totalSteps} 步，阻塞 ${summary.blockedSteps} 步。`,
       alternatives: ['继续保留在 tasks/current 中', '只写 breadcrumb 不生成长期 decision'],
       relatedFiles: [
         '.docpath/workspace/breadcrumb.md',
         '.docpath/workspace/last-check.md',
-        `.docpath/tasks/${taskDirName}/spec.md`,
-        `.docpath/tasks/${taskDirName}/plan.md`,
+        `.docpath/${canonicalTaskRelativePath(taskDirName, 'spec.md')}`,
+        `.docpath/${canonicalTaskRelativePath(taskDirName, 'plan.md')}`,
       ],
     });
     console.log('📝  决策日志已更新: workspace/decisions.md');
+
+    const architectureDecisions = extractArchitectureDecisionCandidates(summary.keyDecisions);
+    for (const candidate of architectureDecisions) {
+      await appendDecision(cwd, 'architecture', candidate.decision, candidate.context, {
+        taskId: summary.taskId,
+        context: `从 journal 关键决策自动提取:\n${candidate.context}`,
+        impact: '该架构取舍会影响后续实现与 review 判断。',
+        alternatives: ['继续沿用旧实现', '仅记录到 breadcrumb，不生成 ADR'],
+        relatedFiles: [
+          '.docpath/workspace/breadcrumb.md',
+          `.docpath/${canonicalTaskRelativePath(taskDirName, 'spec.md')}`,
+          `.docpath/${canonicalTaskRelativePath(taskDirName, 'plan.md')}`,
+        ],
+      });
+    }
+    if (architectureDecisions.length > 0) {
+      console.log(`🏗️  已从 journal 提取 ${architectureDecisions.length} 条架构决策`);
+    }
   } catch (e) {
     console.warn('⚠️  决策日志写入失败（非致命）:', (e as Error).message);
   }
-
-  console.log('─── 完成 ───');
-  console.log('所有步骤已归档。运行 `docpath:init` 开始新任务。\n');
 }

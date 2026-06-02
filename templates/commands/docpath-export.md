@@ -6,15 +6,15 @@ Export the DocPath workflow state as standalone markdown.
 
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
-  ./.docpath/bin/docpath export $ARGUMENTS
+  ./.docpath/bin/docpath export
 elif command -v docpath >/dev/null 2>&1; then
-  docpath export $ARGUMENTS
+  docpath export
 elif [ -x ./node_modules/.bin/docpath ]; then
-  ./node_modules/.bin/docpath export $ARGUMENTS
+  ./node_modules/.bin/docpath export
 elif [ -f ./bin/docpath.js ]; then
-  node ./bin/docpath.js export $ARGUMENTS
+  node ./bin/docpath.js export
 elif [ -f ./dist/index.js ]; then
-  node ./dist/index.js export $ARGUMENTS
+  node ./dist/index.js export
 else
   echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127

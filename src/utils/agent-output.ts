@@ -7,11 +7,14 @@
 
 import { stringify } from 'yaml';
 import { existsSync } from 'fs';
+import { readdir } from 'fs/promises';
 import { join } from 'path';
 import { parsePlanTasks, readCurrentMd, readOptionalFile } from './workspace.js';
 import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
-import { detectPlanBreadcrumbDrift, type PlanBreadcrumbDrift } from './plan-sync.js';
+import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from './plan-sync.js';
+import { listBacklogItems, type BacklogItem } from '../engine/backlog.js';
+import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.js';
 
 export interface AgentOutput {
   /** 当前状态 (state machine state) */
@@ -45,8 +48,27 @@ export interface AgentOutput {
     in_progress: number;
     blocked: number;
   };
+  /** plan/breadcrumb 漂移摘要 */
+  drift_summary: string | null;
+  /** plan/breadcrumb 漂移明细 */
+  drift_details: {
+    plan_done_without_breadcrumb: string[];
+    breadcrumb_done_without_plan: string[];
+  };
   /** 时间戳 */
   generated_at: string;
+}
+
+function summarizeDrift(drift: PlanBreadcrumbDrift): string | null {
+  const messages = [
+    drift.planDoneWithoutBreadcrumb.length > 0
+      ? `plan 已完成但缺少 breadcrumb: ${drift.planDoneWithoutBreadcrumb.join(', ')}`
+      : '',
+    drift.breadcrumbDoneWithoutPlan.length > 0
+      ? `breadcrumb done 但 plan 未勾选: ${drift.breadcrumbDoneWithoutPlan.join(', ')}`
+      : '',
+  ].filter(Boolean);
+  return messages.length > 0 ? messages.join('; ') : null;
 }
 
 function summarizeCurrentTaskBreadcrumbs(
@@ -61,7 +83,9 @@ function summarizeCurrentTaskBreadcrumbs(
     latestByStep.set(entry.step, entry);
   }
 
-  const entries = Array.from(latestByStep.values());
+  const entries = Array.from(latestByStep.values()).sort((a, b) =>
+    (a.timestamp || '').localeCompare(b.timestamp || '')
+  );
   const done = entries.filter((e) => e.status === 'done').length;
   const inProgress = entries.filter((e) => e.status === 'in_progress').length;
   const blocked = entries.filter((e) => e.status === 'blocked').length;
@@ -76,15 +100,121 @@ function summarizeCurrentTaskBreadcrumbs(
   };
 }
 
+function compareBacklogPriority(a: BacklogItem, b: BacklogItem): number {
+  const priorityOrder = Number.parseInt(a.priority.slice(1), 10) - Number.parseInt(b.priority.slice(1), 10);
+  if (priorityOrder !== 0) return priorityOrder;
+  return a.id.localeCompare(b.id, undefined, { numeric: true });
+}
+
+const GC_TASK_DIR_THRESHOLD = 20;
+
+async function countHistoricalTaskDirs(docpathDir: string, activeTaskId?: string): Promise<number> {
+  const tasksDir = join(docpathDir, 'tasks');
+  if (!existsSync(tasksDir)) return 0;
+  const entries = await readdir(tasksDir, { withFileTypes: true });
+  return entries.filter((entry) =>
+    entry.isDirectory()
+    && /^T-\d{8}(?:-|$)/.test(entry.name)
+    && entry.name !== activeTaskId
+  ).length;
+}
+
+function hasLessonCandidates(content: string): boolean {
+  if (!content.trim()) return false;
+  return /^-\s*key:\s*\S+/m.test(content) && /^###\s+Lesson\s*$/m.test(content);
+}
+
+function normalizeLessonKeyPart(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function extractExistingLessonMetaKeys(content: string): Set<string> {
+  const keys = new Set<string>();
+  const regex = /^<!--\s+docpath:lesson-meta\s+(.+?)\s+-->$/gm;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(content)) != null) {
+    keys.add(normalizeLessonKeyPart(match[1]));
+  }
+  return keys;
+}
+
+function candidateLessonKeys(content: string): string[] {
+  if (!hasLessonCandidates(content)) return [];
+  const keys: string[] = [];
+  const blocks = content.split(/^##\s+/m).filter((block) => block.trim());
+
+  for (const block of blocks) {
+    const keyword = block.match(/^- key:\s*(.+)$/m)?.[1]?.trim();
+    if (!keyword) continue;
+    const taskId = block.match(/^- task_id:\s*(.+)$/m)?.[1]?.trim() || '';
+    const typeValue = block.match(/^- type:\s*(.+)$/m)?.[1]?.trim() || 'best-practice';
+    const targetValue = block.match(/^- target:\s*(.+)$/m)?.[1]?.trim() || 'style';
+    const source = block.match(/^- source:\s*(.+)$/m)?.[1]?.trim() || 'lesson-candidates';
+    const type = targetValue === 'architecture' || typeValue === 'architecture' ? 'architecture' : typeValue;
+    const target = targetValue === 'architecture' || type === 'architecture' ? 'architecture' : 'style';
+    keys.push(normalizeLessonKeyPart([type, target, keyword, source, taskId].join(':').slice(0, 180)));
+  }
+
+  return keys;
+}
+
+function hasUnlearnedLessonCandidates(
+  candidatesContent: string,
+  styleContent: string,
+  architectureContent: string,
+): boolean {
+  const keys = candidateLessonKeys(candidatesContent);
+  if (keys.length === 0) return false;
+  const learned = new Set([
+    ...extractExistingLessonMetaKeys(styleContent),
+    ...extractExistingLessonMetaKeys(architectureContent),
+  ]);
+  return keys.some((key) => !learned.has(key));
+}
+
+type TddStateSnapshot = {
+  phase?: string;
+};
+
+type AgentOutputContext = {
+  docpathDir: string;
+  state: Awaited<ReturnType<typeof readCurrentMd>>;
+  lastCheckContent: string;
+  hasSpec: boolean;
+  planTasks: Array<{ id: string; title: string; done: boolean }>;
+  bc: BreadcrumbSummary;
+  drift: PlanBreadcrumbDrift;
+  backlogItems: BacklogItem[];
+  pendingDone: Awaited<ReturnType<typeof readPendingDone>>;
+  tddState: TddStateSnapshot | null;
+  historicalTaskDirCount: number;
+  hasPendingLessonCandidates: boolean;
+};
+
+function parseTddState(raw: string): TddStateSnapshot | null {
+  if (!raw.trim()) return null;
+  try {
+    const parsed = JSON.parse(raw) as TddStateSnapshot;
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 推断下一步动作
  */
 function inferNextAction(
   state: Awaited<ReturnType<typeof readCurrentMd>>,
   bc: BreadcrumbSummary,
-  planTasks: ReturnType<typeof parsePlanTasks>,
+  planTasks: Array<{ id: string; title: string; done: boolean }>,
   lastCheckContent: string,
   drift: PlanBreadcrumbDrift,
+  hasSpec: boolean,
+  backlogItems: BacklogItem[],
+  tddState: TddStateSnapshot | null,
+  historicalTaskDirCount: number,
+  hasPendingLessonCandidates: boolean,
 ): {
   next_action: string;
   recommended_command: string;
@@ -107,6 +237,12 @@ function inferNextAction(
   let required_context = ['.docpath/workspace/current.md'];
   let must_update: string[] = [];
   let exit_criteria = '任务目标完成';
+  const acceptedBacklog = [...backlogItems]
+    .filter((item) => item.status === 'accepted')
+    .sort(compareBacklogPriority)[0];
+  const proposedBacklog = [...backlogItems]
+    .filter((item) => item.status === 'proposed')
+    .sort(compareBacklogPriority)[0];
 
   if (drift.planDoneWithoutBreadcrumb.length > 0 || drift.breadcrumbDoneWithoutPlan.length > 0) {
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'];
@@ -149,6 +285,21 @@ function inferNextAction(
   }
 
   if (gate === 'check_fail' || currentState === 'check_fail' || lastCheckFailed) {
+    if (tddState?.phase === 'check') {
+      const required = [
+        '.docpath/workspace/current.md',
+        '.docpath/workspace/last-check.md',
+        '.docpath/workspace/tdd-state.json',
+      ];
+      return {
+        next_action: '质量检查失败，先修复失败项后回到 TDD 循环推进',
+        recommended_command: 'docpath tdd next',
+        required_context: required,
+        required_files: required,
+        must_update: ['.docpath/workspace/last-check.md', '.docpath/workspace/tdd-state.json'],
+        exit_criteria: '修复失败项后重新通过 check，并推进 TDD 到下一阶段',
+      };
+    }
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md', '.docpath/workspace/breadcrumb.md'];
     return {
       next_action: '修复质量检查失败项',
@@ -160,7 +311,7 @@ function inferNextAction(
     };
   }
 
-  const activeStep = bc.entries.find(e => e.status === 'in_progress');
+  const activeStep = [...bc.entries].reverse().find(e => e.status === 'in_progress');
   if (activeStep) {
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'];
     return {
@@ -211,13 +362,54 @@ function inferNextAction(
 
   if (currentState === 'completed' || phase === 'completed') {
     const required = ['.docpath/workspace/current.md'];
+    if (acceptedBacklog) {
+      return {
+        next_action: `从 backlog 拉起下一项任务: ${acceptedBacklog.id} ${acceptedBacklog.title}`,
+        recommended_command: `docpath backlog promote ${acceptedBacklog.id}`,
+        required_context: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
+        required_files: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
+        must_update: [],
+        exit_criteria: `${acceptedBacklog.id} 已 promote 成活跃任务`,
+      };
+    }
+    if (proposedBacklog) {
+      return {
+        next_action: `先接收 backlog 条目: ${proposedBacklog.id} ${proposedBacklog.title}`,
+        recommended_command: `docpath backlog accept ${proposedBacklog.id}`,
+        required_context: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
+        required_files: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
+        must_update: [],
+        exit_criteria: `${proposedBacklog.id} 已进入 accepted`,
+      };
+    }
+    if (hasPendingLessonCandidates) {
+      const learnRequired = ['.docpath/workspace/current.md', '.docpath/workspace/lesson-candidates.md'];
+      return {
+        next_action: '检测到待固化 lesson 候选，建议先沉淀为全局规范',
+        recommended_command: 'docpath learn',
+        required_context: learnRequired,
+        required_files: learnRequired,
+        must_update: ['.docpath/spec/style.md', '.docpath/spec/architecture.md'],
+        exit_criteria: 'lesson 候选已由 docpath learn 合并或去重跳过',
+      };
+    }
+    if (!acceptedBacklog && !proposedBacklog && historicalTaskDirCount > GC_TASK_DIR_THRESHOLD) {
+      return {
+        next_action: `检测到 ${historicalTaskDirCount} 个历史任务目录，建议先预览清理`,
+        recommended_command: 'docpath gc',
+        required_context: required,
+        required_files: required,
+        must_update: [],
+        exit_criteria: '已预览历史任务目录清理候选；确认后可运行 docpath gc --force',
+      };
+    }
     return {
       next_action: '任务已完成，可启动新任务',
-      recommended_command: 'docpath brainstorm',
+      recommended_command: 'docpath backlog add',
       required_context: required,
       required_files: required,
       must_update: [],
-      exit_criteria: '新任务已创建或导入',
+      exit_criteria: '已新增 backlog 条目',
     };
   }
 
@@ -235,18 +427,47 @@ function inferNextAction(
 
   switch (currentState) {
     case 'idle':
-      next_action = '创建或导入下一项任务';
-      recommended_command = 'docpath brainstorm';
-      required_context = ['.docpath/workspace/current.md', '.docpath/spec/architecture.md', '.docpath/spec/style.md'];
-      exit_criteria = '任务 spec 已创建';
+      if (acceptedBacklog) {
+        next_action = `从 backlog 拉起下一项任务: ${acceptedBacklog.id} ${acceptedBacklog.title}`;
+        recommended_command = `docpath backlog promote ${acceptedBacklog.id}`;
+        required_context = ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'];
+        exit_criteria = `${acceptedBacklog.id} 已 promote 成活跃任务`;
+      } else if (proposedBacklog) {
+        next_action = `先接收 backlog 条目: ${proposedBacklog.id} ${proposedBacklog.title}`;
+        recommended_command = `docpath backlog accept ${proposedBacklog.id}`;
+        required_context = ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'];
+        exit_criteria = `${proposedBacklog.id} 已进入 accepted`;
+      } else if (hasPendingLessonCandidates) {
+        next_action = '检测到待固化 lesson 候选，建议先沉淀为全局规范';
+        recommended_command = 'docpath learn';
+        required_context = ['.docpath/workspace/current.md', '.docpath/workspace/lesson-candidates.md'];
+        must_update = ['.docpath/spec/style.md', '.docpath/spec/architecture.md'];
+        exit_criteria = 'lesson 候选已由 docpath learn 合并或去重跳过';
+      } else {
+        next_action = '当前无活跃任务，先创建 backlog 条目';
+        recommended_command = 'docpath backlog add';
+        required_context = ['.docpath/workspace/current.md', '.docpath/spec/architecture.md', '.docpath/spec/style.md'];
+        exit_criteria = '至少存在一条 backlog 条目';
+      }
       break;
     case 'drafting':
+      if (hasSpec) {
+        next_action = 'spec 已就绪，生成执行计划';
+        recommended_command = 'docpath plan';
+        required_context = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md'];
+        exit_criteria = 'plan.md 已生成';
+      } else {
+        next_action = '完成需求澄清后写入 spec';
+        recommended_command = 'docpath write-spec';
+        required_context = ['.docpath/workspace/current.md', '.docpath/spec/architecture.md', '.docpath/spec/style.md'];
+        exit_criteria = 'spec.md 已写入';
+      }
+      break;
     case 'planning_done':
-      next_action = '读取 spec 和 plan，开始第一个执行步骤';
-      recommended_command = 'docpath context';
+      next_action = '计划已就绪，执行第一个子任务';
+      recommended_command = 'docpath go';
       required_context = [
         '.docpath/workspace/current.md',
-        '.docpath/tasks/current/spec.md',
         '.docpath/tasks/current/plan.md',
       ];
       exit_criteria = '第一步执行完成并记录 breadcrumb';
@@ -278,6 +499,75 @@ function inferNextAction(
   return { next_action, recommended_command, required_context, required_files: required_context, must_update, exit_criteria };
 }
 
+async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<AgentOutputContext> {
+  const state = await readCurrentMd(cwd);
+  const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
+  const hasSpec = existsSync(join(docpathDir, 'tasks', 'current', 'spec.md'));
+  const planTasks = await resolveEffectivePlanTasks(cwd);
+  const rawBreadcrumb = await readBreadcrumb(cwd);
+  const bc = summarizeCurrentTaskBreadcrumbs(rawBreadcrumb, state?.task_id || '');
+  const drift = await detectPlanBreadcrumbDrift(cwd);
+  const backlogItems = await listBacklogItems(cwd);
+  const pendingDone = await handleStalePendingDoneWarning(cwd, state, await readPendingDone(cwd));
+  const tddState = parseTddState(await readOptionalFile(join(docpathDir, 'workspace', 'tdd-state.json')));
+  const historicalTaskDirCount = await countHistoricalTaskDirs(docpathDir, state?.task_id || undefined);
+  const hasPendingLessonCandidates = hasUnlearnedLessonCandidates(
+    await readOptionalFile(join(docpathDir, 'workspace', 'lesson-candidates.md')),
+    await readOptionalFile(join(docpathDir, 'spec', 'style.md')),
+    await readOptionalFile(join(docpathDir, 'spec', 'architecture.md')),
+  );
+
+  return {
+    docpathDir,
+    state,
+    lastCheckContent,
+    hasSpec,
+    planTasks,
+    bc,
+    drift,
+    backlogItems,
+    pendingDone,
+    tddState,
+    historicalTaskDirCount,
+    hasPendingLessonCandidates,
+  };
+}
+
+function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof inferNextAction> {
+  const { pendingDone, state } = context;
+  if (pendingDone && state?.phase === 'executing' && pendingDone.task_id === state.task_id) {
+    return {
+      next_action: `检测到未收尾任务哨兵，请先完成当前任务: ${pendingDone.task_id}`,
+      recommended_command: 'docpath agent done',
+      required_context: [
+        '.docpath/workspace/current.md',
+        '.docpath/workspace/pending-done.md',
+        '.docpath/tasks/current/plan.md',
+      ],
+      required_files: [
+        '.docpath/workspace/current.md',
+        '.docpath/workspace/pending-done.md',
+        '.docpath/tasks/current/plan.md',
+      ],
+      must_update: ['.docpath/workspace/breadcrumb.md'],
+      exit_criteria: '运行 docpath agent done 并清理 pending-done 哨兵',
+    };
+  }
+
+  return inferNextAction(
+    state,
+    context.bc,
+    context.planTasks,
+    context.lastCheckContent,
+    context.drift,
+    context.hasSpec,
+    context.backlogItems,
+    context.tddState,
+    context.historicalTaskDirCount,
+    context.hasPendingLessonCandidates,
+  );
+}
+
 /**
  * 生成 Agent YAML 输出
  */
@@ -294,31 +584,30 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
     });
   }
 
-  const state = await readCurrentMd(cwd);
-  const planContent = await readOptionalFile(join(docpathDir, 'tasks', 'current', 'plan.md'));
-  const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
-  const planTasks = parsePlanTasks(planContent);
-  const rawBreadcrumb = await readBreadcrumb(cwd);
-  const bc = summarizeCurrentTaskBreadcrumbs(rawBreadcrumb, state?.task_id || '');
-  const drift = await detectPlanBreadcrumbDrift(cwd);
-  const inferred = inferNextAction(state, bc, planTasks, lastCheckContent, drift);
+  const context = await loadAgentOutputContext(cwd, docpathDir);
+  const inferred = inferRouteFromContext(context);
 
   const output: AgentOutput = {
-    state: state?.state || 'unknown',
-    level: state?.level ?? null,
-    task_id: state?.task_id || '',
-    task_title: state?.task_title || '',
-    phase: state?.phase || '',
-    gate: state?.gate || 'none',
+    state: context.state?.state || 'unknown',
+    level: context.state?.level ?? null,
+    task_id: context.state?.task_id || '',
+    task_title: context.state?.task_title || '',
+    phase: context.state?.phase || '',
+    gate: context.state?.gate || 'none',
     ...inferred,
     required_context: [...inferred.required_context],
     required_files: [...inferred.required_files],
     must_update: [...inferred.must_update],
     progress: {
-      done: bc.done,
-      total: bc.total,
-      in_progress: bc.inProgress,
-      blocked: bc.blocked,
+      done: context.planTasks.filter((task) => task.done).length,
+      total: context.planTasks.length,
+      in_progress: context.bc.inProgress,
+      blocked: context.bc.blocked,
+    },
+    drift_summary: summarizeDrift(context.drift),
+    drift_details: {
+      plan_done_without_breadcrumb: [...context.drift.planDoneWithoutBreadcrumb],
+      breadcrumb_done_without_plan: [...context.drift.breadcrumbDoneWithoutPlan],
     },
     generated_at: new Date().toISOString(),
   };

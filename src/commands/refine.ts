@@ -6,10 +6,10 @@
  */
 
 import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import { resolveDocpathDir } from '../utils/file.js';
-import { updateCurrentState } from '../utils/workspace.js';
+import { readRequirementFile } from '../utils/input.js';
+import { transitionWorkflow } from '../engine/transitions.js';
+import { nextCommand } from './runtime.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 
 interface RefineOptions {
@@ -91,16 +91,16 @@ const SPEC_OUTPUT_FORMAT = `# 规约: {从需求文档提炼的标题}
 - 运行 \`docpath plan\` 生成执行计划
 - 运行 \`docpath continue\` 恢复/推进工作流`;
 
-export async function refineCommand(options: RefineOptions): Promise<void> {
-  const { cwd } = options;
+async function ensureDocpathWorkspace(cwd: string): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
     process.exit(1);
   }
+}
 
-  const requirementDoc = await readRequirementInput(options);
+function ensureRequirementDoc(requirementDoc: string): void {
   if (!requirementDoc.trim()) {
     console.error('❌  未提供需求文档。用法：');
     console.error('   docpath refine --file requirements.md');
@@ -108,14 +108,15 @@ export async function refineCommand(options: RefineOptions): Promise<void> {
     console.error('   docpath refine --content "..."');
     process.exit(1);
   }
+}
 
-  if (options.dryRun) {
-    console.log('📝  [dry-run] 需求文档预览：');
-    console.log(requirementDoc.slice(0, 1200));
-    if (requirementDoc.length > 1200) console.log(`\n... (${requirementDoc.length - 1200} chars truncated)`);
-    return;
-  }
+function printRequirementDryRun(requirementDoc: string): void {
+  console.log('📝  [dry-run] 需求文档预览：');
+  console.log(requirementDoc.slice(0, 1200));
+  if (requirementDoc.length > 1200) console.log(`\n... (${requirementDoc.length - 1200} chars truncated)`);
+}
 
+async function emitRefinePrompt(cwd: string, requirementDoc: string): Promise<void> {
   const existingSpec = await readTaskFile(cwd, 'tasks/current/spec.md');
 
   emitPrompt({
@@ -137,18 +138,32 @@ export async function refineCommand(options: RefineOptions): Promise<void> {
     ],
     output_format: SPEC_OUTPUT_FORMAT,
   });
+}
 
-  await updateCurrentState(cwd, 'drafting', { substep: 'requirements-refine' });
+export async function refineCommand(options: RefineOptions): Promise<void> {
+  const { cwd } = options;
+  await ensureDocpathWorkspace(cwd);
+
+  const requirementDoc = await readRequirementInput(options);
+  ensureRequirementDoc(requirementDoc);
+
+  if (options.dryRun) {
+    printRequirementDryRun(requirementDoc);
+    return;
+  }
+
+  await emitRefinePrompt(cwd, requirementDoc);
+
+  await transitionWorkflow(cwd, 'task.created', { currentStep: '需求梳理中，整理后写入 spec' });
   console.log('\n✅ 状态已更新为 drafting (requirements-refine)');
-  console.log('📌 完成后运行: docpath write-spec --stdin  然后: docpath plan\n');
+  await nextCommand({ cwd });
 }
 
 async function readRequirementInput(options: RefineOptions): Promise<string> {
   if (options.content) return options.content;
 
   if (options.file) {
-    const filePath = resolve(options.cwd, options.file);
-    return readFile(filePath, 'utf-8');
+    return readRequirementFile(options.cwd, options.file);
   }
 
   if (options.stdin !== false) {

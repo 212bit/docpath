@@ -6,15 +6,15 @@ Run the systematic debugging workflow.
 
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
-  ./.docpath/bin/docpath debug $ARGUMENTS
+  ./.docpath/bin/docpath debug
 elif command -v docpath >/dev/null 2>&1; then
-  docpath debug $ARGUMENTS
+  docpath debug
 elif [ -x ./node_modules/.bin/docpath ]; then
-  ./node_modules/.bin/docpath debug $ARGUMENTS
+  ./node_modules/.bin/docpath debug
 elif [ -f ./bin/docpath.js ]; then
-  node ./bin/docpath.js debug $ARGUMENTS
+  node ./bin/docpath.js debug
 elif [ -f ./dist/index.js ]; then
-  node ./dist/index.js debug $ARGUMENTS
+  node ./dist/index.js debug
 else
   echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127

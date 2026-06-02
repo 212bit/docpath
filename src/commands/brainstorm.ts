@@ -14,15 +14,19 @@
 import { existsSync } from 'fs';
 import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
-import { updateCurrentState } from '../utils/workspace.js';
+import { transitionWorkflow } from '../engine/transitions.js';
+import { nextCommand } from './runtime.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { readRequirementFile } from '../utils/input.js';
 
 interface BrainstormOptions {
   /** 项目根目录 */
   cwd: string;
   /** 初始需求（用户的第一句话） */
   input?: string;
+  /** 需求文档路径（[file] 位置参数或 --file 选项） */
+  file?: string;
   /** 跳过交互，直接生成 spec（用于 CI/非交互模式） */
   dryRun?: boolean;
   /** 单次模式：不进入交互循环，直接从 input 生成 spec */
@@ -58,55 +62,39 @@ acceptance_criteria:
 当前项目上下文：
 `;
 
-/**
- * 交互式 brainstorm 主流程
- *
- * 注意：此函数设计为在 CLI 交互模式下运行。
- * 在 Claude Code Agent 环境中，此流程由 CLAUDE.md 协议替代。
- */
-export async function brainstormCommand(options: BrainstormOptions): Promise<void> {
-  const { cwd, input, dryRun } = options;
+async function ensureDocpathDir(cwd: string): Promise<string> {
   const docpathDir = await resolveDocpathDir(cwd);
-
-  // 1. 检测 .docpath/
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
     process.exit(1);
   }
+  return docpathDir;
+}
 
-  console.log('\n🧠  需求拷问模式启动...\n');
-
-  // 2. 读取现有 spec（延迟到 prompt 构建时）
-
-  // 3. 构建初始上下文
-  const projectContext = await readFile(join(docpathDir, 'config.yaml'), 'utf-8');
-
-  // 收集现有 spec（如果有）
-  const existingSpec = await readTaskFile(cwd, 'spec.md');
-
-  let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-
-  // 添加系统 Prompt
-  const systemPrompt = SOCRATIC_SYSTEM_PROMPT + projectContext +
-    (existingSpec ? `\n\n已有规约：\n${existingSpec}` : '');
-
-  if (dryRun) {
-    console.log('📝  [dry-run] 生成的 Spec 预览：');
-    console.log('---');
-    console.log(existingSpec || '(无现有 spec)');
-    console.log('---');
-    return;
+async function resolveBrainstormInput(options: BrainstormOptions): Promise<string> {
+  let userMsg = options.input?.trim() || '';
+  if (!userMsg && options.file) {
+    userMsg = (await readRequirementFile(options.cwd, options.file)).trim();
   }
+  return userMsg || '（未提供需求描述）';
+}
 
-  // 确保 tasks/current 目录存在
-  const tasksCurrentDir = join(docpathDir, 'tasks', 'current');
-  await mkdir(tasksCurrentDir, { recursive: true });
+async function readBrainstormContext(cwd: string, docpathDir: string): Promise<{
+  projectContext: string;
+  existingSpec: string;
+}> {
+  const projectContext = await readFile(join(docpathDir, 'config.yaml'), 'utf-8');
+  const existingSpec = await readTaskFile(cwd, 'spec.md');
+  return { projectContext, existingSpec };
+}
 
-  // 3.5 单次模式：不进入交互循环，直接从 input 生成 spec
-  // [Agent Mode] 输出结构化 prompt，由宿主 Agent 执行推理
-  const userMsg = input || '（未提供需求描述）';
+function buildBrainstormSystemPrompt(projectContext: string, existingSpec: string): string {
+  return SOCRATIC_SYSTEM_PROMPT + projectContext +
+    (existingSpec ? `\n\n已有规约：\n${existingSpec}` : '');
+}
 
-  const prompt = emitPrompt({
+function emitBrainstormPrompt(systemPrompt: string, userMsg: string, existingSpec: string): void {
+  emitPrompt({
     task: 'brainstorm',
     system: systemPrompt,
     context: {
@@ -139,10 +127,50 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
     ],
     output_format: 'spec.md (YAML format)',
   });
+}
 
-  console.log(prompt);
+/**
+ * 交互式 brainstorm 主流程
+ *
+ * 注意：此函数设计为在 CLI 交互模式下运行。
+ * 在 Claude Code Agent 环境中，此流程由 CLAUDE.md 协议替代。
+ */
+export async function brainstormCommand(options: BrainstormOptions): Promise<void> {
+  const { cwd, dryRun } = options;
+  const docpathDir = await ensureDocpathDir(cwd);
 
-  await updateCurrentState(cwd, 'drafting', { substep: 'agent-brainstorm' });
+  // 解析需求来源：--input 文本 > [file]/--file 文件。
+  // fail-loud：指定了文件就必须读到内容，否则 readRequirementFile 抛错，绝不静默回退空需求。
+  const userMsg = await resolveBrainstormInput(options);
+
+  console.log('\n🧠  需求拷问模式启动...\n');
+
+  // 2. 读取现有 spec（延迟到 prompt 构建时）
+
+  // 3. 构建初始上下文
+  const { projectContext, existingSpec } = await readBrainstormContext(cwd, docpathDir);
+
+  // 添加系统 Prompt
+  const systemPrompt = buildBrainstormSystemPrompt(projectContext, existingSpec);
+
+  if (dryRun) {
+    console.log('📝  [dry-run] 生成的 Spec 预览：');
+    console.log('---');
+    console.log(existingSpec || '(无现有 spec)');
+    console.log('---');
+    return;
+  }
+
+  // 确保 tasks/current 目录存在
+  const tasksCurrentDir = join(docpathDir, 'tasks', 'current');
+  await mkdir(tasksCurrentDir, { recursive: true });
+
+  // 3.5 单次模式：不进入交互循环，直接从 input 生成 spec
+  // [Agent Mode] 输出结构化 prompt，由宿主 Agent 执行推理（userMsg 已在上方解析）
+
+  emitBrainstormPrompt(systemPrompt, userMsg, existingSpec);
+
+  await transitionWorkflow(cwd, 'task.created', { currentStep: '需求拷问中，澄清后写入 spec' });
   console.log('\n✅ 状态已更新为 drafting');
-  console.log('📌 完成后运行: docpath write-spec\n');
+  await nextCommand({ cwd });
 }

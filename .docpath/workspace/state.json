@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "state": "completed",
-  "task_id": "T-20260529-p3",
-  "task_title": "Phase 3: Agent Superpowers — 借鉴 Superpowers/Trellis/GSD 的 5 项改进",
-  "phase": "archived",
-  "current_step": "质量检查通过 (3 项)，下一步: docpath review",
-  "started_at": "2026-05-29T14:02:01.583Z",
-  "updated_at": "2026-05-29T14:02"
+  "task_id": "T-20260601-review-todo",
+  "task_title": "清理 review TODO 自触发提示",
+  "phase": "completed",
+  "gate": "review_pass",
+  "current_step": "知识归档完成",
+  "started_at": "2026-06-01T16:39:27.432Z",
+  "updated_at": "2026-06-01T16:39:27.431Z"
 }

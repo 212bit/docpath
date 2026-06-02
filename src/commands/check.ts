@@ -12,10 +12,12 @@ import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
-import { readCurrentMd, syncCurrentDocument, readOptionalFile, parsePlanTasks } from '../utils/workspace.js';
+import { readCurrentMd, readCurrentState, syncCurrentDocument, readOptionalFile, parsePlanTasks } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
+import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
+import { detectActiveTaskFileDrift, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 
 interface CheckOptions {
   cwd: string;
@@ -35,6 +37,8 @@ interface CheckOptions {
   onlyHarness?: boolean;
   /** 强制执行，即使不在 agent 会话中 */
   force?: boolean;
+  /** 检测到 active task 文件漂移时按指定来源自动同步 */
+  fixDrift?: 'canonical' | 'current';
 }
 
 interface CheckResult {
@@ -44,12 +48,69 @@ interface CheckResult {
   category?: 'compile' | 'test' | 'lint' | 'plan' | 'preflight' | 'boundary' | 'pattern';
 }
 
+function formatValidationIssue(issue: { message: string; line?: number; section?: string; field?: string }): string {
+  const details = [
+    issue.line ? `line ${issue.line}` : '',
+    issue.section ? `section ${issue.section}` : '',
+    issue.field ? `field ${issue.field}` : '',
+  ].filter(Boolean);
+  return details.length > 0 ? `${issue.message} (${details.join(', ')})` : issue.message;
+}
+
+function formatValidationFailure(filePath: string, issues: Array<{ message: string; line?: number; section?: string; field?: string }>): string {
+  return [
+    `检查文件: ${filePath}`,
+    ...issues.map((issue) => `  - ${formatValidationIssue(issue)}`),
+  ].join('\n');
+}
+
+function formatTaskFileDrift(drifts: TaskFileDrift[]): string {
+  const reasonLabel: Record<TaskFileDrift['reason'], string> = {
+    'missing-current': 'current 缺失',
+    'missing-canonical': 'canonical 缺失',
+    'content-mismatch': '内容不一致',
+  };
+  return [
+    'TASK FILE DRIFT DETECTED:',
+    ...drifts.flatMap((drift) => [
+      `  [${drift.file}] ${reasonLabel[drift.reason]}`,
+      `    current: ${drift.currentPath}`,
+      `    canonical: ${drift.canonicalPath}`,
+    ]),
+    '修复建议:',
+    '  - 以任务目录为准同步 current: docpath tasks sync --from canonical',
+    '  - 以 current 为准回写任务目录: docpath tasks sync --from current',
+  ].join('\n');
+}
+
+function formatSyncedTaskFiles(synced: Array<{ file: string; fromPath: string; toPath: string }>): string {
+  return [
+    '已自动同步 active task 文件:',
+    ...synced.flatMap((item) => [
+      `  [${item.file}]`,
+      `    from: ${item.fromPath}`,
+      `    to: ${item.toPath}`,
+    ]),
+  ].join('\n');
+}
+
+function errorOutput(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const record = err as { stderr?: unknown; stdout?: unknown; message?: unknown };
+    for (const value of [record.stderr, record.stdout, record.message]) {
+      if (typeof value === 'string' && value) return value;
+      if (Buffer.isBuffer(value)) return value.toString('utf-8');
+    }
+  }
+  return err instanceof Error ? err.message : '';
+}
+
 function runCheck(name: string, cmd: string, cwd: string, category?: CheckResult['category']): CheckResult {
   try {
     const output = execSync(cmd, { cwd, encoding: 'utf-8', timeout: 60000, stdio: ['pipe', 'pipe', 'pipe'] });
     return { name, passed: true, output: output.slice(0, 500), category };
-  } catch (err: any) {
-    return { name, passed: false, output: (err.stderr || err.stdout || err.message || '').slice(0, 500), category };
+  } catch (err: unknown) {
+    return { name, passed: false, output: errorOutput(err).slice(0, 500), category };
   }
 }
 
@@ -94,186 +155,527 @@ function parseHarnessRules(content: string): HarnessRule[] {
 
 // ─── Harness 规则检查 ───
 
+interface HarnessEvaluation {
+  passed: boolean;
+  output: string;
+}
+
+function harnessRuleCategory(ruleId: string): CheckResult['category'] {
+  if (ruleId.startsWith('pre_')) return 'preflight';
+  if (ruleId.startsWith('bound_')) return 'boundary';
+  return 'pattern';
+}
+
+function shouldRunHarnessRule(rule: HarnessRule, options: CheckOptions): boolean {
+  if (options.preflight && !rule.id.startsWith('pre_')) return false;
+  if (options.boundary && !rule.id.startsWith('bound_')) return false;
+  if (options.pattern && !rule.id.startsWith('post_')) return false;
+  return true;
+}
+
+function missingHarnessResult(): CheckResult {
+  return {
+    name: 'Harness 规则',
+    passed: false,
+    output: '未找到 .docpath/harness.md，请先创建 harness 文件',
+    category: 'preflight',
+  };
+}
+
+function noMatchingHarnessRulesResult(): CheckResult {
+  return {
+    name: 'Harness 规则',
+    passed: true,
+    output: '未找到匹配的规则',
+    category: 'preflight',
+  };
+}
+
+async function evaluatePreflightRule(ruleId: string, cwd: string, docpathDir: string): Promise<HarnessEvaluation> {
+  switch (ruleId) {
+    case 'pre_project_setup': {
+      const currentMd = join(docpathDir, 'workspace', 'current.md');
+      const specDir = join(docpathDir, 'spec');
+      const passed = existsSync(docpathDir) && existsSync(currentMd) && existsSync(specDir);
+      return { passed, output: passed ? '项目结构完整' : '缺少 .docpath/ 目录或必要文件' };
+    }
+
+    case 'pre_file_structure': {
+      const docsMd = join(docpathDir, 'docs.md');
+      const passed = existsSync(docsMd);
+      return { passed, output: passed ? 'docs.md 存在' : '缺少 docs.md，请运行 `docpath docs scan`' };
+    }
+
+    case 'pre_task_ready': {
+      try {
+        const current = await readCurrentMd(cwd);
+        const passed = current?.state === 'ready' || current?.state === 'in_progress';
+        return { passed, output: passed ? `任务状态: ${current?.state}` : `任务未就绪: ${current?.state || 'unknown'}` };
+      } catch {
+        return { passed: false, output: '无法读取任务状态' };
+      }
+    }
+
+    case 'pre_dependencies': {
+      const pkgPath = join(cwd, 'package.json');
+      if (!existsSync(pkgPath)) return { passed: true, output: '无 package.json，跳过依赖检查' };
+      const nodeModules = join(cwd, 'node_modules');
+      const passed = existsSync(nodeModules);
+      return { passed, output: passed ? '依赖已安装' : '请运行 npm install' };
+    }
+
+    default:
+      return { passed: true, output: `未知规则: ${ruleId}` };
+  }
+}
+
+async function evaluateBoundaryRule(ruleId: string, cwd: string, docpathDir: string): Promise<HarnessEvaluation> {
+  switch (ruleId) {
+    case 'bound_time_box': {
+      const timeLimit = 60;
+      return { passed: true, output: `时间限制: ${timeLimit} 分钟（WARN 级别）` };
+    }
+
+    case 'bound_scope': {
+      try {
+        const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
+        if (!existsSync(planPath)) return { passed: true, output: '无 plan.md，跳过范围检查' };
+        const planContent = await readFile(planPath, 'utf-8');
+        const taskCount = (planContent.match(/- \[[ x]\]/gi) || []).length;
+        const passed = taskCount <= 20;
+        return { passed, output: passed ? `任务数量: ${taskCount}` : `任务数量过多: ${taskCount}，建议拆分` };
+      } catch {
+        return { passed: true, output: '无法检查范围' };
+      }
+    }
+
+    case 'bound_tool_permission':
+      return { passed: true, output: '工具权限检查（WARN 级别）' };
+
+    default:
+      return { passed: true, output: `未知规则: ${ruleId}` };
+  }
+}
+
+function evaluatePatternRule(ruleId: string, docpathDir: string): HarnessEvaluation {
+  switch (ruleId) {
+    case 'post_shell_command':
+      return { passed: true, output: 'Shell 命令安全性检查（WARN 级别）' };
+
+    case 'post_file_write':
+      return { passed: true, output: '文件写入检查（WARN 级别）' };
+
+    case 'post_external_tool':
+      return { passed: true, output: '外部工具使用检查（WARN 级别）' };
+
+    case 'post_spec_ref': {
+      const docsMd = join(docpathDir, 'docs.md');
+      const passed = existsSync(docsMd);
+      return { passed, output: passed ? 'docs.md 存在' : '缺少 docs.md，请运行 `docpath docs scan`' };
+    }
+
+    default:
+      return { passed: true, output: `未知规则: ${ruleId}` };
+  }
+}
+
+async function evaluateHarnessRule(rule: HarnessRule, cwd: string, docpathDir: string): Promise<HarnessEvaluation> {
+  const category = harnessRuleCategory(rule.id);
+  if (category === 'preflight') return evaluatePreflightRule(rule.id, cwd, docpathDir);
+  if (category === 'boundary') return evaluateBoundaryRule(rule.id, cwd, docpathDir);
+  return evaluatePatternRule(rule.id, docpathDir);
+}
+
+async function runSingleHarnessRule(rule: HarnessRule, cwd: string, docpathDir: string): Promise<CheckResult> {
+  const category = harnessRuleCategory(rule.id);
+  const evaluation = await evaluateHarnessRule(rule, cwd, docpathDir);
+  const shouldBlock = rule.level === 'MUST' && !evaluation.passed;
+
+  return {
+    name: `[${rule.level}] ${rule.description}`,
+    passed: shouldBlock ? false : true,
+    output: evaluation.output,
+    category,
+  };
+}
+
 async function runHarnessChecks(cwd: string, options: CheckOptions): Promise<CheckResult[]> {
   const docpathDir = await resolveDocpathDir(cwd);
   const harnessPath = join(docpathDir, 'harness.md');
-  if (!existsSync(harnessPath)) {
-    return [{
-      name: 'Harness 规则',
-      passed: false,
-      output: '未找到 .docpath/harness.md，请先创建 harness 文件',
-      category: 'preflight',
-    }];
-  }
+  if (!existsSync(harnessPath)) return [missingHarnessResult()];
 
   const content = await readFile(harnessPath, 'utf-8');
   const rules = parseHarnessRules(content);
-  const results: CheckResult[] = [];
+  const filteredRules = rules.filter(rule => shouldRunHarnessRule(rule, options));
+  if (filteredRules.length === 0) return [noMatchingHarnessRulesResult()];
 
-  // 按 category 过滤规则
-  const filteredRules = rules.filter(rule => {
-    if (options.preflight && !rule.id.startsWith('pre_')) return false;
-    if (options.boundary && !rule.id.startsWith('bound_')) return false;
-    if (options.pattern && !rule.id.startsWith('post_')) return false;
-    return true;
-  });
+  return Promise.all(filteredRules.map(rule => runSingleHarnessRule(rule, cwd, docpathDir)));
+}
 
-  if (filteredRules.length === 0) {
-    return [{
-      name: 'Harness 规则',
-      passed: true,
-      output: '未找到匹配的规则',
-      category: 'preflight',
-    }];
+interface NodeCommandConfig {
+  pkgRunner: string;
+  runCmd: string;
+}
+
+interface PackageManifest {
+  scripts?: Record<string, string>;
+}
+
+interface TaskPlanProgress {
+  planDoneCount: number;
+  planTotalCount: number;
+}
+
+function normalizeHarnessOptions(options: CheckOptions): void {
+  if (options.onlyHarness) {
+    options.harness = true;
   }
 
-  // 执行规则检查
-  for (const rule of filteredRules) {
-    const category: CheckResult['category'] = rule.id.startsWith('pre_')
-      ? 'preflight'
-      : rule.id.startsWith('bound_')
-        ? 'boundary'
-        : 'pattern';
+  if ((options.preflight || options.boundary) && !options.harness) {
+    options.harness = true;
+  }
+}
 
-    // 根据规则 ID 执行具体检查
-    let passed = true;
-    let output = '';
+function warnWhenOutsideAgentSession(current: Awaited<ReturnType<typeof readCurrentMd>>, options: CheckOptions): void {
+  if (current?.task_id || options.force) return;
+  console.warn('⚠️  当前无活跃 agent 会话 (current.md 无 task_id)');
+  console.warn('   这些检查通常应在 agent 流程内执行 (docpath:agent done)');
+  console.warn('   如需独立运行，添加 --force 标志');
+  console.warn('');
+}
 
-    switch (rule.id) {
-      // Pre-flight 规则
-      case 'pre_project_setup': {
-        // 检查 .docpath/ 目录和必要文件
-        const docpathDir = await resolveDocpathDir(cwd);
-        const currentMd = join(docpathDir, 'workspace', 'current.md');
-        const specDir = join(docpathDir, 'spec');
-        passed = existsSync(docpathDir) && existsSync(currentMd) && existsSync(specDir);
-        output = passed ? '项目结构完整' : '缺少 .docpath/ 目录或必要文件';
-        break;
-      }
+function detectNodeCommandConfig(cwd: string): NodeCommandConfig {
+  const hasPnpmLock = existsSync(join(cwd, 'pnpm-lock.yaml'));
+  const hasYarnLock = existsSync(join(cwd, 'yarn.lock'));
+  return {
+    pkgRunner: hasPnpmLock ? 'pnpm' : hasYarnLock ? 'yarn' : 'npm',
+    runCmd: hasPnpmLock ? 'pnpm run' : hasYarnLock ? 'yarn' : 'npm run',
+  };
+}
 
-      case 'pre_file_structure': {
-        // 检查文件结构
-        const docsMd = join(docpathDir, 'docs.md');
-        passed = existsSync(docsMd);
-        output = passed ? 'docs.md 存在' : '缺少 docs.md，请运行 `docpath docs scan`';
-        break;
-      }
+async function readPackageManifest(pkgPath: string): Promise<PackageManifest | null> {
+  if (!existsSync(pkgPath)) return null;
+  try {
+    return JSON.parse(await readFile(pkgPath, 'utf-8')) as PackageManifest;
+  } catch {
+    return null;
+  }
+}
 
-      case 'pre_task_ready': {
-        // 检查任务就绪状态
-        try {
-          const current = await readCurrentMd(cwd);
-          passed = current?.state === 'ready' || current?.state === 'in_progress';
-          output = passed ? `任务状态: ${current?.state}` : `任务未就绪: ${current?.state || 'unknown'}`;
-        } catch {
-          passed = false;
-          output = '无法读取任务状态';
-        }
-        break;
-      }
+async function runCompileChecks(cwd: string, pkgPath: string, nodeCommands: NodeCommandConfig): Promise<CheckResult[]> {
+  const tsconfigPath = join(cwd, 'tsconfig.json');
+  const cargoPath = join(cwd, 'Cargo.toml');
+  const goModPath = join(cwd, 'go.mod');
 
-      case 'pre_dependencies': {
-        // 检查依赖项
-        const pkgPath = join(cwd, 'package.json');
-        if (existsSync(pkgPath)) {
-          try {
-            const nodeModules = join(cwd, 'node_modules');
-            passed = existsSync(nodeModules);
-            output = passed ? '依赖已安装' : '请运行 npm install';
-          } catch {
-            passed = true;
-            output = '无 package.json，跳过依赖检查';
-          }
-        } else {
-          passed = true;
-          output = '无 package.json，跳过依赖检查';
-        }
-        break;
-      }
-
-      // Boundary 规则
-      case 'bound_time_box': {
-        // 检查时间限制（从配置读取）
-        const timeLimit = 60; // 默认 60 分钟
-        output = `时间限制: ${timeLimit} 分钟（WARN 级别）`;
-        passed = true; // 时间检查是警告，不是阻断
-        break;
-      }
-
-      case 'bound_scope': {
-        // 检查范围控制
-        try {
-          const current = await readCurrentMd(cwd);
-          const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-          if (existsSync(planPath)) {
-            const planContent = await readFile(planPath, 'utf-8');
-            const taskCount = (planContent.match(/- \[[ x]\]/gi) || []).length;
-            passed = taskCount <= 20; // 超过 20 个子任务可能超出范围
-            output = passed ? `任务数量: ${taskCount}` : `任务数量过多: ${taskCount}，建议拆分`;
-          } else {
-            passed = true;
-            output = '无 plan.md，跳过范围检查';
-          }
-        } catch {
-          passed = true;
-          output = '无法检查范围';
-        }
-        break;
-      }
-
-      case 'bound_tool_permission': {
-        // 检查工具权限（从配置读取）
-        output = '工具权限检查（WARN 级别）';
-        passed = true; // 权限检查是警告，不是阻断
-        break;
-      }
-
-      // Pattern 规则
-      case 'post_shell_command': {
-        // 检查 shell 命令安全性
-        output = 'Shell 命令安全性检查（WARN 级别）';
-        passed = true; // 模式检查是警告，不是阻断
-        break;
-      }
-
-      case 'post_file_write': {
-        // 检查文件写入
-        output = '文件写入检查（WARN 级别）';
-        passed = true; // 模式检查是警告，不是阻断
-        break;
-      }
-
-      case 'post_external_tool': {
-        // 检查外部工具使用
-        output = '外部工具使用检查（WARN 级别）';
-        passed = true; // 模式检查是警告，不是阻断
-        break;
-      }
-
-      case 'post_spec_ref': {
-        // 检查规范引用
-        const docsMd = join(docpathDir, 'docs.md');
-        passed = existsSync(docsMd);
-        output = passed ? 'docs.md 存在' : '缺少 docs.md，请运行 `docpath docs scan`';
-        break;
-      }
-
-      default:
-        output = `未知规则: ${rule.id}`;
-        passed = true;
+  if (existsSync(tsconfigPath)) {
+    const pkg = await readPackageManifest(pkgPath);
+    const scripts = pkg?.scripts || {};
+    let typecheckCmd = 'npx tsc --noEmit 2>&1';
+    if (scripts.typecheck) {
+      typecheckCmd = `${nodeCommands.runCmd} typecheck 2>&1`;
+    } else if (scripts['type-check']) {
+      typecheckCmd = `${nodeCommands.runCmd} type-check 2>&1`;
     }
+    return [runCheck('TypeScript 编译', typecheckCmd, cwd, 'compile')];
+  }
 
-    // 根据 level 决定是否阻断
-    const shouldBlock = rule.level === 'MUST' && !passed;
+  if (existsSync(cargoPath)) return [runCheck('Rust 编译', 'cargo check 2>&1', cwd)];
+  if (existsSync(goModPath)) return [runCheck('Go 编译', 'go build ./... 2>&1', cwd)];
+  return [];
+}
+
+async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeCommands: NodeCommandConfig, options: CheckOptions): Promise<CheckResult[]> {
+  const pkg = await readPackageManifest(pkgPath);
+  if (!pkg?.scripts) return [];
+
+  const results: CheckResult[] = [];
+  if (pkg.scripts.build) {
+    results.push(runCheck('构建', `${nodeCommands.runCmd} build 2>&1`, cwd, 'compile'));
+  }
+  if (!options.skipTests && pkg.scripts.test) {
+    results.push(runCheck('测试', `${nodeCommands.pkgRunner} test 2>&1`, cwd, 'test'));
+  }
+  if (!options.skipLint && pkg.scripts.lint) {
+    results.push(runCheck('Lint', `${nodeCommands.runCmd} lint 2>&1`, cwd, 'lint'));
+  }
+  return results;
+}
+
+async function runProjectChecks(cwd: string, options: CheckOptions): Promise<CheckResult[]> {
+  const pkgPath = join(cwd, 'package.json');
+  const nodeCommands = detectNodeCommandConfig(cwd);
+  return [
+    ...await runCompileChecks(cwd, pkgPath, nodeCommands),
+    ...await runPackageScriptChecks(cwd, pkgPath, nodeCommands, options),
+  ];
+}
+
+async function checkTaskFileDrift(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
+  const workflowState = await readCurrentState(cwd);
+  if ((workflowState?.level || 0) < 2 || !workflowState?.task_id) return [];
+
+  let drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
+  let driftOutput = drifts.length === 0 ? 'current 与 canonical 任务文件一致' : formatTaskFileDrift(drifts);
+  if (drifts.length > 0 && options.fixDrift) {
+    const synced = await syncActiveTaskFiles(docpathDir, workflowState.task_id, options.fixDrift);
+    await syncCurrentDocument(cwd);
+    console.log(`🔧  已自动同步 active task 文件 (${options.fixDrift}): ${synced.map((item) => item.file).join(', ')}`);
+    drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
+    driftOutput = drifts.length === 0
+      ? formatSyncedTaskFiles(synced)
+      : `${formatSyncedTaskFiles(synced)}\n${formatTaskFileDrift(drifts)}`;
+  }
+
+  return [{
+    name: '任务文件 current/canonical 漂移检查',
+    passed: drifts.length === 0,
+    output: driftOutput,
+    category: 'plan',
+  }];
+}
+
+async function validateTaskDocuments(cwd: string, docpathDir: string): Promise<{ results: CheckResult[]; progress: TaskPlanProgress }> {
+  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
+  const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
+  const workflowState = await readCurrentState(cwd);
+  const shouldValidateTaskDocs = (workflowState?.level || 0) >= 2;
+  const results: CheckResult[] = [];
+  const progress: TaskPlanProgress = { planDoneCount: 0, planTotalCount: 0 };
+
+  if (shouldValidateTaskDocs && existsSync(specPath)) {
+    const specContent = await readFile(specPath, 'utf-8');
+    const validation = validateSpecContent(specContent);
     results.push({
-      name: `[${rule.level}] ${rule.description}`,
-      passed: shouldBlock ? false : true,
-      output: output,
-      category,
+      name: 'spec.md 结构校验',
+      passed: validation.ok,
+      output: validation.ok ? `检查文件: ${specPath}` : formatValidationFailure(specPath, validation.issues),
+      category: 'plan',
     });
   }
 
+  if (!existsSync(planPath)) return { results, progress };
+
+  const planContent = await readFile(planPath, 'utf-8');
+  if (shouldValidateTaskDocs) {
+    const validation = validatePlanContent(planContent);
+    results.push({
+      name: 'plan.md 结构校验',
+      passed: validation.ok,
+      output: validation.ok ? `检查文件: ${planPath}` : formatValidationFailure(planPath, validation.issues),
+      category: 'plan',
+    });
+  }
+
+  progress.planDoneCount = (planContent.match(/- \[x\]/gi) || []).length;
+  progress.planTotalCount = (planContent.match(/- \[[ x]\]/gi) || []).length;
+  if (progress.planTotalCount > 0) {
+    const passed = progress.planDoneCount === progress.planTotalCount;
+    results.push({
+      name: `子任务完成度 (${progress.planDoneCount}/${progress.planTotalCount})`,
+      passed,
+      output: passed ? '所有子任务已完成' : `还有 ${progress.planTotalCount - progress.planDoneCount} 个子任务未完成`,
+      category: 'plan',
+    });
+  }
+
+  return { results, progress };
+}
+
+async function checkCurrentChecklist(cwd: string, docpathDir: string, progress: TaskPlanProgress): Promise<CheckResult[]> {
+  await syncCurrentDocument(cwd);
+
+  const currentMdPath = join(docpathDir, 'workspace', 'current.md');
+  if (!existsSync(currentMdPath)) return [];
+
+  try {
+    const currentContent = await readFile(currentMdPath, 'utf-8');
+    const checklistMatch = currentContent.match(/##[^\n]*?执行检查清单\s*\n([\s\S]*?)(?=\n##|\n---|\n```|$)/);
+    if (!checklistMatch) return [];
+
+    const checklistBlock = checklistMatch[1];
+    const currentDoneCount = (checklistBlock.match(/- \[x\]/gi) || []).length;
+    const currentTotalCount = (checklistBlock.match(/- \[[ x]\]/gi) || []).length;
+    const planFullyDone = progress.planTotalCount > 0 && progress.planDoneCount === progress.planTotalCount;
+
+    if (currentTotalCount > 0 && planFullyDone && currentDoneCount < currentTotalCount) {
+      return [{
+        name: `⚠️  Checklist 同步 (${currentDoneCount}/${currentTotalCount})`,
+        passed: false,
+        output: `plan.md 全部完成但 current.md checklist 仍有 ${currentTotalCount - currentDoneCount} 项未勾选，请同步更新`,
+        category: 'plan',
+      }];
+    }
+    if (currentTotalCount > 0) {
+      return [{
+        name: `Checklist 同步 (${currentDoneCount}/${currentTotalCount})`,
+        passed: true,
+        output: planFullyDone ? 'current.md checklist 与执行状态一致' : 'checklist 已记录 (plan.md 未全部完成，暂不交叉校验)',
+        category: 'plan',
+      }];
+    }
+  } catch { /* skip */ }
+
+  return [];
+}
+
+async function checkPlanBreadcrumbDrift(cwd: string): Promise<CheckResult[]> {
+  const drift = await detectPlanBreadcrumbDrift(cwd);
+  if (drift.planDoneWithoutBreadcrumb.length === 0 && drift.breadcrumbDoneWithoutPlan.length === 0) return [];
+
+  const driftLines = [
+    'DRIFT DETECTED:',
+    ...drift.planDoneWithoutBreadcrumb.map((step) =>
+      `  [plan-done-no-breadcrumb] ${step} marked done in plan.md but no breadcrumb evidence`,
+    ),
+    ...drift.breadcrumbDoneWithoutPlan.map((step) =>
+      `  [breadcrumb-done-no-plan] ${step} done in breadcrumb but plan.md still unchecked`,
+    ),
+    '修复建议:',
+    ...drift.planDoneWithoutBreadcrumb.map((step) =>
+      `  - 若步骤尚未真正完成，运行: docpath go --step ${step}`,
+    ),
+    ...drift.breadcrumbDoneWithoutPlan.map((step) =>
+      `  - 若步骤已完成但 plan 未同步，运行: docpath agent step --step ${step} --status done`,
+    ),
+  ];
+
+  return [{
+    name: 'Plan/Breadcrumb 漂移检查',
+    passed: false,
+    output: driftLines.join('\n'),
+    category: 'plan',
+  }];
+}
+
+async function runTaskDocumentChecks(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
+  const results: CheckResult[] = [];
+  results.push(...await checkTaskFileDrift(cwd, docpathDir, options));
+  const { results: documentResults, progress } = await validateTaskDocuments(cwd, docpathDir);
+  results.push(...documentResults);
+  results.push(...await checkCurrentChecklist(cwd, docpathDir, progress));
+  results.push(...await checkPlanBreadcrumbDrift(cwd));
   return results;
+}
+
+function formatFailedOutput(output: string): string[] {
+  const lines = output.split('\n');
+  if (lines.length <= 1) return [`     └─ ${output.slice(0, 200)}`];
+  const limit = output.includes('修复建议:') ? 14 : 8;
+  return lines.slice(0, limit).map((line, index) => index === 0 ? `     └─ ${line}` : `        ${line}`);
+}
+
+function groupCheckResults(results: CheckResult[]): Record<string, CheckResult[]> {
+  const categories: Record<string, CheckResult[]> = {};
+  for (const result of results) {
+    const category = result.category || 'other';
+    if (!categories[category]) categories[category] = [];
+    categories[category].push(result);
+  }
+  return categories;
+}
+
+function printCheckReport(results: CheckResult[], allPassed: boolean): void {
+  const categoryNames: Record<string, string> = {
+    compile: '📝 编译检查',
+    test: '🧪 测试检查',
+    lint: '🔍 Lint 检查',
+    plan: '📋 计划检查',
+    preflight: '🚀 Pre-flight 检查',
+    boundary: '🛡️  Boundary 检查',
+    pattern: '📊 Pattern 检查',
+    other: '📦 其他检查',
+  };
+
+  for (const [category, categoryResults] of Object.entries(groupCheckResults(results))) {
+    console.log(`\n${categoryNames[category] || category}:`);
+    for (const result of categoryResults) {
+      const icon = result.passed ? '✅' : '❌';
+      console.log(`  ${icon}  ${result.name}`);
+      if (!result.passed && result.output) {
+        for (const line of formatFailedOutput(result.output)) {
+          console.log(line);
+        }
+      }
+    }
+  }
+
+  if (results.length === 0) {
+    console.log('⚠️  未检测到可执行的检查项（无 tsconfig/package.json/Cargo.toml/go.mod）');
+  }
+
+  console.log(`\n${allPassed ? '✅  全部通过' : '❌  存在失败项'}\n`);
+}
+
+async function updateCheckWorkflowState(cwd: string, allPassed: boolean, results: CheckResult[]): Promise<void> {
+  const workflowState = await readCurrentState(cwd);
+  const alreadyPastCheck = allPassed && (
+    (workflowState?.phase === 'reviewing' && workflowState?.gate === 'review_pass')
+    || workflowState?.phase === 'completed'
+  );
+  if (alreadyPastCheck) return;
+
+  await transitionWorkflow(cwd, allPassed ? 'check.passed' : 'check.failed', {
+    currentStep: allPassed
+      ? `质量检查通过 (${results.length} 项)，下一步: docpath review`
+      : `质量检查失败: ${results.filter(result => !result.passed).map(result => result.name).join(', ')}`,
+  });
+}
+
+async function writeLastCheckEvidence(cwd: string, results: CheckResult[], allPassed: boolean): Promise<void> {
+  const lastCheckPath = join(cwd, '.docpath', 'workspace', 'last-check.md');
+  const checkLines: string[] = ['# Last Check Evidence', ''];
+  checkLines.push(`**时间**: ${new Date().toISOString()}`);
+  checkLines.push(`**结果**: ${allPassed ? '✅ PASS' : '❌ FAIL'}`);
+  checkLines.push(`**检查项**: ${results.length}`);
+  checkLines.push('');
+  for (const result of results) {
+    checkLines.push(`- ${result.passed ? '✅' : '❌'} ${result.name}`);
+  }
+  checkLines.push('');
+  await writeFile(lastCheckPath, checkLines.join('\n'), 'utf-8');
+}
+
+async function writeCheckBreadcrumb(cwd: string, taskId: string, results: CheckResult[], allPassed: boolean): Promise<void> {
+  await writeBreadcrumb(cwd, {
+    taskId,
+    step: 'check',
+    status: allPassed ? 'done' : 'blocked',
+    context: allPassed
+      ? `质量检查通过 (${results.length} 项)`
+      : `质量检查失败: ${results.filter(result => !result.passed).map(result => result.name).join(', ')}`,
+  });
+}
+
+async function updateCheckHistory(docpathDir: string, results: CheckResult[], allPassed: boolean): Promise<void> {
+  const regressionPath = join(docpathDir, 'workspace', 'check-history.json');
+  type CheckHistoryEntry = { timestamp: string; passed: boolean; failedChecks: string[] };
+  let history: CheckHistoryEntry[] = [];
+  if (existsSync(regressionPath)) {
+    try { history = JSON.parse(await readFile(regressionPath, 'utf-8')) as CheckHistoryEntry[]; } catch { history = []; }
+  }
+
+  const currentFailed = results.filter(result => !result.passed).map(result => result.name);
+  history.push({ timestamp: new Date().toISOString(), passed: allPassed, failedChecks: currentFailed });
+  if (history.length > 20) history = history.slice(-20);
+  await writeFile(regressionPath, JSON.stringify(history, null, 2), 'utf-8');
+
+  if (history.length < 2) return;
+  const prev = history[history.length - 2];
+  if (!prev.passed || allPassed) return;
+
+  const newFailures = currentFailed.filter(failure => !prev.failedChecks.includes(failure));
+  if (newFailures.length > 0) {
+    console.log(`\n🚨 回归检测: ${newFailures.length} 项新增失败!`);
+    newFailures.forEach(failure => console.log(`  ↩️  ${failure}`));
+  }
+}
+
+async function persistCheckEvidence(cwd: string, docpathDir: string, taskId: string, results: CheckResult[], allPassed: boolean): Promise<void> {
+  await updateCheckWorkflowState(cwd, allPassed, results);
+  await writeLastCheckEvidence(cwd, results, allPassed);
+  await writeCheckBreadcrumb(cwd, taskId, results, allPassed);
+  await syncCurrentDocument(cwd);
+  await updateCheckHistory(docpathDir, results, allPassed);
 }
 
 export async function checkCommand(options: CheckOptions): Promise<void> {
@@ -287,163 +689,16 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
   const current = await readCurrentMd(cwd);
 
-  // P0.2: bypass protection — 警告无 agent 会话
-  if (!current?.task_id && !options.force) {
-    console.warn('⚠️  当前无活跃 agent 会话 (current.md 无 task_id)');
-    console.warn('   这些检查通常应在 agent 流程内执行 (docpath:agent done)');
-    console.warn('   如需独立运行，添加 --force 标志');
-    console.warn('');
-  }
+  warnWhenOutsideAgentSession(current, options);
 
   console.log('\n🔍  质量检查...\n');
   const results: CheckResult[] = [];
-
-  // 当 --only-harness 时，自动启用 harness 检查并跳过常规检查
-  if (options.onlyHarness) {
-    options.harness = true;
-  }
-
-  // 当 --preflight 或 --boundary 单独使用时，自动启用 harness
-  if ((options.preflight || options.boundary) && !options.harness) {
-    options.harness = true;
-  }
+  normalizeHarnessOptions(options);
 
   // 1-5. 常规检查（--only-harness 时跳过）
   if (!options.onlyHarness) {
-    // 1. 编译检查 (检测项目类型)
-    const pkgPath = join(cwd, 'package.json');
-    const tsconfigPath = join(cwd, 'tsconfig.json');
-    const cargoPath = join(cwd, 'Cargo.toml');
-    const goModPath = join(cwd, 'go.mod');
-
-    // 检测包管理器
-    const hasPnpmLock = existsSync(join(cwd, 'pnpm-lock.yaml'));
-    const hasYarnLock = existsSync(join(cwd, 'yarn.lock'));
-    const pkgRunner = hasPnpmLock ? 'pnpm' : hasYarnLock ? 'yarn' : 'npm';
-    const runCmd = hasPnpmLock ? 'pnpm run' : hasYarnLock ? 'yarn' : 'npm run';
-
-    if (existsSync(tsconfigPath)) {
-      // 优先使用项目定义的 typecheck 脚本
-      let typecheckCmd = 'npx tsc --noEmit 2>&1';
-      if (existsSync(pkgPath)) {
-        try {
-          const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
-          const scripts = pkg.scripts || {};
-          if (scripts.typecheck) {
-            typecheckCmd = `${runCmd} typecheck 2>&1`;
-          } else if (scripts['type-check']) {
-            typecheckCmd = `${runCmd} type-check 2>&1`;
-          }
-        } catch { /* use default */ }
-      }
-      results.push(runCheck('TypeScript 编译', typecheckCmd, cwd, 'compile'));
-    } else if (existsSync(cargoPath)) {
-      results.push(runCheck('Rust 编译', 'cargo check 2>&1', cwd));
-    } else if (existsSync(goModPath)) {
-      results.push(runCheck('Go 编译', 'go build ./... 2>&1', cwd));
-    }
-
-    // 2. 构建检查
-    if (existsSync(pkgPath)) {
-      try {
-        const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
-        if (pkg.scripts?.build) {
-          results.push(runCheck('构建', `${runCmd} build 2>&1`, cwd, 'compile'));
-        }
-      } catch { /* skip */ }
-    }
-
-    // 3. 测试
-    if (!skipTests && existsSync(pkgPath)) {
-      try {
-        const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
-        if (pkg.scripts?.test) {
-          results.push(runCheck('测试', `${pkgRunner} test 2>&1`, cwd, 'test'));
-        }
-      } catch { /* skip */ }
-    }
-
-    // 4. Lint
-    if (!skipLint && existsSync(pkgPath)) {
-      try {
-        const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
-        if (pkg.scripts?.lint) {
-          results.push(runCheck('Lint', `${runCmd} lint 2>&1`, cwd, 'lint'));
-        }
-      } catch { /* skip */ }
-    }
-
-    // 5. DocPath plan.md 验收条件检查
-    const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-    let planDoneCount = 0;
-    let planTotalCount = 0;
-    if (existsSync(planPath)) {
-      const planContent = await readFile(planPath, 'utf-8');
-      planDoneCount = (planContent.match(/- \[x\]/gi) || []).length;
-      planTotalCount = (planContent.match(/- \[[ x]\]/gi) || []).length;
-      if (planTotalCount > 0) {
-        const passed = planDoneCount === planTotalCount;
-        results.push({
-          name: `子任务完成度 (${planDoneCount}/${planTotalCount})`,
-          passed,
-          output: passed ? '所有子任务已完成' : `还有 ${planTotalCount - planDoneCount} 个子任务未完成`,
-          category: 'plan',
-        });
-      }
-    }
-
-    // 5b. current.md checklist 独立检查 + 与 plan.md 一致性检查
-    // 先根据最新 plan/spec 重建 current.md，避免检查到上一轮缓存。
-    await syncCurrentDocument(cwd);
-
-    const currentMdPath = join(docpathDir, 'workspace', 'current.md');
-    if (existsSync(currentMdPath)) {
-      try {
-        const currentContent = await readFile(currentMdPath, 'utf-8');
-        // 提取 "执行检查清单" 区块
-        const checklistMatch = currentContent.match(/##[^\n]*?执行检查清单\s*\n([\s\S]*?)(?=\n##|\n---|\n```|$)/);
-        if (checklistMatch) {
-          const checklistBlock = checklistMatch[1];
-          const currentDoneCount = (checklistBlock.match(/- \[x\]/gi) || []).length;
-          const currentTotalCount = (checklistBlock.match(/- \[[ x]\]/gi) || []).length;
-
-          // 只有 plan.md 有 checkbox 且 100% 完成时才做交叉一致性检查
-          const planFullyDone = planTotalCount > 0 && planDoneCount === planTotalCount;
-          if (currentTotalCount > 0 && planFullyDone && currentDoneCount < currentTotalCount) {
-            results.push({
-              name: `⚠️  Checklist 同步 (${currentDoneCount}/${currentTotalCount})`,
-              passed: false,
-              output: `plan.md 全部完成但 current.md checklist 仍有 ${currentTotalCount - currentDoneCount} 项未勾选，请同步更新`,
-              category: 'plan',
-            });
-          } else if (currentTotalCount > 0) {
-            results.push({
-              name: `Checklist 同步 (${currentDoneCount}/${currentTotalCount})`,
-              passed: true,
-              output: planFullyDone ? 'current.md checklist 与执行状态一致' : 'checklist 已记录 (plan.md 未全部完成，暂不交叉校验)',
-              category: 'plan',
-            });
-          }
-        }
-      } catch { /* skip */ }
-    }
-
-    const drift = await detectPlanBreadcrumbDrift(cwd);
-    if (drift.planDoneWithoutBreadcrumb.length > 0 || drift.breadcrumbDoneWithoutPlan.length > 0) {
-      results.push({
-        name: 'Plan/Breadcrumb 漂移检查',
-        passed: false,
-        output: [
-          drift.planDoneWithoutBreadcrumb.length > 0
-            ? `plan 已完成但缺少 done breadcrumb: ${drift.planDoneWithoutBreadcrumb.join(', ')}`
-            : '',
-          drift.breadcrumbDoneWithoutPlan.length > 0
-            ? `breadcrumb done 但 plan 未勾选: ${drift.breadcrumbDoneWithoutPlan.join(', ')}`
-            : '',
-        ].filter(Boolean).join('; '),
-        category: 'plan',
-      });
-    }
+    results.push(...await runProjectChecks(cwd, { ...options, skipTests, skipLint }));
+    results.push(...await runTaskDocumentChecks(cwd, docpathDir, options));
   }
 
   // 6. Harness 规则检查 (--harness 选项)
@@ -453,109 +708,13 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     results.push(...harnessResults);
   }
 
-  // 输出报告
   const allPassed = results.every(r => r.passed);
-
-  // 按 category 分组输出
-  const categories: Record<string, CheckResult[]> = {};
-  for (const r of results) {
-    const cat = r.category || 'other';
-    if (!categories[cat]) categories[cat] = [];
-    categories[cat].push(r);
-  }
-
-  const categoryNames: Record<string, string> = {
-    compile: '📝 编译检查',
-    test: '🧪 测试检查',
-    lint: '🔍 Lint 检查',
-    plan: '📋 计划检查',
-    preflight: '🚀 Pre-flight 检查',
-    boundary: '🛡️  Boundary 检查',
-    pattern: '📊 Pattern 检查',
-    other: '📦 其他检查',
-  };
-
-  for (const [cat, catResults] of Object.entries(categories)) {
-    console.log(`\n${categoryNames[cat] || cat}:`);
-    for (const r of catResults) {
-      const icon = r.passed ? '✅' : '❌';
-      console.log(`  ${icon}  ${r.name}`);
-      if (!r.passed && r.output) {
-        console.log(`     └─ ${r.output.slice(0, 200)}`);
-      }
-    }
-  }
-
-  if (results.length === 0) {
-    console.log('⚠️  未检测到可执行的检查项（无 tsconfig/package.json/Cargo.toml/go.mod）');
-  }
-
-  console.log(`\n${allPassed ? '✅  全部通过' : '❌  存在失败项'}\n`);
-
-  // 更新状态
-  await transitionWorkflow(cwd, allPassed ? 'check.passed' : 'check.failed', {
-    currentStep: allPassed
-      ? `质量检查通过 (${results.length} 项)，下一步: docpath review`
-      : `质量检查失败: ${results.filter(r => !r.passed).map(r => r.name).join(', ')}`,
-  });
-
-  // [Harness Lite] 写入 last-check.md
-  const lastCheckPath = join(cwd, '.docpath', 'workspace', 'last-check.md');
-  const checkLines: string[] = ['# Last Check Evidence', ''];
-  checkLines.push(`**时间**: ${new Date().toISOString()}`);
-  checkLines.push(`**结果**: ${allPassed ? '✅ PASS' : '❌ FAIL'}`);
-  checkLines.push(`**检查项**: ${results.length}`);
-  checkLines.push('');
-  for (const r of results) {
-    checkLines.push(`- ${r.passed ? '✅' : '❌'} ${r.name}`);
-  }
-  checkLines.push('');
-  await writeFile(lastCheckPath, checkLines.join('\n'), 'utf-8');
-
-  // 写入 breadcrumb
-  const taskId = current?.task_id || 'unknown';
-  await writeBreadcrumb(cwd, {
-    taskId,
-    step: 'check',
-    status: allPassed ? 'done' : 'blocked',
-    context: allPassed
-      ? `质量检查通过 (${results.length} 项)`
-      : `质量检查失败: ${results.filter(r => !r.passed).map(r => r.name).join(', ')}`,
-  });
-
-  // last-check.md 与 breadcrumb.md 写入后，再同步 current.md 的证据区块。
-  await syncCurrentDocument(cwd);
-
-  
-
-  // ── 7. Regression Awareness (回归检测) ──
-  const regressionPath = join(docpathDir, 'workspace', 'check-history.json');
-  type CheckHistoryEntry = { timestamp: string; passed: boolean; failedChecks: string[] };
-  let history: CheckHistoryEntry[] = [];
-  if (existsSync(regressionPath)) {
-    try { history = JSON.parse(await readFile(regressionPath, 'utf-8')); } catch { history = []; }
-  }
-
-  const currentFailed = results.filter(r => !r.passed).map(r => r.name);
-  history.push({ timestamp: new Date().toISOString(), passed: allPassed, failedChecks: currentFailed });
-  // 只保留最近 20 条
-  if (history.length > 20) history = history.slice(-20);
-  await writeFile(regressionPath, JSON.stringify(history, null, 2), 'utf-8');
-
-  // 检测回归: 上次通过这次失败 = 回归
-  if (history.length >= 2) {
-    const prev = history[history.length - 2];
-    if (prev.passed && !allPassed) {
-      const newFailures = currentFailed.filter(f => !prev.failedChecks.includes(f));
-      if (newFailures.length > 0) {
-        console.log(`\n🚨 回归检测: ${newFailures.length} 项新增失败!`);
-        newFailures.forEach(f => console.log(`  ↩️  ${f}`));
-      }
-    }
-  }
+  printCheckReport(results, allPassed);
+  await persistCheckEvidence(cwd, docpathDir, current?.task_id || 'unknown', results, allPassed);
 
   if (!allPassed) {
     console.log('请修复失败项后重新运行 `docpath:check`\n');
+    throw new Error(`docpath check failed: ${results.filter(r => !r.passed).map(r => r.name).join(', ')}`);
   } else {
     console.log('下一步: `docpath:review` 进行代码审查\n');
   }

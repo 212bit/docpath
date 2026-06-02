@@ -6,15 +6,15 @@ Persist a compact handoff package for the next Claude Code session.
 
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
-  ./.docpath/bin/docpath agent handoff
+  ./.docpath/bin/docpath agent handoff $ARGUMENTS
 elif command -v docpath >/dev/null 2>&1; then
-  docpath agent handoff
+  docpath agent handoff $ARGUMENTS
 elif [ -x ./node_modules/.bin/docpath ]; then
-  ./node_modules/.bin/docpath agent handoff
+  ./node_modules/.bin/docpath agent handoff $ARGUMENTS
 elif [ -f ./bin/docpath.js ]; then
-  node ./bin/docpath.js agent handoff
+  node ./bin/docpath.js agent handoff $ARGUMENTS
 elif [ -f ./dist/index.js ]; then
-  node ./dist/index.js agent handoff
+  node ./dist/index.js agent handoff $ARGUMENTS
 else
   echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127

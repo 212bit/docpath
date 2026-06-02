@@ -6,15 +6,15 @@ Show progressive disclosure output for the current project state.
 
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
-  ./.docpath/bin/docpath disclosure $ARGUMENTS
+  ./.docpath/bin/docpath disclosure
 elif command -v docpath >/dev/null 2>&1; then
-  docpath disclosure $ARGUMENTS
+  docpath disclosure
 elif [ -x ./node_modules/.bin/docpath ]; then
-  ./node_modules/.bin/docpath disclosure $ARGUMENTS
+  ./node_modules/.bin/docpath disclosure
 elif [ -f ./bin/docpath.js ]; then
-  node ./bin/docpath.js disclosure $ARGUMENTS
+  node ./bin/docpath.js disclosure
 elif [ -f ./dist/index.js ]; then
-  node ./dist/index.js disclosure $ARGUMENTS
+  node ./dist/index.js disclosure
 else
   echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127

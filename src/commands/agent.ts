@@ -18,8 +18,11 @@ import { reviewCommand } from './review.js';
 import { compactCommand, nextCommand, runCommand } from './runtime.js';
 import { goCommand } from './go.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
+import { transitionWorkflow } from '../engine/transitions.js';
 import { recordSkipReason } from '../engine/policy.js';
 import { markPlanStep } from '../utils/plan-sync.js';
+import { emit } from '../hooks/lifecycle.js';
+import { readCurrentState } from '../utils/workspace.js';
 
 type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
 
@@ -46,129 +49,180 @@ function requireStep(action: AgentAction, step?: string): string {
   return step.trim();
 }
 
+function requireSkipReason(flag: '--skip-tests' | '--skip-check' | '--skip-review', note?: string): string {
+  if (!note || !note.trim()) {
+    throw new Error(`docpath agent done ${flag} requires --note "<reason>"`);
+  }
+  return note.trim();
+}
+
+function syncStatusForAgentStep(status: NonNullable<AgentOptions['status']>): 'done' | 'blocked' | 'skipped' | 'pending' {
+  return status === 'done'
+    ? 'done'
+    : status === 'skipped'
+      ? 'skipped'
+      : status === 'blocked'
+        ? 'blocked'
+        : 'pending';
+}
+
+async function handleAgentEnter(cwd: string): Promise<void> {
+  const current = await readCurrentState(cwd);
+  try {
+    await emit('task_start', cwd, current?.task_id || undefined, {
+      phase: current?.phase || 'executing',
+    });
+  } catch (error) {
+    console.warn(`⚠️  lifecycle task_start 失败: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  console.log('\n# agent_context');
+  console.log(await generateAgentOutput(cwd));
+}
+
+async function handleAgentStep(options: AgentOptions): Promise<void> {
+  const { cwd } = options;
+  const step = requireStep(options.action, options.step);
+  const status = options.status || 'done';
+  await runCommand({
+    cwd,
+    action: 'end',
+    step,
+    status,
+    note: options.note || `agent-step: ${step}`,
+  });
+
+  const sync = await markPlanStep(cwd, step, syncStatusForAgentStep(status));
+  if (!sync.updated) console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
+
+  if (status !== 'done') {
+    await runCommand({
+      cwd,
+      action: 'start',
+      step,
+      note: 'agent-step: ready for next action',
+    });
+  } else if (options.autoNext) {
+    console.log('\n─── 自动加载下一个任务 ───\n');
+    await goCommand({ cwd, dryRun: true });
+  }
+}
+
+async function runAgentCheckGate(options: AgentOptions): Promise<void> {
+  const { cwd } = options;
+  if (options.skipCheck) {
+    if (options.enforce) {
+      throw new Error('docpath agent done --enforce: --skip-check not allowed');
+    }
+    await recordSkipReason(cwd, 'check', requireSkipReason('--skip-check', options.note));
+    return;
+  }
+
+  if (options.skipTests) {
+    requireSkipReason('--skip-tests', options.note);
+    await recordSkipReason(cwd, 'check', options.note!.trim());
+  }
+  try {
+    await checkCommand({
+      cwd,
+      skipTests: !!options.skipTests,
+      skipLint: !!options.skipLint,
+    });
+  } catch (error) {
+    await transitionWorkflow(cwd, 'check.failed', {
+      currentStep: `质量检查失败: ${error instanceof Error ? error.message : String(error)}`,
+    });
+    throw error;
+  }
+}
+
+async function runAgentReviewGate(options: AgentOptions): Promise<void> {
+  const { cwd } = options;
+  if (options.skipReview) {
+    if (options.enforce) {
+      throw new Error('docpath agent done --enforce: --skip-review not allowed');
+    }
+    await recordSkipReason(cwd, 'review', requireSkipReason('--skip-review', options.note));
+    return;
+  }
+
+  try {
+    await reviewCommand({
+      cwd,
+      approve: !!options.approveReview,
+    });
+  } catch (error) {
+    await transitionWorkflow(cwd, 'review.failed', {
+      currentStep: `审查失败: ${error instanceof Error ? error.message : String(error)}`,
+    });
+    throw error;
+  }
+}
+
+async function finishAgentDoneTask(options: AgentOptions, finalStatus: NonNullable<AgentOptions['status']>): Promise<void> {
+  const { cwd } = options;
+  if (finalStatus === 'done') {
+    await journalCommand({
+      cwd,
+      skipAi: true,
+      archiveMode: 'skip',
+    });
+    return;
+  }
+
+  if (finalStatus === 'blocked') {
+    await transitionWorkflow(cwd, 'review.failed', {
+      currentStep: options.note || `agent-done: ${finalStatus}`,
+    });
+    return;
+  }
+
+  throw new Error(`docpath agent done 暂不支持状态 ${finalStatus}`);
+}
+
+async function emitAgentTaskEnd(cwd: string, finalStatus: NonNullable<AgentOptions['status']>): Promise<void> {
+  try {
+    const current = await readCurrentState(cwd);
+    await emit('task_end', cwd, current?.task_id || undefined, {
+      phase: current?.phase || 'completed',
+      finalStatus,
+    });
+  } catch (error) {
+    console.warn(`⚠️  lifecycle task_end 失败: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+async function handleAgentDone(options: AgentOptions): Promise<void> {
+  const { cwd } = options;
+  const finalStatus = options.status || 'done';
+
+  await runAgentCheckGate(options);
+  await runAgentReviewGate(options);
+  await finishAgentDoneTask(options, finalStatus);
+  await emitAgentTaskEnd(cwd, finalStatus);
+  await nextCommand({ cwd, agent: true });
+}
+
+async function handleAgentHandoff(options: AgentOptions): Promise<void> {
+  await compactCommand({
+    cwd: options.cwd,
+    maxEntries: options.maxEntries,
+  });
+  await runCommand({
+    cwd: options.cwd,
+    action: 'recover',
+  });
+}
+
 export async function agentCommand(options: AgentOptions): Promise<void> {
-  const cwd = options.cwd;
-  const action = options.action;
+  const { cwd, action } = options;
 
   if (!['enter', 'step', 'done', 'handoff'].includes(action)) {
     throw new Error(`Unsupported agent action: ${action}. Expected enter | step | done | handoff`);
   }
 
-  if (action === 'enter') {
-
-    console.log('\n# agent_context');
-    console.log(await generateAgentOutput(cwd));
-    return;
-  }
-
-  if (action === 'step') {
-    const step = requireStep(action, options.step);
-    const status = options.status || 'done';
-    await runCommand({
-      cwd,
-      action: 'end',
-      step,
-      status,
-      note: options.note || `agent-step: ${step}`,
-    });
-    if (status === 'done') {
-      const sync = await markPlanStep(cwd, step, true);
-      if (!sync.updated) console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
-    }
-    if (status !== 'done') {
-      await runCommand({
-        cwd,
-        action: 'start',
-        step,
-        note: 'agent-step: ready for next action',
-      });
-    } else if (options.autoNext) {
-      console.log('\n─── 自动加载下一个任务 ───\n');
-      await goCommand({ cwd, dryRun: true });
-    }
-    return;
-  }
-
-  if (action === 'done') {
-    const step = options.step || 'agent-task';
-    let finalStatus: 'done' | 'blocked' | 'skipped' = options.status || 'done';
-
-    if (options.skipCheck) {
-      if (options.enforce) {
-        throw new Error('docpath agent done --enforce: --skip-check not allowed');
-      }
-      await recordSkipReason(cwd, 'check', options.note || 'agent done --skip-check');
-    } else {
-      try {
-        await checkCommand({
-          cwd,
-          skipTests: !!options.skipTests,
-          skipLint: !!options.skipLint,
-        });
-      } catch (error) {
-        finalStatus = 'blocked';
-        await runCommand({
-          cwd,
-          action: 'end',
-          step,
-          status: 'blocked',
-          note: `agent-done: check failed — ${error instanceof Error ? error.message : String(error)}`,
-        });
-        throw error;
-      }
-    }
-
-    if (options.skipReview) {
-      if (options.enforce) {
-        throw new Error('docpath agent done --enforce: --skip-review not allowed');
-      }
-      await recordSkipReason(cwd, 'review', options.note || 'agent done --skip-review');
-    } else {
-      try {
-        await reviewCommand({
-          cwd,
-          useAi: false,
-          approve: !!options.approveReview,
-        });
-      } catch (error) {
-        finalStatus = 'blocked';
-        await runCommand({
-          cwd,
-          action: 'end',
-          step,
-          status: 'blocked',
-          note: `agent-done: review failed — ${error instanceof Error ? error.message : String(error)}`,
-        });
-        throw error;
-      }
-    }
-
-    await runCommand({
-      cwd,
-      action: 'end',
-      step,
-      status: finalStatus,
-      note: options.note || `agent-done: ${finalStatus}`,
-    });
-
-    if (finalStatus === 'done') {
-      await journalCommand({
-        cwd,
-        skipAi: true,
-        archiveMode: 'skip',
-      });
-    }
-
-    await nextCommand({ cwd, agent: true });
-    return;
-  }
-
-  await compactCommand({
-    cwd,
-    maxEntries: options.maxEntries,
-  });
-  await runCommand({
-    cwd,
-    action: 'recover',
-  });
+  if (action === 'enter') return handleAgentEnter(cwd);
+  if (action === 'step') return handleAgentStep(options);
+  if (action === 'done') return handleAgentDone(options);
+  return handleAgentHandoff(options);
 }

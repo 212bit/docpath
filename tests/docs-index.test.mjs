@@ -12,6 +12,7 @@ function mkWorkspace() {
   const dp = join(cwd, '.docpath');
   mkdirSync(join(dp, 'workspace'), { recursive: true });
   mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
+  mkdirSync(join(dp, 'tasks', 'T-DOCS'), { recursive: true });
   mkdirSync(join(dp, 'tasks', 'done', 'T-OLD'), { recursive: true });
   mkdirSync(join(dp, 'spec', 'backend'), { recursive: true });
 
@@ -31,6 +32,8 @@ function mkWorkspace() {
   writeFileSync(join(dp, 'workspace', 'last-check.md'), '# Last Check Evidence\n\n**结果**: ✅ PASS\n');
   writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), '# Current Task Spec\n\nCurrent task summary should be prioritized.\n');
   writeFileSync(join(dp, 'tasks', 'current', 'plan.md'), '# Current Task Plan\n\n- [ ] S1: Build structured docs index\n');
+  writeFileSync(join(dp, 'tasks', 'T-DOCS', 'spec.md'), '# Current Task Spec\n\nCurrent task summary should be prioritized.\n');
+  writeFileSync(join(dp, 'tasks', 'T-DOCS', 'plan.md'), '# Current Task Plan\n\n- [ ] S1: Build structured docs index\n');
   writeFileSync(join(dp, 'tasks', 'done', 'T-OLD', 'notes.md'), '# Old Task Notes\n\nOld archived notes should be lower priority.\n');
   writeFileSync(join(dp, 'spec', 'backend', 'api.md'), '# Backend API\n\nBackend API reference summary.\n');
   return cwd;
@@ -50,8 +53,8 @@ describe('structured docs index', () => {
     const index = JSON.parse(readFileSync(indexPath, 'utf-8'));
     assert.ok(Array.isArray(index.entries));
 
-    const specEntry = index.entries.find((entry) => entry.path === 'tasks/current/spec.md');
-    assert.ok(specEntry, 'current spec should be indexed');
+    const specEntry = index.entries.find((entry) => entry.path === 'tasks/T-DOCS/spec.md');
+    assert.ok(specEntry, 'canonical task spec should be indexed');
     assert.equal(specEntry.type, 'runbook');
     assert.equal(specEntry.scope, 'task');
     assert.equal(specEntry.title, 'Current Task Spec');
@@ -82,10 +85,10 @@ describe('structured docs index', () => {
     run(`docs scan --cwd ${cwd}`, cwd);
 
     const output = run(`context --cwd ${cwd} --format raw --max-tokens 500`, cwd);
-    const currentIdx = output.indexOf('path: tasks/current/spec.md');
+    const currentIdx = output.indexOf('path: tasks/T-DOCS/spec.md');
     const oldIdx = output.indexOf('path: tasks/done/T-OLD/notes.md');
 
-    assert.notEqual(currentIdx, -1, 'current task spec should be included from docs-index');
+    assert.notEqual(currentIdx, -1, 'canonical task spec should be included from docs-index');
     assert.match(output, /相关文档: Current Task Spec/);
     if (oldIdx !== -1) assert.ok(currentIdx < oldIdx, 'current task docs should appear before old task docs');
     rmSync(cwd, { recursive: true, force: true });

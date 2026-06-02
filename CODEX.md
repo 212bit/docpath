@@ -1,0 +1,55 @@
+# DocPath — Codex Agent Protocol
+
+> This project uses **DocPath** as its task state machine and workflow memory.
+> Read this file before making changes in Codex or Codex-compatible coding agents.
+
+## First Steps
+
+1. Run `docpath status --agent` or read `.docpath/workspace/current.md`.
+2. Read `.docpath/workspace/breadcrumb.md` for recent progress.
+3. Use `docpath next --agent` to choose the next safe action.
+4. After each meaningful step, update DocPath state/breadcrumb via CLI or files.
+
+
+
+## Agent Lifecycle Commands
+
+For Codex / Claude Code / OpenCode, prefer these enforceable lifecycle commands over manual file edits:
+
+```bash
+docpath agent enter                         # start: load state + print agent context
+docpath agent step --step "<sub-task>"      # after each meaningful step
+docpath agent done --step "<task>"          # run check/review + record completion
+docpath agent handoff                       # compact context before session switch
+```
+
+Rules:
+- Run `docpath agent enter` before changing code.
+- Run `docpath agent step` after each sub-task or major decision.
+- Run `docpath agent done` before claiming completion.
+- Run `docpath agent handoff` when context is getting long or another agent may resume.
+
+## Useful Commands
+
+```bash
+docpath status --agent
+docpath context --agent
+docpath next --agent
+docpath check
+docpath review
+docpath journal --dry-run
+docpath compact
+```
+
+## Rules
+
+- Do not act from memory alone; read DocPath state first.
+- Keep changes scoped to the active task.
+- Run `docpath check` before marking work complete.
+- Record blockers and decisions in breadcrumb/review/journal files.
+- Do not push unless explicitly requested.
+
+## Linked Project
+
+Linked to: **docpath**
+Config: `.docpath/config.yaml`

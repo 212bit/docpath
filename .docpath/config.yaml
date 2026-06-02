@@ -1,9 +1,9 @@
 # DocPath 项目配置
-# 由 docpath:init 自动生成 (2026-05-28)
+# 由 docpath:init 自动生成 (2026-05-30)
 
 # 默认复杂度级别 (0|1|2|3)
 # 0=即时响应, 1=轻量任务, 2=标准任务, 3=复杂任务
-default_level: 0
+default_level: 1
 
 # 工作流设置
 workflow:
@@ -23,7 +23,7 @@ project:
   type: "node"
   language: "TypeScript"
   framework: ""
-  created_at: "2026-05-28"
+  created_at: "2026-05-30"
 
 # 路径门禁 (不可修改，由引擎维护)
 paths:

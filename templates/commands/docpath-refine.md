@@ -6,15 +6,15 @@ Convert a requirement note into a structured DocPath spec input.
 
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
-  ./.docpath/bin/docpath refine $ARGUMENTS
+  ./.docpath/bin/docpath refine
 elif command -v docpath >/dev/null 2>&1; then
-  docpath refine $ARGUMENTS
+  docpath refine
 elif [ -x ./node_modules/.bin/docpath ]; then
-  ./node_modules/.bin/docpath refine $ARGUMENTS
+  ./node_modules/.bin/docpath refine
 elif [ -f ./bin/docpath.js ]; then
-  node ./bin/docpath.js refine $ARGUMENTS
+  node ./bin/docpath.js refine
 elif [ -f ./dist/index.js ]; then
-  node ./dist/index.js refine $ARGUMENTS
+  node ./dist/index.js refine
 else
   echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127

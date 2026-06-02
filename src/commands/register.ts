@@ -6,6 +6,8 @@ import { statusCommand } from './status.js';
 import { brainstormCommand } from './brainstorm.js';
 import { refineCommand } from './refine.js';
 import { writeSpecCommand } from './write-spec.js';
+import { writePlanCommand } from './write-plan.js';
+import { writeJournalCommand } from './write-journal.js';
 import { planCommand } from './plan.js';
 import { continueCommand } from './continue.js';
 import { goCommand } from './go.js';
@@ -25,11 +27,26 @@ import { revealCommand } from './reveal.js';
 import { installCommand } from './install.js';
 import { tddCommand } from './tdd.js';
 import { debugCommand } from './debug.js';
+import { backlogCommand } from './backlog.js';
+import { tasksCommand } from './tasks.js';
+import { taskCommand } from './task.js';
+import { gcCommand } from './gc.js';
 import { runCommand, compactCommand, discoverCommand, nextCommand } from './runtime.js';
 import { agentCommand } from './agent.js';
 import { disclosureCommand } from '../utils/disclosure.js';
 
-export function registerCommands(cli: CAC): void {
+function getOptionValue(argv: string[], flag: string): string | undefined {
+  const index = argv.indexOf(flag);
+  return index >= 0 ? argv[index + 1] : undefined;
+}
+
+function normalizeTaskFileSyncSource(value: string | undefined, optionName: string): 'canonical' | 'current' | undefined {
+  if (!value) return undefined;
+  if (value === 'canonical' || value === 'current') return value;
+  throw new Error(`docpath ${optionName}: 参数非法: ${value}（允许: canonical|current）`);
+}
+
+function registerInitializationCommands(cli: CAC): void {
 
 // ─── docpath:init ───
 cli.command('init', '初始化 .docpath/ 工作流目录')
@@ -54,53 +71,66 @@ cli.command('status', '查看当前工作流状态')
     await statusCommand({ cwd: options.cwd || process.cwd(), agent: options.agent });
   });
 
+}
+
+function registerBrainstormCommands(cli: CAC): void {
 // ─── docpath:brainstorm ───
-cli.command('brainstorm', '苏格拉底式需求拷问 — 从模糊需求到结构化 spec')
+cli.command('brainstorm [file]', '苏格拉底式需求拷问 — 从模糊需求到结构化 spec')
   .option('--cwd <path>', '项目目录')
   .option('--input <input>', '初始需求描述')
+  .option('--file <path>', '需求文档路径（等价于位置参数 [file]）')
   .option('--dry-run', '非交互模式，直接输出 spec 预览')
   .option('--one-shot', '单次模式：直接从 input 生成 spec，不进入交互循环')
-  .action(async (options: { cwd?: string; input?: string; 'dry-run'?: boolean; oneShot?: boolean }) => {
+  .action(async (file: string | undefined, options: { cwd?: string; input?: string; file?: string; 'dry-run'?: boolean; oneShot?: boolean }) => {
     await brainstormCommand({
       cwd: options.cwd || process.cwd(),
       input: options.input,
+      file: file || options.file,
       dryRun: options['dry-run'],
       noInteractive: options['oneShot'],
     });
   });
 
 // 常见误拼兼容：brainstor -> brainstorm
-cli.command('brainstor', 'brainstorm 的兼容别名')
+cli.command('brainstor [file]', 'brainstorm 的兼容别名')
   .option('--cwd <path>', '项目目录')
   .option('--input <input>', '初始需求描述')
+  .option('--file <path>', '需求文档路径（等价于位置参数 [file]）')
   .option('--dry-run', '非交互模式，直接输出 spec 预览')
   .option('--one-shot', '单次模式：直接从 input 生成 spec，不进入交互循环')
-  .action(async (options: { cwd?: string; input?: string; 'dry-run'?: boolean; oneShot?: boolean }) => {
+  .action(async (file: string | undefined, options: { cwd?: string; input?: string; file?: string; 'dry-run'?: boolean; oneShot?: boolean }) => {
     await brainstormCommand({
       cwd: options.cwd || process.cwd(),
       input: options.input,
+      file: file || options.file,
       dryRun: options['dry-run'],
       noInteractive: options['oneShot'],
     });
   });
 
+}
+
+function registerRefineCommand(cli: CAC): void {
 // ─── docpath:refine ───
-cli.command('refine', '需求梳理 — 从需求文档生成标准 spec.md')
+cli.command('refine [file]', '需求梳理 — 从需求文档生成标准 spec.md')
   .option('--cwd <path>', '项目目录')
-  .option('--file <path>', '需求文档路径')
+  .option('--file <path>', '需求文档路径（等价于位置参数 [file]）')
   .option('--content <content>', '需求文档内容')
   .option('--stdin', '从 stdin 读取需求文档')
   .option('--dry-run', '只预览输入，不更新状态')
-  .action(async (options: { cwd?: string; file?: string; content?: string; stdin?: boolean; 'dry-run'?: boolean; dryRun?: boolean }) => {
+  .action(async (file: string | undefined, options: { cwd?: string; file?: string; content?: string; stdin?: boolean; 'dry-run'?: boolean; dryRun?: boolean }) => {
     await refineCommand({
       cwd: options.cwd || process.cwd(),
-      file: options.file,
+      file: file || options.file,
       content: options.content,
       stdin: options.stdin,
       dryRun: options['dry-run'] || options.dryRun,
     });
   });
 
+}
+
+function registerSpecPlanCommands(cli: CAC): void {
 // ─── docpath:write-spec ───
 cli.command('write-spec', '从 brainstorm 结果写入 spec.md')
   .option('--cwd <path>', '项目目录')
@@ -125,6 +155,22 @@ cli.command('plan', '从 spec.md 生成执行计划')
     });
   });
 
+// ─── docpath:write-plan ───
+cli.command('write-plan', '从 plan 结果写入 plan.md')
+  .option('--cwd <path>', '项目目录')
+  .option('--content <content>', 'plan 内容（Markdown）')
+  .option('--stdin', '从 stdin 读取内容')
+  .action(async (options: { cwd?: string; content?: string; stdin?: boolean }) => {
+    await writePlanCommand({
+      cwd: options.cwd || process.cwd(),
+      content: options.content,
+      stdin: options.stdin,
+    });
+  });
+
+}
+
+function registerExecutionCommands(cli: CAC): void {
 // ─── docpath:continue ───
 cli.command('continue', '断线重连 — 读取 breadcrumb 恢复执行，检查升级信号')
   .option('--cwd <path>', '项目目录')
@@ -140,15 +186,20 @@ cli.command('continue', '断线重连 — 读取 breadcrumb 恢复执行，检�
 cli.command('go', '按 plan.md 逐个执行子任务')
   .option('--cwd <path>', '项目目录')
   .option('--step <step>', '指定子任务编号 (e.g. S1)')
+  .option('--status <status>', '收尾状态: done | skipped | blocked')
   .option('--dry-run', '仅预览，不更新状态')
-  .action(async (options: { cwd?: string; step?: string; 'dry-run'?: boolean }) => {
+  .action(async (options: { cwd?: string; step?: string; status?: 'done' | 'skipped' | 'blocked'; 'dry-run'?: boolean }) => {
     await goCommand({
       cwd: options.cwd || process.cwd(),
       step: options.step,
+      status: options.status,
       dryRun: options['dry-run'],
     });
   });
 
+}
+
+function registerCheckCommand(cli: CAC): void {
 // ─── docpath:check ───
 cli.command('check', '质量门禁 — 编译/测试/lint/检查 + 工作流护栏')
   .option('--cwd <path>', '项目目录')
@@ -158,7 +209,8 @@ cli.command('check', '质量门禁 — 编译/测试/lint/检查 + 工作流护�
   .option('--preflight', '仅执行 pre-flight 检查')
   .option('--boundary', '仅执行 boundary 检查')
   .option('--only-harness', '仅执行 harness 检查，跳过编译/测试/lint')
-  .action(async (options: { cwd?: string; 'skip-tests'?: boolean; 'skip-lint'?: boolean; harness?: boolean; preflight?: boolean; boundary?: boolean; 'only-harness'?: boolean }) => {
+  .option('--fix-drift <source>', '检测到任务文件漂移时自动同步: canonical | current')
+  .action(async (options: { cwd?: string; 'skip-tests'?: boolean; 'skip-lint'?: boolean; harness?: boolean; preflight?: boolean; boundary?: boolean; 'only-harness'?: boolean; 'fix-drift'?: string; fixDrift?: string }) => {
     // Fallback: cac may not pass boolean options, so parse from process.argv
     const argv = process.argv.slice(2);
     const hasFlag = (flag: string) => argv.includes(flag);
@@ -169,6 +221,7 @@ cli.command('check', '质量门禁 — 编译/测试/lint/检查 + 工作流护�
     const preflight = options.preflight || hasFlag('--preflight');
     const boundary = options.boundary || hasFlag('--boundary');
     const onlyHarness = options['only-harness'] || hasFlag('--only-harness');
+    const fixDrift = normalizeTaskFileSyncSource(options['fix-drift'] || options.fixDrift || getOptionValue(argv, '--fix-drift'), 'check --fix-drift');
     
     await checkCommand({
       cwd: options.cwd || process.cwd(),
@@ -178,20 +231,25 @@ cli.command('check', '质量门禁 — 编译/测试/lint/检查 + 工作流护�
       preflight,
       boundary,
       onlyHarness,
+      fixDrift,
     });
   });
 
+}
+
+function registerReviewJournalCommands(cli: CAC): void {
 // ─── docpath:review ───
 cli.command('review', '结构化代码审查 (可选 LLM 深度审查)')
   .option('--cwd <path>', '项目目录')
   .option('--scope <scope>', '审查范围: staged|last_commit|all')
+  .option('--dry-run', '只预览审查结果，不写入状态')
   .option('--no-ai', '跳过 LLM 审查')
   .option('--approve', '直接批准（跳过自动检查）')
-  .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean }) => {
+  .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean }) => {
     await reviewCommand({
       cwd: options.cwd || process.cwd(),
       scope: (options.scope as any) || 'staged',
-      useAi: options.ai !== false,
+      dryRun: options['dry-run'] ?? options.dryRun,
       approve: options.approve ?? false,
     });
   });
@@ -210,6 +268,22 @@ cli.command('journal', '知识归档 — 从完成任务中提炼经验')
     });
   });
 
+// ─── docpath:write-journal ───
+cli.command('write-journal', '将归档知识记录写回当前任务 spec.md')
+  .option('--cwd <path>', '项目目录')
+  .option('--content <content>', 'journal 内容（Markdown）')
+  .option('--stdin', '从 stdin 读取内容')
+  .action(async (options: { cwd?: string; content?: string; stdin?: boolean }) => {
+    await writeJournalCommand({
+      cwd: options.cwd || process.cwd(),
+      content: options.content,
+      stdin: options.stdin,
+    });
+  });
+
+}
+
+function registerConfigCommand(cli: CAC): void {
 // ─── docpath:config ───
 cli.command('config [...args]', '查看/更新配置')
   .option('--cwd <path>', '项目目录')
@@ -239,11 +313,18 @@ cli.command('config [...args]', '查看/更新配置')
     await configCommand({ cwd, list: true });
   });
 
+}
+
+function registerResumeDiffLearnCommands(cli: CAC): void {
 // ─── docpath:resume ───
 cli.command('resume', '断线恢复 — 跳到上次中断点')
   .option('--cwd <path>', '项目目录')
-  .action(async (options: { cwd?: string }) => {
-    await resumeCommand({ cwd: options.cwd || process.cwd() });
+  .option('--verbose', '显示更详细的 checkpoint 上下文')
+  .action(async (options: { cwd?: string; verbose?: boolean }) => {
+    await resumeCommand({
+      cwd: options.cwd || process.cwd(),
+      verbose: options.verbose,
+    });
   });
 
 // ─── docpath:diff ───
@@ -264,14 +345,21 @@ cli.command('diff', '查看步骤间差异')
 // ─── docpath:learn ───
 cli.command('learn', '从 journal 提取规则 → 更新 style.md')
   .option('--journal <path>', '指定 journal 文件')
+  .option('--from-journal', '忽略 lesson-candidates，直接从 journal 提取')
+  .option('--dry-run', '只预览提取结果，不写入 style.md / architecture.md')
   .option('--cwd <path>', '项目目录')
-  .action(async (options: { cwd?: string; journal?: string }) => {
+  .action(async (options: { cwd?: string; journal?: string; 'from-journal'?: boolean; fromJournal?: boolean; 'dry-run'?: boolean; dryRun?: boolean }) => {
     await learnCommand({
       cwd: options.cwd || process.cwd(),
       journalPath: options.journal,
+      fromJournal: options['from-journal'] ?? options.fromJournal,
+      dryRun: options['dry-run'] ?? options.dryRun,
     });
   });
 
+}
+
+function registerContextExportStatsCommands(cli: CAC): void {
 // ─── docpath:context ───
 cli.command('context', '生成 Claude Code 可消费的上下文包')
   .option('--cwd <path>', '项目目录')
@@ -320,6 +408,9 @@ cli.command('stats', '项目统计面板')
   });
 
 
+}
+
+function registerRunCommand(cli: CAC): void {
 // ─── docpath:runtime (Phase4) ───
 cli.command('run <action>', 'Agent runtime lifecycle: start | end | recover')
   .option('--cwd <path>', '项目目录')
@@ -337,6 +428,9 @@ cli.command('run <action>', 'Agent runtime lifecycle: start | end | recover')
   });
 
 
+}
+
+function registerAgentCommand(cli: CAC): void {
 cli.command('agent <action>', 'Agent lifecycle enforcement: enter | step | done | handoff')
   .option('--cwd <path>', '项目目录')
   .option('--step <step>', '当前步骤/子任务')
@@ -364,6 +458,9 @@ cli.command('agent <action>', 'Agent lifecycle enforcement: enter | step | done 
     });
   });
 
+}
+
+function registerRuntimeUtilityCommands(cli: CAC): void {
 cli.command('compact', '持久化压缩运行上下文到 workspace/compact-context.md')
   .option('--cwd <path>', '项目目录')
   .option('--max-entries <n>', '保留最近 breadcrumb 条数 (默认 20)')
@@ -389,20 +486,89 @@ cli.command('discover', '发现 DocPath 关键上下文文件')
 cli.command('next', '输出下一步建议')
   .option('--cwd <path>', '项目目录')
   .option('--agent', '输出 Agent YAML')
-  .action(async (options: { cwd?: string; agent?: boolean }) => {
-    await nextCommand({ cwd: options.cwd || process.cwd(), agent: !!options.agent });
+  .option('--auto-fix <source>', '检测到任务文件漂移时自动同步: canonical | current')
+  .action(async (options: { cwd?: string; agent?: boolean; 'auto-fix'?: string; autoFix?: string }) => {
+    const argv = process.argv.slice(2);
+    await nextCommand({
+      cwd: options.cwd || process.cwd(),
+      agent: !!options.agent,
+      autoFix: normalizeTaskFileSyncSource(options['auto-fix'] || options.autoFix || getOptionValue(argv, '--auto-fix'), 'next --auto-fix'),
+    });
   });
 
+}
+
+function registerBacklogCommand(cli: CAC): void {
+// ─── docpath:backlog ───
+cli.command('backlog <action> [id]', '需求条目管理: add | list | refresh | accept | plan | promote | done | drop')
+  .option('--cwd <path>', '项目目录')
+  .option('--title <title>', 'add: 条目标题')
+  .option('--priority <priority>', 'add/list: 优先级过滤或创建优先级 (P0|P1|P2|P3)')
+  .option('--level <level>', 'add: 条目复杂度 (0|1|2|3)')
+  .option('--status <status>', 'list: 状态过滤')
+  .option('--agent', 'list: 输出 agent YAML')
+  .action(async (action: string, id: string | undefined, options: { cwd?: string; title?: string; priority?: string; level?: string; status?: string; agent?: boolean }) => {
+    await backlogCommand({
+      cwd: options.cwd || process.cwd(),
+      action,
+      id,
+      title: options.title,
+      priority: options.priority,
+      level: options.level,
+      status: options.status,
+      agent: !!options.agent,
+    });
+  });
+
+}
+
+function registerTaskMaintenanceCommands(cli: CAC): void {
+// ─── docpath:tasks ───
+cli.command('tasks <action>', '任务文件别名管理: drift | sync')
+  .option('--cwd <path>', '项目目录')
+  .option('--from <source>', 'sync: 同步来源 canonical | current')
+  .action(async (action: string, options: { cwd?: string; from?: 'canonical' | 'current' }) => {
+    await tasksCommand({
+      cwd: options.cwd || process.cwd(),
+      action,
+      from: options.from,
+    });
+  });
+
+// ─── docpath:task ───
+cli.command('task <action>', '当前任务生命周期管理: abort | reset')
+  .option('--cwd <path>', '项目目录')
+  .action(async (action: string, options: { cwd?: string }) => {
+    await taskCommand({
+      cwd: options.cwd || process.cwd(),
+      action,
+    });
+  });
+
+// ─── docpath:gc ───
+cli.command('gc', '清理历史任务目录')
+  .option('--cwd <path>', '项目目录')
+  .option('--force', '执行归档而不是仅预览')
+  .option('--delete', '在 force 模式下直接删除而不是归档到 done')
+  .action(async (options: { cwd?: string; force?: boolean; delete?: boolean }) => {
+    await gcCommand({
+      cwd: options.cwd || process.cwd(),
+      force: !!options.force,
+      delete: !!options.delete,
+    });
+  });
+
+}
+
+function registerDocsCommands(cli: CAC): void {
 // ─── docpath:docs ───
-cli.command('docs', '文档资产管理')
+cli.command('docs [action]', '文档资产管理')
   .option('--cwd <path>', '项目目录')
   .option('--scan', '扫描文档生成索引')
   .option('--list', '列出所有注册文档')
   .option('--add <path>', '添加文档到索引')
-  .action(async (options: { cwd?: string; scan?: boolean; list?: boolean; add?: string }) => {
-    // 手动路由子命令
-    const args = process.argv.slice(3);
-    const sub = args[0] || 'list';
+  .action(async (action: string | undefined, options: { cwd?: string; scan?: boolean; list?: boolean; add?: string }) => {
+    const sub = action || (options.scan ? 'scan' : options.add ? 'add' : 'list');
     await docsCommand({
       cwd: options.cwd || process.cwd(),
       action: sub,
@@ -435,6 +601,9 @@ cli.command('reveal', '渐进式上下文披露 — 按 level 0-3 输出上下�
     });
   });
 
+}
+
+function registerInstallCommands(cli: CAC): void {
 // ─── docpath:unlink ───
 cli.command('unlink', '取消项目关联')
   .option('--cwd <path>', '项目目录')
@@ -456,6 +625,9 @@ cli.command('install', '安装 Agent 协议文件到项目')
   });
 
 // ─── 解析并执行 ───
+}
+
+function registerTddDebugCommands(cli: CAC): void {
 
 // ─── docpath:tdd ── (Stage 1: TDD Skill 循环)
 cli.command('tdd', 'TDD 工作流 — start/spec/plan/act/check/done')
@@ -482,16 +654,36 @@ cli.command('disclosure', '渐进式信息展示 — summary|detail|debug')
   });
 
 // ─── docpath:debug ── (Systematic Debugging Workflow)
-cli.command('debug', '系统化调试工作流 — reproduce/isolate/hypothesize/verify/fix')
+cli.command('debug [phase]', '系统化调试工作流 — reproduce/isolate/hypothesize/verify/fix')
   .option('--cwd <path>', '项目目录')
-  .action(async (options: { cwd?: string }) => {
+  .action(async (phase: string | undefined, options: { cwd?: string }) => {
     const cwd = options.cwd || process.cwd();
-    const sub = cli.args[0];
-    if (!sub || !['reproduce', 'isolate', 'hypothesize', 'verify', 'fix'].includes(sub)) {
+    if (!phase || !['reproduce', 'isolate', 'hypothesize', 'verify', 'fix'].includes(phase)) {
       console.log('用法: docpath debug <reproduce|isolate|hypothesize|verify|fix>');
       return;
     }
-    await debugCommand({ cwd, action: sub as any });
+    await debugCommand({ cwd, action: phase as any });
   });
 
+}
+
+export function registerCommands(cli: CAC): void {
+  registerInitializationCommands(cli);
+  registerBrainstormCommands(cli);
+  registerRefineCommand(cli);
+  registerSpecPlanCommands(cli);
+  registerExecutionCommands(cli);
+  registerCheckCommand(cli);
+  registerReviewJournalCommands(cli);
+  registerConfigCommand(cli);
+  registerResumeDiffLearnCommands(cli);
+  registerContextExportStatsCommands(cli);
+  registerRunCommand(cli);
+  registerAgentCommand(cli);
+  registerRuntimeUtilityCommands(cli);
+  registerBacklogCommand(cli);
+  registerTaskMaintenanceCommands(cli);
+  registerDocsCommands(cli);
+  registerInstallCommands(cli);
+  registerTddDebugCommands(cli);
 }

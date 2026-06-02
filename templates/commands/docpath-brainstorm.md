@@ -16,7 +16,7 @@ elif [ -f ./bin/docpath.js ]; then
 elif [ -f ./dist/index.js ]; then
   node ./dist/index.js brainstorm --input "$ARGUMENTS"
 else
-  echo "DocPath CLI not found. Run docpath install --target claude from a shell where docpath is available."
+  echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127
 fi
 ```

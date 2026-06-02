@@ -1,33 +1,119 @@
 [
   {
-    "timestamp": "2026-05-29T11:38:06.181Z",
+    "timestamp": "2026-06-01T15:04:46.361Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-01T15:10:45.449Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-01T15:17:51.638Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-01T15:25:43.397Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-01T15:31:41.262Z",
     "passed": false,
     "failedChecks": [
-      "TypeScript 编译"
+      "任务文件 current/canonical 漂移检查",
+      "⚠️  Checklist 同步 (2/3)"
     ]
   },
   {
-    "timestamp": "2026-05-29T11:39:24.068Z",
+    "timestamp": "2026-06-01T15:32:15.729Z",
     "passed": true,
     "failedChecks": []
   },
   {
-    "timestamp": "2026-05-29T13:12:52.538Z",
+    "timestamp": "2026-06-01T15:36:34.961Z",
+    "passed": false,
+    "failedChecks": [
+      "任务文件 current/canonical 漂移检查",
+      "⚠️  Checklist 同步 (2/3)"
+    ]
+  },
+  {
+    "timestamp": "2026-06-01T15:37:10.706Z",
     "passed": true,
     "failedChecks": []
   },
   {
-    "timestamp": "2026-05-29T13:15:05.537Z",
+    "timestamp": "2026-06-01T15:42:01.820Z",
+    "passed": false,
+    "failedChecks": [
+      "任务文件 current/canonical 漂移检查",
+      "⚠️  Checklist 同步 (2/3)"
+    ]
+  },
+  {
+    "timestamp": "2026-06-01T15:42:38.697Z",
     "passed": true,
     "failedChecks": []
   },
   {
-    "timestamp": "2026-05-29T13:19:19.312Z",
+    "timestamp": "2026-06-01T15:49:07.843Z",
+    "passed": false,
+    "failedChecks": [
+      "任务文件 current/canonical 漂移检查",
+      "⚠️  Checklist 同步 (2/3)"
+    ]
+  },
+  {
+    "timestamp": "2026-06-01T15:50:06.172Z",
     "passed": true,
     "failedChecks": []
   },
   {
-    "timestamp": "2026-05-29T13:55:22.682Z",
+    "timestamp": "2026-06-01T15:58:18.831Z",
+    "passed": false,
+    "failedChecks": [
+      "任务文件 current/canonical 漂移检查",
+      "⚠️  Checklist 同步 (2/3)"
+    ]
+  },
+  {
+    "timestamp": "2026-06-01T15:59:13.482Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-01T16:07:57.911Z",
+    "passed": false,
+    "failedChecks": [
+      "任务文件 current/canonical 漂移检查",
+      "⚠️  Checklist 同步 (2/3)"
+    ]
+  },
+  {
+    "timestamp": "2026-06-01T16:08:46.764Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-01T16:15:29.522Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-01T16:24:33.154Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-01T16:30:37.925Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-01T16:39:05.741Z",
     "passed": true,
     "failedChecks": []
   }

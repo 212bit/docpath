@@ -1,83 +1,97 @@
 /**
- * docpath:resume — 断线恢复
- * 读取 breadcrumb + current state → 跳到上次中断点
+ * docpath:resume — Checkpoint 恢复
+ *
+ * 与 `continue` 的差异：
+ * - **resume**: 更强调“上次中断点 / checkpoint”视角，适合人类恢复现场
+ * - **continue**: 更强调“继续推进”视角，适合人类或 agent 按下一步执行
+ *
+ * 两者共同原则：
+ * 1. 状态以 state.json 真源为准
+ * 2. 下一步建议统一复用 `generateAgentOutput()` 路由
+ * 3. 不再输出过时的 `docpath:...` 命令名
  */
 
-import { readFileSafe, resolveDocpathDir} from '../utils/file.js';
+import { existsSync } from 'fs';
+import { readFile } from 'fs/promises';
 import { join } from 'node:path';
+import { parse as parseYaml } from 'yaml';
+import { readCurrentState } from '../utils/workspace.js';
+import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
+import { generateAgentOutput } from '../utils/agent-output.js';
 
 interface ResumeOptions {
   cwd: string;
   verbose?: boolean;
 }
 
+type ResumeRoute = {
+  next_action?: string;
+  recommended_command?: string;
+  required_files?: string[];
+};
+
+function parseRoute(raw: string): ResumeRoute {
+  try {
+    return (parseYaml(raw) as ResumeRoute | null) || {};
+  } catch {
+    return {};
+  }
+}
+
+function printRequiredFiles(requiredFiles: string[]): void {
+  if (requiredFiles.length === 0) return;
+  console.log('\n建议先读文件:');
+  for (const file of requiredFiles) {
+    console.log(`  - ${file}`);
+  }
+}
+
 export async function resumeCommand(options: ResumeOptions): Promise<void> {
-  const workspaceDir = join(options.cwd, '.docpath', 'workspace');
+  const { cwd, verbose } = options;
+  const docpathDir = await resolveDocpathDir(cwd);
 
-  // 1. 读取 current.md
-  const currentPath = join(workspaceDir, 'current.md');
-  const currentContent = await readFileSafe(currentPath);
-
-  if (!currentContent) {
-    console.log('\n⚠️  未找到活跃任务。运行 `docpath:init` 或 `docpath:brainstorm` 开始。\n');
+  if (!existsSync(docpathDir)) {
+    console.log('\n⚠️  未找到活跃任务。运行 `docpath init` 或 `docpath brainstorm` 开始。\n');
     return;
   }
 
-  // 2. 读取 breadcrumb
-  const breadcrumbPath = join(workspaceDir, 'breadcrumb.md');
-  const breadcrumbContent = await readFileSafe(breadcrumbPath);
-
-  // 3. 读取 plan.md
-  const planPath = join(options.cwd, '.docpath', 'tasks', 'current', 'plan.md');
-  const planContent = await readFileSafe(planPath);
-
-  // 4. 读取 config
-  const configPath = join(options.cwd, '.docpath', 'config.yaml');
-  const configContent = await readFileSafe(configPath);
-
-  console.log('\n🔄  断线恢复 — DocPath Checkpoint\n');
-
-  // Extract state info
-  const levelMatch = currentContent.match(/level:\s*(\d)/);
-  const stateMatch = currentContent.match(/state:\s*(\w+)/);
-  const taskMatch = currentContent.match(/task_title:\s*"?([^"\n]+)"?/);
-
-  const level = levelMatch ? levelMatch[1] : '?';
-  const state = stateMatch ? stateMatch[1] : '?';
-  const task = taskMatch ? taskMatch[1] : '(无标题)';
-
-  console.log(`📋  任务: ${task}`);
-  console.log(`📊  级别: Level ${level} | 状态: ${state}`);
-
-  // Find current subtask from plan
-  if (planContent) {
-    const unchecked = planContent.match(/- \[ \].+/g);
-    const checked = planContent.match(/- \[x\].+/g);
-    const total = (unchecked?.length || 0) + (checked?.length || 0);
-    const done = checked?.length || 0;
-
-    if (unchecked && unchecked.length > 0) {
-      const next = unchecked[0];
-      console.log(`\n▶️  下一个子任务: ${next.replace('- [ ] ', '')}`);
-      console.log(`📈  进度: ${done}/${total} 完成`);
-    } else if (done > 0) {
-      console.log(`\n✅  全部 ${total} 个子任务已完成！`);
-      console.log(`💡  下一步: \`docpath:review\` → \`docpath:journal\``);
-    }
+  const current = await readCurrentState(cwd);
+  if (!current) {
+    console.log('\n⚠️  未找到活跃任务。运行 `docpath init` 或 `docpath brainstorm` 开始。\n');
+    return;
   }
 
-  // Breadcrumb context
-  if (breadcrumbContent && options.verbose) {
+  const breadcrumbPath = join(docpathDir, 'workspace', 'breadcrumb.md');
+  const breadcrumbContent = await readFileSafe(breadcrumbPath);
+  const configContent = await readFileSafe(join(docpathDir, 'config.yaml'));
+
+  console.log('\n🔄  断线恢复 — DocPath Checkpoint\n');
+  console.log(`📋  任务: ${current.task_title || '(无标题)'}`);
+  console.log(`📊  级别: Level ${current.level ?? '?'} | 状态: ${current.state}`);
+  console.log(`📍  阶段: ${current.phase} | 门禁: ${current.gate}`);
+
+  if (verbose && breadcrumbContent) {
     console.log('\n─── 面包屑上下文 ───');
-    const recentLines = breadcrumbContent.split('\n').slice(-15);
+    const recentLines = breadcrumbContent.split('\n').slice(-20);
     console.log(recentLines.join('\n'));
   }
 
-  // LLM config status
   if (configContent) {
     const hasKey = configContent.includes('apiKey:') && !configContent.includes('apiKey: ""');
     console.log(`\n🤖  LLM: ${hasKey ? '已配置' : '未配置 (仅模板模式)'}`);
   }
 
-  console.log(`\n💡  运行 \`docpath:go\` 继续执行\n`);
+  const route = parseRoute(await generateAgentOutput(cwd));
+  const nextAction = route.next_action || '运行 `docpath next --agent` 查看下一步';
+  const recommended = route.recommended_command || 'docpath next --agent';
+  const requiredFiles = route.required_files || [];
+
+  console.log(`\n💡  下一步: ${nextAction}`);
+  console.log(`推荐命令: ${recommended}`);
+
+  if (verbose) {
+    printRequiredFiles(requiredFiles);
+  }
+
+  console.log('');
 }

@@ -11,6 +11,8 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { transitionWorkflow } from '../engine/transitions.js';
+import { detectActiveTaskFileDrift, syncActiveTaskFiles } from '../utils/task-files.js';
+import { syncCurrentDocument } from '../utils/workspace.js';
 
 type RuntimeState = NonNullable<Awaited<ReturnType<typeof readCurrentState>>>;
 
@@ -36,6 +38,7 @@ type DiscoverOptions = {
 type NextOptions = {
   cwd: string;
   agent?: boolean;
+  autoFix?: 'canonical' | 'current';
 };
 
 function nowIso(): string {
@@ -155,13 +158,25 @@ function summarizeLastCheck(lastCheckContent: string): string {
     : `${result} (${time})`;
 }
 
-function renderCompactedContext(
-  state: RuntimeState,
+type CompactedContextView = {
+  entries: Awaited<ReturnType<typeof readBreadcrumb>>['entries'];
+  latestEntries: Awaited<ReturnType<typeof readBreadcrumb>>['entries'];
+  completedSteps: Awaited<ReturnType<typeof readBreadcrumb>>['entries'];
+  blockedSteps: Awaited<ReturnType<typeof readBreadcrumb>>['entries'];
+  recommendedCommand: string;
+  nextAction: string;
+  requiredFiles: string[];
+  progressLine: string;
+  recentFailures: string[];
+  lastCheckSummary: string;
+};
+
+function buildCompactedContextView(
   breadcrumb: Awaited<ReturnType<typeof readBreadcrumb>>,
   keepEntries: number,
   agentOutput: string,
   lastCheckContent: string,
-): string {
+): CompactedContextView {
   const entries = breadcrumb.entries.slice(-keepEntries);
   const latestEntries = uniqueLatestByStep(breadcrumb.entries);
   const completedSteps = latestEntries.filter((e) => e.status === 'done');
@@ -169,24 +184,84 @@ function renderCompactedContext(
   const recommendedCommand = extractScalarFromAgentYaml(agentOutput, 'recommended_command') || 'docpath next --agent';
   const nextAction = extractScalarFromAgentYaml(agentOutput, 'next_action') || '运行 docpath next --agent';
   const requiredFiles = extractRequiredFiles(agentOutput);
+  const lastCheckSummary = summarizeLastCheck(lastCheckContent);
+  return {
+    entries,
+    latestEntries,
+    completedSteps,
+    blockedSteps,
+    recommendedCommand,
+    nextAction,
+    requiredFiles,
+    progressLine: `${completedSteps.length}/${latestEntries.length || 0}`,
+    recentFailures: blockedSteps.length > 0
+      ? blockedSteps.map((e) => `${e.step}: ${e.context || 'blocked'}`)
+      : [lastCheckSummary],
+    lastCheckSummary,
+  };
+}
+
+function renderRequiredFiles(requiredFiles: string[]): string[] {
+  return requiredFiles.length > 0
+    ? requiredFiles.map((file) => `- ${file}`)
+    : ['- .docpath/workspace/current.md'];
+}
+
+function renderBreadcrumbList(
+  entries: Awaited<ReturnType<typeof readBreadcrumb>>['entries'],
+  fallback: string,
+): string[] {
+  return entries.length > 0
+    ? entries.map((e) => `- ${e.step}: ${e.context || e.status}`)
+    : [fallback];
+}
+
+function renderCompactedOverview(state: RuntimeState, view: CompactedContextView): string[] {
   return [
-    '# Compact Context',
+    `# Context Handoff — ${state.task_id || 'unknown'}`,
     '',
     `> Generated: ${nowIso()}`,
     '',
+    `## Current State: ${state.phase} / ${state.gate}`,
+    '',
+    `## Goal: ${state.task_title || '未命名任务'}`,
+    '',
+    `## Progress: ${view.progressLine}`,
+    '',
+    '## Recent Failures',
+    '',
+    ...view.recentFailures.map((item) => `- ${item}`),
+    '',
+    '## Next Action',
+    '',
+    `- next_action: ${view.nextAction}`,
+    `- recommended_command: ${view.recommendedCommand}`,
+    '',
+    '## Required Reading',
+    '',
+    ...renderRequiredFiles(view.requiredFiles),
+  ];
+}
+
+function renderResumeProtocol(): string[] {
+  return [
     '## Resume Protocol',
     '',
     '1. 先读 `.docpath/workspace/current.md`。',
     '2. 再读本文件中的 `Next Agent Route`。',
     '3. 按 `recommended_command` 执行下一步，除非当前工作区状态已经变化。',
-    '',
+  ];
+}
+
+function renderCurrentGoalAndState(state: RuntimeState, view: CompactedContextView): string[] {
+  return [
     '## Current Goal',
     '',
     `- task_id: ${state.task_id || 'unknown'}`,
     `- task_title: ${state.task_title || '未命名任务'}`,
     `- current_step: ${state.current_step || '待确认'}`,
-    `- next_action: ${nextAction}`,
-    `- recommended_command: ${recommendedCommand}`,
+    `- next_action: ${view.nextAction}`,
+    `- recommended_command: ${view.recommendedCommand}`,
     '',
     '## Current State',
     '',
@@ -196,30 +271,32 @@ function renderCompactedContext(
     `- gate: ${state.gate}`,
     `- current_step: ${state.current_step}`,
     `- updated_at: ${state.updated_at}`,
-    '',
+  ];
+}
+
+function renderProgressDetails(view: CompactedContextView): string[] {
+  return [
     '## Completed Steps',
     '',
-    ...(completedSteps.length > 0
-      ? completedSteps.map((e) => `- ${e.step}: ${e.context || 'done'}`)
-      : ['- 无已完成 breadcrumb 记录']),
+    ...renderBreadcrumbList(view.completedSteps, '- 无已完成 breadcrumb 记录'),
     '',
     '## Current Blockers',
     '',
-    ...(blockedSteps.length > 0
-      ? blockedSteps.map((e) => `- ${e.step}: ${e.context || 'blocked'}`)
-      : ['- 无阻塞 breadcrumb 记录']),
+    ...renderBreadcrumbList(view.blockedSteps, '- 无阻塞 breadcrumb 记录'),
     '',
     '## Verification Evidence',
     '',
-    `- last_check: ${summarizeLastCheck(lastCheckContent)}`,
-    `- breadcrumb_events_kept: ${entries.length}`,
+    `- last_check: ${view.lastCheckSummary}`,
+    `- breadcrumb_events_kept: ${view.entries.length}`,
     '',
     '## Required Files Before Resume',
     '',
-    ...(requiredFiles.length > 0
-      ? requiredFiles.map((file) => `- ${file}`)
-      : ['- .docpath/workspace/current.md']),
-    '',
+    ...renderRequiredFiles(view.requiredFiles),
+  ];
+}
+
+function renderAgentRouteAndBreadcrumbs(view: CompactedContextView, agentOutput: string): string[] {
+  return [
     '## Next Agent Route',
     '',
     '```yaml',
@@ -228,7 +305,28 @@ function renderCompactedContext(
     '',
     '## Recent Breadcrumbs',
     '',
-    ...entries.map((e) => `- ${e.timestamp || ''} [${e.status}] ${e.step}: ${e.context}`),
+    ...view.entries.map((e) => `- ${e.timestamp || ''} [${e.status}] ${e.step}: ${e.context}`),
+  ];
+}
+
+function renderCompactedContext(
+  state: RuntimeState,
+  breadcrumb: Awaited<ReturnType<typeof readBreadcrumb>>,
+  keepEntries: number,
+  agentOutput: string,
+  lastCheckContent: string,
+): string {
+  const view = buildCompactedContextView(breadcrumb, keepEntries, agentOutput, lastCheckContent);
+  return [
+    ...renderCompactedOverview(state, view),
+    '',
+    ...renderResumeProtocol(),
+    '',
+    ...renderCurrentGoalAndState(state, view),
+    '',
+    ...renderProgressDetails(view),
+    '',
+    ...renderAgentRouteAndBreadcrumbs(view, agentOutput),
     '',
   ].join('\n');
 }
@@ -253,7 +351,11 @@ export async function compactCommand(options: CompactOptions): Promise<void> {
   await writeFile(output, content, 'utf-8');
   // 裁剪 breadcrumb：只保留最近 keepEntries 条
   const trimmedEntries = breadcrumb.entries.slice(-keepEntries);
-  await writeBreadcrumb(cwd, { entries: trimmedEntries });
+  const { writeFile: writeFsFile } = await import('node:fs/promises');
+  const { formatEntry, BREADCRUMB_HEADER } = await import('../engine/breadcrumb.js');
+  const breadcrumbPath = join(docpathDir, 'workspace', 'breadcrumb.md');
+  const body = trimmedEntries.map((entry) => formatEntry(entry)).join('');
+  await writeFsFile(breadcrumbPath, BREADCRUMB_HEADER + body, 'utf-8');
   console.log(`🧩 compact: saved ${relative(cwd, output)} (${trimmedEntries.length} events, pruned ${breadcrumb.entries.length - trimmedEntries.length})`);
 }
 
@@ -299,6 +401,18 @@ export async function discoverCommand(options: DiscoverOptions): Promise<void> {
 }
 
 export async function nextCommand(options: NextOptions): Promise<void> {
+  if (options.autoFix) {
+    const state = await readCurrentState(options.cwd);
+    if (state?.task_id) {
+      const docpathDir = await resolveDocpathDir(options.cwd);
+      const drifts = await detectActiveTaskFileDrift(docpathDir, state.task_id);
+      if (drifts.length > 0) {
+        const synced = await syncActiveTaskFiles(docpathDir, state.task_id, options.autoFix);
+        await syncCurrentDocument(options.cwd);
+        console.error(`已自动修复 active task 文件漂移 (${options.autoFix}): ${synced.map((item) => item.file).join(', ')}`);
+      }
+    }
+  }
   const output = await generateAgentOutput(options.cwd);
   if (options.agent) {
     console.log(output);

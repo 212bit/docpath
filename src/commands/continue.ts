@@ -1,40 +1,50 @@
 /**
- * docpath:continue — 断线重连 + 子任务推进（面向人类/agent 断线恢复）
+ * docpath:continue — 断线重连 + 统一恢复建议
  *
  * 与 `agent enter` 的分工：
- * - **continue**: 人类或 agent 断线后恢复上下文，读 breadcrumb + current.md 给出建议，不改变状态
- * - **agent enter**: agent 生命周期入口，加载 state.json 标记执行开始，会修改运行时状态
+ * - **continue**: 人类或 agent 断线后恢复上下文，读 breadcrumb + current state 给出建议，不改变工作流状态
+ * - **agent enter**: agent 生命周期入口，加载 state.json 并标记执行开始
  *
- * 核心流程：
- *   1. 读取 breadcrumb.md 最后一条记录，恢复上下文
- *   2. 读取 current.md 状态，判断下一步动作
- *   3. 如果有未完成的子任务 → 继续执行
- *   4. 如果所有子任务完成 → 触发 check 命令
- *   5. 自动判断是否需要升级 level
+ * 当前实现原则：
+ * 1. 保留 breadcrumb 恢复价值
+ * 2. 不再维护独立的旧状态 → 命令映射
+ * 3. 恢复建议统一复用 `generateAgentOutput()` 的 next 路由结果
  */
 
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd, updateCurrentState } from '../utils/workspace.js';
-import { getLatestEntry } from '../engine/breadcrumb.js';
+import { parse as parseYaml } from 'yaml';
+import { readCurrentMd, updateLevel } from '../utils/workspace.js';
 import { evaluateEscalation } from '../engine/escalation.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { generateAgentOutput } from '../utils/agent-output.js';
 
 interface ContinueOptions {
   cwd: string;
   verbose?: boolean;
 }
 
-/**
- * 从断点恢复上下文
- */
-async function resumeContext(cwd: string, docpathDir: string): Promise<void> {
+type ContinueRoute = {
+  next_action?: string;
+  recommended_command?: string;
+  required_files?: string[];
+};
+
+function parseContinueRoute(raw: string): ContinueRoute {
+  try {
+    const parsed = parseYaml(raw) as ContinueRoute | null;
+    return parsed || {};
+  } catch {
+    return {};
+  }
+}
+
+async function printResumeContext(cwd: string, docpathDir: string): Promise<void> {
   const breadcrumbPath = join(docpathDir, 'workspace', 'breadcrumb.md');
 
   console.log('🔄  恢复断点上下文...\n');
 
-  // 读取 breadcrumb 最后一条
   if (existsSync(breadcrumbPath)) {
     const breadcrumbContent = await readFile(breadcrumbPath, 'utf-8');
     const entries = parseBreadcrumbEntries(breadcrumbContent);
@@ -46,38 +56,15 @@ async function resumeContext(cwd: string, docpathDir: string): Promise<void> {
     }
   }
 
-  // 读取 current.md 状态
   const current = await readCurrentMd(cwd);
   if (current) {
     console.log(`📌  当前状态: ${current.state}`);
     console.log(`   任务: ${current.task_title} (${current.task_id})`);
-    console.log(`   阶段: ${current.phase}\n`);
-
-    // 根据状态给出下一步建议
-    const nextAction = getNextAction(current.state);
-    console.log(`👉  建议下一步: ${nextAction}\n`);
+    console.log(`   阶段: ${current.phase}`);
+    console.log(`   门禁: ${current.gate}\n`);
   }
 }
 
-/**
- * 状态 → 下一步动作映射
- */
-function getNextAction(state: string): string {
-  const actions: Record<string, string> = {
-    'idle': '运行 `docpath:brainstorm` 开始新任务',
-    'brainstorming': '继续回答 AI 的需求提问',
-    'spec_written': '运行 `docpath:plan` 生成执行计划',
-    'planning_done': '开始执行第一个子任务',
-    'executing': '继续执行当前子任务',
-    'build_pass': '运行 `docpath:check` 进行质量审查',
-    'review_pass': '运行 `docpath:check` 最终验收',
-  };
-  return actions[state] || '查看 .docpath/workspace/current.md 确认当前状态';
-}
-
-/**
- * 解析 breadcrumb 条目
- */
 function parseBreadcrumbEntries(content: string): Array<{
   taskId: string;
   status: string;
@@ -87,7 +74,7 @@ function parseBreadcrumbEntries(content: string): Array<{
   const blocks = content.split(/^### /m).filter(Boolean);
 
   for (const block of blocks) {
-    const lines = block.split('\n').filter(l => l.trim());
+    const lines = block.split('\n').filter((line) => line.trim());
     const header = lines[0];
     const taskIdMatch = header.match(/\[([^\]]+)\]/);
     if (!taskIdMatch) continue;
@@ -108,6 +95,54 @@ function parseBreadcrumbEntries(content: string): Array<{
   return entries;
 }
 
+async function maybeEscalateLevel(cwd: string, docpathDir: string): Promise<void> {
+  const current = await readCurrentMd(cwd);
+  if (!current) return;
+
+  const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
+  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
+
+  let specContent: string | undefined;
+  let planContent: string | undefined;
+  try { specContent = await readFile(specPath, 'utf-8'); } catch { /* no spec */ }
+  try { planContent = await readFile(planPath, 'utf-8'); } catch { /* no plan */ }
+
+  const taskDescription = [specContent, planContent].filter(Boolean).join('\n\n') || 'unknown task';
+  const escalation = evaluateEscalation(
+    taskDescription,
+    current.level as any,
+    current.state,
+    current.started_at,
+  );
+
+  if (escalation.action !== 'no_change') {
+    console.log(`🚀  建议升级: Level ${escalation.finalLevel}`);
+    console.log(`   原因: ${escalation.reason}\n`);
+
+    await updateLevel(cwd, escalation.finalLevel);
+    console.log(`✅  已升级到 Level ${escalation.finalLevel}\n`);
+  }
+}
+
+function printNextRoute(route: ContinueRoute, verbose?: boolean): void {
+  const nextAction = route.next_action || '运行 `docpath next --agent` 查看下一步';
+  const recommended = route.recommended_command || 'docpath next --agent';
+  const requiredFiles = route.required_files || [];
+
+  console.log(`👉  建议下一步: ${nextAction}\n`);
+  console.log('─── 下一步操作 ───');
+  console.log(`推荐命令: ${recommended}`);
+
+  if (verbose && requiredFiles.length > 0) {
+    console.log('\n建议先读文件:');
+    for (const file of requiredFiles) {
+      console.log(`  - ${file}`);
+    }
+  }
+
+  console.log('');
+}
+
 export async function continueCommand(options: ContinueOptions): Promise<void> {
   const { cwd, verbose } = options;
   const docpathDir = await resolveDocpathDir(cwd);
@@ -117,49 +152,10 @@ export async function continueCommand(options: ContinueOptions): Promise<void> {
     process.exit(1);
   }
 
-  // 1. 恢复上下文
-  await resumeContext(cwd, docpathDir);
+  await printResumeContext(cwd, docpathDir);
+  await maybeEscalateLevel(cwd, docpathDir);
 
-  // 2. 检查是否需要升级
-  const current = await readCurrentMd(cwd);
-  if (current) {
-    const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
-    const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-
-    let specContent: string | undefined;
-    let planContent: string | undefined;
-    try { specContent = await readFile(specPath, 'utf-8'); } catch { /* no spec yet */ }
-    try { planContent = await readFile(planPath, 'utf-8'); } catch { /* no plan yet */ }
-
-    const taskDescription = [specContent, planContent].filter(Boolean).join('\n\n') || 'unknown task';
-    const escalation = evaluateEscalation(
-      taskDescription,
-      current.level as any,
-      current.state,
-      current.started_at,
-    );
-
-    if (escalation.action !== 'no_change') {
-      console.log(`🚀  建议升级: Level ${escalation.finalLevel}`);
-      console.log(`   原因: ${escalation.reason}\n`);
-
-      // 自动升级
-      await updateCurrentState(cwd, current.state, {
-        level: String(escalation.finalLevel),
-      });
-      console.log(`✅  已升级到 Level ${escalation.finalLevel}\n`);
-    }
-  }
-
-  // 3. 提示下一步
-  console.log('─── 下一步操作 ───');
-  if (current?.state === 'planning_done' || current?.state === 'executing') {
-    console.log('执行当前子任务，完成后运行:');
-    console.log('  docpath:continue   （推进到下一个子任务）');
-    console.log('  docpath:check      （执行质量检查）');
-  }
-  if (current?.state === 'build_pass' || current?.state === 'review_pass') {
-    console.log('运行质量审查:');
-    console.log('  docpath:check      （执行 check）');
-  }
+  const agentOutput = await generateAgentOutput(cwd);
+  const route = parseContinueRoute(agentOutput);
+  printNextRoute(route, verbose);
 }

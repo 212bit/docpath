@@ -85,9 +85,11 @@ export type RuntimeWorkflowState =
   | WorkflowState
   | 'uninitialized'
   | 'drafting'
+  | 'task_created'
   | 'planning_done'
   | 'ready'
   | 'in_progress'
+  | 'verifying'
   | 'check_pass'
   | 'check_fail'
   | 'review_pass'

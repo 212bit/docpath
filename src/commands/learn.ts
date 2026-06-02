@@ -12,7 +12,11 @@ interface LearnOptions {
   cwd: string;
   journalPath?: string;
   skipAi?: boolean;
+  fromJournal?: boolean;
+  dryRun?: boolean;
 }
+
+type LearnTarget = 'style' | 'architecture';
 
 interface Pattern {
   type: 'anti-pattern' | 'best-practice' | 'convention' | 'architecture';
@@ -20,10 +24,81 @@ interface Pattern {
   description: string;
   source: string;  // from which journal entry
   taskId?: string;
+  target: LearnTarget;
 }
 
 const AUTO_STYLE_MARKER = '<!-- docpath:auto-learn:style -->';
 const AUTO_ARCH_MARKER = '<!-- docpath:auto-learn:architecture -->';
+const LESSON_META_PREFIX = '<!-- docpath:lesson-meta ';
+
+interface ExistingRuleSummary {
+  keys: Set<string>;
+  count: number;
+  patterns: Pattern[];
+}
+
+interface FilterResult {
+  added: Pattern[];
+  skipped: Pattern[];
+}
+
+interface LearnPaths {
+  docpathDir: string;
+  lessonCandidatesPath: string;
+  stylePath: string;
+  architecturePath: string;
+}
+
+interface PatternSelection {
+  patterns: Pattern[];
+  sourceMode: string;
+}
+
+interface PatternMergePlan {
+  existingStyle: string;
+  existingArchitecture: string;
+  styleSummary: ExistingRuleSummary;
+  architectureSummary: ExistingRuleSummary;
+  stylePatterns: Pattern[];
+  architecturePatterns: Pattern[];
+  filteredStyle: FilterResult;
+  filteredArchitecture: FilterResult;
+}
+
+function createJournalPattern(
+  type: Pattern['type'],
+  keyword: string,
+  description: string,
+  source: string,
+): Pattern {
+  return {
+    type,
+    keyword,
+    description: description.slice(0, 200),
+    source,
+    target: type === 'architecture' ? 'architecture' : 'style',
+  };
+}
+
+function classifyMarkedJournalLine(line: string): Pattern['type'] | null {
+  if (line.includes('⚠️')) return 'anti-pattern';
+  if (line.includes('✅')) return 'best-practice';
+  if (line.includes('📋')) return 'convention';
+  if (line.includes('🏗️')) return 'architecture';
+  return null;
+}
+
+function classifyKeywordJournalLine(line: string): Pattern['type'] | null {
+  if (line.match(/反模式|anti.?pattern|不要|避免|错误/i)) return 'anti-pattern';
+  if (line.match(/最佳实践|best.?practice|应该|推荐|使用/i)) return 'best-practice';
+  if (line.match(/规范|convention|格式|命名/i)) return 'convention';
+  if (line.match(/架构|architecture|模块|边界|接口|数据模型/i)) return 'architecture';
+  return null;
+}
+
+function classifyJournalLine(line: string): Pattern['type'] | null {
+  return classifyMarkedJournalLine(line) || classifyKeywordJournalLine(line);
+}
 
 function extractPatternsFromJournal(content: string, source: string): Pattern[] {
   const patterns: Pattern[] = [];
@@ -31,61 +106,12 @@ function extractPatternsFromJournal(content: string, source: string): Pattern[] 
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
+    const desc = lines.slice(i, Math.min(i + 3, lines.length)).join(' ').trim();
+    const keyword = extractKeyword(desc);
+    if (!keyword) continue;
 
-    // Look for anti-pattern markers
-    if (line.match(/⚠️|反模式|anti.?pattern|不要|避免|错误/i)) {
-      const desc = lines.slice(i, Math.min(i + 3, lines.length)).join(' ').trim();
-      const keyword = extractKeyword(desc);
-      if (keyword) {
-        patterns.push({
-          type: 'anti-pattern',
-          keyword,
-          description: desc.slice(0, 200),
-          source,
-        });
-      }
-    }
-
-    // Look for best practice markers
-    if (line.match(/✅|最佳实践|best.?practice|应该|推荐|使用/i)) {
-      const desc = lines.slice(i, Math.min(i + 3, lines.length)).join(' ').trim();
-      const keyword = extractKeyword(desc);
-      if (keyword) {
-        patterns.push({
-          type: 'best-practice',
-          keyword,
-          description: desc.slice(0, 200),
-          source,
-        });
-      }
-    }
-
-    // Look for convention markers
-    if (line.match(/📋|规范|convention|格式|命名/i)) {
-      const desc = lines.slice(i, Math.min(i + 3, lines.length)).join(' ').trim();
-      const keyword = extractKeyword(desc);
-      if (keyword) {
-        patterns.push({
-          type: 'convention',
-          keyword,
-          description: desc.slice(0, 200),
-          source,
-        });
-      }
-    }
-
-    if (line.match(/🏗️|架构|architecture|模块|边界|接口|数据模型/i)) {
-      const desc = lines.slice(i, Math.min(i + 3, lines.length)).join(' ').trim();
-      const keyword = extractKeyword(desc);
-      if (keyword) {
-        patterns.push({
-          type: 'architecture',
-          keyword,
-          description: desc.slice(0, 200),
-          source,
-        });
-      }
-    }
+    const type = classifyJournalLine(line);
+    if (type) patterns.push(createJournalPattern(type, keyword, desc, source));
   }
 
   return patterns;
@@ -96,6 +122,10 @@ function extractCandidateLessons(content: string): Pattern[] {
   const blocks = content.split(/^##\s+/m).filter((block) => block.trim());
 
   for (const block of blocks) {
+    const hasCandidateShape = /^- (task_id|type|target|source|key):/m.test(block)
+      || /^### (Lesson|经验)\s*$/m.test(block);
+    if (!hasCandidateShape) continue;
+
     const title = block.split('\n')[0]?.trim() || '';
     const taskId = block.match(/^- task_id:\s*(.+)$/m)?.[1]?.trim();
     const typeValue = block.match(/^- type:\s*(.+)$/m)?.[1]?.trim();
@@ -118,6 +148,7 @@ function extractCandidateLessons(content: string): Pattern[] {
         description: description.slice(0, 300),
         source,
         taskId,
+        target: targetValue === 'architecture' || type === 'architecture' ? 'architecture' : 'style',
       });
     }
   }
@@ -132,7 +163,14 @@ function extractKeyword(text: string): string | null {
 }
 
 function lessonKey(pattern: Pattern): string {
-  return `${pattern.type}:${pattern.keyword}:${pattern.description}`
+  return [
+    pattern.type,
+    pattern.target,
+    pattern.keyword,
+    pattern.source,
+    pattern.taskId || '',
+  ]
+    .join(':')
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .slice(0, 180);
@@ -155,6 +193,14 @@ function sourceSuffix(pattern: Pattern): string {
   return ` _(来源: ${parts.join(', ')})_`;
 }
 
+function lessonMetaComment(pattern: Pattern): string {
+  return `${LESSON_META_PREFIX}${lessonKey(pattern)} -->`;
+}
+
+function renderPattern(pattern: Pattern): string {
+  return `- **${pattern.keyword}**: ${pattern.description}${sourceSuffix(pattern)}\n${lessonMetaComment(pattern)}\n`;
+}
+
 function patternsToStyleSection(patterns: Pattern[]): string {
   if (patterns.length === 0) return '';
 
@@ -167,7 +213,7 @@ function patternsToStyleSection(patterns: Pattern[]): string {
   if (antiPatterns.length > 0) {
     section += '### ⚠️ 反模式\n\n';
     for (const p of antiPatterns) {
-      section += `- **${p.keyword}**: ${p.description}${sourceSuffix(p)}\n`;
+      section += renderPattern(p);
     }
     section += '\n';
   }
@@ -175,7 +221,7 @@ function patternsToStyleSection(patterns: Pattern[]): string {
   if (bestPractices.length > 0) {
     section += '### ✅ 最佳实践\n\n';
     for (const p of bestPractices) {
-      section += `- **${p.keyword}**: ${p.description}${sourceSuffix(p)}\n`;
+      section += renderPattern(p);
     }
     section += '\n';
   }
@@ -183,7 +229,7 @@ function patternsToStyleSection(patterns: Pattern[]): string {
   if (conventions.length > 0) {
     section += '### 📋 规范\n\n';
     for (const p of conventions) {
-      section += `- **${p.keyword}**: ${p.description}${sourceSuffix(p)}\n`;
+      section += renderPattern(p);
     }
     section += '\n';
   }
@@ -196,7 +242,7 @@ function patternsToArchitectureSection(patterns: Pattern[]): string {
 
   let section = `\n${AUTO_ARCH_MARKER}\n## 自动学习架构经验\n\n`;
   for (const p of patterns) {
-    section += `- **${p.keyword}**: ${p.description}${sourceSuffix(p)}\n`;
+    section += renderPattern(p);
   }
   section += '\n';
   return section;
@@ -207,48 +253,197 @@ function stripAutoSection(content: string, marker: string): string {
   return index >= 0 ? content.slice(0, index).trimEnd() + '\n' : content;
 }
 
+function normalizeKeyPart(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function inferTypeFromHeading(heading: string, target: LearnTarget): Pattern['type'] {
+  if (/反模式/.test(heading)) return 'anti-pattern';
+  if (/最佳实践/.test(heading)) return 'best-practice';
+  if (/规范/.test(heading)) return 'convention';
+  return target === 'architecture' ? 'architecture' : 'best-practice';
+}
+
+function existingRuleSummaryFromContent(content: string, marker: string, target: LearnTarget): ExistingRuleSummary {
+  const index = content.indexOf(marker);
+  if (index < 0) return { keys: new Set(), count: 0, patterns: [] };
+
+  const autoSection = content.slice(index).split('\n');
+  const keys = new Set<string>();
+  const patterns: Pattern[] = [];
+  let currentHeading = '';
+  let count = 0;
+
+  for (let i = 0; i < autoSection.length; i++) {
+    const line = autoSection[i].trim();
+    if (!line) continue;
+    if (line.startsWith('### ')) {
+      currentHeading = line;
+      continue;
+    }
+    const meta = line.match(/^<!--\s+docpath:lesson-meta\s+(.+?)\s+-->$/);
+    if (meta) {
+      keys.add(normalizeKeyPart(meta[1]));
+      continue;
+    }
+    const bullet = line.match(/^- \*\*(.+?)\*\*:.*?(?:_\(来源:\s*(.+?)\)_)?$/);
+    if (!bullet) continue;
+
+    count += 1;
+    const keyword = normalizeKeyPart(bullet[1]);
+    const sourceBlock = bullet[2] || '';
+    const rawSource = sourceBlock.match(/source:\s*([^,)]+)/)?.[1]?.trim() || 'journal';
+    const rawTaskId = sourceBlock.match(/task:\s*([^,)]+)/)?.[1]?.trim() || '';
+    const type = inferTypeFromHeading(currentHeading, target);
+    const pattern: Pattern = {
+      type,
+      target,
+      keyword,
+      description: line.replace(/^- \*\*.+?\*\*:\s*/, '').replace(/\s*_\(.+\)_\s*$/, '').trim(),
+      source: rawSource,
+      taskId: rawTaskId || undefined,
+    };
+    keys.add(normalizeKeyPart(lessonKey(pattern)));
+    patterns.push(pattern);
+  }
+
+  return { keys, count: Math.max(count, keys.size), patterns: uniquePatterns(patterns) };
+}
+
+function filterExistingPatterns(patterns: Pattern[], existingKeys: Set<string>): FilterResult {
+  const seen = new Set(existingKeys);
+  const added: Pattern[] = [];
+  const skipped: Pattern[] = [];
+
+  for (const pattern of patterns) {
+    const key = normalizeKeyPart(lessonKey(pattern));
+    if (seen.has(key)) {
+      skipped.push(pattern);
+      continue;
+    }
+    seen.add(key);
+    added.push(pattern);
+  }
+
+  return { added, skipped };
+}
+
+async function resolveLearnPaths(cwd: string): Promise<LearnPaths> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  return {
+    docpathDir,
+    lessonCandidatesPath: join(docpathDir, 'workspace', 'lesson-candidates.md'),
+    stylePath: join(docpathDir, 'spec', 'style.md'),
+    architecturePath: join(docpathDir, 'spec', 'architecture.md'),
+  };
+}
+
+async function readJournalContent(options: LearnOptions, paths: LearnPaths): Promise<string> {
+  if (options.journalPath) {
+    return await readFileSafe(options.journalPath) || '';
+  }
+  if (!options.fromJournal && existsSync(paths.lessonCandidatesPath)) {
+    return await readFileSafe(paths.lessonCandidatesPath) || '';
+  }
+
+  const journalDir = join(options.cwd, '.docpath', 'workspace', 'journal');
+  const defaultJournal = join(options.cwd, '.docpath', 'workspace', 'journal.md');
+  const fs = await import('node:fs/promises');
+  try {
+    const entries = await fs.readdir(journalDir);
+    const mdFiles = entries.filter(f => f.endsWith('.md')).sort();
+    let journalContent = '';
+    for (const f of mdFiles) {
+      const content = await readFileSafe(join(journalDir, f));
+      if (content) journalContent += `\n--- ${f} ---\n${content}\n`;
+    }
+    return journalContent;
+  } catch {
+    return await readFileSafe(defaultJournal) || '';
+  }
+}
+
+function sourceModeForLearn(options: LearnOptions, paths: LearnPaths): string {
+  return options.journalPath
+    ? `指定文件: ${options.journalPath}`
+    : options.fromJournal
+      ? 'journal'
+      : existsSync(paths.lessonCandidatesPath)
+        ? 'lesson-candidates'
+        : 'journal';
+}
+
+function selectPatterns(journalContent: string, options: LearnOptions, paths: LearnPaths): PatternSelection {
+  const candidatePatterns = extractCandidateLessons(journalContent);
+  const rawPatterns = candidatePatterns.length > 0
+    ? candidatePatterns
+    : extractPatternsFromJournal(journalContent, options.journalPath ? options.journalPath : 'journal');
+  return {
+    patterns: uniquePatterns(rawPatterns),
+    sourceMode: sourceModeForLearn(options, paths),
+  };
+}
+
+function printPatterns(patterns: Pattern[]): void {
+  console.log(`📊  发现 ${patterns.length} 条规则:\n`);
+  for (const p of patterns) {
+    const icon = p.type === 'anti-pattern' ? '⚠️' : p.type === 'best-practice' ? '✅' : p.type === 'architecture' ? '🏗️' : '📋';
+    console.log(`  ${icon} [${p.type}] ${p.keyword}: ${p.description.slice(0, 80)}...`);
+  }
+}
+
+async function buildPatternMergePlan(paths: LearnPaths, patterns: Pattern[]): Promise<PatternMergePlan> {
+  const existingStyle = await readFileSafe(paths.stylePath) || '';
+  const existingArchitecture = await readFileSafe(paths.architecturePath) || '';
+  const styleSummary = existingRuleSummaryFromContent(existingStyle, AUTO_STYLE_MARKER, 'style');
+  const architectureSummary = existingRuleSummaryFromContent(existingArchitecture, AUTO_ARCH_MARKER, 'architecture');
+  const stylePatterns = patterns.filter((p) => p.target === 'style');
+  const architecturePatterns = patterns.filter((p) => p.target === 'architecture');
+  return {
+    existingStyle,
+    existingArchitecture,
+    styleSummary,
+    architectureSummary,
+    stylePatterns,
+    architecturePatterns,
+    filteredStyle: filterExistingPatterns(stylePatterns, styleSummary.keys),
+    filteredArchitecture: filterExistingPatterns(architecturePatterns, architectureSummary.keys),
+  };
+}
+
+function printDryRunSummary(sourceMode: string, plan: PatternMergePlan): void {
+  console.log('\n📝  [dry-run] 预览模式，不写入 style.md / architecture.md');
+  console.log(`   - 来源模式: ${sourceMode}`);
+  console.log(`   - style 规则: 提取 ${plan.stylePatterns.length} / 新增 ${plan.filteredStyle.added.length} / 跳过 ${plan.filteredStyle.skipped.length}`);
+  console.log(`   - architecture 规则: 提取 ${plan.architecturePatterns.length} / 新增 ${plan.filteredArchitecture.added.length} / 跳过 ${plan.filteredArchitecture.skipped.length}\n`);
+}
+
+async function writeMergedPatterns(paths: LearnPaths, plan: PatternMergePlan): Promise<void> {
+  const cleanedStyle = stripAutoSection(plan.existingStyle, AUTO_STYLE_MARKER);
+  const mergedStylePatterns = uniquePatterns([...plan.styleSummary.patterns, ...plan.filteredStyle.added]);
+  const newSection = patternsToStyleSection(mergedStylePatterns);
+
+  await mkdir(join(paths.docpathDir, 'spec'), { recursive: true });
+  if (newSection) await writeFile(paths.stylePath, cleanedStyle + newSection, 'utf-8');
+
+  const cleanedArchitecture = stripAutoSection(plan.existingArchitecture, AUTO_ARCH_MARKER);
+  const mergedArchitecturePatterns = uniquePatterns([...plan.architectureSummary.patterns, ...plan.filteredArchitecture.added]);
+  const architectureSection = patternsToArchitectureSection(mergedArchitecturePatterns);
+  if (architectureSection) await writeFile(paths.architecturePath, cleanedArchitecture + architectureSection, 'utf-8');
+}
+
 export async function learnCommand(options: LearnOptions): Promise<void> {
   console.log('\n🧠  学习模式 — 从经验中提取规则\n');
 
-  // Find journal entries
-  const journalDir = join(options.cwd, '.docpath', 'workspace', 'journal');
-  const defaultJournal = join(options.cwd, '.docpath', 'workspace', 'journal.md');
-  const docpathDir = await resolveDocpathDir(options.cwd);
-  const lessonCandidatesPath = join(docpathDir, 'workspace', 'lesson-candidates.md');
-
-  let journalContent = '';
-
-  if (options.journalPath) {
-    journalContent = await readFileSafe(options.journalPath) || '';
-  } else if (existsSync(lessonCandidatesPath)) {
-    journalContent = await readFileSafe(lessonCandidatesPath) || '';
-  } else {
-    // Try directory first, then single file
-    const fs = await import('node:fs/promises');
-    try {
-      const entries = await fs.readdir(journalDir);
-      const mdFiles = entries.filter(f => f.endsWith('.md')).sort();
-      for (const f of mdFiles) {
-        const content = await readFileSafe(join(journalDir, f));
-        if (content) journalContent += `\n--- ${f} ---\n${content}\n`;
-      }
-    } catch {
-      // Fall back to single file
-      journalContent = await readFileSafe(defaultJournal) || '';
-    }
-  }
+  const paths = await resolveLearnPaths(options.cwd);
+  const journalContent = await readJournalContent(options, paths);
 
   if (!journalContent) {
     console.log('⚠️  未找到 journal 内容。先运行 `docpath:journal` 积累经验。\n');
     return;
   }
 
-  // Extract patterns
-  const candidatePatterns = extractCandidateLessons(journalContent);
-  const rawPatterns = candidatePatterns.length > 0
-    ? candidatePatterns
-    : extractPatternsFromJournal(journalContent, options.journalPath ? options.journalPath : 'journal');
-  const patterns = uniquePatterns(rawPatterns);
+  const { patterns, sourceMode } = selectPatterns(journalContent, options, paths);
 
   if (patterns.length === 0) {
     console.log('📭  未发现可提取的规则模式。\n');
@@ -257,30 +452,16 @@ export async function learnCommand(options: LearnOptions): Promise<void> {
     return;
   }
 
-  console.log(`📊  发现 ${patterns.length} 条规则:\n`);
-  for (const p of patterns) {
-    const icon = p.type === 'anti-pattern' ? '⚠️' : p.type === 'best-practice' ? '✅' : p.type === 'architecture' ? '🏗️' : '📋';
-    console.log(`  ${icon} [${p.type}] ${p.keyword}: ${p.description.slice(0, 80)}...`);
+  printPatterns(patterns);
+  const plan = await buildPatternMergePlan(paths, patterns);
+
+  if (options.dryRun) {
+    printDryRunSummary(sourceMode, plan);
+    return;
   }
 
-  const stylePatterns = patterns.filter((p) => p.type !== 'architecture');
-  const architecturePatterns = patterns.filter((p) => p.type === 'architecture');
+  await writeMergedPatterns(paths, plan);
 
-  // Update style.md
-  const stylePath = join(docpathDir, 'spec', 'style.md');
-  const existingStyle = await readFileSafe(stylePath) || '';
-  const cleanedStyle = stripAutoSection(existingStyle, AUTO_STYLE_MARKER);
-  const newSection = patternsToStyleSection(stylePatterns);
-
-  await mkdir(join(docpathDir, 'spec'), { recursive: true });
-  if (newSection) await writeFile(stylePath, cleanedStyle + newSection, 'utf-8');
-
-  const architecturePath = join(docpathDir, 'spec', 'architecture.md');
-  const existingArchitecture = await readFileSafe(architecturePath) || '';
-  const cleanedArchitecture = stripAutoSection(existingArchitecture, AUTO_ARCH_MARKER);
-  const architectureSection = patternsToArchitectureSection(architecturePatterns);
-  if (architectureSection) await writeFile(architecturePath, cleanedArchitecture + architectureSection, 'utf-8');
-
-  console.log(`\n✅  已更新 style.md (+${stylePatterns.length} 条规则), architecture.md (+${architecturePatterns.length} 条经验)\n`);
+  console.log(`\n✅  已更新 style.md (+${plan.filteredStyle.added.length} 条规则, 跳过 ${plan.filteredStyle.skipped.length} 条重复), architecture.md (+${plan.filteredArchitecture.added.length} 条经验, 跳过 ${plan.filteredArchitecture.skipped.length} 条重复)\n`);
   console.log('💡  下次 `docpath:go` 将自动应用这些规则。\n');
 }
