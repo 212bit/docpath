@@ -3,13 +3,13 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260601-review-todo
-task_title: 清理 review TODO 自触发提示
+task_id: T-20260602-task
+task_title: 修复状态机边界并恢复测试全绿
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-01T16:39:27.432Z
-updated_at: 2026-06-01T16:39:27.431Z
+started_at: 2026-06-02T13:20:35.379Z
+updated_at: 2026-06-02T13:20:35.378Z
 ```
 
 > 📖 规约: [spec.md](../tasks/current/spec.md)
@@ -21,8 +21,8 @@ updated_at: 2026-06-01T16:39:27.431Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-01T16:39:05.738Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260601-review-todo] — 2026-06-01T16:39:20.628Z · 状态: done · 代码审查: 0 错误, 0 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-02T13:20:11.626Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260602-task] — 2026-06-02T13:20:27.447Z · 状态: done · 代码审查: 0 错误, 3 警告, 0 提示
 
 ## 🔄 同步说明
 

@@ -4,138 +4,6 @@
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ review [T-20260601-journalcommand] — 2026-06-01T16:07:49.150Z
-
----
-taskId: T-20260601-journalcommand
-step: review
-status: done
-timestamp: 2026-06-01T16:07:49.150Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 3 警告, 1 提示
-
-### 🚫 check [T-20260601-journalcommand] — 2026-06-01T16:07:57.909Z
-
----
-taskId: T-20260601-journalcommand
-step: check
-status: blocked
-timestamp: 2026-06-01T16:07:57.909Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 任务文件 current/canonical 漂移检查, ⚠️  Checklist 同步 (2/3)
-
-### ✅ S3 [T-20260601-journalcommand] — 2026-06-01T16:08:24.186Z
-
----
-taskId: T-20260601-journalcommand
-step: S3
-status: done
-timestamp: 2026-06-01T16:08:24.186Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ review [T-20260601-journalcommand] — 2026-06-01T16:08:37.974Z
-
----
-taskId: T-20260601-journalcommand
-step: review
-status: done
-timestamp: 2026-06-01T16:08:37.974Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 3 警告, 1 提示
-
-### ✅ check [T-20260601-journalcommand] — 2026-06-01T16:08:46.762Z
-
----
-taskId: T-20260601-journalcommand
-step: check
-status: done
-timestamp: 2026-06-01T16:08:46.762Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (8 项)
-
-### ✅ review [T-20260601-journalcommand] — 2026-06-01T16:09:03.204Z
-
----
-taskId: T-20260601-journalcommand
-step: review
-status: done
-timestamp: 2026-06-01T16:09:03.204Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 3 警告, 1 提示
-
-### ✅ journal [T-20260601-journalcommand] — 2026-06-01T16:09:14.054Z
-
----
-taskId: T-20260601-journalcommand
-step: journal
-status: done
-timestamp: 2026-06-01T16:09:14.054Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260601-runharnesschecks] — 2026-06-01T16:12:22.751Z
-
----
-taskId: T-20260601-runharnesschecks
-step: S1
-status: in_progress
-timestamp: 2026-06-01T16:12:22.751Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 拆分 runHarnessChecks 降低函数复杂度警告
-
-### ✅ S1 [T-20260601-runharnesschecks] — 2026-06-01T16:12:28.265Z
-
----
-taskId: T-20260601-runharnesschecks
-step: S1
-status: done
-timestamp: 2026-06-01T16:12:28.265Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### 🔄 S2 [T-20260601-runharnesschecks] — 2026-06-01T16:12:32.778Z
-
----
-taskId: T-20260601-runharnesschecks
-step: S2
-status: in_progress
-timestamp: 2026-06-01T16:12:32.778Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 拆分 runHarnessChecks 降低函数复杂度警告
-
-### ✅ review [T-20260601-runharnesschecks] — 2026-06-01T16:13:54.899Z
-
----
-taskId: T-20260601-runharnesschecks
-step: review
-status: done
-timestamp: 2026-06-01T16:13:54.899Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 2 警告, 1 提示
-
 ### ✅ S2 [T-20260601-runharnesschecks] — 2026-06-01T16:14:29.473Z
 
 ---
@@ -603,3 +471,135 @@ timestamp: 2026-06-01T16:39:27.505Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (3/3 步)
+
+### 🔄 S1 [T-20260602-task] — 2026-06-02T13:13:19.056Z
+
+---
+taskId: T-20260602-task
+step: S1
+status: in_progress
+timestamp: 2026-06-02T13:13:19.056Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 复现并定位红测
+
+### ✅ S2 [T-20260602-task] — 2026-06-02T13:16:00.117Z
+
+---
+taskId: T-20260602-task
+step: S2
+status: done
+timestamp: 2026-06-02T13:16:00.117Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+
+### ✅ S1 [T-20260602-task] — 2026-06-02T13:16:10.553Z
+
+---
+taskId: T-20260602-task
+step: S1
+status: done
+timestamp: 2026-06-02T13:16:10.553Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S3 [T-20260602-task] — 2026-06-02T13:16:20.455Z
+
+---
+taskId: T-20260602-task
+step: S3
+status: in_progress
+timestamp: 2026-06-02T13:16:20.455Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 补 completed 态 check.failed 边界
+
+### ✅ S3 [T-20260602-task] — 2026-06-02T13:17:20.567Z
+
+---
+taskId: T-20260602-task
+step: S3
+status: done
+timestamp: 2026-06-02T13:17:20.567Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+
+### 🔄 S4 [T-20260602-task] — 2026-06-02T13:17:37.036Z
+
+---
+taskId: T-20260602-task
+step: S4
+status: in_progress
+timestamp: 2026-06-02T13:17:37.036Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 验证门禁并归档
+
+### 🚫 check [T-20260602-task] — 2026-06-02T13:18:41.146Z
+
+---
+taskId: T-20260602-task
+step: check
+status: blocked
+timestamp: 2026-06-02T13:18:41.146Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (3/4)
+
+### ✅ S4 [T-20260602-task] — 2026-06-02T13:19:45.523Z
+
+---
+taskId: T-20260602-task
+step: S4
+status: done
+timestamp: 2026-06-02T13:19:45.523Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+
+### ✅ check [T-20260602-task] — 2026-06-02T13:20:11.626Z
+
+---
+taskId: T-20260602-task
+step: check
+status: done
+timestamp: 2026-06-02T13:20:11.626Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260602-task] — 2026-06-02T13:20:27.447Z
+
+---
+taskId: T-20260602-task
+step: review
+status: done
+timestamp: 2026-06-02T13:20:27.447Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 3 警告, 0 提示
+
+### ✅ journal [T-20260602-task] — 2026-06-02T13:20:35.483Z
+
+---
+taskId: T-20260602-task
+step: journal
+status: done
+timestamp: 2026-06-02T13:20:35.483Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (4/4 步)

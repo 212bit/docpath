@@ -50,8 +50,8 @@ const EVENT_TARGETS: Record<WorkflowEvent, TransitionTarget> = {
   'step.started': { phase: 'executing', gate: 'none', from: ['idle', 'drafting', 'planning', 'executing', 'checking'] },
   // 门禁类事件：保持严格 from，禁止跳过验证/审查直达完成。
   'step.completed': { phase: 'executing', gate: 'none', from: ['executing', 'checking'] },
-  'check.passed': { phase: 'checking', gate: 'check_pass', from: ['executing', 'checking'] },
-  'check.failed': { phase: 'checking', gate: 'check_fail', from: ['executing', 'checking', 'reviewing'] },
+  'check.passed': { phase: 'checking', gate: 'check_pass', from: ['executing', 'checking', 'completed'] },
+  'check.failed': { phase: 'checking', gate: 'check_fail', from: ['executing', 'checking', 'reviewing', 'completed'] },
   'review.passed': { phase: 'reviewing', gate: 'review_pass', from: ['checking', 'reviewing'] },
   'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing'] },
   'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'] },

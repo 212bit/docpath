@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { readFileSafe, rmFile, writeFileSafe } from './file.js';
 import { resolveDocpathDir } from './file.js';
-import { writeBreadcrumb } from '../engine/breadcrumb.js';
+import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import type { CurrentState } from './workspace.js';
 
 export interface PendingDoneRecord {
@@ -74,6 +74,16 @@ export async function markPendingDoneWarned(cwd: string, warned: boolean): Promi
   await writePendingDone(cwd, { ...record, warned });
 }
 
+async function hasStalePendingDoneWarning(cwd: string, taskId: string): Promise<boolean> {
+  const warning = `[WARN] Task ${taskId} active >24h without done`;
+  const summary = await readBreadcrumb(cwd);
+  return summary.entries.some((entry) =>
+    entry.taskId === taskId &&
+    entry.step === 'pending-done' &&
+    entry.context.includes(warning)
+  );
+}
+
 export async function handleStalePendingDoneWarning(
   cwd: string,
   current: Pick<CurrentState, 'phase' | 'task_id'> | null | undefined,
@@ -86,12 +96,14 @@ export async function handleStalePendingDoneWarning(
   if (record.warned === true) return record;
   if (!isPendingDoneStale(record.entered_at)) return record;
 
-  await writeBreadcrumb(cwd, {
-    taskId: current.task_id || record.task_id,
-    step: 'pending-done',
-    status: 'skipped',
-    context: `[WARN] Task ${record.task_id} active >24h without done`,
-  });
+  if (!await hasStalePendingDoneWarning(cwd, record.task_id)) {
+    await writeBreadcrumb(cwd, {
+      taskId: current.task_id || record.task_id,
+      step: 'pending-done',
+      status: 'skipped',
+      context: `[WARN] Task ${record.task_id} active >24h without done`,
+    });
+  }
   await markPendingDoneWarned(cwd, true);
   return { ...record, warned: true };
 }

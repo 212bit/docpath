@@ -158,4 +158,5 @@
 <!-- docpath:lesson-meta best-practice:style:t-20260601-registercommands-workflow:journal:t-20260601-registercommands -->
 - **T-20260601-review-todo-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260601-review-todo, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260601-review-todo-workflow:journal:t-20260601-review-todo -->
-
+- **T-20260602-task-workflow**: ✅ 推荐保留本次任务的执行经验：完成 4/4 步，阻塞 0 步。 _(来源: task: T-20260602-task, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260602-task-workflow:journal:t-20260602-task -->

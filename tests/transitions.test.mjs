@@ -58,6 +58,17 @@ describe('transitionWorkflow', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('records a failed re-check from completed state', async () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    await transitionWorkflow(cwd, 'check.failed', { currentStep: 're-check failed' });
+    const persisted = readState(cwd);
+
+    assert.equal(persisted.phase, 'checking');
+    assert.equal(persisted.gate, 'check_fail');
+    assert.equal(persisted.current_step, 're-check failed');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('writes journal.archived as completed/review_pass', async () => {
     const cwd = mkWorkspace({ phase: 'reviewing', gate: 'review_pass' });
     await transitionWorkflow(cwd, 'journal.archived');

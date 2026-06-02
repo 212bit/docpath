@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260601-review-todo",
-  "task_title": "清理 review TODO 自触发提示",
+  "task_id": "T-20260602-task",
+  "task_title": "修复状态机边界并恢复测试全绿",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-01T16:39:27.432Z",
-  "updated_at": "2026-06-01T16:39:27.431Z"
+  "started_at": "2026-06-02T13:20:35.379Z",
+  "updated_at": "2026-06-02T13:20:35.378Z"
 }
