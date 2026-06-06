@@ -3,13 +3,13 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260606-task
-task_title: 补齐版本号与安装资产同步检测
+task_id: T-20260606-manifest
+task_title: 补齐安装模板资产 manifest 与漂移检测
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-06T08:58:04.005Z
-updated_at: 2026-06-06T08:58:04.004Z
+started_at: 2026-06-06T09:10:13.486Z
+updated_at: 2026-06-06T09:10:13.485Z
 ```
 
 > 📖 规约: [spec.md](../tasks/current/spec.md)
@@ -21,8 +21,8 @@ updated_at: 2026-06-06T08:58:04.004Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-06T08:57:18.772Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260606-task] — 2026-06-06T08:57:23.336Z · 状态: done · 代码审查: 0 错误, 6 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-06T09:10:00.901Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260606-manifest] — 2026-06-06T09:10:06.038Z · 状态: done · 代码审查: 0 错误, 0 警告, 0 提示
 
 ## 🔄 同步说明
 

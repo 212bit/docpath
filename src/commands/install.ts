@@ -10,12 +10,19 @@
 
 import { join, resolve, basename } from 'node:path';
 import { readFile, readdir, mkdir, copyFile, chmod } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { exists, writeFileSafe } from '../utils/file.js';
 import { detectProject, type ProjectInfo } from '../utils/detect.js';
 import { getDocpathPackageVersion } from '../utils/package-info.js';
 
-type Target = 'codex' | 'claude' | 'opencode' | 'universal';
+export type Target = 'codex' | 'claude' | 'opencode' | 'universal';
 type HookMode = 'check' | 'agent-done';
+
+export interface InstallAssetManifestEntry {
+  path: string;
+  source: string;
+  sha256: string;
+}
 
 interface InstallOptions {
   cwd?: string;
@@ -147,6 +154,110 @@ function wrapClaudeCommandWithShim(content: string): string {
   ].join('\n');
 
   return content.replace(runBlock[0], `## Run\n\n\`\`\`bash\n${fallback}\n\`\`\``);
+}
+
+function sha256(content: string): string {
+  return createHash('sha256').update(content).digest('hex');
+}
+
+function manifestEntry(path: string, source: string, content: string): InstallAssetManifestEntry {
+  return { path, source, sha256: sha256(content) };
+}
+
+async function listTemplateFiles(...segments: string[]): Promise<string[]> {
+  const dir = await resolveTemplate(...segments);
+  const files = await readdir(dir);
+  return files.filter((file) => file.endsWith('.md') || file.endsWith('.txt')).sort();
+}
+
+function entryProtocolFiles(target: Target): string[] {
+  if (target === 'universal') return ['CLAUDE.md', 'AGENTS.md', 'CODEX.md'];
+  if (target === 'codex') return ['AGENTS.md', 'CODEX.md'];
+  if (target === 'claude') return ['CLAUDE.md'];
+  return ['OPENCODE.md'];
+}
+
+function renderCodexConfigContent(): string {
+  return `# DocPath adapter for Codex CLI / Codex-style coding agents
+# Keep repository instructions in AGENTS.md and CODEX.md.
+
+[docpath]
+protocol = "CODEX.md"
+fallback_protocol = "AGENTS.md"
+state = ".docpath/workspace/current.md"
+breadcrumb = ".docpath/workspace/breadcrumb.md"
+commands = ".docpath/commands"
+
+[docpath.commands]
+status = "docpath status --agent"
+context = "docpath context --agent"
+next = "docpath next --agent"
+check = "docpath check"
+review = "docpath review"
+journal = "docpath journal"
+compact = "docpath compact"
+`;
+}
+
+function renderOpenCodeConfigContent(): string {
+  return JSON.stringify({
+    protocol: 'OPENCODE.md',
+    state: '.docpath/workspace/current.md',
+    breadcrumb: '.docpath/workspace/breadcrumb.md',
+    commands: {
+      status: 'docpath status --agent',
+      next: 'docpath next --agent',
+      context: 'docpath context --agent',
+      check: 'docpath check',
+      review: 'docpath review',
+      journal: 'docpath journal',
+      handoff: 'docpath agent handoff',
+    },
+  }, null, 2) + '\n';
+}
+
+export async function buildExpectedInstallAssets(options: {
+  target: Target;
+  projectName: string;
+}): Promise<InstallAssetManifestEntry[]> {
+  const assets: InstallAssetManifestEntry[] = [];
+
+  for (const filename of entryProtocolFiles(options.target)) {
+    const template = await readFile(await resolveTemplate(filename), 'utf-8');
+    const content = template.replace(/\{\{PROJECT_NAME\}\}/g, options.projectName);
+    assets.push(manifestEntry(filename, `protocol:${filename}`, content));
+  }
+
+  for (const group of ['workflows', 'skills', 'protocols', 'commands']) {
+    for (const file of await listTemplateFiles(group)) {
+      const content = await readFile(await resolveTemplate(group, file), 'utf-8');
+      assets.push(manifestEntry(`.docpath/${group}/${file}`, `docpath:${group}/${file}`, content));
+    }
+  }
+
+  if (options.target === 'claude' || options.target === 'universal') {
+    for (const file of await listTemplateFiles('commands')) {
+      const content = await readFile(await resolveTemplate('commands', file), 'utf-8');
+      assets.push(manifestEntry(`.claude/commands/${file}`, `claude-command:${file}`, wrapClaudeCommandWithShim(content)));
+    }
+  }
+
+  if (options.target === 'opencode' || options.target === 'universal') {
+    for (const file of await listTemplateFiles('commands')) {
+      const content = await readFile(await resolveTemplate('commands', file), 'utf-8');
+      assets.push(manifestEntry(`.opencode/commands/${file}`, `opencode-command:${file}`, content));
+    }
+  }
+
+  if (options.target === 'codex' || options.target === 'universal') {
+    assets.push(manifestEntry('.codex/config.toml', 'codex-config', renderCodexConfigContent()));
+  }
+
+  if (options.target === 'opencode' || options.target === 'universal') {
+    assets.push(manifestEntry('.opencode/docpath.json', 'opencode-config', renderOpenCodeConfigContent()));
+  }
+
+  return assets.sort((a, b) => a.path.localeCompare(b.path) || a.source.localeCompare(b.source));
 }
 
 async function installLocalCliShim(targetDir: string, force: boolean): Promise<void> {
@@ -337,12 +448,14 @@ async function writeInstallMetadata(context: InstallContext): Promise<void> {
   // ─── 4. 写入安装元数据 ───
   const metaPath = join(docpathDir, '.install-meta.json');
   const docpathVersion = await getDocpathPackageVersion();
+  const assets = await buildExpectedInstallAssets({ target, projectName });
   const meta = {
     target,
     installedAt: new Date().toISOString(),
     projectName,
     projectType: projectInfo?.type ?? 'unknown',
     docpathVersion,
+    assets,
   };
   await writeFileSafe(metaPath, JSON.stringify(meta, null, 2) + '\n');
 }
@@ -440,45 +553,12 @@ async function installCodexConfig(targetDir: string, force: boolean): Promise<vo
   const codexDir = join(targetDir, '.codex');
   await mkdir(codexDir, { recursive: true });
   const configPath = join(codexDir, 'config.toml');
-  const content = `# DocPath adapter for Codex CLI / Codex-style coding agents
-# Keep repository instructions in AGENTS.md and CODEX.md.
-
-[docpath]
-protocol = "CODEX.md"
-fallback_protocol = "AGENTS.md"
-state = ".docpath/workspace/current.md"
-breadcrumb = ".docpath/workspace/breadcrumb.md"
-commands = ".docpath/commands"
-
-[docpath.commands]
-status = "docpath status --agent"
-context = "docpath context --agent"
-next = "docpath next --agent"
-check = "docpath check"
-review = "docpath review"
-journal = "docpath journal"
-compact = "docpath compact"
-`;
-  await writeManagedFile(configPath, content, force, 'Codex 配置 → .codex/config.toml');
+  await writeManagedFile(configPath, renderCodexConfigContent(), force, 'Codex 配置 → .codex/config.toml');
 }
 
 async function installOpenCodeConfig(targetDir: string, force: boolean): Promise<void> {
   const opencodeDir = join(targetDir, '.opencode');
   await mkdir(opencodeDir, { recursive: true });
   const configPath = join(opencodeDir, 'docpath.json');
-  const content = JSON.stringify({
-    protocol: 'OPENCODE.md',
-    state: '.docpath/workspace/current.md',
-    breadcrumb: '.docpath/workspace/breadcrumb.md',
-    commands: {
-      status: 'docpath status --agent',
-      next: 'docpath next --agent',
-      context: 'docpath context --agent',
-      check: 'docpath check',
-      review: 'docpath review',
-      journal: 'docpath journal',
-      handoff: 'docpath agent handoff',
-    },
-  }, null, 2) + '\n';
-  await writeManagedFile(configPath, content, force, 'OpenCode 配置 → .opencode/docpath.json');
+  await writeManagedFile(configPath, renderOpenCodeConfigContent(), force, 'OpenCode 配置 → .opencode/docpath.json');
 }

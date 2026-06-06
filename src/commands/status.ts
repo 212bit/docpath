@@ -3,6 +3,8 @@
  */
 
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { buildExpectedInstallAssets, type InstallAssetManifestEntry, type Target } from './install.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
 import { getDocpathPackageVersion } from '../utils/package-info.js';
@@ -20,6 +22,8 @@ const LEVEL_NAMES: Record<string, string> = {
   '2': '标准任务',
   '3': '复杂任务',
 };
+
+const INSTALL_TARGETS: Target[] = ['codex', 'claude', 'opencode', 'universal'];
 
 function printMissingStateHint(): void {
   console.log('\n⚠️  未找到可解析的工作流状态');
@@ -98,6 +102,69 @@ async function printLinkedProject(cwd: string): Promise<void> {
   }
 }
 
+function sha256(content: string): string {
+  return createHash('sha256').update(content).digest('hex');
+}
+
+function isInstallTarget(value: unknown): value is Target {
+  return typeof value === 'string' && INSTALL_TARGETS.includes(value as Target);
+}
+
+function assetKey(asset: Pick<InstallAssetManifestEntry, 'path' | 'source'>): string {
+  return `${asset.path}\0${asset.source}`;
+}
+
+async function countLocalAssetDrift(
+  cwd: string,
+  installedAssets: InstallAssetManifestEntry[],
+): Promise<{ missing: number; modified: number }> {
+  let missing = 0;
+  let modified = 0;
+
+  for (const asset of installedAssets) {
+    const localContent = await readFileSafe(join(cwd, asset.path));
+    if (localContent === null) {
+      missing++;
+      continue;
+    }
+    if (sha256(localContent) !== asset.sha256) {
+      modified++;
+    }
+  }
+
+  return { missing, modified };
+}
+
+async function printInstallAssetDrift(cwd: string, meta: {
+  target?: string;
+  projectName?: string;
+  assets?: InstallAssetManifestEntry[];
+}): Promise<void> {
+  if (!isInstallTarget(meta.target)) return;
+  if (!Array.isArray(meta.assets) || meta.assets.length === 0) {
+    console.log('  ⚠️  安装资产 manifest 缺失，建议重新运行: docpath install --target <target>');
+    return;
+  }
+
+  const expectedAssets = await buildExpectedInstallAssets({
+    target: meta.target,
+    projectName: meta.projectName || cwd.split('/').at(-1) || 'project',
+  });
+  const installedByKey = new Map(meta.assets.map((asset) => [assetKey(asset), asset]));
+  const templateDrift = expectedAssets.filter((expected) => {
+    const installed = installedByKey.get(assetKey(expected));
+    return !installed || installed.sha256 !== expected.sha256;
+  });
+  const localDrift = await countLocalAssetDrift(cwd, meta.assets);
+
+  if (templateDrift.length === 0 && localDrift.missing === 0 && localDrift.modified === 0) return;
+
+  console.log(`  ⚠️  安装资产 manifest 检测到漂移: 模板 ${templateDrift.length} 项, 缺失 ${localDrift.missing} 项, 本地改动 ${localDrift.modified} 项`);
+  const sample = templateDrift.slice(0, 3).map((asset) => asset.path).join(', ');
+  if (sample) console.log(`      模板漂移示例: ${sample}`);
+  console.log(`      建议运行: docpath install --target ${meta.target}`);
+}
+
 async function printInstallMetadata(cwd: string): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
   const metaRaw = await readFileSafe(join(docpathDir, '.install-meta.json'));
@@ -108,6 +175,8 @@ async function printInstallMetadata(cwd: string): Promise<void> {
       target?: string;
       docpathVersion?: string;
       installedAt?: string;
+      projectName?: string;
+      assets?: InstallAssetManifestEntry[];
     };
     const installedVersion = meta.docpathVersion || 'unknown';
     const currentVersion = await getDocpathPackageVersion();
@@ -121,6 +190,7 @@ async function printInstallMetadata(cwd: string): Promise<void> {
       console.log(`  ⚠️  当前 CLI 版本 ${currentVersion} 与安装资产版本 ${installedVersion} 不一致`);
       console.log('      建议运行: docpath install --target <target>');
     }
+    await printInstallAssetDrift(cwd, meta);
   } catch {
     console.log('  ⚠️  .docpath/.install-meta.json 无法解析，建议重新运行: docpath install');
   }

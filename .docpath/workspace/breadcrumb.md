@@ -4,90 +4,6 @@
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ S2 [T-20260602-registercommands] — 2026-06-03T00:48:26.376Z
-
----
-taskId: T-20260602-registercommands
-step: S2
-status: done
-timestamp: 2026-06-03T00:48:26.376Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260602-registercommands] — 2026-06-03T00:48:32.270Z
-
----
-taskId: T-20260602-registercommands
-step: S3
-status: in_progress
-timestamp: 2026-06-03T00:48:32.270Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证门禁并归档
-
-### 🚫 check [T-20260602-registercommands] — 2026-06-03T00:48:56.062Z
-
----
-taskId: T-20260602-registercommands
-step: check
-status: blocked
-timestamp: 2026-06-03T00:48:56.062Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (2/3)
-
-### ✅ S3 [T-20260602-registercommands] — 2026-06-03T00:49:19.083Z
-
----
-taskId: T-20260602-registercommands
-step: S3
-status: done
-timestamp: 2026-06-03T00:49:19.083Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ check [T-20260602-registercommands] — 2026-06-03T00:49:39.153Z
-
----
-taskId: T-20260602-registercommands
-step: check
-status: done
-timestamp: 2026-06-03T00:49:39.153Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (8 项)
-
-### ✅ review [T-20260602-registercommands] — 2026-06-03T00:50:00.626Z
-
----
-taskId: T-20260602-registercommands
-step: review
-status: done
-timestamp: 2026-06-03T00:50:00.626Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
-
-### ✅ review [T-20260602-registercommands] — 2026-06-03T00:50:07.284Z
-
----
-taskId: T-20260602-registercommands
-step: review
-status: done
-timestamp: 2026-06-03T00:50:07.284Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
-
 ### ✅ check [T-20260602-registercommands] — 2026-06-03T00:50:31.410Z
 
 ---
@@ -599,6 +515,90 @@ taskId: T-20260606-task
 step: journal
 status: done
 timestamp: 2026-06-06T08:58:04.094Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (3/3 步)
+
+### 🔄 S1 [T-20260606-manifest] — 2026-06-06T09:08:52.037Z
+
+---
+taskId: T-20260606-manifest
+step: S1
+status: in_progress
+timestamp: 2026-06-06T09:08:52.037Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 设计安装资产 manifest 结构
+
+### ✅ S1 [T-20260606-manifest] — 2026-06-06T09:09:00.250Z
+
+---
+taskId: T-20260606-manifest
+step: S1
+status: done
+timestamp: 2026-06-06T09:09:00.250Z
+---
+
+- **状态**: done
+- **上下文**: go-status: S1 -> done
+
+### ✅ S2 [T-20260606-manifest] — 2026-06-06T09:09:06.214Z
+
+---
+taskId: T-20260606-manifest
+step: S2
+status: done
+timestamp: 2026-06-06T09:09:06.214Z
+---
+
+- **状态**: done
+- **上下文**: go-status: S2 -> done
+
+### ✅ S3 [T-20260606-manifest] — 2026-06-06T09:09:35.186Z
+
+---
+taskId: T-20260606-manifest
+step: S3
+status: done
+timestamp: 2026-06-06T09:09:35.186Z
+---
+
+- **状态**: done
+- **上下文**: go-status: S3 -> done
+
+### ✅ check [T-20260606-manifest] — 2026-06-06T09:10:00.902Z
+
+---
+taskId: T-20260606-manifest
+step: check
+status: done
+timestamp: 2026-06-06T09:10:00.902Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260606-manifest] — 2026-06-06T09:10:06.038Z
+
+---
+taskId: T-20260606-manifest
+step: review
+status: done
+timestamp: 2026-06-06T09:10:06.038Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### ✅ journal [T-20260606-manifest] — 2026-06-06T09:10:13.566Z
+
+---
+taskId: T-20260606-manifest
+step: journal
+status: done
+timestamp: 2026-06-06T09:10:13.566Z
 ---
 
 - **状态**: done

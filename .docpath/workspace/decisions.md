@@ -9207,3 +9207,66 @@ go-status: S3 -> done
 - .docpath/tasks/T-20260606-task/plan.md
 
 ---
+## ADR-20260606-004 — review
+
+- task_id: T-20260606-manifest
+- created_at: 2026-06-06T09:10:06.036Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-005 — journal.archive
+
+- task_id: T-20260606-manifest
+- created_at: 2026-06-06T09:10:13.570Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 设计安装资产 manifest 结构
+go-status: S1 -> done
+go-status: S2 -> done
+go-status: S3 -> done
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260606-manifest
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260606-manifest/spec.md
+- .docpath/tasks/T-20260606-manifest/plan.md
+
+---

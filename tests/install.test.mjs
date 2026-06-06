@@ -238,10 +238,16 @@ describe('install agent adapters', () => {
     run(`install --cwd ${cwd} --target codex`, cwd);
 
     const meta = JSON.parse(readFileSync(join(cwd, '.docpath', '.install-meta.json'), 'utf-8'));
+    const assetPaths = meta.assets.map((asset) => asset.path);
 
     assert.equal(meta.target, 'codex');
     assert.equal(meta.docpathVersion, PACKAGE_VERSION);
     assert.equal(meta.projectName, cwd.split('/').at(-1));
+    assert.equal(meta.assets.every((asset) => asset.path && asset.source && asset.sha256), true);
+    assert.ok(assetPaths.includes('AGENTS.md'));
+    assert.ok(assetPaths.includes('CODEX.md'));
+    assert.ok(assetPaths.includes('.docpath/commands/docpath-status.md'));
+    assert.ok(assetPaths.includes('.codex/config.toml'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -260,6 +266,26 @@ describe('install agent adapters', () => {
     assert.match(output, /安装资产: DocPath 0\.0\.1 \(target=codex\)/);
     assert.match(output, new RegExp(`当前 CLI 版本 ${PACKAGE_VERSION.replace(/\./g, '\\.')} 与安装资产版本 0\\.0\\.1 不一致`));
     assert.match(output, /docpath install --target <target>/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('status warns when the installed asset manifest differs from current templates', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+
+    const metaPath = join(cwd, '.docpath', '.install-meta.json');
+    const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+    const statusCommand = meta.assets.find((asset) => asset.path === '.docpath/commands/docpath-status.md');
+    assert.ok(statusCommand, 'status command should be tracked in the install manifest');
+    statusCommand.sha256 = '0'.repeat(64);
+    writeFileSync(metaPath, JSON.stringify(meta, null, 2) + '\n');
+
+    const output = run(`status --cwd ${cwd}`, cwd);
+
+    assert.match(output, /安装资产 manifest 检测到漂移/);
+    assert.match(output, /模板 1 项/);
+    assert.match(output, /\.docpath\/commands\/docpath-status\.md/);
+    assert.match(output, /docpath install --target codex/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
