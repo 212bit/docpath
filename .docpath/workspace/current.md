@@ -3,13 +3,13 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260606-manifest
-task_title: 补齐安装模板资产 manifest 与漂移检测
+task_id: T-20260606-install-manifest-check-only
+task_title: 为 install manifest 漂移检测增加 check-only 模式
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-06T09:10:13.486Z
-updated_at: 2026-06-06T09:10:13.485Z
+started_at: 2026-06-06T09:30:09.088Z
+updated_at: 2026-06-06T09:30:39.608Z
 ```
 
 > 📖 规约: [spec.md](../tasks/current/spec.md)
@@ -21,8 +21,8 @@ updated_at: 2026-06-06T09:10:13.485Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-06T09:10:00.901Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260606-manifest] — 2026-06-06T09:10:06.038Z · 状态: done · 代码审查: 0 错误, 0 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 5 项 · 2026-06-06T09:30:39.570Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260606-install-manifest-check-only] — 2026-06-06T09:30:39.605Z · 状态: done · 代码审查: 0 错误, 1 警告, 0 提示
 
 ## 🔄 同步说明
 

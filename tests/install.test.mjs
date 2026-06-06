@@ -289,6 +289,79 @@ describe('install agent adapters', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('install --check-only passes without writing files when manifest is current', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    const metaPath = join(cwd, '.docpath', '.install-meta.json');
+    const agentsPath = join(cwd, 'AGENTS.md');
+    const metaBefore = readFileSync(metaPath, 'utf-8');
+    const agentsBefore = readFileSync(agentsPath, 'utf-8');
+
+    const output = run(`install --cwd ${cwd} --target codex --check-only`, cwd);
+    const metaAfter = readFileSync(metaPath, 'utf-8');
+    const agentsAfter = readFileSync(agentsPath, 'utf-8');
+
+    assert.match(output, /install manifest 检查通过/);
+    assert.equal(metaAfter, metaBefore);
+    assert.equal(agentsAfter, agentsBefore);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --check-only fails loudly when manifest drift is detected', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+
+    const metaPath = join(cwd, '.docpath', '.install-meta.json');
+    const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+    const statusCommand = meta.assets.find((asset) => asset.path === '.docpath/commands/docpath-status.md');
+    assert.ok(statusCommand, 'status command should be tracked in the install manifest');
+    statusCommand.sha256 = '0'.repeat(64);
+    writeFileSync(metaPath, JSON.stringify(meta, null, 2) + '\n');
+
+    const failed = runResult(`install --cwd ${cwd} --target codex --check-only`, cwd);
+
+    assert.equal(failed.code, 1);
+    assert.match(failed.out, /install manifest 检查失败/);
+    assert.match(failed.out, /模板 1 项/);
+    assert.match(failed.out, /docpath install --target codex/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --check-only fails when local installed assets were modified', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    writeFileSync(join(cwd, 'AGENTS.md'), '# Locally customized\n');
+
+    const failed = runResult(`install --cwd ${cwd} --target codex --check-only`, cwd);
+
+    assert.equal(failed.code, 1);
+    assert.match(failed.out, /本地改动 1 项/);
+    assert.match(failed.out, /本地改动示例: AGENTS\.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --check-only fails when install metadata is missing or invalid', () => {
+    const missingCwd = mkWorkspace();
+    const invalidCwd = mkWorkspace();
+    run(`install --cwd ${missingCwd} --target codex`, missingCwd);
+    run(`install --cwd ${invalidCwd} --target codex`, invalidCwd);
+
+    rmSync(join(missingCwd, '.docpath', '.install-meta.json'));
+    writeFileSync(join(invalidCwd, '.docpath', '.install-meta.json'), '{ invalid json\n');
+
+    const missing = runResult(`install --cwd ${missingCwd} --target codex --check-only`, missingCwd);
+    const invalid = runResult(`install --cwd ${invalidCwd} --target codex --check-only`, invalidCwd);
+
+    assert.equal(missing.code, 1);
+    assert.match(missing.out, /未找到 \.docpath\/\.install-meta\.json/);
+    assert.match(missing.out, /请先运行 docpath install/);
+    assert.equal(invalid.code, 1);
+    assert.match(invalid.out, /\.docpath\/\.install-meta\.json 无法解析/);
+    assert.match(invalid.out, /请重新运行 docpath install/);
+    rmSync(missingCwd, { recursive: true, force: true });
+    rmSync(invalidCwd, { recursive: true, force: true });
+  });
+
   it('install --hooks writes an executable pre-commit hook that runs docpath check', () => {
     const cwd = mkWorkspace();
     mkdirSync(join(cwd, '.git'), { recursive: true });

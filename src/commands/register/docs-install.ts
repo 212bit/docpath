@@ -48,17 +48,25 @@ export function registerDocsInstallCommands(cli: CAC): void {
       await unlinkCommand({ cwd: options.cwd || process.cwd() });
     });
 
+  registerInstallCommand(cli);
+}
+
+function registerInstallCommand(cli: CAC): void {
   cli.command('install', '安装 Agent 协议文件到项目')
     .option('--cwd <path>', '项目目录')
     .option('--target <type>', '目标类型: codex | claude | opencode | universal (默认 universal)')
     .option('--force', '覆盖已有文件')
+    .option('--check-only', '仅检查安装资产 manifest 漂移，不写入文件')
+    .option('--check', '仅检查安装资产 manifest 漂移，不写入文件（--check-only 别名）')
     .option('--hooks', '安装 git hooks')
     .option('--hook-mode <mode>', 'pre-commit 模式: check | agent-done (默认 check)')
-    .action(async (options: { cwd?: string; target?: string; force?: boolean; hooks?: boolean; hookMode?: string; 'hook-mode'?: string }) => {
+    .action(async (options: { cwd?: string; target?: string; force?: boolean; check?: boolean; checkOnly?: boolean; 'check-only'?: boolean; hooks?: boolean; hookMode?: string; 'hook-mode'?: string }) => {
       await installCommand({
         cwd: options.cwd || process.cwd(),
         target: options.target,
         force: !!options.force,
+        check: !!options.check,
+        checkOnly: !!(options.checkOnly || options['check-only']),
         hooks: !!options.hooks,
         hookMode: options.hookMode || options['hook-mode'],
       });

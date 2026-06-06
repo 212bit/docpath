@@ -4,234 +4,6 @@
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ check [T-20260602-registercommands] — 2026-06-03T00:50:31.410Z
-
----
-taskId: T-20260602-registercommands
-step: check
-status: done
-timestamp: 2026-06-03T00:50:31.410Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (8 项)
-
-### ✅ review [T-20260602-registercommands] — 2026-06-03T00:50:31.443Z
-
----
-taskId: T-20260602-registercommands
-step: review
-status: done
-timestamp: 2026-06-03T00:50:31.443Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
-
-### ✅ journal [T-20260602-registercommands] — 2026-06-03T00:50:31.519Z
-
----
-taskId: T-20260602-registercommands
-step: journal
-status: done
-timestamp: 2026-06-03T00:50:31.519Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260603-check] — 2026-06-03T00:51:40.076Z
-
----
-taskId: T-20260603-check
-step: S1
-status: in_progress
-timestamp: 2026-06-03T00:51:40.076Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 在 check 检测到漂移时支持交互式或自动修复
-
-### ✅ S1 [T-20260603-check] — 2026-06-03T00:51:46.578Z
-
----
-taskId: T-20260603-check
-step: S1
-status: done
-timestamp: 2026-06-03T00:51:46.578Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### ✅ S2 [T-20260603-check] — 2026-06-03T00:55:08.944Z
-
----
-taskId: T-20260603-check
-step: S2
-status: done
-timestamp: 2026-06-03T00:55:08.944Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260603-check] — 2026-06-03T00:55:15.263Z
-
----
-taskId: T-20260603-check
-step: S3
-status: in_progress
-timestamp: 2026-06-03T00:55:15.263Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证门禁并归档
-
-### ✅ S3 [T-20260603-check] — 2026-06-03T00:55:21.315Z
-
----
-taskId: T-20260603-check
-step: S3
-status: done
-timestamp: 2026-06-03T00:55:21.315Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ check [T-20260603-check] — 2026-06-03T00:55:43.243Z
-
----
-taskId: T-20260603-check
-step: check
-status: done
-timestamp: 2026-06-03T00:55:43.243Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (8 项)
-
-### ✅ review [T-20260603-check] — 2026-06-03T00:55:57.415Z
-
----
-taskId: T-20260603-check
-step: review
-status: done
-timestamp: 2026-06-03T00:55:57.415Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
-
-### ✅ check [T-20260603-check] — 2026-06-03T00:56:23.283Z
-
----
-taskId: T-20260603-check
-step: check
-status: done
-timestamp: 2026-06-03T00:56:23.283Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (8 项)
-
-### ✅ review [T-20260603-check] — 2026-06-03T00:56:23.317Z
-
----
-taskId: T-20260603-check
-step: review
-status: done
-timestamp: 2026-06-03T00:56:23.317Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
-
-### ✅ journal [T-20260603-check] — 2026-06-03T00:56:23.396Z
-
----
-taskId: T-20260603-check
-step: journal
-status: done
-timestamp: 2026-06-03T00:56:23.396Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260603-learn-next-agent] — 2026-06-03T00:57:33.764Z
-
----
-taskId: T-20260603-learn-next-agent
-step: S1
-status: in_progress
-timestamp: 2026-06-03T00:57:33.764Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 打通 learn 机制到 next --agent 智能引导流
-
-### ✅ S1 [T-20260603-learn-next-agent] — 2026-06-03T00:57:40.589Z
-
----
-taskId: T-20260603-learn-next-agent
-step: S1
-status: done
-timestamp: 2026-06-03T00:57:40.589Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### ✅ S2 [T-20260603-learn-next-agent] — 2026-06-03T00:59:31.314Z
-
----
-taskId: T-20260603-learn-next-agent
-step: S2
-status: done
-timestamp: 2026-06-03T00:59:31.314Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260603-learn-next-agent] — 2026-06-03T00:59:37.813Z
-
----
-taskId: T-20260603-learn-next-agent
-step: S3
-status: in_progress
-timestamp: 2026-06-03T00:59:37.813Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证门禁并归档
-
-### ✅ S3 [T-20260603-learn-next-agent] — 2026-06-03T00:59:44.092Z
-
----
-taskId: T-20260603-learn-next-agent
-step: S3
-status: done
-timestamp: 2026-06-03T00:59:44.092Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ check [T-20260603-learn-next-agent] — 2026-06-03T01:00:06.915Z
-
----
-taskId: T-20260603-learn-next-agent
-step: check
-status: done
-timestamp: 2026-06-03T01:00:06.915Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (8 项)
-
 ### ✅ review [T-20260603-learn-next-agent] — 2026-06-03T01:00:18.792Z
 
 ---
@@ -603,3 +375,231 @@ timestamp: 2026-06-06T09:10:13.566Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (3/3 步)
+
+### 🔄 S1 [T-20260606-install-manifest-check-only] — 2026-06-06T09:24:22.453Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: S1
+status: in_progress
+timestamp: 2026-06-06T09:24:22.453Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理 为 `docpath install` 增加 `--check-only` 参数
+
+### 🔄 S1 [T-20260606-install-manifest-check-only] — 2026-06-06T09:28:00.700Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: S1
+status: in_progress
+timestamp: 2026-06-06T09:28:00.700Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 明确 check-only 接口与退出码
+
+### ✅ S1 [T-20260606-install-manifest-check-only] — 2026-06-06T09:28:05.246Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: S1
+status: done
+timestamp: 2026-06-06T09:28:05.246Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### ✅ S1 [T-20260606-install-manifest-check-only] — 2026-06-06T09:28:05.908Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: S1
+status: done
+timestamp: 2026-06-06T09:28:05.908Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S2 [T-20260606-install-manifest-check-only] — 2026-06-06T09:28:11.948Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: S2
+status: in_progress
+timestamp: 2026-06-06T09:28:11.948Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 install manifest check-only
+
+### ✅ S2 [T-20260606-install-manifest-check-only] — 2026-06-06T09:28:20.202Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: S2
+status: done
+timestamp: 2026-06-06T09:28:20.202Z
+---
+
+- **状态**: done
+- **上下文**: go-status: S2 -> done
+
+### ✅ S3 [T-20260606-install-manifest-check-only] — 2026-06-06T09:28:53.272Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: S3
+status: done
+timestamp: 2026-06-06T09:28:53.272Z
+---
+
+- **状态**: done
+- **上下文**: go-status: S3 -> done
+
+### ✅ S2 [T-20260606-install-manifest-check-only] — 2026-06-06T09:28:58.874Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: S2
+status: done
+timestamp: 2026-06-06T09:28:58.874Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+
+### 🔄 S3 [T-20260606-install-manifest-check-only] — 2026-06-06T09:29:04.773Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: S3
+status: in_progress
+timestamp: 2026-06-06T09:29:04.773Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 补测试并通过门禁
+
+### 🚫 check [T-20260606-install-manifest-check-only] — 2026-06-06T09:29:21.575Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: check
+status: blocked
+timestamp: 2026-06-06T09:29:21.575Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: Plan/Breadcrumb 漂移检查
+
+### ✅ S3 [T-20260606-install-manifest-check-only] — 2026-06-06T09:29:28.587Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: S3
+status: done
+timestamp: 2026-06-06T09:29:28.587Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+
+### ✅ check [T-20260606-install-manifest-check-only] — 2026-06-06T09:29:57.061Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: check
+status: done
+timestamp: 2026-06-06T09:29:57.061Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ check [T-20260606-install-manifest-check-only] — 2026-06-06T09:29:57.423Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: check
+status: done
+timestamp: 2026-06-06T09:29:57.423Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260606-install-manifest-check-only] — 2026-06-06T09:30:02.170Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: review
+status: done
+timestamp: 2026-06-06T09:30:02.170Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 1 警告, 0 提示
+
+### ✅ review [T-20260606-install-manifest-check-only] — 2026-06-06T09:30:02.923Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: review
+status: done
+timestamp: 2026-06-06T09:30:02.923Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 1 警告, 0 提示
+
+### ✅ journal [T-20260606-install-manifest-check-only] — 2026-06-06T09:30:09.180Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: journal
+status: done
+timestamp: 2026-06-06T09:30:09.180Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (3/3 步)
+
+### ✅ check [T-20260606-install-manifest-check-only] — 2026-06-06T09:30:39.571Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: check
+status: done
+timestamp: 2026-06-06T09:30:39.571Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (5 项)
+
+### ✅ review [T-20260606-install-manifest-check-only] — 2026-06-06T09:30:39.605Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: review
+status: done
+timestamp: 2026-06-06T09:30:39.605Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 1 警告, 0 提示
+
+### ✅ journal [T-20260606-install-manifest-check-only] — 2026-06-06T09:30:39.661Z
+
+---
+taskId: T-20260606-install-manifest-check-only
+step: journal
+status: done
+timestamp: 2026-06-06T09:30:39.661Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (6/6 步)

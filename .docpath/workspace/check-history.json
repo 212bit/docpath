@@ -1,27 +1,5 @@
 [
   {
-    "timestamp": "2026-06-01T16:30:37.925Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-01T16:39:05.741Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-02T13:18:41.148Z",
-    "passed": false,
-    "failedChecks": [
-      "⚠️  Checklist 同步 (3/4)"
-    ]
-  },
-  {
-    "timestamp": "2026-06-02T13:20:11.629Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
     "timestamp": "2026-06-02T14:05:36.348Z",
     "passed": true,
     "failedChecks": []
@@ -104,6 +82,28 @@
   },
   {
     "timestamp": "2026-06-06T09:10:00.905Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-06T09:29:21.577Z",
+    "passed": false,
+    "failedChecks": [
+      "Plan/Breadcrumb 漂移检查"
+    ]
+  },
+  {
+    "timestamp": "2026-06-06T09:29:57.064Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-06T09:29:57.428Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-06T09:30:39.574Z",
     "passed": true,
     "failedChecks": []
   }

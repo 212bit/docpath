@@ -174,6 +174,8 @@
 <!-- docpath:lesson-meta best-practice:style:t-20260603-git-hooks-pre-commit-workflow:journal:t-20260603-git-hooks-pre-commit -->
 - **t-20260606-task-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-task, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260606-task-workflow:journal:t-20260606-task -->
-- **T-20260606-manifest-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-manifest, source: journal)_
+- **t-20260606-manifest-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-manifest, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260606-manifest-workflow:journal:t-20260606-manifest -->
+- **T-20260606-install-manifest-check-only-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-install-manifest-check-only, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260606-install-manifest-check-only-workflow:journal:t-20260606-install-manifest-check-only -->
 

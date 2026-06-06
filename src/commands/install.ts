@@ -24,12 +24,30 @@ export interface InstallAssetManifestEntry {
   sha256: string;
 }
 
+export interface InstallMetadata {
+  target?: string;
+  projectName?: string;
+  assets?: InstallAssetManifestEntry[];
+}
+
+export interface InstallAssetDriftReport {
+  target: Target;
+  projectName: string;
+  assetCount: number;
+  templateDrift: InstallAssetManifestEntry[];
+  missingLocal: InstallAssetManifestEntry[];
+  modifiedLocal: InstallAssetManifestEntry[];
+  hasDrift: boolean;
+}
+
 interface InstallOptions {
   cwd?: string;
   target?: string;
   force?: boolean;
   hooks?: boolean;
   hookMode?: string;
+  checkOnly?: boolean;
+  check?: boolean;
 }
 
 interface InstallContext {
@@ -292,6 +310,11 @@ function normalizeTarget(value?: string): Target {
   return target;
 }
 
+export function isInstallTarget(value: unknown): value is Target {
+  const validTargets: Target[] = ['codex', 'claude', 'opencode', 'universal'];
+  return typeof value === 'string' && validTargets.includes(value as Target);
+}
+
 function normalizeHookMode(value?: string): HookMode {
   const mode = (value || 'check') as HookMode;
   const validModes: HookMode[] = ['check', 'agent-done'];
@@ -299,6 +322,108 @@ function normalizeHookMode(value?: string): HookMode {
     throw new Error(`未知 hook mode: ${mode}. 可选: ${validModes.join(' | ')}`);
   }
   return mode;
+}
+
+function assetKey(asset: Pick<InstallAssetManifestEntry, 'path' | 'source'>): string {
+  return `${asset.path}\0${asset.source}`;
+}
+
+async function readInstallMetadata(docpathDir: string): Promise<InstallMetadata | null> {
+  const metaPath = join(docpathDir, '.install-meta.json');
+  if (!(await exists(metaPath))) return null;
+
+  try {
+    return JSON.parse(await readFile(metaPath, 'utf-8')) as InstallMetadata;
+  } catch {
+    throw new Error('.docpath/.install-meta.json 无法解析，请重新运行 docpath install');
+  }
+}
+
+async function countLocalAssetDrift(
+  targetDir: string,
+  installedAssets: InstallAssetManifestEntry[],
+): Promise<{ missingLocal: InstallAssetManifestEntry[]; modifiedLocal: InstallAssetManifestEntry[] }> {
+  const missingLocal: InstallAssetManifestEntry[] = [];
+  const modifiedLocal: InstallAssetManifestEntry[] = [];
+
+  for (const asset of installedAssets) {
+    const localPath = join(targetDir, asset.path);
+    if (!(await exists(localPath))) {
+      missingLocal.push(asset);
+      continue;
+    }
+    const content = await readFile(localPath, 'utf-8');
+    if (sha256(content) !== asset.sha256) modifiedLocal.push(asset);
+  }
+
+  return { missingLocal, modifiedLocal };
+}
+
+export async function detectInstallAssetDrift(
+  targetDir: string,
+  meta: InstallMetadata,
+  fallback: { target: Target; projectName: string },
+): Promise<InstallAssetDriftReport> {
+  const target = meta.target === undefined ? fallback.target : meta.target;
+  if (!isInstallTarget(target)) {
+    throw new Error(`安装资产 manifest target 非法: ${target}`);
+  }
+  if (!Array.isArray(meta.assets) || meta.assets.length === 0) {
+    throw new Error('安装资产 manifest 缺失，请重新运行 docpath install');
+  }
+
+  const projectName = meta.projectName || fallback.projectName;
+  const expectedAssets = await buildExpectedInstallAssets({ target, projectName });
+  const installedByKey = new Map(meta.assets.map((asset) => [assetKey(asset), asset]));
+  const templateDrift = expectedAssets.filter((expected) => {
+    const installed = installedByKey.get(assetKey(expected));
+    return !installed || installed.sha256 !== expected.sha256;
+  });
+  const { missingLocal, modifiedLocal } = await countLocalAssetDrift(targetDir, meta.assets);
+
+  return {
+    target,
+    projectName,
+    assetCount: meta.assets.length,
+    templateDrift,
+    missingLocal,
+    modifiedLocal,
+    hasDrift: templateDrift.length > 0 || missingLocal.length > 0 || modifiedLocal.length > 0,
+  };
+}
+
+function sampleAssetPaths(assets: InstallAssetManifestEntry[], limit = 3): string {
+  return assets.slice(0, limit).map((asset) => asset.path).join(', ');
+}
+
+async function runInstallCheck(context: InstallContext): Promise<void> {
+  const meta = await readInstallMetadata(context.docpathDir);
+  if (!meta) {
+    throw new Error('未找到 .docpath/.install-meta.json，请先运行 docpath install');
+  }
+  if (!Array.isArray(meta.assets) || meta.assets.length === 0) {
+    throw new Error('安装资产 manifest 缺失，请重新运行 docpath install');
+  }
+
+  const report = await detectInstallAssetDrift(context.targetDir, meta, {
+    target: context.target,
+    projectName: context.projectName,
+  });
+
+  if (!report.hasDrift) {
+    console.log(`✅  install manifest 检查通过 (target: ${report.target}, assets: ${report.assetCount})`);
+    return;
+  }
+
+  console.log(`❌  install manifest 检查失败: 模板 ${report.templateDrift.length} 项, 缺失 ${report.missingLocal.length} 项, 本地改动 ${report.modifiedLocal.length} 项`);
+  const sample = sampleAssetPaths(report.templateDrift);
+  if (sample) console.log(`    模板漂移示例: ${sample}`);
+  const missingSample = sampleAssetPaths(report.missingLocal);
+  if (missingSample) console.log(`    缺失文件示例: ${missingSample}`);
+  const modifiedSample = sampleAssetPaths(report.modifiedLocal);
+  if (modifiedSample) console.log(`    本地改动示例: ${modifiedSample}`);
+  console.log(`    建议运行: docpath install --target ${report.target}`);
+  throw new Error('install manifest drift detected');
 }
 
 async function createInstallContext(options: InstallOptions): Promise<InstallContext> {
@@ -481,6 +606,11 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
   const detected = projectInfo ? `${projectInfo.type}/${projectInfo.language}` : '未检测到';
   console.log(`📦  安装 Agent 协议文件到: ${targetDir}`);
   console.log(`    目标: ${target} | 项目: ${detected}\n`);
+
+  if (options.checkOnly || options.check) {
+    await runInstallCheck(context);
+    return;
+  }
 
   await installLocalCliShim(targetDir, force);
   await installEntryProtocols(context);

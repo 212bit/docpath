@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260606-manifest",
-  "task_title": "补齐安装模板资产 manifest 与漂移检测",
+  "task_id": "T-20260606-install-manifest-check-only",
+  "task_title": "为 install manifest 漂移检测增加 check-only 模式",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-06T09:10:13.486Z",
-  "updated_at": "2026-06-06T09:10:13.485Z"
+  "started_at": "2026-06-06T09:30:09.088Z",
+  "updated_at": "2026-06-06T09:30:39.608Z"
 }

@@ -9270,3 +9270,177 @@ go-status: S3 -> done
 - .docpath/tasks/T-20260606-manifest/plan.md
 
 ---
+## ADR-20260606-006 — review
+
+- task_id: T-20260606-install-manifest-check-only
+- created_at: 2026-06-06T09:30:02.168Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-007 — review
+
+- task_id: T-20260606-install-manifest-check-only
+- created_at: 2026-06-06T09:30:02.922Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-008 — journal.archive
+
+- task_id: T-20260606-install-manifest-check-only
+- created_at: 2026-06-06T09:30:09.183Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 为 `docpath install` 增加 `--check-only` 参数
+开始执行: 明确 check-only 接口与退出码
+agent-step: S1
+agent-step: S1
+开始执行: 实现 install manifest check-only
+go-status: S2 -> done
+go-status: S3 -> done
+agent-step: S2
+开始执行: 补测试并通过门禁
+质量检查失败: Plan/Breadcrumb 漂移检查
+agent-step: S3
+质量检查通过 (8 项)
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 0 提示
+代码审查: 0 错误, 1 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260606-install-manifest-check-only
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260606-install-manifest-check-only/spec.md
+- .docpath/tasks/T-20260606-install-manifest-check-only/plan.md
+
+---
+## ADR-20260606-009 — review
+
+- task_id: T-20260606-install-manifest-check-only
+- created_at: 2026-06-06T09:30:39.605Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-010 — journal.archive
+
+- task_id: T-20260606-install-manifest-check-only
+- created_at: 2026-06-06T09:30:39.664Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 为 `docpath install` 增加 `--check-only` 参数
+开始执行: 明确 check-only 接口与退出码
+agent-step: S1
+agent-step: S1
+开始执行: 实现 install manifest check-only
+go-status: S2 -> done
+go-status: S3 -> done
+agent-step: S2
+开始执行: 补测试并通过门禁
+质量检查失败: Plan/Breadcrumb 漂移检查
+agent-step: S3
+质量检查通过 (8 项)
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 0 提示
+代码审查: 0 错误, 1 警告, 0 提示
+知识归档完成 (3/3 步)
+质量检查通过 (5 项)
+代码审查: 0 错误, 1 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260606-install-manifest-check-only
+
+### 影响
+
+任务进入归档状态；完成 6/6 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260606-install-manifest-check-only/spec.md
+- .docpath/tasks/T-20260606-install-manifest-check-only/plan.md
+
+---
