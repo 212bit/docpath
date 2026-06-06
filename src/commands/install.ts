@@ -12,6 +12,7 @@ import { join, resolve, basename } from 'node:path';
 import { readFile, readdir, mkdir, copyFile, chmod } from 'node:fs/promises';
 import { exists, writeFileSafe } from '../utils/file.js';
 import { detectProject, type ProjectInfo } from '../utils/detect.js';
+import { getDocpathPackageVersion } from '../utils/package-info.js';
 
 type Target = 'codex' | 'claude' | 'opencode' | 'universal';
 type HookMode = 'check' | 'agent-done';
@@ -335,12 +336,13 @@ async function writeInstallMetadata(context: InstallContext): Promise<void> {
   const { target, docpathDir, projectName, projectInfo } = context;
   // ─── 4. 写入安装元数据 ───
   const metaPath = join(docpathDir, '.install-meta.json');
+  const docpathVersion = await getDocpathPackageVersion();
   const meta = {
     target,
     installedAt: new Date().toISOString(),
     projectName,
     projectType: projectInfo?.type ?? 'unknown',
-    docpathVersion: '0.1.0',
+    docpathVersion,
   };
   await writeFileSafe(metaPath, JSON.stringify(meta, null, 2) + '\n');
 }

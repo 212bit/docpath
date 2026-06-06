@@ -4,102 +4,6 @@
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🔄 S3 [T-20260602-task-3] — 2026-06-02T14:44:02.745Z
-
----
-taskId: T-20260602-task-3
-step: S3
-status: in_progress
-timestamp: 2026-06-02T14:44:02.745Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证并归档
-
-### ✅ S3 [T-20260602-task-3] — 2026-06-02T14:44:44.283Z
-
----
-taskId: T-20260602-task-3
-step: S3
-status: done
-timestamp: 2026-06-02T14:44:44.283Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### 🚫 check [T-20260602-task-3] — 2026-06-02T14:45:13.208Z
-
----
-taskId: T-20260602-task-3
-step: check
-status: blocked
-timestamp: 2026-06-02T14:45:13.208Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 任务文件 current/canonical 漂移检查
-
-### ✅ check [T-20260602-task-3] — 2026-06-02T14:45:53.219Z
-
----
-taskId: T-20260602-task-3
-step: check
-status: done
-timestamp: 2026-06-02T14:45:53.219Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (8 项)
-
-### ✅ review [T-20260602-task-3] — 2026-06-02T14:46:18.945Z
-
----
-taskId: T-20260602-task-3
-step: review
-status: done
-timestamp: 2026-06-02T14:46:18.945Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
-
-### ✅ journal [T-20260602-task-3] — 2026-06-02T14:46:29.508Z
-
----
-taskId: T-20260602-task-3
-step: journal
-status: done
-timestamp: 2026-06-02T14:46:29.508Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260602-registercommands] — 2026-06-02T15:52:27.792Z
-
----
-taskId: T-20260602-registercommands
-step: S1
-status: in_progress
-timestamp: 2026-06-02T15:52:27.792Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 重构 registerCommands 拆分为独立命令文件注册
-
-### ✅ S1 [T-20260602-registercommands] — 2026-06-02T15:54:14.044Z
-
----
-taskId: T-20260602-registercommands
-step: S1
-status: done
-timestamp: 2026-06-02T15:54:14.044Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
 ### ✅ S2 [T-20260602-registercommands] — 2026-06-03T00:48:26.376Z
 
 ---
@@ -603,3 +507,99 @@ timestamp: 2026-06-06T08:40:02.724Z
 
 - **状态**: done
 - **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### 🔄 S1 [T-20260606-task] — 2026-06-06T08:55:05.124Z
+
+---
+taskId: T-20260606-task
+step: S1
+status: in_progress
+timestamp: 2026-06-06T08:55:05.124Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 明确版本同步检测口径
+
+### ✅ S1 [T-20260606-task] — 2026-06-06T08:55:10.699Z
+
+---
+taskId: T-20260606-task
+step: S1
+status: done
+timestamp: 2026-06-06T08:55:10.699Z
+---
+
+- **状态**: done
+- **上下文**: go-status: S1 -> done
+
+### ✅ S2 [T-20260606-task] — 2026-06-06T08:56:01.185Z
+
+---
+taskId: T-20260606-task
+step: S2
+status: done
+timestamp: 2026-06-06T08:56:01.185Z
+---
+
+- **状态**: done
+- **上下文**: go-status: S2 -> done
+
+### 🚫 check [T-20260606-task] — 2026-06-06T08:56:49.215Z
+
+---
+taskId: T-20260606-task
+step: check
+status: blocked
+timestamp: 2026-06-06T08:56:49.215Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (2/3)
+
+### ✅ S3 [T-20260606-task] — 2026-06-06T08:56:56.201Z
+
+---
+taskId: T-20260606-task
+step: S3
+status: done
+timestamp: 2026-06-06T08:56:56.201Z
+---
+
+- **状态**: done
+- **上下文**: go-status: S3 -> done
+
+### ✅ check [T-20260606-task] — 2026-06-06T08:57:18.772Z
+
+---
+taskId: T-20260606-task
+step: check
+status: done
+timestamp: 2026-06-06T08:57:18.772Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260606-task] — 2026-06-06T08:57:23.336Z
+
+---
+taskId: T-20260606-task
+step: review
+status: done
+timestamp: 2026-06-06T08:57:23.336Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 6 警告, 0 提示
+
+### ✅ journal [T-20260606-task] — 2026-06-06T08:58:04.094Z
+
+---
+taskId: T-20260606-task
+step: journal
+status: done
+timestamp: 2026-06-06T08:58:04.094Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (3/3 步)

@@ -1,6 +1,6 @@
 {
   "name": "docpath",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "\u6587\u5f84 DocPath \u2014 \u6e10\u8fdb\u5f0f\u6587\u6863\u9a71\u52a8\u5de5\u4f5c\u6d41 (Document as Finite State Machine)",
   "type": "module",
   "bin": {

@@ -7,6 +7,7 @@ import { tmpdir } from 'os';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 const TEMPLATE_COMMANDS_DIR = new URL('../templates/commands/', import.meta.url).pathname;
+const PACKAGE_VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')).version;
 
 const CLAUDE_EXPOSED_COMMANDS = [
   'agent-done',
@@ -52,6 +53,16 @@ function mkWorkspace() {
   mkdirSync(join(dp, 'workspace'), { recursive: true });
   writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: install-test\n');
   writeFileSync(join(dp, 'workspace', 'current.md'), '# Current\n');
+  writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
+    level: 0,
+    task_id: '',
+    task_title: '',
+    phase: 'idle',
+    gate: 'none',
+    current_step: '待确认下一步',
+    started_at: '2026-06-01T00:00:00.000Z',
+    updated_at: '2026-06-01T00:00:00.000Z',
+  }, null, 2) + '\n');
   return cwd;
 }
 
@@ -219,6 +230,36 @@ describe('install agent adapters', () => {
     assert.match(protocolAgents, /docpath agent done/);
     assert.doesNotMatch(protocolAgents, /docpath archive\b/);
     assert.equal(existsSync(join(cwd, '.git', 'hooks', 'pre-commit')), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install metadata records the current DocPath package version', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+
+    const meta = JSON.parse(readFileSync(join(cwd, '.docpath', '.install-meta.json'), 'utf-8'));
+
+    assert.equal(meta.target, 'codex');
+    assert.equal(meta.docpathVersion, PACKAGE_VERSION);
+    assert.equal(meta.projectName, cwd.split('/').at(-1));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('status warns when installed agent assets lag behind the current CLI version', () => {
+    const cwd = mkWorkspace();
+    writeFileSync(join(cwd, '.docpath', '.install-meta.json'), JSON.stringify({
+      target: 'codex',
+      installedAt: '2026-06-01T00:00:00.000Z',
+      projectName: 'install-test',
+      projectType: 'unknown',
+      docpathVersion: '0.0.1',
+    }, null, 2) + '\n');
+
+    const output = run(`status --cwd ${cwd}`, cwd);
+
+    assert.match(output, /安装资产: DocPath 0\.0\.1 \(target=codex\)/);
+    assert.match(output, new RegExp(`当前 CLI 版本 ${PACKAGE_VERSION.replace(/\./g, '\\.')} 与安装资产版本 0\\.0\\.1 不一致`));
+    assert.match(output, /docpath install --target <target>/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

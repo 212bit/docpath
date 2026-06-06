@@ -5,6 +5,7 @@
 import { join } from 'node:path';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
+import { getDocpathPackageVersion } from '../utils/package-info.js';
 import { handleStalePendingDoneWarning, readPendingDone } from '../utils/pending-done.js';
 import { readCurrentState, type CurrentState } from '../utils/workspace.js';
 
@@ -97,6 +98,34 @@ async function printLinkedProject(cwd: string): Promise<void> {
   }
 }
 
+async function printInstallMetadata(cwd: string): Promise<void> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const metaRaw = await readFileSafe(join(docpathDir, '.install-meta.json'));
+  if (!metaRaw) return;
+
+  try {
+    const meta = JSON.parse(metaRaw) as {
+      target?: string;
+      docpathVersion?: string;
+      installedAt?: string;
+    };
+    const installedVersion = meta.docpathVersion || 'unknown';
+    const currentVersion = await getDocpathPackageVersion();
+    const target = meta.target ? `target=${meta.target}` : 'target=unknown';
+
+    console.log(`  📦  安装资产: DocPath ${installedVersion} (${target})`);
+    if (meta.installedAt) {
+      console.log(`      安装时间: ${meta.installedAt}`);
+    }
+    if (currentVersion !== 'unknown' && installedVersion !== currentVersion) {
+      console.log(`  ⚠️  当前 CLI 版本 ${currentVersion} 与安装资产版本 ${installedVersion} 不一致`);
+      console.log('      建议运行: docpath install --target <target>');
+    }
+  } catch {
+    console.log('  ⚠️  .docpath/.install-meta.json 无法解析，建议重新运行: docpath install');
+  }
+}
+
 export async function statusCommand(options: StatusOptions): Promise<void> {
   const cwd = options.cwd;
   if (options.agent) {
@@ -120,6 +149,7 @@ export async function statusCommand(options: StatusOptions): Promise<void> {
   await printBreadcrumbProgress(breadcrumbPath);
   printPhaseHint(current.phase);
   await printLinkedProject(cwd);
+  await printInstallMetadata(cwd);
 
   console.log('');
 }
