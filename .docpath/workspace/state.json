@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260602-task",
-  "task_title": "修复状态机边界并恢复测试全绿",
+  "task_id": "T-20260603-git-hooks-pre-commit",
+  "task_title": "实现 git hooks 安装与 pre-commit 门禁校验",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-02T13:20:35.379Z",
-  "updated_at": "2026-06-02T13:20:35.378Z"
+  "started_at": "2026-06-03T01:05:25.275Z",
+  "updated_at": "2026-06-03T01:05:25.275Z"
 }

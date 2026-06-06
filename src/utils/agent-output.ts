@@ -55,6 +55,11 @@ export interface AgentOutput {
     plan_done_without_breadcrumb: string[];
     breadcrumb_done_without_plan: string[];
   };
+  /** 待学习 lesson 候选摘要 */
+  lesson_summary: {
+    pending_count: number;
+    pending_keys: string[];
+  };
   /** 时间戳 */
   generated_at: string;
 }
@@ -158,18 +163,22 @@ function candidateLessonKeys(content: string): string[] {
   return keys;
 }
 
-function hasUnlearnedLessonCandidates(
+function summarizeUnlearnedLessonCandidates(
   candidatesContent: string,
   styleContent: string,
   architectureContent: string,
-): boolean {
+): { pendingCount: number; pendingKeys: string[] } {
   const keys = candidateLessonKeys(candidatesContent);
-  if (keys.length === 0) return false;
+  if (keys.length === 0) return { pendingCount: 0, pendingKeys: [] };
   const learned = new Set([
     ...extractExistingLessonMetaKeys(styleContent),
     ...extractExistingLessonMetaKeys(architectureContent),
   ]);
-  return keys.some((key) => !learned.has(key));
+  const pendingKeys = keys.filter((key) => !learned.has(key));
+  return {
+    pendingCount: pendingKeys.length,
+    pendingKeys,
+  };
 }
 
 type TddStateSnapshot = {
@@ -188,7 +197,7 @@ type AgentOutputContext = {
   pendingDone: Awaited<ReturnType<typeof readPendingDone>>;
   tddState: TddStateSnapshot | null;
   historicalTaskDirCount: number;
-  hasPendingLessonCandidates: boolean;
+  lessonSummary: { pendingCount: number; pendingKeys: string[] };
 };
 
 function parseTddState(raw: string): TddStateSnapshot | null {
@@ -214,7 +223,7 @@ function inferNextAction(
   backlogItems: BacklogItem[],
   tddState: TddStateSnapshot | null,
   historicalTaskDirCount: number,
-  hasPendingLessonCandidates: boolean,
+  lessonSummary: { pendingCount: number; pendingKeys: string[] },
 ): {
   next_action: string;
   recommended_command: string;
@@ -230,6 +239,7 @@ function inferNextAction(
   const allPlanDone = planTasks.length > 0 && planTasks.every((task) => task.done);
   const lastCheckFailed = /^\*\*结果\*\*:\s*❌\s*FAIL\s*$/m.test(lastCheckContent);
   const lastCheckPassed = /^\*\*结果\*\*:\s*✅\s*PASS\s*$/m.test(lastCheckContent);
+  const hasPendingLessonCandidates = lessonSummary.pendingCount > 0;
 
   // 默认值
   let next_action = '评估当前任务状态';
@@ -385,12 +395,12 @@ function inferNextAction(
     if (hasPendingLessonCandidates) {
       const learnRequired = ['.docpath/workspace/current.md', '.docpath/workspace/lesson-candidates.md'];
       return {
-        next_action: '检测到待固化 lesson 候选，建议先沉淀为全局规范',
-        recommended_command: 'docpath learn',
+        next_action: `检测到 ${lessonSummary.pendingCount} 条待固化 lesson 候选，建议先预览并沉淀为全局规范`,
+        recommended_command: 'docpath learn --dry-run',
         required_context: learnRequired,
         required_files: learnRequired,
         must_update: ['.docpath/spec/style.md', '.docpath/spec/architecture.md'],
-        exit_criteria: 'lesson 候选已由 docpath learn 合并或去重跳过',
+        exit_criteria: '预览确认后运行 docpath learn，lesson 候选已合并或去重跳过',
       };
     }
     if (!acceptedBacklog && !proposedBacklog && historicalTaskDirCount > GC_TASK_DIR_THRESHOLD) {
@@ -438,11 +448,11 @@ function inferNextAction(
         required_context = ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'];
         exit_criteria = `${proposedBacklog.id} 已进入 accepted`;
       } else if (hasPendingLessonCandidates) {
-        next_action = '检测到待固化 lesson 候选，建议先沉淀为全局规范';
-        recommended_command = 'docpath learn';
+        next_action = `检测到 ${lessonSummary.pendingCount} 条待固化 lesson 候选，建议先预览并沉淀为全局规范`;
+        recommended_command = 'docpath learn --dry-run';
         required_context = ['.docpath/workspace/current.md', '.docpath/workspace/lesson-candidates.md'];
         must_update = ['.docpath/spec/style.md', '.docpath/spec/architecture.md'];
-        exit_criteria = 'lesson 候选已由 docpath learn 合并或去重跳过';
+        exit_criteria = '预览确认后运行 docpath learn，lesson 候选已合并或去重跳过';
       } else {
         next_action = '当前无活跃任务，先创建 backlog 条目';
         recommended_command = 'docpath backlog add';
@@ -511,7 +521,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   const pendingDone = await handleStalePendingDoneWarning(cwd, state, await readPendingDone(cwd));
   const tddState = parseTddState(await readOptionalFile(join(docpathDir, 'workspace', 'tdd-state.json')));
   const historicalTaskDirCount = await countHistoricalTaskDirs(docpathDir, state?.task_id || undefined);
-  const hasPendingLessonCandidates = hasUnlearnedLessonCandidates(
+  const lessonSummary = summarizeUnlearnedLessonCandidates(
     await readOptionalFile(join(docpathDir, 'workspace', 'lesson-candidates.md')),
     await readOptionalFile(join(docpathDir, 'spec', 'style.md')),
     await readOptionalFile(join(docpathDir, 'spec', 'architecture.md')),
@@ -529,7 +539,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     pendingDone,
     tddState,
     historicalTaskDirCount,
-    hasPendingLessonCandidates,
+    lessonSummary,
   };
 }
 
@@ -564,7 +574,7 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
     context.backlogItems,
     context.tddState,
     context.historicalTaskDirCount,
-    context.hasPendingLessonCandidates,
+    context.lessonSummary,
   );
 }
 
@@ -608,6 +618,10 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
     drift_details: {
       plan_done_without_breadcrumb: [...context.drift.planDoneWithoutBreadcrumb],
       breadcrumb_done_without_plan: [...context.drift.breadcrumbDoneWithoutPlan],
+    },
+    lesson_summary: {
+      pending_count: context.lessonSummary.pendingCount,
+      pending_keys: [...context.lessonSummary.pendingKeys],
     },
     generated_at: new Date().toISOString(),
   };

@@ -8584,3 +8584,562 @@ agent-step: S4
 - .docpath/tasks/T-20260602-task/plan.md
 
 ---
+## ADR-20260602-003 — review
+
+- task_id: T-20260602-task-2
+- created_at: 2026-06-02T14:05:56.059Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260602-004 — journal.archive
+
+- task_id: T-20260602-task-2
+- created_at: 2026-06-02T14:06:04.440Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 确认清理范围
+agent-step: S1
+开始执行: 删除明确冗余项
+agent-step: S2
+开始执行: 验证并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260602-task-2
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260602-task-2/spec.md
+- .docpath/tasks/T-20260602-task-2/plan.md
+
+---
+## ADR-20260602-005 — review
+
+- task_id: T-20260602-task-3
+- created_at: 2026-06-02T14:46:18.937Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260602-006 — journal.archive
+
+- task_id: T-20260602-task-3
+- created_at: 2026-06-02T14:46:29.512Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 确认夹具目录去留
+agent-step: S1
+开始执行: 删除 temp-test
+agent-step: S2
+开始执行: 验证并归档
+agent-step: S3
+质量检查失败: 任务文件 current/canonical 漂移检查
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260602-task-3
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260602-task-3/spec.md
+- .docpath/tasks/T-20260602-task-3/plan.md
+
+---
+## ADR-20260603-001 — review
+
+- task_id: T-20260602-registercommands
+- created_at: 2026-06-03T00:50:00.625Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260603-002 — review
+
+- task_id: T-20260602-registercommands
+- created_at: 2026-06-03T00:50:07.282Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260603-003 — review
+
+- task_id: T-20260602-registercommands
+- created_at: 2026-06-03T00:50:31.442Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260603-004 — journal.archive
+
+- task_id: T-20260602-registercommands
+- created_at: 2026-06-03T00:50:31.522Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 重构 registerCommands 拆分为独立命令文件注册
+agent-step: S1
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260602-registercommands
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260602-registercommands/spec.md
+- .docpath/tasks/T-20260602-registercommands/plan.md
+
+---
+## ADR-20260603-005 — review
+
+- task_id: T-20260603-check
+- created_at: 2026-06-03T00:55:57.414Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260603-006 — review
+
+- task_id: T-20260603-check
+- created_at: 2026-06-03T00:56:23.316Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260603-007 — journal.archive
+
+- task_id: T-20260603-check
+- created_at: 2026-06-03T00:56:23.399Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 在 check 检测到漂移时支持交互式或自动修复
+agent-step: S1
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260603-check
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260603-check/spec.md
+- .docpath/tasks/T-20260603-check/plan.md
+
+---
+## ADR-20260603-008 — review
+
+- task_id: T-20260603-learn-next-agent
+- created_at: 2026-06-03T01:00:18.790Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260603-009 — review
+
+- task_id: T-20260603-learn-next-agent
+- created_at: 2026-06-03T01:00:42.202Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260603-010 — journal.archive
+
+- task_id: T-20260603-learn-next-agent
+- created_at: 2026-06-03T01:00:42.344Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 打通 learn 机制到 next --agent 智能引导流
+agent-step: S1
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260603-learn-next-agent
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260603-learn-next-agent/spec.md
+- .docpath/tasks/T-20260603-learn-next-agent/plan.md
+
+---
+## ADR-20260603-011 — review
+
+- task_id: T-20260603-git-hooks-pre-commit
+- created_at: 2026-06-03T01:05:01.506Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260603-012 — review
+
+- task_id: T-20260603-git-hooks-pre-commit
+- created_at: 2026-06-03T01:05:25.271Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260603-013 — journal.archive
+
+- task_id: T-20260603-git-hooks-pre-commit
+- created_at: 2026-06-03T01:05:25.352Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 实现 git hooks 安装与 pre-commit 门禁校验
+agent-step: S1
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260603-git-hooks-pre-commit
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260603-git-hooks-pre-commit/spec.md
+- .docpath/tasks/T-20260603-git-hooks-pre-commit/plan.md
+
+---
+## ADR-20260606-001 — review
+
+- task_id: T-20260603-git-hooks-pre-commit
+- created_at: 2026-06-06T08:40:02.722Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---

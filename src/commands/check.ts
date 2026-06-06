@@ -11,6 +11,7 @@ import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import { isCancel, select } from '@clack/prompts';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentMd, readCurrentState, syncCurrentDocument, readOptionalFile, parsePlanTasks } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
@@ -92,6 +93,22 @@ function formatSyncedTaskFiles(synced: Array<{ file: string; fromPath: string; t
       `    to: ${item.toPath}`,
     ]),
   ].join('\n');
+}
+
+async function promptTaskFileDriftFix(): Promise<'canonical' | 'current' | undefined> {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return undefined;
+
+  const choice = await select({
+    message: '检测到 active task 文件漂移，选择修复方式',
+    options: [
+      { value: 'canonical', label: '使用任务目录覆盖 current' },
+      { value: 'current', label: '使用 current 回写任务目录' },
+      { value: 'skip', label: '暂不修复，仅报告失败' },
+    ],
+  });
+
+  if (isCancel(choice) || choice === 'skip') return undefined;
+  return choice;
 }
 
 function errorOutput(err: unknown): string {
@@ -416,10 +433,14 @@ async function checkTaskFileDrift(cwd: string, docpathDir: string, options: Chec
 
   let drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
   let driftOutput = drifts.length === 0 ? 'current 与 canonical 任务文件一致' : formatTaskFileDrift(drifts);
-  if (drifts.length > 0 && options.fixDrift) {
-    const synced = await syncActiveTaskFiles(docpathDir, workflowState.task_id, options.fixDrift);
+  const fixSource = drifts.length > 0
+    ? options.fixDrift ?? await promptTaskFileDriftFix()
+    : undefined;
+  if (drifts.length > 0 && fixSource) {
+    const synced = await syncActiveTaskFiles(docpathDir, workflowState.task_id, fixSource);
     await syncCurrentDocument(cwd);
-    console.log(`🔧  已自动同步 active task 文件 (${options.fixDrift}): ${synced.map((item) => item.file).join(', ')}`);
+    const mode = options.fixDrift ? '自动同步' : '交互式同步';
+    console.log(`🔧  已${mode} active task 文件 (${fixSource}): ${synced.map((item) => item.file).join(', ')}`);
     drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
     driftOutput = drifts.length === 0
       ? formatSyncedTaskFiles(synced)

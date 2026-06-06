@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync
 import { execSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { mkExecWorkspace } from '/tmp/docpath-test-helpers.mjs';
+import { mkExecWorkspace } from './helpers.mjs';
 
 const CLI = '/Users/mac/project/docpath/dist/index.js';
 const run = (args, cwd) => {

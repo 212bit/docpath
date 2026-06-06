@@ -68,9 +68,12 @@ describe('next --agent routing', () => {
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath learn');
-    assert.match(output.next_action, /lesson 候选/);
+    assert.equal(output.recommended_command, 'docpath learn --dry-run');
+    assert.match(output.next_action, /1 条待固化 lesson 候选/);
     assert.ok(output.required_files.includes('.docpath/workspace/lesson-candidates.md'));
+    assert.equal(output.lesson_summary.pending_count, 1);
+    assert.equal(output.lesson_summary.pending_keys.length, 1);
+    assert.match(output.lesson_summary.pending_keys[0], /t-lesson-workflow/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -89,8 +92,9 @@ describe('next --agent routing', () => {
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath learn');
+    assert.equal(output.recommended_command, 'docpath learn --dry-run');
     assert.ok(output.required_files.includes('.docpath/workspace/lesson-candidates.md'));
+    assert.equal(output.lesson_summary.pending_count, 1);
     rmSync(cwd, { recursive: true, force: true });
   });
 

@@ -156,7 +156,20 @@
 <!-- docpath:lesson-meta best-practice:style:t-20260601-checkcommand-workflow:journal:t-20260601-checkcommand -->
 - **t-20260601-registercommands-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260601-registercommands, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260601-registercommands-workflow:journal:t-20260601-registercommands -->
-- **T-20260601-review-todo-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260601-review-todo, source: journal)_
+- **t-20260601-review-todo-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260601-review-todo, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260601-review-todo-workflow:journal:t-20260601-review-todo -->
-- **T-20260602-task-workflow**: ✅ 推荐保留本次任务的执行经验：完成 4/4 步，阻塞 0 步。 _(来源: task: T-20260602-task, source: journal)_
+- **t-20260602-task-workflow**: ✅ 推荐保留本次任务的执行经验：完成 4/4 步，阻塞 0 步。 _(来源: task: T-20260602-task, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260602-task-workflow:journal:t-20260602-task -->
+- **t-20260602-task-2-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260602-task-2, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260602-task-2-workflow:journal:t-20260602-task-2 -->
+- **t-20260602-task-3-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260602-task-3, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260602-task-3-workflow:journal:t-20260602-task-3 -->
+- **T-20260602-registercommands-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260602-registercommands, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260602-registercommands-workflow:journal:t-20260602-registercommands -->
+- **T-20260603-check-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260603-check, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260603-check-workflow:journal:t-20260603-check -->
+- **T-20260603-learn-next-agent-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260603-learn-next-agent, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260603-learn-next-agent-workflow:journal:t-20260603-learn-next-agent -->
+- **T-20260603-git-hooks-pre-commit-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260603-git-hooks-pre-commit, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260603-git-hooks-pre-commit-workflow:journal:t-20260603-git-hooks-pre-commit -->
+

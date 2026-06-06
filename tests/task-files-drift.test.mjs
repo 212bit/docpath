@@ -115,6 +115,20 @@ function run(args, cwd) {
   }
 }
 
+function runShell(command, cwd) {
+  try {
+    return {
+      code: 0,
+      out: execSync(command, { cwd, encoding: 'utf-8', timeout: 30000 }),
+    };
+  } catch (error) {
+    return {
+      code: error.status || 1,
+      out: `${error.stdout || ''}${error.stderr || ''}`,
+    };
+  }
+}
+
 describe('active task file drift', () => {
   it('check reports current/canonical drift with paths and sync fixes it from canonical', () => {
     const cwd = mkWorkspace();
@@ -163,6 +177,21 @@ describe('active task file drift', () => {
 
     assert.equal(fixed.code, 0);
     assert.match(fixed.out, /已自动同步 active task 文件/);
+    assert.match(fixed.out, /全部通过/);
+    assert.equal(
+      readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8'),
+      readFileSync(join(cwd, '.docpath', 'tasks', 'T-DRIFT', 'spec.md'), 'utf-8'),
+    );
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check interactively fixes drift from canonical when running in a TTY', () => {
+    const cwd = mkWorkspace();
+
+    const fixed = runShell(`(sleep 0.5; printf '\\r') | script -q /dev/null node ${BIN} check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+
+    assert.equal(fixed.code, 0);
+    assert.match(fixed.out, /已交互式同步 active task 文件 \(canonical\)/);
     assert.match(fixed.out, /全部通过/);
     assert.equal(
       readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8'),
