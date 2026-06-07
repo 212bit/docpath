@@ -23,8 +23,10 @@ else
 fi
 ```
 
-若需要机器可读输出，运行：
+常用参数：
 
 ```bash
 docpath changes --agent
+docpath changes --json
+docpath changes --since main
 ```

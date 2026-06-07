@@ -10,6 +10,8 @@ import { readCurrentState } from '../utils/workspace.js';
 interface ChangesOptions {
   cwd: string;
   agent?: boolean;
+  json?: boolean;
+  since?: string;
 }
 
 type ChangeGroupName = 'source' | 'tests' | 'docpath' | 'templates_docs' | 'other';
@@ -27,6 +29,8 @@ interface ChangedFile {
 interface ChangesReport {
   git_root: string;
   branch: string;
+  mode: 'worktree' | 'since';
+  since: string | null;
   current_task: {
     task_id: string;
     task_title: string;
@@ -128,6 +132,34 @@ function parsePorcelainStatus(output: string): ChangedFile[] {
     });
 }
 
+function parseNameStatus(output: string): ChangedFile[] {
+  return output
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split('\t').filter(Boolean);
+      const status = parts[0] || 'M';
+      const path = parts.at(-1) || '';
+      return {
+        path,
+        index: status[0] || 'M',
+        worktree: ' ',
+        staged: true,
+        unstaged: false,
+        untracked: false,
+        group: classifyPath(path),
+      };
+    });
+}
+
+async function resolveSinceRef(docpathDir: string, since?: string): Promise<string | null> {
+  if (!since) return null;
+  if (since !== 'last-check') return since;
+  const raw = await readFileSafe(join(docpathDir, 'workspace', 'last-check.md'));
+  const ref = raw?.match(/(?:git_ref|ref|commit):\s*`?([a-f0-9]{7,40}|HEAD(?:~\d+)?|[\w./-]+)`?/i)?.[1];
+  return ref || 'HEAD';
+}
+
 async function readLastCheckPass(docpathDir: string): Promise<boolean> {
   const raw = await readFileSafe(join(docpathDir, 'workspace', 'last-check.md'));
   if (!raw) return false;
@@ -150,11 +182,7 @@ function buildSuggestedCommitMessage(report: Omit<ChangesReport, 'suggested_comm
   return `${type}: ${title}`;
 }
 
-async function buildChangesReport(cwd: string): Promise<ChangesReport> {
-  const gitRoot = ensureGitRepo(cwd);
-  const docpathDir = await resolveDocpathDir(cwd);
-  const current = await readCurrentState(cwd);
-  const files = parsePorcelainStatus(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
+function groupChangedFiles(files: ChangedFile[]): Record<ChangeGroupName, string[]> {
   const groups: Record<ChangeGroupName, string[]> = {
     source: [],
     tests: [],
@@ -163,17 +191,47 @@ async function buildChangesReport(cwd: string): Promise<ChangesReport> {
     other: [],
   };
   for (const file of files) groups[file.group].push(file.path);
+  return groups;
+}
 
+function buildBlockingReasons(args: {
+  files: ChangedFile[];
+  since: string | null;
+  hasTask: boolean;
+  lastCheckPass: boolean;
+  reviewPass: boolean;
+}): string[] {
   const blockingReasons: string[] = [];
-  if (files.length === 0) blockingReasons.push('当前工作树没有可提交变更');
-  if (files.some((file) => file.untracked)) blockingReasons.push('存在未跟踪文件，请确认是否需要纳入提交');
-  if (!current?.task_id) blockingReasons.push('当前没有关联的 DocPath 任务');
-  if (!await readLastCheckPass(docpathDir)) blockingReasons.push('last-check.md 未显示 PASS，请先运行 docpath check');
-  if (!await readReviewPass(docpathDir)) blockingReasons.push('review.md 未显示通过，请先运行 docpath review');
+  if (args.files.length === 0) blockingReasons.push(args.since ? `相对 ${args.since} 没有变更` : '当前工作树没有可提交变更');
+  if (!args.since && args.files.some((file) => file.untracked)) blockingReasons.push('存在未跟踪文件，请确认是否需要纳入提交');
+  if (!args.hasTask) blockingReasons.push('当前没有关联的 DocPath 任务');
+  if (!args.lastCheckPass) blockingReasons.push('last-check.md 未显示 PASS，请先运行 docpath check');
+  if (!args.reviewPass) blockingReasons.push('review.md 未显示通过，请先运行 docpath review');
+  return blockingReasons;
+}
+
+async function buildChangesReport(cwd: string, options: Pick<ChangesOptions, 'since'> = {}): Promise<ChangesReport> {
+  const gitRoot = ensureGitRepo(cwd);
+  const docpathDir = await resolveDocpathDir(cwd);
+  const current = await readCurrentState(cwd);
+  const since = await resolveSinceRef(docpathDir, options.since);
+  const files = since
+    ? parseNameStatus(runGit(cwd, ['diff', '--name-status', since, '--']))
+    : parsePorcelainStatus(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
+  const groups = groupChangedFiles(files);
+  const blockingReasons = buildBlockingReasons({
+    files,
+    since,
+    hasTask: !!current?.task_id,
+    lastCheckPass: await readLastCheckPass(docpathDir),
+    reviewPass: await readReviewPass(docpathDir),
+  });
 
   const partial: Omit<ChangesReport, 'suggested_commit_message'> = {
     git_root: gitRoot,
     branch: currentBranch(cwd),
+    mode: since ? 'since' : 'worktree',
+    since,
     current_task: {
       task_id: current?.task_id || '',
       task_title: current?.task_title || '',
@@ -206,6 +264,8 @@ function renderAgentYaml(report: ChangesReport): string {
   lines.push(`ready_to_commit: ${report.ready_to_commit}`);
   lines.push(`branch: ${yamlString(report.branch)}`);
   lines.push(`git_root: ${yamlString(report.git_root)}`);
+  lines.push(`mode: ${yamlString(report.mode)}`);
+  lines.push(`since: ${report.since === null ? 'null' : yamlString(report.since)}`);
   lines.push('current_task:');
   lines.push(`  task_id: ${yamlString(report.current_task.task_id)}`);
   lines.push(`  task_title: ${yamlString(report.current_task.task_title)}`);
@@ -231,6 +291,7 @@ function renderHuman(report: ChangesReport): string {
   const lines: string[] = [];
   lines.push('\n📦  DocPath 变更收口\n');
   lines.push(`  分支: ${report.branch}`);
+  if (report.since) lines.push(`  基线: ${report.since}`);
   lines.push(`  任务: ${report.current_task.task_id || '-'} ${report.current_task.task_title || ''}`.trimEnd());
   lines.push(`  变更: ${report.counts.total} 个文件（staged ${report.counts.staged}, unstaged ${report.counts.unstaged}, untracked ${report.counts.untracked}）`);
   lines.push(`  提交状态: ${report.ready_to_commit ? '✅ ready' : '⚠️ blocked'}`);
@@ -255,6 +316,10 @@ function renderHuman(report: ChangesReport): string {
 }
 
 export async function changesCommand(options: ChangesOptions): Promise<void> {
-  const report = await buildChangesReport(options.cwd);
+  const report = await buildChangesReport(options.cwd, { since: options.since });
+  if (options.json) {
+    process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+    return;
+  }
   process.stdout.write(options.agent ? renderAgentYaml(report) : renderHuman(report));
 }

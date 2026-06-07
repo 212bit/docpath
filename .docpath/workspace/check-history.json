@@ -1,15 +1,5 @@
 [
   {
-    "timestamp": "2026-06-06T09:29:57.064Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-06T09:29:57.428Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
     "timestamp": "2026-06-06T09:30:39.574Z",
     "passed": true,
     "failedChecks": []
@@ -102,6 +92,16 @@
   },
   {
     "timestamp": "2026-06-07T15:22:53.384Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-07T15:59:03.524Z",
+    "passed": true,
+    "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-07T16:16:39.548Z",
     "passed": true,
     "failedChecks": []
   }

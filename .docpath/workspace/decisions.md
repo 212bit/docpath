@@ -10131,3 +10131,84 @@ agent-step: S3
 - .docpath/tasks/T-20260607-changes/plan.md
 
 ---
+## ADR-20260607-006 — review
+
+- task_id: T-20260607-changes
+- created_at: 2026-06-07T15:59:11.676Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 2 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260607-007 — review
+
+- task_id: T-20260607-changes
+- created_at: 2026-06-07T16:09:24.969Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260607-008 — review
+
+- task_id: T-20260607-changes
+- created_at: 2026-06-07T16:16:50.939Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---

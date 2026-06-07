@@ -21,5 +21,4 @@ else
 fi
 ```
 
-Common arguments: `--target claude`, `--target universal`, or `--force`.
-
+Common arguments: `--target codex`, `--target claude`, `--target universal`, `--force`, `--check-only`, or `--doctor`.

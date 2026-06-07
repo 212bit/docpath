@@ -116,4 +116,34 @@ describe('changes command', () => {
     assert.match(out, /last-check\.md 未显示 PASS/);
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('changes --json emits parseable JSON for automation', () => {
+    const cwd = mkGitWorkspace();
+    writeFileSync(join(cwd, 'README.md'), '# changed\n');
+
+    const out = run('changes --json', cwd);
+    const parsed = JSON.parse(out);
+
+    assert.equal(parsed.mode, 'worktree');
+    assert.equal(parsed.since, null);
+    assert.equal(parsed.ready_to_commit, true);
+    assert.equal(parsed.groups.templates_docs.includes('README.md'), true);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('changes --since summarizes diff files from a git ref', () => {
+    const cwd = mkGitWorkspace();
+    mkdirSync(join(cwd, 'src'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'feature.ts'), 'export const x = 1;\n');
+    git(cwd, 'add src/feature.ts');
+    git(cwd, 'commit -m feature');
+
+    const out = run('changes --since HEAD~1 --agent', cwd);
+
+    assert.match(out, /mode: "since"/);
+    assert.match(out, /since: "HEAD~1"/);
+    assert.match(out, /src\/feature\.ts/);
+    assert.doesNotMatch(out, /存在未跟踪文件/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

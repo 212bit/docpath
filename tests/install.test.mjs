@@ -363,6 +363,49 @@ describe('install agent adapters', () => {
     rmSync(invalidCwd, { recursive: true, force: true });
   });
 
+  it('install --doctor passes for a healthy codex install', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+
+    const output = run(`install --cwd ${cwd} --target codex --doctor`, cwd);
+
+    assert.match(output, /install doctor 通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --doctor detects legacy Codex docpath config tables', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    writeFileSync(join(cwd, '.codex', 'config.toml'), [
+      '[docpath]',
+      'protocol = "CODEX.md"',
+      '',
+      '[docpath.commands]',
+      'next = "docpath next --agent"',
+      '',
+    ].join('\n'));
+
+    const failed = runResult(`install --cwd ${cwd} --target codex --doctor`, cwd);
+
+    assert.equal(failed.code, 1);
+    assert.match(failed.out, /codex-unknown-docpath-table/);
+    assert.match(failed.out, /严格配置可能拒绝/);
+    assert.match(failed.out, /--force/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --doctor reports missing local shim', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    rmSync(join(cwd, '.docpath', 'bin', 'docpath'));
+
+    const output = run(`install --cwd ${cwd} --target codex --doctor`, cwd);
+
+    assert.match(output, /shim-missing/);
+    assert.match(output, /install doctor 发现 0 个错误, 1 个警告/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('install --hooks writes an executable pre-commit hook that runs docpath check', () => {
     const cwd = mkWorkspace();
     mkdirSync(join(cwd, '.git'), { recursive: true });

@@ -9,7 +9,7 @@
  */
 
 import { join, resolve, basename } from 'node:path';
-import { readFile, readdir, mkdir, copyFile, chmod } from 'node:fs/promises';
+import { readFile, readdir, mkdir, copyFile, chmod, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { exists, writeFileSafe } from '../utils/file.js';
 import { detectProject, type ProjectInfo } from '../utils/detect.js';
@@ -48,6 +48,7 @@ interface InstallOptions {
   hookMode?: string;
   checkOnly?: boolean;
   check?: boolean;
+  doctor?: boolean;
 }
 
 interface InstallContext {
@@ -413,6 +414,130 @@ async function runInstallCheck(context: InstallContext): Promise<void> {
   throw new Error('install manifest drift detected');
 }
 
+interface DoctorIssue {
+  severity: 'error' | 'warn';
+  id: string;
+  message: string;
+  suggestion: string;
+}
+
+async function checkShimExecutable(context: InstallContext): Promise<DoctorIssue[]> {
+  const shimPath = join(context.targetDir, '.docpath', 'bin', 'docpath');
+  if (!(await exists(shimPath))) {
+    return [{
+      severity: 'warn',
+      id: 'shim-missing',
+      message: '缺少本地 DocPath CLI shim: .docpath/bin/docpath',
+      suggestion: `运行 docpath install --target ${context.target}`,
+    }];
+  }
+  const mode = (await stat(shimPath)).mode;
+  if ((mode & 0o111) === 0) {
+    return [{
+      severity: 'error',
+      id: 'shim-not-executable',
+      message: '本地 DocPath CLI shim 不可执行: .docpath/bin/docpath',
+      suggestion: `运行 docpath install --target ${context.target} --force`,
+    }];
+  }
+  return [];
+}
+
+async function checkCodexConfigRisk(context: InstallContext): Promise<DoctorIssue[]> {
+  if (context.target !== 'codex' && context.target !== 'universal') return [];
+  const configPath = join(context.targetDir, '.codex', 'config.toml');
+  if (!(await exists(configPath))) {
+    return [{
+      severity: 'error',
+      id: 'codex-config-missing',
+      message: '缺少 Codex 项目配置: .codex/config.toml',
+      suggestion: `运行 docpath install --target ${context.target}`,
+    }];
+  }
+  const content = await readFile(configPath, 'utf-8');
+  const issues: DoctorIssue[] = [];
+  if (/^\s*\[docpath\]/m.test(content) || /^\s*\[docpath\.commands\]/m.test(content)) {
+    issues.push({
+      severity: 'error',
+      id: 'codex-unknown-docpath-table',
+      message: '.codex/config.toml 包含 Codex 严格配置可能拒绝的 [docpath] 自定义表',
+      suggestion: `运行 docpath install --target ${context.target} --force 生成仅包含官方键的配置`,
+    });
+  }
+  if (!/project_doc_fallback_filenames\s*=\s*\[[^\]]*"CODEX\.md"/.test(content)) {
+    issues.push({
+      severity: 'warn',
+      id: 'codex-fallback-missing',
+      message: '.codex/config.toml 未声明 CODEX.md 作为项目说明 fallback',
+      suggestion: `运行 docpath install --target ${context.target} --force`,
+    });
+  }
+  return issues;
+}
+
+async function checkManifestDoctor(context: InstallContext): Promise<DoctorIssue[]> {
+  try {
+    const meta = await readInstallMetadata(context.docpathDir);
+    if (!meta) {
+      return [{
+        severity: 'error',
+        id: 'install-meta-missing',
+        message: '缺少 .docpath/.install-meta.json，无法校验安装资产 manifest',
+        suggestion: `运行 docpath install --target ${context.target}`,
+      }];
+    }
+    if (!Array.isArray(meta.assets) || meta.assets.length === 0) {
+      return [{
+        severity: 'error',
+        id: 'install-manifest-empty',
+        message: '安装资产 manifest 为空',
+        suggestion: `运行 docpath install --target ${context.target}`,
+      }];
+    }
+    const report = await detectInstallAssetDrift(context.targetDir, meta, {
+      target: context.target,
+      projectName: context.projectName,
+    });
+    if (!report.hasDrift) return [];
+    return [{
+      severity: 'error',
+      id: 'install-manifest-drift',
+      message: `安装资产 manifest 漂移: 模板 ${report.templateDrift.length} 项, 缺失 ${report.missingLocal.length} 项, 本地改动 ${report.modifiedLocal.length} 项`,
+      suggestion: `运行 docpath install --target ${report.target}`,
+    }];
+  } catch (err) {
+    return [{
+      severity: 'error',
+      id: 'install-manifest-invalid',
+      message: err instanceof Error ? err.message : String(err),
+      suggestion: `运行 docpath install --target ${context.target}`,
+    }];
+  }
+}
+
+async function runInstallDoctor(context: InstallContext): Promise<void> {
+  const issues = [
+    ...await checkManifestDoctor(context),
+    ...await checkShimExecutable(context),
+    ...await checkCodexConfigRisk(context),
+  ];
+
+  if (issues.length === 0) {
+    console.log(`✅  install doctor 通过 (target: ${context.target})`);
+    return;
+  }
+
+  const errors = issues.filter((issue) => issue.severity === 'error');
+  const warnings = issues.filter((issue) => issue.severity === 'warn');
+  console.log(`❌  install doctor 发现 ${errors.length} 个错误, ${warnings.length} 个警告`);
+  for (const issue of issues) {
+    const icon = issue.severity === 'error' ? '❌' : '⚠️';
+    console.log(`  ${icon} [${issue.id}] ${issue.message}`);
+    console.log(`     建议: ${issue.suggestion}`);
+  }
+  if (errors.length > 0) throw new Error('install doctor failed');
+}
+
 async function createInstallContext(options: InstallOptions): Promise<InstallContext> {
   const cwd = options.cwd || process.cwd();
   const target = normalizeTarget(options.target);
@@ -596,6 +721,11 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
 
   if (options.checkOnly || options.check) {
     await runInstallCheck(context);
+    return;
+  }
+
+  if (options.doctor) {
+    await runInstallDoctor(context);
     return;
   }
 

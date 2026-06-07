@@ -21,5 +21,9 @@ else
 fi
 ```
 
-Use `--journal <path>` to learn from a specific journal file.
+Useful arguments:
 
+- `--journal <path>` learns from a specific journal file.
+- `--dry-run` previews learned rules without writing guidance files.
+- `groom --dry-run` reports low-value lesson candidates.
+- `prune` removes low-value lesson candidates from `workspace/lesson-candidates.md`.

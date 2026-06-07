@@ -373,6 +373,93 @@ describe('journal to learn loop', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('learn groom --dry-run reports low-value workflow lessons without writing', () => {
+    const cwd = mkWorkspace();
+    const lessonsPath = join(cwd, '.docpath', 'workspace', 'lesson-candidates.md');
+    writeFileSync(lessonsPath, [
+      '# Lesson Candidates',
+      '',
+      '## T-LOW — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LOW',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: T-LOW-workflow',
+      '',
+      '### Lesson',
+      '',
+      '✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。',
+      '',
+      '---',
+      '',
+      '## T-KEEP — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-KEEP',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: cli-contract',
+      '',
+      '### Lesson',
+      '',
+      '✅ CLI 机器输出字段必须保持稳定，避免 agent 路由解析漂移。',
+      '',
+    ].join('\n'));
+    const before = readFileSync(lessonsPath, 'utf-8');
+
+    const output = execSync(`node ${BIN} learn groom --cwd ${cwd} --dry-run`, { cwd, encoding: 'utf-8', timeout: 20000 });
+    const after = readFileSync(lessonsPath, 'utf-8');
+
+    assert.match(output, /lesson 候选: 2 条，建议清理: 1 条/);
+    assert.match(output, /低信息密度的任务完成统计/);
+    assert.equal(after, before);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('learn prune removes low-value workflow lessons and keeps concrete lessons', () => {
+    const cwd = mkWorkspace();
+    const lessonsPath = join(cwd, '.docpath', 'workspace', 'lesson-candidates.md');
+    writeFileSync(lessonsPath, [
+      '# Lesson Candidates',
+      '',
+      '## T-LOW — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LOW',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: T-LOW-workflow',
+      '',
+      '### Lesson',
+      '',
+      '✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。',
+      '',
+      '---',
+      '',
+      '## T-KEEP — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-KEEP',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: cli-contract',
+      '',
+      '### Lesson',
+      '',
+      '✅ CLI 机器输出字段必须保持稳定，避免 agent 路由解析漂移。',
+      '',
+    ].join('\n'));
+
+    const output = execSync(`node ${BIN} learn prune --cwd ${cwd}`, { cwd, encoding: 'utf-8', timeout: 20000 });
+    const after = readFileSync(lessonsPath, 'utf-8');
+
+    assert.match(output, /已清理/);
+    assert.doesNotMatch(after, /T-LOW-workflow/);
+    assert.match(after, /cli-contract/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('journal writes lesson candidates after successful archive', () => {
     const cwd = mkWorkspace();
     execSync(`node ${BIN} journal --cwd ${cwd} --optional-archive skip`, { cwd, encoding: 'utf-8', timeout: 20000 });

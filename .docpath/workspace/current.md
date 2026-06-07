@@ -23,8 +23,8 @@ updated_at: 2026-06-07T15:22:53.434Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-07T15:22:53.379Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260607-changes] — 2026-06-07T15:22:53.431Z · 状态: done · 代码审查: 0 错误, 4 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-07T16:16:39.543Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ check [T-20260607-changes] — 2026-06-07T16:16:39.544Z · 状态: done · 质量检查通过 (8 项)
 
 ## 🔄 同步说明
 

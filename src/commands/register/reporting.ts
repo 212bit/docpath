@@ -8,10 +8,14 @@ function registerChangesCommand(cli: CAC): void {
   cli.command('changes', '提交前只读变更收口视图')
     .option('--cwd <path>', '项目目录')
     .option('--agent', '输出 Agent 可读 YAML 状态')
-    .action(async (options: { cwd?: string; agent?: boolean }) => {
+    .option('--json', '输出 JSON')
+    .option('--since <ref>', '按 git ref 汇总差异，例如 HEAD、main、origin/main、last-check')
+    .action(async (options: { cwd?: string; agent?: boolean; json?: boolean; since?: string }) => {
       await changesCommand({
         cwd: options.cwd || process.cwd(),
         agent: !!options.agent,
+        json: !!options.json,
+        since: options.since,
       });
     });
 }

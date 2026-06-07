@@ -58,15 +58,17 @@ function registerInstallCommand(cli: CAC): void {
     .option('--force', '覆盖已有文件')
     .option('--check-only', '仅检查安装资产 manifest 漂移，不写入文件')
     .option('--check', '仅检查安装资产 manifest 漂移，不写入文件（--check-only 别名）')
+    .option('--doctor', '诊断安装资产、shim 与 Agent 配置风险，不写入文件')
     .option('--hooks', '安装 git hooks')
     .option('--hook-mode <mode>', 'pre-commit 模式: check | agent-done (默认 check)')
-    .action(async (options: { cwd?: string; target?: string; force?: boolean; check?: boolean; checkOnly?: boolean; 'check-only'?: boolean; hooks?: boolean; hookMode?: string; 'hook-mode'?: string }) => {
+    .action(async (options: { cwd?: string; target?: string; force?: boolean; check?: boolean; checkOnly?: boolean; 'check-only'?: boolean; doctor?: boolean; hooks?: boolean; hookMode?: string; 'hook-mode'?: string }) => {
       await installCommand({
         cwd: options.cwd || process.cwd(),
         target: options.target,
         force: !!options.force,
         check: !!options.check,
         checkOnly: !!(options.checkOnly || options['check-only']),
+        doctor: !!options.doctor,
         hooks: !!options.hooks,
         hookMode: options.hookMode || options['hook-mode'],
       });

@@ -11,6 +11,7 @@ import { resolveRulePaths } from '../utils/rules.js';
 
 interface LearnOptions {
   cwd: string;
+  action?: string;
   journalPath?: string;
   skipAi?: boolean;
   fromJournal?: boolean;
@@ -53,6 +54,22 @@ interface LearnPaths {
 interface PatternSelection {
   patterns: Pattern[];
   sourceMode: string;
+}
+
+interface CandidateBlock {
+  raw: string;
+  title: string;
+  taskId?: string;
+  type?: string;
+  target?: string;
+  source: string;
+  key: string;
+  description: string;
+}
+
+interface GroomIssue {
+  block: CandidateBlock;
+  reasons: string[];
 }
 
 interface PatternMergePlan {
@@ -118,8 +135,8 @@ function extractPatternsFromJournal(content: string, source: string): Pattern[] 
   return patterns;
 }
 
-function extractCandidateLessons(content: string): Pattern[] {
-  const patterns: Pattern[] = [];
+function parseCandidateBlocks(content: string): CandidateBlock[] {
+  const candidates: CandidateBlock[] = [];
   const blocks = content.split(/^##\s+/m).filter((block) => block.trim());
 
   for (const block of blocks) {
@@ -136,25 +153,107 @@ function extractCandidateLessons(content: string): Pattern[] {
       || block.match(/^### 经验\s*\n([\s\S]*?)(?=\n###|\n---|$)/m)?.[1]?.trim()
       || title;
     const keyword = block.match(/^- key:\s*(.+)$/m)?.[1]?.trim() || extractKeyword(description) || title;
+
+    candidates.push({
+      raw: block.trimEnd(),
+      title,
+      taskId,
+      type: typeValue,
+      target: targetValue,
+      source,
+      key: keyword,
+      description,
+    });
+  }
+
+  return candidates;
+}
+
+function extractCandidateLessons(content: string): Pattern[] {
+  const patterns: Pattern[] = [];
+
+  for (const candidate of parseCandidateBlocks(content)) {
+    const typeValue = candidate.type;
+    const targetValue = candidate.target;
     const type: Pattern['type'] = targetValue === 'architecture' || typeValue === 'architecture'
       ? 'architecture'
       : typeValue === 'anti-pattern' || typeValue === 'best-practice' || typeValue === 'convention'
         ? typeValue
         : 'best-practice';
 
-    if (description) {
+    if (candidate.description) {
       patterns.push({
         type,
-        keyword,
-        description: description.slice(0, 300),
-        source,
-        taskId,
+        keyword: candidate.key,
+        description: candidate.description.slice(0, 300),
+        source: candidate.source,
+        taskId: candidate.taskId,
         target: targetValue === 'architecture' || type === 'architecture' ? 'architecture' : 'style',
       });
     }
   }
 
   return patterns;
+}
+
+function isLowValueWorkflowLesson(candidate: CandidateBlock): boolean {
+  return /^✅\s*推荐保留本次任务的执行经验：完成\s*\d+\/\d+\s*步，阻塞\s*\d+\s*步。?$/u.test(candidate.description.trim());
+}
+
+function isVagueLesson(candidate: CandidateBlock): boolean {
+  const description = candidate.description.replace(/[✅⚠️📋🏗️]/g, '').trim();
+  if (description.length < 18) return true;
+  return /^(待补充|暂无|无|none|n\/a)$/i.test(description);
+}
+
+function analyzeCandidateQuality(candidates: CandidateBlock[]): GroomIssue[] {
+  const issues: GroomIssue[] = [];
+  const seen = new Set<string>();
+
+  for (const candidate of candidates) {
+    const reasons: string[] = [];
+    const key = `${candidate.type || 'best-practice'}:${candidate.target || 'style'}:${candidate.key}:${candidate.source}:${candidate.taskId || ''}`.toLowerCase();
+    if (seen.has(key)) reasons.push('重复候选');
+    seen.add(key);
+    if (isLowValueWorkflowLesson(candidate)) reasons.push('低信息密度的任务完成统计');
+    if (isVagueLesson(candidate)) reasons.push('经验描述过短或占位');
+    if (!candidate.key || candidate.key === candidate.title) reasons.push('缺少稳定 key');
+    if (reasons.length > 0) issues.push({ block: candidate, reasons });
+  }
+
+  return issues;
+}
+
+function renderGroomedCandidates(original: string, issues: GroomIssue[]): string {
+  const remove = new Set(issues.map((issue) => issue.block.raw.trim()));
+  const kept = parseCandidateBlocks(original).filter((candidate) => !remove.has(candidate.raw.trim()));
+  const header = '# Lesson Candidates\n\n';
+  if (kept.length === 0) return header;
+  return header + kept.map((candidate) => `## ${candidate.raw.trim()}\n`).join('\n---\n\n');
+}
+
+function printGroomReport(candidates: CandidateBlock[], issues: GroomIssue[], dryRun: boolean): void {
+  console.log(`📊  lesson 候选: ${candidates.length} 条，建议清理: ${issues.length} 条`);
+  for (const issue of issues.slice(0, 20)) {
+    console.log(`  - ${issue.block.taskId || '-'} / ${issue.block.key}: ${issue.reasons.join('、')}`);
+  }
+  if (issues.length > 20) console.log(`  ... 省略 ${issues.length - 20} 条`);
+  console.log(dryRun ? '\n📝  [dry-run] 未写入 lesson-candidates.md\n' : '\n✅  lesson-candidates.md 已清理\n');
+}
+
+async function groomLessonCandidates(options: LearnOptions): Promise<void> {
+  const paths = await resolveLearnPaths(options.cwd);
+  const raw = await readFileSafe(paths.lessonCandidatesPath) || '';
+  if (!raw.trim()) {
+    console.log('📭  未找到 lesson-candidates.md 或内容为空。\n');
+    return;
+  }
+
+  const candidates = parseCandidateBlocks(raw);
+  const issues = analyzeCandidateQuality(candidates);
+  printGroomReport(candidates, issues, !!options.dryRun);
+  if (options.dryRun || issues.length === 0) return;
+  await writeFile(paths.lessonCandidatesPath, renderGroomedCandidates(raw, issues), 'utf-8');
 }
 
 function extractKeyword(text: string): string | null {
@@ -435,6 +534,14 @@ async function writeMergedPatterns(paths: LearnPaths, plan: PatternMergePlan): P
 }
 
 export async function learnCommand(options: LearnOptions): Promise<void> {
+  if (options.action === 'groom' || options.action === 'prune') {
+    await groomLessonCandidates(options);
+    return;
+  }
+  if (options.action) {
+    throw new Error(`docpath learn: unsupported action ${options.action}（允许: groom|prune）`);
+  }
+
   console.log('\n🧠  学习模式 — 从经验中提取规则\n');
 
   const paths = await resolveLearnPaths(options.cwd);
