@@ -59,6 +59,323 @@ describe('backlog commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('backlog add writes inline background and acceptance body', () => {
+    const cwd = mkWorkspace();
+    run('backlog add --title "带正文条目" --background "问题背景" --acceptance "完成验收"', cwd);
+
+    const backlogDir = join(cwd, '.docpath', 'backlog');
+    const itemFile = readdirSync(backlogDir).find((name) => name === 'R-001.md' || /^R-001-.*\.md$/.test(name));
+    assert.ok(itemFile, 'R-001 item file should exist');
+    const item = readFileSync(join(backlogDir, itemFile), 'utf-8');
+
+    assert.match(item, /## 背景\n\n问题背景/);
+    assert.match(item, /## 验收\n\n完成验收/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog add reads full body from body file', () => {
+    const cwd = mkWorkspace();
+    writeFileSync(join(cwd, 'body.md'), [
+      '## 背景',
+      '',
+      '- 来自文件的背景',
+      '',
+      '## 验收',
+      '',
+      '- 来自文件的验收',
+    ].join('\n'));
+
+    run('backlog add --title "文件正文条目" --body-file body.md', cwd);
+
+    const backlogDir = join(cwd, '.docpath', 'backlog');
+    const itemFile = readdirSync(backlogDir).find((name) => name === 'R-001.md' || /^R-001-.*\.md$/.test(name));
+    assert.ok(itemFile, 'R-001 item file should exist');
+    const item = readFileSync(join(backlogDir, itemFile), 'utf-8');
+
+    assert.match(item, /## 背景\n\n- 来自文件的背景/);
+    assert.match(item, /## 验收\n\n- 来自文件的验收/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog add fails loudly when body file conflicts with inline body options', () => {
+    const cwd = mkWorkspace();
+    writeFileSync(join(cwd, 'body.md'), '## 背景\n\n- body file\n');
+
+    assert.throws(
+      () => run('backlog add --title "冲突正文" --body-file body.md --background "inline"', cwd),
+      /--body-file 不能与 --background\/--acceptance 同时使用/,
+    );
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog edit updates metadata and refreshes the index without changing stable fields', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: accepted
+priority: P2
+level: 3
+source: test
+links:
+  task: T-001
+  spec: tasks/T-001/spec.md
+created_at: 2026-05-31
+---
+
+Alpha body
+`);
+
+    const out = run('backlog edit R-001 --title "Beta" --priority P0 --level 1', cwd);
+
+    assert.match(out, /backlog 条目已编辑: R-001/);
+    const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8');
+    assert.match(item, /title: Beta/);
+    assert.match(item, /status: accepted/);
+    assert.match(item, /priority: P0/);
+    assert.match(item, /level: 1/);
+    assert.match(item, /source: test/);
+    assert.match(item, /task: T-001/);
+    assert.match(item, /created_at: 2026-05-31/);
+    assert.match(item, /Alpha body/);
+
+    const index = readFileSync(join(cwd, '.docpath', 'backlog', 'backlog.md'), 'utf-8');
+    assert.match(index, /\| R-001 \| Beta \| accepted \| P0 \| 1 \| T-001 \|/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog edit updates inline body sections', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: proposed
+priority: P1
+level: 2
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Old body
+`);
+
+    run('backlog edit R-001 --background "新背景" --acceptance "新验收"', cwd);
+
+    const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8');
+    assert.match(item, /## 背景\n\n新背景/);
+    assert.match(item, /## 验收\n\n新验收/);
+    assert.doesNotMatch(item, /Old body/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog edit replaces body from body file', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: proposed
+priority: P1
+level: 2
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Old body
+`);
+    writeFileSync(join(cwd, 'body.md'), '## 背景\n\n- 文件背景\n\n## 验收\n\n- 文件验收\n');
+
+    run('backlog edit R-001 --body-file body.md', cwd);
+
+    const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8');
+    assert.match(item, /## 背景\n\n- 文件背景/);
+    assert.match(item, /## 验收\n\n- 文件验收/);
+    assert.doesNotMatch(item, /Old body/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog edit fails loudly for missing items, no fields, invalid fields, and conflicting body options', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: proposed
+priority: P1
+level: 2
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Alpha
+`);
+    writeFileSync(join(cwd, 'body.md'), 'Body\n');
+
+    assert.throws(() => run('backlog edit R-404 --title "Missing"', cwd), /backlog 条目不存在/);
+    assert.throws(() => run('backlog edit R-001', cwd), /requires at least one field option/);
+    assert.throws(() => run('backlog edit R-001 --priority PX', cwd), /priority 非法/);
+    assert.throws(() => run('backlog edit R-001 --level 9', cwd), /level 非法/);
+    assert.throws(
+      () => run('backlog edit R-001 --body-file body.md --acceptance "inline"', cwd),
+      /--body-file 不能与 --background\/--acceptance 同时使用/,
+    );
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog groom passes for healthy backlog items', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: proposed
+priority: P1
+level: 2
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+- 清晰背景
+
+## 验收
+
+- 清晰验收
+`);
+    run('backlog refresh', cwd);
+
+    const out = run('backlog groom', cwd);
+
+    assert.match(out, /Backlog 健康检查通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog groom reports missing body sections and placeholder content', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: accepted
+priority: P1
+level: 2
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+- 待补充
+`);
+    run('backlog refresh', cwd);
+
+    assert.throws(() => run('backlog groom', cwd), /backlog groom failed: 3 issue/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog groom reports missing links for active or done items', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: done
+priority: P1
+level: 2
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Done body
+`);
+    run('backlog refresh', cwd);
+
+    assert.throws(() => run('backlog groom', cwd), /backlog groom failed: 2 issue/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog groom reports a missing generated index', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: proposed
+priority: P1
+level: 2
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+- 清晰背景
+
+## 验收
+
+- 清晰验收
+`);
+
+    assert.throws(() => run('backlog groom', cwd), /backlog groom failed: 1 issue/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog groom supports agent yaml output', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: accepted
+priority: P1
+level: 2
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Old body
+`);
+    run('backlog refresh', cwd);
+
+    let parsed;
+    try {
+      run('backlog groom --agent', cwd);
+    } catch (error) {
+      parsed = parse(error.stdout.toString());
+    }
+
+    assert.equal(parsed.passed, false);
+    assert.equal(parsed.issue_count, 2);
+    assert.equal(parsed.issues[0].id, 'R-001');
+    assert.match(parsed.issues[0].suggestion, /docpath backlog edit R-001/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('backlog list filters by status and priority and supports agent yaml output', () => {
     const cwd = mkWorkspace();
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });

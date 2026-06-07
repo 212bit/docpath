@@ -5,14 +5,17 @@ import { taskCommand } from '../task.js';
 import { tasksCommand } from '../tasks.js';
 
 export function registerBacklogMaintenanceCommands(cli: CAC): void {
-  cli.command('backlog <action> [id]', '需求条目管理: add | list | refresh | accept | plan | promote | done | drop')
+  cli.command('backlog <action> [id]', '需求条目管理: add | edit | list | groom | refresh | accept | plan | promote | done | drop')
     .option('--cwd <path>', '项目目录')
-    .option('--title <title>', 'add: 条目标题')
-    .option('--priority <priority>', 'add/list: 优先级过滤或创建优先级 (P0|P1|P2|P3)')
-    .option('--level <level>', 'add: 条目复杂度 (0|1|2|3)')
+    .option('--title <title>', 'add/edit: 条目标题')
+    .option('--priority <priority>', 'add/edit/list: 优先级过滤或创建优先级 (P0|P1|P2|P3)')
+    .option('--level <level>', 'add/edit: 条目复杂度 (0|1|2|3)')
+    .option('--background <text>', 'add/edit: 条目背景正文')
+    .option('--acceptance <text>', 'add/edit: 条目验收正文')
+    .option('--body-file <path>', 'add/edit: 从 markdown 文件读取完整正文')
     .option('--status <status>', 'list: 状态过滤')
-    .option('--agent', 'list: 输出 agent YAML')
-    .action(async (action: string, id: string | undefined, options: { cwd?: string; title?: string; priority?: string; level?: string; status?: string; agent?: boolean }) => {
+    .option('--agent', 'list/groom: 输出 agent YAML')
+    .action(async (action: string, id: string | undefined, options: { cwd?: string; title?: string; priority?: string; level?: string; background?: string; acceptance?: string; bodyFile?: string; status?: string; agent?: boolean }) => {
       await backlogCommand({
         cwd: options.cwd || process.cwd(),
         action,
@@ -20,6 +23,9 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         title: options.title,
         priority: options.priority,
         level: options.level,
+        background: options.background,
+        acceptance: options.acceptance,
+        bodyFile: options.bodyFile,
         status: options.status,
         agent: !!options.agent,
       });

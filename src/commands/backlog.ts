@@ -4,8 +4,8 @@
 
 import { stringify } from 'yaml';
 import { existsSync } from 'node:fs';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { isAbsolute, join } from 'node:path';
 import {
   type BacklogItem,
   type BacklogPriority,
@@ -31,14 +31,25 @@ interface BacklogCommandOptions {
   title?: string;
   priority?: string;
   level?: string;
+  background?: string;
+  acceptance?: string;
+  bodyFile?: string;
   status?: string;
   agent?: boolean;
+}
+
+interface BacklogGroomIssue {
+  id: string;
+  severity: 'error';
+  field: string;
+  message: string;
+  suggestion: string;
 }
 
 function normalizePriority(priority?: string): BacklogPriority {
   const value = (priority || 'P2').toUpperCase();
   if (!isBacklogPriority(value)) {
-    throw new Error(`docpath backlog add: priority 非法: ${priority}（允许: P0|P1|P2|P3）`);
+    throw new Error(`docpath backlog: priority 非法: ${priority}（允许: P0|P1|P2|P3）`);
   }
   return value;
 }
@@ -47,7 +58,7 @@ function normalizeLevel(level?: string): number {
   const raw = level ?? '2';
   const parsed = Number.parseInt(raw, 10);
   if (!Number.isInteger(parsed) || parsed < 0 || parsed > 3) {
-    throw new Error(`docpath backlog add: level 非法: ${raw}（允许: 0|1|2|3）`);
+    throw new Error(`docpath backlog: level 非法: ${raw}（允许: 0|1|2|3）`);
   }
   return parsed;
 }
@@ -60,6 +71,154 @@ function normalizeStatusFilter(status?: string): BacklogStatus | undefined {
     throw new Error(`docpath backlog list: status 非法: ${status}`);
   }
   return value as BacklogStatus;
+}
+
+function hasInlineBodyOptions(options: BacklogCommandOptions): boolean {
+  return options.background != null || options.acceptance != null;
+}
+
+function formatBacklogSection(title: string, value: string | undefined, fallback: string): string[] {
+  return [
+    `## ${title}`,
+    '',
+    value?.trim() ? value.trim() : fallback,
+  ];
+}
+
+function buildInlineBacklogBody(options: BacklogCommandOptions): string {
+  return [
+    ...formatBacklogSection('背景', options.background, '- 待补充'),
+    '',
+    ...formatBacklogSection('验收', options.acceptance, '- 待补充'),
+  ].join('\n');
+}
+
+async function readBacklogBodyFile(cwd: string, bodyFile: string): Promise<string> {
+  const path = isAbsolute(bodyFile) ? bodyFile : join(cwd, bodyFile);
+  const content = await readFile(path, 'utf-8');
+  if (!content.trim()) {
+    throw new Error(`docpath backlog add: --body-file 内容为空: ${bodyFile}`);
+  }
+  return content.trim();
+}
+
+async function resolveBacklogBody(options: BacklogCommandOptions): Promise<string> {
+  if (options.bodyFile && hasInlineBodyOptions(options)) {
+    throw new Error('docpath backlog: --body-file 不能与 --background/--acceptance 同时使用');
+  }
+
+  if (options.bodyFile) {
+    return readBacklogBodyFile(options.cwd, options.bodyFile);
+  }
+
+  return buildInlineBacklogBody(options);
+}
+
+function hasEditFields(options: BacklogCommandOptions): boolean {
+  return Boolean(
+    options.title?.trim()
+    || options.priority
+    || options.level
+    || options.bodyFile
+    || hasInlineBodyOptions(options)
+  );
+}
+
+function hasSection(body: string, title: string): boolean {
+  return new RegExp(`^##\\s+${title}\\s*$`, 'm').test(body);
+}
+
+function isPlaceholderBody(body: string): boolean {
+  const trimmed = body.trim();
+  return !trimmed || /待补充/.test(trimmed);
+}
+
+function inspectBacklogItem(item: BacklogItem): BacklogGroomIssue[] {
+  const issues: BacklogGroomIssue[] = [];
+  if ((item.status === 'proposed' || item.status === 'accepted') && !hasSection(item.body, '背景')) {
+    issues.push({
+      id: item.id,
+      severity: 'error',
+      field: 'body.background',
+      message: '条目正文缺少 `## 背景` 章节',
+      suggestion: `docpath backlog edit ${item.id} --background <text> --acceptance <text>`,
+    });
+  }
+  if ((item.status === 'proposed' || item.status === 'accepted') && !hasSection(item.body, '验收')) {
+    issues.push({
+      id: item.id,
+      severity: 'error',
+      field: 'body.acceptance',
+      message: '条目正文缺少 `## 验收` 章节',
+      suggestion: `docpath backlog edit ${item.id} --background <text> --acceptance <text>`,
+    });
+  }
+  if ((item.status === 'proposed' || item.status === 'accepted') && isPlaceholderBody(item.body)) {
+    issues.push({
+      id: item.id,
+      severity: 'error',
+      field: 'body',
+      message: '条目正文为空或仍包含占位内容',
+      suggestion: `docpath backlog edit ${item.id} --body-file <path>`,
+    });
+  }
+  if ((item.status === 'active' || item.status === 'done') && !item.links.task) {
+    issues.push({
+      id: item.id,
+      severity: 'error',
+      field: 'links.task',
+      message: 'active/done 条目缺少 task 链接',
+      suggestion: '确认任务归档或手工修复 backlog links.task',
+    });
+  }
+  if ((item.status === 'active' || item.status === 'done') && !item.links.spec) {
+    issues.push({
+      id: item.id,
+      severity: 'error',
+      field: 'links.spec',
+      message: 'active/done 条目缺少 spec 链接',
+      suggestion: '确认任务归档或手工修复 backlog links.spec',
+    });
+  }
+  return issues;
+}
+
+async function collectBacklogGroomIssues(options: BacklogCommandOptions): Promise<BacklogGroomIssue[]> {
+  const docpathDir = await resolveDocpathDir(options.cwd);
+  const issues: BacklogGroomIssue[] = [];
+  if (!existsSync(join(docpathDir, 'backlog', 'backlog.md'))) {
+    issues.push({
+      id: 'backlog.md',
+      severity: 'error',
+      field: 'index',
+      message: '缺少 backlog 索引文件 .docpath/backlog/backlog.md',
+      suggestion: 'docpath backlog refresh',
+    });
+  }
+
+  const items = await listBacklogItems(options.cwd);
+  for (const item of items) {
+    issues.push(...inspectBacklogItem(item));
+  }
+  return issues;
+}
+
+function renderGroomReport(issues: BacklogGroomIssue[]): string {
+  const lines = ['', '🧹  Backlog 健康检查', ''];
+  if (issues.length === 0) {
+    lines.push('✅  Backlog 健康检查通过');
+    lines.push('');
+    return lines.join('\n');
+  }
+
+  lines.push(`❌  发现 ${issues.length} 个问题`);
+  lines.push('');
+  for (const issue of issues) {
+    lines.push(`- [${issue.id}] ${issue.field}: ${issue.message}`);
+    lines.push(`  修复建议: ${issue.suggestion}`);
+  }
+  lines.push('');
+  return lines.join('\n');
 }
 
 function comparePriority(a: BacklogPriority, b: BacklogPriority): number {
@@ -155,6 +314,8 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
     throw new Error('docpath backlog add requires --title <title>');
   }
 
+  const body = await resolveBacklogBody(options);
+
   const item = await createBacklogItem(options.cwd, {
     title: options.title.trim(),
     status: 'proposed',
@@ -166,21 +327,42 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
       spec: null,
     },
     created_at: today(),
-    body: [
-      '## 背景',
-      '',
-      '- 待补充',
-      '',
-      '## 验收',
-      '',
-      '- 待补充',
-    ].join('\n'),
+    body,
   });
 
   console.log(`✅  已创建 backlog 条目: ${item.id}`);
   console.log(`   title: ${item.title}`);
   console.log(`   priority: ${item.priority}`);
   console.log(`   level: ${item.level}`);
+}
+
+async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
+  if (!options.id?.trim()) {
+    throw new Error('docpath backlog edit requires <id>');
+  }
+  if (!hasEditFields(options)) {
+    throw new Error('docpath backlog edit requires at least one field option');
+  }
+
+  const item = await readBacklogItem(options.cwd, options.id.trim());
+  if (!item) {
+    throw new Error(`docpath backlog edit: backlog 条目不存在: ${options.id}`);
+  }
+
+  const updated: BacklogItem = { ...item };
+  if (options.title?.trim()) updated.title = options.title.trim();
+  if (options.priority) updated.priority = normalizePriority(options.priority);
+  if (options.level) updated.level = normalizeLevel(options.level);
+  if (options.bodyFile || hasInlineBodyOptions(options)) {
+    updated.body = await resolveBacklogBody(options);
+  }
+
+  await writeBacklogItem(options.cwd, updated);
+  await refreshBacklogIndex(options.cwd);
+  console.log(`✅  backlog 条目已编辑: ${updated.id}`);
+  console.log(`   title: ${updated.title}`);
+  console.log(`   priority: ${updated.priority}`);
+  console.log(`   level: ${updated.level}`);
 }
 
 async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
@@ -316,18 +498,42 @@ async function backlogRefresh(options: BacklogCommandOptions): Promise<void> {
   console.log('   index: .docpath/backlog/backlog.md');
 }
 
+async function backlogGroom(options: BacklogCommandOptions): Promise<void> {
+  const issues = await collectBacklogGroomIssues(options);
+
+  if (options.agent) {
+    console.log(stringify({
+      passed: issues.length === 0,
+      issue_count: issues.length,
+      issues,
+    }));
+  } else {
+    console.log(renderGroomReport(issues));
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`docpath backlog groom failed: ${issues.length} issue(s)`);
+  }
+}
+
 export async function backlogCommand(options: BacklogCommandOptions): Promise<void> {
   const action = options.action?.trim().toLowerCase();
   if (!action) {
-    throw new Error('docpath backlog requires <add|list|refresh|accept|plan|promote|done|drop>');
+    throw new Error('docpath backlog requires <add|edit|list|groom|refresh|accept|plan|promote|done|drop>');
   }
 
   switch (action) {
     case 'add':
       await backlogAdd(options);
       return;
+    case 'edit':
+      await backlogEdit(options);
+      return;
     case 'list':
       await backlogList(options);
+      return;
+    case 'groom':
+      await backlogGroom(options);
       return;
     case 'refresh':
       await backlogRefresh(options);
@@ -348,6 +554,6 @@ export async function backlogCommand(options: BacklogCommandOptions): Promise<vo
       await backlogUpdateTerminalStatus(options, 'dropped');
       return;
     default:
-      throw new Error(`docpath backlog: unsupported action ${action}（允许: add|list|refresh|accept|plan|promote|done|drop）`);
+      throw new Error(`docpath backlog: unsupported action ${action}（允许: add|edit|list|groom|refresh|accept|plan|promote|done|drop）`);
   }
 }
