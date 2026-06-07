@@ -5,9 +5,10 @@
  * .docpath/
  * ├── config.yaml
  * ├── CLAUDE.md (灵魂协议文件)
- * ├── spec/
+ * ├── rules/
  * │   ├── architecture.md
  * │   ├── style.md
+ * ├── spec/
  * │   └── template/
  * │       ├── spec.template.md
  * │       ├── plan.template.md
@@ -28,6 +29,7 @@ import { createDefaultState } from '../engine/state-machine.js';
 import { loadTemplate } from '../utils/file.js';
 import { detectProject, formatProjectInfo, detectMonorepo, type ProjectInfo } from '../utils/detect.js';
 import { writeCurrentState, type CurrentState } from '../utils/workspace.js';
+import { ensureRulesDir } from '../utils/rules.js';
 
 interface InitOptions {
   cwd?: string;
@@ -89,6 +91,7 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
 
   const dirs = [
     '.docpath',
+    '.docpath/rules',
     '.docpath/spec',
     '.docpath/spec/template',
     '.docpath/tasks',
@@ -99,6 +102,7 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   for (const dir of dirs) {
     await ensureDir(join(cwd, dir));
   }
+  await ensureRulesDir(docpathDir);
   console.log('  ✓  目录结构已创建');
 
   // ── 写入 config.yaml (含自动检测的项目信息) ──
@@ -158,12 +162,12 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   }
   console.log('  ✓  spec/template/ (6 份文档模板)');
 
-  // ── 写入初始 spec 文件 ──
+  // ── 写入初始全局规则文件 ──
   const architectureContent = await loadTemplate(join(TEMPLATES_DIR, 'architecture.template.md'));
-  await writeFileSafe(join(cwd, '.docpath/spec/architecture.md'), architectureContent);
+  await writeFileSafe(join(cwd, '.docpath/rules/architecture.md'), architectureContent);
 
   const styleContent = await loadTemplate(join(TEMPLATES_DIR, 'style.template.md'));
-  await writeFileSafe(join(cwd, '.docpath/spec/style.md'), styleContent);
+  await writeFileSafe(join(cwd, '.docpath/rules/style.md'), styleContent);
 
   // ── 创建 .gitignore（如果 .git 存在） ──
   const gitignorePath = join(cwd, '.gitignore');
@@ -233,7 +237,8 @@ paths:
   state: .docpath/workspace/current.md
   breadcrumb: .docpath/workspace/breadcrumb.md
   tasks: .docpath/tasks/
-  spec: .docpath/spec/
+  rules: .docpath/rules/
+  spec_templates: .docpath/spec/template/
   journal: .docpath/journal/
 `;
 }
