@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260606-install-manifest-check-only",
-  "task_title": "为 install manifest 漂移检测增加 check-only 模式",
+  "task_id": "T-20260607-changes",
+  "task_title": "新增 changes 变更收口命令",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-06T09:30:09.088Z",
-  "updated_at": "2026-06-06T09:30:39.608Z"
+  "started_at": "2026-06-07T15:22:53.434Z",
+  "updated_at": "2026-06-07T15:22:53.434Z"
 }

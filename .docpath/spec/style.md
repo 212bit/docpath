@@ -176,6 +176,18 @@
 <!-- docpath:lesson-meta best-practice:style:t-20260606-task-workflow:journal:t-20260606-task -->
 - **t-20260606-manifest-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-manifest, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260606-manifest-workflow:journal:t-20260606-manifest -->
-- **T-20260606-install-manifest-check-only-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-install-manifest-check-only, source: journal)_
+- **t-20260606-install-manifest-check-only-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-install-manifest-check-only, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260606-install-manifest-check-only-workflow:journal:t-20260606-install-manifest-check-only -->
+- **t-20260606-docs-install-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-docs-install, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260606-docs-install-workflow:journal:t-20260606-docs-install -->
+- **t-20260606-brainstorm-spec-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-brainstorm-spec, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260606-brainstorm-spec-workflow:journal:t-20260606-brainstorm-spec -->
+- **t-20260606-docpath-backlog-task-workspace-spec-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-docpath-backlog-task-workspace-spec, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260606-docpath-backlog-task-workspace-spec-workflow:journal:t-20260606-docpath-backlog-task-workspace-spec -->
+- **t-20260606-backlog-add-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-backlog-add, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260606-backlog-add-workflow:journal:t-20260606-backlog-add -->
+- **t-20260606-backlog-edit-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-backlog-edit, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260606-backlog-edit-workflow:journal:t-20260606-backlog-edit -->
+- **T-20260606-backlog-groom-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-backlog-groom, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260606-backlog-groom-workflow:journal:t-20260606-backlog-groom -->
 

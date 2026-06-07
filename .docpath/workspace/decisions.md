@@ -9444,3 +9444,690 @@ agent-step: S3
 - .docpath/tasks/T-20260606-install-manifest-check-only/plan.md
 
 ---
+## ADR-20260606-011 — review
+
+- task_id: T-20260606-install-manifest-check-only
+- created_at: 2026-06-06T09:32:02.638Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-012 — review
+
+- task_id: T-20260606-docs-install
+- created_at: 2026-06-06T09:38:13.353Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-013 — review
+
+- task_id: T-20260606-docs-install
+- created_at: 2026-06-06T09:38:41.434Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-014 — journal.archive
+
+- task_id: T-20260606-docs-install
+- created_at: 2026-06-06T09:38:41.535Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 拆分 docs-install 注册逻辑降低函数复杂度警告
+agent-step: S1
+开始执行: 实现 拆分 docs-install 注册逻辑降低函数复杂度警告
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260606-docs-install
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260606-docs-install/spec.md
+- .docpath/tasks/T-20260606-docs-install/plan.md
+
+---
+## ADR-20260606-015 — review
+
+- task_id: T-20260606-brainstorm-spec
+- created_at: 2026-06-06T09:54:52.041Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 2 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-016 — review
+
+- task_id: T-20260606-brainstorm-spec
+- created_at: 2026-06-06T09:56:58.434Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-017 — review
+
+- task_id: T-20260606-brainstorm-spec
+- created_at: 2026-06-06T09:57:31.743Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-018 — journal.archive
+
+- task_id: T-20260606-brainstorm-spec
+- created_at: 2026-06-06T09:57:31.834Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 `brainstorm --dry-run` 基于 input 或 file 生成结构化需求分析输出
+agent-step: S1
+开始执行: 实现 `brainstorm --dry-run` 基于 input 或 file 生成结构化需求分析输出
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 2 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260606-brainstorm-spec
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260606-brainstorm-spec/spec.md
+- .docpath/tasks/T-20260606-brainstorm-spec/plan.md
+
+---
+## ADR-20260606-019 — review
+
+- task_id: T-20260606-docpath-backlog-task-workspace-spec
+- created_at: 2026-06-06T11:32:06.323Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-020 — review
+
+- task_id: T-20260606-docpath-backlog-task-workspace-spec
+- created_at: 2026-06-06T11:32:39.820Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-021 — journal.archive
+
+- task_id: T-20260606-docpath-backlog-task-workspace-spec
+- created_at: 2026-06-06T11:32:39.919Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 引入 `.docpath/rules` 作为全局规则目录，并保留 `.docpath/spec` 兼容读取
+agent-step: S1
+开始执行: 实现 引入 `.docpath/rules` 作为全局规则目录，并保留 `.docpath/spec` 兼容读取
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260606-docpath-backlog-task-workspace-spec
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260606-docpath-backlog-task-workspace-spec/spec.md
+- .docpath/tasks/T-20260606-docpath-backlog-task-workspace-spec/plan.md
+
+---
+## ADR-20260606-022 — review
+
+- task_id: T-20260606-backlog-add
+- created_at: 2026-06-06T13:34:18.560Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-023 — journal.archive
+
+- task_id: T-20260606-backlog-add
+- created_at: 2026-06-06T13:34:36.476Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 `docpath backlog add` 支持 `--background <text>` 和 `--acceptance <text>`，用于生成标准 `## 背景` / `## 验收` 正文。
+agent-step: S1
+开始执行: 实现 `docpath backlog add` 支持 `--background <text>` 和 `--acceptance <text>`，用于生成标准 `## 背景` / `## 验收` 正文。
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 4 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260606-backlog-add
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260606-backlog-add/spec.md
+- .docpath/tasks/T-20260606-backlog-add/plan.md
+
+---
+## ADR-20260606-024 — review
+
+- task_id: T-20260606-backlog-edit
+- created_at: 2026-06-06T14:18:46.738Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-025 — journal.archive
+
+- task_id: T-20260606-backlog-edit
+- created_at: 2026-06-06T14:19:05.868Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 `docpath backlog edit <id>` 支持修改 `--title`、`--priority`、`--level`。
+agent-step: S1
+开始执行: 实现 `docpath backlog edit <id>` 支持修改 `--title`、`--priority`、`--level`。
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 4 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260606-backlog-edit
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260606-backlog-edit/spec.md
+- .docpath/tasks/T-20260606-backlog-edit/plan.md
+
+---
+## ADR-20260606-026 — review
+
+- task_id: T-20260606-backlog-groom
+- created_at: 2026-06-06T14:51:58.447Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260606-027 — journal.archive
+
+- task_id: T-20260606-backlog-groom
+- created_at: 2026-06-06T14:52:08.630Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 `docpath backlog groom` 默认只读检查 backlog 条目健康状况。
+agent-step: S1
+开始执行: 实现 `docpath backlog groom` 默认只读检查 backlog 条目健康状况。
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 4 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260606-backlog-groom
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260606-backlog-groom/spec.md
+- .docpath/tasks/T-20260606-backlog-groom/plan.md
+
+---
+## ADR-20260607-001 — review
+
+- task_id: T-20260607-changes
+- created_at: 2026-06-07T15:15:45.056Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 5 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260607-002 — review
+
+- task_id: T-20260607-changes
+- created_at: 2026-06-07T15:19:38.921Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260607-003 — review
+
+- task_id: T-20260607-changes
+- created_at: 2026-06-07T15:22:14.422Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260607-004 — review
+
+- task_id: T-20260607-changes
+- created_at: 2026-06-07T15:22:53.430Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260607-005 — journal.archive
+
+- task_id: T-20260607-changes
+- created_at: 2026-06-07T15:22:53.516Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 新增 changes 变更收口命令
+agent-step: S1
+开始执行: 实现 新增 changes 变更收口命令
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 5 警告, 0 提示
+代码审查: 0 错误, 4 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 4 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 4 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260607-changes
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260607-changes/spec.md
+- .docpath/tasks/T-20260607-changes/plan.md
+
+---
