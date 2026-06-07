@@ -49,6 +49,12 @@ interface CheckResult {
   category?: 'compile' | 'test' | 'lint' | 'plan' | 'preflight' | 'boundary' | 'pattern';
 }
 
+interface GitBaseline {
+  ref: string;
+  branch: string;
+  worktreeDirty: boolean;
+}
+
 function formatValidationIssue(issue: { message: string; line?: number; section?: string; field?: string }): string {
   const details = [
     issue.line ? `line ${issue.line}` : '',
@@ -129,6 +135,24 @@ function runCheck(name: string, cmd: string, cwd: string, category?: CheckResult
   } catch (err: unknown) {
     return { name, passed: false, output: errorOutput(err).slice(0, 500), category };
   }
+}
+
+function runGitOptional(cwd: string, args: string[]): string | null {
+  try {
+    return execSync(`git ${args.join(' ')}`, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function readGitBaseline(cwd: string): GitBaseline | null {
+  const ref = runGitOptional(cwd, ['rev-parse', 'HEAD']);
+  if (!ref) return null;
+  return {
+    ref,
+    branch: runGitOptional(cwd, ['branch', '--show-current']) || 'HEAD',
+    worktreeDirty: (runGitOptional(cwd, ['status', '--porcelain=v1', '--untracked-files=all']) || '').length > 0,
+  };
 }
 
 // ─── Harness 规则解析 ───
@@ -644,10 +668,16 @@ async function updateCheckWorkflowState(cwd: string, allPassed: boolean, results
 
 async function writeLastCheckEvidence(cwd: string, results: CheckResult[], allPassed: boolean): Promise<void> {
   const lastCheckPath = join(cwd, '.docpath', 'workspace', 'last-check.md');
+  const gitBaseline = readGitBaseline(cwd);
   const checkLines: string[] = ['# Last Check Evidence', ''];
   checkLines.push(`**时间**: ${new Date().toISOString()}`);
   checkLines.push(`**结果**: ${allPassed ? '✅ PASS' : '❌ FAIL'}`);
   checkLines.push(`**检查项**: ${results.length}`);
+  if (gitBaseline) {
+    checkLines.push(`git_ref: ${gitBaseline.ref}`);
+    checkLines.push(`branch: ${gitBaseline.branch}`);
+    checkLines.push(`worktree_dirty: ${gitBaseline.worktreeDirty}`);
+  }
   checkLines.push('');
   for (const result of results) {
     checkLines.push(`- ${result.passed ? '✅' : '❌'} ${result.name}`);
@@ -667,16 +697,24 @@ async function writeCheckBreadcrumb(cwd: string, taskId: string, results: CheckR
   });
 }
 
-async function updateCheckHistory(docpathDir: string, results: CheckResult[], allPassed: boolean): Promise<void> {
+async function updateCheckHistory(cwd: string, docpathDir: string, results: CheckResult[], allPassed: boolean): Promise<void> {
   const regressionPath = join(docpathDir, 'workspace', 'check-history.json');
-  type CheckHistoryEntry = { timestamp: string; passed: boolean; failedChecks: string[] };
+  type CheckHistoryEntry = { timestamp: string; passed: boolean; failedChecks: string[]; gitRef?: string; branch?: string; worktreeDirty?: boolean };
   let history: CheckHistoryEntry[] = [];
   if (existsSync(regressionPath)) {
     try { history = JSON.parse(await readFile(regressionPath, 'utf-8')) as CheckHistoryEntry[]; } catch { history = []; }
   }
 
   const currentFailed = results.filter(result => !result.passed).map(result => result.name);
-  history.push({ timestamp: new Date().toISOString(), passed: allPassed, failedChecks: currentFailed });
+  const gitBaseline = readGitBaseline(cwd);
+  history.push({
+    timestamp: new Date().toISOString(),
+    passed: allPassed,
+    failedChecks: currentFailed,
+    gitRef: gitBaseline?.ref,
+    branch: gitBaseline?.branch,
+    worktreeDirty: gitBaseline?.worktreeDirty,
+  });
   if (history.length > 20) history = history.slice(-20);
   await writeFile(regressionPath, JSON.stringify(history, null, 2), 'utf-8');
 
@@ -696,7 +734,7 @@ async function persistCheckEvidence(cwd: string, docpathDir: string, taskId: str
   await writeLastCheckEvidence(cwd, results, allPassed);
   await writeCheckBreadcrumb(cwd, taskId, results, allPassed);
   await syncCurrentDocument(cwd);
-  await updateCheckHistory(docpathDir, results, allPassed);
+  await updateCheckHistory(cwd, docpathDir, results, allPassed);
 }
 
 export async function checkCommand(options: CheckOptions): Promise<void> {

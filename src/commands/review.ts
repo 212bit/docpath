@@ -20,7 +20,7 @@ import { transitionWorkflow } from '../engine/transitions.js';
 interface ReviewOptions {
   cwd: string;
   output?: string;
-  scope?: string;
+  scope?: 'staged' | 'last_commit' | 'all' | string;
   approve?: boolean;
   dryRun?: boolean;
   /** 强制执行，即使不在 agent 会话中 */
@@ -39,25 +39,40 @@ interface FindingGroups {
   infos: ReviewFinding[];
 }
 
-function collectChangedFiles(cwd: string): string[] {
-  let changedFiles: string[] = [];
+function parseNameList(output: string): string[] {
+  return output.split('\n').map(line => line.trim()).filter(Boolean);
+}
+
+function parsePorcelainPaths(output: string): string[] {
+  return output
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      const rawPath = line.slice(3).trim();
+      return rawPath.includes(' -> ') ? rawPath.split(' -> ').at(-1) || rawPath : rawPath;
+    });
+}
+
+function isReviewableFile(file: string): boolean {
+  return /\.(ts|tsx|js|jsx|mjs|cjs|json)$/.test(file);
+}
+
+function runGit(cwd: string, args: string[]): string {
+  return execSync(`git ${args.join(' ')}`, { cwd, encoding: 'utf-8', timeout: 10000 });
+}
+
+function collectChangedFiles(cwd: string, scope = 'all'): string[] {
   try {
-    const strategies = [
-      'git diff --name-only HEAD~1',
-      'git diff --name-only --cached',
-      'git show --name-only --format="" HEAD',
-    ];
-    for (const cmd of strategies) {
-      try {
-        const diff = execSync(cmd, { cwd, encoding: 'utf-8', timeout: 10000 });
-        changedFiles = diff.trim().split('\n').filter(f => f.endsWith('.ts') || f.endsWith('.js') || f.endsWith('.json'));
-        if (changedFiles.length > 0) break;
-      } catch { /* try next strategy */ }
-    }
+    const files = scope === 'staged'
+      ? parseNameList(runGit(cwd, ['diff', '--name-only', '--cached']))
+      : scope === 'last_commit'
+        ? parseNameList(runGit(cwd, ['show', '--name-only', '--format=""', 'HEAD']))
+        : parsePorcelainPaths(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
+    return [...new Set(files)].filter(isReviewableFile);
   } catch {
-    // 可能没有 git 仓库
+    // 可能没有 git 仓库，或仓库尚无提交。
+    return [];
   }
-  return changedFiles;
 }
 
 async function analyzeChangedFile(cwd: string, file: string): Promise<ReviewFinding[]> {
@@ -184,7 +199,7 @@ async function persistReviewResult(cwd: string, taskId: string, groups: FindingG
 export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const docpathDir = await resolveDocpathDir(opts.cwd);
   console.log('🔍 代码审查开始...');
-  const changedFiles = collectChangedFiles(opts.cwd);
+  const changedFiles = collectChangedFiles(opts.cwd, opts.scope || 'all');
   if (changedFiles.length === 0) {
     console.log('⚠️  未发现变更文件');
     if (opts.dryRun) console.log('📝  [dry-run] 当前无可审查变更，未写入任何状态或证据文件');

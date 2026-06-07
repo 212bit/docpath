@@ -40,14 +40,14 @@ export function registerQualityCommands(cli: CAC): void {
 
   cli.command('review', '结构化代码审查 (可选 LLM 深度审查)')
     .option('--cwd <path>', '项目目录')
-    .option('--scope <scope>', '审查范围: staged|last_commit|all')
+    .option('--scope <scope>', '审查范围: all|staged|last_commit (默认 all)')
     .option('--dry-run', '只预览审查结果，不写入状态')
     .option('--no-ai', '跳过 LLM 审查')
     .option('--approve', '直接批准（跳过自动检查）')
     .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean }) => {
       await reviewCommand({
         cwd: options.cwd || process.cwd(),
-        scope: (options.scope as any) || 'staged',
+        scope: (options.scope as any) || 'all',
         dryRun: options['dry-run'] ?? options.dryRun,
         approve: options.approve ?? false,
       });

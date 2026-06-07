@@ -4,42 +4,6 @@
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ review [T-20260606-docpath-backlog-task-workspace-spec] — 2026-06-06T11:32:39.821Z
-
----
-taskId: T-20260606-docpath-backlog-task-workspace-spec
-step: review
-status: done
-timestamp: 2026-06-06T11:32:39.821Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 3 警告, 0 提示
-
-### ✅ journal [T-20260606-docpath-backlog-task-workspace-spec] — 2026-06-06T11:32:39.916Z
-
----
-taskId: T-20260606-docpath-backlog-task-workspace-spec
-step: journal
-status: done
-timestamp: 2026-06-06T11:32:39.916Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260606-backlog-add] — 2026-06-06T13:26:30.057Z
-
----
-taskId: T-20260606-backlog-add
-step: S1
-status: in_progress
-timestamp: 2026-06-06T13:26:30.057Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 `docpath backlog add` 支持 `--background <text>` 和 `--acceptance <text>`，用于生成标准 `## 背景` / `## 验收` 正文。
-
 ### ✅ S1 [T-20260606-backlog-add] — 2026-06-06T13:30:34.888Z
 
 ---
@@ -603,3 +567,39 @@ timestamp: 2026-06-07T16:16:50.941Z
 
 - **状态**: done
 - **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### ✅ check [T-20260607-changes] — 2026-06-07T16:34:26.424Z
+
+---
+taskId: T-20260607-changes
+step: check
+status: done
+timestamp: 2026-06-07T16:34:26.424Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ check [T-20260607-changes] — 2026-06-07T16:36:26.383Z
+
+---
+taskId: T-20260607-changes
+step: check
+status: done
+timestamp: 2026-06-07T16:36:26.383Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260607-changes] — 2026-06-07T16:36:33.607Z
+
+---
+taskId: T-20260607-changes
+step: review
+status: done
+timestamp: 2026-06-07T16:36:33.607Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 1 警告, 2 提示

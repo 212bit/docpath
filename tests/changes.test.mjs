@@ -146,4 +146,29 @@ describe('changes command', () => {
     assert.doesNotMatch(out, /存在未跟踪文件/);
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('changes --since last-check uses git_ref recorded by check evidence', () => {
+    const cwd = mkGitWorkspace();
+    const baseline = git(cwd, 'rev-parse HEAD').trim();
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), [
+      '# Last Check Evidence',
+      '',
+      '**结果**: ✅ PASS',
+      `git_ref: ${baseline}`,
+      'branch: main',
+      'worktree_dirty: false',
+      '',
+    ].join('\n'));
+    mkdirSync(join(cwd, 'src'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'after-check.ts'), 'export const after = true;\n');
+    git(cwd, 'add src/after-check.ts .docpath/workspace/last-check.md');
+    git(cwd, 'commit -m after-check');
+
+    const out = run('changes --since last-check --agent', cwd);
+
+    assert.match(out, /mode: "since"/);
+    assert.match(out, new RegExp(`since: "${baseline}"`));
+    assert.match(out, /src\/after-check\.ts/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

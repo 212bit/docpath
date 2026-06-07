@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkExecWorkspace } from './helpers.mjs';
 
-const CLI = '/Users/mac/project/docpath/dist/index.js';
+const CLI = new URL('../dist/index.js', import.meta.url).pathname;
 const run = (args, cwd) => {
   try {
     return execSync(`node ${CLI} ${args}`, { cwd, encoding: 'utf-8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] });
@@ -77,7 +77,7 @@ describe('check and review commands', () => {
       '',
     ].join('\n'));
 
-    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
 
     assert.equal(result.code, 1);
     assert.match(result.out, /spec\.md 结构校验/);
@@ -123,6 +123,45 @@ describe('check and review commands', () => {
     assert.match(out, /todo\.ts/);
     assert.match(out, /未处理的 TODO/);
     assert.doesNotMatch(out, /\[f\.file\]/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('review defaults to current worktree changes instead of last commit', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-worktree-'));
+    mkExecWorkspace(cwd);
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
+    execSync('git add baseline.ts', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'todo.ts'), '// TODO review current worktree\n');
+
+    const out = run(`review --cwd ${cwd} --dry-run`, cwd);
+
+    assert.match(out, /todo\.ts/);
+    assert.match(out, /未处理的 TODO/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check writes git baseline metadata into last-check evidence', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-git-baseline-'));
+    mkExecWorkspace(cwd);
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'README.md'), '# baseline\n');
+    execSync('git add .', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+    const head = execSync('git rev-parse HEAD', { cwd, encoding: 'utf-8' }).trim();
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+    const lastCheck = readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
+
+    assert.equal(result.code, 0);
+    assert.match(lastCheck, new RegExp(`git_ref: ${head}`));
+    assert.match(lastCheck, /branch: (main|master)/);
+    assert.match(lastCheck, /worktree_dirty: (true|false)/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

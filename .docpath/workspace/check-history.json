@@ -1,15 +1,5 @@
 [
   {
-    "timestamp": "2026-06-06T09:30:39.574Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-06T09:31:55.354Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
     "timestamp": "2026-06-06T09:38:02.629Z",
     "passed": true,
     "failedChecks": []
@@ -104,5 +94,21 @@
     "timestamp": "2026-06-07T16:16:39.548Z",
     "passed": true,
     "failedChecks": []
+  },
+  {
+    "timestamp": "2026-06-07T16:34:26.489Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "c109b7c250417f7e6cda1767ecc59af05ae68b8b",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-07T16:36:26.444Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "c109b7c250417f7e6cda1767ecc59af05ae68b8b",
+    "branch": "main",
+    "worktreeDirty": true
   }
 ]
