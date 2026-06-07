@@ -196,24 +196,11 @@ function entryProtocolFiles(target: Target): string[] {
 }
 
 function renderCodexConfigContent(): string {
-  return `# DocPath adapter for Codex CLI / Codex-style coding agents
-# Keep repository instructions in AGENTS.md and CODEX.md.
+  return `# DocPath adapter for Codex CLI / Codex-style coding agents.
+# Codex reads workflow instructions from AGENTS.md. CODEX.md remains an
+# instruction fallback for environments that do not use AGENTS.md directly.
 
-[docpath]
-protocol = "CODEX.md"
-fallback_protocol = "AGENTS.md"
-state = ".docpath/workspace/current.md"
-breadcrumb = ".docpath/workspace/breadcrumb.md"
-commands = ".docpath/commands"
-
-[docpath.commands]
-status = "docpath status --agent"
-context = "docpath context --agent"
-next = "docpath next --agent"
-check = "docpath check"
-review = "docpath review"
-journal = "docpath journal"
-compact = "docpath compact"
+project_doc_fallback_filenames = ["CODEX.md"]
 `;
 }
 

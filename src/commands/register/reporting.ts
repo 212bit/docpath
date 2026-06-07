@@ -1,9 +1,22 @@
 import type { CAC } from 'cac';
+import { changesCommand } from '../changes.js';
 import { contextCommand } from '../context.js';
 import { exportCommand } from '../export.js';
 import { statsCommand } from '../stats.js';
 
-export function registerReportingCommands(cli: CAC): void {
+function registerChangesCommand(cli: CAC): void {
+  cli.command('changes', '提交前只读变更收口视图')
+    .option('--cwd <path>', '项目目录')
+    .option('--agent', '输出 Agent 可读 YAML 状态')
+    .action(async (options: { cwd?: string; agent?: boolean }) => {
+      await changesCommand({
+        cwd: options.cwd || process.cwd(),
+        agent: !!options.agent,
+      });
+    });
+}
+
+function registerContextCommand(cli: CAC): void {
   cli.command('context', '生成 Claude Code 可消费的上下文包')
     .option('--cwd <path>', '项目目录')
     .option('--max-tokens <n>', '最大 token 预算 (默认 8000)')
@@ -23,7 +36,9 @@ export function registerReportingCommands(cli: CAC): void {
         agent: !!options.agent,
       });
     });
+}
 
+function registerExportCommand(cli: CAC): void {
   cli.command('export', '导出工作流状态为可分享的 standalone markdown')
     .option('--cwd <path>', '项目目录')
     .option('--output <file>', '输出文件路径 (默认 stdout)')
@@ -35,7 +50,9 @@ export function registerReportingCommands(cli: CAC): void {
         full: !!options.full,
       });
     });
+}
 
+function registerStatsCommand(cli: CAC): void {
   cli.command('stats', '项目统计面板')
     .option('--cwd <path>', '项目目录')
     .option('--format <format>', '输出格式: table(默认) | json')
@@ -47,4 +64,11 @@ export function registerReportingCommands(cli: CAC): void {
         agent: !!options.agent,
       });
     });
+}
+
+export function registerReportingCommands(cli: CAC): void {
+  registerChangesCommand(cli);
+  registerContextCommand(cli);
+  registerExportCommand(cli);
+  registerStatsCommand(cli);
 }

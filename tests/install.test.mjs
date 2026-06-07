@@ -16,6 +16,7 @@ const CLAUDE_EXPOSED_COMMANDS = [
   'agent-step',
   'brainstorm',
   'check',
+  'changes',
   'compact',
   'config',
   'context',
@@ -201,10 +202,9 @@ describe('install agent adapters', () => {
       assert.doesNotMatch(content, /docpath archive\b/);
     }
     assert.match(codexProtocol, /docpath next --agent/);
-    assert.match(codexConfig, /protocol = "CODEX\.md"/);
-    assert.match(codexConfig, /fallback_protocol = "AGENTS\.md"/);
-    assert.match(codexConfig, /next = "docpath next --agent"/);
-    assert.match(codexConfig, /status = "docpath status --agent"/);
+    assert.match(codexConfig, /project_doc_fallback_filenames = \["CODEX\.md"\]/);
+    assert.doesNotMatch(codexConfig, /\[docpath\]/);
+    assert.doesNotMatch(codexConfig, /\[docpath\.commands\]/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -223,8 +223,9 @@ describe('install agent adapters', () => {
     const codex = readFileSync(join(cwd, '.codex', 'config.toml'), 'utf-8');
     const protocolAgents = readFileSync(join(cwd, '.docpath', 'protocols', 'AGENTS.md'), 'utf-8');
 
-    assert.match(codex, /next = "docpath next --agent"/);
-    assert.match(codex, /status = "docpath status --agent"/);
+    assert.match(codex, /project_doc_fallback_filenames = \["CODEX\.md"\]/);
+    assert.doesNotMatch(codex, /\[docpath\]/);
+    assert.doesNotMatch(codex, /\[docpath\.commands\]/);
     assert.match(protocolAgents, /docpath status --agent/);
     assert.match(protocolAgents, /docpath next --agent/);
     assert.match(protocolAgents, /docpath agent done/);
