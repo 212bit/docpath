@@ -16,6 +16,7 @@ import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcru
 import { listBacklogItems, type BacklogItem } from '../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.js';
 import { readRuleFile, ruleDisplayPaths } from './rules.js';
+import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } from '../commands/install.js';
 
 export interface AgentOutput {
   /** 当前状态 (state machine state) */
@@ -61,6 +62,15 @@ export interface AgentOutput {
     pending_count: number;
     pending_keys: string[];
   };
+  /** 安装资产与 Agent 配置健康摘要 */
+  install_health: {
+    target: string;
+    passed: boolean;
+    errors: number;
+    warnings: number;
+    recommended_command: string | null;
+    issue_ids: string[];
+  } | null;
   /** 时间戳 */
   generated_at: string;
 }
@@ -200,6 +210,7 @@ type AgentOutputContext = {
   historicalTaskDirCount: number;
   lessonSummary: { pendingCount: number; pendingKeys: string[] };
   hasIncompleteSpec: boolean;
+  installHealth: InstallDoctorReport | null;
 };
 
 function parseTddState(raw: string): TddStateSnapshot | null {
@@ -216,6 +227,18 @@ function isIncompleteSpec(content: string): boolean {
   const trimmed = content.trim();
   if (!trimmed) return true;
   return /待补充/.test(trimmed);
+}
+
+async function readInstallHealth(cwd: string, docpathDir: string): Promise<InstallDoctorReport | null> {
+  const metaRaw = await readOptionalFile(join(docpathDir, '.install-meta.json'));
+  let target = 'universal';
+  try {
+    const meta = metaRaw ? JSON.parse(metaRaw) as { target?: unknown } : null;
+    if (isInstallTarget(meta?.target)) target = meta.target;
+  } catch {
+    // manifest 无法解析时仍交给 doctor 报告具体错误。
+  }
+  return buildInstallDoctorReport({ cwd, target });
 }
 
 /**
@@ -543,6 +566,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     (await readRuleFile(docpathDir, 'style')).content,
     (await readRuleFile(docpathDir, 'architecture')).content,
   );
+  const installHealth = await readInstallHealth(cwd, docpathDir);
 
   return {
     docpathDir,
@@ -558,6 +582,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     historicalTaskDirCount,
     lessonSummary,
     hasIncompleteSpec: hasSpec ? isIncompleteSpec(specContent) : false,
+    installHealth,
   };
 }
 
@@ -642,6 +667,14 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
       pending_count: context.lessonSummary.pendingCount,
       pending_keys: [...context.lessonSummary.pendingKeys],
     },
+    install_health: context.installHealth ? {
+      target: context.installHealth.target,
+      passed: context.installHealth.passed,
+      errors: context.installHealth.errors,
+      warnings: context.installHealth.warnings,
+      recommended_command: context.installHealth.recommended_command,
+      issue_ids: context.installHealth.issues.map((issue) => issue.id),
+    } : null,
     generated_at: new Date().toISOString(),
   };
 

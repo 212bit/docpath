@@ -4,6 +4,7 @@ import { execSync } from 'child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, statSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { parse } from 'yaml';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 const TEMPLATE_COMMANDS_DIR = new URL('../templates/commands/', import.meta.url).pathname;
@@ -373,6 +374,21 @@ describe('install agent adapters', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('install --doctor --json emits structured health for automation', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+
+    const output = run(`install --cwd ${cwd} --target codex --doctor --json`, cwd);
+    const parsed = JSON.parse(output);
+
+    assert.equal(parsed.passed, true);
+    assert.equal(parsed.target, 'codex');
+    assert.equal(parsed.errors, 0);
+    assert.equal(parsed.warnings, 0);
+    assert.deepEqual(parsed.issues, []);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('install --doctor detects legacy Codex docpath config tables', () => {
     const cwd = mkWorkspace();
     run(`install --cwd ${cwd} --target codex`, cwd);
@@ -391,6 +407,38 @@ describe('install agent adapters', () => {
     assert.match(failed.out, /codex-unknown-docpath-table/);
     assert.match(failed.out, /严格配置可能拒绝/);
     assert.match(failed.out, /--force/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --doctor --json reports failures without wrapping stdout', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    writeFileSync(join(cwd, '.codex', 'config.toml'), '[docpath]\nprotocol = "CODEX.md"\n');
+
+    const failed = runResult(`install --cwd ${cwd} --target codex --doctor --json`, cwd);
+    const parsed = JSON.parse(failed.out);
+
+    assert.equal(failed.code, 1);
+    assert.equal(parsed.passed, false);
+    assert.ok(parsed.errors >= 1);
+    assert.ok(parsed.issues.some((issue) => issue.id === 'codex-unknown-docpath-table'));
+    assert.ok(parsed.issues.some((issue) => issue.suggestion.includes('--force')));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('status --agent includes install_health summary', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    rmSync(join(cwd, '.codex', 'config.toml'));
+
+    const output = run(`status --cwd ${cwd} --agent`, cwd);
+    const parsed = parse(output);
+
+    assert.equal(parsed.install_health.target, 'codex');
+    assert.equal(parsed.install_health.passed, false);
+    assert.ok(parsed.install_health.errors >= 1);
+    assert.ok(parsed.install_health.issue_ids.includes('codex-config-missing'));
+    assert.equal(parsed.install_health.recommended_command, 'docpath install --target codex');
     rmSync(cwd, { recursive: true, force: true });
   });
 

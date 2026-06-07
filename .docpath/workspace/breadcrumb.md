@@ -4,54 +4,6 @@
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ S1 [T-20260606-backlog-add] — 2026-06-06T13:30:34.888Z
-
----
-taskId: T-20260606-backlog-add
-step: S1
-status: done
-timestamp: 2026-06-06T13:30:34.888Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### 🔄 S2 [T-20260606-backlog-add] — 2026-06-06T13:30:48.478Z
-
----
-taskId: T-20260606-backlog-add
-step: S2
-status: in_progress
-timestamp: 2026-06-06T13:30:48.478Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 `docpath backlog add` 支持 `--background <text>` 和 `--acceptance <text>`，用于生成标准 `## 背景` / `## 验收` 正文。
-
-### ✅ S2 [T-20260606-backlog-add] — 2026-06-06T13:31:07.915Z
-
----
-taskId: T-20260606-backlog-add
-step: S2
-status: done
-timestamp: 2026-06-06T13:31:07.915Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260606-backlog-add] — 2026-06-06T13:31:35.063Z
-
----
-taskId: T-20260606-backlog-add
-step: S3
-status: in_progress
-timestamp: 2026-06-06T13:31:35.063Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证门禁并归档
-
 ### 🚫 check [T-20260606-backlog-add] — 2026-06-06T13:32:48.600Z
 
 ---
@@ -603,3 +555,51 @@ timestamp: 2026-06-07T16:36:33.607Z
 
 - **状态**: done
 - **上下文**: 代码审查: 0 错误, 1 警告, 2 提示
+
+### ✅ check [T-20260607-changes] — 2026-06-07T17:05:24.930Z
+
+---
+taskId: T-20260607-changes
+step: check
+status: done
+timestamp: 2026-06-07T17:05:24.930Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260607-changes] — 2026-06-07T17:06:50.370Z
+
+---
+taskId: T-20260607-changes
+step: review
+status: done
+timestamp: 2026-06-07T17:06:50.370Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 1 警告, 0 提示
+
+### ✅ check [T-20260607-changes] — 2026-06-07T17:08:35.489Z
+
+---
+taskId: T-20260607-changes
+step: check
+status: done
+timestamp: 2026-06-07T17:08:35.489Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260607-changes] — 2026-06-07T17:08:49.685Z
+
+---
+taskId: T-20260607-changes
+step: review
+status: done
+timestamp: 2026-06-07T17:08:49.685Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 1 警告, 0 提示

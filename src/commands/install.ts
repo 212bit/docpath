@@ -49,6 +49,7 @@ interface InstallOptions {
   checkOnly?: boolean;
   check?: boolean;
   doctor?: boolean;
+  json?: boolean;
 }
 
 interface InstallContext {
@@ -414,11 +415,20 @@ async function runInstallCheck(context: InstallContext): Promise<void> {
   throw new Error('install manifest drift detected');
 }
 
-interface DoctorIssue {
+export interface DoctorIssue {
   severity: 'error' | 'warn';
   id: string;
   message: string;
   suggestion: string;
+}
+
+export interface InstallDoctorReport {
+  passed: boolean;
+  target: Target;
+  errors: number;
+  warnings: number;
+  issues: DoctorIssue[];
+  recommended_command: string | null;
 }
 
 async function checkShimExecutable(context: InstallContext): Promise<DoctorIssue[]> {
@@ -515,27 +525,55 @@ async function checkManifestDoctor(context: InstallContext): Promise<DoctorIssue
   }
 }
 
-async function runInstallDoctor(context: InstallContext): Promise<void> {
+function buildDoctorReport(context: InstallContext, issues: DoctorIssue[]): InstallDoctorReport {
+  const errors = issues.filter((issue) => issue.severity === 'error').length;
+  const warnings = issues.filter((issue) => issue.severity === 'warn').length;
+  return {
+    passed: errors === 0,
+    target: context.target,
+    errors,
+    warnings,
+    issues,
+    recommended_command: issues[0]?.suggestion.replace(/^运行\s+/, '') || null,
+  };
+}
+
+async function buildInstallDoctorReportFromContext(context: InstallContext): Promise<InstallDoctorReport> {
   const issues = [
     ...await checkManifestDoctor(context),
     ...await checkShimExecutable(context),
     ...await checkCodexConfigRisk(context),
   ];
+  return buildDoctorReport(context, issues);
+}
 
-  if (issues.length === 0) {
-    console.log(`✅  install doctor 通过 (target: ${context.target})`);
+export async function buildInstallDoctorReport(options: InstallOptions = {}): Promise<InstallDoctorReport> {
+  return buildInstallDoctorReportFromContext(await createInstallContext(options));
+}
+
+function printDoctorReport(report: InstallDoctorReport): void {
+  if (report.issues.length === 0) {
+    console.log(`✅  install doctor 通过 (target: ${report.target})`);
     return;
   }
 
-  const errors = issues.filter((issue) => issue.severity === 'error');
-  const warnings = issues.filter((issue) => issue.severity === 'warn');
-  console.log(`❌  install doctor 发现 ${errors.length} 个错误, ${warnings.length} 个警告`);
-  for (const issue of issues) {
+  console.log(`❌  install doctor 发现 ${report.errors} 个错误, ${report.warnings} 个警告`);
+  for (const issue of report.issues) {
     const icon = issue.severity === 'error' ? '❌' : '⚠️';
     console.log(`  ${icon} [${issue.id}] ${issue.message}`);
     console.log(`     建议: ${issue.suggestion}`);
   }
-  if (errors.length > 0) throw new Error('install doctor failed');
+}
+
+async function runInstallDoctor(context: InstallContext, json = false): Promise<void> {
+  const report = await buildInstallDoctorReportFromContext(context);
+  if (json) {
+    process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+    if (!report.passed) process.exitCode = 1;
+    return;
+  }
+  printDoctorReport(report);
+  if (!report.passed) throw new Error('install doctor failed');
 }
 
 async function createInstallContext(options: InstallOptions): Promise<InstallContext> {
@@ -716,8 +754,11 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
   const context = await createInstallContext(options);
   const { target, targetDir, force, projectInfo } = context;
   const detected = projectInfo ? `${projectInfo.type}/${projectInfo.language}` : '未检测到';
-  console.log(`📦  安装 Agent 协议文件到: ${targetDir}`);
-  console.log(`    目标: ${target} | 项目: ${detected}\n`);
+  const quietJsonDoctor = options.doctor && options.json;
+  if (!quietJsonDoctor) {
+    console.log(`📦  安装 Agent 协议文件到: ${targetDir}`);
+    console.log(`    目标: ${target} | 项目: ${detected}\n`);
+  }
 
   if (options.checkOnly || options.check) {
     await runInstallCheck(context);
@@ -725,7 +766,7 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
   }
 
   if (options.doctor) {
-    await runInstallDoctor(context);
+    await runInstallDoctor(context, !!options.json);
     return;
   }
 
