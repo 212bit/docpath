@@ -93,6 +93,104 @@ function buildBrainstormSystemPrompt(projectContext: string, existingSpec: strin
     (existingSpec ? `\n\n已有规约：\n${existingSpec}` : '');
 }
 
+function firstMeaningfulLine(input: string): string {
+  return input
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => line.length > 0) || '未命名需求';
+}
+
+function sanitizeInline(value: string): string {
+  return value.replace(/[`*_#\[\]]/g, '').trim() || '未命名需求';
+}
+
+function buildDraftTitle(userMsg: string): string {
+  const line = sanitizeInline(firstMeaningfulLine(userMsg));
+  return line.length > 48 ? `${line.slice(0, 48)}...` : line;
+}
+
+function buildClarificationSection(): string[] {
+  return [
+    '## 澄清问题',
+    '',
+    '1. 这个需求主要服务哪类用户或 Agent 工作流？',
+    '2. 完成后用户会通过哪个命令、文件或界面感知到变化？',
+    '3. 哪些行为必须保持兼容，哪些场景明确不在本次范围内？',
+    '4. 验收时应该检查哪些输出、状态变化或无副作用约束？',
+    '',
+  ];
+}
+
+function buildAssumptionsSection(): string[] {
+  return [
+    '## 默认假设',
+    '',
+    '- 优先保持现有 DocPath FSM 与命令行为兼容。',
+    '- 如果需求仍不完整，先采用最小可交付范围，并在 spec 中写明不包含项。',
+    '- 所有新增行为应可通过本地测试验证，不依赖网络或外部 LLM。',
+    '',
+  ];
+}
+
+function buildSpecDraftSection(title: string, summary: string): string[] {
+  return [
+    '## Spec 草稿',
+    '',
+    `# T-DRAFT - ${title}`,
+    '',
+    '## 1. 背景与动机',
+    '',
+    '## 背景',
+    '',
+    `- 用户提出的初始需求：${summary}`,
+    '- 当前信息仍需要通过澄清问题确认用户、入口、范围和验收口径。',
+    '',
+    '## 验收',
+    '',
+    '- 需求已补齐背景、范围、功能需求和验收标准，可进入 `docpath plan`。',
+    '',
+    '## 2. 需求清单',
+    '',
+    '### 功能需求',
+    `- [ ] FR-1: ${title}`,
+    '  - 来源: brainstorm draft',
+    '',
+    '### 非功能需求',
+    '- [ ] NFR-1: 保持现有 DocPath 工作流兼容',
+    '- [ ] NFR-2: 新增行为应可通过自动化测试验证',
+    '',
+    '## 3. 范围界定',
+    '',
+    '### 包含',
+    `- ${title}`,
+    '',
+    '### 不包含',
+    '- 待根据澄清问题补充',
+    '',
+    '## 4. 关键决策',
+    '',
+    '| # | 决策 | 选项 | 结论 | 理由 |',
+    '|---|------|------|------|------|',
+    '| 1 | 实施范围 | 最小可交付 / 扩展方案 | 最小可交付 | 降低入口需求不清导致的返工 |',
+    '',
+    '## 5. 验收标准',
+    '',
+    '- [ ] AC-1: 需求背景、范围和验收口径已补齐',
+    '- [ ] AC-2: `docpath plan` 可基于该 spec 生成可执行计划',
+    '',
+  ];
+}
+
+function buildBrainstormDraft(userMsg: string): string {
+  const title = buildDraftTitle(userMsg);
+  const summary = userMsg.trim() || '（未提供需求描述）';
+  return [
+    ...buildClarificationSection(),
+    ...buildAssumptionsSection(),
+    ...buildSpecDraftSection(title, summary),
+  ].join('\n');
+}
+
 function emitBrainstormPrompt(systemPrompt: string, userMsg: string, existingSpec: string): void {
   emitPrompt({
     task: 'brainstorm',
@@ -108,24 +206,29 @@ function emitBrainstormPrompt(systemPrompt: string, userMsg: string, existingSpe
       '',
       '**执行方式**：',
       '1. 分析用户输入，识别模糊点和缺失信息',
-      '2. 逐一提问澄清（每次只问 1-2 个关键问题）',
-      '3. 需求清晰后，生成结构化 spec.md',
-      '4. 使用 `docpath write-spec` 写入结果',
+      '2. 先输出“澄清问题”，每次只问 1-2 个关键问题',
+      '3. 给出“默认假设”，明确哪些边界是暂定的',
+      '4. 需求清晰后，生成可执行的 Markdown spec 草稿',
+      '5. 使用 `docpath write-spec` 写入结果',
       '',
-      '**spec.md 格式要求**：',
-      '```yaml',
-      'title: "项目标题"',
-      'background: |',
-      '  背景描述',
-      'functional_requirements:',
-      '  - id: FR-1',
-      '    description: "功能描述"',
-      'constraints: []',
-      'acceptance_criteria:',
-      '  - "验收条件"',
+      '**输出必须包含**：',
+      '- `## 澄清问题`',
+      '- `## 默认假设`',
+      '- `## Spec 草稿`',
+      '',
+      '**Spec 草稿格式要求**：',
+      '```markdown',
+      '# T-DRAFT - 项目标题',
+      '## 1. 背景与动机',
+      '## 2. 需求清单',
+      '### 功能需求',
+      '### 非功能需求',
+      '## 3. 范围界定',
+      '## 4. 关键决策',
+      '## 5. 验收标准',
       '```',
     ],
-    output_format: 'spec.md (YAML format)',
+    output_format: '澄清问题 + 默认假设 + spec.md Markdown 草稿',
   });
 }
 
@@ -154,9 +257,14 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
   const systemPrompt = buildBrainstormSystemPrompt(projectContext, existingSpec);
 
   if (dryRun) {
-    console.log('📝  [dry-run] 生成的 Spec 预览：');
+    console.log('📝  [dry-run] 需求头脑风暴预览：');
     console.log('---');
-    console.log(existingSpec || '(无现有 spec)');
+    console.log(buildBrainstormDraft(userMsg));
+    if (existingSpec) {
+      console.log('## 现有 Spec 参考');
+      console.log('');
+      console.log(existingSpec);
+    }
     console.log('---');
     return;
   }
