@@ -97,23 +97,30 @@ gates:
 ```
 .docpath/
 ├── config.yaml             ← 项目配置
-├── spec/                   ← 全局规范（跨任务沉淀）
+├── rules/                  ← 全局规则（跨任务沉淀）
 │   ├── architecture.md     ← 架构规范
-│   ├── style.md            ← 代码风格
-│   └── template/           ← 文档模板
+│   └── style.md            ← 代码风格
+├── spec/template/          ← 文档模板（兼容旧模板目录）
 ├── tasks/T-YYYYMMDD-xxx/   ← 任务目录（沙盒隔离）
 │   ├── spec.md             ← 任务规约
 │   ├── plan.md             ← 执行计划（子任务清单）
 │   ├── check.md            ← 验证记录
 │   └── review.md           ← 审查记录
 └── workspace/              ← 运行时状态
-    ├── current.md          ← 当前状态（读写频繁）
+    ├── current.md          ← state.json 的渲染视图
     └── breadcrumb.md       ← 执行面包屑（断点续传）
 ```
 
+### 职责边界
+
+- `backlog/`：候选需求池，负责优先级、接收与 promote 前状态。
+- `tasks/`：任务真源，负责当前任务的 spec、plan、review 与归档材料。
+- `workspace/`：运行态与证据，`current.md` 只读展示 `state.json`，不作为任务真源。
+- `rules/`：全局规范，负责跨任务的 style、architecture 与 learned conventions。
+
 ### 文档第一性原则
 
-1. **先文档，后代码**：任何改动前，确保对应的 spec/plan 文档存在
+1. **先文档，后代码**：任何改动前，确保对应的任务 spec/plan 文档存在
 2. **执行写回文档**：任务执行中的关键决策、验证结果、发现需写回文档
 3. **文档即验证**：任务完成的标准是文档都已更新到最终状态
 

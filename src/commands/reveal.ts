@@ -20,6 +20,7 @@ import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { getRecentDecisions } from '../governance/decisions.js';
+import { readRuleFile } from '../utils/rules.js';
 
 interface DocsIndexEntry {
   path: string;
@@ -229,27 +230,21 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
   // ══════════════════════════════════════════
   if (level >= 2) {
     // Style 规则
-    const stylePath = join(docpathDir, 'spec', 'style.md');
-    if (existsSync(stylePath)) {
-      const style = await safeRead(stylePath);
-      if (style.trim()) {
-        sections.push(
-          header('📏', '编码规范 (style)') + '\n' +
-          style.trim()
-        );
-      }
+    const { content: style, file: styleFile } = await readRuleFile(docpathDir, 'style');
+    if (style.trim()) {
+      sections.push(
+        header('📏', `全局规则: 编码规范 (${styleFile.displayPath})`) + '\n' +
+        style.trim()
+      );
     }
 
     // Architecture（如果存在）
-    const archPath = join(docpathDir, 'spec', 'architecture.md');
-    if (existsSync(archPath)) {
-      const arch = await safeRead(archPath);
-      if (arch.trim()) {
-        sections.push(
-          header('🏗️', '架构 (architecture)') + '\n' +
-          firstNLines(arch, 30)
-        );
-      }
+    const { content: arch, file: archFile } = await readRuleFile(docpathDir, 'architecture');
+    if (arch.trim()) {
+      sections.push(
+        header('🏗️', `全局规则: 架构 (${archFile.displayPath})`) + '\n' +
+        firstNLines(arch, 30)
+      );
     }
 
     // 结构化文档索引

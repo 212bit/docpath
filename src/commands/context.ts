@@ -11,6 +11,7 @@ import { join } from 'path';
 import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { readRuleFile } from '../utils/rules.js';
 
 interface DocsIndexEntry {
   path: string;
@@ -87,6 +88,7 @@ function docPriority(entry: DocsIndexEntry): number {
   if (path.includes('workspace/current.md')) score += 80;
   if (path.includes('workspace/breadcrumb.md')) score += 70;
   if (path.includes('workspace/last-check.md')) score += 60;
+  if (path.includes('rules/style.md') || path.includes('rules/architecture.md')) score += 55;
   if (path.includes('spec/style.md') || path.includes('spec/architecture.md')) score += 50;
   if (entry.type === 'runbook' || entry.kind === 'runbook') score += 20;
   if (!Number.isNaN(level)) score += Math.max(0, 10 - level);
@@ -181,13 +183,10 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
     }
   }
 
-  // ── 6. Style 规则 ──
-  const stylePath = join(docpathDir, 'spec', 'style.md');
-  if (existsSync(stylePath)) {
-    const style = await readFile(stylePath, 'utf-8');
-    if (style.trim()) {
-      sections.push(`## 编码规范 (style.md)\n${compressMarkdown(style, Math.floor(maxChars * 0.2))}`);
-    }
+  // ── 6. 全局规则 ──
+  const { content: style, file: styleFile } = await readRuleFile(docpathDir, 'style');
+  if (style.trim()) {
+    sections.push(`## 全局规则: 编码规范 (${styleFile.displayPath})\n${compressMarkdown(style, Math.floor(maxChars * 0.2))}`);
   }
 
   // ── 7. 结构化文档索引：小预算下优先保留当前任务相关文档 ──

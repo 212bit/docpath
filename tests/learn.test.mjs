@@ -58,6 +58,13 @@ function mkWorkspace({ gate = 'check_pass' } = {}) {
   return cwd;
 }
 
+function moveLegacyRulesToRules(cwd) {
+  const dp = join(cwd, '.docpath');
+  mkdirSync(join(dp, 'rules'), { recursive: true });
+  writeFileSync(join(dp, 'rules', 'style.md'), readFileSync(join(dp, 'spec', 'style.md'), 'utf-8'));
+  writeFileSync(join(dp, 'rules', 'architecture.md'), readFileSync(join(dp, 'spec', 'architecture.md'), 'utf-8'));
+}
+
 function count(content, needle) {
   return content.split(needle).length - 1;
 }
@@ -121,6 +128,36 @@ describe('journal to learn loop', () => {
     assert.match(architecture, /workflow-boundary/);
     assert.match(architecture, /来源: task: T-LEARN, source: journal/);
     assert.equal(countRule(architecture, 'workflow-boundary'), 1);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('learn prefers .docpath/rules for new projects', () => {
+    const cwd = mkWorkspace();
+    const dp = join(cwd, '.docpath');
+    moveLegacyRulesToRules(cwd);
+    writeFileSync(join(dp, 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## T-LEARN rules path',
+      '',
+      '- task_id: T-LEARN',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: rules-first',
+      '',
+      '### Lesson',
+      '',
+      '✅ 新项目应把学习规则写入 rules 目录。',
+      '',
+    ].join('\n'));
+
+    execSync(`node ${BIN} learn --cwd ${cwd}`, { cwd, encoding: 'utf-8', timeout: 20000 });
+
+    const rulesStyle = readFileSync(join(dp, 'rules', 'style.md'), 'utf-8');
+    const legacyStyle = readFileSync(join(dp, 'spec', 'style.md'), 'utf-8');
+    assert.match(rulesStyle, /rules-first/);
+    assert.doesNotMatch(legacyStyle, /rules-first/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

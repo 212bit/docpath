@@ -218,6 +218,61 @@ Alpha
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('reads learned metadata from .docpath/rules before legacy spec paths', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    mkdirSync(join(cwd, '.docpath', 'rules'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## T-LESSON — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LESSON',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: rules-learned',
+      '',
+      '### Lesson',
+      '',
+      '推荐固化经验。',
+      '',
+    ].join('\n'));
+    writeFileSync(join(cwd, '.docpath', 'rules', 'style.md'), [
+      '# Style',
+      '',
+      '<!-- docpath:auto-learn:style -->',
+      '- **rules-learned**: 推荐固化经验。',
+      '<!-- docpath:lesson-meta best-practice:style:rules-learned:journal:t-lesson -->',
+      '',
+    ].join('\n'));
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath backlog add');
+    assert.equal(output.lesson_summary.pending_count, 0);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('routes drafting with placeholder spec into spec completion guidance', () => {
+    const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), [
+      '# Placeholder Spec',
+      '',
+      '## 背景',
+      '',
+      '- 待补充',
+      '',
+    ].join('\n'));
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath brainstorm --dry-run');
+    assert.match(output.next_action, /补全需求/);
+    assert.ok(output.required_files.includes('.docpath/tasks/current/spec.md'));
+    assert.ok(output.must_update.includes('.docpath/tasks/current/spec.md'));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('routes idle state to accept the highest-priority proposed backlog item when none are accepted', () => {
     const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });

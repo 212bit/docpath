@@ -8,7 +8,14 @@
 1. Run `docpath status --agent` or read `.docpath/workspace/current.md`.
 2. Read `.docpath/workspace/breadcrumb.md` for recent progress.
 3. Use `docpath next --agent` to choose the next safe action.
-4. After each meaningful step, update DocPath state/breadcrumb via CLI or files.
+4. After each meaningful step, update DocPath state/breadcrumb via lifecycle commands.
+
+## Information Architecture
+
+- `.docpath/backlog/` holds candidate work before it becomes an active task.
+- `.docpath/tasks/` holds task truth: spec, plan, review, and task journal.
+- `.docpath/workspace/` holds runtime state and evidence; `current.md` is rendered from `state.json`.
+- `.docpath/rules/` holds global style, architecture, and learned conventions.
 
 
 
@@ -47,6 +54,7 @@ docpath compact
 - Keep changes scoped to the active task.
 - Run `docpath check` before marking work complete.
 - Record blockers and decisions in breadcrumb/review/journal files.
+- Do not hand-edit `current.md`; use DocPath commands to update state.
 - Do not push unless explicitly requested.
 
 ## Linked Project

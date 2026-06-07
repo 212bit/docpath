@@ -17,11 +17,13 @@
 
 ## Project Context
 
+- **Backlog**: `.docpath/backlog/` — candidate work pool; priority and acceptance live here before a task starts.
 - **Task Directory**: `.docpath/tasks/`
 - **Spec**: `.docpath/tasks/<id>/spec.md`
 - **Plan**: `.docpath/tasks/<id>/plan.md`
 - **Review**: `.docpath/tasks/<id>/review.md`
-- **Coding Style**: `.docpath/spec/style.md`
+- **Workspace**: `.docpath/workspace/` — rendered runtime state and execution evidence; `current.md` is generated from `state.json`.
+- **Rules**: `.docpath/rules/` — global style, architecture, and learned conventions.
 
 ---
 
@@ -70,10 +72,10 @@ Rules:
 
 1. Do NOT skip state checks
 2. Do NOT execute from memory alone
-3. Always update `current.md` after state changes
-4. Always write breadcrumb after each sub-task
+3. Do NOT hand-edit `current.md`; it is a rendered view of `workspace/state.json`
+4. Always record progress with DocPath lifecycle commands after each sub-task
 5. Run `docpath check` before marking tasks complete
-6. **After completing each sub-task, immediately check off the corresponding item in `current.md` checklist (`[ ]` → `[x]`)**
+6. Let `docpath agent step` update breadcrumb and plan checklist state
 
 ---
 

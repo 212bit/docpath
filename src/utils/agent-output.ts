@@ -15,6 +15,7 @@ import { resolveDocpathDir } from './file.js';
 import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from './plan-sync.js';
 import { listBacklogItems, type BacklogItem } from '../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.js';
+import { readRuleFile, ruleDisplayPaths } from './rules.js';
 
 export interface AgentOutput {
   /** 当前状态 (state machine state) */
@@ -198,6 +199,7 @@ type AgentOutputContext = {
   tddState: TddStateSnapshot | null;
   historicalTaskDirCount: number;
   lessonSummary: { pendingCount: number; pendingKeys: string[] };
+  hasIncompleteSpec: boolean;
 };
 
 function parseTddState(raw: string): TddStateSnapshot | null {
@@ -208,6 +210,12 @@ function parseTddState(raw: string): TddStateSnapshot | null {
   } catch {
     return null;
   }
+}
+
+function isIncompleteSpec(content: string): boolean {
+  const trimmed = content.trim();
+  if (!trimmed) return true;
+  return /待补充/.test(trimmed);
 }
 
 /**
@@ -224,6 +232,7 @@ function inferNextAction(
   tddState: TddStateSnapshot | null,
   historicalTaskDirCount: number,
   lessonSummary: { pendingCount: number; pendingKeys: string[] },
+  hasIncompleteSpec: boolean,
 ): {
   next_action: string;
   recommended_command: string;
@@ -240,6 +249,7 @@ function inferNextAction(
   const lastCheckFailed = /^\*\*结果\*\*:\s*❌\s*FAIL\s*$/m.test(lastCheckContent);
   const lastCheckPassed = /^\*\*结果\*\*:\s*✅\s*PASS\s*$/m.test(lastCheckContent);
   const hasPendingLessonCandidates = lessonSummary.pendingCount > 0;
+  const globalRules = ruleDisplayPaths();
 
   // 默认值
   let next_action = '评估当前任务状态';
@@ -399,7 +409,7 @@ function inferNextAction(
         recommended_command: 'docpath learn --dry-run',
         required_context: learnRequired,
         required_files: learnRequired,
-        must_update: ['.docpath/spec/style.md', '.docpath/spec/architecture.md'],
+        must_update: globalRules,
         exit_criteria: '预览确认后运行 docpath learn，lesson 候选已合并或去重跳过',
       };
     }
@@ -451,25 +461,31 @@ function inferNextAction(
         next_action = `检测到 ${lessonSummary.pendingCount} 条待固化 lesson 候选，建议先预览并沉淀为全局规范`;
         recommended_command = 'docpath learn --dry-run';
         required_context = ['.docpath/workspace/current.md', '.docpath/workspace/lesson-candidates.md'];
-        must_update = ['.docpath/spec/style.md', '.docpath/spec/architecture.md'];
+        must_update = globalRules;
         exit_criteria = '预览确认后运行 docpath learn，lesson 候选已合并或去重跳过';
       } else {
         next_action = '当前无活跃任务，先创建 backlog 条目';
         recommended_command = 'docpath backlog add';
-        required_context = ['.docpath/workspace/current.md', '.docpath/spec/architecture.md', '.docpath/spec/style.md'];
+        required_context = ['.docpath/workspace/current.md', ...globalRules];
         exit_criteria = '至少存在一条 backlog 条目';
       }
       break;
     case 'drafting':
-      if (hasSpec) {
+      if (hasSpec && !hasIncompleteSpec) {
         next_action = 'spec 已就绪，生成执行计划';
         recommended_command = 'docpath plan';
         required_context = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md'];
         exit_criteria = 'plan.md 已生成';
+      } else if (hasSpec && hasIncompleteSpec) {
+        next_action = '当前 spec 仍是骨架内容，请先补全需求背景、验收标准和范围边界';
+        recommended_command = 'docpath brainstorm --dry-run';
+        required_context = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md', ...globalRules];
+        must_update = ['.docpath/tasks/current/spec.md'];
+        exit_criteria = 'spec.md 不再包含“待补充”，并明确需求、范围和验收';
       } else {
         next_action = '完成需求澄清后写入 spec';
         recommended_command = 'docpath write-spec';
-        required_context = ['.docpath/workspace/current.md', '.docpath/spec/architecture.md', '.docpath/spec/style.md'];
+        required_context = ['.docpath/workspace/current.md', ...globalRules];
         exit_criteria = 'spec.md 已写入';
       }
       break;
@@ -490,7 +506,7 @@ function inferNextAction(
         '.docpath/workspace/breadcrumb.md',
         '.docpath/tasks/current/plan.md',
       ];
-      must_update = ['.docpath/workspace/breadcrumb.md', '.docpath/workspace/current.md'];
+      must_update = ['.docpath/workspace/breadcrumb.md'];
       if (bc.blocked > 0) {
         next_action = `处理 ${bc.blocked} 个阻塞项后继续: ${phase}`;
       }
@@ -513,6 +529,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   const state = await readCurrentMd(cwd);
   const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
   const hasSpec = existsSync(join(docpathDir, 'tasks', 'current', 'spec.md'));
+  const specContent = hasSpec ? await readOptionalFile(join(docpathDir, 'tasks', 'current', 'spec.md')) : '';
   const planTasks = await resolveEffectivePlanTasks(cwd);
   const rawBreadcrumb = await readBreadcrumb(cwd);
   const bc = summarizeCurrentTaskBreadcrumbs(rawBreadcrumb, state?.task_id || '');
@@ -523,8 +540,8 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   const historicalTaskDirCount = await countHistoricalTaskDirs(docpathDir, state?.task_id || undefined);
   const lessonSummary = summarizeUnlearnedLessonCandidates(
     await readOptionalFile(join(docpathDir, 'workspace', 'lesson-candidates.md')),
-    await readOptionalFile(join(docpathDir, 'spec', 'style.md')),
-    await readOptionalFile(join(docpathDir, 'spec', 'architecture.md')),
+    (await readRuleFile(docpathDir, 'style')).content,
+    (await readRuleFile(docpathDir, 'architecture')).content,
   );
 
   return {
@@ -540,6 +557,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     tddState,
     historicalTaskDirCount,
     lessonSummary,
+    hasIncompleteSpec: hasSpec ? isIncompleteSpec(specContent) : false,
   };
 }
 
@@ -575,6 +593,7 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
     context.tddState,
     context.historicalTaskDirCount,
     context.lessonSummary,
+    context.hasIncompleteSpec,
   );
 }
 

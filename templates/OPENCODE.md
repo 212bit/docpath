@@ -13,10 +13,12 @@
 
 ## Core Files
 
-- `.docpath/workspace/current.md` — active task state and checklist
+- `.docpath/workspace/current.md` — rendered active state view generated from `state.json`
 - `.docpath/workspace/breadcrumb.md` — execution trace for resume/handoff
 - `.docpath/tasks/current/spec.md` — active task spec
 - `.docpath/tasks/current/plan.md` — active task plan
+- `.docpath/rules/` — global style, architecture, and learned conventions
+- `.docpath/backlog/` — candidate work before it becomes an active task
 
 ## Agent Lifecycle Commands
 
@@ -61,6 +63,7 @@ docpath continue
 
 - Do not act from memory alone; read DocPath state first.
 - Do not hand-edit `state.json` or workflow fields in `current.md`.
+- Do not use `current.md` as task truth; task spec/plan live under `.docpath/tasks/`.
 - Use `docpath next --agent` when the route is unclear.
 - Run `docpath check` before claiming completion.
 - Use `docpath agent handoff` when another session may resume the task.

@@ -30,6 +30,8 @@ function mkWorkspace() {
   writeFileSync(join(dp, 'workspace', 'current.md'), '# Current\n\nCurrent task state.\n');
   writeFileSync(join(dp, 'workspace', 'breadcrumb.md'), '# Breadcrumb\n');
   writeFileSync(join(dp, 'workspace', 'last-check.md'), '# Last Check Evidence\n\n**结果**: ✅ PASS\n');
+  writeFileSync(join(dp, 'spec', 'style.md'), '# Legacy Style\n\nLegacy style fallback rule.\n');
+  writeFileSync(join(dp, 'spec', 'architecture.md'), '# Legacy Architecture\n\nLegacy architecture fallback rule.\n');
   writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), '# Current Task Spec\n\nCurrent task summary should be prioritized.\n');
   writeFileSync(join(dp, 'tasks', 'current', 'plan.md'), '# Current Task Plan\n\n- [ ] S1: Build structured docs index\n');
   writeFileSync(join(dp, 'tasks', 'T-DOCS', 'spec.md'), '# Current Task Spec\n\nCurrent task summary should be prioritized.\n');
@@ -104,6 +106,19 @@ describe('structured docs index', () => {
     assert.match(output, /path: spec\/backend\/api.md/);
     assert.match(output, /Backend API reference summary/);
     assert.doesNotMatch(output, /path: tasks\/current\/spec.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('context and reveal read legacy spec rules when rules directory is absent', () => {
+    const cwd = mkWorkspace();
+
+    const contextOutput = run(`context --cwd ${cwd} --format raw --max-tokens 500`, cwd);
+    const revealOutput = run(`reveal --cwd ${cwd} --level 2 --format raw`, cwd);
+
+    assert.match(contextOutput, /全局规则: 编码规范 \(\.docpath\/spec\/style\.md\)/);
+    assert.match(contextOutput, /Legacy style fallback rule/);
+    assert.match(revealOutput, /全局规则: 编码规范 \(\.docpath\/spec\/style\.md\)/);
+    assert.match(revealOutput, /Legacy architecture fallback rule/);
     rmSync(cwd, { recursive: true, force: true });
   });
 });

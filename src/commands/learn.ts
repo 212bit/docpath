@@ -7,6 +7,7 @@ import { readFileSafe, resolveDocpathDir} from '../utils/file.js';
 import { join } from 'node:path';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { resolveRulePaths } from '../utils/rules.js';
 
 interface LearnOptions {
   cwd: string;
@@ -330,11 +331,12 @@ function filterExistingPatterns(patterns: Pattern[], existingKeys: Set<string>):
 
 async function resolveLearnPaths(cwd: string): Promise<LearnPaths> {
   const docpathDir = await resolveDocpathDir(cwd);
+  const rules = resolveRulePaths(docpathDir);
   return {
     docpathDir,
     lessonCandidatesPath: join(docpathDir, 'workspace', 'lesson-candidates.md'),
-    stylePath: join(docpathDir, 'spec', 'style.md'),
-    architecturePath: join(docpathDir, 'spec', 'architecture.md'),
+    stylePath: rules.style.path,
+    architecturePath: rules.architecture.path,
   };
 }
 
@@ -423,7 +425,7 @@ async function writeMergedPatterns(paths: LearnPaths, plan: PatternMergePlan): P
   const mergedStylePatterns = uniquePatterns([...plan.styleSummary.patterns, ...plan.filteredStyle.added]);
   const newSection = patternsToStyleSection(mergedStylePatterns);
 
-  await mkdir(join(paths.docpathDir, 'spec'), { recursive: true });
+  await mkdir(join(paths.docpathDir, 'rules'), { recursive: true });
   if (newSection) await writeFile(paths.stylePath, cleanedStyle + newSection, 'utf-8');
 
   const cleanedArchitecture = stripAutoSection(plan.existingArchitecture, AUTO_ARCH_MARKER);

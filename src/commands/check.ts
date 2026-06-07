@@ -522,7 +522,7 @@ async function checkCurrentChecklist(cwd: string, docpathDir: string, progress: 
       return [{
         name: `⚠️  Checklist 同步 (${currentDoneCount}/${currentTotalCount})`,
         passed: false,
-        output: `plan.md 全部完成但 current.md checklist 仍有 ${currentTotalCount - currentDoneCount} 项未勾选，请同步更新`,
+        output: `plan.md 全部完成但渲染出的 current.md checklist 仍有 ${currentTotalCount - currentDoneCount} 项未完成，请通过 docpath agent step 或 plan 同步修复`,
         category: 'plan',
       }];
     }
@@ -530,7 +530,7 @@ async function checkCurrentChecklist(cwd: string, docpathDir: string, progress: 
       return [{
         name: `Checklist 同步 (${currentDoneCount}/${currentTotalCount})`,
         passed: true,
-        output: planFullyDone ? 'current.md checklist 与执行状态一致' : 'checklist 已记录 (plan.md 未全部完成，暂不交叉校验)',
+        output: planFullyDone ? 'current.md 渲染 checklist 与执行状态一致' : '渲染 checklist 已记录 (plan.md 未全部完成，暂不交叉校验)',
         category: 'plan',
       }];
     }
