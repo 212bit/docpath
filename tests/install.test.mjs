@@ -152,6 +152,7 @@ describe('install agent adapters', () => {
       assert.match(content, /docpath next --agent/);
       assert.match(content, /docpath agent done/);
       assert.match(content, /页面、Dashboard、流程可视化/);
+      assert.match(content, /重大变更|UI 信息架构/);
       assert.doesNotMatch(content, /docpath link\b/);
       assert.doesNotMatch(content, /docpath archive\b/);
     }
@@ -174,6 +175,7 @@ describe('install agent adapters', () => {
     assert.match(agents, /docpath next --agent/);
     assert.match(agents, /docpath agent done --step/);
     assert.match(agents, /Clarify product\/UI requests/);
+    assert.match(agents, /major changes/);
     assert.doesNotMatch(agents, /agent enter --step/);
     assert.doesNotMatch(agents, /--auto-next/);
 
@@ -206,10 +208,13 @@ describe('install agent adapters', () => {
       assert.match(content, /docpath next --agent/);
       assert.match(content, /docpath agent done/);
       assert.match(content, /stop and clarify before creating a backlog item/);
+      assert.match(content, /Decision Brief/);
+      assert.match(content, /long-term maintenance cost/);
       assert.doesNotMatch(content, /docpath archive\b/);
     }
     assert.match(codexProtocol, /docpath next --agent/);
     assert.match(codexProtocol, /Clarify product\/UI requests/);
+    assert.match(codexProtocol, /major changes/);
     assert.match(codexConfig, /project_doc_fallback_filenames = \["CODEX\.md"\]/);
     assert.doesNotMatch(codexConfig, /\[docpath\]/);
     assert.doesNotMatch(codexConfig, /\[docpath\.commands\]/);

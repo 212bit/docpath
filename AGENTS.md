@@ -17,11 +17,13 @@
 
 ## Project Context
 
+- **Backlog**: `.docpath/backlog/` — candidate work pool; priority and acceptance live here before a task starts.
 - **Task Directory**: `.docpath/tasks/`
 - **Spec**: `.docpath/tasks/<id>/spec.md`
 - **Plan**: `.docpath/tasks/<id>/plan.md`
 - **Review**: `.docpath/tasks/<id>/review.md`
-- **Coding Style**: `.docpath/spec/style.md`
+- **Workspace**: `.docpath/workspace/` — rendered runtime state and execution evidence; `current.md` is generated from `state.json`.
+- **Rules**: `.docpath/rules/` — global style, architecture, and learned conventions.
 
 ---
 
@@ -73,10 +75,11 @@ Rules:
 1. Do NOT skip state checks
 2. Do NOT execute from memory alone
 3. When a request describes a product/UI surface such as a page, dashboard, workflow visualization, or data view but does not define the target user, entry point, data scope, and interaction model, stop and clarify before creating a backlog item, promoting a task, or writing code.
-4. Always update `current.md` after state changes
-5. Always write breadcrumb after each sub-task
-6. Run `docpath check` before marking tasks complete
-7. **After completing each sub-task, immediately check off the corresponding item in `current.md` checklist (`[ ]` → `[x]`)**
+4. When a request may change technology stack, architecture/module boundaries, data model/API contract, UI information architecture/user journey, workflow/Agent behavior, permission or write-operation boundaries, task scope, existing capabilities, or long-term maintenance cost, stop and run brainstorm/refine first. Write a Decision Brief in the task spec and wait for explicit user confirmation before promoting an implementation task or writing implementation code.
+5. Do NOT hand-edit `current.md`; it is a rendered view of `workspace/state.json`
+6. Always record progress with DocPath lifecycle commands after each sub-task
+7. Run `docpath check` before marking tasks complete
+8. Let `docpath agent step` update breadcrumb and plan checklist state
 
 ---
 

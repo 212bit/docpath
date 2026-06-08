@@ -14060,3 +14060,638 @@ agent-step: S3
 - .docpath/tasks/T-20260608-init-sqlite-registry/plan.md
 
 ---
+## ADR-20260608-123 — review
+
+- task_id: T-20260608-task-6
+- created_at: 2026-06-08T12:22:07.231Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-124 — review
+
+- task_id: T-20260608-task-6
+- created_at: 2026-06-08T12:22:58.883Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-125 — journal.archive
+
+- task_id: T-20260608-task-6
+- created_at: 2026-06-08T12:22:59.020Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 新增重大技术决策门禁
+agent-step: S1
+开始执行: 实现 新增重大技术决策门禁
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 2 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 2 提示
+
+### 决策
+
+归档任务 T-20260608-task-6
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-task-6/spec.md
+- .docpath/tasks/T-20260608-task-6/plan.md
+
+---
+## ADR-20260608-126 — review
+
+- task_id: T-20260608-dashboard-react-ui
+- created_at: 2026-06-08T12:34:21.887Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-127 — review
+
+- task_id: T-20260608-dashboard-react-ui
+- created_at: 2026-06-08T12:35:02.947Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-128 — journal.archive
+
+- task_id: T-20260608-dashboard-react-ui
+- created_at: 2026-06-08T12:35:03.060Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard React UI 方案边界
+agent-step: S1
+开始执行: 交付 Dashboard React UI Decision Brief
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 2 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 2 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-react-ui
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-react-ui/spec.md
+- .docpath/tasks/T-20260608-dashboard-react-ui/plan.md
+
+---
+## ADR-20260608-129 — review
+
+- task_id: T-20260608-dashboard-react-agent
+- created_at: 2026-06-08T13:11:41.356Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-130 — review
+
+- task_id: T-20260608-dashboard-react-agent
+- created_at: 2026-06-08T13:12:39.398Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-131 — journal.archive
+
+- task_id: T-20260608-dashboard-react-agent
+- created_at: 2026-06-08T13:12:39.493Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 固化 React/Vite 迁移边界
+agent-step: S1
+开始执行: 建立 Vite + React Dashboard UI 构建入口
+agent-step: S2
+开始执行: 迁移 Agent 工作台核心视图
+agent-step: S3
+开始执行: 更新测试并验证兼容性
+agent-step: S4
+质量检查失败: ⚠️  Checklist 同步 (4/5)
+agent-step: S5
+质量检查通过 (9 项)
+代码审查: 0 错误, 1 警告, 2 提示
+质量检查通过 (9 项)
+代码审查: 0 错误, 1 警告, 2 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-react-agent
+
+### 影响
+
+任务进入归档状态；完成 5/5 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-react-agent/spec.md
+- .docpath/tasks/T-20260608-dashboard-react-agent/plan.md
+
+---
+## ADR-20260608-132 — review
+
+- task_id: T-20260608-task-7
+- created_at: 2026-06-08T14:06:19.407Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-133 — review
+
+- task_id: T-20260608-task-7
+- created_at: 2026-06-08T14:07:21.359Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-134 — journal.archive
+
+- task_id: T-20260608-task-7
+- created_at: 2026-06-08T14:07:21.482Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理现有重大决策门禁
+agent-step: S1
+开始执行: 升级模板与 Agent 协议
+agent-step: S2
+开始执行: 强化 check 门禁检测
+agent-step: S3
+开始执行: 更新测试并验证
+agent-step: S4
+开始执行: 门禁检查与归档
+agent-step: S5
+质量检查通过 (9 项)
+代码审查: 0 错误, 1 警告, 2 提示
+质量检查通过 (9 项)
+代码审查: 0 错误, 1 警告, 2 提示
+
+### 决策
+
+归档任务 T-20260608-task-7
+
+### 影响
+
+任务进入归档状态；完成 5/5 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-task-7/spec.md
+- .docpath/tasks/T-20260608-task-7/plan.md
+
+---
+## ADR-20260608-135 — review
+
+- task_id: T-20260608-team-portfolio-cockpit-decision-brief
+- created_at: 2026-06-08T14:33:38.141Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-136 — policy.skip
+
+- task_id: T-20260608-team-portfolio-cockpit-decision-brief
+- created_at: 2026-06-08T14:34:09.819Z
+- category: policy.skip
+
+### 背景
+
+设计任务，仅产出 Decision Brief；已运行 docpath check --skip-tests --skip-lint 和 docpath review，未写 UI/API 实现代码
+
+### 决策
+
+跳过 check
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-137 — review
+
+- task_id: T-20260608-team-portfolio-cockpit-decision-brief
+- created_at: 2026-06-08T14:34:13.356Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-138 — journal.archive
+
+- task_id: T-20260608-team-portfolio-cockpit-decision-brief
+- created_at: 2026-06-08T14:34:13.493Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 固化用户确认与重大变更边界
+agent-step: S1
+开始执行: 设计 Team Portfolio Cockpit 信息架构
+agent-step: S2
+开始执行: 设计可写控制台安全模型
+agent-step: S3
+开始执行: 形成分阶段实施计划
+agent-step: S4
+开始执行: 检查与归档
+agent-step: S5
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 2 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 2 提示
+
+### 决策
+
+归档任务 T-20260608-team-portfolio-cockpit-decision-brief
+
+### 影响
+
+任务进入归档状态；完成 5/5 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-team-portfolio-cockpit-decision-brief/spec.md
+- .docpath/tasks/T-20260608-team-portfolio-cockpit-decision-brief/plan.md
+
+---
+## ADR-20260608-139 — review
+
+- task_id: T-20260608-dashboard-phase-1-team-cockpit
+- created_at: 2026-06-08T14:46:32.701Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-140 — review
+
+- task_id: T-20260608-dashboard-phase-1-team-cockpit
+- created_at: 2026-06-08T14:47:36.880Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-141 — journal.archive
+
+- task_id: T-20260608-dashboard-phase-1-team-cockpit
+- created_at: 2026-06-08T14:47:36.990Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 固化 Phase 1 只读边界
+agent-step: S1
+开始执行: 重构 React Team Cockpit 布局
+agent-step: S2
+开始执行: 重写 Team Cockpit CSS
+agent-step: S3
+开始执行: 更新测试并验证兼容性
+agent-step: S4
+开始执行: 门禁检查与归档
+agent-step: S5
+质量检查通过 (9 项)
+代码审查: 0 错误, 1 警告, 2 提示
+质量检查通过 (9 项)
+代码审查: 0 错误, 1 警告, 2 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-phase-1-team-cockpit
+
+### 影响
+
+任务进入归档状态；完成 5/5 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-phase-1-team-cockpit/spec.md
+- .docpath/tasks/T-20260608-dashboard-phase-1-team-cockpit/plan.md
+
+---
+## ADR-20260608-142 — review
+
+- task_id: T-20260608-dashboard-phase-1-team-cockpit
+- created_at: 2026-06-08T15:38:48.384Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 2 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---

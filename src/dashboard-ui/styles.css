@@ -1,0 +1,1024 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --dp-bg: #070a13;
+  --dp-surface: rgba(13, 20, 37, 0.7);
+  --dp-surface-hover: rgba(20, 30, 55, 0.85);
+  --dp-surface-muted: rgba(26, 36, 57, 0.45);
+  --dp-border: rgba(255, 255, 255, 0.06);
+  --dp-border-hover: rgba(16, 185, 129, 0.25);
+  --dp-text: #f1f5f9;
+  --dp-muted: #94a3b8;
+  --dp-accent: #10b981;
+  --dp-accent-hover: #059669;
+  --dp-accent-glow: rgba(16, 185, 129, 0.15);
+  --dp-accent-soft: rgba(16, 185, 129, 0.1);
+  --dp-warn: #f59e0b;
+  --dp-warn-soft: rgba(245, 158, 11, 0.1);
+  --dp-danger: #ef4444;
+  --dp-danger-soft: rgba(239, 68, 68, 0.1);
+  --dp-radius: 12px;
+  --dp-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  --dp-shadow-glow: 0 0 20px rgba(16, 185, 129, 0.1);
+  
+  color: var(--dp-text);
+  background: var(--dp-bg);
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dp-accent);
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.92); }
+}
+
+@keyframes spin-cw {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.react-dashboard {
+  display: grid;
+  gap: 20px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px;
+  animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.react-live-anchors {
+  display: none;
+}
+
+/* Glassmorphism Panel styles */
+.react-shell,
+.react-search,
+.react-panel,
+.react-cockpit-topbar,
+.react-project-rail,
+.react-cockpit-panel,
+.react-current-console {
+  background: var(--dp-surface);
+  border: 1px solid var(--dp-border);
+  border-radius: var(--dp-radius);
+  box-shadow: var(--dp-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.react-panel:hover,
+.react-cockpit-panel:hover,
+.react-current-console:hover {
+  border-color: var(--dp-border-hover);
+  box-shadow: var(--dp-shadow), var(--dp-shadow-glow);
+}
+
+.react-shell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(13, 20, 37, 0.8), rgba(9, 15, 29, 0.8));
+}
+
+.react-eyebrow {
+  margin: 0 0 6px;
+  color: var(--dp-accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.react-eyebrow::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--dp-accent);
+  border-radius: 50%;
+  animation: pulse 1.8s infinite;
+}
+
+.react-shell h1,
+.react-panel h2,
+.react-cockpit-brand h1 {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.react-shell h1,
+.react-cockpit-brand h1 {
+  font-size: 32px;
+  background: linear-gradient(135deg, #ffffff 30%, #a5f3fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.react-panel h2 {
+  font-size: 20px;
+}
+
+.react-subtitle {
+  margin: 8px 0 0;
+  max-width: 680px;
+  color: var(--dp-muted);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.react-shell-actions,
+.react-view-nav,
+.react-tab-list,
+.react-panel-header,
+.react-next-command {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.react-shell-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.react-command,
+.react-icon-button,
+.react-search button,
+.react-command-list button,
+.react-tab-list button,
+.react-view-nav a {
+  min-height: 38px;
+  border: 1px solid var(--dp-border);
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.4);
+  color: var(--dp-text);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.react-command:hover,
+.react-icon-button:hover,
+.react-search button:hover,
+.react-command-list button:hover,
+.react-tab-list button:hover:not([data-state="active"]),
+.react-view-nav a:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: var(--dp-accent);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+  transform: translateY(-1px);
+}
+
+.react-command:active,
+.react-icon-button:active,
+.react-view-nav a:active {
+  transform: translateY(0);
+}
+
+.react-command {
+  padding: 0 16px;
+  background: var(--dp-accent-soft);
+  border-color: rgba(16, 185, 129, 0.2);
+  color: var(--dp-accent);
+}
+
+.react-command:hover {
+  background: var(--dp-accent);
+  color: #070a13;
+  border-color: var(--dp-accent);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+.react-command:hover svg {
+  animation: spin-cw 1s linear infinite;
+}
+
+.react-icon-button {
+  padding: 0 10px;
+}
+
+.react-sync {
+  color: var(--dp-muted);
+  font-size: 12px;
+  background: rgba(30, 41, 59, 0.3);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--dp-border);
+}
+
+/* SearchStrip styles */
+.react-search {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: linear-gradient(90deg, rgba(13, 20, 37, 0.7), rgba(20, 30, 55, 0.4));
+}
+
+.react-search svg {
+  color: var(--dp-accent);
+}
+
+.react-search input {
+  min-width: 0;
+  border: 1px solid var(--dp-border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: rgba(15, 23, 42, 0.6);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.react-search input:focus {
+  outline: none;
+  border-color: var(--dp-accent);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.react-search span {
+  font-size: 13px;
+  color: var(--dp-muted);
+}
+
+.react-search b {
+  color: var(--dp-accent);
+}
+
+/* Tabs & Navigation styles */
+.react-view-nav,
+.react-tab-list {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.react-view-nav a {
+  padding: 0 14px;
+  text-decoration: none;
+}
+
+.react-tab-list {
+  border-bottom: 1px solid var(--dp-border);
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+}
+
+.react-tab-list button {
+  padding: 0 16px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--dp-muted);
+}
+
+.react-tab-list button[data-state="active"] {
+  border-color: var(--dp-accent);
+  background: var(--dp-accent-soft);
+  color: var(--dp-accent);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+}
+
+/* Panels */
+.react-panel {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.react-panel-header {
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.react-next-command {
+  max-width: 520px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.5);
+  color: #34d399;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.react-metrics-grid,
+.react-link-grid,
+.react-map-groups,
+.react-two-col {
+  display: grid;
+  gap: 12px;
+}
+
+.react-metrics-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.react-metrics-grid.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.react-metric,
+.react-link-grid a,
+.react-map-groups article {
+  min-width: 0;
+  border: 1px solid var(--dp-border);
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.3);
+  padding: 16px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.react-metric:hover,
+.react-link-grid a:hover,
+.react-map-groups article:hover {
+  border-color: var(--dp-border-hover);
+  background: rgba(30, 41, 59, 0.55);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.react-metric span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dp-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.react-metric strong {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.react-metric small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--dp-muted);
+}
+
+.react-link-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.react-link-grid a {
+  color: var(--dp-text);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100px;
+}
+
+.react-link-grid a:hover {
+  border-color: var(--dp-accent);
+}
+
+.react-link-grid b {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.react-link-grid span {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--dp-accent);
+  margin-top: 8px;
+}
+
+.react-link-grid small {
+  font-size: 11px;
+  color: var(--dp-muted);
+  margin-top: 4px;
+}
+
+.react-path,
+.react-command-list,
+.react-two-col ul,
+.react-map-groups ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.react-path li,
+.react-command-list li,
+.react-two-col li,
+.react-map-groups li {
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--dp-text);
+}
+
+.react-path a,
+.react-command-list a,
+.react-two-col a,
+.react-map-groups a {
+  color: var(--dp-accent);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.react-path a:hover,
+.react-command-list a:hover,
+.react-two-col a:hover,
+.react-map-groups a:hover {
+  text-decoration: underline;
+  color: #34d399;
+}
+
+.react-path small,
+.react-command-list small,
+.react-two-col small,
+.react-map-groups p {
+  color: var(--dp-muted);
+  font-size: 12px;
+  margin-top: 2px;
+  display: block;
+}
+
+.react-map-groups {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.react-map-groups article {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.react-map-groups article b {
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.react-map-groups p {
+  margin: 0 0 6px;
+}
+
+.react-two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.react-status {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--dp-accent-soft);
+  color: var(--dp-accent);
+}
+
+.react-status.attention {
+  background: var(--dp-warn-soft);
+  color: var(--dp-warn);
+}
+
+.react-status.blocked {
+  background: var(--dp-danger-soft);
+  color: var(--dp-danger);
+}
+
+/* Tooltip */
+.react-tooltip {
+  border-radius: 6px;
+  background: #1e293b;
+  color: #ffffff;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: fade-in-up 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.react-tooltip-arrow {
+  fill: #1e293b;
+}
+
+/* Team Cockpit UI styles */
+.react-team-cockpit {
+  display: grid;
+  gap: 16px;
+}
+
+.react-cockpit-topbar {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.1fr) minmax(360px, 1.4fr) minmax(280px, 1fr);
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+}
+
+.react-cockpit-brand p:last-child {
+  margin: 6px 0 0;
+  color: var(--dp-muted);
+  font-size: 13px;
+}
+
+.react-cockpit-status,
+.react-cockpit-summary,
+.react-console-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.react-cockpit-status {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.react-cockpit-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.react-cockpit-stat {
+  min-width: 0;
+  border: 1px solid var(--dp-border);
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.25);
+  padding: 12px;
+  transition: all 0.2s;
+}
+
+.react-cockpit-stat:hover {
+  border-color: var(--dp-border-hover);
+  background: rgba(30, 41, 59, 0.45);
+}
+
+.react-cockpit-stat span {
+  display: block;
+  color: var(--dp-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.react-cockpit-stat strong {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.15;
+}
+
+.react-cockpit-stat small {
+  display: block;
+  color: var(--dp-muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.react-cockpit-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(520px, 2fr) minmax(320px, 0.95fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.react-project-rail,
+.react-current-console,
+.react-cockpit-panel {
+  padding: 20px;
+}
+
+.react-rail-heading,
+.react-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--dp-border);
+  padding-bottom: 12px;
+}
+
+.react-rail-heading svg,
+.react-section-title svg {
+  color: var(--dp-accent);
+}
+
+.react-rail-heading h2,
+.react-section-title h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.react-rail-search {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0;
+  border: 1px dashed rgba(16, 185, 129, 0.2);
+  background: var(--dp-accent-soft);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--dp-accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.react-project-list,
+.react-queue-list,
+.react-blocker-list,
+.react-lane ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.react-project-list {
+  display: grid;
+  gap: 10px;
+}
+
+.react-project-list a,
+.react-queue-list li,
+.react-lane li {
+  min-width: 0;
+  border: 1px solid var(--dp-border);
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.2);
+  color: var(--dp-text);
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.react-project-list a:hover,
+.react-lane li:hover,
+.react-queue-list li:hover {
+  border-color: var(--dp-border-hover);
+  background: rgba(30, 41, 59, 0.45);
+  transform: translateX(2px);
+}
+
+.react-project-list a {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.react-project-list span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.react-project-list small,
+.react-queue-list small,
+.react-lane small,
+.react-current-task small,
+.react-blocker-list li {
+  color: var(--dp-muted);
+  font-size: 12px;
+}
+
+.react-cockpit-main {
+  display: grid;
+  gap: 16px;
+}
+
+.react-lane-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.react-lane {
+  min-width: 0;
+  border: 1px solid var(--dp-border);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(30, 41, 59, 0.15);
+}
+
+.react-lane header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding-bottom: 8px;
+}
+
+.react-lane header b {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.react-lane header strong {
+  background: var(--dp-accent-soft);
+  color: var(--dp-accent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.react-lane ul {
+  display: grid;
+  gap: 8px;
+}
+
+.react-lane li {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.react-lane a,
+.react-queue-list a {
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.react-queue-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.react-queue-list {
+  display: grid;
+  gap: 10px;
+}
+
+.react-queue-list li {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.react-queue-list span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.react-queue-list strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  color: var(--dp-accent);
+}
+
+.react-health-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 99px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.react-health-dot.ok {
+  background: var(--dp-accent);
+  color: var(--dp-accent);
+}
+
+.react-health-dot.warning,
+.react-health-dot.attention {
+  background: var(--dp-warn);
+  color: var(--dp-warn);
+}
+
+.react-health-dot.error,
+.react-health-dot.blocked {
+  background: var(--dp-danger);
+  color: var(--dp-danger);
+}
+
+.react-current-console {
+  display: grid;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(13, 20, 37, 0.8), rgba(9, 15, 29, 0.9));
+}
+
+.react-current-task {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--dp-border);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.4);
+  padding: 14px;
+}
+
+.react-current-task strong {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.react-console-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.react-readonly-command {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.04);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.react-readonly-command p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--dp-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.react-readonly-command code {
+  overflow-wrap: anywhere;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #34d399;
+}
+
+.react-blocker-list {
+  display: grid;
+  gap: 8px;
+}
+
+.react-blocker-list li {
+  border-left: 3px solid var(--dp-danger);
+  background: rgba(239, 68, 68, 0.07);
+  padding: 10px 12px;
+  border-radius: 0 6px 6px 0;
+  font-size: 13px;
+  color: #fca5a5;
+  border-top: 1px solid rgba(239, 68, 68, 0.1);
+  border-right: 1px solid rgba(239, 68, 68, 0.1);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.1);
+}
+
+/* Command Palette overrides */
+.react-palette {
+  position: relative;
+  min-width: min(320px, 100%);
+}
+
+.react-palette input {
+  width: 100%;
+  border: 1px solid var(--dp-border);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  color: #ffffff;
+  min-height: 38px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.react-palette input:focus {
+  outline: none;
+  border-color: var(--dp-accent);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.react-palette-results {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  width: min(480px, calc(100vw - 32px));
+  max-height: 320px;
+  overflow: auto;
+  background: #0f172a;
+  border: 1px solid var(--dp-border);
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  padding: 8px;
+  z-index: 10;
+  display: none;
+}
+
+.react-palette.open .react-palette-results {
+  display: grid;
+  gap: 6px;
+}
+
+/* Media Queries */
+@media (max-width: 1100px) {
+  .react-cockpit-layout {
+    grid-template-columns: minmax(200px, 0.8fr) minmax(400px, 2fr);
+  }
+  .react-current-console {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 980px) {
+  .react-shell,
+  .react-panel-header,
+  .react-cockpit-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .react-shell-actions {
+    justify-content: flex-start;
+  }
+
+  .react-cockpit-topbar,
+  .react-cockpit-layout,
+  .react-queue-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .react-metrics-grid,
+  .react-metrics-grid.compact,
+  .react-link-grid,
+  .react-map-groups,
+  .react-two-col,
+  .react-cockpit-status,
+  .react-cockpit-summary,
+  .react-lane-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .react-dashboard {
+    padding: 14px;
+  }
+
+  .react-search,
+  .react-metrics-grid,
+  .react-metrics-grid.compact,
+  .react-link-grid,
+  .react-map-groups,
+  .react-two-col,
+  .react-cockpit-status,
+  .react-cockpit-summary,
+  .react-console-grid,
+  .react-lane-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,5 @@
+# DocPath adapter for Codex CLI / Codex-style coding agents.
+# Codex reads workflow instructions from AGENTS.md. CODEX.md remains an
+# instruction fallback for environments that do not use AGENTS.md directly.
+
+project_doc_fallback_filenames = ["CODEX.md"]

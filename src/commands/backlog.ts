@@ -297,6 +297,8 @@ function renderPromotedSpec(item: BacklogItem, taskId: string): string {
     '|---|------|------|------|------|',
     '| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |',
     '',
+    ...renderMajorDecisionGate(),
+    '',
     '## 5. 验收标准',
     '',
     '- [ ] AC-1: 生成的 spec 可直接进入 `docpath plan`',
@@ -307,6 +309,46 @@ function renderPromotedSpec(item: BacklogItem, taskId: string): string {
     '*此文件由 `docpath backlog promote` 生成。*',
     '',
   ].join('\n');
+}
+
+function renderMajorDecisionGate(): string[] {
+  return [
+    '## 4.1 重大变更门禁',
+    '',
+    '### 是否涉及重大变更',
+    '- [ ] 否',
+    '- [ ] 是，需要用户确认',
+    '',
+    '### 变更类型',
+    '- [ ] 技术栈 / 框架',
+    '- [ ] UI 框架 / 设计系统',
+    '- [ ] 构建工具 / 打包方式',
+    '- [ ] 数据库 / 存储模型',
+    '- [ ] API / 数据契约',
+    '- [ ] 部署 / 运行方式',
+    '- [ ] 安全 / 权限边界',
+    '- [ ] 外部 SDK / 大依赖',
+    '- [ ] 架构 / 模块边界',
+    '- [ ] UI 信息架构 / 用户主路径',
+    '- [ ] 工作流 / Agent 行为',
+    '- [ ] 权限 / 写操作边界',
+    '- [ ] 范围扩大',
+    '- [ ] 删除 / 替换已有能力',
+    '- [ ] 长期维护成本增加',
+    '- [ ] 其他',
+    '',
+    '### Decision Brief',
+    '- 当前问题:',
+    '- 目标:',
+    '- 背景:',
+    '- 可选方案:',
+    '- 推荐方案:',
+    '- 不做什么:',
+    '- 成本:',
+    '- 风险:',
+    '- 回滚方案:',
+    '- 用户确认:',
+  ];
 }
 
 async function backlogAdd(options: BacklogCommandOptions): Promise<void> {

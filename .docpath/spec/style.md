@@ -188,6 +188,18 @@
 <!-- docpath:lesson-meta best-practice:style:t-20260606-backlog-add-workflow:journal:t-20260606-backlog-add -->
 - **t-20260606-backlog-edit-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-backlog-edit, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260606-backlog-edit-workflow:journal:t-20260606-backlog-edit -->
-- **T-20260606-backlog-groom-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-backlog-groom, source: journal)_
+- **t-20260606-backlog-groom-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-backlog-groom, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260606-backlog-groom-workflow:journal:t-20260606-backlog-groom -->
+- **T-20260608-task-6-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-task-6, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-task-6-workflow:journal:t-20260608-task-6 -->
+- **T-20260608-dashboard-react-ui-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-react-ui, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-react-ui-workflow:journal:t-20260608-dashboard-react-ui -->
+- **T-20260608-dashboard-react-agent-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-react-agent, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-react-agent-workflow:journal:t-20260608-dashboard-react-agent -->
+- **T-20260608-task-7-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-task-7, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-task-7-workflow:journal:t-20260608-task-7 -->
+- **T-20260608-team-portfolio-cockpit-decision-brief-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-team-portfolio-cockpit-decision-brief, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-team-portfolio-cockpit-decision-brief-workflow:journal:t-20260608-team-portfolio-cockpit-decision-brief -->
+- **T-20260608-dashboard-phase-1-team-cockpit-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-phase-1-team-cockpit, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-phase-1-team-cockpit-workflow:journal:t-20260608-dashboard-phase-1-team-cockpit -->
 

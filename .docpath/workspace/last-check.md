@@ -1,9 +1,9 @@
 # Last Check Evidence
 
-**时间**: 2026-06-08T11:32:44.157Z
+**时间**: 2026-06-08T15:38:45.959Z
 **结果**: ✅ PASS
-**检查项**: 8
-git_ref: 764d07bf9675b64fe59d6be0becd491da1d9ac76
+**检查项**: 9
+git_ref: 5fffe973019910afc774b694c1a2ec4637d443d8
 branch: main
 worktree_dirty: true
 
@@ -12,6 +12,7 @@ worktree_dirty: true
 - ✅ 测试
 - ✅ 任务文件 current/canonical 漂移检查
 - ✅ spec.md 结构校验
+- ✅ 重大决策确认检查
 - ✅ plan.md 结构校验
-- ✅ 子任务完成度 (3/3)
-- ✅ Checklist 同步 (3/3)
+- ✅ 子任务完成度 (5/5)
+- ✅ Checklist 同步 (5/5)

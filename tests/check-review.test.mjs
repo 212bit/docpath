@@ -165,6 +165,129 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check blocks major dependency additions without a confirmed Decision Brief', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-major-decision-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'package.json'), JSON.stringify({
+      type: 'module',
+      dependencies: { cac: '^6.7.14' },
+      scripts: {},
+    }, null, 2) + '\n');
+    execSync('git add .', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+
+    writeFileSync(join(cwd, 'package.json'), JSON.stringify({
+      type: 'module',
+      dependencies: {
+        cac: '^6.7.14',
+        react: '^19.0.0',
+        antd: '^6.0.0',
+      },
+      scripts: {},
+    }, null, 2) + '\n');
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /重大决策确认检查/);
+    assert.match(result.out, /新增重大依赖: antd, react/);
+    assert.match(result.out, /检测到重大变更/);
+    assert.match(result.out, /未记录 Decision Brief 和用户确认/);
+
+    const confirmedSpec = `${readFileSync(join(tasks, 'spec.md'), 'utf-8').replace('## 5. 验收标准', [
+      '## 4.1 重大决策门禁',
+      '',
+      '### 是否涉及重大技术决策',
+      '- [x] 是，需要用户确认',
+      '',
+      '### 决策类型',
+      '- [x] 技术栈 / 框架',
+      '- [x] UI 框架 / 设计系统',
+      '- [x] 外部 SDK / 大依赖',
+      '',
+      '### Decision Brief',
+      '- 背景: 测试新增重大依赖门禁',
+      '- 可选方案: 保持原生 / React',
+      '- 推荐方案: React',
+      '- 成本: 新增依赖与维护成本',
+      '- 风险: 包体积与技术栈迁移风险',
+      '- 回滚方案: 移除新增依赖并恢复原实现',
+      '- 用户确认: 2026-06-08 用户确认新增 React 测试依赖',
+      '',
+      '## 5. 验收标准',
+    ].join('\n'))}`;
+    writeFileSync(join(tasks, 'spec.md'), confirmedSpec);
+
+    const confirmed = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+
+    assert.equal(confirmed.code, 0);
+    assert.match(confirmed.out, /重大决策确认检查/);
+    assert.match(confirmed.out, /全部通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check blocks strategic workflow or UI changes without confirmed major change gate', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-strategic-change-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    mkdirSync(join(cwd, 'templates'), { recursive: true });
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'templates', 'AGENTS.md'), '# Agent Protocol\n\nOld rule.\n');
+    execSync('git add .', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+
+    writeFileSync(join(cwd, 'templates', 'AGENTS.md'), [
+      '# Agent Protocol',
+      '',
+      '重大 UI 信息架构和工作流变更必须先讨论。',
+      '',
+    ].join('\n'));
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /重大决策确认检查/);
+    assert.match(result.out, /Agent 协议模板变更: templates\/AGENTS\.md/);
+    assert.match(result.out, /检测到重大变更/);
+
+    const confirmedSpec = `${readFileSync(join(tasks, 'spec.md'), 'utf-8').replace('## 5. 验收标准', [
+      '## 4.1 重大变更门禁',
+      '',
+      '### 是否涉及重大变更',
+      '- [x] 是，需要用户确认',
+      '',
+      '### 变更类型',
+      '- [x] UI 信息架构 / 用户主路径',
+      '- [x] 工作流 / Agent 行为',
+      '',
+      '### Decision Brief',
+      '- 当前问题: 测试协议模板重大变更门禁',
+      '- 目标: 未确认时阻塞协议级改动',
+      '- 背景: 协议模板会改变 Agent 行为',
+      '- 可选方案: 直接修改 / 先确认',
+      '- 推荐方案: 先确认',
+      '- 不做什么: 不扩大到实现任务',
+      '- 成本: 增加前置讨论',
+      '- 风险: 门禁过严',
+      '- 回滚方案: 恢复旧协议模板',
+      '- 用户确认: 2026-06-08 用户确认协议模板重大变更',
+      '',
+      '## 5. 验收标准',
+    ].join('\n'))}`;
+    writeFileSync(join(tasks, 'spec.md'), confirmedSpec);
+
+    const confirmed = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+
+    assert.equal(confirmed.code, 0);
+    assert.match(confirmed.out, /重大决策确认检查/);
+    assert.match(confirmed.out, /全部通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('status warns when current executing task has pending-done sentinel', () => {
     writeFileSync(join(tmpdir_path, '.docpath', 'workspace', 'state.json'), JSON.stringify({
       level: 2,
