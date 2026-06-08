@@ -3,28 +3,28 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260607-changes
-task_title: 新增 changes 变更收口命令
+task_id: T-20260608-task
+task_title: 优化产品形态需求澄清工作流
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-07T15:22:53.434Z
-updated_at: 2026-06-07T15:22:53.434Z
+started_at: 2026-06-08T02:45:17.730Z
+updated_at: 2026-06-08T02:45:17.730Z
 ```
 
-> 📖 规约: [spec.md](../tasks/T-20260607-changes/spec.md)
-> 📋 计划: [plan.md](../tasks/T-20260607-changes/plan.md)
+> 📖 规约: [spec.md](../tasks/T-20260608-task/spec.md)
+> 📋 计划: [plan.md](../tasks/T-20260608-task/plan.md)
 
 ## ✅ 执行检查清单
 
-- [x] S1: 梳理 新增 changes 变更收口命令
-- [x] S2: 实现 新增 changes 变更收口命令
+- [x] S1: 梳理 优化产品形态需求澄清工作流
+- [x] S2: 实现 优化产品形态需求澄清工作流
 - [x] S3: 验证门禁并归档
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-07T17:08:35.487Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ check [T-20260607-changes] — 2026-06-07T17:08:35.489Z · 状态: done · 质量检查通过 (8 项)
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-08T02:45:17.633Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260608-task] — 2026-06-08T02:45:17.726Z · 状态: done · 代码审查: 0 错误, 0 警告, 0 提示
 
 ## 🔄 同步说明
 

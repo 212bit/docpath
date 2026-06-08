@@ -4,366 +4,6 @@
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🚫 check [T-20260606-backlog-add] — 2026-06-06T13:32:48.600Z
-
----
-taskId: T-20260606-backlog-add
-step: check
-status: blocked
-timestamp: 2026-06-06T13:32:48.600Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (2/3)
-
-### ✅ S3 [T-20260606-backlog-add] — 2026-06-06T13:33:24.379Z
-
----
-taskId: T-20260606-backlog-add
-step: S3
-status: done
-timestamp: 2026-06-06T13:33:24.379Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ check [T-20260606-backlog-add] — 2026-06-06T13:33:57.505Z
-
----
-taskId: T-20260606-backlog-add
-step: check
-status: done
-timestamp: 2026-06-06T13:33:57.505Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (8 项)
-
-### ✅ review [T-20260606-backlog-add] — 2026-06-06T13:34:18.562Z
-
----
-taskId: T-20260606-backlog-add
-step: review
-status: done
-timestamp: 2026-06-06T13:34:18.562Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 4 警告, 0 提示
-
-### ✅ journal [T-20260606-backlog-add] — 2026-06-06T13:34:36.469Z
-
----
-taskId: T-20260606-backlog-add
-step: journal
-status: done
-timestamp: 2026-06-06T13:34:36.469Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260606-backlog-edit] — 2026-06-06T14:14:05.676Z
-
----
-taskId: T-20260606-backlog-edit
-step: S1
-status: in_progress
-timestamp: 2026-06-06T14:14:05.676Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 `docpath backlog edit <id>` 支持修改 `--title`、`--priority`、`--level`。
-
-### ✅ S1 [T-20260606-backlog-edit] — 2026-06-06T14:16:11.124Z
-
----
-taskId: T-20260606-backlog-edit
-step: S1
-status: done
-timestamp: 2026-06-06T14:16:11.124Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### 🔄 S2 [T-20260606-backlog-edit] — 2026-06-06T14:16:24.299Z
-
----
-taskId: T-20260606-backlog-edit
-step: S2
-status: in_progress
-timestamp: 2026-06-06T14:16:24.299Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 `docpath backlog edit <id>` 支持修改 `--title`、`--priority`、`--level`。
-
-### ✅ S2 [T-20260606-backlog-edit] — 2026-06-06T14:16:33.437Z
-
----
-taskId: T-20260606-backlog-edit
-step: S2
-status: done
-timestamp: 2026-06-06T14:16:33.437Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260606-backlog-edit] — 2026-06-06T14:17:04.989Z
-
----
-taskId: T-20260606-backlog-edit
-step: S3
-status: in_progress
-timestamp: 2026-06-06T14:17:04.989Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证门禁并归档
-
-### ✅ S3 [T-20260606-backlog-edit] — 2026-06-06T14:17:48.280Z
-
----
-taskId: T-20260606-backlog-edit
-step: S3
-status: done
-timestamp: 2026-06-06T14:17:48.280Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ check [T-20260606-backlog-edit] — 2026-06-06T14:18:32.513Z
-
----
-taskId: T-20260606-backlog-edit
-step: check
-status: done
-timestamp: 2026-06-06T14:18:32.513Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (8 项)
-
-### ✅ review [T-20260606-backlog-edit] — 2026-06-06T14:18:46.739Z
-
----
-taskId: T-20260606-backlog-edit
-step: review
-status: done
-timestamp: 2026-06-06T14:18:46.739Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 4 警告, 0 提示
-
-### ✅ journal [T-20260606-backlog-edit] — 2026-06-06T14:19:05.862Z
-
----
-taskId: T-20260606-backlog-edit
-step: journal
-status: done
-timestamp: 2026-06-06T14:19:05.862Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260606-backlog-groom] — 2026-06-06T14:37:47.140Z
-
----
-taskId: T-20260606-backlog-groom
-step: S1
-status: in_progress
-timestamp: 2026-06-06T14:37:47.140Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 `docpath backlog groom` 默认只读检查 backlog 条目健康状况。
-
-### ✅ S1 [T-20260606-backlog-groom] — 2026-06-06T14:49:09.352Z
-
----
-taskId: T-20260606-backlog-groom
-step: S1
-status: done
-timestamp: 2026-06-06T14:49:09.352Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### 🔄 S2 [T-20260606-backlog-groom] — 2026-06-06T14:49:17.303Z
-
----
-taskId: T-20260606-backlog-groom
-step: S2
-status: in_progress
-timestamp: 2026-06-06T14:49:17.303Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 `docpath backlog groom` 默认只读检查 backlog 条目健康状况。
-
-### ✅ S2 [T-20260606-backlog-groom] — 2026-06-06T14:49:28.085Z
-
----
-taskId: T-20260606-backlog-groom
-step: S2
-status: done
-timestamp: 2026-06-06T14:49:28.085Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260606-backlog-groom] — 2026-06-06T14:49:40.471Z
-
----
-taskId: T-20260606-backlog-groom
-step: S3
-status: in_progress
-timestamp: 2026-06-06T14:49:40.471Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证门禁并归档
-
-### ✅ S3 [T-20260606-backlog-groom] — 2026-06-06T14:50:26.638Z
-
----
-taskId: T-20260606-backlog-groom
-step: S3
-status: done
-timestamp: 2026-06-06T14:50:26.638Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ check [T-20260606-backlog-groom] — 2026-06-06T14:51:15.121Z
-
----
-taskId: T-20260606-backlog-groom
-step: check
-status: done
-timestamp: 2026-06-06T14:51:15.121Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (8 项)
-
-### ✅ review [T-20260606-backlog-groom] — 2026-06-06T14:51:58.448Z
-
----
-taskId: T-20260606-backlog-groom
-step: review
-status: done
-timestamp: 2026-06-06T14:51:58.448Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 4 警告, 0 提示
-
-### ✅ journal [T-20260606-backlog-groom] — 2026-06-06T14:52:08.626Z
-
----
-taskId: T-20260606-backlog-groom
-step: journal
-status: done
-timestamp: 2026-06-06T14:52:08.626Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260607-changes] — 2026-06-07T14:57:13.623Z
-
----
-taskId: T-20260607-changes
-step: S1
-status: in_progress
-timestamp: 2026-06-07T14:57:13.623Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 新增 changes 变更收口命令
-
-### ✅ S1 [T-20260607-changes] — 2026-06-07T14:57:43.639Z
-
----
-taskId: T-20260607-changes
-step: S1
-status: done
-timestamp: 2026-06-07T14:57:43.639Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### 🔄 S2 [T-20260607-changes] — 2026-06-07T14:58:33.590Z
-
----
-taskId: T-20260607-changes
-step: S2
-status: in_progress
-timestamp: 2026-06-07T14:58:33.590Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 新增 changes 变更收口命令
-
-### ✅ S2 [T-20260607-changes] — 2026-06-07T15:13:30.772Z
-
----
-taskId: T-20260607-changes
-step: S2
-status: done
-timestamp: 2026-06-07T15:13:30.772Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260607-changes] — 2026-06-07T15:13:39.453Z
-
----
-taskId: T-20260607-changes
-step: S3
-status: in_progress
-timestamp: 2026-06-07T15:13:39.453Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证门禁并归档
-
-### 🚫 check [T-20260607-changes] — 2026-06-07T15:14:43.083Z
-
----
-taskId: T-20260607-changes
-step: check
-status: blocked
-timestamp: 2026-06-07T15:14:43.083Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (2/3)
-
-### ✅ S3 [T-20260607-changes] — 2026-06-07T15:14:55.205Z
-
----
-taskId: T-20260607-changes
-step: S3
-status: done
-timestamp: 2026-06-07T15:14:55.205Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
 ### ✅ check [T-20260607-changes] — 2026-06-07T15:15:26.692Z
 
 ---
@@ -603,3 +243,363 @@ timestamp: 2026-06-07T17:08:49.685Z
 
 - **状态**: done
 - **上下文**: 代码审查: 0 错误, 1 警告, 0 提示
+
+### 🔄 S1 [T-20260608-html] — 2026-06-08T02:17:02.373Z
+
+---
+taskId: T-20260608-html
+step: S1
+status: in_progress
+timestamp: 2026-06-08T02:17:02.373Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理 新增 HTML 页面展示数据和流程
+
+### ✅ S1 [T-20260608-html] — 2026-06-08T02:17:10.192Z
+
+---
+taskId: T-20260608-html
+step: S1
+status: done
+timestamp: 2026-06-08T02:17:10.192Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S2 [T-20260608-html] — 2026-06-08T02:17:15.281Z
+
+---
+taskId: T-20260608-html
+step: S2
+status: in_progress
+timestamp: 2026-06-08T02:17:15.281Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 新增 HTML 页面展示数据和流程
+
+### ✅ S2 [T-20260608-html] — 2026-06-08T02:19:51.136Z
+
+---
+taskId: T-20260608-html
+step: S2
+status: done
+timestamp: 2026-06-08T02:19:51.136Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+
+### 🔄 S3 [T-20260608-html] — 2026-06-08T02:19:56.342Z
+
+---
+taskId: T-20260608-html
+step: S3
+status: in_progress
+timestamp: 2026-06-08T02:19:56.342Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 验证门禁并归档
+
+### 🚫 check [T-20260608-html] — 2026-06-08T02:20:29.127Z
+
+---
+taskId: T-20260608-html
+step: check
+status: blocked
+timestamp: 2026-06-08T02:20:29.127Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (2/3)
+
+### ✅ S3 [T-20260608-html] — 2026-06-08T02:20:37.265Z
+
+---
+taskId: T-20260608-html
+step: S3
+status: done
+timestamp: 2026-06-08T02:20:37.265Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+
+### ✅ check [T-20260608-html] — 2026-06-08T02:21:09.483Z
+
+---
+taskId: T-20260608-html
+step: check
+status: done
+timestamp: 2026-06-08T02:21:09.483Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260608-html] — 2026-06-08T02:21:16.942Z
+
+---
+taskId: T-20260608-html
+step: review
+status: done
+timestamp: 2026-06-08T02:21:16.942Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 1 警告, 0 提示
+
+### ✅ check [T-20260608-html] — 2026-06-08T02:22:41.206Z
+
+---
+taskId: T-20260608-html
+step: check
+status: done
+timestamp: 2026-06-08T02:22:41.206Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260608-html] — 2026-06-08T02:22:47.397Z
+
+---
+taskId: T-20260608-html
+step: review
+status: done
+timestamp: 2026-06-08T02:22:47.397Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 1 警告, 0 提示
+
+### ✅ review [T-20260608-html] — 2026-06-08T02:23:30.627Z
+
+---
+taskId: T-20260608-html
+step: review
+status: done
+timestamp: 2026-06-08T02:23:30.627Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### ✅ check [T-20260608-html] — 2026-06-08T02:24:03.473Z
+
+---
+taskId: T-20260608-html
+step: check
+status: done
+timestamp: 2026-06-08T02:24:03.473Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260608-html] — 2026-06-08T02:24:09.016Z
+
+---
+taskId: T-20260608-html
+step: review
+status: done
+timestamp: 2026-06-08T02:24:09.016Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### ✅ check [T-20260608-html] — 2026-06-08T02:24:41.798Z
+
+---
+taskId: T-20260608-html
+step: check
+status: done
+timestamp: 2026-06-08T02:24:41.798Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260608-html] — 2026-06-08T02:24:41.881Z
+
+---
+taskId: T-20260608-html
+step: review
+status: done
+timestamp: 2026-06-08T02:24:41.881Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### ✅ journal [T-20260608-html] — 2026-06-08T02:24:41.971Z
+
+---
+taskId: T-20260608-html
+step: journal
+status: done
+timestamp: 2026-06-08T02:24:41.971Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (3/3 步)
+
+### ✅ check [T-20260608-html] — 2026-06-08T02:40:55.299Z
+
+---
+taskId: T-20260608-html
+step: check
+status: done
+timestamp: 2026-06-08T02:40:55.299Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260608-html] — 2026-06-08T02:41:05.790Z
+
+---
+taskId: T-20260608-html
+step: review
+status: done
+timestamp: 2026-06-08T02:41:05.790Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### 🔄 S1 [T-20260608-task] — 2026-06-08T02:42:23.804Z
+
+---
+taskId: T-20260608-task
+step: S1
+status: in_progress
+timestamp: 2026-06-08T02:42:23.804Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理 优化产品形态需求澄清工作流
+
+### ✅ S1 [T-20260608-task] — 2026-06-08T02:42:31.108Z
+
+---
+taskId: T-20260608-task
+step: S1
+status: done
+timestamp: 2026-06-08T02:42:31.108Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S2 [T-20260608-task] — 2026-06-08T02:42:57.061Z
+
+---
+taskId: T-20260608-task
+step: S2
+status: in_progress
+timestamp: 2026-06-08T02:42:57.061Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 优化产品形态需求澄清工作流
+
+### ✅ S2 [T-20260608-task] — 2026-06-08T02:43:07.038Z
+
+---
+taskId: T-20260608-task
+step: S2
+status: done
+timestamp: 2026-06-08T02:43:07.038Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+
+### 🔄 S3 [T-20260608-task] — 2026-06-08T02:43:15.679Z
+
+---
+taskId: T-20260608-task
+step: S3
+status: in_progress
+timestamp: 2026-06-08T02:43:15.679Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 验证门禁并归档
+
+### ✅ S3 [T-20260608-task] — 2026-06-08T02:43:40.465Z
+
+---
+taskId: T-20260608-task
+step: S3
+status: done
+timestamp: 2026-06-08T02:43:40.465Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+
+### ✅ check [T-20260608-task] — 2026-06-08T02:44:13.385Z
+
+---
+taskId: T-20260608-task
+step: check
+status: done
+timestamp: 2026-06-08T02:44:13.385Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260608-task] — 2026-06-08T02:44:45.012Z
+
+---
+taskId: T-20260608-task
+step: review
+status: done
+timestamp: 2026-06-08T02:44:45.012Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### ✅ check [T-20260608-task] — 2026-06-08T02:45:17.634Z
+
+---
+taskId: T-20260608-task
+step: check
+status: done
+timestamp: 2026-06-08T02:45:17.634Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260608-task] — 2026-06-08T02:45:17.726Z
+
+---
+taskId: T-20260608-task
+step: review
+status: done
+timestamp: 2026-06-08T02:45:17.726Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### ✅ journal [T-20260608-task] — 2026-06-08T02:45:17.822Z
+
+---
+taskId: T-20260608-task
+step: journal
+status: done
+timestamp: 2026-06-08T02:45:17.822Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (3/3 步)

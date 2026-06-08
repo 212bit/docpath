@@ -72,10 +72,11 @@ Rules:
 
 1. Do NOT skip state checks
 2. Do NOT execute from memory alone
-3. Always update `current.md` after state changes
-4. Always write breadcrumb after each sub-task
-5. Run `docpath check` before marking tasks complete
-6. **After completing each sub-task, immediately check off the corresponding item in `current.md` checklist (`[ ]` → `[x]`)**
+3. When a request describes a product/UI surface such as a page, dashboard, workflow visualization, or data view but does not define the target user, entry point, data scope, and interaction model, stop and clarify before creating a backlog item, promoting a task, or writing code.
+4. Always update `current.md` after state changes
+5. Always write breadcrumb after each sub-task
+6. Run `docpath check` before marking tasks complete
+7. **After completing each sub-task, immediately check off the corresponding item in `current.md` checklist (`[ ]` → `[x]`)**
 
 ---
 

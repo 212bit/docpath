@@ -17,6 +17,8 @@
 
 > ⚠ **禁止**：跳过状态检查、凭记忆执行、手工编辑 state.json/current.md。
 
+> ⚠ **需求澄清门禁**：当用户提出页面、Dashboard、流程可视化、数据视图、工作台等产品/UI 形态需求，但未明确目标用户、入口位置、数据范围或交互方式时，必须先澄清或进入 brainstorm/refine，不得直接创建任务、promote backlog 或写代码。
+
 ## Claude Code Slash Commands
 
 安装 Claude 适配后，优先使用这些 `/` 命令，而不是复制长提示词：

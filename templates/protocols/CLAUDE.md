@@ -48,6 +48,7 @@ docpath agent handoff                       # 生成 compact-context.md 交接�
 
 - 禁止手工编辑 `state.json`、`current.md` 中的 `phase/gate/state`
 - 禁止跳过 `status --agent` / `next --agent` 直接从记忆执行
+- 当用户提出页面、Dashboard、流程可视化、数据视图、工作台等产品/UI 形态需求，但未明确目标用户、入口位置、数据范围或交互方式时，必须先澄清或进入 brainstorm/refine，不得直接创建任务、promote backlog 或写代码。
 - `plan.md` 与 `breadcrumb.md` 的同步应通过 CLI 命令完成
 - 质量门禁失败时，优先遵循 `next --agent` 给出的恢复路线
 

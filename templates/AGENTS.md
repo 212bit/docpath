@@ -74,10 +74,11 @@ Rules:
 
 1. Do NOT skip state checks
 2. Do NOT execute from memory alone
-3. Do NOT hand-edit `current.md`; it is a rendered view of `workspace/state.json`
-4. Always record progress with DocPath lifecycle commands after each sub-task
-5. Run `docpath check` before marking tasks complete
-6. Let `docpath agent step` update breadcrumb and plan checklist state
+3. When a request describes a product/UI surface such as a page, dashboard, workflow visualization, or data view but does not define the target user, entry point, data scope, and interaction model, stop and clarify before creating a backlog item, promoting a task, or writing code.
+4. Do NOT hand-edit `current.md`; it is a rendered view of `workspace/state.json`
+5. Always record progress with DocPath lifecycle commands after each sub-task
+6. Run `docpath check` before marking tasks complete
+7. Let `docpath agent step` update breadcrumb and plan checklist state
 
 ---
 

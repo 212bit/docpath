@@ -51,6 +51,7 @@ docpath compact
 ## Rules
 
 - Do not act from memory alone; read DocPath state first.
+- Clarify product/UI requests before implementation when the target user, entry point, data scope, or interaction model is ambiguous. This applies to pages, dashboards, workflow visualizations, and data views.
 - Keep changes scoped to the active task.
 - Run `docpath check` before marking work complete.
 - Record blockers and decisions in breadcrumb/review/journal files.

@@ -10293,3 +10293,305 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+## ADR-20260608-001 — review
+
+- task_id: T-20260608-html
+- created_at: 2026-06-08T02:21:16.940Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-002 — review
+
+- task_id: T-20260608-html
+- created_at: 2026-06-08T02:22:47.396Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-003 — review
+
+- task_id: T-20260608-html
+- created_at: 2026-06-08T02:23:30.626Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-004 — review
+
+- task_id: T-20260608-html
+- created_at: 2026-06-08T02:24:09.014Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-005 — review
+
+- task_id: T-20260608-html
+- created_at: 2026-06-08T02:24:41.881Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-006 — journal.archive
+
+- task_id: T-20260608-html
+- created_at: 2026-06-08T02:24:41.975Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 新增 HTML 页面展示数据和流程
+agent-step: S1
+开始执行: 实现 新增 HTML 页面展示数据和流程
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 0 提示
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-html
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-html/spec.md
+- .docpath/tasks/T-20260608-html/plan.md
+
+---
+## ADR-20260608-007 — review
+
+- task_id: T-20260608-html
+- created_at: 2026-06-08T02:41:05.788Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-008 — review
+
+- task_id: T-20260608-task
+- created_at: 2026-06-08T02:44:45.010Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-009 — review
+
+- task_id: T-20260608-task
+- created_at: 2026-06-08T02:45:17.726Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-010 — journal.archive
+
+- task_id: T-20260608-task
+- created_at: 2026-06-08T02:45:17.824Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 优化产品形态需求澄清工作流
+agent-step: S1
+开始执行: 实现 优化产品形态需求澄清工作流
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-task
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-task/spec.md
+- .docpath/tasks/T-20260608-task/plan.md
+
+---

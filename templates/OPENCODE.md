@@ -62,6 +62,7 @@ docpath continue
 ## Rules
 
 - Do not act from memory alone; read DocPath state first.
+- Clarify product/UI requests before implementation when the target user, entry point, data scope, or interaction model is ambiguous. This applies to pages, dashboards, workflow visualizations, and data views.
 - Do not hand-edit `state.json` or workflow fields in `current.md`.
 - Do not use `current.md` as task truth; task spec/plan live under `.docpath/tasks/`.
 - Use `docpath next --agent` when the route is unclear.
