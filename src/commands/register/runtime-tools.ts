@@ -1,8 +1,38 @@
 import type { CAC } from 'cac';
+import { dashboardCommand } from '../dashboard.js';
 import { compactCommand, discoverCommand, nextCommand } from '../runtime.js';
 import { getOptionValue, normalizeTaskFileSyncSource } from './shared.js';
 
+function registerDashboardCommand(cli: CAC): void {
+  cli.command('dashboard', '启动本地只读 Agent Dashboard')
+    .option('--cwd <path>', '项目目录')
+    .option('--host <host>', '监听地址 (默认 127.0.0.1)')
+    .option('--port <port>', '监听端口 (默认 7181)')
+    .option('--project <name>', '只读选择已注册项目名称、任务 ID 或根目录')
+    .option('--root <path>', '只读选择已注册项目根目录')
+    .option('--status <status>', '只读筛选 Backlog 状态')
+    .option('--priority <priority>', '只读筛选 Backlog 优先级')
+    .option('--q <query>', '只读搜索 Backlog ID、标题或任务链接')
+    .option('--print', '只输出 HTML，不启动服务')
+    .option('--json', '只输出 Dashboard 数据 JSON，不启动服务')
+    .action(async (options: { cwd?: string; host?: string; port?: string; project?: string; root?: string; status?: string; priority?: string; q?: string; print?: boolean; json?: boolean }) => {
+      await dashboardCommand({
+        cwd: options.cwd || process.cwd(),
+        host: options.host,
+        port: options.port ? parseInt(options.port, 10) : undefined,
+        project: options.project,
+        root: options.root,
+        status: options.status,
+        priority: options.priority,
+        q: options.q,
+        print: !!options.print,
+        json: !!options.json,
+      });
+    });
+}
+
 export function registerRuntimeToolCommands(cli: CAC): void {
+  registerDashboardCommand(cli);
   cli.command('compact', '持久化压缩运行上下文到 workspace/compact-context.md')
     .option('--cwd <path>', '项目目录')
     .option('--max-entries <n>', '保留最近 breadcrumb 条数 (默认 20)')

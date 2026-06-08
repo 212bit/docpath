@@ -14,7 +14,7 @@ interface ChangesOptions {
   since?: string;
 }
 
-type ChangeGroupName = 'source' | 'tests' | 'docpath' | 'templates_docs' | 'other';
+export type ChangeGroupName = 'source' | 'tests' | 'docpath' | 'templates_docs' | 'other';
 
 interface ChangedFile {
   path: string;
@@ -26,7 +26,7 @@ interface ChangedFile {
   group: ChangeGroupName;
 }
 
-interface ChangesReport {
+export interface ChangesReport {
   git_root: string;
   branch: string;
   mode: 'worktree' | 'since';
@@ -210,7 +210,7 @@ function buildBlockingReasons(args: {
   return blockingReasons;
 }
 
-async function buildChangesReport(cwd: string, options: Pick<ChangesOptions, 'since'> = {}): Promise<ChangesReport> {
+export async function buildChangesReport(cwd: string, options: Pick<ChangesOptions, 'since'> = {}): Promise<ChangesReport> {
   const gitRoot = ensureGitRepo(cwd);
   const docpathDir = await resolveDocpathDir(cwd);
   const current = await readCurrentState(cwd);

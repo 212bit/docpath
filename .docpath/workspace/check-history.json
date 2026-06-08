@@ -1,141 +1,166 @@
 [
   {
-    "timestamp": "2026-06-06T14:18:32.516Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-06T14:51:15.123Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-07T15:14:43.086Z",
-    "passed": false,
-    "failedChecks": [
-      "⚠️  Checklist 同步 (2/3)"
-    ]
-  },
-  {
-    "timestamp": "2026-06-07T15:15:26.695Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-07T15:22:03.074Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-07T15:22:53.384Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-07T15:59:03.524Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-07T16:16:39.548Z",
-    "passed": true,
-    "failedChecks": []
-  },
-  {
-    "timestamp": "2026-06-07T16:34:26.489Z",
+    "timestamp": "2026-06-08T08:56:31.061Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "c109b7c250417f7e6cda1767ecc59af05ae68b8b",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-07T16:36:26.444Z",
+    "timestamp": "2026-06-08T09:05:34.751Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "c109b7c250417f7e6cda1767ecc59af05ae68b8b",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-07T17:05:24.989Z",
+    "timestamp": "2026-06-08T09:06:21.274Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "86c929fc4b5f0d6936bade41063e7ce16aff1c2f",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-07T17:08:35.547Z",
+    "timestamp": "2026-06-08T09:16:34.985Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "86c929fc4b5f0d6936bade41063e7ce16aff1c2f",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-08T02:20:29.191Z",
+    "timestamp": "2026-06-08T09:17:25.529Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-08T09:26:18.763Z",
     "passed": false,
     "failedChecks": [
       "⚠️  Checklist 同步 (2/3)"
     ],
-    "gitRef": "035bf0e2e18a4f09827483c8a146e9dfaf60d879",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-08T02:21:09.548Z",
+    "timestamp": "2026-06-08T09:27:02.659Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "035bf0e2e18a4f09827483c8a146e9dfaf60d879",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-08T02:22:41.269Z",
+    "timestamp": "2026-06-08T09:28:55.991Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "035bf0e2e18a4f09827483c8a146e9dfaf60d879",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-08T02:24:03.539Z",
+    "timestamp": "2026-06-08T09:29:41.822Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "035bf0e2e18a4f09827483c8a146e9dfaf60d879",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-08T02:24:41.856Z",
+    "timestamp": "2026-06-08T09:41:02.092Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "035bf0e2e18a4f09827483c8a146e9dfaf60d879",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-08T02:40:55.358Z",
+    "timestamp": "2026-06-08T09:41:50.647Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "035bf0e2e18a4f09827483c8a146e9dfaf60d879",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-08T02:44:13.445Z",
+    "timestamp": "2026-06-08T10:02:31.344Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "035bf0e2e18a4f09827483c8a146e9dfaf60d879",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   },
   {
-    "timestamp": "2026-06-08T02:45:17.696Z",
+    "timestamp": "2026-06-08T10:03:32.112Z",
     "passed": true,
     "failedChecks": [],
-    "gitRef": "035bf0e2e18a4f09827483c8a146e9dfaf60d879",
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-08T10:14:08.826Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-08T10:15:21.403Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-08T10:26:35.952Z",
+    "passed": false,
+    "failedChecks": [
+      "任务文件 current/canonical 漂移检查",
+      "⚠️  Checklist 同步 (2/3)"
+    ],
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-08T10:27:33.727Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-08T11:18:05.001Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-08T11:31:36.831Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-08T11:32:44.217Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "764d07bf9675b64fe59d6be0becd491da1d9ac76",
     "branch": "main",
     "worktreeDirty": true
   }

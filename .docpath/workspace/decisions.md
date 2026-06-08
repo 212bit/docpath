@@ -10595,3 +10595,3468 @@ agent-step: S3
 - .docpath/tasks/T-20260608-task/plan.md
 
 ---
+## ADR-20260608-011 — review
+
+- task_id: T-20260608-agent-dashboard
+- created_at: 2026-06-08T03:02:37.105Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-012 — review
+
+- task_id: T-20260608-agent-dashboard
+- created_at: 2026-06-08T03:05:56.635Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-013 — review
+
+- task_id: T-20260608-agent-dashboard
+- created_at: 2026-06-08T03:06:40.981Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-014 — review
+
+- task_id: T-20260608-agent-dashboard
+- created_at: 2026-06-08T03:07:33.230Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-015 — journal.archive
+
+- task_id: T-20260608-agent-dashboard
+- created_at: 2026-06-08T03:07:33.324Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 新增本地只读 Agent Dashboard
+agent-step: S1
+开始执行: 实现 新增本地只读 Agent Dashboard
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 4 警告, 0 提示
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-agent-dashboard
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-agent-dashboard/spec.md
+- .docpath/tasks/T-20260608-agent-dashboard/plan.md
+
+---
+## ADR-20260608-016 — review
+
+- task_id: T-20260608-dashboard
+- created_at: 2026-06-08T03:20:09.000Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-017 — review
+
+- task_id: T-20260608-dashboard
+- created_at: 2026-06-08T03:21:12.919Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-018 — review
+
+- task_id: T-20260608-dashboard
+- created_at: 2026-06-08T03:22:08.457Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-019 — journal.archive
+
+- task_id: T-20260608-dashboard
+- created_at: 2026-06-08T03:22:08.548Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 优化 Dashboard 项目层级展示
+agent-step: S1
+开始执行: 实现 优化 Dashboard 项目层级展示
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+代码审查: 0 错误, 1 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard/spec.md
+- .docpath/tasks/T-20260608-dashboard/plan.md
+
+---
+## ADR-20260608-020 — review
+
+- task_id: T-20260608-dashboard
+- created_at: 2026-06-08T03:28:41.083Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-021 — review
+
+- task_id: T-20260608-dashboard-lesson
+- created_at: 2026-06-08T03:40:54.086Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-022 — review
+
+- task_id: T-20260608-dashboard-lesson
+- created_at: 2026-06-08T03:41:27.540Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-023 — journal.archive
+
+- task_id: T-20260608-dashboard-lesson
+- created_at: 2026-06-08T03:41:27.636Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 修正 Dashboard lesson 待固化统计
+agent-step: S1
+开始执行: 实现 修正 Dashboard lesson 待固化统计
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-lesson
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-lesson/spec.md
+- .docpath/tasks/T-20260608-dashboard-lesson/plan.md
+
+---
+## ADR-20260608-024 — review
+
+- task_id: T-20260608-sqlite
+- created_at: 2026-06-08T03:58:13.011Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-025 — review
+
+- task_id: T-20260608-sqlite
+- created_at: 2026-06-08T04:00:11.697Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-026 — review
+
+- task_id: T-20260608-sqlite
+- created_at: 2026-06-08T04:01:25.688Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-027 — review
+
+- task_id: T-20260608-sqlite
+- created_at: 2026-06-08T04:02:03.175Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-028 — journal.archive
+
+- task_id: T-20260608-sqlite
+- created_at: 2026-06-08T04:02:03.267Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 新增 SQLite 项目注册中心
+agent-step: S1
+开始执行: 实现 新增 SQLite 项目注册中心
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-sqlite
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-sqlite/spec.md
+- .docpath/tasks/T-20260608-sqlite/plan.md
+
+---
+## ADR-20260608-029 — review
+
+- task_id: T-20260608-dashboard-team
+- created_at: 2026-06-08T04:56:27.191Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-030 — review
+
+- task_id: T-20260608-dashboard-team
+- created_at: 2026-06-08T04:57:06.917Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-031 — journal.archive
+
+- task_id: T-20260608-dashboard-team
+- created_at: 2026-06-08T04:57:07.007Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 优化 Dashboard Team 视角
+agent-step: S1
+开始执行: 实现 优化 Dashboard Team 视角
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-team
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-team/spec.md
+- .docpath/tasks/T-20260608-dashboard-team/plan.md
+
+---
+## ADR-20260608-032 — review
+
+- task_id: T-20260608-dashboard-docpath
+- created_at: 2026-06-08T05:23:21.848Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-033 — review
+
+- task_id: T-20260608-dashboard-docpath
+- created_at: 2026-06-08T05:24:01.214Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-034 — review
+
+- task_id: T-20260608-dashboard-docpath
+- created_at: 2026-06-08T05:25:09.689Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-035 — journal.archive
+
+- task_id: T-20260608-dashboard-docpath
+- created_at: 2026-06-08T05:25:09.781Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 将 Dashboard 升级为 DocPath 工作台应用壳
+agent-step: S1
+开始执行: 实现 将 Dashboard 升级为 DocPath 工作台应用壳
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-docpath
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-docpath/spec.md
+- .docpath/tasks/T-20260608-dashboard-docpath/plan.md
+
+---
+## ADR-20260608-036 — review
+
+- task_id: T-20260608-task-2
+- created_at: 2026-06-08T06:01:52.942Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-037 — review
+
+- task_id: T-20260608-task-2
+- created_at: 2026-06-08T06:04:08.541Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-038 — journal.archive
+
+- task_id: T-20260608-task-2
+- created_at: 2026-06-08T06:04:08.635Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 为工作台增加健康关注队列
+agent-step: S1
+开始执行: 实现 为工作台增加健康关注队列
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-task-2
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-task-2/spec.md
+- .docpath/tasks/T-20260608-task-2/plan.md
+
+---
+## ADR-20260608-039 — review
+
+- task_id: T-20260608-task-3
+- created_at: 2026-06-08T06:20:23.589Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-040 — review
+
+- task_id: T-20260608-task-3
+- created_at: 2026-06-08T06:20:58.089Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-041 — journal.archive
+
+- task_id: T-20260608-task-3
+- created_at: 2026-06-08T06:20:58.176Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 为工作台增加只读项目切换
+agent-step: S1
+开始执行: 实现 为工作台增加只读项目切换
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-task-3
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-task-3/spec.md
+- .docpath/tasks/T-20260608-task-3/plan.md
+
+---
+## ADR-20260608-042 — review
+
+- task_id: T-20260608-backlog
+- created_at: 2026-06-08T06:29:13.116Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-043 — review
+
+- task_id: T-20260608-backlog
+- created_at: 2026-06-08T06:29:48.934Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-044 — journal.archive
+
+- task_id: T-20260608-backlog
+- created_at: 2026-06-08T06:29:49.034Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 为工作台增加只读 Backlog 筛选视图
+agent-step: S1
+开始执行: 实现 为工作台增加只读 Backlog 筛选视图
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-backlog
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-backlog/spec.md
+- .docpath/tasks/T-20260608-backlog/plan.md
+
+---
+## ADR-20260608-045 — review
+
+- task_id: T-20260608-task-4
+- created_at: 2026-06-08T06:38:08.477Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-046 — review
+
+- task_id: T-20260608-task-4
+- created_at: 2026-06-08T06:39:49.034Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-047 — review
+
+- task_id: T-20260608-task-4
+- created_at: 2026-06-08T06:40:28.567Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-048 — journal.archive
+
+- task_id: T-20260608-task-4
+- created_at: 2026-06-08T06:40:28.686Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 为工作台增加任务详情与流程节点视图
+agent-step: S1
+开始执行: 实现 为工作台增加任务详情与流程节点视图
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 0 提示
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-task-4
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-task-4/spec.md
+- .docpath/tasks/T-20260608-task-4/plan.md
+
+---
+## ADR-20260608-049 — review
+
+- task_id: T-20260608-task-5
+- created_at: 2026-06-08T06:49:26.672Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-050 — review
+
+- task_id: T-20260608-task-5
+- created_at: 2026-06-08T06:50:04.024Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-051 — journal.archive
+
+- task_id: T-20260608-task-5
+- created_at: 2026-06-08T06:50:04.106Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 为工作台增加只读任务文档预览
+agent-step: S1
+开始执行: 实现 为工作台增加只读任务文档预览
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-task-5
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-task-5/spec.md
+- .docpath/tasks/T-20260608-task-5/plan.md
+
+---
+## ADR-20260608-052 — review
+
+- task_id: T-20260608-dashboard-team-2
+- created_at: 2026-06-08T06:59:01.002Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-053 — review
+
+- task_id: T-20260608-dashboard-team-2
+- created_at: 2026-06-08T06:59:37.732Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-054 — journal.archive
+
+- task_id: T-20260608-dashboard-team-2
+- created_at: 2026-06-08T06:59:37.832Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard Team 视角增加组合项目视图
+agent-step: S1
+开始执行: 实现 Dashboard Team 视角增加组合项目视图
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-team-2
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-team-2/spec.md
+- .docpath/tasks/T-20260608-dashboard-team-2/plan.md
+
+---
+## ADR-20260608-055 — review
+
+- task_id: T-20260608-dashboard-2
+- created_at: 2026-06-08T07:06:07.853Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-056 — review
+
+- task_id: T-20260608-dashboard-2
+- created_at: 2026-06-08T07:06:44.284Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-057 — journal.archive
+
+- task_id: T-20260608-dashboard-2
+- created_at: 2026-06-08T07:06:44.384Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加只读工作台交互壳
+agent-step: S1
+开始执行: 实现 Dashboard 增加只读工作台交互壳
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-2
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-2/spec.md
+- .docpath/tasks/T-20260608-dashboard-2/plan.md
+
+---
+## ADR-20260608-058 — review
+
+- task_id: T-20260608-dashboard-action-center
+- created_at: 2026-06-08T07:12:35.694Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-059 — review
+
+- task_id: T-20260608-dashboard-action-center
+- created_at: 2026-06-08T07:13:46.405Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-060 — review
+
+- task_id: T-20260608-dashboard-action-center
+- created_at: 2026-06-08T07:14:13.774Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-061 — review
+
+- task_id: T-20260608-dashboard-action-center
+- created_at: 2026-06-08T07:14:41.169Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-062 — review
+
+- task_id: T-20260608-dashboard-action-center
+- created_at: 2026-06-08T07:16:07.551Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-063 — review
+
+- task_id: T-20260608-dashboard-action-center
+- created_at: 2026-06-08T07:16:42.533Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-064 — journal.archive
+
+- task_id: T-20260608-dashboard-action-center
+- created_at: 2026-06-08T07:16:42.632Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加只读 Action Center
+agent-step: S1
+开始执行: 实现 Dashboard 增加只读 Action Center
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 0 提示
+代码审查: 0 错误, 1 警告, 0 提示
+代码审查: 0 错误, 1 警告, 0 提示
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-action-center
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-action-center/spec.md
+- .docpath/tasks/T-20260608-dashboard-action-center/plan.md
+
+---
+## ADR-20260608-065 — review
+
+- task_id: T-20260608-dashboard-3
+- created_at: 2026-06-08T07:25:27.287Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-066 — review
+
+- task_id: T-20260608-dashboard-3
+- created_at: 2026-06-08T07:26:04.460Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-067 — journal.archive
+
+- task_id: T-20260608-dashboard-3
+- created_at: 2026-06-08T07:26:04.663Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加只读刷新同步
+agent-step: S1
+开始执行: 实现 Dashboard 增加只读刷新同步
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-3
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-3/spec.md
+- .docpath/tasks/T-20260608-dashboard-3/plan.md
+
+---
+## ADR-20260608-068 — review
+
+- task_id: T-20260608-dashboard-command-palette
+- created_at: 2026-06-08T07:35:05.824Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-069 — review
+
+- task_id: T-20260608-dashboard-command-palette
+- created_at: 2026-06-08T07:35:45.822Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-070 — journal.archive
+
+- task_id: T-20260608-dashboard-command-palette
+- created_at: 2026-06-08T07:35:45.927Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加只读 Command Palette
+agent-step: S1
+开始执行: 实现 Dashboard 增加只读 Command Palette
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-command-palette
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-command-palette/spec.md
+- .docpath/tasks/T-20260608-dashboard-command-palette/plan.md
+
+---
+## ADR-20260608-071 — review
+
+- task_id: T-20260608-dashboard-command-palette-2
+- created_at: 2026-06-08T07:43:20.835Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-072 — review
+
+- task_id: T-20260608-dashboard-command-palette-2
+- created_at: 2026-06-08T07:44:35.973Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-073 — review
+
+- task_id: T-20260608-dashboard-command-palette-2
+- created_at: 2026-06-08T07:45:09.442Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-074 — journal.archive
+
+- task_id: T-20260608-dashboard-command-palette-2
+- created_at: 2026-06-08T07:45:09.540Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard Command Palette 增强键盘操作
+agent-step: S1
+开始执行: 实现 Dashboard Command Palette 增强键盘操作
+agent-step: S2
+开始执行: 验证门禁并归档
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-command-palette-2
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-command-palette-2/spec.md
+- .docpath/tasks/T-20260608-dashboard-command-palette-2/plan.md
+
+---
+## ADR-20260608-075 — review
+
+- task_id: T-20260608-dashboard-team-3
+- created_at: 2026-06-08T07:51:24.454Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-076 — review
+
+- task_id: T-20260608-dashboard-team-3
+- created_at: 2026-06-08T07:51:59.990Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-077 — journal.archive
+
+- task_id: T-20260608-dashboard-team-3
+- created_at: 2026-06-08T07:52:00.087Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard Team 视角增强
+agent-step: S1
+开始执行: 实现 Dashboard Team 视角增强
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-team-3
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-team-3/spec.md
+- .docpath/tasks/T-20260608-dashboard-team-3/plan.md
+
+---
+## ADR-20260608-078 — review
+
+- task_id: T-20260608-dashboard-team-4
+- created_at: 2026-06-08T08:00:26.061Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-079 — review
+
+- task_id: T-20260608-dashboard-team-4
+- created_at: 2026-06-08T08:01:02.222Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-080 — journal.archive
+
+- task_id: T-20260608-dashboard-team-4
+- created_at: 2026-06-08T08:01:02.330Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard Team 视角接入只读刷新同步
+agent-step: S1
+开始执行: 实现 Dashboard Team 视角接入只读刷新同步
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-team-4
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-team-4/spec.md
+- .docpath/tasks/T-20260608-dashboard-team-4/plan.md
+
+---
+## ADR-20260608-081 — review
+
+- task_id: T-20260608-dashboard-changes
+- created_at: 2026-06-08T08:11:43.035Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-082 — review
+
+- task_id: T-20260608-dashboard-changes
+- created_at: 2026-06-08T08:12:19.168Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-083 — journal.archive
+
+- task_id: T-20260608-dashboard-changes
+- created_at: 2026-06-08T08:12:19.288Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加只读 Changes 收口视图
+agent-step: S1
+开始执行: 实现 Dashboard 增加只读 Changes 收口视图
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-changes
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-changes/spec.md
+- .docpath/tasks/T-20260608-dashboard-changes/plan.md
+
+---
+## ADR-20260608-084 — review
+
+- task_id: T-20260608-dashboard-handoff
+- created_at: 2026-06-08T08:22:55.840Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-085 — review
+
+- task_id: T-20260608-dashboard-handoff
+- created_at: 2026-06-08T08:23:35.161Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-086 — journal.archive
+
+- task_id: T-20260608-dashboard-handoff
+- created_at: 2026-06-08T08:23:35.262Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加只读 Handoff 交接视图
+agent-step: S1
+开始执行: 实现 Dashboard 增加只读 Handoff 交接视图
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-handoff
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-handoff/spec.md
+- .docpath/tasks/T-20260608-dashboard-handoff/plan.md
+
+---
+## ADR-20260608-087 — review
+
+- task_id: T-20260608-dashboard-agent-overview
+- created_at: 2026-06-08T08:34:57.086Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-088 — review
+
+- task_id: T-20260608-dashboard-agent-overview
+- created_at: 2026-06-08T08:35:37.482Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-089 — journal.archive
+
+- task_id: T-20260608-dashboard-agent-overview
+- created_at: 2026-06-08T08:35:37.584Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加 Agent Overview 首屏
+agent-step: S1
+开始执行: 实现 Dashboard 增加 Agent Overview 首屏
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-agent-overview
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-agent-overview/spec.md
+- .docpath/tasks/T-20260608-dashboard-agent-overview/plan.md
+
+---
+## ADR-20260608-090 — review
+
+- task_id: T-20260608-dashboard-activity-timeline
+- created_at: 2026-06-08T08:46:13.957Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-091 — review
+
+- task_id: T-20260608-dashboard-activity-timeline
+- created_at: 2026-06-08T08:46:58.874Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-092 — journal.archive
+
+- task_id: T-20260608-dashboard-activity-timeline
+- created_at: 2026-06-08T08:46:58.978Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加 Activity Timeline 视角
+agent-step: S1
+开始执行: 实现 Dashboard 增加 Activity Timeline 视角
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-activity-timeline
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-activity-timeline/spec.md
+- .docpath/tasks/T-20260608-dashboard-activity-timeline/plan.md
+
+---
+## ADR-20260608-093 — review
+
+- task_id: T-20260608-dashboard-session-recovery
+- created_at: 2026-06-08T08:55:53.864Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-094 — review
+
+- task_id: T-20260608-dashboard-session-recovery
+- created_at: 2026-06-08T08:56:31.090Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-095 — journal.archive
+
+- task_id: T-20260608-dashboard-session-recovery
+- created_at: 2026-06-08T08:56:31.191Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加 Session Recovery 视角
+agent-step: S1
+开始执行: 实现 Dashboard 增加 Session Recovery 视角
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-session-recovery
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-session-recovery/spec.md
+- .docpath/tasks/T-20260608-dashboard-session-recovery/plan.md
+
+---
+## ADR-20260608-096 — review
+
+- task_id: T-20260608-dashboard-readiness-audit
+- created_at: 2026-06-08T09:05:43.796Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-097 — review
+
+- task_id: T-20260608-dashboard-readiness-audit
+- created_at: 2026-06-08T09:06:21.308Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-098 — journal.archive
+
+- task_id: T-20260608-dashboard-readiness-audit
+- created_at: 2026-06-08T09:06:21.421Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加 Readiness Audit 视角
+agent-step: S1
+开始执行: 实现 Dashboard 增加 Readiness Audit 视角
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-readiness-audit
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-readiness-audit/spec.md
+- .docpath/tasks/T-20260608-dashboard-readiness-audit/plan.md
+
+---
+## ADR-20260608-099 — review
+
+- task_id: T-20260608-dashboard-docs-index
+- created_at: 2026-06-08T09:16:46.421Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-100 — review
+
+- task_id: T-20260608-dashboard-docs-index
+- created_at: 2026-06-08T09:17:25.560Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-101 — journal.archive
+
+- task_id: T-20260608-dashboard-docs-index
+- created_at: 2026-06-08T09:17:25.721Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加 Docs Index 视角
+agent-step: S1
+开始执行: 实现 Dashboard 增加 Docs Index 视角
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-docs-index
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-docs-index/spec.md
+- .docpath/tasks/T-20260608-dashboard-docs-index/plan.md
+
+---
+## ADR-20260608-102 — review
+
+- task_id: T-20260608-dashboard-team-5
+- created_at: 2026-06-08T09:25:48.854Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-103 — review
+
+- task_id: T-20260608-dashboard-team-5
+- created_at: 2026-06-08T09:27:13.366Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-104 — review
+
+- task_id: T-20260608-dashboard-team-5
+- created_at: 2026-06-08T09:28:15.595Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-105 — review
+
+- task_id: T-20260608-dashboard-team-5
+- created_at: 2026-06-08T09:29:07.118Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-106 — review
+
+- task_id: T-20260608-dashboard-team-5
+- created_at: 2026-06-08T09:29:41.853Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-107 — journal.archive
+
+- task_id: T-20260608-dashboard-team-5
+- created_at: 2026-06-08T09:29:41.962Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 优化 Team 视角
+agent-step: S1
+开始执行: 实现 Dashboard 优化 Team 视角
+agent-step: S2
+开始执行: 验证门禁并归档
+代码审查: 0 错误, 1 警告, 0 提示
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 1 警告, 0 提示
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-team-5
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-team-5/spec.md
+- .docpath/tasks/T-20260608-dashboard-team-5/plan.md
+
+---
+## ADR-20260608-108 — review
+
+- task_id: T-20260608-dashboard-settings
+- created_at: 2026-06-08T09:41:13.909Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-109 — review
+
+- task_id: T-20260608-dashboard-settings
+- created_at: 2026-06-08T09:41:50.678Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-110 — journal.archive
+
+- task_id: T-20260608-dashboard-settings
+- created_at: 2026-06-08T09:41:50.785Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加 Settings 视角
+agent-step: S1
+开始执行: 实现 Dashboard 增加 Settings 视角
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-settings
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-settings/spec.md
+- .docpath/tasks/T-20260608-dashboard-settings/plan.md
+
+---
+## ADR-20260608-111 — review
+
+- task_id: T-20260608-dashboard-workbench-map
+- created_at: 2026-06-08T10:02:48.689Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-112 — review
+
+- task_id: T-20260608-dashboard-workbench-map
+- created_at: 2026-06-08T10:03:32.147Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-113 — journal.archive
+
+- task_id: T-20260608-dashboard-workbench-map
+- created_at: 2026-06-08T10:03:32.255Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加 Workbench Map 视角
+agent-step: S1
+开始执行: 实现 Dashboard 增加 Workbench Map 视角
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-workbench-map
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-workbench-map/spec.md
+- .docpath/tasks/T-20260608-dashboard-workbench-map/plan.md
+
+---
+## ADR-20260608-114 — review
+
+- task_id: T-20260608-dashboard-4
+- created_at: 2026-06-08T10:14:39.110Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-115 — review
+
+- task_id: T-20260608-dashboard-4
+- created_at: 2026-06-08T10:15:21.437Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-116 — journal.archive
+
+- task_id: T-20260608-dashboard-4
+- created_at: 2026-06-08T10:15:21.550Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加只读搜索过滤
+agent-step: S1
+开始执行: 实现 Dashboard 增加只读搜索过滤
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-4
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-4/spec.md
+- .docpath/tasks/T-20260608-dashboard-4/plan.md
+
+---
+## ADR-20260608-117 — review
+
+- task_id: T-20260608-dashboard-completion-audit
+- created_at: 2026-06-08T11:17:28.093Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-118 — review
+
+- task_id: T-20260608-dashboard-completion-audit
+- created_at: 2026-06-08T11:18:05.033Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-119 — journal.archive
+
+- task_id: T-20260608-dashboard-completion-audit
+- created_at: 2026-06-08T11:18:05.126Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard 增加 Completion Audit 视角
+agent-step: S1
+开始执行: 实现 Dashboard 增加 Completion Audit 视角
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: 任务文件 current/canonical 漂移检查, ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-completion-audit
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-completion-audit/spec.md
+- .docpath/tasks/T-20260608-dashboard-completion-audit/plan.md
+
+---
+## ADR-20260608-120 — review
+
+- task_id: T-20260608-init-sqlite-registry
+- created_at: 2026-06-08T11:31:47.922Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-121 — review
+
+- task_id: T-20260608-init-sqlite-registry
+- created_at: 2026-06-08T11:32:44.248Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-122 — journal.archive
+
+- task_id: T-20260608-init-sqlite-registry
+- created_at: 2026-06-08T11:32:44.363Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 init 对已初始化项目补注册 SQLite registry
+agent-step: S1
+开始执行: 实现 init 对已初始化项目补注册 SQLite registry
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-init-sqlite-registry
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-init-sqlite-registry/spec.md
+- .docpath/tasks/T-20260608-init-sqlite-registry/plan.md
+
+---

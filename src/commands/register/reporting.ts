@@ -2,6 +2,7 @@ import type { CAC } from 'cac';
 import { changesCommand } from '../changes.js';
 import { contextCommand } from '../context.js';
 import { exportCommand } from '../export.js';
+import { projectsCommand } from '../projects.js';
 import { statsCommand } from '../stats.js';
 
 function registerChangesCommand(cli: CAC): void {
@@ -70,9 +71,18 @@ function registerStatsCommand(cli: CAC): void {
     });
 }
 
+function registerProjectsCommand(cli: CAC): void {
+  cli.command('projects', '查看本地 SQLite 注册项目')
+    .option('--json', '输出 JSON')
+    .action(async (options: { json?: boolean }) => {
+      await projectsCommand({ json: !!options.json });
+    });
+}
+
 export function registerReportingCommands(cli: CAC): void {
   registerChangesCommand(cli);
   registerContextCommand(cli);
   registerExportCommand(cli);
   registerStatsCommand(cli);
+  registerProjectsCommand(cli);
 }
