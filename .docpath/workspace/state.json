@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260608-dashboard-phase-1-team-cockpit",
-  "task_title": "Dashboard Phase 1 Team Cockpit 只读信息架构实现",
+  "task_id": "T-20260608-dashboard-tablet-workbench-audit-lane-sl",
+  "task_title": "Dashboard tablet workbench audit lane slide-over hardening",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-08T14:47:36.884Z",
-  "updated_at": "2026-06-08T14:47:36.884Z"
+  "started_at": "2026-06-08T18:31:14.806Z",
+  "updated_at": "2026-06-08T18:31:14.806Z"
 }

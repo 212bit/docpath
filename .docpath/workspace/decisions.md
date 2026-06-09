@@ -14695,3 +14695,651 @@ agent-step: S5
 - 未记录相关文件。
 
 ---
+## ADR-20260608-143 — policy.skip
+
+- task_id: T-20260608-dashboard-phase-2-two-tier-sidebar-navig
+- created_at: 2026-06-08T16:54:31.677Z
+- category: policy.skip
+
+### 背景
+
+清理误建的非计划步骤 pending 哨兵；正式范围补充已记录在 S1
+
+### 决策
+
+跳过 check
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-144 — policy.skip
+
+- task_id: T-20260608-dashboard-phase-2-two-tier-sidebar-navig
+- created_at: 2026-06-08T16:54:31.681Z
+- category: policy.skip
+
+### 背景
+
+清理误建的非计划步骤 pending 哨兵；正式范围补充已记录在 S1
+
+### 决策
+
+跳过 review
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-145 — review
+
+- task_id: T-20260608-dashboard-phase-2-two-tier-sidebar-navig
+- created_at: 2026-06-08T17:06:52.594Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-146 — review
+
+- task_id: T-20260608-dashboard-phase-2-two-tier-sidebar-navig
+- created_at: 2026-06-08T17:08:09.004Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-147 — journal.archive
+
+- task_id: T-20260608-dashboard-phase-2-two-tier-sidebar-navig
+- created_at: 2026-06-08T17:08:09.122Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard Phase 2 - Two-Tier Sidebar Navigation and Routing State
+agent-step: S1
+质量检查失败: 任务文件 current/canonical 漂移检查, ⚠️  Checklist 同步 (1/3)
+质量检查失败: 任务文件 current/canonical 漂移检查, 子任务完成度 (1/3)
+agent-step: S1 scope update: left sidebar navigation architecture
+补充 Left Sidebar Navigation Architecture: Global=Projects/Teams/Settings; Project=Overview/Workflow/Backlog/Changes/Handoff/Docs/Session/Activity
+质量检查失败: 子任务完成度 (1/3), Plan/Breadcrumb 漂移检查
+误用非计划步骤记录范围补充；实际补充已挂载到 S1 note
+agent-step: ready for next action
+开始执行: 实现 Dashboard Phase 2 - Two-Tier Sidebar Navigation and Routing State
+实现 Left Sidebar 两级导航：Global=Projects/Teams/Settings，Project=Overview/Workflow/Backlog/Changes/Handoff/Docs/Session/Activity；补充 hash 与返回按钮测试
+开始执行: 验证门禁并归档
+质量检查失败: 子任务完成度 (2/3)
+验证完成：pnpm run build:test、node --test tests/dashboard.test.mjs 与 docpath check 编译/构建/测试项均通过；重新运行 check 以确认 3/3 完成度
+质量检查通过 (9 项)
+代码审查: 0 错误, 1 警告, 0 提示
+质量检查通过 (9 项)
+代码审查: 0 错误, 1 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-phase-2-two-tier-sidebar-navig
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-phase-2-two-tier-sidebar-navig/spec.md
+- .docpath/tasks/T-20260608-dashboard-phase-2-two-tier-sidebar-navig/plan.md
+
+---
+## ADR-20260608-148 — review
+
+- task_id: T-20260608-dashboard-phase-2-project-workbench-fsm-
+- created_at: 2026-06-08T17:26:21.742Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 2 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-149 — review
+
+- task_id: T-20260608-dashboard-phase-2-project-workbench-fsm-
+- created_at: 2026-06-08T17:27:25.959Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 2 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-150 — journal.archive
+
+- task_id: T-20260608-dashboard-phase-2-project-workbench-fsm-
+- created_at: 2026-06-08T17:27:26.080Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard Phase 2 - Project Workbench FSM Workflow and Kanban Backlog
+固化 R-138 Revision 3 产品定义：Target User、Entry Point、Data Scope、Interaction Model、Decision Brief 与验收标准已同步到 spec/plan
+开始执行: 实现 Dashboard Phase 2 - Project Workbench FSM Workflow and Kanban Backlog
+实现 Project Workbench：root hash context、project dropdown、readiness gauge、FSM graph、plan checklist、Kanban backlog、priority cards、只读 Markdown drawer；Dashboard 专项测试通过
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+验证完成：pnpm run build:test、node --test tests/dashboard.test.mjs 与 docpath check 编译/构建/测试项均通过；重新运行 check 确认 checklist 同步
+质量检查通过 (9 项)
+代码审查: 0 错误, 2 警告, 0 提示
+质量检查通过 (9 项)
+代码审查: 0 错误, 2 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-phase-2-project-workbench-fsm-
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-phase-2-project-workbench-fsm-/spec.md
+- .docpath/tasks/T-20260608-dashboard-phase-2-project-workbench-fsm-/plan.md
+
+---
+## ADR-20260608-151 — review
+
+- task_id: T-20260608-dashboard-phase-2-global-views-projects-
+- created_at: 2026-06-08T17:57:03.062Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-152 — review
+
+- task_id: T-20260608-dashboard-phase-2-global-views-projects-
+- created_at: 2026-06-08T17:58:10.492Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-153 — journal.archive
+
+- task_id: T-20260608-dashboard-phase-2-global-views-projects-
+- created_at: 2026-06-08T17:58:10.629Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 固化产品定义与实现边界
+agent-step: S1
+agent-step: S2
+开始执行: 实现 Project Deep View 分屏与 Sticky Context
+agent-step: S3
+开始执行: 补齐响应式与视觉系统
+agent-step: S4
+开始执行: 增加只读交互反馈与本地筛选
+agent-step: S5
+开始执行: 验证兼容性并收口
+质量检查失败: TypeScript 编译, ⚠️  Checklist 同步 (5/6)
+质量检查失败: TypeScript 编译, ⚠️  Checklist 同步 (5/6)
+质量检查失败: TypeScript 编译, ⚠️  Checklist 同步 (5/6)
+质量检查失败: TypeScript 编译, 测试, ⚠️  Checklist 同步 (5/6)
+agent-step: S6
+质量检查失败: 测试
+质量检查通过 (9 项)
+代码审查: 0 错误, 4 警告, 0 提示
+质量检查通过 (9 项)
+代码审查: 0 错误, 4 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-phase-2-global-views-projects-
+
+### 影响
+
+任务进入归档状态；完成 6/6 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-phase-2-global-views-projects-/spec.md
+- .docpath/tasks/T-20260608-dashboard-phase-2-global-views-projects-/plan.md
+
+---
+## ADR-20260608-154 — review
+
+- task_id: T-20260608-dashboard-phase-2-project-workbench-code
+- created_at: 2026-06-08T18:12:20.011Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-155 — review
+
+- task_id: T-20260608-dashboard-phase-2-project-workbench-code
+- created_at: 2026-06-08T18:13:17.417Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-156 — journal.archive
+
+- task_id: T-20260608-dashboard-phase-2-project-workbench-code
+- created_at: 2026-06-08T18:13:17.553Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 固化详情视图边界与差距清单
+agent-step: S1
+开始执行: 实现 Sticky Project Sub-header 与真实 Loading Skeleton
+agent-step: S2
+开始执行: 深化 Changes 与 Docs 详情视图
+agent-step: S3
+开始执行: 强化 Handoff、Session、Activity 可复制审计流
+agent-step: S4
+开始执行: 补齐移动折叠导航与响应式验证锚点
+agent-step: S5
+开始执行: 验证兼容性并收口
+质量检查失败: ⚠️  Checklist 同步 (5/6)
+agent-step: S6
+质量检查通过 (9 项)
+代码审查: 0 错误, 4 警告, 0 提示
+质量检查通过 (9 项)
+代码审查: 0 错误, 4 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-phase-2-project-workbench-code
+
+### 影响
+
+任务进入归档状态；完成 6/6 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-phase-2-project-workbench-code/spec.md
+- .docpath/tasks/T-20260608-dashboard-phase-2-project-workbench-code/plan.md
+
+---
+## ADR-20260608-157 — review
+
+- task_id: T-20260608-dashboard-frontend-visual-system-hardeni
+- created_at: 2026-06-08T18:24:44.379Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-158 — review
+
+- task_id: T-20260608-dashboard-frontend-visual-system-hardeni
+- created_at: 2026-06-08T18:25:46.089Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-159 — journal.archive
+
+- task_id: T-20260608-dashboard-frontend-visual-system-hardeni
+- created_at: 2026-06-08T18:25:46.209Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 完成视觉系统与响应式证据审计
+agent-step: S1
+开始执行: 硬化 HSL 语义 token 与响应式布局样式
+agent-step: S2
+开始执行: 补齐 dashboard completion audit 合约测试
+agent-step: S3
+开始执行: 全量验证并按 DocPath 收口
+质量检查失败: 子任务完成度 (3/4)
+agent-step: S4
+质量检查通过 (9 项)
+代码审查: 0 错误, 4 警告, 0 提示
+质量检查通过 (9 项)
+代码审查: 0 错误, 4 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-frontend-visual-system-hardeni
+
+### 影响
+
+任务进入归档状态；完成 4/4 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-frontend-visual-system-hardeni/spec.md
+- .docpath/tasks/T-20260608-dashboard-frontend-visual-system-hardeni/plan.md
+
+---
+## ADR-20260608-160 — review
+
+- task_id: T-20260608-dashboard-tablet-workbench-audit-lane-sl
+- created_at: 2026-06-08T18:30:10.873Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-161 — review
+
+- task_id: T-20260608-dashboard-tablet-workbench-audit-lane-sl
+- created_at: 2026-06-08T18:31:14.801Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260608-162 — journal.archive
+
+- task_id: T-20260608-dashboard-tablet-workbench-audit-lane-sl
+- created_at: 2026-06-08T18:31:14.919Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 Dashboard tablet workbench audit lane slide-over hardening
+agent-step: S1
+开始执行: 实现 Dashboard tablet workbench audit lane slide-over hardening
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (9 项)
+代码审查: 0 错误, 4 警告, 0 提示
+质量检查通过 (9 项)
+代码审查: 0 错误, 4 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260608-dashboard-tablet-workbench-audit-lane-sl
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260608-dashboard-tablet-workbench-audit-lane-sl/spec.md
+- .docpath/tasks/T-20260608-dashboard-tablet-workbench-audit-lane-sl/plan.md
+
+---

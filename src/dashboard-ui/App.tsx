@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import {
   Activity,
   AlertTriangle,
+  ArrowLeft,
   CheckCircle2,
   ClipboardList,
   Compass,
@@ -22,20 +23,87 @@ type DashboardAppProps = {
   data: DashboardData;
 };
 
-const coreViews = [
+type SidebarView = {
+  id: string;
+  label: string;
+  detail: string;
+  icon: typeof Compass;
+};
+
+const globalViews: SidebarView[] = [
+  { id: 'projects', label: 'Projects', detail: '项目空间', icon: FolderKanban },
+  { id: 'team', label: 'Teams', detail: '团队驾驶舱', icon: Users },
+  { id: 'settings', label: 'Settings', detail: '全局配置', icon: Settings },
+] as const;
+
+const projectViews: SidebarView[] = [
+  { id: 'overview', label: 'Overview', detail: '总览', icon: Compass },
+  { id: 'workflow', label: 'Workflow', detail: 'FSM 流程', icon: GitBranch },
+  { id: 'backlog', label: 'Backlog', detail: '待办看板', icon: FolderKanban },
+  { id: 'changes', label: 'Changes', detail: '代码变更', icon: GitBranch },
+  { id: 'handoff', label: 'Handoff', detail: '任务交接', icon: ShieldCheck },
+  { id: 'documents', label: 'Docs', detail: '文档中心', icon: ClipboardList },
+  { id: 'session', label: 'Session', detail: '会话恢复', icon: Layers3 },
+  { id: 'activity', label: 'Activity', detail: '动态时间线', icon: Activity },
+] as const;
+
+const compatibilityViews = [
   { id: 'overview', label: '工作台总览', icon: Compass },
+  { id: 'map', label: '工作台地图', icon: Compass },
+  { id: 'session', label: '会话恢复', icon: Layers3 },
+  { id: 'readiness', label: '收口审计', icon: ShieldCheck },
+  { id: 'audit', label: '完成度审计', icon: ClipboardList },
+  { id: 'docs-index', label: '文档索引', icon: ClipboardList },
+  { id: 'settings', label: '系统配置', icon: Settings },
+  { id: 'activity', label: '最近活动', icon: Activity },
   { id: 'team', label: '团队驾驶舱', icon: Users },
-  { id: 'backlog', label: '工作待办', icon: FolderKanban },
+  { id: 'actions', label: '行动中心', icon: CheckCircle2 },
+  { id: 'project', label: '项目详情', icon: FolderKanban },
+  { id: 'task', label: '任务详情', icon: ClipboardList },
   { id: 'changes', label: '代码变更', icon: GitBranch },
   { id: 'handoff', label: '交接审计', icon: ShieldCheck },
-  { id: 'docs-index', label: '文档索引', icon: ClipboardList },
-  { id: 'activity', label: '最近活动', icon: Activity },
-  { id: 'settings', label: '系统配置', icon: Settings },
+  { id: 'documents', label: '工作流文档', icon: ClipboardList },
+  { id: 'health', label: '健康检查', icon: ShieldCheck },
+  { id: 'workflow', label: 'FSM 流程', icon: GitBranch },
+  { id: 'evidence', label: '证据', icon: ClipboardList },
+  { id: 'backlog', label: '工作待办', icon: FolderKanban },
 ] as const;
+
+const knownViewIds = new Set(['projects', ...compatibilityViews.map((view) => view.id)]);
+const projectViewIds = new Set(projectViews.map((view) => view.id));
+
+function splitHash(hash: string): { view: string; query: string } {
+  const raw = hash.replace(/^#/, '');
+  const [view, query = ''] = raw.split('?');
+  return { view, query };
+}
+
+function viewFromHash(): string {
+  if (typeof window === 'undefined') return 'projects';
+  const { view } = splitHash(window.location.hash);
+  return knownViewIds.has(view) ? view : 'projects';
+}
+
+function rootFromHash(): string | null {
+  if (typeof window === 'undefined') return null;
+  const { query } = splitHash(window.location.hash);
+  return new URLSearchParams(query).get('root');
+}
+
+function projectViewHref(view: string, root: string | null): string {
+  return root && projectViewIds.has(view) ? `#${view}?root=${encodeURIComponent(root)}` : `#${view}`;
+}
 
 function statusLabel(value: string | boolean | number | null | undefined): string {
   if (value === null || value === undefined || value === '') return '-';
   return String(value);
+}
+
+function projectDirectoryHealth(project: { selected: boolean; phase: string; gate: string }, data: DashboardData): string {
+  if (project.selected) return data.health.status;
+  if (project.gate.endsWith('_fail')) return 'error';
+  if (!['completed', 'idle'].includes(project.phase)) return 'warning';
+  return 'ok';
 }
 
 function Metric({ label, value, field, detail }: { label: string; value: string | number | boolean | null | undefined; field?: string; detail?: string }) {
@@ -59,6 +127,14 @@ function CopyButton({ command }: { command: string }) {
       </Tooltip.Portal>
     </Tooltip.Root>
   </Tooltip.Provider>;
+}
+
+function CopyableText({ value, label, mono = true }: { value: string; label?: string; mono?: boolean }) {
+  return <span className={mono ? 'react-copyable-text mono' : 'react-copyable-text'} data-copyable-text>
+    {label ? <b>{label}</b> : null}
+    <code>{value}</code>
+    <CopyButton command={value} />
+  </span>;
 }
 
 function Shell({ data }: DashboardAppProps) {
@@ -89,6 +165,100 @@ function SearchStrip() {
     <span><b data-search-count>0</b> 项匹配</span>
     <small data-search-empty className="search-empty">没有匹配项</small>
   </section>;
+}
+
+function LoadingSkeletonTemplate({ active }: { active: boolean }) {
+  return <div className="react-skeleton-region" data-loading-skeleton data-loading-active={active ? 'true' : 'false'} aria-hidden={!active} hidden={!active}>
+    <div className="react-skeleton line" />
+    <div className="react-skeleton block" />
+    <div className="react-skeleton grid"><span /><span /><span /></div>
+  </div>;
+}
+
+function CopyToast({ message }: { message: string }) {
+  return <div className="react-copy-toast" data-copy-toast aria-live="polite" hidden={!message}>{message || 'Copied'}</div>;
+}
+
+function ProjectSubHeader({ data, activeView }: DashboardAppProps & { activeView: string }) {
+  const projectLevel = projectViewIds.has(activeView);
+  const root = data.selected_project.project?.root || data.project.root;
+  return <div className="react-project-subheader" data-project-subheader data-project-subheader-active={projectLevel ? 'true' : 'false'} hidden={!projectLevel}>
+    <div>
+      <p className="react-eyebrow">Sticky Project Context</p>
+      <strong>{data.project.name}</strong>
+      <small>{root}</small>
+    </div>
+    <div className="react-subheader-status">
+      <span data-subheader-fsm>{data.current.phase} / {data.current.gate}</span>
+      <span className={`react-status ${data.health.status}`} data-subheader-health>{data.health.status}</span>
+    </div>
+    <div className="react-subheader-command">
+      <code data-subheader-next-command>{data.next.command}</code>
+      <CopyButton command={data.next.command} />
+    </div>
+  </div>;
+}
+
+function SidebarLink({ view, activeView, href }: { view: SidebarView; activeView: string; href?: string }) {
+  const Icon = view.icon;
+  const active = activeView === view.id;
+  return <a
+    href={href || `#${view.id}`}
+    className={active ? 'active' : undefined}
+    data-sidebar-link={view.id}
+    aria-current={active ? 'page' : undefined}
+  >
+    <Icon size={16} aria-hidden="true" />
+    <span>{view.label}<small>{view.detail}</small></span>
+  </a>;
+}
+
+function DashboardSidebar({ data, activeView }: DashboardAppProps & { activeView: string }) {
+  const projectLevel = projectViewIds.has(activeView);
+  const activeProject = data.project;
+  const activeRoot = data.selected_project.project?.root || data.project.root;
+  return <aside className="react-sidebar" data-sidebar-level={projectLevel ? 'project' : 'global'} aria-label="Left Sidebar Navigation">
+    <div className="react-sidebar-project" hidden={!projectLevel}>
+      <a href="#projects" className="react-back-link" data-back-to-projects>
+        <ArrowLeft size={16} aria-hidden="true" />Back to Projects
+      </a>
+      <div className="react-sidebar-status">
+        <p className="react-eyebrow">Workbench Focus</p>
+        <strong>{activeProject.name}</strong>
+        <small>{data.current.phase} / {data.current.gate} · {data.health.status}</small>
+      </div>
+    </div>
+    <div className="react-sidebar-status" hidden={projectLevel}>
+      <p className="react-eyebrow">Overall Management</p>
+      <strong>Global</strong>
+      <small>{data.registry.total} registered projects · {data.health.status}</small>
+    </div>
+    <nav className="react-sidebar-nav" aria-label="Global Level Sidebar Menu" hidden={projectLevel}>
+      {globalViews.map((view) => <SidebarLink key={view.id} view={view} activeView={activeView} />)}
+    </nav>
+    <nav className="react-sidebar-nav" aria-label="Project Level Sidebar Menu" hidden={!projectLevel}>
+      {projectViews.map((view) => <SidebarLink key={view.id} view={view} activeView={activeView} href={projectViewHref(view.id, activeRoot)} />)}
+    </nav>
+  </aside>;
+}
+
+function MobileNavigation({ data, activeView }: DashboardAppProps & { activeView: string }) {
+  const projectLevel = projectViewIds.has(activeView);
+  const activeRoot = data.selected_project.project?.root || data.project.root;
+  const views = projectLevel
+    ? [globalViews[0], ...projectViews.filter((view) => ['overview', 'workflow', 'backlog', 'changes', 'handoff'].includes(view.id))]
+    : [...globalViews, projectViews[0]];
+  return <nav className="react-mobile-nav" data-mobile-nav data-mobile-nav-level={projectLevel ? 'project' : 'global'} aria-label="Mobile Workbench Navigation">
+    {views.map((view) => {
+      const Icon = view.icon;
+      const href = projectViewIds.has(view.id) ? projectViewHref(view.id, activeRoot) : `#${view.id}`;
+      const active = activeView === view.id;
+      return <a key={view.id} href={href} className={active ? 'active' : undefined} data-mobile-nav-link={view.id} aria-current={active ? 'page' : undefined}>
+        <Icon size={16} aria-hidden="true" />
+        <span>{view.label}</span>
+      </a>;
+    })}
+  </nav>;
 }
 
 function HealthDot({ value }: { value: string }) {
@@ -155,6 +325,7 @@ function ProjectRail({ data }: DashboardAppProps) {
           <span><HealthDot value={project.health} />{project.name}</span>
           <small>{project.phase} / {project.gate}</small>
           <small>{project.task_id || 'no task'} · {project.stack}</small>
+          <small className="react-accent">Enter Project</small>
         </a>
       </li>)}
     </ul>
@@ -275,6 +446,179 @@ function TeamCockpit({ data }: DashboardAppProps) {
   </section>;
 }
 
+function ProjectsDirectory({ data }: DashboardAppProps) {
+  const projects = data.project_directory.length > 0
+    ? data.project_directory
+    : [{
+      ...data.project,
+      selected: true,
+      href: projectViewHref('overview', data.project.root),
+      phase: data.current.phase,
+      gate: data.current.gate,
+      task_id: data.current.task_id || '',
+      task_title: data.current.task_title,
+      health: data.health.status,
+      next_action: data.next.action,
+      last_seen_at: data.generated_at,
+    }];
+  return <section className="react-projects-directory" data-projects-directory data-search-item data-search-text="Projects Directory 项目空间 registered projects branch phase status health Enter Project">
+    <div className="react-panel-header">
+      <div>
+        <p className="react-eyebrow">Projects Directory</p>
+        <h2>项目空间</h2>
+      </div>
+      <span><b data-live-field="registry_total_projects">{data.registry.total}</b> registered</span>
+    </div>
+    <div className="react-projects-summary">
+      <Metric label="Registry DB" value={data.settings.registry.exists ? 'exists' : 'missing'} detail={data.settings.registry.db_path} />
+      <Metric label="Active Projects" value={data.team.active_projects} detail={`${data.team.attention_projects} attention`} />
+      <Metric label="Current Root" value={data.selected_project.project?.name || data.project.name} detail={data.selected_project.message} />
+    </div>
+    <div className="react-project-card-grid" data-projects-directory-grid>
+      {projects.map((project) => {
+        const health = projectDirectoryHealth(project, data);
+        return <article key={project.root} className={project.selected ? 'selected' : undefined} data-project-card data-search-item data-search-text={`${project.name} ${project.root} ${project.phase} ${project.gate} ${health} ${project.task_id}`}>
+          <header>
+            <div>
+              <p className="react-eyebrow">{project.selected ? 'Active Project' : 'Registered Project'}</p>
+              <h3>{project.name}</h3>
+            </div>
+            <span className={`react-status ${health}`}>{health}</span>
+          </header>
+          <dl className="react-project-facts">
+            <div><dt>Phase</dt><dd>{project.phase}</dd></div>
+            <div><dt>Gate</dt><dd>{project.gate}</dd></div>
+            <div><dt>Branch</dt><dd>{project.selected ? data.changes.branch : 'registry snapshot'}</dd></div>
+            <div><dt>Task</dt><dd>{project.task_id || '-'}</dd></div>
+          </dl>
+          <p>{project.task_title || (project.selected ? data.next.action : 'No active task')}</p>
+          <small>{project.root}</small>
+          <footer>
+            <span>Last seen {project.last_seen_at || '-'}</span>
+            <a href={project.href} data-enter-project data-root={project.root}>Enter Project</a>
+          </footer>
+        </article>;
+      })}
+    </div>
+  </section>;
+}
+
+type BacklogCard = DashboardData['backlog']['items'][number];
+
+function ProjectContextSelect({ data, onSwitchProject }: DashboardAppProps & { onSwitchProject?: () => void }) {
+  const selectedRoot = data.selected_project.project?.root || data.project.root;
+  const projects = data.project_directory.length > 0
+    ? data.project_directory
+    : [{ name: data.project.name, root: data.project.root, selected: true }];
+  const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const root = event.target.value;
+    if (typeof window !== 'undefined') {
+      onSwitchProject?.();
+      const encoded = encodeURIComponent(root);
+      window.location.href = `/?root=${encoded}#overview?root=${encoded}`;
+    }
+  };
+  return <label className="react-project-context">
+    <span>Project context</span>
+    <select value={selectedRoot} onChange={handleChange} aria-label="Project context" data-project-context-control>
+      {projects.map((project) => <option key={project.root} value={project.root}>{project.name}</option>)}
+    </select>
+  </label>;
+}
+
+function ProjectWorkbench({ data, onSwitchProject }: DashboardAppProps & { onSwitchProject?: () => void }) {
+  const [selectedCard, setSelectedCard] = useState<BacklogCard | null>(null);
+  const selectedRoot = data.selected_project.project?.root || data.project.root;
+  const score = Math.max(0, Math.min(100, data.readiness.score));
+  const kanbanStatuses = ['proposed', 'accepted', 'active', 'done'];
+  const backlogItems = data.backlog.filtered_items.length > 0 ? data.backlog.filtered_items : data.backlog.items;
+  const cardsByStatus = new Map(kanbanStatuses.map((status) => [status, backlogItems.filter((item) => item.status === status)]));
+  const scrollToNode = (nodeId: string) => {
+    if (typeof document !== 'undefined') {
+      document.querySelector(`[data-workbench-detail="${nodeId}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+  return <section className="react-project-workbench" data-project-workbench data-search-item data-search-text="Project Workbench readiness gauge FSM node graph Kanban backlog drawer root context">
+    <div className="react-workbench-hero">
+      <div>
+        <p className="react-eyebrow">Project Workbench</p>
+        <h2>{data.project.name}</h2>
+        <p className="react-subtitle">只读单项目工作台 · {selectedRoot}</p>
+      </div>
+      <ProjectContextSelect data={data} onSwitchProject={onSwitchProject} />
+    </div>
+    <div className="react-workbench-grid">
+      <article className="react-readiness-card" data-workbench-readiness-gauge>
+        <div className="react-readiness-gauge" style={{ background: `conic-gradient(var(--dp-accent) ${score}%, var(--dp-muted-soft) 0)` }}>
+          <span>{score}</span>
+          <small>{data.readiness.status}</small>
+        </div>
+        <div>
+          <p className="react-eyebrow">Readiness Gauge</p>
+          <strong>{data.current.phase} / {data.current.gate}</strong>
+          <small>{data.next.action}</small>
+        </div>
+      </article>
+      <article className="react-workbench-summary">
+        <Metric label="Active Task" value={data.current.task_id || '-'} detail={data.current.task_title} />
+        <Metric label="Checklist" value={`${data.task_detail.progress.done_steps}/${data.task_detail.progress.total_steps}`} />
+        <Metric label="Backlog" value={data.backlog.filtered_total} detail={`${data.backlog.total} total`} />
+        <Metric label="Changes" value={data.changes.ready_to_commit ? 'READY' : 'BLOCKED'} detail={`${data.changes.counts.total} files`} />
+      </article>
+    </div>
+    <div className="react-workbench-three-column" data-workbench-three-column>
+      <div className="react-workbench-flow-lane" data-workbench-flow-lane>
+        <article className="react-fsm-graph" data-workbench-fsm-graph>
+          <div className="react-section-title"><GitBranch size={18} aria-hidden="true" /><div><p className="react-eyebrow">FSM State Node Graph</p><h2>生命周期流转</h2></div></div>
+          <div className="react-fsm-nodes">
+            {data.task_detail.flow_nodes.map((node) => <button key={node.id} type="button" className={node.active ? 'active' : node.complete ? 'complete' : undefined} onClick={() => scrollToNode(node.id)} data-fsm-node={node.id}>
+              <span>{node.label}</span>
+              <small>{node.summary}</small>
+            </button>)}
+          </div>
+        </article>
+        <article className="react-kanban-board" data-workbench-kanban>
+          <div className="react-section-title"><FolderKanban size={18} aria-hidden="true" /><div><p className="react-eyebrow">Kanban Backlog</p><h2>项目待办看板</h2></div></div>
+          <div className="react-kanban-columns">
+            {kanbanStatuses.map((status) => <section key={status} className="react-kanban-column" data-kanban-column={status}>
+              <h3>{status.toUpperCase()} <span>{cardsByStatus.get(status)?.length || 0}</span></h3>
+              {(cardsByStatus.get(status) || []).map((item) => <button key={item.id} type="button" className={`react-kanban-card priority-${item.priority.toLowerCase()}`} onClick={() => setSelectedCard(item)} data-backlog-card={item.id}>
+                <b>{item.title}</b>
+                <small>{item.id} · {item.priority} · L{item.level}</small>
+                {item.task ? <small>Task: {item.task}</small> : null}
+              </button>)}
+              {(cardsByStatus.get(status) || []).length === 0 ? <p className="react-muted">暂无条目</p> : null}
+            </section>)}
+          </div>
+        </article>
+      </div>
+      <aside className="react-workbench-audit-lane" data-workbench-audit-lane>
+        <article className="react-checklist-details" data-workbench-plan-checklist>
+          <div className="react-section-title"><ClipboardList size={18} aria-hidden="true" /><div><p className="react-eyebrow">Plan Checklist Details</p><h2>执行清单</h2></div></div>
+          <ul>
+            {data.task_detail.steps.map((step) => <li key={step.id} data-workbench-detail={step.id} className={step.done ? 'done' : step.breadcrumb_status || 'pending'}>
+              <b>{step.id}: {step.title}</b>
+              <small>{step.done ? 'done' : 'pending'} · {step.breadcrumb_status || 'no breadcrumb'}</small>
+            </li>)}
+            {data.task_detail.flow_nodes.map((node) => <li key={`node-${node.id}`} data-workbench-detail={node.id} className={node.active ? 'active' : node.complete ? 'done' : 'pending'}>
+              <b>{node.label}</b>
+              <small>{node.summary}</small>
+            </li>)}
+          </ul>
+        </article>
+      </aside>
+    </div>
+    <aside className="react-backlog-drawer" role="dialog" aria-modal="true" aria-label="Backlog markdown detail" data-backlog-drawer hidden={!selectedCard}>
+      <div>
+        <button type="button" className="react-icon-button" onClick={() => setSelectedCard(null)} aria-label="关闭 backlog 详情">×</button>
+        <p className="react-eyebrow">Read-only Markdown</p>
+        <h2>{selectedCard?.title || 'Backlog detail'}</h2>
+        <pre><code>{selectedCard ? selectedCard.body || `# ${selectedCard.title}\n\n- ID: ${selectedCard.id}\n- Status: ${selectedCard.status}\n- Priority: ${selectedCard.priority}\n- Level: ${selectedCard.level}\n\n## Acceptance criteria\n\n该 backlog 条目暂无详细正文。` : 'Select a backlog card to inspect its Markdown description.'}</code></pre>
+      </div>
+    </aside>
+  </section>;
+}
+
 function OverviewPanel({ data }: DashboardAppProps) {
   const overview = data.overview;
   return <section className="react-panel react-overview" data-search-item data-search-text="Agent Overview 工作台总览 当前步骤 下一步">
@@ -322,9 +666,9 @@ function SessionPanel({ data }: DashboardAppProps) {
       <Metric label="文件" value={session.required_files.length} field="session_file_count" />
       <Metric label="风险" value={data.readiness.blockers.length} field="session_risk_count" />
     </div>
-    <ul className="react-command-list" data-team-session-commands>{session.recovery_commands.map((item) => <li key={item.command}><button type="button" data-copy-command={item.command}>{item.label}</button><small>{item.detail}</small></li>)}</ul>
-    <div className="react-two-col"><ul data-team-session-files>{session.required_files.map((file) => <li key={file}>{file}</li>)}</ul><ul data-team-session-risks>{data.readiness.blockers.slice(0, 4).map((item) => <li key={item}>{item}</li>)}</ul></div>
-    <ol className="react-command-list" data-team-session-protocol>{data.handoff.resume_protocol.map((item) => <li key={item}>{item}</li>)}</ol>
+    <ul className="react-command-list" data-team-session-commands>{session.recovery_commands.map((item) => <li key={item.command}><CopyableText label={item.label} value={item.command} /><small>{item.detail}</small></li>)}</ul>
+    <div className="react-two-col"><ul data-team-session-files>{session.required_files.map((file) => <li key={file}><CopyableText value={file} /></li>)}</ul><ul data-team-session-risks>{data.readiness.blockers.slice(0, 4).map((item) => <li key={item}>{item}</li>)}</ul></div>
+    <ol className="react-command-list" data-team-session-protocol>{data.handoff.resume_protocol.map((item) => <li key={item}><CopyableText value={item} mono={false} /></li>)}</ol>
   </section>;
 }
 
@@ -365,13 +709,40 @@ function SettingsPanel({ data }: DashboardAppProps) {
 
 function BacklogPanel({ data }: DashboardAppProps) {
   const backlog = data.backlog;
+  const [query, setQuery] = useState('');
+  const [priority, setPriority] = useState('all');
+  const priorities = Array.from(new Set(backlog.items.map((item) => item.priority))).sort();
+  const normalizedQuery = query.trim().toLowerCase();
+  const localItems = backlog.items.filter((item) => {
+    const matchesPriority = priority === 'all' || item.priority === priority;
+    const searchText = `${item.id} ${item.title} ${item.status} ${item.priority} ${item.task || ''} ${item.body || ''}`.toLowerCase();
+    return matchesPriority && (!normalizedQuery || searchText.includes(normalizedQuery));
+  });
+  const statusOrder = Array.from(new Set([...backlog.groups.map((group) => group.status), ...localItems.map((item) => item.status)]));
+  const localGroups = statusOrder.map((status) => {
+    const items = localItems.filter((item) => item.status === status);
+    return { status, count: items.length, items };
+  }).filter((group) => group.count > 0);
   return <section className="react-panel" data-search-item data-search-text="Backlog Board 任务待办 工作清单 Board active proposed planned done dropped">
     <div className="react-panel-header">
       <div><p className="react-eyebrow">Backlog Board</p><h2>工作待办看板</h2></div>
-      <span>共 <b data-live-field="backlog_filtered_total">{backlog.filtered_total}</b> / <b data-live-field="backlog_total">{backlog.total}</b> 项</span>
+      <span>本地 <b data-local-backlog-count>{localItems.length}</b> / API <b data-live-field="backlog_filtered_total">{backlog.filtered_total}</b> / <b data-live-field="backlog_total">{backlog.total}</b> 项</span>
+    </div>
+    <div className="react-local-backlog-controls" data-local-backlog-filter>
+      <label>
+        <span>Search</span>
+        <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索 id、标题、正文" aria-label="本地搜索 backlog" />
+      </label>
+      <label>
+        <span>Priority</span>
+        <select value={priority} onChange={(event) => setPriority(event.target.value)} aria-label="按优先级筛选 backlog" data-priority-filter>
+          <option value="all">All priorities</option>
+          {priorities.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+      </label>
     </div>
     <div className="react-board">
-      {backlog.groups.map((group) => <article key={group.status} className="react-board-column">
+      {localGroups.map((group) => <article key={group.status} className="react-board-column">
         <h3><b>{group.status.toUpperCase()}</b> <span>{group.count}</span></h3>
         <ul className="react-project-list">
           {group.items.map((item) => <li key={item.id} className="react-backlog-card" data-search-item data-search-text={`${item.id} ${item.title} ${item.status} ${item.priority}`}>
@@ -381,9 +752,20 @@ function BacklogPanel({ data }: DashboardAppProps) {
           </li>)}
         </ul>
       </article>)}
-      {backlog.groups.length === 0 ? <p className="react-muted">当前筛选没有匹配的 backlog。</p> : null}
+      {localGroups.length === 0 ? <p className="react-muted">当前本地筛选没有匹配的 backlog。</p> : null}
     </div>
   </section>;
+}
+
+function InlineDiffPreview({ groups }: { groups: Record<string, string[]> }) {
+  const entries = Object.entries(groups).flatMap(([status, files]) => files.map((file) => ({ status, file }))).slice(0, 8);
+  return <article className="react-diff-preview" data-inline-diff-preview>
+    <div className="react-section-title">
+      <GitBranch size={18} aria-hidden="true" />
+      <div><p className="react-eyebrow">Inline Diff Preview</p><h2>代码变更预览</h2></div>
+    </div>
+    {entries.length > 0 ? <pre className="react-code-block"><code>{entries.map((entry) => `# ${entry.status.toUpperCase()} ${entry.file}\n@@ read-only dashboard preview @@\n! Diff hunks are not loaded in the current dashboard payload.\n  Open the file or run docpath changes for full local diff context.`).join('\n\n')}</code></pre> : <p className="react-muted">当前 payload 没有可预览的变更文件。</p>}
+  </article>;
 }
 
 function ChangesPanel({ data }: DashboardAppProps) {
@@ -391,8 +773,17 @@ function ChangesPanel({ data }: DashboardAppProps) {
   if (!changes.available) {
     return <section className="react-panel" data-search-item data-search-text="Git Changes 变更收口 blocking reasons not a git repo">
       <div className="react-panel-header"><div><p className="react-eyebrow">Git Changes</p><h2>变更收口</h2></div></div>
-      <div className="react-blocker-list">
-        <li><b>未启用 Git 仓库</b><p>{changes.error || '当前目录不是 git 仓库，无法监控代码变更。'}</p></li>
+      <div className="react-split-pane" data-changes-split-pane>
+        <aside className="react-split-context" data-sticky-context>
+          <p className="react-eyebrow">File Tree</p>
+          <nav aria-label="Changed file groups"><a href="#changes-unavailable">UNAVAILABLE<span>1</span></a></nav>
+        </aside>
+        <div className="react-split-details" data-scrollable-details>
+          <div id="changes-unavailable" className="react-blocker-list">
+            <li><b>未启用 Git 仓库</b><p>{changes.error || '当前目录不是 git 仓库，无法监控代码变更。'}</p></li>
+          </div>
+          <InlineDiffPreview groups={{ unavailable: [] }} />
+        </div>
       </div>
     </section>;
   }
@@ -409,24 +800,38 @@ function ChangesPanel({ data }: DashboardAppProps) {
       <Metric label="未跟踪" value={changes.counts.untracked} />
     </div>
 
-    {changes.blocking_reasons.length > 0 ? <div className="react-blocker-list">
-      <p className="react-eyebrow">变更拦截原因</p>
-      <ul data-team-changes-blockers>{changes.blocking_reasons.map((reason, idx) => <li key={idx}>{reason}</li>)}</ul>
-    </div> : null}
+    <div className="react-split-pane" data-changes-split-pane>
+      <aside className="react-split-context" data-sticky-context>
+        <p className="react-eyebrow">File Tree</p>
+        <nav aria-label="Changed file groups">
+          {Object.entries(changes.groups).map(([name, files]) => <a key={name} href={`#changes-${name}`}>{name.toUpperCase()}<span>{files.length}</span></a>)}
+          {changes.blocking_reasons.length > 0 ? <a href="#changes-blockers">BLOCKERS<span>{changes.blocking_reasons.length}</span></a> : null}
+          <a href="#changes-commit">COMMIT<span>1</span></a>
+        </nav>
+      </aside>
+      <div className="react-split-details" data-scrollable-details>
+        {changes.blocking_reasons.length > 0 ? <div id="changes-blockers" className="react-blocker-list">
+          <p className="react-eyebrow">变更拦截原因</p>
+          <ul data-team-changes-blockers>{changes.blocking_reasons.map((reason, idx) => <li key={idx}>{reason}</li>)}</ul>
+        </div> : null}
 
-    <div className="react-two-col" data-team-changes-groups>
-      {Object.entries(changes.groups).map(([name, files]) => <article key={name} className="react-metric">
-        <b>{name.toUpperCase()} ({files.length})</b>
-        <ul className="react-mini-list">
-          {files.map((file) => <li key={file}><small>{file}</small></li>)}
-        </ul>
-      </article>)}
-    </div>
+        <div className="react-split-groups" data-team-changes-groups>
+          {Object.entries(changes.groups).map(([name, files]) => <article key={name} id={`changes-${name}`} className="react-metric">
+            <b>{name.toUpperCase()} ({files.length})</b>
+            <ul className="react-mini-list">
+              {files.map((file) => <li key={file}><small>{file}</small></li>)}
+            </ul>
+          </article>)}
+        </div>
 
-    <div className="react-readonly-command">
-      <p>推荐提交日志</p>
-      <code>{changes.suggested_commit_message}</code>
-      <CopyButton command={changes.suggested_commit_message} />
+        <InlineDiffPreview groups={changes.groups} />
+
+        <div id="changes-commit" className="react-readonly-command">
+          <p>推荐提交日志</p>
+          <code>{changes.suggested_commit_message}</code>
+          <CopyButton command={changes.suggested_commit_message} />
+        </div>
+      </div>
     </div>
   </section>;
 }
@@ -448,21 +853,19 @@ function HandoffPanel({ data }: DashboardAppProps) {
       <div>
         <p className="react-eyebrow">交接所需文件</p>
         <ul className="react-command-list" data-team-handoff-files>
-          {handoff.required_files.map((file) => <li key={file}><small>{file}</small></li>)}
+          {handoff.required_files.map((file) => <li key={file}><CopyableText value={file} /></li>)}
         </ul>
       </div>
       <div>
         <p className="react-eyebrow">推荐交接命令</p>
         <ul className="react-command-list" data-team-handoff-commands>
           {handoff.commands.map((cmd) => <li key={cmd.id}>
-            <b>{cmd.label}</b>
-            <code>{cmd.command}</code>
-            <CopyButton command={cmd.command} />
+            <CopyableText label={cmd.label} value={cmd.command} />
           </li>)}
         </ul>
       </div>
     </div>
-    <div className="react-blocker-list">
+    <div className="react-blocker-list react-audit-slide-panel" data-audit-slide-over>
       <p className="react-eyebrow">最近面包屑记录</p>
       <ul data-team-handoff-breadcrumbs>
         {handoff.recent_breadcrumbs.map((b, idx) => <li key={idx}>
@@ -471,7 +874,7 @@ function HandoffPanel({ data }: DashboardAppProps) {
       </ul>
     </div>
     <ol className="react-command-list" data-team-handoff-protocol>
-      {data.handoff.resume_protocol.map((item, idx) => <li key={idx}><small>{item}</small></li>)}
+      {data.handoff.resume_protocol.map((item, idx) => <li key={idx}><CopyableText value={item} mono={false} /></li>)}
     </ol>
   </section>;
 }
@@ -514,12 +917,26 @@ function DocumentsPanel({ data }: DashboardAppProps) {
   const previews = data.document_previews;
   return <section className="react-panel" data-search-item data-search-text="Document Previews 文档预览 spec plan check review">
     <div className="react-panel-header"><div><p className="react-eyebrow">Document Previews</p><h2>工作流文档预览</h2></div></div>
-    <div className="react-two-col">
-      {previews.map((preview) => <article key={preview.id} className="react-metric react-doc-preview">
-        <b>{preview.title}</b>
-        <small>{preview.path} ({preview.line_count} 行)</small>
-        {preview.exists ? <pre className="react-code-block"><code>{preview.excerpt}</code></pre> : <p className="react-muted">文件不存在</p>}
-      </article>)}
+    <div className="react-split-pane" data-documents-split-pane>
+      <aside className="react-split-context" data-sticky-context>
+        <p className="react-eyebrow">Document Tree</p>
+        <nav aria-label="Document tree">
+          {previews.map((preview) => <a key={preview.id} href={`#doc-${preview.id}`} className={preview.exists ? undefined : 'missing'}>{preview.title}<span>{preview.exists ? `${preview.line_count}` : 'missing'}</span></a>)}
+        </nav>
+      </aside>
+      <div className="react-split-details" data-scrollable-details>
+        {previews.map((preview) => <article key={preview.id} id={`doc-${preview.id}`} className="react-metric react-doc-preview" data-markdown-preview-panel>
+          <header>
+            <div>
+              <p className="react-eyebrow">Markdown Preview</p>
+              <b>{preview.title}</b>
+            </div>
+            <span className={`react-status ${preview.exists ? 'ok' : 'warning'}`}>{preview.exists ? 'exists' : 'missing'}</span>
+          </header>
+          <small>{preview.path} ({preview.line_count} 行)</small>
+          {preview.exists ? <pre className="react-code-block" data-markdown-preview><code>{preview.excerpt}</code></pre> : <p className="react-muted">文件不存在</p>}
+        </article>)}
+      </div>
     </div>
   </section>;
 }
@@ -776,28 +1193,68 @@ function LiveFieldAnchors({ data }: DashboardAppProps) {
 }
 
 export function DashboardApp({ data }: DashboardAppProps) {
-  const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      const hash = window.location.hash.slice(1);
-      if (coreViews.some((v) => v.id === hash)) return hash;
-    }
-    return 'overview';
-  });
+  const [activeView, setActiveView] = useState(viewFromHash);
+  const [copyToast, setCopyToast] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handleHashChange = () => {
-      const hash = window.location.hash.slice(1);
-      if (coreViews.some((v) => v.id === hash)) {
-        setActiveTab(hash);
-      }
+      setActiveView(viewFromHash());
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    let timer: number | null = null;
+    const showToast = (message: string) => {
+      setCopyToast(message);
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => setCopyToast(''), 1800);
+    };
+    const handleCopyClick = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-copy-command]') : null;
+      const command = target?.getAttribute('data-copy-command');
+      if (!command) return;
+      event.preventDefault();
+      void navigator.clipboard?.writeText(command)
+        .then(() => showToast('Copied to clipboard'))
+        .catch(() => showToast('Copy unavailable'));
+    };
+    document.addEventListener('click', handleCopyClick);
+    return () => {
+      document.removeEventListener('click', handleCopyClick);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    let timer: number | null = null;
+    const startLoading = () => {
+      setLoading(true);
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => setLoading(false), 2200);
+    };
+    const handleRefreshOrProjectSwitch = (event: Event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('[data-refresh], [data-project-context-control], [data-enter-project]')) {
+        startLoading();
+      }
+    };
+    document.addEventListener('click', handleRefreshOrProjectSwitch);
+    document.addEventListener('change', handleRefreshOrProjectSwitch);
+    return () => {
+      document.removeEventListener('click', handleRefreshOrProjectSwitch);
+      document.removeEventListener('change', handleRefreshOrProjectSwitch);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
+
   const handleTabChange = (val: string) => {
-    setActiveTab(val);
+    setActiveView(val);
     if (typeof window !== 'undefined') {
       window.location.hash = val;
     }
@@ -805,38 +1262,49 @@ export function DashboardApp({ data }: DashboardAppProps) {
 
   return <div className="react-dashboard" data-react-dashboard="agent-core">
     <LiveFieldAnchors data={data} />
+    <LoadingSkeletonTemplate active={loading} />
+    <CopyToast message={copyToast} />
     <Shell data={data} />
     <SearchStrip />
-    <nav className="react-view-nav" aria-label="工作台视图">
+    <nav className="react-view-nav react-compat-nav" aria-label="工作台视图">
       {data.workspace.navigation.map((view) => {
-        const core = coreViews.find((item) => item.id === view.id);
+        const core = compatibilityViews.find((item) => item.id === view.id);
         const Icon = core?.icon || CheckCircle2;
         return <a key={view.id} href={view.href} data-view-link={view.id}><Icon size={16} aria-hidden="true" />{view.label}</a>;
       })}
+      <a href="#projects" data-view-link="projects"><FolderKanban size={16} aria-hidden="true" />Projects</a>
     </nav>
-    <Tabs.Root value={activeTab} onValueChange={handleTabChange} className="react-tabs">
+    <Tabs.Root value={activeView} onValueChange={handleTabChange} className="react-tabs react-compat-tabs">
       <Tabs.List className="react-tab-list" aria-label="Agent 工作台核心视图">
-        {coreViews.map((view) => <Tabs.Trigger key={view.id} value={view.id}>{view.label}</Tabs.Trigger>)}
+        {compatibilityViews.map((view) => <Tabs.Trigger key={view.id} value={view.id}>{view.label}</Tabs.Trigger>)}
       </Tabs.List>
     </Tabs.Root>
-    <div id="overview" data-view="overview" className="react-core-section view-section"><OverviewPanel data={data} /></div>
-    <div id="map" data-view="map" className="react-core-section view-section"><MapPanel data={data} /></div>
-    <div id="session" data-view="session" className="react-core-section view-section"><SessionPanel data={data} /></div>
-    <div id="readiness" data-view="readiness" className="react-core-section view-section"><ReadinessPanel data={data} /></div>
-    <div id="settings" data-view="settings" className="react-core-section view-section"><SettingsPanel data={data} /></div>
-    <div id="team" data-view="team" className="react-core-section view-section"><TeamCockpit data={data} /></div>
-    <div id="backlog" data-view="backlog" className="react-core-section view-section"><BacklogPanel data={data} /></div>
-    <div id="changes" data-view="changes" className="react-core-section view-section"><ChangesPanel data={data} /></div>
-    <div id="handoff" data-view="handoff" className="react-core-section view-section"><HandoffPanel data={data} /></div>
-    <div id="documents" data-view="documents" className="react-core-section view-section"><DocumentsPanel data={data} /></div>
-    <div id="docs-index" data-view="docs-index" className="react-core-section view-section"><DocsPanel data={data} /></div>
-    <div id="activity" data-view="activity" className="react-core-section view-section"><ActivityPanel data={data} /></div>
-    <div id="actions" data-view="actions" className="react-core-section view-section"><ActionsPanel data={data} /></div>
-    <div id="project" data-view="project" className="react-core-section view-section"><ProjectPanel data={data} /></div>
-    <div id="task" data-view="task" className="react-core-section view-section"><TaskPanel data={data} /></div>
-    <div id="health" data-view="health" className="react-core-section view-section"><HealthPanel data={data} /></div>
-    <div id="workflow" data-view="workflow" className="react-core-section view-section"><WorkflowPanel data={data} /></div>
-    <div id="evidence" data-view="evidence" className="react-core-section view-section"><EvidencePanel data={data} /></div>
-    <div id="audit" data-view="audit" className="react-core-section view-section"><AuditPanel data={data} /></div>
+    <div className="react-workbench-shell">
+      <DashboardSidebar data={data} activeView={activeView} />
+      <main className="react-workbench-content">
+        <ProjectSubHeader data={data} activeView={activeView} />
+        <div id="projects" data-view="projects" className="react-core-section view-section"><ProjectsDirectory data={data} /></div>
+        <div id="overview" data-view="overview" className="react-core-section view-section"><ProjectWorkbench data={data} onSwitchProject={() => setLoading(true)} /><OverviewPanel data={data} /></div>
+        <div id="map" data-view="map" className="react-core-section view-section"><MapPanel data={data} /></div>
+        <div id="session" data-view="session" className="react-core-section view-section"><SessionPanel data={data} /></div>
+        <div id="readiness" data-view="readiness" className="react-core-section view-section"><ReadinessPanel data={data} /></div>
+        <div id="settings" data-view="settings" className="react-core-section view-section"><SettingsPanel data={data} /></div>
+        <div id="team" data-view="team" className="react-core-section view-section"><TeamCockpit data={data} /></div>
+        <div id="backlog" data-view="backlog" className="react-core-section view-section"><BacklogPanel data={data} /></div>
+        <div id="changes" data-view="changes" className="react-core-section view-section"><ChangesPanel data={data} /></div>
+        <div id="handoff" data-view="handoff" className="react-core-section view-section"><HandoffPanel data={data} /></div>
+        <div id="documents" data-view="documents" className="react-core-section view-section"><DocumentsPanel data={data} /></div>
+        <div id="docs-index" data-view="docs-index" className="react-core-section view-section"><DocsPanel data={data} /></div>
+        <div id="activity" data-view="activity" className="react-core-section view-section"><ActivityPanel data={data} /></div>
+        <div id="actions" data-view="actions" className="react-core-section view-section"><ActionsPanel data={data} /></div>
+        <div id="project" data-view="project" className="react-core-section view-section"><ProjectPanel data={data} /></div>
+        <div id="task" data-view="task" className="react-core-section view-section"><TaskPanel data={data} /></div>
+        <div id="health" data-view="health" className="react-core-section view-section"><HealthPanel data={data} /></div>
+        <div id="workflow" data-view="workflow" className="react-core-section view-section"><WorkflowPanel data={data} /></div>
+        <div id="evidence" data-view="evidence" className="react-core-section view-section"><EvidencePanel data={data} /></div>
+        <div id="audit" data-view="audit" className="react-core-section view-section"><AuditPanel data={data} /></div>
+      </main>
+    </div>
+    <MobileNavigation data={data} activeView={activeView} />
   </div>;
 }

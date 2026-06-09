@@ -190,16 +190,28 @@
 <!-- docpath:lesson-meta best-practice:style:t-20260606-backlog-edit-workflow:journal:t-20260606-backlog-edit -->
 - **t-20260606-backlog-groom-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260606-backlog-groom, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260606-backlog-groom-workflow:journal:t-20260606-backlog-groom -->
-- **T-20260608-task-6-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-task-6, source: journal)_
+- **t-20260608-task-6-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-task-6, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260608-task-6-workflow:journal:t-20260608-task-6 -->
-- **T-20260608-dashboard-react-ui-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-react-ui, source: journal)_
+- **t-20260608-dashboard-react-ui-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-react-ui, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-react-ui-workflow:journal:t-20260608-dashboard-react-ui -->
-- **T-20260608-dashboard-react-agent-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-react-agent, source: journal)_
+- **t-20260608-dashboard-react-agent-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-react-agent, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-react-agent-workflow:journal:t-20260608-dashboard-react-agent -->
-- **T-20260608-task-7-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-task-7, source: journal)_
+- **t-20260608-task-7-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-task-7, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260608-task-7-workflow:journal:t-20260608-task-7 -->
-- **T-20260608-team-portfolio-cockpit-decision-brief-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-team-portfolio-cockpit-decision-brief, source: journal)_
+- **t-20260608-team-portfolio-cockpit-decision-brief-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-team-portfolio-cockpit-decision-brief, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260608-team-portfolio-cockpit-decision-brief-workflow:journal:t-20260608-team-portfolio-cockpit-decision-brief -->
-- **T-20260608-dashboard-phase-1-team-cockpit-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-phase-1-team-cockpit, source: journal)_
+- **t-20260608-dashboard-phase-1-team-cockpit-workflow**: ✅ 推荐保留本次任务的执行经验：完成 5/5 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-phase-1-team-cockpit, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-phase-1-team-cockpit-workflow:journal:t-20260608-dashboard-phase-1-team-cockpit -->
+- **t-20260608-dashboard-phase-2-two-tier-sidebar-navig-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-phase-2-two-tier-sidebar-navig, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-phase-2-two-tier-sidebar-navig-workflow:journal:t-20260608-dashboard-phase-2-two-tier-sidebar-navig -->
+- **t-20260608-dashboard-phase-2-project-workbench-fsm--workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-phase-2-project-workbench-fsm-, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-phase-2-project-workbench-fsm--workflow:journal:t-20260608-dashboard-phase-2-project-workbench-fsm- -->
+- **t-20260608-dashboard-phase-2-global-views-projects--workflow**: ✅ 推荐保留本次任务的执行经验：完成 6/6 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-phase-2-global-views-projects-, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-phase-2-global-views-projects--workflow:journal:t-20260608-dashboard-phase-2-global-views-projects- -->
+- **t-20260608-dashboard-phase-2-project-workbench-code-workflow**: ✅ 推荐保留本次任务的执行经验：完成 6/6 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-phase-2-project-workbench-code, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-phase-2-project-workbench-code-workflow:journal:t-20260608-dashboard-phase-2-project-workbench-code -->
+- **t-20260608-dashboard-frontend-visual-system-hardeni-workflow**: ✅ 推荐保留本次任务的执行经验：完成 4/4 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-frontend-visual-system-hardeni, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-frontend-visual-system-hardeni-workflow:journal:t-20260608-dashboard-frontend-visual-system-hardeni -->
+- **T-20260608-dashboard-tablet-workbench-audit-lane-sl-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-tablet-workbench-audit-lane-sl, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-tablet-workbench-audit-lane-sl-workflow:journal:t-20260608-dashboard-tablet-workbench-audit-lane-sl -->
 

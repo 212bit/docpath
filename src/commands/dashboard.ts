@@ -527,9 +527,9 @@ export type DashboardData = {
       q: string | null;
     };
     filtered_total: number;
-    items: Array<{ id: string; title: string; status: string; priority: string; level: number; task: string | null }>;
-    filtered_items: Array<{ id: string; title: string; status: string; priority: string; level: number; task: string | null }>;
-    groups: Array<{ status: string; count: number; items: Array<{ id: string; title: string; status: string; priority: string; level: number; task: string | null }> }>;
+    items: Array<{ id: string; title: string; status: string; priority: string; level: number; task: string | null; body: string }>;
+    filtered_items: Array<{ id: string; title: string; status: string; priority: string; level: number; task: string | null; body: string }>;
+    groups: Array<{ status: string; count: number; items: Array<{ id: string; title: string; status: string; priority: string; level: number; task: string | null; body: string }> }>;
   };
   registry: {
     total: number;
@@ -1038,7 +1038,7 @@ const DASHBOARD_SCRIPT = `
   };
 
   var selectedView = function () {
-    var hash = window.location.hash ? window.location.hash.slice(1) : '';
+    var hash = window.location.hash ? window.location.hash.slice(1).split('?')[0] : '';
     return knownViews.indexOf(hash) >= 0 ? hash : 'overview';
   };
 
@@ -1576,7 +1576,8 @@ function projectStack(project: RegisteredProject): string {
 }
 
 function projectHref(project: RegisteredProject): string {
-  return `/?root=${encodeURIComponent(project.root)}#project`;
+  const root = encodeURIComponent(project.root);
+  return `/?root=${root}#overview?root=${root}`;
 }
 
 function projectHealth(project: RegisteredProject): HealthSeverity {
@@ -3054,7 +3055,7 @@ function normalizeBacklogFilter(value: string | null | undefined): string | null
 }
 
 function serializeBacklogItem(item: Awaited<ReturnType<typeof listBacklogItems>>[number]): DashboardData['backlog']['items'][number] {
-  return { id: item.id, title: item.title, status: item.status, priority: item.priority, level: item.level, task: item.links.task };
+  return { id: item.id, title: item.title, status: item.status, priority: item.priority, level: item.level, task: item.links.task, body: item.body };
 }
 
 function matchesBacklogFilters(item: Awaited<ReturnType<typeof listBacklogItems>>[number], filters: DashboardData['backlog']['filters']): boolean {
