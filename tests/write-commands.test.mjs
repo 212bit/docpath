@@ -317,4 +317,39 @@ describe('write commands', () => {
     assert.match(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.md'), 'utf-8'), /## Journal Record/);
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('write-analysis writes section files to canonical and current analysis dirs', () => {
+    const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+    const analysis = [
+      '# UI Analysis',
+      '',
+      '- 页面/组件清单: 筛选栏、表格、详情抽屉',
+      '- 状态: 空态、错误态、加载态',
+      '',
+    ].join('\n');
+
+    const output = run(`write-analysis --cwd ${cwd} --section ui --content ${JSON.stringify(analysis)}`, cwd);
+    assert.match(output, /analysis\/ui\.md 已写入/);
+
+    const canonical = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'analysis', 'ui.md'), 'utf-8');
+    const current = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'analysis', 'ui.md'), 'utf-8');
+    assert.match(canonical, /详情抽屉/);
+    assert.equal(current, canonical);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('write-analysis keeps legacy analysis.md compatibility when no section is provided', () => {
+    const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+    const analysis = '# Predev Analysis\n\n## UI/UX 分析\n- 表格、详情抽屉\n';
+
+    const output = run(`write-analysis --cwd ${cwd} --content ${JSON.stringify(analysis)}`, cwd);
+    assert.match(output, /analysis\.md 已写入/);
+
+    const canonical = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'analysis.md'), 'utf-8');
+    const current = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'analysis.md'), 'utf-8');
+    assert.match(canonical, /UI\/UX 分析/);
+    assert.equal(current, canonical);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
 });

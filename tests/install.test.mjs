@@ -365,16 +365,27 @@ describe('install agent adapters', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('install --check-only fails when local installed assets were modified', () => {
+  it('install --check-only allows local AGENTS.md customization', () => {
     const cwd = mkWorkspace();
     run(`install --cwd ${cwd} --target codex`, cwd);
     writeFileSync(join(cwd, 'AGENTS.md'), '# Locally customized\n');
+
+    const output = run(`install --cwd ${cwd} --target codex --check-only`, cwd);
+
+    assert.match(output, /install manifest 检查通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --check-only still fails when a Codex Skill asset was modified', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    writeFileSync(join(cwd, '.codex', 'skills', 'docpath', 'SKILL.md'), '# Locally customized skill\n');
 
     const failed = runResult(`install --cwd ${cwd} --target codex --check-only`, cwd);
 
     assert.equal(failed.code, 1);
     assert.match(failed.out, /本地改动 1 项/);
-    assert.match(failed.out, /本地改动示例: AGENTS\.md/);
+    assert.match(failed.out, /本地改动示例: \.codex\/skills\/docpath\/SKILL\.md/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

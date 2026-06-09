@@ -1085,3 +1085,18 @@ The strategic direction is reasonable if DocPath remains lightweight:
 > Tool runtimes execute. DocPath remembers, disciplines, and orchestrates.
 
 The recommended next step is not hard enforcement or complex automation. The recommended next step is to generate clear protocol files and slash-command wrappers so Claude Code and OpenCode can reliably use DocPath today.
+
+
+## 开发前分析工作流
+
+当需求还没有达到可直接写入 `spec.md` 的程度，Agent 应先使用：
+
+```bash
+docpath analyze --file requirements.md
+# 将模型输出审阅/补全后：
+docpath write-analysis --section requirements --stdin
+docpath write-analysis --section ui --stdin
+docpath refine --file .docpath/tasks/current/analysis/requirements.md
+```
+
+`analysis/` 是 spec 前的准备产物目录，按 requirements/product/ui/technical/risks/open-questions 分区，兼容旧 `analysis.md`。它不替代 `spec.md`，而是作为 `write-spec` / `plan` 前的输入材料。

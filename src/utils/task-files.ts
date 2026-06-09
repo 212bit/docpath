@@ -1,5 +1,5 @@
 import { existsSync } from 'fs';
-import { mkdir, readFile, rm, writeFile } from 'fs/promises';
+import { mkdir, readFile, readdir, rm, stat, writeFile } from 'fs/promises';
 import { join } from 'path';
 
 export function currentTaskDir(docpathDir: string): string {
@@ -37,6 +37,74 @@ export async function writeActiveTaskFile(
   return { canonicalPath, currentPath };
 }
 
+
+
+export async function writeActiveAnalysisSection(
+  docpathDir: string,
+  taskId: string,
+  section: AnalysisSection,
+  content: string,
+): Promise<{ canonicalPath: string; currentPath: string; file: TaskFileAlias }> {
+  const file = analysisSectionFile(section);
+  await ensureActiveTaskDirs(docpathDir, taskId);
+  const canonicalPath = join(canonicalTaskDir(docpathDir, taskId), file);
+  const currentPath = join(currentTaskDir(docpathDir), file);
+  await mkdir(join(canonicalTaskDir(docpathDir, taskId), 'analysis'), { recursive: true });
+  await mkdir(join(currentTaskDir(docpathDir), 'analysis'), { recursive: true });
+  await writeFile(canonicalPath, content, 'utf-8');
+  await writeFile(currentPath, content, 'utf-8');
+  return { canonicalPath, currentPath, file };
+}
+
+async function readIfExists(path: string): Promise<string> {
+  if (!existsSync(path)) return '';
+  const info = await stat(path);
+  if (!info.isFile()) return '';
+  return readFile(path, 'utf-8');
+}
+
+export async function readActiveAnalysisSummary(
+  docpathDir: string,
+  taskId: string | undefined,
+): Promise<string> {
+  const baseDirs = [
+    ...(taskId ? [canonicalTaskDir(docpathDir, taskId)] : []),
+    currentTaskDir(docpathDir),
+  ];
+  const seen = new Set<string>();
+  const blocks: string[] = [];
+
+  for (const baseDir of baseDirs) {
+    const analysisDir = join(baseDir, 'analysis');
+    if (existsSync(analysisDir)) {
+      const entries = await readdir(analysisDir);
+      const ordered = [
+        ...ANALYSIS_SECTIONS.map((section) => `${section}.md`),
+        ...entries.filter((entry) => !ANALYSIS_SECTIONS.some((section) => entry === `${section}.md`)).sort(),
+      ];
+      for (const entry of ordered) {
+        if (!entry.endsWith('.md')) continue;
+        const fileKey = `analysis/${entry}`;
+        if (seen.has(fileKey)) continue;
+        const content = await readIfExists(join(analysisDir, entry));
+        if (!content.trim()) continue;
+        seen.add(fileKey);
+        blocks.push(`## ${fileKey}\n\n${content.trim()}`);
+      }
+    }
+
+    if (!seen.has('analysis.md')) {
+      const legacy = await readIfExists(join(baseDir, 'analysis.md'));
+      if (legacy.trim()) {
+        seen.add('analysis.md');
+        blocks.push(`## analysis.md (legacy)\n\n${legacy.trim()}`);
+      }
+    }
+  }
+
+  return blocks.join('\n\n---\n\n');
+}
+
 export async function readActiveTaskFile(
   docpathDir: string,
   taskId: string | undefined,
@@ -67,7 +135,20 @@ export async function clearCurrentTaskAlias(docpathDir: string): Promise<void> {
   await rm(currentTaskDir(docpathDir), { recursive: true, force: true });
 }
 
-export type TaskFileAlias = 'spec.md' | 'plan.md';
+export type TaskFileAlias = 'spec.md' | 'plan.md' | 'analysis.md' | 'analysis/requirements.md' | 'analysis/product.md' | 'analysis/ui.md' | 'analysis/technical.md' | 'analysis/risks.md' | 'analysis/open-questions.md';
+
+export const ANALYSIS_SECTIONS = ['requirements', 'product', 'ui', 'technical', 'risks', 'open-questions'] as const;
+export type AnalysisSection = typeof ANALYSIS_SECTIONS[number];
+
+export function normalizeAnalysisSection(section: string | undefined): AnalysisSection {
+  const normalized = (section || 'requirements').trim().toLowerCase();
+  if ((ANALYSIS_SECTIONS as readonly string[]).includes(normalized)) return normalized as AnalysisSection;
+  throw new Error(`未知 analysis section: ${section}（允许: ${ANALYSIS_SECTIONS.join(', ')}）`);
+}
+
+export function analysisSectionFile(section: AnalysisSection): TaskFileAlias {
+  return `analysis/${section}.md` as TaskFileAlias;
+}
 
 export interface TaskFileDrift {
   file: TaskFileAlias;

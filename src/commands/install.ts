@@ -332,6 +332,10 @@ function assetKey(asset: Pick<InstallAssetManifestEntry, 'path' | 'source'>): st
   return `${asset.path}\0${asset.source}`;
 }
 
+function isLocallyCustomizableInstallAsset(asset: Pick<InstallAssetManifestEntry, 'path'>): boolean {
+  return asset.path === 'AGENTS.md';
+}
+
 async function readInstallMetadata(docpathDir: string): Promise<InstallMetadata | null> {
   const metaPath = join(docpathDir, '.install-meta.json');
   if (!(await exists(metaPath))) return null;
@@ -353,11 +357,11 @@ async function countLocalAssetDrift(
   for (const asset of installedAssets) {
     const localPath = join(targetDir, asset.path);
     if (!(await exists(localPath))) {
-      missingLocal.push(asset);
+      if (!isLocallyCustomizableInstallAsset(asset)) missingLocal.push(asset);
       continue;
     }
     const content = await readFile(localPath, 'utf-8');
-    if (sha256(content) !== asset.sha256) modifiedLocal.push(asset);
+    if (sha256(content) !== asset.sha256 && !isLocallyCustomizableInstallAsset(asset)) modifiedLocal.push(asset);
   }
 
   return { missingLocal, modifiedLocal };
@@ -380,6 +384,7 @@ export async function detectInstallAssetDrift(
   const expectedAssets = await buildExpectedInstallAssets({ target, projectName });
   const installedByKey = new Map(meta.assets.map((asset) => [assetKey(asset), asset]));
   const templateDrift = expectedAssets.filter((expected) => {
+    if (isLocallyCustomizableInstallAsset(expected)) return false;
     const installed = installedByKey.get(assetKey(expected));
     return !installed || installed.sha256 !== expected.sha256;
   });

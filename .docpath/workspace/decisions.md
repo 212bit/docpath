@@ -16004,3 +16004,652 @@ agent-step: S3
 - .docpath/tasks/T-20260609-codex-skill-docpath/plan.md
 
 ---
+## ADR-20260609-022 — policy.skip
+
+- task_id: T-20260609-ui
+- created_at: 2026-06-09T07:30:41.719Z
+- category: policy.skip
+
+### 背景
+
+进入S3前清理S2 pending；完整质量门禁将在S3执行，避免S3未完成导致checklist循环拦截。
+
+### 决策
+
+跳过 check
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-023 — policy.skip
+
+- task_id: T-20260609-ui
+- created_at: 2026-06-09T07:30:41.722Z
+- category: policy.skip
+
+### 背景
+
+进入S3前清理S2 pending；完整质量门禁将在S3执行，避免S3未完成导致checklist循环拦截。
+
+### 决策
+
+跳过 review
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-024 — review
+
+- task_id: T-20260609-ui
+- created_at: 2026-06-09T07:37:02.956Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+需修改: 1 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-025 — review
+
+- task_id: T-20260609-ui
+- created_at: 2026-06-09T07:39:24.684Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-026 — review
+
+- task_id: T-20260609-ui
+- created_at: 2026-06-09T07:40:22.349Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-027 — journal.archive
+
+- task_id: T-20260609-ui
+- created_at: 2026-06-09T07:40:22.554Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 增加开发前需求与UI分析工作流
+梳理 predev analysis workflow 实现边界
+边界：新增 analyze prompt-only、write-analysis 持久化 analysis.md、refine/spec 可引用 analysis、skills/docs/tests 覆盖；不新增强制审批门禁。
+开始执行: 实现 增加开发前需求与UI分析工作流
+实现 predev analysis workflow 最小闭环
+新增 analyze/write-analysis 命令、analysis.md 持久化、测试、Codex skills 与 agent integration 文档；build:test 与相关测试通过。
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+质量检查失败: 子任务完成度 (2/3)
+开始执行: 验证门禁并归档
+质量检查失败: 子任务完成度 (2/3)
+验证完成：install --target codex --force 同步 manifest/skills；相关测试 230/230 通过；进入最终 check/review/journal。
+质量检查通过 (8 项)
+质量检查通过 (8 项)
+代码审查: 1 错误, 0 警告, 0 提示
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-ui
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-ui/spec.md
+- .docpath/tasks/T-20260609-ui/plan.md
+
+---
+## ADR-20260609-028 — review
+
+- task_id: T-20260609-mvp
+- created_at: 2026-06-09T08:35:01.272Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+手动批准: 跳过自动检查
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-029 — review
+
+- task_id: T-20260609-mvp
+- created_at: 2026-06-09T08:35:58.145Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-030 — journal.archive
+
+- task_id: T-20260609-mvp
+- created_at: 2026-06-09T08:35:58.267Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 修复开发前分析能力的MVP窄化问题
+run-start: agent execution started
+审计完成：单文件analysis、无section写入、plan/refine未读取分析上下文、skills文案旧入口、tests覆盖不足等窄化点已列入S2。
+质量检查失败: 子任务完成度 (1/3)
+开始执行: 实现 修复开发前分析能力的MVP窄化问题
+run-start: agent execution started
+质量检查失败: TypeScript 编译, 重大决策确认检查, 子任务完成度 (1/3)
+质量检查失败: 子任务完成度 (1/3)
+质量检查失败: 子任务完成度 (1/3)
+implemented analysis directory sections, legacy compatibility, plan/refine context, skills/docs/tests; typecheck and tests passed
+开始执行: 验证门禁并归档
+start final verification
+质量检查失败: 子任务完成度 (2/3)
+install codex passed; full build/typecheck/test passed; final check only awaited S3 completion marker
+质量检查通过 (9 项)
+手动批准
+质量检查通过 (9 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-mvp
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-mvp/spec.md
+- .docpath/tasks/T-20260609-mvp/plan.md
+
+---
+## ADR-20260609-031 — review
+
+- task_id: T-20260609-task
+- created_at: 2026-06-09T09:26:20.670Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-032 — review
+
+- task_id: T-20260609-task
+- created_at: 2026-06-09T09:29:53.276Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-033 — journal.archive
+
+- task_id: T-20260609-task
+- created_at: 2026-06-09T09:29:53.555Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 增强开发前分析深度与质量门禁
+audited predev analysis gap; decision brief updated with user confirmation
+implemented deep predev analysis prompt, analysis quality gate, skill guidance, and tests; typecheck and full test suite pass
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+代码审查: 0 错误, 0 警告, 0 提示
+验证完成：install --target codex 已通过；typecheck/build/test/check/review 已执行，因 reviewing 阶段禁止 agent step，按 SOP 最小同步 S3 checklist 后重跑总门禁。
+质量检查通过 (9 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-task
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-task/spec.md
+- .docpath/tasks/T-20260609-task/plan.md
+
+---
+## ADR-20260609-034 — review
+
+- task_id: T-20260609-analyze-dry-run-skill
+- created_at: 2026-06-09T10:29:11.851Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-035 — journal.archive
+
+- task_id: T-20260609-analyze-dry-run-skill
+- created_at: 2026-06-09T10:29:24.063Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 修正 analyze dry-run 语义与 Skill 前置分析指引
+gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
+开始执行: 实现 修正 analyze dry-run 语义与 Skill 前置分析指引
+gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
+质量检查失败: 重大决策确认检查, Plan/Breadcrumb 漂移检查
+质量检查失败: 任务文件 current/canonical 漂移检查, ⚠️  Checklist 同步 (0/3), Plan/Breadcrumb 漂移检查
+gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
+gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
+质量检查失败: ⚠️  Checklist 同步 (0/3), Plan/Breadcrumb 漂移检查
+质量检查失败: 子任务完成度 (2/3), Plan/Breadcrumb 漂移检查
+agent-step: S1
+agent-step: S2
+agent-step: S1 梳理 dry-run 语义、正式分析职责与 Skill 约束
+agent-step: ready for next action
+agent-step: S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果
+agent-step: ready for next action
+agent-step: S3
+质量检查通过 (9 项)
+gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
+gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
+质量检查失败: Plan/Breadcrumb 漂移检查
+质量检查通过 (9 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-analyze-dry-run-skill
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-analyze-dry-run-skill/spec.md
+- .docpath/tasks/T-20260609-analyze-dry-run-skill/plan.md
+
+---
+## ADR-20260609-036 — review
+
+- task_id: T-20260609-agents-md-docpath-skill
+- created_at: 2026-06-09T12:15:28.828Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-037 — journal.archive
+
+- task_id: T-20260609-agents-md-docpath-skill
+- created_at: 2026-06-09T12:15:46.858Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 瘦身 AGENTS.md 减少与 DocPath Skill 重叠
+agent-step: S1
+agent-step: S2
+质量检查失败: 重大决策确认检查, ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (9 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-agents-md-docpath-skill
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-agents-md-docpath-skill/spec.md
+- .docpath/tasks/T-20260609-agents-md-docpath-skill/plan.md
+
+---
+## ADR-20260609-038 — review
+
+- task_id: T-20260609-agents-md-skill-manifest
+- created_at: 2026-06-09T12:32:13.600Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-039 — journal.archive
+
+- task_id: T-20260609-agents-md-skill-manifest
+- created_at: 2026-06-09T12:32:23.176Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 允许 AGENTS.md 定制但继续校验 Skill manifest 漂移
+agent-step: S1
+agent-step: S2
+agent-step: S3
+质量检查失败: 重大决策确认检查
+质量检查失败: 重大决策确认检查
+质量检查通过 (9 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-agents-md-skill-manifest
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-agents-md-skill-manifest/spec.md
+- .docpath/tasks/T-20260609-agents-md-skill-manifest/plan.md
+
+---
+## ADR-20260609-040 — review
+
+- task_id: T-20260609-docpath-codex-skills
+- created_at: 2026-06-09T12:48:14.464Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-041 — journal.archive
+
+- task_id: T-20260609-docpath-codex-skills
+- created_at: 2026-06-09T12:48:28.897Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 优化 DocPath Codex Skills 文案与触发边界
+agent-step: S1
+agent-step: S2
+质量检查失败: 任务文件 current/canonical 漂移检查, ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (9 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-docpath-codex-skills
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-docpath-codex-skills/spec.md
+- .docpath/tasks/T-20260609-docpath-codex-skills/plan.md
+
+---

@@ -13,7 +13,7 @@ import { transitionWorkflow } from '../engine/transitions.js';
 import { nextCommand } from './runtime.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 import { readCurrentState } from '../utils/workspace.js';
-import { writeActiveTaskFile } from '../utils/task-files.js';
+import { readActiveAnalysisSummary, writeActiveTaskFile } from '../utils/task-files.js';
 
 interface PlanOptions {
   cwd: string;
@@ -23,6 +23,7 @@ interface PlanOptions {
 interface PlanContext {
   docpathDir: string;
   spec: string;
+  analysis: string;
 }
 
 const PLAN_SYSTEM_PROMPT = `你是一个项目计划专家。根据用户提供的 spec.md，将需求分解为可执行的子任务。
@@ -116,23 +117,28 @@ async function loadPlanContext(cwd: string): Promise<PlanContext> {
     process.exit(1);
   }
 
+  const state = await readCurrentState(docpathDir);
   return {
     docpathDir,
     spec: await readTaskFile(cwd, 'spec.md'),
+    analysis: await readActiveAnalysisSummary(docpathDir, state?.task_id),
   };
 }
 
-function printDryRun(spec: string): void {
+function printDryRun(spec: string, analysis = ''): void {
   console.log('📝  [dry-run] Spec 内容预览：');
   console.log(spec.slice(0, 500));
   console.log('---');
 }
 
-function emitPlanPrompt(spec: string): void {
+function emitPlanPrompt(spec: string, analysis = ''): void {
   emitPrompt({
     task: 'plan',
     system: PLAN_SYSTEM_PROMPT,
-    context: { 'Spec.md 内容': spec },
+    context: {
+      'Spec.md 内容': spec,
+      ...(analysis.trim() ? { predev_analysis: analysis } : {}),
+    },
     instructions: [
       '请根据 spec.md 生成执行计划，写入 plan.md。',
       '',
@@ -176,16 +182,16 @@ async function writeGeneratedPlan(cwd: string, docpathDir: string, spec: string)
 
 export async function planCommand(options: PlanOptions): Promise<void> {
   const { cwd } = options;
-  const { docpathDir, spec } = await loadPlanContext(cwd);
+  const { docpathDir, spec, analysis } = await loadPlanContext(cwd);
 
   console.log('\n📋  生成执行计划...\n');
 
   if (options.dryRun) {
-    printDryRun(spec);
+    printDryRun(spec, analysis);
     return;
   }
 
-  emitPlanPrompt(spec);
+  emitPlanPrompt(spec, analysis);
 
   // 已有计划时同步 active alias；无计划时生成保守草案，避免 planning 状态缺 plan.md。
   const canonicalPath = await writeGeneratedPlan(cwd, docpathDir, spec);

@@ -11,6 +11,7 @@ import { readRequirementFile } from '../utils/input.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { nextCommand } from './runtime.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
+import { readActiveAnalysisSummary } from '../utils/task-files.js';
 
 interface RefineOptions {
   cwd: string;
@@ -165,7 +166,7 @@ async function emitRefinePrompt(cwd: string, requirementDoc: string): Promise<vo
         : '当前没有 spec.md，请从需求文档生成新的标准 spec。',
     },
     instructions: [
-      '请把“原始需求文档”梳理为 DocPath 标准 spec.md。',
+      '请把“原始需求文档”梳理为 DocPath 标准 spec.md；若存在 predev_analysis，必须吸收其中的需求、产品、UI/UX、技术、风险与开放问题分区。',
       '先提取事实、目标、约束、范围和验收标准，再整理为指定 Markdown 结构。',
       '不要编造原文没有的信息；缺失内容写入“待确认”。',
       '如果已有 spec.md，请合并已有内容并指出修正点。',

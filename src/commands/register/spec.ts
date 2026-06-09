@@ -1,14 +1,18 @@
 import type { CAC } from 'cac';
+import { analyzeCommand } from '../analyze.js';
 import { brainstormCommand } from '../brainstorm.js';
 import { planCommand } from '../plan.js';
 import { refineCommand } from '../refine.js';
+import { writeAnalysisCommand } from '../write-analysis.js';
 import { writePlanCommand } from '../write-plan.js';
 import { writeSpecCommand } from '../write-spec.js';
 
 export function registerSpecCommands(cli: CAC): void {
   registerBrainstormCommand(cli, 'brainstorm', '苏格拉底式需求拷问 — 从模糊需求到结构化 spec');
   registerBrainstormCommand(cli, 'brainstor', 'brainstorm 的兼容别名');
+  registerAnalyzeCommand(cli);
   registerRefineCommand(cli);
+  registerWriteAnalysisCommand(cli);
   registerWriteSpecCommand(cli);
   registerPlanCommand(cli);
   registerWritePlanCommand(cli);
@@ -32,6 +36,27 @@ function registerBrainstormCommand(cli: CAC, name: string, description: string):
     });
 }
 
+
+function registerAnalyzeCommand(cli: CAC): void {
+  cli.command('analyze [file]', '开发前分析 — 需求/产品/UI/技术影响分析')
+    .option('--cwd <path>', '项目目录')
+    .option('--file <path>', '需求文档路径（等价于位置参数 [file]）')
+    .option('--content <content>', '需求内容')
+    .option('--stdin', '从 stdin 读取需求内容')
+    .option('--dry-run', '只预览输入，不更新状态')
+    .option('--mode <mode>', '分析深度: quick/deep（默认 deep）')
+    .action(async (file: string | undefined, options: { cwd?: string; file?: string; content?: string; stdin?: boolean; 'dry-run'?: boolean; dryRun?: boolean; mode?: 'quick' | 'deep' }) => {
+      await analyzeCommand({
+        cwd: options.cwd || process.cwd(),
+        file: file || options.file,
+        content: options.content,
+        stdin: options.stdin,
+        dryRun: options['dry-run'] || options.dryRun,
+        mode: options.mode,
+      });
+    });
+}
+
 function registerRefineCommand(cli: CAC): void {
   cli.command('refine [file]', '需求梳理 — 从需求文档生成标准 spec.md')
     .option('--cwd <path>', '项目目录')
@@ -50,12 +75,30 @@ function registerRefineCommand(cli: CAC): void {
     });
 }
 
+
+function registerWriteAnalysisCommand(cli: CAC): void {
+  cli.command('write-analysis', '写入开发前分析 analysis/<section>.md')
+    .option('--cwd <path>', '项目目录')
+    .option('--content <content>', 'analysis 内容（Markdown）')
+    .option('--stdin', '从 stdin 读取内容')
+    .option('--section <section>', '分析分区: requirements/product/ui/technical/risks/open-questions')
+    .action(async (options: { cwd?: string; content?: string; stdin?: boolean; section?: string }) => {
+      await writeAnalysisCommand({
+        cwd: options.cwd || process.cwd(),
+        content: options.content,
+        stdin: options.stdin,
+        section: options.section,
+      });
+    });
+}
+
 function registerWriteSpecCommand(cli: CAC): void {
   cli.command('write-spec', '从 brainstorm 结果写入 spec.md')
     .option('--cwd <path>', '项目目录')
     .option('--content <content>', 'spec 内容（YAML/Markdown）')
     .option('--stdin', '从 stdin 读取内容')
-    .action(async (options: { cwd?: string; content?: string; stdin?: boolean }) => {
+    .option('--section <section>', '分析分区: requirements/product/ui/technical/risks/open-questions')
+    .action(async (options: { cwd?: string; content?: string; stdin?: boolean; section?: string }) => {
       await writeSpecCommand({
         cwd: options.cwd || process.cwd(),
         content: options.content,

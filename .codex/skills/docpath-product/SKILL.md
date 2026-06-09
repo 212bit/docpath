@@ -1,38 +1,45 @@
 ---
 name: docpath-product
-description: Product-focused DocPath adapter for requirements, PRDs, competitive analysis, stakeholder updates, and role-based context in Codex.
+description: "Product-quality lens for DocPath work: requirements, PRDs, user value, journeys, scope, metrics, and stakeholder trade-offs."
 ---
 
 # DocPath Product
 
-Use this skill for product strategy, requirements, PRDs, competitive analysis, stakeholder updates, or backlog shaping in a DocPath repository.
+Use this skill when a DocPath task needs a product lens: requirements, PRDs, backlog shaping, stakeholder trade-offs, user journeys, success metrics, or scope decisions.
 
-## First Commands
+This is a **quality lens**, not a parallel workflow. Use the main `docpath` skill for lifecycle routing and pre-development analysis commands.
+
+## Product quality bar
+
+Product analysis must be durable and specific enough to guide spec/plan decisions. Cover:
+
+- target users, personas, and primary jobs-to-be-done
+- user value and expected behavior change
+- success metrics and signals of failure
+- core user journey, entry points, and exit states
+- business rules, permissions, data ownership, and policy constraints
+- scope boundaries, non-goals, release slicing, rollout and rollback
+- assumptions, dependencies, risks, and blocking questions
+
+Avoid one-line product conclusions. If details are missing, write explicit assumptions and confirmation questions.
+
+## Useful DocPath context
 
 ```bash
 docpath status --agent
 docpath next --agent
-docpath roles context --role product-director
-```
-
-If the work changes scope, workflow, user journey, API contract, data model, permission boundary, or long-term maintenance cost, run brainstorm/refine first and record the Decision Brief in the active task spec.
-
-## Product Roles
-
-Use the smallest relevant role:
-
-```bash
 docpath roles context --role product-director
 docpath roles context --role requirement-analyst
 docpath roles context --role user-researcher
 docpath roles context --role competitive-analyst
 ```
 
-## Product Deliverables
+## Durable outputs
 
-Render structured outputs when the task needs a durable artifact:
+Write product conclusions into DocPath evidence, for example:
 
 ```bash
+docpath write-analysis --section product --stdin
 docpath deliverables render --template prd --output .docpath/tasks/current/deliverables/prd.md
 docpath deliverables render --template competitive-analysis --output .docpath/tasks/current/deliverables/competitive-analysis.md
 docpath deliverables render --template stakeholder-update --output .docpath/tasks/current/deliverables/stakeholder-update.md
@@ -41,6 +48,6 @@ docpath deliverables check
 
 ## Boundaries
 
-- Product recommendations must land in spec, plan, deliverables, review, or journal.
-- The skill does not approve scope changes by itself.
-- Completion still requires `docpath check`, `docpath review`, or `docpath agent done` as routed by DocPath.
+- Do not approve scope changes by skill authority alone; record the decision in spec/Decision Brief and follow DocPath gates.
+- Do not duplicate the main `docpath analyze` procedure here; use this skill to improve the product section quality.
+- Product recommendations must land in analysis, spec, plan, deliverables, review, or journal.

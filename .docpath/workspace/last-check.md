@@ -1,14 +1,15 @@
 # Last Check Evidence
 
-**时间**: 2026-06-09T05:18:15.798Z
+**时间**: 2026-06-09T12:48:14.203Z
 **结果**: ✅ PASS
-**检查项**: 8
-git_ref: 05fd99e6a71fa7206b5b5ed6ca98567eaae9601a
+**检查项**: 9
+git_ref: d8f47f98bfac10a4fbbb0742a554ebd7993233d8
 branch: main
 worktree_dirty: true
 
 - ✅ TypeScript 编译
 - ✅ 构建
+- ✅ 测试
 - ✅ 任务文件 current/canonical 漂移检查
 - ✅ spec.md 结构校验
 - ✅ 重大决策确认检查
