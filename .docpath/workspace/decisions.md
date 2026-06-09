@@ -15343,3 +15343,664 @@ agent-step: S3
 - .docpath/tasks/T-20260608-dashboard-tablet-workbench-audit-lane-sl/plan.md
 
 ---
+## ADR-20260609-001 — review
+
+- task_id: T-20260609-docpath-fit-assessment
+- created_at: 2026-06-09T03:58:38.733Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-002 — review
+
+- task_id: T-20260609-docpath-fit-assessment
+- created_at: 2026-06-09T03:59:40.023Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-003 — journal.archive
+
+- task_id: T-20260609-docpath-fit-assessment
+- created_at: 2026-06-09T03:59:40.147Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 对外部参考项目能力进行 DocPath Fit Assessment
+agent-step: S1
+开始执行: 实现 对外部参考项目能力进行 DocPath Fit Assessment
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-docpath-fit-assessment
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-docpath-fit-assessment/spec.md
+- .docpath/tasks/T-20260609-docpath-fit-assessment/plan.md
+
+---
+## ADR-20260609-004 — review
+
+- task_id: T-20260609-payload-hybrid-context-index
+- created_at: 2026-06-09T04:47:10.958Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-005 — review
+
+- task_id: T-20260609-payload-hybrid-context-index
+- created_at: 2026-06-09T04:48:16.843Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-006 — journal.archive
+
+- task_id: T-20260609-payload-hybrid-context-index
+- created_at: 2026-06-09T04:48:16.983Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 引入结构化 Payload 与 Hybrid Context Index
+agent-step: S1
+开始执行: 实现 引入结构化 Payload 与 Hybrid Context Index
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: 任务文件 current/canonical 漂移检查, ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-payload-hybrid-context-index
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-payload-hybrid-context-index/spec.md
+- .docpath/tasks/T-20260609-payload-hybrid-context-index/plan.md
+
+---
+## ADR-20260609-007 — review
+
+- task_id: T-20260609-deliverables
+- created_at: 2026-06-09T04:54:46.266Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-008 — review
+
+- task_id: T-20260609-deliverables
+- created_at: 2026-06-09T04:55:49.202Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-009 — journal.archive
+
+- task_id: T-20260609-deliverables
+- created_at: 2026-06-09T04:55:49.393Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 增加业务交付物模板库与 deliverables 索引
+agent-step: S1
+开始执行: 实现 增加业务交付物模板库与 deliverables 索引
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: 任务文件 current/canonical 漂移检查, 重大决策确认检查, ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (9 项)
+代码审查: 0 错误, 3 警告, 0 提示
+质量检查通过 (9 项)
+代码审查: 0 错误, 3 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-deliverables
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-deliverables/spec.md
+- .docpath/tasks/T-20260609-deliverables/plan.md
+
+---
+## ADR-20260609-010 — review
+
+- task_id: T-20260609-role-profile-role-based-context
+- created_at: 2026-06-09T05:00:47.120Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-011 — review
+
+- task_id: T-20260609-role-profile-role-based-context
+- created_at: 2026-06-09T05:05:08.393Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-012 — policy.skip
+
+- task_id: T-20260609-role-profile-role-based-context
+- created_at: 2026-06-09T05:05:15.739Z
+- category: policy.skip
+
+### 背景
+
+Full pnpm test passed independently with 223/223 tests; docpath check test phase exceeds its internal timeout on this full suite.
+
+### 决策
+
+跳过 check
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-013 — review
+
+- task_id: T-20260609-role-profile-role-based-context
+- created_at: 2026-06-09T05:05:19.989Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-014 — journal.archive
+
+- task_id: T-20260609-role-profile-role-based-context
+- created_at: 2026-06-09T05:05:20.142Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 引入 Role Profile 与 role-based context
+agent-step: S1
+开始执行: 实现 引入 Role Profile 与 role-based context
+agent-step: S2
+开始执行: 验证门禁并归档
+agent-step: S3
+质量检查通过 (9 项)
+代码审查: 0 错误, 3 警告, 0 提示
+质量检查失败: 测试
+质量检查失败: 测试
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-role-profile-role-based-context
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-role-profile-role-based-context/spec.md
+- .docpath/tasks/T-20260609-role-profile-role-based-context/plan.md
+
+---
+## ADR-20260609-015 — review
+
+- task_id: T-20260609-codex-skill-docpath
+- created_at: 2026-06-09T05:16:05.366Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-016 — policy.skip
+
+- task_id: T-20260609-codex-skill-docpath
+- created_at: 2026-06-09T05:16:18.623Z
+- category: policy.skip
+
+### 背景
+
+Full pnpm test passed independently with 227/227 tests; docpath check test phase exceeded its internal command window during this full suite, so check was rerun with --skip-tests after independent test evidence.
+
+### 决策
+
+跳过 check
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-017 — journal.archive
+
+- task_id: T-20260609-codex-skill-docpath
+- created_at: 2026-06-09T05:16:20.984Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 增加 Codex Skill 适配器封装 DocPath 专家团入口
+run-start: agent execution started
+agent-step: S1
+开始执行: 实现 增加 Codex Skill 适配器封装 DocPath 专家团入口
+agent-step: S1
+agent-step: S2
+质量检查失败: 测试, 任务文件 current/canonical 漂移检查, 重大决策确认检查, ⚠️  Checklist 同步 (2/3)
+质量检查失败: 测试, 任务文件 current/canonical 漂移检查, 重大决策确认检查, ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-codex-skill-docpath
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-codex-skill-docpath/spec.md
+- .docpath/tasks/T-20260609-codex-skill-docpath/plan.md
+
+---
+## ADR-20260609-018 — review
+
+- task_id: T-20260609-codex-skill-docpath
+- created_at: 2026-06-09T05:18:07.290Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-019 — policy.skip
+
+- task_id: T-20260609-codex-skill-docpath
+- created_at: 2026-06-09T05:18:12.173Z
+- category: policy.skip
+
+### 背景
+
+Full pnpm test passed independently with 227/227 tests; docpath check was rerun with --skip-tests after independent full-suite evidence to avoid the internal test command timeout.
+
+### 决策
+
+跳过 check
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-020 — review
+
+- task_id: T-20260609-codex-skill-docpath
+- created_at: 2026-06-09T05:18:15.905Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-021 — journal.archive
+
+- task_id: T-20260609-codex-skill-docpath
+- created_at: 2026-06-09T05:18:16.008Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 增加 Codex Skill 适配器封装 DocPath 专家团入口
+run-start: agent execution started
+agent-step: S1
+开始执行: 实现 增加 Codex Skill 适配器封装 DocPath 专家团入口
+agent-step: S1
+agent-step: S2
+质量检查失败: 测试, 任务文件 current/canonical 漂移检查, 重大决策确认检查, ⚠️  Checklist 同步 (2/3)
+质量检查失败: 测试, 任务文件 current/canonical 漂移检查, 重大决策确认检查, ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+知识归档完成 (3/3 步)
+质量检查失败: 重大决策确认检查
+质量检查失败: 重大决策确认检查
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+质量检查通过 (8 项)
+代码审查: 0 错误, 3 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-codex-skill-docpath
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-codex-skill-docpath/spec.md
+- .docpath/tasks/T-20260609-codex-skill-docpath/plan.md
+
+---

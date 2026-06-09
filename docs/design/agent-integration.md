@@ -215,7 +215,34 @@ Key rule:
 
 > Do not act from memory. Read DocPath state first.
 
-### 5.2 docpath-spec
+### 5.2 Codex Skills adapter
+
+DocPath can expose native Codex project skills in `.codex/skills/<skill-name>/SKILL.md`, matching Codex's discoverable skill layout instead of relying only on generic project documents.
+
+Installed skills:
+
+- `docpath`: boot/status/next/done safety loop.
+- `docpath-product`: product requirements, PRDs, backlog shaping, stakeholder context.
+- `docpath-design`: UX/UI exploration, flows, design critique, dashboard-oriented work.
+- `docpath-software`: implementation, refactor, debugging, checks, and evidence.
+
+Install or refresh them with:
+
+```bash
+docpath install --target codex
+# or install all runtime adapters:
+docpath install --target universal
+```
+
+Codex can then trigger the relevant skill by intent. Direct prompts can also name a skill explicitly, for example:
+
+```text
+Use the docpath-software skill. Check current state, enter the active step, implement S2, and run docpath check.
+```
+
+`docpath install doctor --target codex` validates installed Codex skills through the install manifest and checks each `SKILL.md` has YAML frontmatter with a matching `name` and non-empty `description`.
+
+### 5.3 docpath-spec
 
 Purpose:
 

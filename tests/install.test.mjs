@@ -193,6 +193,10 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(cwd, 'AGENTS.md')), true);
     assert.equal(existsSync(join(cwd, 'CODEX.md')), true);
     assert.equal(existsSync(join(cwd, '.codex', 'config.toml')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath', 'SKILL.md')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-product', 'SKILL.md')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-design', 'SKILL.md')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-software', 'SKILL.md')), true);
     assert.equal(existsSync(join(cwd, 'CLAUDE.md')), false);
     assert.equal(existsSync(join(cwd, 'OPENCODE.md')), false);
     assert.equal(existsSync(join(cwd, '.claude', 'commands')), false);
@@ -201,6 +205,8 @@ describe('install agent adapters', () => {
     const agents = readFileSync(join(cwd, 'AGENTS.md'), 'utf-8');
     const codexProtocol = readFileSync(join(cwd, 'CODEX.md'), 'utf-8');
     const codexConfig = readFileSync(join(cwd, '.codex', 'config.toml'), 'utf-8');
+    const codexSkill = readFileSync(join(cwd, '.codex', 'skills', 'docpath', 'SKILL.md'), 'utf-8');
+    const codexSoftwareSkill = readFileSync(join(cwd, '.codex', 'skills', 'docpath-software', 'SKILL.md'), 'utf-8');
     const protocolAgents = readFileSync(join(cwd, '.docpath', 'protocols', 'AGENTS.md'), 'utf-8');
 
     for (const content of [agents, protocolAgents]) {
@@ -216,6 +222,16 @@ describe('install agent adapters', () => {
     assert.match(codexProtocol, /Clarify product\/UI requests/);
     assert.match(codexProtocol, /major changes/);
     assert.match(codexConfig, /project_doc_fallback_filenames = \["CODEX\.md"\]/);
+    assert.match(codexSkill, /^---\nname: docpath\ndescription:/);
+    assert.match(codexSkill, /docpath status --agent/);
+    assert.match(codexSkill, /docpath next --agent/);
+    assert.match(codexSkill, /docpath roles list/);
+    assert.match(codexSkill, /docpath deliverables list/);
+    assert.match(codexSkill, /Do not bypass `spec -> plan -> go -> check -> review -> journal`/);
+    assert.match(codexSoftwareSkill, /^---\nname: docpath-software\ndescription:/);
+    assert.match(codexSoftwareSkill, /docpath agent enter/);
+    assert.match(codexSoftwareSkill, /docpath roles context --role software-engineer/);
+    assert.match(codexSoftwareSkill, /docpath agent done/);
     assert.doesNotMatch(codexConfig, /\[docpath\]/);
     assert.doesNotMatch(codexConfig, /\[docpath\.commands\]/);
     rmSync(cwd, { recursive: true, force: true });
@@ -231,6 +247,10 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(cwd, '.claude', 'commands')), true);
     assert.equal(existsSync(join(cwd, '.opencode', 'commands')), true);
     assert.equal(existsSync(join(cwd, '.codex', 'config.toml')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath', 'SKILL.md')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-product', 'SKILL.md')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-design', 'SKILL.md')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-software', 'SKILL.md')), true);
     assert.equal(existsSync(join(cwd, '.opencode', 'docpath.json')), true);
 
     const codex = readFileSync(join(cwd, '.codex', 'config.toml'), 'utf-8');
@@ -262,6 +282,10 @@ describe('install agent adapters', () => {
     assert.ok(assetPaths.includes('CODEX.md'));
     assert.ok(assetPaths.includes('.docpath/commands/docpath-status.md'));
     assert.ok(assetPaths.includes('.codex/config.toml'));
+    assert.ok(assetPaths.includes('.codex/skills/docpath/SKILL.md'));
+    assert.ok(assetPaths.includes('.codex/skills/docpath-product/SKILL.md'));
+    assert.ok(assetPaths.includes('.codex/skills/docpath-design/SKILL.md'));
+    assert.ok(assetPaths.includes('.codex/skills/docpath-software/SKILL.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -354,6 +378,19 @@ describe('install agent adapters', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('install --check-only fails when a Codex Skill asset is missing', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    rmSync(join(cwd, '.codex', 'skills', 'docpath-software', 'SKILL.md'));
+
+    const failed = runResult(`install --cwd ${cwd} --target codex --check-only`, cwd);
+
+    assert.equal(failed.code, 1);
+    assert.match(failed.out, /缺失 1 项/);
+    assert.match(failed.out, /\.codex\/skills\/docpath-software\/SKILL\.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('install --check-only fails when install metadata is missing or invalid', () => {
     const missingCwd = mkWorkspace();
     const invalidCwd = mkWorkspace();
@@ -419,6 +456,42 @@ describe('install agent adapters', () => {
     assert.match(failed.out, /codex-unknown-docpath-table/);
     assert.match(failed.out, /严格配置可能拒绝/);
     assert.match(failed.out, /--force/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --doctor detects Codex Skill frontmatter name mismatch', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    writeFileSync(join(cwd, '.codex', 'skills', 'docpath-product', 'SKILL.md'), [
+      '---',
+      'name: wrong-name',
+      'description: broken',
+      '---',
+      '',
+      '# Broken',
+      '',
+    ].join('\n'));
+
+    const failed = runResult(`install --cwd ${cwd} --target codex --doctor`, cwd);
+
+    assert.equal(failed.code, 1);
+    assert.match(failed.out, /codex-skill-frontmatter-name-mismatch/);
+    assert.match(failed.out, /wrong-name/);
+    assert.match(failed.out, /docpath-product/);
+    assert.match(failed.out, /--force/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --doctor detects missing Codex Skill frontmatter name', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    writeFileSync(join(cwd, '.codex', 'skills', 'docpath-design', 'SKILL.md'), '# Missing frontmatter\n');
+
+    const failed = runResult(`install --cwd ${cwd} --target codex --doctor`, cwd);
+
+    assert.equal(failed.code, 1);
+    assert.match(failed.out, /codex-skill-frontmatter-name-missing/);
+    assert.match(failed.out, /docpath-design/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -531,6 +604,26 @@ describe('install agent adapters', () => {
     assert.match(overwritten, /docpath agent done --step/);
     assert.doesNotMatch(overwritten, /agent enter --step/);
     assert.doesNotMatch(overwritten, /Do not overwrite/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('does not overwrite existing Codex Skill without --force', () => {
+    const cwd = mkWorkspace();
+    const skillDir = join(cwd, '.codex', 'skills', 'docpath');
+    mkdirSync(skillDir, { recursive: true });
+    const skillPath = join(skillDir, 'SKILL.md');
+    writeFileSync(skillPath, '# Custom Skill\n');
+
+    const output = run(`install --cwd ${cwd} --target codex`, cwd);
+    assert.match(output, /Codex Skill/);
+    assert.match(output, /使用 --force 覆盖/);
+    assert.equal(readFileSync(skillPath, 'utf-8'), '# Custom Skill\n');
+
+    run(`install --cwd ${cwd} --target codex --force`, cwd);
+    const overwritten = readFileSync(skillPath, 'utf-8');
+    assert.match(overwritten, /name: docpath/);
+    assert.match(overwritten, /docpath status --agent/);
+    assert.doesNotMatch(overwritten, /Custom Skill/);
     rmSync(cwd, { recursive: true, force: true });
   });
 });

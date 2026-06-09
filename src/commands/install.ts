@@ -11,6 +11,7 @@
 import { join, resolve, basename } from 'node:path';
 import { readFile, readdir, mkdir, copyFile, chmod, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { parse as parseYaml } from 'yaml';
 import { exists, writeFileSafe } from '../utils/file.js';
 import { detectProject, type ProjectInfo } from '../utils/detect.js';
 import { getDocpathPackageVersion } from '../utils/package-info.js';
@@ -190,6 +191,12 @@ async function listTemplateFiles(...segments: string[]): Promise<string[]> {
   return files.filter((file) => file.endsWith('.md') || file.endsWith('.txt')).sort();
 }
 
+async function listCodexSkillNames(): Promise<string[]> {
+  const dir = await resolveTemplate('codex-skills');
+  const entries = await readdir(dir, { withFileTypes: true });
+  return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+}
+
 function entryProtocolFiles(target: Target): string[] {
   if (target === 'universal') return ['CLAUDE.md', 'AGENTS.md', 'CODEX.md'];
   if (target === 'codex') return ['AGENTS.md', 'CODEX.md'];
@@ -258,6 +265,14 @@ export async function buildExpectedInstallAssets(options: {
 
   if (options.target === 'codex' || options.target === 'universal') {
     assets.push(manifestEntry('.codex/config.toml', 'codex-config', renderCodexConfigContent()));
+    for (const skillName of await listCodexSkillNames()) {
+      const content = await readFile(await resolveTemplate('codex-skills', skillName, 'SKILL.md'), 'utf-8');
+      assets.push(manifestEntry(
+        `.codex/skills/${skillName}/SKILL.md`,
+        `codex-skill:${skillName}/SKILL.md`,
+        content
+      ));
+    }
   }
 
   if (options.target === 'opencode' || options.target === 'universal') {
@@ -485,6 +500,61 @@ async function checkCodexConfigRisk(context: InstallContext): Promise<DoctorIssu
   return issues;
 }
 
+function parseSkillFrontmatter(content: string): Record<string, unknown> | null {
+  const match = content.match(/^---\n([\s\S]*?)\n---\n/);
+  if (!match) return null;
+  const parsed = parseYaml(match[1]);
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? parsed as Record<string, unknown>
+    : null;
+}
+
+async function checkCodexSkillFrontmatter(context: InstallContext): Promise<DoctorIssue[]> {
+  if (context.target !== 'codex' && context.target !== 'universal') return [];
+  const skillsDir = join(context.targetDir, '.codex', 'skills');
+  if (!(await exists(skillsDir))) {
+    return [{
+      severity: 'error',
+      id: 'codex-skills-missing',
+      message: '缺少 Codex Skill 目录: .codex/skills',
+      suggestion: `运行 docpath install --target ${context.target}`,
+    }];
+  }
+
+  const issues: DoctorIssue[] = [];
+  for (const skillName of await listCodexSkillNames()) {
+    const skillPath = join(skillsDir, skillName, 'SKILL.md');
+    if (!(await exists(skillPath))) {
+      issues.push({
+        severity: 'error',
+        id: 'codex-skill-missing',
+        message: `缺少 Codex Skill: .codex/skills/${skillName}/SKILL.md`,
+        suggestion: `运行 docpath install --target ${context.target}`,
+      });
+      continue;
+    }
+
+    const frontmatter = parseSkillFrontmatter(await readFile(skillPath, 'utf-8'));
+    const actualName = typeof frontmatter?.name === 'string' ? frontmatter.name.trim() : '';
+    if (!actualName) {
+      issues.push({
+        severity: 'error',
+        id: 'codex-skill-frontmatter-name-missing',
+        message: `.codex/skills/${skillName}/SKILL.md 缺少 frontmatter name`,
+        suggestion: `运行 docpath install --target ${context.target} --force`,
+      });
+    } else if (actualName !== skillName) {
+      issues.push({
+        severity: 'error',
+        id: 'codex-skill-frontmatter-name-mismatch',
+        message: `.codex/skills/${skillName}/SKILL.md frontmatter name 为 ${actualName}，应为 ${skillName}`,
+        suggestion: `运行 docpath install --target ${context.target} --force`,
+      });
+    }
+  }
+  return issues;
+}
+
 async function checkManifestDoctor(context: InstallContext): Promise<DoctorIssue[]> {
   try {
     const meta = await readInstallMetadata(context.docpathDir);
@@ -543,6 +613,7 @@ async function buildInstallDoctorReportFromContext(context: InstallContext): Pro
     ...await checkManifestDoctor(context),
     ...await checkShimExecutable(context),
     ...await checkCodexConfigRisk(context),
+    ...await checkCodexSkillFrontmatter(context),
   ];
   return buildDoctorReport(context, issues);
 }
@@ -695,6 +766,35 @@ async function installDocpathTemplates(context: InstallContext): Promise<void> {
   );
 }
 
+async function installCodexSkills(targetDir: string, force: boolean): Promise<void> {
+  const skillsRoot = join(targetDir, '.codex', 'skills');
+  await mkdir(skillsRoot, { recursive: true });
+  let written = 0;
+  let skipped = 0;
+
+  for (const skillName of await listCodexSkillNames()) {
+    const content = await readFile(await resolveTemplate('codex-skills', skillName, 'SKILL.md'), 'utf-8');
+    const skillDir = join(skillsRoot, skillName);
+    const skillFile = join(skillDir, 'SKILL.md');
+    await mkdir(skillDir, { recursive: true });
+    const result = await writeManagedFile(
+      skillFile,
+      content,
+      force,
+      `Codex Skill → .codex/skills/${skillName}/SKILL.md`,
+    );
+    if (result === 'skipped') skipped++;
+    else written++;
+  }
+
+  if (written > 0) {
+    const suffix = skipped > 0 ? ` (跳过 ${skipped} 个已存在)` : '';
+    console.log(`✅  Codex Skills 已处理 (${written} 个)${suffix}`);
+  } else {
+    console.log('⏭️  Codex Skills 已存在，跳过');
+  }
+}
+
 async function installAgentSpecificFiles(context: InstallContext): Promise<void> {
   const { target, targetDir, force } = context;
   // ─── 3. Agent-specific 目录 ───
@@ -712,6 +812,7 @@ async function installAgentSpecificFiles(context: InstallContext): Promise<void>
   }
   if (target === 'codex' || target === 'universal') {
     await installCodexConfig(targetDir, force);
+    await installCodexSkills(targetDir, force);
   }
   if (target === 'opencode' || target === 'universal') {
     await installOpenCodeConfig(targetDir, force);
@@ -742,9 +843,9 @@ function printInstallSummary(target: Target): void {
   } else if (target === 'opencode') {
     console.log('    AGENTS.md 和 .opencode/commands/ 已就绪，可在 OpenCode 中调用 DocPath 命令。');
   } else if (target === 'codex') {
-    console.log('    AGENTS.md / CODEX.md / .codex/config.toml 已就绪，可在 Codex 中读取项目协议。');
+    console.log('    AGENTS.md / CODEX.md / .codex/config.toml / .codex/skills/ 已就绪，可在 Codex 中读取项目协议与 $docpath Skills。');
   } else {
-    console.log('    CODEX.md / CLAUDE.md / AGENTS.md 及三端配置已就绪。');
+    console.log('    CODEX.md / CLAUDE.md / AGENTS.md、.codex/skills/ 及三端配置已就绪。');
   }
 }
 

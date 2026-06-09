@@ -19,6 +19,7 @@ import { transitionWorkflow } from '../engine/transitions.js';
 import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
 import { detectActiveTaskFileDrift, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
+import { validateDeliverables } from '../utils/deliverables.js';
 
 interface CheckOptions {
   cwd: string;
@@ -739,6 +740,20 @@ async function checkPlanBreadcrumbDrift(cwd: string): Promise<CheckResult[]> {
   }];
 }
 
+async function checkDeliverablesIndex(cwd: string): Promise<CheckResult[]> {
+  const issues = await validateDeliverables(cwd);
+  if (issues.length === 0) return [];
+  return [{
+    name: 'Deliverables 必填章节校验',
+    passed: false,
+    output: [
+      '以下 deliverables 缺少必填章节:',
+      ...issues.map((issue) => `  - ${issue.path} (${issue.template}): ${issue.missing_sections.join(', ')}`),
+    ].join('\n'),
+    category: 'plan',
+  }];
+}
+
 async function runTaskDocumentChecks(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
   results.push(...await checkTaskFileDrift(cwd, docpathDir, options));
@@ -746,6 +761,7 @@ async function runTaskDocumentChecks(cwd: string, docpathDir: string, options: C
   results.push(...documentResults);
   results.push(...await checkCurrentChecklist(cwd, docpathDir, progress));
   results.push(...await checkPlanBreadcrumbDrift(cwd));
+  results.push(...await checkDeliverablesIndex(cwd));
   return results;
 }
 

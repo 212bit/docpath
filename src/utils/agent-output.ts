@@ -17,6 +17,7 @@ import { listBacklogItems, type BacklogItem } from '../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.js';
 import { readRuleFile, ruleDisplayPaths } from './rules.js';
 import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } from '../commands/install.js';
+import { readHybridContextIndexSummary, type HybridContextIndexSummary } from './context-index.js';
 
 export interface AgentOutput {
   /** 当前状态 (state machine state) */
@@ -71,6 +72,8 @@ export interface AgentOutput {
     recommended_command: string | null;
     issue_ids: string[];
   } | null;
+  /** 任务级 Hybrid Context Index 摘要；旧任务没有 index 时省略。 */
+  context_index?: HybridContextIndexSummary;
   /** 时间戳 */
   generated_at: string;
 }
@@ -211,6 +214,7 @@ type AgentOutputContext = {
   lessonSummary: { pendingCount: number; pendingKeys: string[] };
   hasIncompleteSpec: boolean;
   installHealth: InstallDoctorReport | null;
+  contextIndex: HybridContextIndexSummary | null;
 };
 
 function parseTddState(raw: string): TddStateSnapshot | null {
@@ -567,6 +571,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     (await readRuleFile(docpathDir, 'architecture')).content,
   );
   const installHealth = await readInstallHealth(cwd, docpathDir);
+  const contextIndex = await readHybridContextIndexSummary(cwd);
 
   return {
     docpathDir,
@@ -583,6 +588,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     lessonSummary,
     hasIncompleteSpec: hasSpec ? isIncompleteSpec(specContent) : false,
     installHealth,
+    contextIndex,
   };
 }
 
@@ -675,6 +681,7 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
       recommended_command: context.installHealth.recommended_command,
       issue_ids: context.installHealth.issues.map((issue) => issue.id),
     } : null,
+    ...(context.contextIndex ? { context_index: context.contextIndex } : {}),
     generated_at: new Date().toISOString(),
   };
 

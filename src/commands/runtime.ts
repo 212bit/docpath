@@ -13,6 +13,7 @@ import { generateAgentOutput } from '../utils/agent-output.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { detectActiveTaskFileDrift, syncActiveTaskFiles } from '../utils/task-files.js';
 import { syncCurrentDocument } from '../utils/workspace.js';
+import { writeHybridContextIndex, readHybridContextIndexSummary } from '../utils/context-index.js';
 
 type RuntimeState = NonNullable<Awaited<ReturnType<typeof readCurrentState>>>;
 
@@ -207,6 +208,19 @@ function renderRequiredFiles(requiredFiles: string[]): string[] {
     : ['- .docpath/workspace/current.md'];
 }
 
+function renderContextIndexReference(summary: Awaited<ReturnType<typeof readHybridContextIndexSummary>>): string[] {
+  if (!summary) return [];
+  return [
+    '',
+    '## Hybrid Context Index',
+    '',
+    `- path: ${summary.path}`,
+    `- trunk: ${summary.trunk_count}`,
+    `- leaves: ${summary.leaf_count}`,
+    `- generated_at: ${summary.generated_at || 'unknown'}`,
+  ];
+}
+
 function renderBreadcrumbList(
   entries: Awaited<ReturnType<typeof readBreadcrumb>>['entries'],
   fallback: string,
@@ -315,10 +329,12 @@ function renderCompactedContext(
   keepEntries: number,
   agentOutput: string,
   lastCheckContent: string,
+  contextIndexSummary: Awaited<ReturnType<typeof readHybridContextIndexSummary>>,
 ): string {
   const view = buildCompactedContextView(breadcrumb, keepEntries, agentOutput, lastCheckContent);
   return [
     ...renderCompactedOverview(state, view),
+    ...renderContextIndexReference(contextIndexSummary),
     '',
     ...renderResumeProtocol(),
     '',
@@ -337,9 +353,11 @@ export async function compactCommand(options: CompactOptions): Promise<void> {
   const state = await getState(cwd);
   const breadcrumb = await readBreadcrumb(cwd);
   const keepEntries = Math.max(1, options.maxEntries || 20);
+  await writeHybridContextIndex(cwd);
+  const contextIndexSummary = await readHybridContextIndexSummary(cwd);
   const agentOutput = await generateAgentOutput(cwd);
   const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
-  const content = renderCompactedContext(state, breadcrumb, keepEntries, agentOutput, lastCheckContent);
+  const content = renderCompactedContext(state, breadcrumb, keepEntries, agentOutput, lastCheckContent, contextIndexSummary);
   const output = join(docpathDir, 'workspace', 'compact-context.md');
 
   if (options.dryRun) {

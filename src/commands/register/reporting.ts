@@ -1,8 +1,10 @@
 import type { CAC } from 'cac';
 import { changesCommand } from '../changes.js';
 import { contextCommand } from '../context.js';
+import { deliverablesCommand } from '../deliverables.js';
 import { exportCommand } from '../export.js';
 import { projectsCommand } from '../projects.js';
+import { rolesCommand } from '../roles.js';
 import { statsCommand } from '../stats.js';
 
 function registerChangesCommand(cli: CAC): void {
@@ -39,6 +41,40 @@ function registerContextCommand(cli: CAC): void {
         withPlan: options.plan !== false,
         output: options.output,
         agent: !!options.agent,
+      });
+    });
+}
+
+function registerDeliverablesCommand(cli: CAC): void {
+  cli.command('deliverables [action]', '业务交付物模板与索引')
+    .option('--cwd <path>', '项目目录')
+    .option('--template <id>', '模板 ID')
+    .option('--output <file>', '输出文件路径；省略时只渲染到 stdout')
+    .option('--force', '允许覆盖已存在文件')
+    .option('--json', '输出 JSON')
+    .action(async (action: 'list' | 'render' | 'check' | undefined, options: { cwd?: string; template?: string; output?: string; force?: boolean; json?: boolean }) => {
+      await deliverablesCommand({
+        cwd: options.cwd || process.cwd(),
+        action,
+        template: options.template,
+        output: options.output,
+        force: !!options.force,
+        json: !!options.json,
+      });
+    });
+}
+
+function registerRolesCommand(cli: CAC): void {
+  cli.command('roles [action]', '角色 Profile 与 role-based context')
+    .option('--cwd <path>', '项目目录')
+    .option('--role <id>', '角色 ID')
+    .option('--json', '输出 JSON')
+    .action(async (action: 'list' | 'context' | undefined, options: { cwd?: string; role?: string; json?: boolean }) => {
+      await rolesCommand({
+        cwd: options.cwd || process.cwd(),
+        action,
+        role: options.role,
+        json: !!options.json,
       });
     });
 }
@@ -82,6 +118,8 @@ function registerProjectsCommand(cli: CAC): void {
 export function registerReportingCommands(cli: CAC): void {
   registerChangesCommand(cli);
   registerContextCommand(cli);
+  registerDeliverablesCommand(cli);
+  registerRolesCommand(cli);
   registerExportCommand(cli);
   registerStatsCommand(cli);
   registerProjectsCommand(cli);

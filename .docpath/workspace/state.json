@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260608-dashboard-tablet-workbench-audit-lane-sl",
-  "task_title": "Dashboard tablet workbench audit lane slide-over hardening",
+  "task_id": "T-20260609-codex-skill-docpath",
+  "task_title": "增加 Codex Skill 适配器封装 DocPath 专家团入口",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-08T18:31:14.806Z",
-  "updated_at": "2026-06-08T18:31:14.806Z"
+  "started_at": "2026-06-09T05:18:15.909Z",
+  "updated_at": "2026-06-09T05:18:15.909Z"
 }
