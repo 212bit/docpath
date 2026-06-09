@@ -1,6 +1,6 @@
 ---
 name: docpath-product
-description: "Product-quality lens for DocPath work: requirements, PRDs, user value, journeys, scope, metrics, and stakeholder trade-offs."
+description: Product quality lens for DocPath work covering requirements PRDs user value journeys scope metrics and stakeholder tradeoffs
 ---
 
 # DocPath Product

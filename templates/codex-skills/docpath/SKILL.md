@@ -1,6 +1,6 @@
 ---
 name: docpath
-description: "Use DocPath as the task state machine in Codex, especially for planning, continuing, reviewing, closing work, or doing pre-development requirements/product/UI/UX/technical analysis before implementation."
+description: Use DocPath as the task state machine in Codex for planning continuing reviewing closing work and pre development requirements product UI UX technical analysis before implementation
 ---
 
 # DocPath

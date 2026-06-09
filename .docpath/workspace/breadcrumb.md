@@ -4,330 +4,6 @@
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🔄 S1 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:18:04.589Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S1
-status: in_progress
-timestamp: 2026-06-09T10:18:04.589Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 修正 analyze dry-run 语义与 Skill 前置分析指引
-
-### ⏭️ S1 梳理 dry-run 语义、正式分析职责与 Skill 约束 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:18:04.769Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S1 梳理 dry-run 语义、正式分析职责与 Skill 约束
-status: skipped
-timestamp: 2026-06-09T10:18:04.769Z
----
-
-- **状态**: skipped
-- **上下文**: gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
-
-### 🔄 S2 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:18:04.927Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S2
-status: in_progress
-timestamp: 2026-06-09T10:18:04.927Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 修正 analyze dry-run 语义与 Skill 前置分析指引
-
-### ⏭️ S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:18:05.093Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果
-status: skipped
-timestamp: 2026-06-09T10:18:05.093Z
----
-
-- **状态**: skipped
-- **上下文**: gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
-
-### 🚫 check [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:19:07.971Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: check
-status: blocked
-timestamp: 2026-06-09T10:19:07.971Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 重大决策确认检查, Plan/Breadcrumb 漂移检查
-
-### 🚫 check [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:21:35.751Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: check
-status: blocked
-timestamp: 2026-06-09T10:21:35.751Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 任务文件 current/canonical 漂移检查, ⚠️  Checklist 同步 (0/3), Plan/Breadcrumb 漂移检查
-
-### ⏭️ S1 梳理 dry-run 语义、正式分析职责与 Skill 约束 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:22:09.696Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S1 梳理 dry-run 语义、正式分析职责与 Skill 约束
-status: skipped
-timestamp: 2026-06-09T10:22:09.696Z
----
-
-- **状态**: skipped
-- **上下文**: gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
-
-### ⏭️ S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:22:09.859Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果
-status: skipped
-timestamp: 2026-06-09T10:22:09.859Z
----
-
-- **状态**: skipped
-- **上下文**: gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
-
-### 🚫 check [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:23:07.689Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: check
-status: blocked
-timestamp: 2026-06-09T10:23:07.689Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (0/3), Plan/Breadcrumb 漂移检查
-
-### 🚫 check [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:24:53.838Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: check
-status: blocked
-timestamp: 2026-06-09T10:24:53.838Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 子任务完成度 (2/3), Plan/Breadcrumb 漂移检查
-
-### ✅ S1 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:25:31.778Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S1
-status: done
-timestamp: 2026-06-09T10:25:31.778Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### ✅ S2 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:25:31.956Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S2
-status: done
-timestamp: 2026-06-09T10:25:31.956Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### ⏭️ S1 梳理 dry-run 语义、正式分析职责与 Skill 约束 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:25:32.125Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S1 梳理 dry-run 语义、正式分析职责与 Skill 约束
-status: skipped
-timestamp: 2026-06-09T10:25:32.125Z
----
-
-- **状态**: skipped
-- **上下文**: agent-step: S1 梳理 dry-run 语义、正式分析职责与 Skill 约束
-
-### ⏭️ S1 梳理 dry-run 语义、正式分析职责与 Skill 约束 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:25:32.129Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S1 梳理 dry-run 语义、正式分析职责与 Skill 约束
-status: skipped
-timestamp: 2026-06-09T10:25:32.129Z
----
-
-- **状态**: skipped
-- **上下文**: agent-step: ready for next action
-
-### ⏭️ S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:25:32.294Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果
-status: skipped
-timestamp: 2026-06-09T10:25:32.294Z
----
-
-- **状态**: skipped
-- **上下文**: agent-step: S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果
-
-### ⏭️ S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:25:32.298Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果
-status: skipped
-timestamp: 2026-06-09T10:25:32.298Z
----
-
-- **状态**: skipped
-- **上下文**: agent-step: ready for next action
-
-### ✅ S3 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:25:32.464Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S3
-status: done
-timestamp: 2026-06-09T10:25:32.464Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ check [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:26:31.325Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: check
-status: done
-timestamp: 2026-06-09T10:26:31.325Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (9 项)
-
-### ⏭️ S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:26:45.812Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S2 实现 dry-run 完整 payload、正式分析 follow-up 与 Codex skill 禁止 dry-run 当正式结果
-status: skipped
-timestamp: 2026-06-09T10:26:45.812Z
----
-
-- **状态**: skipped
-- **上下文**: gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
-
-### ⏭️ S1 梳理 dry-run 语义、正式分析职责与 Skill 约束 [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:26:46.016Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: S1 梳理 dry-run 语义、正式分析职责与 Skill 约束
-status: skipped
-timestamp: 2026-06-09T10:26:46.016Z
----
-
-- **状态**: skipped
-- **上下文**: gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
-
-### 🚫 check [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:27:44.517Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: check
-status: blocked
-timestamp: 2026-06-09T10:27:44.517Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: Plan/Breadcrumb 漂移检查
-
-### ✅ check [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:29:11.505Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: check
-status: done
-timestamp: 2026-06-09T10:29:11.505Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (9 项)
-
-### ✅ review [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:29:11.853Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: review
-status: done
-timestamp: 2026-06-09T10:29:11.853Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
-
-### ✅ journal [T-20260609-analyze-dry-run-skill] — 2026-06-09T10:29:24.058Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: journal
-status: done
-timestamp: 2026-06-09T10:29:24.058Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### ✅ task.reset [T-20260609-analyze-dry-run-skill] — 2026-06-09T12:11:26.919Z
-
----
-taskId: T-20260609-analyze-dry-run-skill
-step: task.reset
-status: done
-timestamp: 2026-06-09T12:11:26.919Z
----
-
-- **状态**: done
-- **上下文**: 任务上下文已清空并回到 idle
-
-### 🔄 S1 [T-20260609-agents-md-docpath-skill] — 2026-06-09T12:12:06.324Z
-
----
-taskId: T-20260609-agents-md-docpath-skill
-step: S1
-status: in_progress
-timestamp: 2026-06-09T12:12:06.324Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 瘦身 AGENTS.md 减少与 DocPath Skill 重叠
-
-### ✅ S1 [T-20260609-agents-md-docpath-skill] — 2026-06-09T12:13:07.047Z
-
----
-taskId: T-20260609-agents-md-docpath-skill
-step: S1
-status: done
-timestamp: 2026-06-09T12:13:07.047Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
 ### ✅ S2 [T-20260609-agents-md-docpath-skill] — 2026-06-09T12:13:07.214Z
 
 ---
@@ -603,3 +279,327 @@ timestamp: 2026-06-09T12:48:28.892Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (3/3 步)
+
+### 🔄 S1 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:01:21.785Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S1
+status: in_progress
+timestamp: 2026-06-09T15:01:21.785Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 建立 Dashboard UI 重构基线与回归证据
+
+### ✅ S1 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:03:32.155Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S1
+status: done
+timestamp: 2026-06-09T15:03:32.155Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S2 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:03:50.834Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S2
+status: in_progress
+timestamp: 2026-06-09T15:03:50.834Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 定义 UI 信息架构与视图职责
+
+### ✅ S2 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:04:40.062Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S2
+status: done
+timestamp: 2026-06-09T15:04:40.062Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+
+### 🔄 S3 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:04:50.246Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S3
+status: in_progress
+timestamp: 2026-06-09T15:04:50.246Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 抽取 Dashboard 数据模型与只读命令表达 helper
+
+### ✅ S3 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:06:49.541Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S3
+status: done
+timestamp: 2026-06-09T15:06:49.541Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+
+### 🔄 S4 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:06:57.477Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S4
+status: in_progress
+timestamp: 2026-06-09T15:06:57.477Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 拆分 Project Overview P0 首屏组件
+
+### ✅ S4 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:07:56.501Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S4
+status: done
+timestamp: 2026-06-09T15:07:56.501Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+
+### ✅ S5 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:10:57.812Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S5
+status: done
+timestamp: 2026-06-09T15:10:57.812Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S5
+
+### 🔄 S6 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:11:08.952Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S6
+status: in_progress
+timestamp: 2026-06-09T15:11:08.952Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 统一空状态、风险提示、命令复制和只读约束
+
+### ✅ S6 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:12:21.080Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S6
+status: done
+timestamp: 2026-06-09T15:12:21.080Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S6
+
+### 🔄 S7 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:12:33.262Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S7
+status: in_progress
+timestamp: 2026-06-09T15:12:33.262Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 重构视觉系统与移动端最低体验
+
+### ✅ S7 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:13:10.178Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S7
+status: done
+timestamp: 2026-06-09T15:13:10.178Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S7
+
+### 🔄 S8 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:13:23.004Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S8
+status: in_progress
+timestamp: 2026-06-09T15:13:23.004Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 补充 HTML snapshot 与 dashboard 回归测试
+
+### ✅ S8 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:14:47.356Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S8
+status: done
+timestamp: 2026-06-09T15:14:47.356Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S8
+
+### 🔄 S9 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:14:57.118Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S9
+status: in_progress
+timestamp: 2026-06-09T15:14:57.118Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 运行质量门禁并修复回归
+
+### 🚫 check [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:16:25.694Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: check
+status: blocked
+timestamp: 2026-06-09T15:16:25.694Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 重大决策确认检查, ⚠️  Checklist 同步 (8/10)
+
+### 🚫 check [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:18:41.029Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: check
+status: blocked
+timestamp: 2026-06-09T15:18:41.029Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 任务文件 current/canonical 漂移检查, 重大决策确认检查, ⚠️  Checklist 同步 (8/10)
+
+### 🚫 check [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:20:29.036Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: check
+status: blocked
+timestamp: 2026-06-09T15:20:29.036Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 测试, 重大决策确认检查, ⚠️  Checklist 同步 (8/10)
+
+### 🚫 check [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:22:20.334Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: check
+status: blocked
+timestamp: 2026-06-09T15:22:20.334Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 测试, ⚠️  Checklist 同步 (8/10)
+
+### 🚫 check [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:24:02.911Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: check
+status: blocked
+timestamp: 2026-06-09T15:24:02.911Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (8/10)
+
+### ✅ S9 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:24:14.748Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S9
+status: done
+timestamp: 2026-06-09T15:24:14.748Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S9
+
+### 🔄 S10 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:24:23.836Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S10
+status: in_progress
+timestamp: 2026-06-09T15:24:23.836Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 更新实现说明与交接材料
+
+### ✅ S10 [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:25:13.103Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: S10
+status: done
+timestamp: 2026-06-09T15:25:13.103Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S10
+
+### ✅ check [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:25:28.259Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: check
+status: done
+timestamp: 2026-06-09T15:25:28.259Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (8 项)
+
+### ✅ review [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:25:35.665Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: review
+status: done
+timestamp: 2026-06-09T15:25:35.665Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 6 警告, 0 提示
+
+### ✅ journal [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:25:58.039Z
+
+---
+taskId: T-20260609-dashboard-ui-refactor
+step: journal
+status: done
+timestamp: 2026-06-09T15:25:58.039Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (10/10 步)

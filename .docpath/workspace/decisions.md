@@ -16653,3 +16653,86 @@ agent-step: S3
 - .docpath/tasks/T-20260609-docpath-codex-skills/plan.md
 
 ---
+## ADR-20260609-042 — review
+
+- task_id: T-20260609-dashboard-ui-refactor
+- created_at: 2026-06-09T15:25:35.663Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 6 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-043 — journal.archive
+
+- task_id: T-20260609-dashboard-ui-refactor
+- created_at: 2026-06-09T15:25:58.044Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 建立 Dashboard UI 重构基线与回归证据
+agent-step: S1
+开始执行: 定义 UI 信息架构与视图职责
+agent-step: S2
+开始执行: 抽取 Dashboard 数据模型与只读命令表达 helper
+agent-step: S3
+开始执行: 拆分 Project Overview P0 首屏组件
+agent-step: S4
+agent-step: S5
+开始执行: 统一空状态、风险提示、命令复制和只读约束
+agent-step: S6
+开始执行: 重构视觉系统与移动端最低体验
+agent-step: S7
+开始执行: 补充 HTML snapshot 与 dashboard 回归测试
+agent-step: S8
+开始执行: 运行质量门禁并修复回归
+质量检查失败: 重大决策确认检查, ⚠️  Checklist 同步 (8/10)
+质量检查失败: 任务文件 current/canonical 漂移检查, 重大决策确认检查, ⚠️  Checklist 同步 (8/10)
+质量检查失败: 测试, 重大决策确认检查, ⚠️  Checklist 同步 (8/10)
+质量检查失败: 测试, ⚠️  Checklist 同步 (8/10)
+质量检查失败: ⚠️  Checklist 同步 (8/10)
+agent-step: S9
+开始执行: 更新实现说明与交接材料
+agent-step: S10
+质量检查通过 (8 项)
+代码审查: 0 错误, 6 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-dashboard-ui-refactor
+
+### 影响
+
+任务进入归档状态；完成 10/10 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-dashboard-ui-refactor/spec.md
+- .docpath/tasks/T-20260609-dashboard-ui-refactor/plan.md
+
+---

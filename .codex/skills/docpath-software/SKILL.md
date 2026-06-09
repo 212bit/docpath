@@ -1,6 +1,6 @@
 ---
 name: docpath-software
-description: "Software-engineering quality lens for DocPath work: architecture, implementation, technical analysis, QA, tests, check, review, and journal evidence."
+description: Software engineering quality lens for DocPath work covering architecture implementation technical analysis QA tests check review and journal evidence
 ---
 
 # DocPath Software

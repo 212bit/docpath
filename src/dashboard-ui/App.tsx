@@ -2,108 +2,37 @@ import { useState, useEffect, type ChangeEvent } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import {
-  Activity,
   AlertTriangle,
-  ArrowLeft,
   CheckCircle2,
   ClipboardList,
-  Compass,
   FolderKanban,
   GitBranch,
   Layers3,
   RefreshCw,
   Search,
-  Settings,
   ShieldCheck,
   Users,
 } from 'lucide-react';
 import type { DashboardData } from './types.js';
+import {
+  compatibilityViews,
+  DashboardSidebar,
+  MobileNavigation,
+  projectDirectoryHealth,
+  projectViewHref,
+  projectViewIds,
+  rootFromHash,
+  viewFromHash,
+} from './navigation.js';
+import { buildProjectOverviewModel, readonlyCommand, type EmptyStateModel } from './view-model.js';
 
 type DashboardAppProps = {
   data: DashboardData;
 };
 
-type SidebarView = {
-  id: string;
-  label: string;
-  detail: string;
-  icon: typeof Compass;
-};
-
-const globalViews: SidebarView[] = [
-  { id: 'projects', label: 'Projects', detail: '项目空间', icon: FolderKanban },
-  { id: 'team', label: 'Teams', detail: '团队驾驶舱', icon: Users },
-  { id: 'settings', label: 'Settings', detail: '全局配置', icon: Settings },
-] as const;
-
-const projectViews: SidebarView[] = [
-  { id: 'overview', label: 'Overview', detail: '总览', icon: Compass },
-  { id: 'workflow', label: 'Workflow', detail: 'FSM 流程', icon: GitBranch },
-  { id: 'backlog', label: 'Backlog', detail: '待办看板', icon: FolderKanban },
-  { id: 'changes', label: 'Changes', detail: '代码变更', icon: GitBranch },
-  { id: 'handoff', label: 'Handoff', detail: '任务交接', icon: ShieldCheck },
-  { id: 'documents', label: 'Docs', detail: '文档中心', icon: ClipboardList },
-  { id: 'session', label: 'Session', detail: '会话恢复', icon: Layers3 },
-  { id: 'activity', label: 'Activity', detail: '动态时间线', icon: Activity },
-] as const;
-
-const compatibilityViews = [
-  { id: 'overview', label: '工作台总览', icon: Compass },
-  { id: 'map', label: '工作台地图', icon: Compass },
-  { id: 'session', label: '会话恢复', icon: Layers3 },
-  { id: 'readiness', label: '收口审计', icon: ShieldCheck },
-  { id: 'audit', label: '完成度审计', icon: ClipboardList },
-  { id: 'docs-index', label: '文档索引', icon: ClipboardList },
-  { id: 'settings', label: '系统配置', icon: Settings },
-  { id: 'activity', label: '最近活动', icon: Activity },
-  { id: 'team', label: '团队驾驶舱', icon: Users },
-  { id: 'actions', label: '行动中心', icon: CheckCircle2 },
-  { id: 'project', label: '项目详情', icon: FolderKanban },
-  { id: 'task', label: '任务详情', icon: ClipboardList },
-  { id: 'changes', label: '代码变更', icon: GitBranch },
-  { id: 'handoff', label: '交接审计', icon: ShieldCheck },
-  { id: 'documents', label: '工作流文档', icon: ClipboardList },
-  { id: 'health', label: '健康检查', icon: ShieldCheck },
-  { id: 'workflow', label: 'FSM 流程', icon: GitBranch },
-  { id: 'evidence', label: '证据', icon: ClipboardList },
-  { id: 'backlog', label: '工作待办', icon: FolderKanban },
-] as const;
-
-const knownViewIds = new Set(['projects', ...compatibilityViews.map((view) => view.id)]);
-const projectViewIds = new Set(projectViews.map((view) => view.id));
-
-function splitHash(hash: string): { view: string; query: string } {
-  const raw = hash.replace(/^#/, '');
-  const [view, query = ''] = raw.split('?');
-  return { view, query };
-}
-
-function viewFromHash(): string {
-  if (typeof window === 'undefined') return 'projects';
-  const { view } = splitHash(window.location.hash);
-  return knownViewIds.has(view) ? view : 'projects';
-}
-
-function rootFromHash(): string | null {
-  if (typeof window === 'undefined') return null;
-  const { query } = splitHash(window.location.hash);
-  return new URLSearchParams(query).get('root');
-}
-
-function projectViewHref(view: string, root: string | null): string {
-  return root && projectViewIds.has(view) ? `#${view}?root=${encodeURIComponent(root)}` : `#${view}`;
-}
-
 function statusLabel(value: string | boolean | number | null | undefined): string {
   if (value === null || value === undefined || value === '') return '-';
   return String(value);
-}
-
-function projectDirectoryHealth(project: { selected: boolean; phase: string; gate: string }, data: DashboardData): string {
-  if (project.selected) return data.health.status;
-  if (project.gate.endsWith('_fail')) return 'error';
-  if (!['completed', 'idle'].includes(project.phase)) return 'warning';
-  return 'ok';
 }
 
 function Metric({ label, value, field, detail }: { label: string; value: string | number | boolean | null | undefined; field?: string; detail?: string }) {
@@ -133,8 +62,63 @@ function CopyableText({ value, label, mono = true }: { value: string; label?: st
   return <span className={mono ? 'react-copyable-text mono' : 'react-copyable-text'} data-copyable-text>
     {label ? <b>{label}</b> : null}
     <code>{value}</code>
-    <CopyButton command={value} />
+    <CopyButton command={readonlyCommand(value)} />
   </span>;
+}
+
+function EmptyStateCard({ state }: { state: EmptyStateModel }) {
+  return <article className="react-empty-state" data-empty-state={state.id} data-search-item data-search-text={`${state.title} ${state.impact} ${state.command}`}>
+    <div>
+      <p className="react-eyebrow">State Notice</p>
+      <h3>{state.title}</h3>
+      <p>{state.impact}</p>
+    </div>
+    <CopyableText label="建议命令" value={state.command} />
+  </article>;
+}
+
+function EmptyStateGrid({ states }: { states: EmptyStateModel[] }) {
+  if (states.length === 0) return null;
+  return <div className="react-empty-grid" data-empty-state-grid>
+    {states.map((state) => <EmptyStateCard key={state.id} state={state} />)}
+  </div>;
+}
+
+function CurrentTaskCard({ data, model }: DashboardAppProps & { model: ReturnType<typeof buildProjectOverviewModel> }) {
+  return <article className="react-current-task-card" data-current-task-card>
+    <p className="react-eyebrow">Current Task</p>
+    <h3>{model.taskLabel}</h3>
+    <p>{data.current.task_title || '当前项目暂无活跃任务标题。'}</p>
+    <dl className="react-console-grid">
+      <div><dt>Phase / Gate</dt><dd>{model.phaseLabel}</dd></div>
+      <div><dt>Current Step</dt><dd>{model.stepLabel}</dd></div>
+      <div><dt>Readiness</dt><dd>{data.readiness.status} · {data.readiness.score}%</dd></div>
+    </dl>
+  </article>;
+}
+
+function RecommendedCommandCard({ model }: { model: ReturnType<typeof buildProjectOverviewModel> }) {
+  return <article className="react-recommendation-card" data-recommended-command-card>
+    <p className="react-eyebrow">Recommended Next</p>
+    <CopyableText value={model.nextCommand} />
+    <div className="react-recommendation-notes">
+      <div><b>推荐原因</b><p>{model.recommendationReason}</p></div>
+      <div><b>影响范围</b><p>{model.impactScope}</p></div>
+    </div>
+  </article>;
+}
+
+function AttentionQueue({ model }: { model: ReturnType<typeof buildProjectOverviewModel> }) {
+  return <div className="react-attention-queue" data-project-attention-queue>
+    <div className="react-section-title"><AlertTriangle size={18} aria-hidden="true" /><div><p className="react-eyebrow">Attention Queue</p><h2>健康与风险队列</h2></div></div>
+    <ul className="react-command-list">
+      {model.attentionItems.map((item) => <li key={item.id} className={`react-timeline-item ${item.severity}`}>
+        <b>{item.label}</b>
+        <p>{item.summary}</p>
+        <small>{item.detail}</small>
+      </li>)}
+    </ul>
+  </div>;
 }
 
 function Shell({ data }: DashboardAppProps) {
@@ -197,68 +181,6 @@ function ProjectSubHeader({ data, activeView }: DashboardAppProps & { activeView
       <CopyButton command={data.next.command} />
     </div>
   </div>;
-}
-
-function SidebarLink({ view, activeView, href }: { view: SidebarView; activeView: string; href?: string }) {
-  const Icon = view.icon;
-  const active = activeView === view.id;
-  return <a
-    href={href || `#${view.id}`}
-    className={active ? 'active' : undefined}
-    data-sidebar-link={view.id}
-    aria-current={active ? 'page' : undefined}
-  >
-    <Icon size={16} aria-hidden="true" />
-    <span>{view.label}<small>{view.detail}</small></span>
-  </a>;
-}
-
-function DashboardSidebar({ data, activeView }: DashboardAppProps & { activeView: string }) {
-  const projectLevel = projectViewIds.has(activeView);
-  const activeProject = data.project;
-  const activeRoot = data.selected_project.project?.root || data.project.root;
-  return <aside className="react-sidebar" data-sidebar-level={projectLevel ? 'project' : 'global'} aria-label="Left Sidebar Navigation">
-    <div className="react-sidebar-project" hidden={!projectLevel}>
-      <a href="#projects" className="react-back-link" data-back-to-projects>
-        <ArrowLeft size={16} aria-hidden="true" />Back to Projects
-      </a>
-      <div className="react-sidebar-status">
-        <p className="react-eyebrow">Workbench Focus</p>
-        <strong>{activeProject.name}</strong>
-        <small>{data.current.phase} / {data.current.gate} · {data.health.status}</small>
-      </div>
-    </div>
-    <div className="react-sidebar-status" hidden={projectLevel}>
-      <p className="react-eyebrow">Overall Management</p>
-      <strong>Global</strong>
-      <small>{data.registry.total} registered projects · {data.health.status}</small>
-    </div>
-    <nav className="react-sidebar-nav" aria-label="Global Level Sidebar Menu" hidden={projectLevel}>
-      {globalViews.map((view) => <SidebarLink key={view.id} view={view} activeView={activeView} />)}
-    </nav>
-    <nav className="react-sidebar-nav" aria-label="Project Level Sidebar Menu" hidden={!projectLevel}>
-      {projectViews.map((view) => <SidebarLink key={view.id} view={view} activeView={activeView} href={projectViewHref(view.id, activeRoot)} />)}
-    </nav>
-  </aside>;
-}
-
-function MobileNavigation({ data, activeView }: DashboardAppProps & { activeView: string }) {
-  const projectLevel = projectViewIds.has(activeView);
-  const activeRoot = data.selected_project.project?.root || data.project.root;
-  const views = projectLevel
-    ? [globalViews[0], ...projectViews.filter((view) => ['overview', 'workflow', 'backlog', 'changes', 'handoff'].includes(view.id))]
-    : [...globalViews, projectViews[0]];
-  return <nav className="react-mobile-nav" data-mobile-nav data-mobile-nav-level={projectLevel ? 'project' : 'global'} aria-label="Mobile Workbench Navigation">
-    {views.map((view) => {
-      const Icon = view.icon;
-      const href = projectViewIds.has(view.id) ? projectViewHref(view.id, activeRoot) : `#${view.id}`;
-      const active = activeView === view.id;
-      return <a key={view.id} href={href} className={active ? 'active' : undefined} data-mobile-nav-link={view.id} aria-current={active ? 'page' : undefined}>
-        <Icon size={16} aria-hidden="true" />
-        <span>{view.label}</span>
-      </a>;
-    })}
-  </nav>;
 }
 
 function HealthDot({ value }: { value: string }) {
@@ -621,19 +543,27 @@ function ProjectWorkbench({ data, onSwitchProject }: DashboardAppProps & { onSwi
 
 function OverviewPanel({ data }: DashboardAppProps) {
   const overview = data.overview;
-  return <section className="react-panel react-overview" data-search-item data-search-text="Agent Overview 工作台总览 当前步骤 下一步">
+  const model = buildProjectOverviewModel(data);
+  return <section className="react-panel react-overview react-project-overview-p0" data-project-overview-p0 data-search-item data-search-text="Project Overview P0 当前任务 当前阶段 推荐下一步 推荐原因 影响范围 关注队列">
     <div className="react-panel-header">
-      <div><p className="react-eyebrow">Agent Overview</p><h2>工作台总览</h2></div>
-      <div className="react-next-command"><span data-live-field="overview_next_command">{overview.next.command}</span><CopyButton command={overview.next.command} /></div>
+      <div><p className="react-eyebrow">Project Overview · P0</p><h2>当前项目工作台</h2></div>
+      <div className="react-next-command"><span data-live-field="overview_next_command">{model.nextCommand}</span><CopyButton command={model.nextCommand} /></div>
+    </div>
+    <div className="react-overview-hero" data-project-overview-hero>
+      <CurrentTaskCard data={data} model={model} />
+      <RecommendedCommandCard model={model} />
     </div>
     <div className="react-metrics-grid">
-      <Metric label="当前步骤" value={overview.task.current_step} field="overview_task" />
+      <Metric label="当前任务" value={overview.task.task_id || '-'} field="overview_task" detail={overview.task.task_title} />
+      <Metric label="当前步骤" value={overview.task.current_step} />
       <Metric label="健康" value={overview.health_status.toUpperCase()} field="overview_health" />
       <Metric label="变更" value={overview.changes_ready ? 'READY' : 'BLOCKED'} field="overview_changes" detail={`${overview.changes_total} files`} />
       <Metric label="Backlog" value={`${overview.backlog_filtered_total}/${overview.backlog_total}`} field="overview_backlog" />
       <Metric label="Team 活跃" value={overview.team_active_projects} field="overview_team_active" />
       <Metric label="项目" value={overview.project_name} field="overview_project" />
     </div>
+    <AttentionQueue model={model} />
+    <EmptyStateGrid states={model.emptyStates} />
     <div className="react-link-grid" data-team-overview-links>{overview.primary_links.map((item) => <a key={item.href} href={item.href}><b>{item.label}</b><span>{item.value}</span><small>{item.detail}</small></a>)}</div>
   </section>;
 }
@@ -690,6 +620,20 @@ function ReadinessPanel({ data }: DashboardAppProps) {
 
 function SettingsPanel({ data }: DashboardAppProps) {
   const settings = data.settings;
+  const states: EmptyStateModel[] = [
+    ...(!settings.registry.exists ? [{
+      id: 'settings-registry-missing',
+      title: 'Registry 数据源缺失',
+      impact: `Projects/Teams 视图无法完整展示跨项目状态，当前路径为 ${settings.registry.db_path}。`,
+      command: 'docpath projects',
+    }] : []),
+    ...(settings.install && !settings.install.passed ? [{
+      id: 'settings-install-attention',
+      title: '安装健康存在关注项',
+      impact: `${settings.install.errors} 个错误 · ${settings.install.warnings} 个警告，可能影响 CLI 或 skill 集成。`,
+      command: settings.install.recommended_command || 'docpath install --target codex',
+    }] : []),
+  ];
   return <section className="react-panel" data-search-item data-search-text="Workbench Settings 运行配置 数据源 Registry DB">
     <div className="react-panel-header"><div><p className="react-eyebrow">Workbench Settings</p><h2>运行配置</h2></div><strong data-live-field="settings_mode">{settings.service.mode}</strong></div>
     <div className="react-metrics-grid compact">
@@ -702,6 +646,7 @@ function SettingsPanel({ data }: DashboardAppProps) {
       <Metric label="Install" value={settings.install?.passed ? 'PASS' : 'ATTENTION'} field="settings_install_status" />
       <Metric label="Install Issues" value={settings.install ? `${settings.install.errors} 错误 · ${settings.install.warnings} 警告` : '-'} field="settings_install_issues" />
     </div>
+    <EmptyStateGrid states={states} />
     <div className="react-two-col"><ul data-team-settings-paths>{settings.paths.map((item) => <li key={item.id}>{item.label}<small>{item.path}</small></li>)}</ul><ul data-team-settings-data-sources>{settings.data_sources.map((item) => <li key={item.id}>{item.label}<small>{item.detail}</small></li>)}</ul></div>
     <ul className="react-command-list" data-team-settings-command-templates>{settings.command_templates.map((item) => <li key={item.id}>{item.label}<small>{item.command}</small></li>)}</ul>
   </section>;
@@ -723,6 +668,20 @@ function BacklogPanel({ data }: DashboardAppProps) {
     const items = localItems.filter((item) => item.status === status);
     return { status, count: items.length, items };
   }).filter((group) => group.count > 0);
+  const states: EmptyStateModel[] = [
+    ...(backlog.total === 0 ? [{
+      id: 'backlog-empty',
+      title: 'Backlog 没有条目',
+      impact: '当前项目没有可规划需求，Backlog 看板和筛选结果为空。',
+      command: 'docpath backlog add',
+    }] : []),
+    ...(backlog.total > 0 && localGroups.length === 0 ? [{
+      id: 'backlog-filter-empty',
+      title: '当前筛选没有匹配',
+      impact: `本地搜索或优先级筛选过滤了 ${backlog.total} 个条目，API 筛选结果为 ${backlog.filtered_total}。`,
+      command: 'docpath dashboard --status active',
+    }] : []),
+  ];
   return <section className="react-panel" data-search-item data-search-text="Backlog Board 任务待办 工作清单 Board active proposed planned done dropped">
     <div className="react-panel-header">
       <div><p className="react-eyebrow">Backlog Board</p><h2>工作待办看板</h2></div>
@@ -754,6 +713,7 @@ function BacklogPanel({ data }: DashboardAppProps) {
       </article>)}
       {localGroups.length === 0 ? <p className="react-muted">当前本地筛选没有匹配的 backlog。</p> : null}
     </div>
+    <EmptyStateGrid states={states} />
   </section>;
 }
 
@@ -773,6 +733,12 @@ function ChangesPanel({ data }: DashboardAppProps) {
   if (!changes.available) {
     return <section className="react-panel" data-search-item data-search-text="Git Changes 变更收口 blocking reasons not a git repo">
       <div className="react-panel-header"><div><p className="react-eyebrow">Git Changes</p><h2>变更收口</h2></div></div>
+      <EmptyStateGrid states={[{
+        id: 'changes-unavailable',
+        title: '代码变更摘要不可用',
+        impact: changes.error || '当前目录不是 git 仓库，无法展示 changes summary。',
+        command: 'docpath changes',
+      }]} />
       <div className="react-split-pane" data-changes-split-pane>
         <aside className="react-split-context" data-sticky-context>
           <p className="react-eyebrow">File Tree</p>
@@ -838,6 +804,20 @@ function ChangesPanel({ data }: DashboardAppProps) {
 
 function HandoffPanel({ data }: DashboardAppProps) {
   const handoff = data.handoff;
+  const states: EmptyStateModel[] = [
+    ...(handoff.recent_breadcrumbs.length === 0 ? [{
+      id: 'handoff-no-breadcrumb',
+      title: '缺少最近 breadcrumb',
+      impact: '交接接手者无法快速恢复最近执行上下文，需要先补齐生命周期记录。',
+      command: 'docpath status --agent',
+    }] : []),
+    ...(handoff.progress.blocked > 0 ? [{
+      id: 'handoff-blocked',
+      title: '交接存在阻塞项',
+      impact: `${handoff.progress.blocked} 个交接要求尚未满足，归档或切换会话前需要处理。`,
+      command: 'docpath agent handoff',
+    }] : []),
+  ];
   return <section className="react-panel" data-search-item data-search-text="Handoff Queue 交接准备 context protocol resume files">
     <div className="react-panel-header">
       <div><p className="react-eyebrow">Handoff Queue</p><h2>交接准备</h2></div>
@@ -849,6 +829,7 @@ function HandoffPanel({ data }: DashboardAppProps) {
       <Metric label="阻塞项" value={handoff.progress.blocked} />
       <Metric label="Check" value={handoff.evidence.check} field="handoff_check" />
     </div>
+    <EmptyStateGrid states={states} />
     <div className="react-two-col">
       <div>
         <p className="react-eyebrow">交接所需文件</p>
@@ -881,6 +862,12 @@ function HandoffPanel({ data }: DashboardAppProps) {
 
 function DocsPanel({ data }: DashboardAppProps) {
   const docs = data.docs_index;
+  const states: EmptyStateModel[] = docs.missing_entries.length > 0 ? [{
+    id: 'docs-index-missing',
+    title: '文档索引存在缺失项',
+    impact: `${docs.missing_entries.length} 个文档入口缺失，恢复上下文或交接证据可能不完整。`,
+    command: 'docpath docs index',
+  }] : [];
   return <section className="react-panel" data-search-item data-search-text="Docs Index 文档索引 missing files previews">
     <div className="react-panel-header">
       <div><p className="react-eyebrow">Docs Index</p><h2>文档索引</h2></div>
@@ -891,6 +878,7 @@ function DocsPanel({ data }: DashboardAppProps) {
       <Metric label="已存在" value={docs.existing} />
       <Metric label="缺失项" value={docs.missing} field="docs_index_missing" />
     </div>
+    <EmptyStateGrid states={states} />
     {docs.missing_entries.length > 0 ? <div className="react-blocker-list">
       <p className="react-eyebrow">缺失项</p>
       <ul data-team-docs-index-missing>

@@ -367,6 +367,14 @@
   font-size: 20px;
 }
 
+.react-panel h3 {
+  margin: 0;
+  color: var(--dp-text-strong);
+  font-size: 18px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
 .react-subtitle {
   margin: 8px 0 0;
   max-width: 680px;
@@ -460,6 +468,92 @@
   padding: 6px 12px;
   border-radius: 20px;
   border: 1px solid var(--dp-border);
+}
+
+.react-project-overview-p0 {
+  display: grid;
+  gap: 18px;
+}
+
+.react-overview-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 14px;
+}
+
+.react-current-task-card,
+.react-recommendation-card,
+.react-empty-state {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid var(--dp-border);
+  border-radius: 8px;
+  background: hsl(var(--dp-h-surface-muted) / 0.38);
+  padding: 16px;
+}
+
+.react-current-task-card {
+  border-color: hsl(var(--dp-h-success) / 0.22);
+  background: linear-gradient(135deg, hsl(var(--dp-h-success) / 0.12), hsl(var(--dp-h-surface-muted) / 0.34));
+}
+
+.react-current-task-card p,
+.react-recommendation-card p,
+.react-empty-state p {
+  margin: 0;
+  color: var(--dp-muted);
+  line-height: 1.55;
+}
+
+.react-current-task-card .react-console-grid {
+  margin-top: 4px;
+}
+
+.react-recommendation-card {
+  align-content: start;
+}
+
+.react-recommendation-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.react-recommendation-notes div {
+  min-width: 0;
+  border: 1px solid var(--dp-border);
+  border-radius: 8px;
+  background: hsl(var(--dp-h-surface) / 0.38);
+  padding: 10px;
+}
+
+.react-recommendation-notes b {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--dp-text-strong);
+}
+
+.react-attention-queue {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.react-attention-queue .react-command-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.react-empty-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.react-empty-state {
+  border-style: dashed;
+  border-color: hsl(var(--dp-h-warning) / 0.35);
+  background: hsl(var(--dp-h-warning) / 0.07);
 }
 
 /* SearchStrip styles */
@@ -1935,6 +2029,7 @@
   .react-queue-grid,
   .react-project-card-grid,
   .react-project-subheader,
+  .react-overview-hero,
   .react-split-pane,
   .react-workbench-shell,
   .react-workbench-three-column,
@@ -1990,6 +2085,9 @@
   .react-link-grid,
   .react-map-groups,
   .react-two-col,
+  .react-empty-grid,
+  .react-recommendation-notes,
+  .react-attention-queue .react-command-list,
   .react-cockpit-status,
   .react-cockpit-summary,
   .react-lane-grid {
@@ -2117,12 +2215,29 @@
     align-items: stretch;
   }
 
+  .react-next-command {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+  }
+
+  .react-next-command span,
+  .react-subheader-command code {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
   .react-search,
   .react-local-backlog-controls,
   .react-projects-summary,
   .react-project-facts,
   .react-split-groups,
   .react-sidebar-nav,
+  .react-overview-hero,
+  .react-empty-grid,
+  .react-recommendation-notes,
+  .react-attention-queue .react-command-list,
   .react-workbench-summary,
   .react-fsm-nodes,
   .react-kanban-columns,

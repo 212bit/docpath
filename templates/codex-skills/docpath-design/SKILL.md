@@ -1,6 +1,6 @@
 ---
 name: docpath-design
-description: "Design-quality lens for DocPath work: UX, information architecture, page states, interaction decisions, prototype review, and handoff evidence."
+description: Design quality lens for DocPath work covering UX information architecture page states interaction decisions prototype review and handoff evidence
 ---
 
 # DocPath Design
