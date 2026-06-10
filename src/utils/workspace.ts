@@ -83,6 +83,28 @@ export async function readCurrentState(cwd: string): Promise<CurrentState | null
 }
 
 /**
+ * 解析「当前已绑定的 task_id」。
+ *
+ * 真源优先级：active spec.md 首行 `# T-<date>-<slug>` > state.json 的 task_id。
+ * 二者都缺失时返回空串 —— 调用方据此 fail-loud，绝不静默兜底成 unknown/runtime
+ * 而在「无任务」状态下推进生命周期（参见 go/agent 漂移根因）。
+ *
+ * 注意：这是 agent 面向命令（go / agent step / agent done）的共享门禁；
+ * 底层原语 `run` 不走此门禁，保留为无任务时的逃生通道。
+ */
+export async function resolveBoundTaskId(cwd: string): Promise<string> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const specPath = resolveActiveTaskDocPath(docpathDir, '', 'spec.md');
+  if (existsSync(specPath)) {
+    const specContent = await readFile(specPath, 'utf-8');
+    const idMatch = specContent.match(/^#\s+(T-\S+)/m);
+    if (idMatch) return idMatch[1].trim();
+  }
+  const state = await readCurrentState(cwd);
+  return (state?.task_id || '').trim();
+}
+
+/**
  * 写入 state.json + 重建 current.md（方案 B：唯一写入路径）
  */
 export async function writeCurrentState(cwd: string, state: CurrentState): Promise<void> {

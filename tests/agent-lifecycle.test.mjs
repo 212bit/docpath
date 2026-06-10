@@ -140,4 +140,40 @@ describe('docpath agent lifecycle', () => {
     assert.match(decisions, /CI 环境无测试依赖，先放行 review/);
     fs.rmSync(cwd, { recursive: true, force: true });
   });
+
+  // 回归：无 task_id 绑定时，agent step/done 必须 fail-loud，绝不静默兜底成
+  // unknown/runtime 推进生命周期（与 go 门禁同源，参见 FSM 漂移根因）。
+  function mkNoTaskWorkspace() {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dp-agent-notask-'));
+    fs.mkdirSync(path.join(tmp, '.docpath', 'workspace'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, '.docpath', 'tasks', 'current'), { recursive: true });
+    // state.json 存在但 task_id 为空；不写 spec.md。
+    fs.writeFileSync(path.join(tmp, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 1, task_id: '', task_title: '', phase: 'executing', gate: 'none',
+      state: 'executing', current_step: 'S1',
+      started_at: '2026-06-01T00:00:00.000Z', updated_at: '2026-06-01T00:00:00.000Z',
+    }));
+    fs.writeFileSync(path.join(tmp, '.docpath', 'workspace', 'breadcrumb.md'), '# breadcrumb.md\n');
+    fs.writeFileSync(path.join(tmp, '.docpath', 'tasks', 'current', 'plan.md'), [
+      '## 执行计划', '', '### S1: Orphan step', '- [ ] S1: Orphan step',
+      '- **描述**: 无任务绑定的孤儿步骤', '- **验收条件**: 不应被执行', '- **依赖**: 无', '',
+    ].join('\n'));
+    return tmp;
+  }
+
+  it('agent step fails loud when no task_id is bound', () => {
+    const cwd = mkNoTaskWorkspace();
+    const out = run('agent step --step S1', cwd);
+    assert.match(out, /无法解析 task_id|无任务/, 'should refuse without a bound task');
+    const breadcrumb = fs.readFileSync(path.join(cwd, '.docpath', 'workspace', 'breadcrumb.md'), 'utf-8');
+    assert.doesNotMatch(breadcrumb, /status: done/, 'must not record a completed step for an orphan task');
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('agent done fails loud when no task_id is bound', () => {
+    const cwd = mkNoTaskWorkspace();
+    const out = run('agent done', cwd);
+    assert.match(out, /无法解析 task_id|无任务/, 'should refuse without a bound task');
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
 });

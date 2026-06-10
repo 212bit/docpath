@@ -22,7 +22,7 @@ import { transitionWorkflow } from '../engine/transitions.js';
 import { recordSkipReason } from '../engine/policy.js';
 import { markPlanStep } from '../utils/plan-sync.js';
 import { emit } from '../hooks/lifecycle.js';
-import { readCurrentState } from '../utils/workspace.js';
+import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 
 type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
 
@@ -47,6 +47,24 @@ function requireStep(action: AgentAction, step?: string): string {
     throw new Error(`docpath agent ${action} requires --step <step>`);
   }
   return step.trim();
+}
+
+/**
+ * 硬门禁：agent step / done 推进生命周期前必须有已绑定的 task_id。
+ * 缺失时 fail-loud，而不是经 runCommand 静默兜底成 runtime —— 否则会在
+ * 「无任务」状态下记录进度/跑完门禁，导致 state.json 与代码漂移
+ * （与 go 同源的漂移根因；底层原语 run 不走此门禁，保留为逃生通道）。
+ */
+async function requireBoundTask(action: AgentAction, cwd: string): Promise<void> {
+  const taskId = await resolveBoundTaskId(cwd);
+  if (!taskId) {
+    throw new Error(
+      `docpath agent ${action}: 无法解析 task_id，当前没有已绑定的任务。\n` +
+      `    agent 不会在「无任务」状态下推进，以免 state.json 与代码漂移。\n` +
+      `    请先创建任务（docpath brainstorm / refine / write-spec），确保 ` +
+      `.docpath/tasks/current/spec.md 存在且首行为 \`# T-<date>-<slug> - <标题>\`。`,
+    );
+  }
 }
 
 function requireSkipReason(flag: '--skip-tests' | '--skip-check' | '--skip-review', note?: string): string {
@@ -82,6 +100,7 @@ async function handleAgentEnter(cwd: string): Promise<void> {
 
 async function handleAgentStep(options: AgentOptions): Promise<void> {
   const { cwd } = options;
+  await requireBoundTask('step', cwd);
   const step = requireStep(options.action, options.step);
   const status = options.status || 'done';
   await runCommand({
@@ -194,6 +213,7 @@ async function emitAgentTaskEnd(cwd: string, finalStatus: NonNullable<AgentOptio
 
 async function handleAgentDone(options: AgentOptions): Promise<void> {
   const { cwd } = options;
+  await requireBoundTask('done', cwd);
   const finalStatus = options.status || 'done';
 
   await runAgentCheckGate(options);

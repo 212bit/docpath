@@ -11,7 +11,7 @@
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd } from '../utils/workspace.js';
+import { readCurrentMd, resolveBoundTaskId } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -226,7 +226,8 @@ export async function goCommand(options: GoOptions): Promise<void> {
   // 硬门禁：执行/收尾前必须有已绑定的 task_id。
   // 缺失时 fail-loud，而不是静默兜底成 unknown/runtime —— 否则会在「无任务」
   // 状态下跑完整个生命周期，导致 state.json 与代码漂移（详见 breadcrumb 漂移根因）。
-  const resolvedTaskId = (extraFields.task_id || current?.task_id || '').trim();
+  // 与 agent step/done 共用 resolveBoundTaskId，保证「已绑定」的判定标准一致。
+  const resolvedTaskId = await resolveBoundTaskId(cwd);
   if (!resolvedTaskId) {
     console.error('❌  无法解析 task_id：当前没有已绑定的任务。');
     console.error('    go 不会在「无任务」状态下推进，以免 state.json 与代码漂移。');
