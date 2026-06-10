@@ -12,7 +12,7 @@ High-signal trigger phrases include:
 - "先做开发前分析", "需求分析", "产品分析", "UI 分析", "UX 分析", "技术分析"
 - "不要直接写代码", "先帮我分析", "先明确问题", "先列确认问题"
 - "用 DocPath 做分析 / 规划 / 继续 / 收尾"
-- "添加一个页面 / 管理页面 / dashboard / workflow / settings page" before implementation details are settled
+- "添加一个页面 / 管理页面 / workflow / settings page" before implementation details are settled
 
 ## Required Route
 

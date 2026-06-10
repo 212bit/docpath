@@ -5,13 +5,13 @@ description: Design quality lens for DocPath work covering UX information archit
 
 # DocPath Design
 
-Use this skill when a DocPath task needs a UX/design lens: new pages, dashboards, management screens, workflow views, prototype critique, interaction decisions, or design-to-implementation handoff.
+Use this skill when a DocPath task needs a UX/design lens: new pages, management screens, workflow views, prototype critique, interaction decisions, or design-to-implementation handoff.
 
 This is a **quality lens**, not a parallel workflow. Use the main `docpath` skill for lifecycle routing and pre-development analysis commands.
 
 ## Approval-gated UI/UX route
 
-When the request or active task mentions UI, UX, dashboard, page, layout, navigation, visual design, responsive behavior, Figma, Stitch, v0, Framer, or equivalent interface work, treat it as an approval-gated UI/UX task.
+When the request or active task mentions UI, UX, page, layout, navigation, visual design, responsive behavior, Figma, Stitch, v0, Framer, or equivalent interface work, treat it as an approval-gated UI/UX task.
 
 Required sequence before product UI implementation:
 
@@ -45,7 +45,7 @@ UI/UX analysis must be specific enough for implementation planning. Cover:
 - data density, filtering/search/sort, pagination, and bulk-action behavior where relevant
 - design risks, usability trade-offs, and open questions
 
-For management pages and dashboards, explicitly analyze read/write boundaries, confirmation points, auditability, and permission visibility.
+For management pages, explicitly analyze read/write boundaries, confirmation points, auditability, and permission visibility.
 
 ## Useful DocPath context
 

@@ -106,11 +106,9 @@ const STRATEGIC_CHANGE_FILE_PATTERNS: Array<{ pattern: RegExp; label: string }> 
   { pattern: /^templates\/spec\.template\.md$/, label: '任务规约模板变更' },
   { pattern: /^templates\/(?:AGENTS|CODEX|CLAUDE|OPENCODE)\.md$/, label: 'Agent 协议模板变更' },
   { pattern: /^templates\/protocols\/(?:AGENTS|CODEX|CLAUDE|OPENCODE)\.md$/, label: 'Agent 协议模板变更' },
-  { pattern: /^src\/commands\/(?:check|review|next|go|agent|backlog|brainstorm|refine|dashboard)\.ts$/, label: '工作流/Agent 行为变更' },
+  { pattern: /^src\/commands\/(?:check|review|next|go|agent|backlog|brainstorm|refine)\.ts$/, label: '工作流/Agent 行为变更' },
   { pattern: /^src\/engine\//, label: '工作流状态机变更' },
   { pattern: /^src\/governance\//, label: '治理规则变更' },
-  { pattern: /^src\/dashboard-ui\//, label: 'UI 信息架构/用户主路径变更' },
-  { pattern: /^src\/commands\/dashboard\.ts$/, label: 'UI 信息架构/用户主路径变更' },
   { pattern: /^\.docpath\/rules\//, label: '全局工作规则变更' },
 ];
 
@@ -745,12 +743,12 @@ async function checkPredevAnalysisQuality(docpathDir: string, taskId: string | u
 }
 
 function isUiUxTaskText(text: string): boolean {
-  return /UI\/UX|UX|用户界面|界面重构|页面重构|页面|dashboard|layout|navigation|visual|视觉设计|设计预览|视觉验收|Design Preview|Visual Acceptance|responsive UI|响应式界面|Figma|Stitch|v0|Framer/i.test(text);
+  return /UI\/UX|UX|用户界面|界面重构|页面重构|页面|layout|navigation|visual|视觉设计|设计预览|视觉验收|Design Preview|Visual Acceptance|responsive UI|响应式界面|Figma|Stitch|v0|Framer/i.test(text);
 }
 
 function isUiUxWorkflowOnlyTask(text: string): boolean {
   return /Codex Skill|Agent 指引|check gate|Approval Gate|Design Approval Gate|门禁|模板|流程|workflow|write-design|docpath check/i.test(text)
-    && /不包含[\s\S]{0,240}(实际重构|Dashboard UI|产品 UI|页面实现)|不做[\s\S]{0,240}(实际重构|Dashboard UI|产品 UI|页面实现)/i.test(text);
+    && /不包含[\s\S]{0,240}(实际重构|产品 UI|页面实现)|不做[\s\S]{0,240}(实际重构|产品 UI|页面实现)/i.test(text);
 }
 
 function hasUiImplementationIntent(text: string): boolean {
@@ -765,7 +763,7 @@ function productUiChangedFiles(cwd: string): string[] {
       .filter(Boolean)
       .filter((file) => {
         if (/^(templates|\.codex|\.docpath)\//.test(file)) return false;
-        return /^src\/dashboard-ui\//.test(file) || /\.(tsx|jsx|css|scss)$/.test(file);
+        return /\.(tsx|jsx|css|scss)$/.test(file);
       });
   } catch {
     return [];

@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260609-ui-ux-ui-prompt-brief-design-approval-ga",
-  "task_title": "为 UI/UX 任务增加 UI Prompt Brief、Design Approval Gate 与 Codex Skill",
-  "phase": "completed",
-  "gate": "review_pass",
-  "current_step": "知识归档完成",
-  "started_at": "2026-06-10T01:55:10.306Z",
-  "updated_at": "2026-06-10T01:55:10.306Z"
+  "task_id": "",
+  "task_title": "",
+  "phase": "idle",
+  "gate": "none",
+  "current_step": "任务上下文已重置并回到 idle",
+  "started_at": "2026-06-10T07:16:05.755Z",
+  "updated_at": "2026-06-10T07:16:05.755Z"
 }

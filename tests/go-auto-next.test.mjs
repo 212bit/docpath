@@ -27,8 +27,8 @@ describe('go --auto-next', () => {
 - [ ] Create login form
 - [ ] Add validation
 
-## Subtask 2: Implement dashboard
-- [ ] Create dashboard component
+## Subtask 2: Implement reports page
+- [ ] Create reports component
 - [ ] Add charts
 `);
   });

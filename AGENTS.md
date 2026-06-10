@@ -37,7 +37,7 @@ AGENTS.md is only the project-level entry point and local constraint list. Do no
 
 Stop and clarify before creating/promoting a task or writing code when:
 
-- A request describes a product/UI surface such as a page, dashboard, workflow visualization, or data view but lacks the target user, entry point, data scope, state model, or interaction model.
+- A request describes a product/UI surface such as a page, workflow visualization, or data view but lacks the target user, entry point, data scope, state model, or interaction model.
 - A request may change technology stack, architecture/module boundaries, data model/API contract, UI information architecture/user journey, workflow/Agent behavior, permission or write-operation boundaries, task scope, existing capabilities, or long-term maintenance cost.
 
 For these cases, use DocPath pre-development analysis/refinement first and capture the decision brief in task evidence before implementation.

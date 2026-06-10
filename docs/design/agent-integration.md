@@ -223,7 +223,7 @@ Installed skills:
 
 - `docpath`: boot/status/next/done safety loop.
 - `docpath-product`: product requirements, PRDs, backlog shaping, stakeholder context.
-- `docpath-design`: UX/UI exploration, flows, design critique, dashboard-oriented work.
+- `docpath-design`: UX/UI exploration, flows, design critique, and interface-quality work.
 - `docpath-software`: implementation, refactor, debugging, checks, and evidence.
 
 Install or refresh them with:

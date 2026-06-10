@@ -22,7 +22,6 @@ const CLAUDE_EXPOSED_COMMANDS = [
   'config',
   'context',
   'continue',
-  'dashboard',
   'debug',
   'diff',
   'discover',
@@ -152,7 +151,7 @@ describe('install agent adapters', () => {
       assert.match(content, /docpath status --agent/);
       assert.match(content, /docpath next --agent/);
       assert.match(content, /docpath agent done/);
-      assert.match(content, /页面、Dashboard、流程可视化/);
+      assert.match(content, /页面、流程可视化/);
       assert.match(content, /重大变更|UI 信息架构/);
       assert.doesNotMatch(content, /docpath link\b/);
       assert.doesNotMatch(content, /docpath archive\b/);

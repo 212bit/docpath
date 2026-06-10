@@ -1,52 +1,5 @@
 [
   {
-    "timestamp": "2026-06-09T12:15:28.629Z",
-    "passed": true,
-    "failedChecks": [],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T12:28:59.374Z",
-    "passed": false,
-    "failedChecks": [
-      "重大决策确认检查"
-    ],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T12:30:25.695Z",
-    "passed": false,
-    "failedChecks": [
-      "重大决策确认检查"
-    ],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T12:32:13.393Z",
-    "passed": true,
-    "failedChecks": [],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T12:46:59.830Z",
-    "passed": false,
-    "failedChecks": [
-      "任务文件 current/canonical 漂移检查",
-      "⚠️  Checklist 同步 (2/3)"
-    ],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
     "timestamp": "2026-06-09T12:48:14.268Z",
     "passed": true,
     "failedChecks": [],
@@ -185,6 +138,53 @@
     "passed": true,
     "failedChecks": [],
     "gitRef": "3a581387854b432af166647d985302cf29ab6e66",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-10T03:21:48.739Z",
+    "passed": false,
+    "failedChecks": [
+      "UI/UX Design Preview Gate"
+    ],
+    "gitRef": "be2b2740c4b11f52827cc8cb7433682492f38dc4",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-10T03:46:46.033Z",
+    "passed": false,
+    "failedChecks": [
+      "UI/UX Design Preview Gate"
+    ],
+    "gitRef": "be2b2740c4b11f52827cc8cb7433682492f38dc4",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-10T04:58:08.324Z",
+    "passed": false,
+    "failedChecks": [
+      "任务文件 current/canonical 漂移检查",
+      "spec.md 结构校验"
+    ],
+    "gitRef": "be2b2740c4b11f52827cc8cb7433682492f38dc4",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-10T04:59:55.110Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "be2b2740c4b11f52827cc8cb7433682492f38dc4",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-10T05:15:43.308Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "be2b2740c4b11f52827cc8cb7433682492f38dc4",
     "branch": "main",
     "worktreeDirty": true
   }

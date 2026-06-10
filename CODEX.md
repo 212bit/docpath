@@ -51,7 +51,7 @@ docpath compact
 ## Rules
 
 - Do not act from memory alone; read DocPath state first.
-- Clarify product/UI requests before implementation when the target user, entry point, data scope, or interaction model is ambiguous. This applies to pages, dashboards, workflow visualizations, and data views.
+- Clarify product/UI requests before implementation when the target user, entry point, data scope, or interaction model is ambiguous. This applies to pages, workflow visualizations, and data views.
 - For major changes, including technology stack, architecture/module boundaries, data model/API contract, UI information architecture/user journey, workflow/Agent behavior, permission or write-operation boundaries, task scope, existing capabilities, or long-term maintenance cost, run brainstorm/refine first. Write a Decision Brief in the task spec and wait for explicit user confirmation before promoting an implementation task or writing implementation code.
 - Keep changes scoped to the active task.
 - Run `docpath check` before marking work complete.

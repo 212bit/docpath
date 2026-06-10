@@ -1,7 +1,7 @@
 # /docpath-write-design — 写入 UI/UX 设计证据
 
 ## 用途
-为 UI/UX、dashboard、page、layout、navigation、visual、responsive、Figma、Stitch、v0、Framer 等界面任务写入当前任务的设计证据。
+为 UI/UX、page、layout、navigation、visual、responsive、Figma、Stitch、v0、Framer 等界面任务写入当前任务的设计证据。
 
 强约束流程：
 
