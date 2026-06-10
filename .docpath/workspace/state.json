@@ -2,9 +2,9 @@
   "level": 3,
   "task_id": "",
   "task_title": "",
-  "phase": "idle",
-  "gate": "none",
-  "current_step": "任务上下文已重置并回到 idle",
-  "started_at": "2026-06-10T07:16:05.755Z",
-  "updated_at": "2026-06-10T07:16:05.755Z"
+  "phase": "completed",
+  "gate": "review_pass",
+  "current_step": "知识归档完成",
+  "started_at": "2026-06-10T09:21:43.381Z",
+  "updated_at": "2026-06-10T09:21:43.380Z"
 }

@@ -20,12 +20,12 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--step <step>', '指定子任务编号 (e.g. S1)')
     .option('--status <status>', '收尾状态: done | skipped | blocked')
     .option('--dry-run', '仅预览，不更新状态')
-    .action(async (options: { cwd?: string; step?: string; status?: 'done' | 'skipped' | 'blocked'; 'dry-run'?: boolean }) => {
+    .action(async (options: { cwd?: string; step?: string; status?: 'done' | 'skipped' | 'blocked'; dryRun?: boolean; 'dry-run'?: boolean }) => {
       await goCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
         status: options.status,
-        dryRun: options['dry-run'],
+        dryRun: options.dryRun ?? options['dry-run'],
       });
     });
 

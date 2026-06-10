@@ -13110,3 +13110,68 @@ agent-step: S8
 - .docpath/tasks/T-20260609-ui-ux-ui-prompt-brief-design-approval-ga/spec.md
 - .docpath/tasks/T-20260609-ui-ux-ui-prompt-brief-design-approval-ga/plan.md
 
+## ADR-20260610-003 — review
+
+- task_id: unknown
+- created_at: 2026-06-10T09:21:38.187Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260610-004 — journal.archive
+
+- task_id: unknown
+- created_at: 2026-06-10T09:21:43.451Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 搭建 UI 构建基础设施
+开始执行: 实现 .docpath 数据层
+开始执行: 实现侧边栏 + 顶部导航布局
+开始执行: 实现项目总览仪表盘
+开始执行: 响应式完善与测试
+质量检查失败: TypeScript 编译, 测试, UI/UX Design Preview Gate, Plan/Breadcrumb 漂移检查
+质量检查失败: Plan/Breadcrumb 漂移检查
+质量检查通过 (8 项)
+
+### 决策
+
+归档任务 unknown
+
+### 影响
+
+任务进入归档状态；完成 5/5 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/current/spec.md
+- .docpath/tasks/current/plan.md
+
+---
