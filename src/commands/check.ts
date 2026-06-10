@@ -185,11 +185,38 @@ function errorOutput(err: unknown): string {
   return err instanceof Error ? err.message : '';
 }
 
-function runCheck(name: string, cmd: string, cwd: string, category?: CheckResult['category']): CheckResult {
+/** 默认检查超时；测试/构建等重命令通过 timeoutMs 单独放宽。 */
+const DEFAULT_CHECK_TIMEOUT_MS = 60000;
+
+/** execSync 因超时杀子进程时，错误带 killed=true / signal=SIGTERM；据此区分超时与真失败。 */
+function isTimeoutKill(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const record = err as { killed?: boolean; signal?: string };
+  return record.killed === true || record.signal === 'SIGTERM' || record.signal === 'SIGKILL';
+}
+
+function runCheck(
+  name: string,
+  cmd: string,
+  cwd: string,
+  category?: CheckResult['category'],
+  timeoutMs: number = DEFAULT_CHECK_TIMEOUT_MS,
+): CheckResult {
   try {
-    const output = execSync(cmd, { cwd, encoding: 'utf-8', timeout: 60000, stdio: ['pipe', 'pipe', 'pipe'] });
+    const output = execSync(cmd, { cwd, encoding: 'utf-8', timeout: timeoutMs, stdio: ['pipe', 'pipe', 'pipe'] });
     return { name, passed: true, output: output.slice(0, 500), category };
   } catch (err: unknown) {
+    // 超时被杀 ≠ 检查失败：给出明确归因，避免被截断的 `Command failed` 误导成代码错误。
+    if (isTimeoutKill(err)) {
+      const seconds = Math.round(timeoutMs / 1000);
+      return {
+        name,
+        passed: false,
+        output: `命令超时（>${seconds}s）被终止，并非检查失败。命令: ${cmd}\n` +
+          `若该命令本身耗时较长，请提高其超时上限或拆分检查。`,
+        category,
+      };
+    }
     return { name, passed: false, output: errorOutput(err).slice(0, 500), category };
   }
 }
@@ -574,11 +601,14 @@ async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeCommands
   if (!pkg?.scripts) return [];
 
   const results: CheckResult[] = [];
+  // 构建/测试是重命令：build 会重编译，test 还串行跑整个套件（本仓库单独跑就 ~33s）。
+  // 默认 60s 余量不足会被误杀成假阳性，这里单独放宽到 5 分钟。
+  const HEAVY_CHECK_TIMEOUT_MS = 300000;
   if (pkg.scripts.build) {
-    results.push(runCheck('构建', `${nodeCommands.runCmd} build 2>&1`, cwd, 'compile'));
+    results.push(runCheck('构建', `${nodeCommands.runCmd} build 2>&1`, cwd, 'compile', HEAVY_CHECK_TIMEOUT_MS));
   }
   if (!options.skipTests && pkg.scripts.test) {
-    results.push(runCheck('测试', `${nodeCommands.pkgRunner} test 2>&1`, cwd, 'test'));
+    results.push(runCheck('测试', `${nodeCommands.pkgRunner} test 2>&1`, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
   }
   if (!options.skipLint && pkg.scripts.lint) {
     results.push(runCheck('Lint', `${nodeCommands.runCmd} lint 2>&1`, cwd, 'lint'));

@@ -8,24 +8,33 @@
   },
   "files": [
     "dist/",
+    "dashboard-dist/",
     "templates/"
   ],
   "scripts": {
     "build": "pnpm run build:clean",
-    "build:clean": "tsup src/index.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/engine/backlog.ts src/governance/decisions.ts src/utils/pending-done.ts src/utils/doc-parser.ts src/utils/payload.ts src/utils/context-index.ts src/utils/deliverables.ts src/utils/roles.ts --format esm --clean --out-dir dist",
-    "build:test": "tsup src/index.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/engine/backlog.ts src/governance/decisions.ts src/utils/pending-done.ts src/utils/doc-parser.ts src/utils/payload.ts src/utils/context-index.ts src/utils/deliverables.ts src/utils/roles.ts --format esm --out-dir dist",
-    "dev": "tsup src/index.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/engine/backlog.ts src/governance/decisions.ts src/utils/pending-done.ts src/utils/doc-parser.ts src/utils/payload.ts src/utils/context-index.ts src/utils/deliverables.ts src/utils/roles.ts --format esm --watch --out-dir dist",
+    "build:clean": "tsup src/index.ts src/commands/dashboard.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/engine/backlog.ts src/governance/decisions.ts src/utils/pending-done.ts src/utils/doc-parser.ts src/utils/payload.ts src/utils/context-index.ts src/utils/deliverables.ts src/utils/roles.ts --format esm --clean --out-dir dist",
+    "build:dashboard": "vite build --config vite.dashboard.config.ts",
+    "build:test": "tsup src/index.ts src/commands/dashboard.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/engine/backlog.ts src/governance/decisions.ts src/utils/pending-done.ts src/utils/doc-parser.ts src/utils/payload.ts src/utils/context-index.ts src/utils/deliverables.ts src/utils/roles.ts --format esm --out-dir dist",
+    "dev": "tsup src/index.ts src/commands/dashboard.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/engine/backlog.ts src/governance/decisions.ts src/utils/pending-done.ts src/utils/doc-parser.ts src/utils/payload.ts src/utils/context-index.ts src/utils/deliverables.ts src/utils/roles.ts --format esm --watch --out-dir dist",
     "prepublishOnly": "pnpm build",
     "test": "pnpm run build:test && node --test --test-concurrency=1 tests/*.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@clack/prompts": "^0.10.0",
+    "@vitejs/plugin-react": "4.5.2",
     "cac": "^6.7.14",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-router-dom": "7.6.2",
+    "vite": "6.3.5",
     "yaml": "^2.7.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
+    "@types/react": "19.1.8",
+    "@types/react-dom": "19.1.6",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
   },

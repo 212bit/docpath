@@ -1,38 +1,5 @@
 [
   {
-    "timestamp": "2026-06-09T15:20:29.116Z",
-    "passed": false,
-    "failedChecks": [
-      "测试",
-      "重大决策确认检查",
-      "⚠️  Checklist 同步 (8/10)"
-    ],
-    "gitRef": "b4a2a1256615bf174a0708cc7b37ecd10d9927cf",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T15:22:20.425Z",
-    "passed": false,
-    "failedChecks": [
-      "测试",
-      "⚠️  Checklist 同步 (8/10)"
-    ],
-    "gitRef": "b4a2a1256615bf174a0708cc7b37ecd10d9927cf",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T15:24:02.979Z",
-    "passed": false,
-    "failedChecks": [
-      "⚠️  Checklist 同步 (8/10)"
-    ],
-    "gitRef": "b4a2a1256615bf174a0708cc7b37ecd10d9927cf",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
     "timestamp": "2026-06-09T15:25:28.337Z",
     "passed": true,
     "failedChecks": [],
@@ -185,6 +152,36 @@
     "passed": true,
     "failedChecks": [],
     "gitRef": "231372bafccd1030f5fd763f31026dee3fa35991",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-10T14:32:47.262Z",
+    "passed": false,
+    "failedChecks": [
+      "任务文件 current/canonical 漂移检查",
+      "UI/UX Design Preview Gate",
+      "⚠️  Checklist 同步 (5/6)"
+    ],
+    "gitRef": "726930d1c6a7b1262a73cf818d328267b2fd342f",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-10T14:34:42.580Z",
+    "passed": false,
+    "failedChecks": [
+      "⚠️  Checklist 同步 (5/6)"
+    ],
+    "gitRef": "726930d1c6a7b1262a73cf818d328267b2fd342f",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-10T14:35:53.732Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "726930d1c6a7b1262a73cf818d328267b2fd342f",
     "branch": "main",
     "worktreeDirty": true
   }

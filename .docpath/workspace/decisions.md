@@ -13175,3 +13175,76 @@ agent-step: S8
 - .docpath/tasks/current/plan.md
 
 ---
+## ADR-20260610-005 — review
+
+- task_id: T-20260610-dashboard-readonly-viewer
+- created_at: 2026-06-10T14:36:03.164Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 5 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260610-006 — journal.archive
+
+- task_id: T-20260610-dashboard-readonly-viewer
+- created_at: 2026-06-10T14:36:20.999Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 恢复前端栈与 dashboard 命令骨架
+agent-step: S1
+开始执行: 实现只读 JSON API 层
+agent-step: S2
+开始执行: 前端布局骨架（Sidebar + Header + 路由）
+agent-step: S3
+开始执行: 实现四个视图页面
+agent-step: S4
+开始执行: vite 构建 + 命令托管产物
+agent-step: S5
+开始执行: 门禁与归档
+质量检查失败: 任务文件 current/canonical 漂移检查, UI/UX Design Preview Gate, ⚠️  Checklist 同步 (5/6)
+质量检查失败: ⚠️  Checklist 同步 (5/6)
+agent-step: S6
+质量检查通过 (10 项)
+代码审查: 0 错误, 5 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260610-dashboard-readonly-viewer
+
+### 影响
+
+任务进入归档状态；完成 6/6 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260610-dashboard-readonly-viewer/spec.md
+- .docpath/tasks/T-20260610-dashboard-readonly-viewer/plan.md
+
+---
