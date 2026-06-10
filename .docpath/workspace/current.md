@@ -3,13 +3,13 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260609-dashboard-ui-refactor
-task_title: DocPath Dashboard/UI 整体重构
+task_id: T-20260609-ui-ux-ui-prompt-brief-design-approval-ga
+task_title: 为 UI/UX 任务增加 UI Prompt Brief、Design Approval Gate 与 Codex Skill
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-09T15:25:57.965Z
-updated_at: 2026-06-09T15:25:57.964Z
+started_at: 2026-06-10T01:55:10.306Z
+updated_at: 2026-06-10T01:55:10.306Z
 ```
 
 > 📖 规约: [spec.md](../tasks/current/spec.md)
@@ -21,8 +21,8 @@ updated_at: 2026-06-09T15:25:57.964Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-09T15:25:28.258Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260609-dashboard-ui-refactor] — 2026-06-09T15:25:35.665Z · 状态: done · 代码审查: 0 错误, 6 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 8 项 · 2026-06-10T01:54:28.103Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260609-ui-ux-ui-prompt-brief-design-approval-ga] — 2026-06-10T01:54:47.249Z · 状态: done · 代码审查: 0 错误, 8 警告, 2 提示
 
 ## 🔄 同步说明
 

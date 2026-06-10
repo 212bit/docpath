@@ -93,6 +93,8 @@
   display: grid;
   gap: 20px;
   max-width: 1440px;
+  min-width: 0;
+  overflow-x: hidden;
   margin: 0 auto;
   padding: 24px;
   animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -202,6 +204,7 @@
   font-family: inherit;
   font-size: 12px;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .react-copyable-text.mono code {
@@ -685,6 +688,7 @@
   display: grid;
   gap: 2px;
   min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 13px;
   font-weight: 800;
 }
@@ -993,6 +997,10 @@
   display: grid;
   justify-items: end;
   background: hsl(var(--dp-h-bg) / 0.68);
+}
+
+.react-backlog-drawer[hidden] {
+  display: none;
 }
 
 .react-backlog-drawer > div {
@@ -1969,7 +1977,7 @@
 
   #overview.react-core-section {
     display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.55fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
     gap: 16px;
   }
@@ -2198,6 +2206,7 @@
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
+    overflow-wrap: anywhere;
     white-space: nowrap;
   }
 
@@ -2225,7 +2234,15 @@
   .react-subheader-command code {
     min-width: 0;
     overflow-wrap: anywhere;
+    word-break: break-word;
     white-space: normal;
+  }
+
+  .react-current-task-card h3,
+  .react-recommendation-card code,
+  .react-panel-header h2 {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .react-search,

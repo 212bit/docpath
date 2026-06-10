@@ -744,6 +744,165 @@ async function checkPredevAnalysisQuality(docpathDir: string, taskId: string | u
   }];
 }
 
+function isUiUxTaskText(text: string): boolean {
+  return /UI\/UX|UX|用户界面|界面重构|页面重构|页面|dashboard|layout|navigation|visual|视觉设计|设计预览|视觉验收|Design Preview|Visual Acceptance|responsive UI|响应式界面|Figma|Stitch|v0|Framer/i.test(text);
+}
+
+function isUiUxWorkflowOnlyTask(text: string): boolean {
+  return /Codex Skill|Agent 指引|check gate|Approval Gate|Design Approval Gate|门禁|模板|流程|workflow|write-design|docpath check/i.test(text)
+    && /不包含[\s\S]{0,240}(实际重构|Dashboard UI|产品 UI|页面实现)|不做[\s\S]{0,240}(实际重构|Dashboard UI|产品 UI|页面实现)/i.test(text);
+}
+
+function hasUiImplementationIntent(text: string): boolean {
+  return /Implementation|实现阶段|进入实现|写产品 UI 代码|产品 UI 代码|UI 代码|改 UI|页面实现|布局实现|组件实现|responsive implementation|视觉实现/i.test(text);
+}
+
+function productUiChangedFiles(cwd: string): string[] {
+  try {
+    const output = execSync('git status --porcelain', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+    return output.split('\n')
+      .map((line) => line.trim().slice(3).trim())
+      .filter(Boolean)
+      .filter((file) => {
+        if (/^(templates|\.codex|\.docpath)\//.test(file)) return false;
+        return /^src\/dashboard-ui\//.test(file) || /\.(tsx|jsx|css|scss)$/.test(file);
+      });
+  } catch {
+    return [];
+  }
+}
+
+function approvalState(content: string): string {
+  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  const source = frontmatterMatch?.[1] || content;
+  const nested = source.match(/approval:\s*\n(?:[ \t]+.+\n)*?[ \t]+state:\s*([A-Za-z_-]+)/i);
+  if (nested) return nested[1].toLowerCase();
+  const direct = source.match(/(?:^|\n)(?:status|state):\s*([A-Za-z_-]+)/i);
+  if (direct) return direct[1].toLowerCase();
+  const markdown = content.match(/(?:^|\n)-\s*State:\s*([A-Za-z_-]+)/i);
+  return markdown ? markdown[1].toLowerCase() : 'missing';
+}
+
+async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<CheckResult[]> {
+  const workflowState = await readCurrentState(cwd);
+  const taskId = workflowState?.task_id;
+  const title = `${workflowState?.task_title || ''} ${taskId || ''}`;
+
+  const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
+  const analysisPath = join(docpathDir, 'tasks', 'current', 'analysis.md');
+  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
+  const haystack = [title];
+  for (const file of [specPath, analysisPath, planPath]) {
+    if (existsSync(file)) {
+      try { haystack.push(await readFile(file, 'utf-8')); } catch { /* ignore */ }
+    }
+  }
+
+  const text = haystack.join('\n');
+  const isUiUxTask = isUiUxTaskText(text);
+  if (!isUiUxTask) return [];
+  if (isUiUxWorkflowOnlyTask(text)) return [];
+
+  const uiBriefPath = join(docpathDir, 'tasks', 'current', 'ui-brief.md');
+  const handoffPath = join(docpathDir, 'tasks', 'current', 'external-design-handoff.md');
+  const approvalPath = join(docpathDir, 'tasks', 'current', 'design-approval.md');
+  const previewPath = join(docpathDir, 'tasks', 'current', 'design-preview.md');
+  const acceptancePath = join(docpathDir, 'tasks', 'current', 'visual-acceptance.md');
+  const missing: string[] = [];
+  const weak: string[] = [];
+
+  if (!existsSync(previewPath)) missing.push('design-preview.md');
+  else {
+    const preview = (await readFile(previewPath, 'utf-8')).trim();
+    if (preview.length < 500 || !/信息架构|布局|状态|交互|移动|响应式|参考|不做|边界|snapshot|HTML/i.test(preview)) {
+      weak.push('design-preview.md 缺少足够的视觉意图、布局/状态/响应式/边界描述');
+    }
+  }
+
+  if (!existsSync(acceptancePath)) missing.push('visual-acceptance.md');
+  else {
+    const acceptance = (await readFile(acceptancePath, 'utf-8')).trim();
+    if (acceptance.length < 300 || !/验收|必须|不得|snapshot|HTML|截图|review|对比|可读|导航/i.test(acceptance)) {
+      weak.push('visual-acceptance.md 缺少可执行的视觉验收标准');
+    }
+  }
+
+  const results: CheckResult[] = [];
+  const previewGatePassed = missing.length === 0 && weak.length === 0;
+  results.push({
+    name: 'UI/UX Design Preview Gate',
+    passed: previewGatePassed,
+    output: previewGatePassed
+      ? 'UI/UX 任务已提供 design-preview.md 与 visual-acceptance.md，视觉意图和验收标准可追踪'
+      : [
+          missing.length ? `缺少文件: ${missing.join(', ')}` : '',
+          ...weak,
+          '修复建议:',
+          '  - 在写 UI 代码前运行: docpath write-design --kind preview --stdin',
+          '  - 写入布局、信息架构、核心状态、响应式边界、参考/反参考与 HTML snapshot 要求',
+          '  - 再运行: docpath write-design --kind acceptance --stdin',
+          '  - 写入可执行的视觉验收项、禁止项、review 方式与 snapshot/screenshot 要求',
+        ].filter(Boolean).join('\n'),
+    category: 'analysis',
+  });
+
+  const changedUiFiles = productUiChangedFiles(cwd);
+  const approvalRequired = !isUiUxWorkflowOnlyTask(text) && (hasUiImplementationIntent(text) || changedUiFiles.length > 0);
+  if (!approvalRequired) return results;
+
+  const approvalMissing: string[] = [];
+  const approvalWeak: string[] = [];
+  if (!existsSync(uiBriefPath)) approvalMissing.push('ui-brief.md');
+  else {
+    const brief = (await readFile(uiBriefPath, 'utf-8')).trim();
+    for (const signal of ['Product Context', 'Design North Star', 'Visual Direction', 'Anti-goals', 'Design Tokens', 'Shared Components']) {
+      if (!brief.includes(signal)) approvalWeak.push(`ui-brief.md 缺少 ${signal}`);
+    }
+  }
+
+  if (!existsSync(handoffPath)) approvalMissing.push('external-design-handoff.md');
+  else {
+    const handoff = (await readFile(handoffPath, 'utf-8')).trim();
+    for (const signal of ['Stitch', 'Figma', 'v0', 'Framer', 'prompt', 'output', 'selected', 'rejected', 'constraints']) {
+      if (new RegExp(signal, 'i').test(handoff)) continue;
+      approvalWeak.push(`external-design-handoff.md 缺少 ${signal}`);
+    }
+  }
+
+  if (!existsSync(approvalPath)) approvalMissing.push('design-approval.md');
+  else {
+    const approval = (await readFile(approvalPath, 'utf-8')).trim();
+    const state = approvalState(approval);
+    if (state !== 'approved') approvalWeak.push(`design-approval.md 状态不是 approved（当前: ${state}）`);
+    if (!/approved[_ -]?at|批准时间|Approved at/i.test(approval)) approvalWeak.push('design-approval.md 缺少批准时间');
+    if (!/source|批准来源|Approval source/i.test(approval)) approvalWeak.push('design-approval.md 缺少批准来源');
+    if (!/forbidden|禁止方向|Forbidden Directions/i.test(approval)) approvalWeak.push('design-approval.md 缺少禁止方向');
+  }
+
+  const approvalPassed = approvalMissing.length === 0 && approvalWeak.length === 0 && previewGatePassed;
+  results.push({
+    name: 'UI/UX Design Approval Gate',
+    passed: approvalPassed,
+    output: approvalPassed
+      ? 'UI/UX 实现已具备 ui-brief、external-design-handoff、design-preview、visual-acceptance 与 approved design-approval'
+      : [
+          changedUiFiles.length ? `检测到产品 UI 改动: ${changedUiFiles.slice(0, 8).join(', ')}${changedUiFiles.length > 8 ? ` ... +${changedUiFiles.length - 8}` : ''}` : '',
+          hasUiImplementationIntent(text) ? '检测到计划或规约包含 UI implementation / 实现意图' : '',
+          approvalMissing.length ? `缺少文件: ${approvalMissing.join(', ')}` : '',
+          ...approvalWeak,
+          '修复建议:',
+          '  - 先运行: docpath write-design --kind brief --stdin',
+          '  - 记录外部设计工具交接: docpath write-design --kind handoff --stdin',
+          '  - 确认具体视觉方案后运行: docpath write-design --kind approval --stdin',
+          '  - design-approval.md frontmatter 必须包含 approval.state: approved',
+          '  - 用户同意采用流程不等于批准具体设计方案。',
+        ].filter(Boolean).join('\n'),
+    category: 'analysis',
+  });
+
+  return results;
+}
+
 async function checkPlanBreadcrumbDrift(cwd: string): Promise<CheckResult[]> {
   const drift = await detectPlanBreadcrumbDrift(cwd);
   if (drift.planDoneWithoutBreadcrumb.length === 0 && drift.breadcrumbDoneWithoutPlan.length === 0) return [];
@@ -792,6 +951,7 @@ async function runTaskDocumentChecks(cwd: string, docpathDir: string, options: C
   results.push(...await checkTaskFileDrift(cwd, docpathDir, options));
   const { results: documentResults, progress } = await validateTaskDocuments(cwd, docpathDir);
   results.push(...documentResults);
+  results.push(...await checkUiUxDesignGate(cwd, docpathDir));
   results.push(...await checkCurrentChecklist(cwd, docpathDir, progress));
   results.push(...await checkPlanBreadcrumbDrift(cwd));
   results.push(...await checkDeliverablesIndex(cwd));

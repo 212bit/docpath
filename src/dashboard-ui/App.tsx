@@ -1,5 +1,4 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
-import * as Tabs from '@radix-ui/react-tabs';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import {
   AlertTriangle,
@@ -67,7 +66,7 @@ function CopyableText({ value, label, mono = true }: { value: string; label?: st
 }
 
 function EmptyStateCard({ state }: { state: EmptyStateModel }) {
-  return <article className="react-empty-state" data-empty-state={state.id} data-search-item data-search-text={`${state.title} ${state.impact} ${state.command}`}>
+  return <article className="react-empty-state" data-state-notice={state.id} data-empty-state={state.id} data-search-item data-search-text={`${state.title} ${state.impact} ${state.command}`}>
     <div>
       <p className="react-eyebrow">State Notice</p>
       <h3>{state.title}</h3>
@@ -1241,20 +1240,13 @@ export function DashboardApp({ data }: DashboardAppProps) {
     };
   }, []);
 
-  const handleTabChange = (val: string) => {
-    setActiveView(val);
-    if (typeof window !== 'undefined') {
-      window.location.hash = val;
-    }
-  };
-
-  return <div className="react-dashboard" data-react-dashboard="agent-core">
+  return <div className="react-dashboard" data-react-dashboard="agent-core" data-design-preview="dashboard-ui-v2" data-visual-acceptance="VA-1 VA-2 VA-3 VA-4 VA-5 VA-6 VA-7 VA-8">
     <LiveFieldAnchors data={data} />
     <LoadingSkeletonTemplate active={loading} />
     <CopyToast message={copyToast} />
     <Shell data={data} />
     <SearchStrip />
-    <nav className="react-view-nav react-compat-nav" aria-label="工作台视图">
+    <nav className="react-view-nav react-compat-nav" aria-label="工作台视图" data-compatibility-navigation="legacy-view-nav" hidden aria-hidden="true">
       {data.workspace.navigation.map((view) => {
         const core = compatibilityViews.find((item) => item.id === view.id);
         const Icon = core?.icon || CheckCircle2;
@@ -1262,17 +1254,17 @@ export function DashboardApp({ data }: DashboardAppProps) {
       })}
       <a href="#projects" data-view-link="projects"><FolderKanban size={16} aria-hidden="true" />Projects</a>
     </nav>
-    <Tabs.Root value={activeView} onValueChange={handleTabChange} className="react-tabs react-compat-tabs">
-      <Tabs.List className="react-tab-list" aria-label="Agent 工作台核心视图">
-        {compatibilityViews.map((view) => <Tabs.Trigger key={view.id} value={view.id}>{view.label}</Tabs.Trigger>)}
-      </Tabs.List>
-    </Tabs.Root>
+    <div className="react-tabs react-compat-tabs" data-compatibility-navigation="legacy-tabs" hidden aria-hidden="true">
+      <div className="react-tab-list" role="tablist" aria-label="Agent 工作台核心视图">
+        {compatibilityViews.map((view) => <a key={view.id} href={projectViewHref(view.id, data.selected_project.project?.root || data.project.root)} role="tab">{view.label}</a>)}
+      </div>
+    </div>
     <div className="react-workbench-shell">
       <DashboardSidebar data={data} activeView={activeView} />
       <main className="react-workbench-content">
         <ProjectSubHeader data={data} activeView={activeView} />
         <div id="projects" data-view="projects" className="react-core-section view-section"><ProjectsDirectory data={data} /></div>
-        <div id="overview" data-view="overview" className="react-core-section view-section"><ProjectWorkbench data={data} onSwitchProject={() => setLoading(true)} /><OverviewPanel data={data} /></div>
+        <div id="overview" data-view="overview" className="react-core-section view-section"><OverviewPanel data={data} /><ProjectWorkbench data={data} onSwitchProject={() => setLoading(true)} /></div>
         <div id="map" data-view="map" className="react-core-section view-section"><MapPanel data={data} /></div>
         <div id="session" data-view="session" className="react-core-section view-section"><SessionPanel data={data} /></div>
         <div id="readiness" data-view="readiness" className="react-core-section view-section"><ReadinessPanel data={data} /></div>

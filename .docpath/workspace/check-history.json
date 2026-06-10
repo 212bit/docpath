@@ -1,87 +1,5 @@
 [
   {
-    "timestamp": "2026-06-09T10:19:08.035Z",
-    "passed": false,
-    "failedChecks": [
-      "重大决策确认检查",
-      "Plan/Breadcrumb 漂移检查"
-    ],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T10:21:35.811Z",
-    "passed": false,
-    "failedChecks": [
-      "任务文件 current/canonical 漂移检查",
-      "⚠️  Checklist 同步 (0/3)",
-      "Plan/Breadcrumb 漂移检查"
-    ],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T10:23:07.796Z",
-    "passed": false,
-    "failedChecks": [
-      "⚠️  Checklist 同步 (0/3)",
-      "Plan/Breadcrumb 漂移检查"
-    ],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T10:24:53.905Z",
-    "passed": false,
-    "failedChecks": [
-      "子任务完成度 (2/3)",
-      "Plan/Breadcrumb 漂移检查"
-    ],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T10:26:31.387Z",
-    "passed": true,
-    "failedChecks": [],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T10:27:44.579Z",
-    "passed": false,
-    "failedChecks": [
-      "Plan/Breadcrumb 漂移检查"
-    ],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T10:29:11.574Z",
-    "passed": true,
-    "failedChecks": [],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-09T12:14:04.721Z",
-    "passed": false,
-    "failedChecks": [
-      "重大决策确认检查",
-      "⚠️  Checklist 同步 (2/3)"
-    ],
-    "gitRef": "d8f47f98bfac10a4fbbb0742a554ebd7993233d8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
     "timestamp": "2026-06-09T12:15:28.629Z",
     "passed": true,
     "failedChecks": [],
@@ -197,6 +115,76 @@
     "passed": true,
     "failedChecks": [],
     "gitRef": "b4a2a1256615bf174a0708cc7b37ecd10d9927cf",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-09T16:15:15.903Z",
+    "passed": false,
+    "failedChecks": [
+      "重大决策确认检查"
+    ],
+    "gitRef": "3a581387854b432af166647d985302cf29ab6e66",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-09T16:16:47.418Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "3a581387854b432af166647d985302cf29ab6e66",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-09T16:19:21.792Z",
+    "passed": false,
+    "failedChecks": [
+      "测试"
+    ],
+    "gitRef": "3a581387854b432af166647d985302cf29ab6e66",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-09T16:23:42.970Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "3a581387854b432af166647d985302cf29ab6e66",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-09T16:24:45.245Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "3a581387854b432af166647d985302cf29ab6e66",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-09T17:02:29.240Z",
+    "passed": false,
+    "failedChecks": [
+      "⚠️  Checklist 同步 (8/9)"
+    ],
+    "gitRef": "3a581387854b432af166647d985302cf29ab6e66",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-09T17:02:52.449Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "3a581387854b432af166647d985302cf29ab6e66",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-10T01:54:28.184Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "3a581387854b432af166647d985302cf29ab6e66",
     "branch": "main",
     "worktreeDirty": true
   }

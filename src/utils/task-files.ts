@@ -135,7 +135,7 @@ export async function clearCurrentTaskAlias(docpathDir: string): Promise<void> {
   await rm(currentTaskDir(docpathDir), { recursive: true, force: true });
 }
 
-export type TaskFileAlias = 'spec.md' | 'plan.md' | 'analysis.md' | 'analysis/requirements.md' | 'analysis/product.md' | 'analysis/ui.md' | 'analysis/technical.md' | 'analysis/risks.md' | 'analysis/open-questions.md';
+export type TaskFileAlias = 'spec.md' | 'plan.md' | 'design-preview.md' | 'visual-acceptance.md' | 'analysis.md' | 'analysis/requirements.md' | 'analysis/product.md' | 'analysis/ui.md' | 'analysis/technical.md' | 'analysis/risks.md' | 'analysis/open-questions.md';
 
 export const ANALYSIS_SECTIONS = ['requirements', 'product', 'ui', 'technical', 'risks', 'open-questions'] as const;
 export type AnalysisSection = typeof ANALYSIS_SECTIONS[number];

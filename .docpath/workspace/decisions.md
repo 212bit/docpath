@@ -16736,3 +16736,224 @@ agent-step: S10
 - .docpath/tasks/T-20260609-dashboard-ui-refactor/plan.md
 
 ---
+## ADR-20260609-044 — review
+
+- task_id: T-20260609-ui-ux-design-preview-gate-visual-accepta
+- created_at: 2026-06-09T16:24:45.280Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-045 — journal.archive
+
+- task_id: T-20260609-ui-ux-design-preview-gate-visual-accepta
+- created_at: 2026-06-09T16:24:45.406Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理现有 UI/UX 流程触点与门禁契约
+start S1: inspect UI/UX gate insertion points
+质量检查失败: 重大决策确认检查
+质量检查通过 (8 项)
+梳理完成：UI/UX 任务触点为 write-design 命令、check 文档门禁、spec Decision Brief；MVP 不强制 screenshot
+已新增 write-design CLI，可写入 design-preview.md 与 visual-acceptance.md
+已在 docpath check 中加入 UI/UX Design Preview Gate，缺失或过弱会失败
+pnpm build 与 docpath check --skip-tests --skip-lint 已通过
+质量检查失败: 测试
+质量检查通过 (9 项)
+质量检查通过 (10 项)
+代码审查: 0 错误, 1 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-ui-ux-design-preview-gate-visual-accepta
+
+### 影响
+
+任务进入归档状态；完成 4/4 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-ui-ux-design-preview-gate-visual-accepta/spec.md
+- .docpath/tasks/T-20260609-ui-ux-design-preview-gate-visual-accepta/plan.md
+
+---
+## ADR-20260609-046 — review
+
+- task_id: T-20260609-docpath-dashboard-ui-design-preview-visu
+- created_at: 2026-06-09T17:03:00.226Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 8 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260609-047 — journal.archive
+
+- task_id: T-20260609-docpath-dashboard-ui-design-preview-visu
+- created_at: 2026-06-09T17:03:16.463Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 完成 Design Preview 证据门槛
+agent-step: S1
+开始执行: 完成 Visual Acceptance 验收矩阵
+agent-step: S2
+开始执行: 建立二次重构测试基线与设计验收钩子
+agent-step: S3
+开始执行: 实现单一 Primary Navigation 与兼容路径降级
+agent-step: S4
+开始执行: 二次整理 Project Overview P0 与 State Notice
+agent-step: S5
+开始执行: 收敛视觉系统、响应式和可访问性
+agent-step: S6
+开始执行: 更新 dashboard HTML/结构回归测试
+agent-step: S7
+开始执行: 运行 Playwright 视觉验收并记录证据
+agent-step: S8
+开始执行: 质量门禁、审查与归档
+质量检查失败: ⚠️  Checklist 同步 (8/9)
+agent-step: S9
+质量检查通过 (9 项)
+代码审查: 0 错误, 8 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260609-docpath-dashboard-ui-design-preview-visu
+
+### 影响
+
+任务进入归档状态；完成 9/9 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-docpath-dashboard-ui-design-preview-visu/spec.md
+- .docpath/tasks/T-20260609-docpath-dashboard-ui-design-preview-visu/plan.md
+
+---
+## ADR-20260610-001 — review
+
+- task_id: T-20260609-ui-ux-ui-prompt-brief-design-approval-ga
+- created_at: 2026-06-10T01:54:47.247Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 8 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260610-002 — journal.archive
+
+- task_id: T-20260609-ui-ux-ui-prompt-brief-design-approval-ga
+- created_at: 2026-06-10T01:55:10.397Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 盘点现有 UI/UX gate、模板与 skill 入口
+agent-step: S1
+开始执行: 新增 UI Prompt Brief 与 Page Brief 模板
+agent-step: S2
+开始执行: 新增 External Design Handoff 与 Design Approval 模板
+agent-step: S3
+开始执行: 更新 Codex Skill / Agent UI/UX 指引
+agent-step: S4
+开始执行: 实现 Design Approval Gate 检查逻辑
+agent-step: S5
+开始执行: 更新文档、规则与任务流程提示
+agent-step: S6
+agent-step: S7
+开始执行: 运行质量门禁、审查与归档
+agent-step: S8
+质量检查通过 (8 项)
+代码审查: 0 错误, 8 警告, 2 提示
+
+### 决策
+
+归档任务 T-20260609-ui-ux-ui-prompt-brief-design-approval-ga
+
+### 影响
+
+任务进入归档状态；完成 8/8 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260609-ui-ux-ui-prompt-brief-design-approval-ga/spec.md
+- .docpath/tasks/T-20260609-ui-ux-ui-prompt-brief-design-approval-ga/plan.md
+
+---

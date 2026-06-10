@@ -352,4 +352,26 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('write-design writes brief, handoff, approval, preview and acceptance artifacts', () => {
+    const cwd = mkWorkspace({ phase: 'executing', gate: 'none' });
+    const artifacts = [
+      ['brief', 'ui-brief.md', '# UI Prompt Brief\n\n## Product Context\n'],
+      ['handoff', 'external-design-handoff.md', '# External Design Handoff\n\n## Tool Inputs\n'],
+      ['approval', 'design-approval.md', '---\napproval:\n  state: approved\n---\n# Design Approval\n'],
+      ['preview', 'design-preview.md', '# Design Preview\n\n布局 状态 响应式 snapshot HTML '.repeat(20)],
+      ['acceptance', 'visual-acceptance.md', '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(10)],
+    ];
+
+    for (const [kind, file, content] of artifacts) {
+      const output = runWithInput(`write-design --cwd ${cwd} --kind ${kind} --stdin`, cwd, content);
+      assert.match(output, new RegExp(`${file} 已写入`));
+      const canonical = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', file), 'utf-8');
+      const current = readFileSync(join(cwd, '.docpath', 'tasks', 'current', file), 'utf-8');
+      assert.match(canonical, new RegExp(content.trim().split('\n')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      assert.equal(current, canonical);
+    }
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
 });

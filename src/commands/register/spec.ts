@@ -6,6 +6,7 @@ import { refineCommand } from '../refine.js';
 import { writeAnalysisCommand } from '../write-analysis.js';
 import { writePlanCommand } from '../write-plan.js';
 import { writeSpecCommand } from '../write-spec.js';
+import { writeDesignCommand } from '../write-design.js';
 
 export function registerSpecCommands(cli: CAC): void {
   registerBrainstormCommand(cli, 'brainstorm', '苏格拉底式需求拷问 — 从模糊需求到结构化 spec');
@@ -14,6 +15,7 @@ export function registerSpecCommands(cli: CAC): void {
   registerRefineCommand(cli);
   registerWriteAnalysisCommand(cli);
   registerWriteSpecCommand(cli);
+  registerWriteDesignCommand(cli);
   registerPlanCommand(cli);
   registerWritePlanCommand(cli);
 }
@@ -101,6 +103,22 @@ function registerWriteSpecCommand(cli: CAC): void {
     .action(async (options: { cwd?: string; content?: string; stdin?: boolean; section?: string }) => {
       await writeSpecCommand({
         cwd: options.cwd || process.cwd(),
+        content: options.content,
+        stdin: options.stdin,
+      });
+    });
+}
+
+function registerWriteDesignCommand(cli: CAC): void {
+  cli.command('write-design', '写入 UI/UX brief、handoff、approval、设计预览或视觉验收文档')
+    .option('--cwd <path>', '项目目录')
+    .option('--kind <kind>', '文档类型: brief/handoff/preview/approval/acceptance（默认 preview）')
+    .option('--content <content>', '设计文档内容（Markdown）')
+    .option('--stdin', '从 stdin 读取内容')
+    .action(async (options: { cwd?: string; kind?: string; content?: string; stdin?: boolean }) => {
+      await writeDesignCommand({
+        cwd: options.cwd || process.cwd(),
+        kind: options.kind,
         content: options.content,
         stdin: options.stdin,
       });

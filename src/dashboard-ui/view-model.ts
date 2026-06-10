@@ -86,6 +86,22 @@ export function buildDashboardEmptyStates(data: DashboardData): EmptyStateModel[
       command: 'docpath projects',
     });
   }
+  if (!data.changes.available) {
+    states.push({
+      id: 'changes-unavailable',
+      title: '变更收口不可用',
+      impact: data.changes.error || '当前目录无法读取 git changes，提交准备状态只能展示保守 fallback。',
+      command: 'docpath changes',
+    });
+  }
+  if (data.handoff.progress.blocked > 0) {
+    states.push({
+      id: 'handoff-blocked',
+      title: '交接准备存在阻塞',
+      impact: `${data.handoff.progress.blocked} 项交接证据或步骤仍未完成，恢复现场可能不完整。`,
+      command: 'docpath agent handoff',
+    });
+  }
   return states;
 }
 

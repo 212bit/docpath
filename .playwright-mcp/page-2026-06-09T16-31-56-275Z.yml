@@ -1,0 +1,552 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - paragraph [ref=e7]: 本地只读 · Agent 工作台
+          - heading "DocPath 工作台" [level=1] [ref=e8]
+          - paragraph [ref=e9]: 核心工作台视图已全部重写至纯 React SPA 架构。
+        - generic "工作台控制" [ref=e10]:
+          - searchbox "Command Palette" [ref=e12]
+          - button "刷新只读数据" [ref=e13] [cursor=pointer]:
+            - img [ref=e14]
+            - text: 刷新只读数据
+          - generic [ref=e19]: 只读数据 · 当前视图 overview
+      - generic [ref=e20]:
+        - img [ref=e21]
+        - searchbox "只读过滤工作台内容" [ref=e24]
+        - button "清除" [ref=e25] [cursor=pointer]
+        - generic [ref=e26]: 显示全部 594 项 项匹配
+      - navigation "工作台视图" [ref=e27]:
+        - link "Overview" [ref=e28] [cursor=pointer]:
+          - /url: "#overview"
+          - img [ref=e29]
+          - text: Overview
+        - link "Map" [ref=e32] [cursor=pointer]:
+          - /url: "#map"
+          - img [ref=e33]
+          - text: Map
+        - link "Session" [ref=e36] [cursor=pointer]:
+          - /url: "#session"
+          - img [ref=e37]
+          - text: Session
+        - link "Readiness" [ref=e41] [cursor=pointer]:
+          - /url: "#readiness"
+          - img [ref=e42]
+          - text: Readiness
+        - link "Audit" [ref=e45] [cursor=pointer]:
+          - /url: "#audit"
+          - img [ref=e46]
+          - text: Audit
+        - link "Docs Index" [ref=e49] [cursor=pointer]:
+          - /url: "#docs-index"
+          - img [ref=e50]
+          - text: Docs Index
+        - link "Settings" [ref=e53] [cursor=pointer]:
+          - /url: "#settings"
+          - img [ref=e54]
+          - text: Settings
+        - link "Activity" [ref=e57] [cursor=pointer]:
+          - /url: "#activity"
+          - img [ref=e58]
+          - text: Activity
+        - link "Team" [ref=e60] [cursor=pointer]:
+          - /url: "#team"
+          - img [ref=e61]
+          - text: Team
+        - link "Actions" [ref=e66] [cursor=pointer]:
+          - /url: "#actions"
+          - img [ref=e67]
+          - text: Actions
+        - link "Project" [ref=e70] [cursor=pointer]:
+          - /url: "#project"
+          - img [ref=e71]
+          - text: Project
+        - link "Task" [ref=e73] [cursor=pointer]:
+          - /url: "#task"
+          - img [ref=e74]
+          - text: Task
+        - link "Changes" [ref=e77] [cursor=pointer]:
+          - /url: "#changes"
+          - img [ref=e78]
+          - text: Changes
+        - link "Handoff" [ref=e82] [cursor=pointer]:
+          - /url: "#handoff"
+          - img [ref=e83]
+          - text: Handoff
+        - link "Documents" [ref=e86] [cursor=pointer]:
+          - /url: "#documents"
+          - img [ref=e87]
+          - text: Documents
+        - link "Health" [ref=e90] [cursor=pointer]:
+          - /url: "#health"
+          - img [ref=e91]
+          - text: Health
+        - link "Workflow" [ref=e94] [cursor=pointer]:
+          - /url: "#workflow"
+          - img [ref=e95]
+          - text: Workflow
+        - link "Evidence" [ref=e99] [cursor=pointer]:
+          - /url: "#evidence"
+          - img [ref=e100]
+          - text: Evidence
+        - link "Backlog" [ref=e103] [cursor=pointer]:
+          - /url: "#backlog"
+          - img [ref=e104]
+          - text: Backlog
+        - link "Projects" [ref=e106] [cursor=pointer]:
+          - /url: "#projects"
+          - img [ref=e107]
+          - text: Projects
+      - tablist "Agent 工作台核心视图" [ref=e110]:
+        - tab "工作台总览" [ref=e111] [cursor=pointer]
+        - tab "工作台地图" [ref=e112] [cursor=pointer]
+        - tab "会话恢复" [ref=e113] [cursor=pointer]
+        - tab "收口审计" [ref=e114] [cursor=pointer]
+        - tab "完成度审计" [ref=e115] [cursor=pointer]
+        - tab "文档索引" [ref=e116] [cursor=pointer]
+        - tab "系统配置" [ref=e117] [cursor=pointer]
+        - tab "最近活动" [ref=e118] [cursor=pointer]
+        - tab "团队驾驶舱" [ref=e119] [cursor=pointer]
+        - tab "行动中心" [ref=e120] [cursor=pointer]
+        - tab "项目详情" [ref=e121] [cursor=pointer]
+        - tab "任务详情" [ref=e122] [cursor=pointer]
+        - tab "代码变更" [ref=e123] [cursor=pointer]
+        - tab "交接审计" [ref=e124] [cursor=pointer]
+        - tab "工作流文档" [ref=e125] [cursor=pointer]
+        - tab "健康检查" [ref=e126] [cursor=pointer]
+        - tab "FSM 流程" [ref=e127] [cursor=pointer]
+        - tab "证据" [ref=e128] [cursor=pointer]
+        - tab "工作待办" [ref=e129] [cursor=pointer]
+      - generic [ref=e130]:
+        - complementary "Left Sidebar Navigation" [ref=e131]:
+          - generic [ref=e132]:
+            - link "Back to Projects" [ref=e133] [cursor=pointer]:
+              - /url: "#projects"
+              - img [ref=e134]
+              - text: Back to Projects
+            - generic [ref=e136]:
+              - paragraph [ref=e137]: Workbench Focus
+              - strong [ref=e138]: docpath
+              - generic [ref=e139]: drafting / none · warning
+          - generic [ref=e140]:
+            - paragraph [ref=e141]: Overall Management
+            - strong [ref=e142]: Global
+            - generic [ref=e143]: 3 registered projects · warning
+          - navigation "Global Level Sidebar Menu" [ref=e144]:
+            - link "Projects 项目空间" [ref=e145] [cursor=pointer]:
+              - /url: "#projects"
+              - img [ref=e146]
+              - generic [ref=e148]:
+                - text: Projects
+                - generic [ref=e149]: 项目空间
+            - link "Teams 团队驾驶舱" [ref=e150] [cursor=pointer]:
+              - /url: "#team"
+              - img [ref=e151]
+              - generic [ref=e156]:
+                - text: Teams
+                - generic [ref=e157]: 团队驾驶舱
+            - link "Settings 全局配置" [ref=e158] [cursor=pointer]:
+              - /url: "#settings"
+              - img [ref=e159]
+              - generic [ref=e162]:
+                - text: Settings
+                - generic [ref=e163]: 全局配置
+          - navigation "Project Level Sidebar Menu" [ref=e164]:
+            - link "Overview 总览" [ref=e165] [cursor=pointer]:
+              - /url: "#overview?root=%2FUsers%2Fmac%2Fproject%2Fdocpath"
+              - img [ref=e166]
+              - generic [ref=e169]:
+                - text: Overview
+                - generic [ref=e170]: 总览
+            - link "Workflow FSM 流程" [ref=e171] [cursor=pointer]:
+              - /url: "#workflow?root=%2FUsers%2Fmac%2Fproject%2Fdocpath"
+              - img [ref=e172]
+              - generic [ref=e176]:
+                - text: Workflow
+                - generic [ref=e177]: FSM 流程
+            - link "Backlog 待办看板" [ref=e178] [cursor=pointer]:
+              - /url: "#backlog?root=%2FUsers%2Fmac%2Fproject%2Fdocpath"
+              - img [ref=e179]
+              - generic [ref=e181]:
+                - text: Backlog
+                - generic [ref=e182]: 待办看板
+            - link "Changes 代码变更" [ref=e183] [cursor=pointer]:
+              - /url: "#changes?root=%2FUsers%2Fmac%2Fproject%2Fdocpath"
+              - img [ref=e184]
+              - generic [ref=e188]:
+                - text: Changes
+                - generic [ref=e189]: 代码变更
+            - link "Handoff 任务交接" [ref=e190] [cursor=pointer]:
+              - /url: "#handoff?root=%2FUsers%2Fmac%2Fproject%2Fdocpath"
+              - img [ref=e191]
+              - generic [ref=e194]:
+                - text: Handoff
+                - generic [ref=e195]: 任务交接
+            - link "Docs 文档中心" [ref=e196] [cursor=pointer]:
+              - /url: "#documents?root=%2FUsers%2Fmac%2Fproject%2Fdocpath"
+              - img [ref=e197]
+              - generic [ref=e200]:
+                - text: Docs
+                - generic [ref=e201]: 文档中心
+            - link "Session 会话恢复" [ref=e202] [cursor=pointer]:
+              - /url: "#session?root=%2FUsers%2Fmac%2Fproject%2Fdocpath"
+              - img [ref=e203]
+              - generic [ref=e207]:
+                - text: Session
+                - generic [ref=e208]: 会话恢复
+            - link "Activity 动态时间线" [ref=e209] [cursor=pointer]:
+              - /url: "#activity?root=%2FUsers%2Fmac%2Fproject%2Fdocpath"
+              - img [ref=e210]
+              - generic [ref=e212]:
+                - text: Activity
+                - generic [ref=e213]: 动态时间线
+        - main [ref=e214]:
+          - generic [ref=e215]:
+            - generic [ref=e216]:
+              - paragraph [ref=e217]: Sticky Project Context
+              - strong [ref=e218]: docpath
+              - generic [ref=e219]: /Users/mac/project/docpath
+            - generic [ref=e220]:
+              - generic [ref=e221]: drafting / none
+              - generic [ref=e222]: warning
+            - generic [ref=e223]:
+              - code [ref=e224]: docpath plan
+              - button "复制下一步命令" [ref=e225] [cursor=pointer]:
+                - img [ref=e226]
+          - generic [ref=e229]:
+            - generic [ref=e230]:
+              - generic [ref=e231]:
+                - generic [ref=e232]:
+                  - paragraph [ref=e233]: Project Workbench
+                  - heading "docpath" [level=2] [ref=e234]
+                  - paragraph [ref=e235]: 只读单项目工作台 · /Users/mac/project/docpath
+                - generic [ref=e236]:
+                  - generic [ref=e237]: Project context
+                  - combobox "Project context" [ref=e238]:
+                    - option "tmp.FFMoeLXDda"
+                    - option "tmp.LcyucXgGxI"
+                    - option "docpath" [selected]
+              - generic [ref=e239]:
+                - article [ref=e240]:
+                  - generic [ref=e241]:
+                    - generic [ref=e242]: "50"
+                    - generic [ref=e243]: attention
+                  - generic [ref=e244]:
+                    - paragraph [ref=e245]: Readiness Gauge
+                    - strong [ref=e246]: drafting / none
+                    - text: 规约已就绪时生成执行计划
+                - article [ref=e247]:
+                  - generic [ref=e248]:
+                    - generic [ref=e249]: Active Task
+                    - strong [ref=e250]: T-20260609-docpath-dashboard-ui-design-preview-visu
+                    - generic [ref=e251]: DocPath Dashboard/UI 二次重构：Design Preview 与 Visual Acceptance 先行
+                  - generic [ref=e252]:
+                    - generic [ref=e253]: Checklist
+                    - strong [ref=e254]: 0/0
+                  - generic [ref=e255]:
+                    - generic [ref=e256]: Backlog
+                    - strong [ref=e257]: "150"
+                    - generic [ref=e258]: 150 total
+                  - generic [ref=e259]:
+                    - generic [ref=e260]: Changes
+                    - strong [ref=e261]: BLOCKED
+                    - generic [ref=e262]: 12 files
+              - generic [ref=e263]:
+                - generic [ref=e264]:
+                  - article [ref=e265]:
+                    - generic [ref=e266]:
+                      - img [ref=e267]
+                      - generic [ref=e271]:
+                        - paragraph [ref=e272]: FSM State Node Graph
+                        - heading "生命周期流转" [level=2] [ref=e273]
+                    - generic [ref=e274]:
+                      - 'button "Spec 当前阶段 · gate: none" [ref=e275] [cursor=pointer]':
+                        - generic [ref=e276]: Spec
+                        - generic [ref=e277]: "当前阶段 · gate: none"
+                      - button "Plan 待推进" [ref=e278] [cursor=pointer]:
+                        - generic [ref=e279]: Plan
+                        - generic [ref=e280]: 待推进
+                      - button "Execute 待推进" [ref=e281] [cursor=pointer]:
+                        - generic [ref=e282]: Execute
+                        - generic [ref=e283]: 待推进
+                      - button "Check ✅ PASS" [ref=e284] [cursor=pointer]:
+                        - generic [ref=e285]: Check
+                        - generic [ref=e286]: ✅ PASS
+                      - button "Review 已记录证据" [ref=e287] [cursor=pointer]:
+                        - generic [ref=e288]: Review
+                        - generic [ref=e289]: 已记录证据
+                      - button "Journal 待推进" [ref=e290] [cursor=pointer]:
+                        - generic [ref=e291]: Journal
+                        - generic [ref=e292]: 待推进
+                      - button "Done 待推进" [ref=e293] [cursor=pointer]:
+                        - generic [ref=e294]: Done
+                        - generic [ref=e295]: 待推进
+                  - article [ref=e296]:
+                    - generic [ref=e297]:
+                      - img [ref=e298]
+                      - generic [ref=e300]:
+                        - paragraph [ref=e301]: Kanban Backlog
+                        - heading "项目待办看板" [level=2] [ref=e302]
+                    - generic [ref=e303]:
+                      - generic [ref=e304]:
+                        - heading "PROPOSED 0" [level=3] [ref=e305]:
+                          - text: PROPOSED
+                          - generic [ref=e306]: "0"
+                        - paragraph [ref=e307]: 暂无条目
+                      - generic [ref=e308]:
+                        - heading "ACCEPTED 0" [level=3] [ref=e309]:
+                          - text: ACCEPTED
+                          - generic [ref=e310]: "0"
+                        - paragraph [ref=e311]: 暂无条目
+                      - generic [ref=e312]:
+                        - heading "ACTIVE 1" [level=3] [ref=e313]:
+                          - text: ACTIVE
+                          - generic [ref=e314]: "1"
+                        - 'button "DocPath Dashboard/UI 二次重构：Design Preview 与 Visual Acceptance 先行 R-156 · P0 · L3 Task: T-20260609-docpath-dashboard-ui-design-preview-visu" [ref=e315] [cursor=pointer]':
+                          - generic [ref=e316]: DocPath Dashboard/UI 二次重构：Design Preview 与 Visual Acceptance 先行
+                          - generic [ref=e317]: R-156 · P0 · L3
+                          - generic [ref=e318]: "Task: T-20260609-docpath-dashboard-ui-design-preview-visu"
+                      - generic [ref=e319]:
+                        - heading "DONE 23" [level=3] [ref=e320]:
+                          - text: DONE
+                          - generic [ref=e321]: "23"
+                        - 'button "Fail-loud（CLI 不再静默吞参数/失败） R-001 · P0 · L1 Task: T-20260530-dp01" [ref=e322] [cursor=pointer]':
+                          - generic [ref=e323]: Fail-loud（CLI 不再静默吞参数/失败）
+                          - generic [ref=e324]: R-001 · P0 · L1
+                          - generic [ref=e325]: "Task: T-20260530-dp01"
+                        - 'button "完成 G2 状态统一（单一写入口） R-002 · P0 · L2 Task: T-20260530-dp02" [ref=e326] [cursor=pointer]':
+                          - generic [ref=e327]: 完成 G2 状态统一（单一写入口）
+                          - generic [ref=e328]: R-002 · P0 · L2
+                          - generic [ref=e329]: "Task: T-20260530-dp02"
+                        - 'button "路由单一真源（消除死循环 + 统一 step id） R-003 · P0 · L2 Task: T-20260530-dp03" [ref=e330] [cursor=pointer]':
+                          - generic [ref=e331]: 路由单一真源（消除死循环 + 统一 step id）
+                          - generic [ref=e332]: R-003 · P0 · L2
+                          - generic [ref=e333]: "Task: T-20260530-dp03"
+                        - 'button "check 结构校验报错显示实际文件路径与定位 R-040 · P0 · L1 Task: T-20260601-check" [ref=e334] [cursor=pointer]':
+                          - generic [ref=e335]: check 结构校验报错显示实际文件路径与定位
+                          - generic [ref=e336]: R-040 · P0 · L1
+                          - generic [ref=e337]: "Task: T-20260601-check"
+                        - 'button "检测并同步 tasks/current 与任务目录漂移 R-041 · P0 · L2 Task: T-20260601-tasks-current" [ref=e338] [cursor=pointer]':
+                          - generic [ref=e339]: 检测并同步 tasks/current 与任务目录漂移
+                          - generic [ref=e340]: R-041 · P0 · L2
+                          - generic [ref=e341]: "Task: T-20260601-tasks-current"
+                        - 'button "backlog add 分配 ID 时避免并发重复 R-043 · P0 · L1 Task: T-20260601-backlog-add-id" [ref=e342] [cursor=pointer]':
+                          - generic [ref=e343]: backlog add 分配 ID 时避免并发重复
+                          - generic [ref=e344]: R-043 · P0 · L1
+                          - generic [ref=e345]: "Task: T-20260601-backlog-add-id"
+                        - 'button "新增任务 abort/reset 状态流转 R-045 · P0 · L2 Task: T-20260601-abort-reset" [ref=e346] [cursor=pointer]':
+                          - generic [ref=e347]: 新增任务 abort/reset 状态流转
+                          - generic [ref=e348]: R-045 · P0 · L2
+                          - generic [ref=e349]: "Task: T-20260601-abort-reset"
+                        - 'button "降低 tasks/current 漂移修复摩擦 R-046 · P0 · L2 Task: T-20260601-drift-auto-fix" [ref=e350] [cursor=pointer]':
+                          - generic [ref=e351]: 降低 tasks/current 漂移修复摩擦
+                          - generic [ref=e352]: R-046 · P0 · L2
+                          - generic [ref=e353]: "Task: T-20260601-drift-auto-fix"
+                        - 'button "next 仅提示未吸收 lesson 候选 R-048 · P0 · L1 Task: T-20260601-next-lesson-pending" [ref=e354] [cursor=pointer]':
+                          - generic [ref=e355]: next 仅提示未吸收 lesson 候选
+                          - generic [ref=e356]: R-048 · P0 · L1
+                          - generic [ref=e357]: "Task: T-20260601-next-lesson-pending"
+                        - 'button "backlog promote 生成唯一 task_id R-049 · P0 · L1 Task: T-20260601-backlog-promote-task-id" [ref=e358] [cursor=pointer]':
+                          - generic [ref=e359]: backlog promote 生成唯一 task_id
+                          - generic [ref=e360]: R-049 · P0 · L1
+                          - generic [ref=e361]: "Task: T-20260601-backlog-promote-task-id"
+                        - 'button "修复状态机边界并恢复测试全绿 R-078 · P0 · L2 Task: T-20260602-task" [ref=e362] [cursor=pointer]':
+                          - generic [ref=e363]: 修复状态机边界并恢复测试全绿
+                          - generic [ref=e364]: R-078 · P0 · L2
+                          - generic [ref=e365]: "Task: T-20260602-task"
+                        - 'button "新增重大技术决策门禁 R-130 · P0 · L2 Task: T-20260608-task-6" [ref=e366] [cursor=pointer]':
+                          - generic [ref=e367]: 新增重大技术决策门禁
+                          - generic [ref=e368]: R-130 · P0 · L2
+                          - generic [ref=e369]: "Task: T-20260608-task-6"
+                        - 'button "新增统一重大变更门禁 R-133 · P0 · L3 Task: T-20260608-task-7" [ref=e370] [cursor=pointer]':
+                          - generic [ref=e371]: 新增统一重大变更门禁
+                          - generic [ref=e372]: R-133 · P0 · L3
+                          - generic [ref=e373]: "Task: T-20260608-task-7"
+                        - 'button "Team Portfolio Cockpit 信息架构与可写控制台 Decision Brief R-134 · P0 · L3 Task: T-20260608-team-portfolio-cockpit-decision-brief" [ref=e374] [cursor=pointer]':
+                          - generic [ref=e375]: Team Portfolio Cockpit 信息架构与可写控制台 Decision Brief
+                          - generic [ref=e376]: R-134 · P0 · L3
+                          - generic [ref=e377]: "Task: T-20260608-team-portfolio-cockpit-decision-brief"
+                        - 'button "Dashboard Phase 1 Team Cockpit 只读信息架构实现 R-135 · P0 · L3 Task: T-20260608-dashboard-phase-1-team-cockpit" [ref=e378] [cursor=pointer]':
+                          - generic [ref=e379]: Dashboard Phase 1 Team Cockpit 只读信息架构实现
+                          - generic [ref=e380]: R-135 · P0 · L3
+                          - generic [ref=e381]: "Task: T-20260608-dashboard-phase-1-team-cockpit"
+                        - 'button "Dashboard Phase 2 - Two-Tier Sidebar Navigation and Routing State R-136 · P0 · L2 Task: T-20260608-dashboard-phase-2-two-tier-sidebar-navig" [ref=e382] [cursor=pointer]':
+                          - generic [ref=e383]: Dashboard Phase 2 - Two-Tier Sidebar Navigation and Routing State
+                          - generic [ref=e384]: R-136 · P0 · L2
+                          - generic [ref=e385]: "Task: T-20260608-dashboard-phase-2-two-tier-sidebar-navig"
+                        - 'button "Dashboard Phase 2 - Project Workbench FSM Workflow and Kanban Backlog R-138 · P0 · L2 Task: T-20260608-dashboard-phase-2-project-workbench-fsm-" [ref=e386] [cursor=pointer]':
+                          - generic [ref=e387]: Dashboard Phase 2 - Project Workbench FSM Workflow and Kanban Backlog
+                          - generic [ref=e388]: R-138 · P0 · L2
+                          - generic [ref=e389]: "Task: T-20260608-dashboard-phase-2-project-workbench-fsm-"
+                        - 'button "增加开发前需求与UI分析工作流 R-147 · P0 · L3 Task: T-20260609-ui" [ref=e390] [cursor=pointer]':
+                          - generic [ref=e391]: 增加开发前需求与UI分析工作流
+                          - generic [ref=e392]: R-147 · P0 · L3
+                          - generic [ref=e393]: "Task: T-20260609-ui"
+                        - 'button "增强开发前分析深度与质量门禁 R-149 · P0 · L3 Task: T-20260609-task" [ref=e394] [cursor=pointer]':
+                          - generic [ref=e395]: 增强开发前分析深度与质量门禁
+                          - generic [ref=e396]: R-149 · P0 · L3
+                          - generic [ref=e397]: "Task: T-20260609-task"
+                        - 'button "为 UI/UX 任务增加 Design Preview Gate 与 Visual Acceptance R-155 · P0 · L3 Task: T-20260609-ui-ux-design-preview-gate-visual-accepta" [ref=e398] [cursor=pointer]':
+                          - generic [ref=e399]: 为 UI/UX 任务增加 Design Preview Gate 与 Visual Acceptance
+                          - generic [ref=e400]: R-155 · P0 · L3
+                          - generic [ref=e401]: "Task: T-20260609-ui-ux-design-preview-gate-visual-accepta"
+                        - 'button "需求管理 / Backlog 层 R-010 · P1 · L2 Task: current" [ref=e402] [cursor=pointer]':
+                          - generic [ref=e403]: 需求管理 / Backlog 层
+                          - generic [ref=e404]: R-010 · P1 · L2
+                          - generic [ref=e405]: "Task: current"
+                        - 'button "实现 write-plan / write-journal 命令并打通断头引用 R-011 · P1 · L2 Task: T-20260531-write-plan-write-journal" [ref=e406] [cursor=pointer]':
+                          - generic [ref=e407]: 实现 write-plan / write-journal 命令并打通断头引用
+                          - generic [ref=e408]: R-011 · P1 · L2
+                          - generic [ref=e409]: "Task: T-20260531-write-plan-write-journal"
+                        - 'button "接活 lifecycle.ts 事件系统并打通 agent enter/done 哨兵副作用 R-012 · P1 · L2 Task: T-20260531-lifecycle-ts-agent-enter-done" [ref=e410] [cursor=pointer]':
+                          - generic [ref=e411]: 接活 lifecycle.ts 事件系统并打通 agent enter/done 哨兵副作用
+                          - generic [ref=e412]: R-012 · P1 · L2
+                          - generic [ref=e413]: "Task: T-20260531-lifecycle-ts-agent-enter-done"
+                - complementary [ref=e414]:
+                  - article [ref=e415]:
+                    - generic [ref=e416]:
+                      - img [ref=e417]
+                      - generic [ref=e420]:
+                        - paragraph [ref=e421]: Plan Checklist Details
+                        - heading "执行清单" [level=2] [ref=e422]
+                    - list [ref=e423]:
+                      - listitem [ref=e424]:
+                        - generic [ref=e425]: Spec
+                        - generic [ref=e426]: "当前阶段 · gate: none"
+                      - listitem [ref=e427]:
+                        - generic [ref=e428]: Plan
+                        - generic [ref=e429]: 待推进
+                      - listitem [ref=e430]:
+                        - generic [ref=e431]: Execute
+                        - generic [ref=e432]: 待推进
+                      - listitem [ref=e433]:
+                        - generic [ref=e434]: Check
+                        - generic [ref=e435]: ✅ PASS
+                      - listitem [ref=e436]:
+                        - generic [ref=e437]: Review
+                        - generic [ref=e438]: 已记录证据
+                      - listitem [ref=e439]:
+                        - generic [ref=e440]: Journal
+                        - generic [ref=e441]: 待推进
+                      - listitem [ref=e442]:
+                        - generic [ref=e443]: Done
+                        - generic [ref=e444]: 待推进
+              - dialog "Backlog markdown detail" [ref=e445]:
+                - generic [ref=e446]:
+                  - button "关闭 backlog 详情" [ref=e447] [cursor=pointer]: ×
+                  - paragraph [ref=e448]: Read-only Markdown
+                  - heading "Backlog detail" [level=2] [ref=e449]
+                  - code [ref=e451]: Select a backlog card to inspect its Markdown description.
+            - generic [ref=e452]:
+              - generic [ref=e453]:
+                - generic [ref=e454]:
+                  - paragraph [ref=e455]: Project Overview · P0
+                  - heading "当前项目工作台" [level=2] [ref=e456]
+                - generic [ref=e457]:
+                  - generic [ref=e458]: docpath plan
+                  - button "复制下一步命令" [ref=e459] [cursor=pointer]:
+                    - img [ref=e460]
+              - generic [ref=e463]:
+                - article [ref=e464]:
+                  - paragraph [ref=e465]: Current Task
+                  - heading "T-20260609-docpath-dashboard-ui-design-preview-visu" [level=3] [ref=e466]
+                  - paragraph [ref=e467]: DocPath Dashboard/UI 二次重构：Design Preview 与 Visual Acceptance 先行
+                  - generic [ref=e468]:
+                    - generic [ref=e469]:
+                      - term [ref=e470]: Phase / Gate
+                      - definition [ref=e471]: drafting / none
+                    - generic [ref=e472]:
+                      - term [ref=e473]: Current Step
+                      - definition [ref=e474]: 开发前分析中，整理后写入 analysis/<section>.md
+                    - generic [ref=e475]:
+                      - term [ref=e476]: Readiness
+                      - definition [ref=e477]: attention · 50%
+                - article [ref=e478]:
+                  - paragraph [ref=e479]: Recommended Next
+                  - generic [ref=e480]:
+                    - code [ref=e481]: docpath plan
+                    - button "复制下一步命令" [ref=e482] [cursor=pointer]:
+                      - img [ref=e483]
+                  - generic [ref=e486]:
+                    - generic [ref=e487]:
+                      - generic [ref=e488]: 推荐原因
+                      - paragraph [ref=e489]: 当前阶段为 drafting，推荐命令来自 DocPath 路由状态机。
+                    - generic [ref=e490]:
+                      - generic [ref=e491]: 影响范围
+                      - paragraph [ref=e492]: 12 个变更文件 · 3 个关注信号 · 150/150 个 backlog 匹配
+              - generic [ref=e493]:
+                - generic [ref=e494]:
+                  - generic [ref=e495]: 当前任务
+                  - strong [ref=e496]: T-20260609-docpath-dashboard-ui-design-preview-visu
+                  - generic [ref=e497]: DocPath Dashboard/UI 二次重构：Design Preview 与 Visual Acceptance 先行
+                - generic [ref=e498]:
+                  - generic [ref=e499]: 当前步骤
+                  - strong [ref=e500]: 开发前分析中，整理后写入 analysis/<section>.md
+                - generic [ref=e501]:
+                  - generic [ref=e502]: 健康
+                  - strong [ref=e503]: WARNING
+                - generic [ref=e504]:
+                  - generic [ref=e505]: 变更
+                  - strong [ref=e506]: BLOCKED
+                  - generic [ref=e507]: 12 files
+                - generic [ref=e508]:
+                  - generic [ref=e509]: Backlog
+                  - strong [ref=e510]: 150/150
+                - generic [ref=e511]:
+                  - generic [ref=e512]: Team 活跃
+                  - strong [ref=e513]: "0"
+                - generic [ref=e514]:
+                  - generic [ref=e515]: 项目
+                  - strong [ref=e516]: docpath
+              - generic [ref=e517]:
+                - generic [ref=e518]:
+                  - img [ref=e519]
+                  - generic [ref=e521]:
+                    - paragraph [ref=e522]: Attention Queue
+                    - heading "健康与风险队列" [level=2] [ref=e523]
+                - list [ref=e524]:
+                  - listitem [ref=e525]:
+                    - text: Workflow
+                    - paragraph [ref=e526]: 当前处于 drafting
+                    - generic [ref=e527]: "gate: none"
+                  - listitem [ref=e528]:
+                    - text: Review
+                    - paragraph [ref=e529]: 代码审查证据待确认
+                    - generic [ref=e530]: 已记录证据
+                  - listitem [ref=e531]:
+                    - text: Backlog
+                    - paragraph [ref=e532]: 存在待处理需求
+                    - generic [ref=e533]: done:147 · dropped:2 · active:1
+              - generic [ref=e534]:
+                - link "当前任务 开发前分析中，整理后写入 analysis/<section>.md T-20260609-docpath-dashboard-ui-design-preview-visu" [ref=e535] [cursor=pointer]:
+                  - /url: "#task"
+                  - generic [ref=e536]: 当前任务
+                  - generic [ref=e537]: 开发前分析中，整理后写入 analysis/<section>.md
+                  - generic [ref=e538]: T-20260609-docpath-dashboard-ui-design-preview-visu
+                - link "健康队列 WARNING 3 关注 · 0 阻塞" [ref=e539] [cursor=pointer]:
+                  - /url: "#health"
+                  - generic [ref=e540]: 健康队列
+                  - generic [ref=e541]: WARNING
+                  - generic [ref=e542]: 3 关注 · 0 阻塞
+                - link "变更收口 BLOCKED 12 个文件变更" [ref=e543] [cursor=pointer]:
+                  - /url: "#changes"
+                  - generic [ref=e544]: 变更收口
+                  - generic [ref=e545]: BLOCKED
+                  - generic [ref=e546]: 12 个文件变更
+                - link "交接准备 0/0 ✅ PASS" [ref=e547] [cursor=pointer]:
+                  - /url: "#handoff"
+                  - generic [ref=e548]: 交接准备
+                  - generic [ref=e549]: 0/0
+                  - generic [ref=e550]: ✅ PASS
+                - link "Backlog 150/150 当前筛选 / 全部事项" [ref=e551] [cursor=pointer]:
+                  - /url: "#backlog"
+                  - generic [ref=e552]: Backlog
+                  - generic [ref=e553]: 150/150
+                  - generic [ref=e554]: 当前筛选 / 全部事项
+                - link "Team 0/3 活跃项目 / 注册项目" [ref=e555] [cursor=pointer]:
+                  - /url: "#team"
+                  - generic [ref=e556]: Team
+                  - generic [ref=e557]: 0/3
+                  - generic [ref=e558]: 活跃项目 / 注册项目
+  - generic [ref=e559] [cursor=pointer]: "ljq_driver: 已连接"

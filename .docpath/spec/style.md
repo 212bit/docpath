@@ -212,6 +212,34 @@
 <!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-phase-2-project-workbench-code-workflow:journal:t-20260608-dashboard-phase-2-project-workbench-code -->
 - **t-20260608-dashboard-frontend-visual-system-hardeni-workflow**: ✅ 推荐保留本次任务的执行经验：完成 4/4 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-frontend-visual-system-hardeni, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-frontend-visual-system-hardeni-workflow:journal:t-20260608-dashboard-frontend-visual-system-hardeni -->
-- **T-20260608-dashboard-tablet-workbench-audit-lane-sl-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-tablet-workbench-audit-lane-sl, source: journal)_
+- **t-20260608-dashboard-tablet-workbench-audit-lane-sl-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260608-dashboard-tablet-workbench-audit-lane-sl, source: journal)_
 <!-- docpath:lesson-meta best-practice:style:t-20260608-dashboard-tablet-workbench-audit-lane-sl-workflow:journal:t-20260608-dashboard-tablet-workbench-audit-lane-sl -->
+- **t-20260609-docpath-fit-assessment-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-docpath-fit-assessment, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-docpath-fit-assessment-workflow:journal:t-20260609-docpath-fit-assessment -->
+- **t-20260609-payload-hybrid-context-index-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-payload-hybrid-context-index, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-payload-hybrid-context-index-workflow:journal:t-20260609-payload-hybrid-context-index -->
+- **t-20260609-deliverables-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-deliverables, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-deliverables-workflow:journal:t-20260609-deliverables -->
+- **t-20260609-role-profile-role-based-context-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-role-profile-role-based-context, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-role-profile-role-based-context-workflow:journal:t-20260609-role-profile-role-based-context -->
+- **t-20260609-codex-skill-docpath-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-codex-skill-docpath, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-codex-skill-docpath-workflow:journal:t-20260609-codex-skill-docpath -->
+- **t-20260609-ui-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-ui, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-ui-workflow:journal:t-20260609-ui -->
+- **t-20260609-mvp-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-mvp, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-mvp-workflow:journal:t-20260609-mvp -->
+- **t-20260609-task-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-task, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-task-workflow:journal:t-20260609-task -->
+- **t-20260609-analyze-dry-run-skill-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-analyze-dry-run-skill, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-analyze-dry-run-skill-workflow:journal:t-20260609-analyze-dry-run-skill -->
+- **t-20260609-agents-md-docpath-skill-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-agents-md-docpath-skill, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-agents-md-docpath-skill-workflow:journal:t-20260609-agents-md-docpath-skill -->
+- **t-20260609-agents-md-skill-manifest-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-agents-md-skill-manifest, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-agents-md-skill-manifest-workflow:journal:t-20260609-agents-md-skill-manifest -->
+- **t-20260609-docpath-codex-skills-workflow**: ✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。 _(来源: task: T-20260609-docpath-codex-skills, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-docpath-codex-skills-workflow:journal:t-20260609-docpath-codex-skills -->
+- **t-20260609-dashboard-ui-refactor-workflow**: ✅ 推荐保留本次任务的执行经验：完成 10/10 步，阻塞 0 步。 _(来源: task: T-20260609-dashboard-ui-refactor, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-dashboard-ui-refactor-workflow:journal:t-20260609-dashboard-ui-refactor -->
+- **T-20260609-ui-ux-design-preview-gate-visual-accepta-workflow**: ✅ 推荐保留本次任务的执行经验：完成 4/4 步，阻塞 0 步。 _(来源: task: T-20260609-ui-ux-design-preview-gate-visual-accepta, source: journal)_
+<!-- docpath:lesson-meta best-practice:style:t-20260609-ui-ux-design-preview-gate-visual-accepta-workflow:journal:t-20260609-ui-ux-design-preview-gate-visual-accepta -->
 

@@ -109,7 +109,7 @@ export function DashboardSidebar({ data, activeView }: { data: DashboardData; ac
   const projectLevel = projectViewIds.has(activeView);
   const activeProject = data.project;
   const activeRoot = data.selected_project.project?.root || data.project.root;
-  return <aside className="react-sidebar" data-sidebar-level={projectLevel ? 'project' : 'global'} aria-label="Left Sidebar Navigation">
+  return <aside className="react-sidebar" data-primary-navigation="desktop" data-sidebar-level={projectLevel ? 'project' : 'global'} aria-label="Primary Workbench Navigation">
     <div className="react-sidebar-project" hidden={!projectLevel}>
       <a href="#projects" className="react-back-link" data-back-to-projects>
         <ArrowLeft size={16} aria-hidden="true" />Back to Projects
@@ -140,7 +140,7 @@ export function MobileNavigation({ data, activeView }: { data: DashboardData; ac
   const views = projectLevel
     ? [globalViews[0], ...projectViews.filter((view) => ['overview', 'workflow', 'backlog', 'changes', 'handoff'].includes(view.id))]
     : [...globalViews, projectViews[0]];
-  return <nav className="react-mobile-nav" data-mobile-nav data-mobile-nav-level={projectLevel ? 'project' : 'global'} aria-label="Mobile Workbench Navigation">
+  return <nav className="react-mobile-nav" data-primary-navigation="mobile" data-mobile-nav data-mobile-nav-level={projectLevel ? 'project' : 'global'} aria-label="Mobile Primary Workbench Navigation">
     {views.map((view) => {
       const Icon = view.icon;
       const href = projectViewIds.has(view.id) ? projectViewHref(view.id, activeRoot) : `#${view.id}`;

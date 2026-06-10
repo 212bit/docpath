@@ -47,6 +47,7 @@ const CLAUDE_EXPOSED_COMMANDS = [
   'tdd',
   'unlink',
   'write-journal',
+  'write-design',
   'write-plan',
   'write-spec',
 ];

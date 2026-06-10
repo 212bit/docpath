@@ -288,6 +288,269 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check blocks UI implementation when design approval is not approved', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-ui-approval-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    writeFileSync(join(tasks, 'spec.md'), [
+      '# T-AGENT - Dashboard UI',
+      '',
+      '## 1. 背景与动机',
+      '重构 dashboard 页面布局。',
+      '',
+      '## 2. 需求清单',
+      '### 功能需求',
+      '- [ ] FR-1: 实现 dashboard UI layout',
+      '### 非功能需求',
+      '- [ ] NFR-1: 响应式界面',
+      '',
+      '## 3. 范围界定',
+      '### 包含',
+      '- 页面实现',
+      '### 不包含',
+      '- 后端改造',
+      '',
+      '## 4. 关键决策',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | UI | 旧版 / 新版 | 新版 | 测试 |',
+      '',
+      '## 5. 验收标准',
+      '- [ ] AC-1: UI implementation 通过 approval gate',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: UI implementation',
+      '- [x] S1: UI implementation',
+      '- **描述**: 写产品 UI 代码',
+      '- **验收条件**: 页面实现完成',
+      '- **依赖**: 无',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'design-preview.md'), '# Design Preview\n\n信息架构 布局 状态 交互 移动 响应式 参考 不做 边界 snapshot HTML '.repeat(20));
+    writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
+    writeFileSync(join(tasks, 'ui-brief.md'), [
+      '# UI Prompt Brief',
+      '## Product Context',
+      '## Design North Star',
+      '## Visual Direction',
+      '## Anti-goals',
+      '## Design Tokens',
+      '## Shared Components',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'external-design-handoff.md'), [
+      '# External Design Handoff',
+      '## Tool Prompt',
+      'Stitch Figma v0 Framer prompt',
+      '## Tool Outputs',
+      'output link and snapshot',
+      '## Selected Direction',
+      'selected dashboard direction',
+      '## Rejected Directions',
+      'rejected marketing hero',
+      '## Implementation Constraints',
+      'constraints for responsive implementation',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'design-approval.md'), [
+      '---',
+      'approval:',
+      '  state: pending',
+      '  source: user',
+      '  approved_at: null',
+      '  forbidden_directions: []',
+      '---',
+      '# Design Approval',
+      '## Forbidden Directions',
+      '',
+    ].join('\n'));
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /UI\/UX Design Approval Gate/);
+    assert.match(result.out, /状态不是 approved（当前: pending）/);
+    assert.match(result.out, /用户同意采用流程不等于批准具体设计方案/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check allows UI implementation when design approval is approved', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-ui-approved-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    writeFileSync(join(tasks, 'spec.md'), [
+      '# T-AGENT - Dashboard UI',
+      '',
+      '## 1. 背景与动机',
+      '重构 dashboard 页面布局。',
+      '',
+      '## 2. 需求清单',
+      '### 功能需求',
+      '- [ ] FR-1: 实现 dashboard UI layout',
+      '### 非功能需求',
+      '- [ ] NFR-1: 响应式界面',
+      '',
+      '## 3. 范围界定',
+      '### 包含',
+      '- 页面实现',
+      '### 不包含',
+      '- 后端改造',
+      '',
+      '## 4. 关键决策',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | UI | 旧版 / 新版 | 新版 | 测试 |',
+      '',
+      '## 5. 验收标准',
+      '- [ ] AC-1: UI implementation 通过 approval gate',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: UI implementation',
+      '- [x] S1: UI implementation',
+      '- **描述**: 写产品 UI 代码',
+      '- **验收条件**: 页面实现完成',
+      '- **依赖**: 无',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'design-preview.md'), '# Design Preview\n\n信息架构 布局 状态 交互 移动 响应式 参考 不做 边界 snapshot HTML '.repeat(20));
+    writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
+    writeFileSync(join(tasks, 'ui-brief.md'), [
+      '# UI Prompt Brief',
+      '## Product Context',
+      '## Design North Star',
+      '## Visual Direction',
+      '## Anti-goals',
+      '## Design Tokens',
+      '## Shared Components',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'external-design-handoff.md'), [
+      '# External Design Handoff',
+      '## Tool Prompt',
+      'Stitch Figma v0 Framer prompt',
+      '## Tool Outputs',
+      'output link and snapshot',
+      '## Selected Direction',
+      'selected dashboard direction',
+      '## Rejected Directions',
+      'rejected marketing hero',
+      '## Implementation Constraints',
+      'constraints for responsive implementation',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'design-approval.md'), [
+      '---',
+      'approval:',
+      '  state: approved',
+      '  source: user',
+      '  approved_at: 2026-06-10T00:00:00.000Z',
+      '  summary: Approved concrete dashboard visual direction',
+      '  forbidden_directions: [marketing hero]',
+      '---',
+      '# Design Approval',
+      '## Forbidden Directions',
+      '- marketing hero',
+      '',
+    ].join('\n'));
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+
+    assert.equal(result.code, 0);
+    assert.match(result.out, /UI\/UX Design Approval Gate/);
+    assert.match(result.out, /全部通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check blocks UI implementation when external design handoff is missing', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-ui-missing-handoff-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    writeFileSync(join(tasks, 'spec.md'), [
+      '# T-AGENT - Dashboard UI',
+      '',
+      '## 1. 背景与动机',
+      '重构 dashboard 页面布局。',
+      '',
+      '## 2. 需求清单',
+      '### 功能需求',
+      '- [ ] FR-1: 实现 dashboard UI layout',
+      '### 非功能需求',
+      '- [ ] NFR-1: 响应式界面',
+      '',
+      '## 3. 范围界定',
+      '### 包含',
+      '- 页面实现',
+      '### 不包含',
+      '- 后端改造',
+      '',
+      '## 4. 关键决策',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | UI | 旧版 / 新版 | 新版 | 测试 |',
+      '',
+      '## 5. 验收标准',
+      '- [ ] AC-1: UI implementation 通过 approval gate',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: UI implementation',
+      '- [x] S1: UI implementation',
+      '- **描述**: 写产品 UI 代码',
+      '- **验收条件**: 页面实现完成',
+      '- **依赖**: 无',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'design-preview.md'), '# Design Preview\n\n信息架构 布局 状态 交互 移动 响应式 参考 不做 边界 snapshot HTML '.repeat(20));
+    writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
+    writeFileSync(join(tasks, 'ui-brief.md'), [
+      '# UI Prompt Brief',
+      '## Product Context',
+      '## Design North Star',
+      '## Visual Direction',
+      '## Anti-goals',
+      '## Design Tokens',
+      '## Shared Components',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'design-approval.md'), [
+      '---',
+      'approval:',
+      '  state: approved',
+      '  source: user',
+      '  approved_at: 2026-06-10T00:00:00.000Z',
+      '  summary: Approved concrete dashboard visual direction',
+      '  forbidden_directions: [marketing hero]',
+      '---',
+      '# Design Approval',
+      '## Forbidden Directions',
+      '- marketing hero',
+      '',
+    ].join('\n'));
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /UI\/UX Design Approval Gate/);
+    assert.match(result.out, /缺少文件: external-design-handoff\.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check does not require UI approval for non-UI tasks', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-non-ui-'));
+    mkExecWorkspace(cwd);
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+
+    assert.equal(result.code, 0);
+    assert.doesNotMatch(result.out, /UI\/UX Design Approval Gate/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('status warns when current executing task has pending-done sentinel', () => {
     writeFileSync(join(tmpdir_path, '.docpath', 'workspace', 'state.json'), JSON.stringify({
       level: 2,
