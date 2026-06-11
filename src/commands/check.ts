@@ -20,6 +20,7 @@ import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
 import { ANALYSIS_SECTIONS, detectActiveTaskFileDrift, readActiveAnalysisSummary, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
+import { resolveUiDesignRequirement, missingDesignArtifacts, approvalState, hasUiImplementationIntent } from '../utils/ui-gate.js';
 
 interface CheckOptions {
   cwd: string;
@@ -772,19 +773,6 @@ async function checkPredevAnalysisQuality(docpathDir: string, taskId: string | u
   }];
 }
 
-function isUiUxTaskText(text: string): boolean {
-  return /UI\/UX|UX|用户界面|界面重构|页面重构|页面|layout|navigation|visual|视觉设计|设计预览|视觉验收|Design Preview|Visual Acceptance|responsive UI|响应式界面|Figma|Stitch|v0|Framer/i.test(text);
-}
-
-function isUiUxWorkflowOnlyTask(text: string): boolean {
-  return /Codex Skill|Agent 指引|check gate|Approval Gate|Design Approval Gate|门禁|模板|流程|workflow|write-design|docpath check/i.test(text)
-    && /不包含[\s\S]{0,240}(实际重构|产品 UI|页面实现)|不做[\s\S]{0,240}(实际重构|产品 UI|页面实现)/i.test(text);
-}
-
-function hasUiImplementationIntent(text: string): boolean {
-  return /Implementation|实现阶段|进入实现|写产品 UI 代码|产品 UI 代码|UI 代码|改 UI|页面实现|布局实现|组件实现|responsive implementation|视觉实现/i.test(text);
-}
-
 function productUiChangedFiles(cwd: string): string[] {
   try {
     const output = execSync('git status --porcelain', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
@@ -798,17 +786,6 @@ function productUiChangedFiles(cwd: string): string[] {
   } catch {
     return [];
   }
-}
-
-function approvalState(content: string): string {
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  const source = frontmatterMatch?.[1] || content;
-  const nested = source.match(/approval:\s*\n(?:[ \t]+.+\n)*?[ \t]+state:\s*([A-Za-z_-]+)/i);
-  if (nested) return nested[1].toLowerCase();
-  const direct = source.match(/(?:^|\n)(?:status|state):\s*([A-Za-z_-]+)/i);
-  if (direct) return direct[1].toLowerCase();
-  const markdown = content.match(/(?:^|\n)-\s*State:\s*([A-Za-z_-]+)/i);
-  return markdown ? markdown[1].toLowerCase() : 'missing';
 }
 
 async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<CheckResult[]> {
@@ -827,9 +804,9 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
   }
 
   const text = haystack.join('\n');
-  const isUiUxTask = isUiUxTaskText(text);
-  if (!isUiUxTask) return [];
-  if (isUiUxWorkflowOnlyTask(text)) return [];
+  // 判定优先级：spec 4.1 显式框 > 关键词回退（与 go 前置门禁共用 ui-gate.ts）。
+  const requirement = await resolveUiDesignRequirement(cwd);
+  if (requirement !== 'required') return [];
 
   const uiBriefPath = join(docpathDir, 'tasks', 'current', 'ui-brief.md');
   const handoffPath = join(docpathDir, 'tasks', 'current', 'external-design-handoff.md');
@@ -875,7 +852,8 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
   });
 
   const changedUiFiles = productUiChangedFiles(cwd);
-  const approvalRequired = !isUiUxWorkflowOnlyTask(text) && (hasUiImplementationIntent(text) || changedUiFiles.length > 0);
+  // 顶层已确认 requirement === 'required'；approval gate 是否触发取决于是否进入实现阶段。
+  const approvalRequired = hasUiImplementationIntent(text) || changedUiFiles.length > 0;
   if (!approvalRequired) return results;
 
   const approvalMissing: string[] = [];
