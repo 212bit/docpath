@@ -6,11 +6,58 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
+const GETTING_STARTED = new URL('../docs/getting-started.md', import.meta.url).pathname;
+
+function registryDbPath() {
+  return join(mkdtempSync(join(tmpdir(), 'dp-registry-')), 'projects.sqlite');
+}
+
+function run(args, cwd, registryDb = registryDbPath()) {
+  try {
+    return {
+      code: 0,
+      out: execSync(`node ${BIN} ${args}`, {
+        cwd,
+        encoding: 'utf-8',
+        timeout: 30000,
+        env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
+      }),
+      registryDb,
+    };
+  } catch (error) {
+    return {
+      code: error.status || 1,
+      out: `${error.stdout || ''}${error.stderr || ''}`,
+      registryDb,
+    };
+  }
+}
+
+function runShell(command, cwd, registryDb = registryDbPath()) {
+  try {
+    return {
+      code: 0,
+      out: execSync(command, {
+        cwd,
+        encoding: 'utf-8',
+        timeout: 30000,
+        env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
+      }),
+      registryDb,
+    };
+  } catch (error) {
+    return {
+      code: error.status || 1,
+      out: `${error.stdout || ''}${error.stderr || ''}`,
+      registryDb,
+    };
+  }
+}
 
 describe('init command', () => {
   it('creates rules as the global rule directory while keeping spec templates', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'dp-init-'));
-    const registryDb = join(mkdtempSync(join(tmpdir(), 'dp-registry-')), 'projects.sqlite');
+    const registryDb = registryDbPath();
 
     execSync(`node ${BIN} init --cwd ${cwd} --level 2`, {
       cwd,
@@ -40,7 +87,7 @@ describe('init command', () => {
 
   it('registers an existing DocPath project without overwriting workspace files', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'dp-init-existing-'));
-    const registryDb = join(mkdtempSync(join(tmpdir(), 'dp-registry-')), 'projects.sqlite');
+    const registryDb = registryDbPath();
 
     execSync(`node ${BIN} init --cwd ${cwd} --level 2`, {
       cwd,
@@ -69,5 +116,125 @@ describe('init command', () => {
     assert.equal(projects.projects.length, 1);
     assert.equal(projects.projects[0].root, cwd);
     rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('respects level 0 for non-interactive init', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-level-zero-'));
+    const registryDb = registryDbPath();
+
+    const output = execSync(`node ${BIN} init --cwd ${cwd} --level 0`, {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 20000,
+      env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
+    });
+
+    assert.match(output, /Level 0 \(手动\)/);
+    const config = readFileSync(join(cwd, '.docpath', 'config.yaml'), 'utf-8');
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.match(config, /default_level: 0/);
+    assert.equal(state.level, 0);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('fails loudly for interactive init without a TTY and does not create .docpath', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-nontty-'));
+
+    const result = run(`init --cwd ${cwd} --interactive`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /docpath init --interactive 需要在 TTY/);
+    assert.match(result.out, /docpath init --level 2/);
+    assert.equal(existsSync(join(cwd, '.docpath')), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('validates init level before writing files', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-bad-level-'));
+
+    const result = run(`init --cwd ${cwd} --level 9`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /--level 参数非法: 9/);
+    assert.match(result.out, /允许: 0\|1\|2\|3/);
+    assert.equal(existsSync(join(cwd, '.docpath')), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('explains how to fix a link target without .docpath', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-link-source-'));
+    const target = mkdtempSync(join(tmpdir(), 'dp-init-link-target-'));
+
+    const result = run(`init --cwd ${cwd} --link ${target}`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /目标项目未找到 \.docpath\/ 目录/);
+    assert.match(result.out, new RegExp(`docpath init --cwd ${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.equal(existsSync(join(cwd, '.docpath')), false);
+    rmSync(cwd, { recursive: true, force: true });
+    rmSync(target, { recursive: true, force: true });
+  });
+
+  it('can initialize interactively in a TTY with the default level', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-interactive-'));
+    const registryDb = registryDbPath();
+
+    const result = runShell(`(sleep 0.5; printf '\\r') | script -q /dev/null node ${BIN} init --cwd ${cwd} --interactive`, cwd, registryDb);
+
+    assert.equal(result.code, 0);
+    assert.equal(existsSync(join(cwd, '.docpath', 'config.yaml')), true);
+    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'state.json')), true);
+    assert.match(readFileSync(join(cwd, '.docpath', 'config.yaml'), 'utf-8'), /default_level: [0-3]/);
+    const projects = JSON.parse(execSync(`node ${BIN} projects --json`, {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 20000,
+      env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
+    }));
+    assert.equal(projects.projects.length, 1);
+    assert.equal(projects.projects[0].root, cwd);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('interactively registers an existing project by default without overwriting files', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-existing-interactive-'));
+    const registryDb = registryDbPath();
+
+    execSync(`node ${BIN} init --cwd ${cwd} --level 2`, {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 20000,
+      env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
+    });
+    const currentPath = join(cwd, '.docpath', 'workspace', 'current.md');
+    writeFileSync(currentPath, '# Current\n\n交互式注册不覆盖。\n');
+
+    const result = runShell(`(sleep 0.5; printf '\\r') | script -q /dev/null node ${BIN} init --cwd ${cwd} --interactive`, cwd, registryDb);
+
+    assert.equal(result.code, 0);
+    assert.equal(readFileSync(currentPath, 'utf-8'), '# Current\n\n交互式注册不覆盖。\n');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('documents the getting started command path', () => {
+    const doc = readFileSync(GETTING_STARTED, 'utf-8');
+
+    for (const command of [
+      'docpath init --interactive',
+      'docpath init --level 2',
+      'docpath status --agent',
+      'docpath next --agent',
+      'docpath backlog add',
+      'docpath backlog accept R-001',
+      'docpath backlog promote R-001',
+      'docpath plan',
+      'docpath go --step S1',
+      'docpath check',
+      'docpath review',
+      'docpath journal',
+      'docpath agent done',
+    ]) {
+      assert.match(doc, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    }
   });
 });
