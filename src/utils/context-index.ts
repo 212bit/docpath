@@ -308,3 +308,12 @@ export async function readHybridContextIndexTrunk(cwd: string): Promise<HybridCo
   if (parsed.version !== 1 || !Array.isArray(parsed.trunk)) return null;
   return parsed.trunk;
 }
+
+export async function readHybridContextIndexLeaves(cwd: string): Promise<HybridContextIndexEntry[] | null> {
+  const outputPath = await getHybridContextIndexPath(cwd);
+  if (!existsSync(outputPath)) return null;
+  const raw = await readFile(outputPath, 'utf-8');
+  const parsed = JSON.parse(raw) as Partial<HybridContextIndex>;
+  if (parsed.version !== 1 || !Array.isArray(parsed.leaves)) return null;
+  return parsed.leaves;
+}

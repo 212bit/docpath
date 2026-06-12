@@ -17,7 +17,7 @@ import { listBacklogItems, type BacklogItem } from '../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.js';
 import { readRuleFile, ruleDisplayPaths } from './rules.js';
 import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } from '../commands/install.js';
-import { readHybridContextIndexSummary, readHybridContextIndexTrunk, type HybridContextIndexSummary, type HybridContextIndexEntry } from './context-index.js';
+import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridContextIndexLeaves, type HybridContextIndexSummary, type HybridContextIndexEntry } from './context-index.js';
 
 export interface AgentOutput {
   /** 当前状态 (state machine state) */
@@ -76,8 +76,69 @@ export interface AgentOutput {
   context_index?: HybridContextIndexSummary;
   /** Hybrid Context Index trunk (稳定核心,优先展示) */
   context_index_trunk?: HybridContextIndexEntry[];
+  /** 当前焦点 (根据 phase/gate 智能展开的内容) */
+  current_focus?: {
+    phase: string;
+    detail: string;
+  };
+  /** Hybrid Context Index leaves 索引 (不展开,只列标题) */
+  context_index_leaves?: Array<{ id: string; label: string; summary: string }>;
   /** 时间戳 */
   generated_at: string;
+}
+
+function selectCurrentFocus(
+  phase: string,
+  gate: string,
+  context: AgentOutputContext,
+): { phase: string; detail: string } | null {
+  // 根据 phase/gate 智能选择当前需要展开的内容
+
+  if (phase === 'executing') {
+    // 执行阶段:展开 plan 当前步骤
+    const openStep = context.planTasks.find(task => !task.done);
+    if (openStep) {
+      return {
+        phase: 'executing',
+        detail: `当前步骤: ${openStep.id} - ${openStep.title}\n进度: ${context.planTasks.filter(t => t.done).length}/${context.planTasks.length} 完成`,
+      };
+    }
+    // 如果所有步骤完成,提示
+    if (context.planTasks.length > 0) {
+      return {
+        phase: 'executing',
+        detail: `所有计划步骤已完成 (${context.planTasks.length}/${context.planTasks.length})\n建议运行 check 门禁`,
+      };
+    }
+  }
+
+  if (phase === 'checking') {
+    // 检查阶段:展开 last-check 结果
+    if (context.lastCheckContent) {
+      const lines = context.lastCheckContent.split('\n').slice(0, 15); // 前15行
+      return {
+        phase: 'checking',
+        detail: lines.join('\n'),
+      };
+    }
+  }
+
+  if (phase === 'completed') {
+    // 完成阶段:优先展开 lesson,否则展示完成摘要
+    if (context.lessonSummary.pendingCount > 0) {
+      return {
+        phase: 'completed',
+        detail: `待归档 lesson: ${context.lessonSummary.pendingCount} 条\nKeys: ${context.lessonSummary.pendingKeys.slice(0, 3).join(', ')}${context.lessonSummary.pendingKeys.length > 3 ? '...' : ''}`,
+      };
+    }
+    // 没有 lesson 时,展示完成摘要
+    return {
+      phase: 'completed',
+      detail: `任务已完成\n计划: ${context.planTasks.filter(t => t.done).length}/${context.planTasks.length} 完成\n门禁: ${gate}`,
+    };
+  }
+
+  return null;
 }
 
 function summarizeDrift(drift: PlanBreadcrumbDrift): string | null {
@@ -218,6 +279,7 @@ type AgentOutputContext = {
   installHealth: InstallDoctorReport | null;
   contextIndex: HybridContextIndexSummary | null;
   contextIndexTrunk: HybridContextIndexEntry[] | null;
+  contextIndexLeaves: HybridContextIndexEntry[] | null;
 };
 
 function parseTddState(raw: string): TddStateSnapshot | null {
@@ -576,6 +638,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   const installHealth = await readInstallHealth(cwd, docpathDir);
   const contextIndex = await readHybridContextIndexSummary(cwd);
   const contextIndexTrunk = await readHybridContextIndexTrunk(cwd);
+  const contextIndexLeaves = await readHybridContextIndexLeaves(cwd);
 
   return {
     docpathDir,
@@ -594,6 +657,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     installHealth,
     contextIndex,
     contextIndexTrunk,
+    contextIndexLeaves,
   };
 }
 
@@ -688,6 +752,14 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
     } : null,
     ...(context.contextIndex ? { context_index: context.contextIndex } : {}),
     ...(context.contextIndexTrunk && context.contextIndexTrunk.length > 0 ? { context_index_trunk: context.contextIndexTrunk } : {}),
+    ...(context.contextIndexLeaves && context.contextIndexLeaves.length > 0 ? {
+      context_index_leaves: context.contextIndexLeaves.map(leaf => ({
+        id: leaf.id,
+        label: leaf.label,
+        summary: leaf.summary.slice(0, 100), // 只保留前100字符作为索引
+      })),
+    } : {}),
+    current_focus: selectCurrentFocus(context.state?.phase || '', context.state?.gate || '', context) || undefined,
     generated_at: new Date().toISOString(),
   };
 
