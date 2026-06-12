@@ -1,8 +1,8 @@
 /**
  * docpath:docs — 文档资产管理
  *
- * 扫描 .docpath/ 目录下的 .md 文件，生成 docs.md 索引。
- * AI 可直接读写 docs.md，无需接触 YAML。
+ * 扫描 .docpath/ 目录下的 .md 文件，生成 docs-index.json 索引。
+ * 人类可读索引见 INDEX.md (静态,手工维护)。
  */
 
 import { existsSync } from 'fs';
@@ -161,10 +161,9 @@ async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<P
 }
 
 async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentIndexEntry[]): Promise<string> {
-  const docsMdPath = join(docpathDir, 'docs.md');
   const docsIndexPath = join(docpathDir, 'docs-index.json');
 
-  await writeFile(docsMdPath, generateDocsMd(entries), 'utf-8');
+  // 不再生成 docs.md (已替换为静态 INDEX.md)
   await writeFile(docsIndexPath, JSON.stringify({
     version: PROJECT_DOCS_INDEX_VERSION,
     generated_at: new Date().toISOString(),
@@ -176,7 +175,7 @@ async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentInde
     entries,
   }, null, 2), 'utf-8');
 
-  return docsMdPath;
+  return docsIndexPath;
 }
 
 /** docs scan — 扫描文档生成索引 */
@@ -193,10 +192,10 @@ async function docsScan(cwd: string): Promise<void> {
   }
 
   const entries = await buildDocEntries(docpathDir, mdFiles);
-  const docsMdPath = await writeDocsIndexes(docpathDir, entries);
+  const docsIndexPath = await writeDocsIndexes(docpathDir, entries);
 
-  console.log(`✅  已生成 docs.md / docs-index.json (${entries.length} 个文档)`);
-  console.log(`📁  位置: ${docsMdPath}`);
+  console.log(`✅  已生成 docs-index.json (${entries.length} 个文档)`);
+  console.log(`📁  位置: ${docsIndexPath}`);
   console.log('');
 }
 
