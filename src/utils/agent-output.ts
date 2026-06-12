@@ -17,7 +17,7 @@ import { listBacklogItems, type BacklogItem } from '../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.js';
 import { readRuleFile, ruleDisplayPaths } from './rules.js';
 import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } from '../commands/install.js';
-import { readHybridContextIndexSummary, type HybridContextIndexSummary } from './context-index.js';
+import { readHybridContextIndexSummary, readHybridContextIndexTrunk, type HybridContextIndexSummary, type HybridContextIndexEntry } from './context-index.js';
 
 export interface AgentOutput {
   /** 当前状态 (state machine state) */
@@ -74,6 +74,8 @@ export interface AgentOutput {
   } | null;
   /** 任务级 Hybrid Context Index 摘要；旧任务没有 index 时省略。 */
   context_index?: HybridContextIndexSummary;
+  /** Hybrid Context Index trunk (稳定核心,优先展示) */
+  context_index_trunk?: HybridContextIndexEntry[];
   /** 时间戳 */
   generated_at: string;
 }
@@ -215,6 +217,7 @@ type AgentOutputContext = {
   hasIncompleteSpec: boolean;
   installHealth: InstallDoctorReport | null;
   contextIndex: HybridContextIndexSummary | null;
+  contextIndexTrunk: HybridContextIndexEntry[] | null;
 };
 
 function parseTddState(raw: string): TddStateSnapshot | null {
@@ -572,6 +575,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   );
   const installHealth = await readInstallHealth(cwd, docpathDir);
   const contextIndex = await readHybridContextIndexSummary(cwd);
+  const contextIndexTrunk = await readHybridContextIndexTrunk(cwd);
 
   return {
     docpathDir,
@@ -589,6 +593,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     hasIncompleteSpec: hasSpec ? isIncompleteSpec(specContent) : false,
     installHealth,
     contextIndex,
+    contextIndexTrunk,
   };
 }
 
@@ -682,6 +687,7 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
       issue_ids: context.installHealth.issues.map((issue) => issue.id),
     } : null,
     ...(context.contextIndex ? { context_index: context.contextIndex } : {}),
+    ...(context.contextIndexTrunk && context.contextIndexTrunk.length > 0 ? { context_index_trunk: context.contextIndexTrunk } : {}),
     generated_at: new Date().toISOString(),
   };
 

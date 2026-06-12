@@ -42,14 +42,135 @@ function compactLine(value: string, fallback: string): string {
   return (line || fallback).slice(0, 180);
 }
 
+function compactMultiLine(value: string, fallback: string, maxChars: number = 500): string {
+  // 提取前 N 行非空文本,拼接成一段,限制总长度
+  const lines = value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => {
+      if (!line) return false;
+      if (line.startsWith('#')) return false; // 过滤标题
+      if (line.startsWith('---')) return false; // 过滤分隔符
+      if (line.startsWith('>')) return false; // 过滤 frontmatter/引用块
+      if (line.match(/^[-*]\s*\[/)) return false; // 过滤 checklist
+      return true;
+    });
+
+  if (lines.length === 0) return fallback;
+
+  let result = '';
+  for (const line of lines) {
+    if (result.length + line.length > maxChars) break;
+    result += (result ? ' ' : '') + line;
+  }
+
+  return result || fallback;
+}
+
 function sectionSummary(content: string, headingPattern: RegExp, fallback: string): string {
   const match = headingPattern.exec(content);
-  if (!match) return fallback;
+  if (!match) {
+    // 找不到章节,返回 fallback (不要从头提取整个 spec!)
+    return fallback;
+  }
   const start = match.index + match[0].length;
   const rest = content.slice(start);
   const endMatch = rest.match(/\n##\s+/);
   const body = endMatch ? rest.slice(0, endMatch.index) : rest;
-  return compactLine(body, fallback);
+  const extracted = compactMultiLine(body, '', 400);
+  return extracted || fallback;
+}
+
+function extractGoal(specContent: string, taskTitle: string): string {
+  // 尝试多种模式: "## 目标" / "## 1. 背景与动机" / "## 背景"
+  const patterns = [
+    /^##\s*目标\s*$/m,
+    /^##\s*\d+\.\s*背景与动机\s*$/m,
+    /^##\s*背景\s*$/m,
+  ];
+  for (const pattern of patterns) {
+    const summary = sectionSummary(specContent, pattern, '');
+    if (summary && summary.length > 20) return summary;
+  }
+  return taskTitle || '未提取目标';
+}
+
+function extractScope(specContent: string): string {
+  // 尝试多种模式: "## 范围" / "## 3. 范围界定"
+  const patterns = [
+    /^##\s*范围\s*$/m,
+    /^##\s*\d+\.\s*范围界定\s*$/m,
+  ];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(specContent);
+    if (!match) continue;
+
+    const start = match.index + match[0].length;
+    const rest = specContent.slice(start);
+    const endMatch = rest.match(/\n##\s+/);
+    const sectionBody = endMatch ? rest.slice(0, endMatch.index) : rest;
+
+    // 先尝试从 section body 里找 "### 包含" 子章节
+    const includeMatch = /^###\s*包含\s*$/m.exec(sectionBody);
+    if (includeMatch) {
+      const subStart = includeMatch.index + includeMatch[0].length;
+      const subRest = sectionBody.slice(subStart);
+      const subEndMatch = subRest.match(/\n###\s+/);
+      const includeBody = subEndMatch ? subRest.slice(0, subEndMatch.index) : subRest;
+      const extracted = compactMultiLine(includeBody, '', 400);
+      if (extracted && extracted.length > 20) return `包含: ${extracted}`;
+    }
+
+    // 如果没有子章节,直接提取 section body
+    const extracted = compactMultiLine(sectionBody, '', 400);
+    if (extracted && extracted.length > 20) return extracted;
+  }
+
+  return '未提取范围';
+}
+
+function extractAcceptance(specContent: string): string {
+  // 尝试多种模式: "## 验收" / "## 5. 验收标准"
+  const patterns = [
+    /^##\s*验收\s*$/m,
+    /^##\s*\d+\.\s*验收标准\s*$/m,
+  ];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(specContent);
+    if (!match) continue;
+
+    const start = match.index + match[0].length;
+    const rest = specContent.slice(start);
+    const endMatch = rest.match(/\n##\s+/);
+    const body = endMatch ? rest.slice(0, endMatch.index) : rest;
+
+    // 对于验收标准,提取 checklist 项(忽略过滤规则)
+    const lines = body
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => {
+        if (!line) return false;
+        if (line.startsWith('##')) return false;
+        return true; // 保留所有内容,包括 checklist
+      });
+
+    if (lines.length === 0) continue;
+
+    let result = '';
+    let count = 0;
+    for (const line of lines) {
+      if (result.length + line.length > 400) break;
+      if (count >= 5) break; // 最多5条验收标准
+      result += (result ? ' ' : '') + line;
+      count++;
+    }
+
+    if (result && result.length > 20) return result;
+  }
+
+  return '未提取验收标准';
 }
 
 function summarizePlan(planContent: string): string {
@@ -98,19 +219,19 @@ export async function buildHybridContextIndex(cwd: string): Promise<HybridContex
         id: 'goal',
         label: '目标',
         path: '.docpath/tasks/current/spec.md',
-        summary: sectionSummary(specContent, /^##\s*目标\s*$/m, state?.task_title || '未提取目标'),
+        summary: extractGoal(specContent, state?.task_title || ''),
       },
       {
         id: 'scope',
         label: '范围',
         path: '.docpath/tasks/current/spec.md',
-        summary: sectionSummary(specContent, /^##\s*范围\s*$/m, '未提取范围'),
+        summary: extractScope(specContent),
       },
       {
         id: 'acceptance',
         label: '验收',
         path: '.docpath/tasks/current/spec.md',
-        summary: sectionSummary(specContent, /^##\s*验收\s*$/m, '未提取验收标准'),
+        summary: extractAcceptance(specContent),
       },
       {
         id: 'decision-brief',
@@ -177,4 +298,13 @@ export async function readHybridContextIndexSummary(cwd: string): Promise<Hybrid
     leaf_count: parsed.leaves.length,
     generated_at: typeof parsed.generated_at === 'string' ? parsed.generated_at : null,
   };
+}
+
+export async function readHybridContextIndexTrunk(cwd: string): Promise<HybridContextIndexEntry[] | null> {
+  const outputPath = await getHybridContextIndexPath(cwd);
+  if (!existsSync(outputPath)) return null;
+  const raw = await readFile(outputPath, 'utf-8');
+  const parsed = JSON.parse(raw) as Partial<HybridContextIndex>;
+  if (parsed.version !== 1 || !Array.isArray(parsed.trunk)) return null;
+  return parsed.trunk;
 }
