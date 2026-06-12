@@ -1,5 +1,6 @@
 import type { CAC } from 'cac';
 import { backlogCommand } from '../backlog.js';
+import { gcDecisionsCommand } from '../gc-decisions.js';
 import { gcCommand } from '../gc.js';
 import { taskCommand } from '../task.js';
 import { tasksCommand } from '../tasks.js';
@@ -60,6 +61,16 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         cwd: options.cwd || process.cwd(),
         force: !!options.force,
         delete: !!options.delete,
+      });
+    });
+
+  cli.command('gc-decisions', '按月轮转 workspace/decisions.md 历史决策')
+    .option('--cwd <path>', '项目目录')
+    .option('--retention-days <days>', '主 decisions.md 保留天数（默认 30）')
+    .action(async (options: { cwd?: string; retentionDays?: string; 'retention-days'?: string }) => {
+      await gcDecisionsCommand({
+        cwd: options.cwd || process.cwd(),
+        retentionDays: options['retention-days'] ?? options.retentionDays,
       });
     });
 }

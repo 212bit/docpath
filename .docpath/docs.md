@@ -1,35 +1,422 @@
 # DocPath 文档索引
 
-> 自动生成，AI 可直接读写
+> 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。
 
-> 扫描时间: 2026-05-28T12:25:57.914Z
+> 扫描时间: 2026-06-12T14:19:14.783Z
 
 ## 文档列表
 
-| 路径 | kind | scope | level | 用途 | 最后修改 | 大小 |
-|------|------|-------|-------|------|----------|------|
-| docs.md | index | project | 0 | DocPath 文档索引 | 2026-05-28 | 2273 |
-| spec/architecture.md | index | project | 0 | 项目架构规范 | 2026-05-28 | 616 |
-| spec/style.md | reference | project | 0 | 代码规范与避坑指南 | 2026-05-28 | 365 |
-| spec/template/architecture.template.md | index | project | 0 | 项目架构规范 | 2026-05-28 | 616 |
-| spec/template/check.template.md | index | project | 0 | 验证记录: {title} | 2026-05-28 | 450 |
-| spec/template/plan.template.md | index | project | 0 | 执行计划: {title} | 2026-05-28 | 619 |
-| spec/template/review.template.md | index | project | 0 | 审查记录: {title} | 2026-05-28 | 349 |
-| spec/template/spec.template.md | index | project | 0 | 规约: {title} | 2026-05-28 | 701 |
-| spec/template/style.template.md | index | project | 0 | 代码规范与避坑指南 | 2026-05-28 | 365 |
-| spec/template/task.template.md | index | project | 0 | 任务: {title} | 2026-05-28 | 335 |
-| tasks/T-20260528-harness-lite/plan.md | index | project | 0 | Plan: Harness Lite for DocPath | 2026-05-28 | 2914 |
-| tasks/T-20260528-harness-lite/spec.md | index | project | 0 | Spec: Harness Lite for DocPath | 2026-05-28 | 2442 |
-| tasks/T-20260528-p2/plan.md | index | project | 0 | 执行计划: Phase 2 — 动态升级引擎与 GSD 上下文编排 | 2026-05-28 | 4484 |
-| tasks/T-20260528-p2/spec.md | index | project | 0 | 规约: Phase 2 — 动态升级引擎与 GSD 上下文编排 | 2026-05-28 | 4000 |
-| tasks/current/plan.md | index | project | 0 | Plan: Harness Lite for DocPath | 2026-05-28 | 2914 |
-| tasks/current/spec.md | index | project | 0 | Spec: Harness Lite for DocPath | 2026-05-28 | 2442 |
-| workspace/breadcrumb.md | log | project | 0 | 面包屑 — 上下文恢复索引 | 2026-05-28 | 1363 |
-| workspace/current.md | runbook | project | 0 | DocPath 当前状态 | 2026-05-28 | 1552 |
+| 路径 | type | scope | level | default_read | archive | tokens | task_id | 标题 | 摘要 | 更新时间 | 大小 |
+|------|------|-------|-------|--------------|---------|--------|---------|------|------|----------|------|
+| backlog/R-001-fail-loud.md | runbook | project | 2 | false | false | 119 |  | R-001-fail-loud | brainstorm/refine 支持 `[file]` 位置参数并真正读取；未知 flag/命令/缺必填参数 → 报错退出。 | 2026-05-30T13:30:48.268Z | 384B |
+| backlog/R-002-g2-state-unify.md | runbook | project | 2 | false | false | 114 |  | R-002-g2-state-unify | 6 个起草命令改走 transitionWorkflow()/updateLevel()；删除 updateCurrentState()，唯一写入口 writeCurrentState()；phase 不再卡 idle。 | 2026-05-30T13:30:51.059Z | 380B |
+| backlog/R-003-router-single-source.md | runbook | project | 2 | false | false | 120 |  | R-003-router-single-source | 命令的「下一步」hint 统一转调 nextCommand；inferNextAction 补 spec→plan / plan→go 规则；parsePlanTasks 读 `**S1**` 不再重编号 T1。 | 2026-05-30T13:30:54.351Z | 399B |
+| backlog/R-010-requirements-mgmt.md | runbook | project | 2 | false | false | 172 |  | R-010-requirements-mgmt | 为 DocPath 增加「一条一文件 + 索引」的 backlog 层：条目独立状态机（proposed→accepted→planned→active→done|dropped）、 | 2026-05-31T14:54:40.291Z | 592B |
+| backlog/R-011-write-plan-write-journal.md | runbook | project | 2 | false | false | 92 |  | R-011-write-plan-write-journal | - 待补充 | 2026-05-31T15:48:12.065Z | 302B |
+| backlog/R-012-lifecycle-ts-agent-enter-done.md | runbook | project | 2 | false | false | 98 |  | R-012-lifecycle-ts-agent-enter-done | - 待补充 | 2026-05-31T16:17:58.402Z | 320B |
+| backlog/R-013-write-spec-write-plan.md | runbook | project | 2 | false | false | 87 |  | R-013-write-spec-write-plan | - 待补充 | 2026-05-31T16:33:20.739Z | 290B |
+| backlog/R-014-progress-step-finder-plan.md | runbook | project | 2 | false | false | 88 |  | R-014-progress-step-finder-plan | - 待补充 | 2026-05-31T16:45:17.809Z | 295B |
+| backlog/R-015-task-id-tasks-current.md | runbook | project | 2 | false | false | 97 |  | R-015-task-id-tasks-current | - 待补充 | 2026-05-31T16:59:29.092Z | 310B |
+| backlog/R-016-agent-done.md | runbook | project | 2 | false | false | 92 |  | R-016-agent-done | - 待补充 | 2026-05-31T17:15:40.612Z | 294B |
+| backlog/R-017-learn-from-journal-dry-run.md | runbook | project | 2 | false | false | 96 |  | R-017-learn-from-journal-dry-run | - 待补充 | 2026-05-31T17:31:21.915Z | 327B |
+| backlog/R-018-status-pending-done.md | runbook | project | 2 | false | false | 94 |  | R-018-status-pending-done | - 待补充 | 2026-05-31T17:41:48.771Z | 313B |
+| backlog/R-019-agent-step-skipped-blocked-plan.md | runbook | project | 2 | false | false | 99 |  | R-019-agent-step-skipped-blocked-plan | - 待补充 | 2026-05-31T17:50:36.631Z | 341B |
+| backlog/R-020-go-plan.md | runbook | project | 2 | false | false | 90 |  | R-020-go-plan | - 待补充 | 2026-05-31T17:57:45.719Z | 286B |
+| backlog/R-021-status-agent-plan-breadcrumb.md | runbook | project | 2 | false | false | 96 |  | R-021-status-agent-plan-breadcrumb | - 待补充 | 2026-05-31T18:12:01.698Z | 331B |
+| backlog/R-022-check-plan-breadcrumb.md | runbook | project | 2 | false | false | 98 |  | R-022-check-plan-breadcrumb | - 待补充 | 2026-05-31T18:20:27.575Z | 323B |
+| backlog/R-023-journal-decisions.md | runbook | project | 2 | false | false | 96 |  | R-023-journal-decisions | - 待补充 | 2026-05-31T18:24:00.010Z | 313B |
+| backlog/R-024-learn.md | runbook | project | 2 | false | false | 82 |  | R-024-learn | - 待补充 | 2026-05-31T18:31:05.489Z | 268B |
+| backlog/R-025-stale-pending-done-24h.md | runbook | project | 2 | false | false | 91 |  | R-025-stale-pending-done-24h | - 待补充 | 2026-05-31T18:37:36.161Z | 311B |
+| backlog/R-026-check.md | runbook | project | 2 | false | false | 82 |  | R-026-check | - 待补充 | 2026-05-31T18:43:12.066Z | 268B |
+| backlog/R-027-codex.md | runbook | project | 2 | false | false | 84 |  | R-027-codex | - 待补充 | 2026-05-31T18:48:39.741Z | 271B |
+| backlog/R-028-claude.md | runbook | project | 2 | false | false | 91 |  | R-028-claude | - 待补充 | 2026-05-31T18:55:55.247Z | 286B |
+| backlog/R-029-agents-codex-opencode.md | runbook | project | 2 | false | false | 102 |  | R-029-agents-codex-opencode | - 待补充 | 2026-05-31T19:01:15.427Z | 332B |
+| backlog/R-030-opencode.md | runbook | project | 2 | false | false | 92 |  | R-030-opencode | - 待补充 | 2026-05-31T19:05:55.873Z | 292B |
+| backlog/R-031-docpath-plan-go-plan.md | runbook | project | 2 | false | false | 94 |  | R-031-docpath-plan-go-plan | - 待补充 | 2026-05-31T19:09:29.692Z | 315B |
+| backlog/R-032-agent-handoff-next.md | runbook | project | 2 | false | false | 95 |  | R-032-agent-handoff-next | - 待补充 | 2026-05-31T19:13:32.421Z | 314B |
+| backlog/R-033-item.md | runbook | project | 2 | false | false | 89 |  | R-033-item | - 待补充 | 2026-05-31T19:17:35.585Z | 277B |
+| backlog/R-034-fail-loud.md | runbook | project | 2 | false | false | 87 |  | R-034-fail-loud | - 待补充 | 2026-05-31T19:27:23.712Z | 283B |
+| backlog/R-035-review.md | runbook | project | 2 | false | false | 89 |  | R-035-review | - 待补充 | 2026-05-31T19:31:41.907Z | 283B |
+| backlog/R-036-review-dry-run.md | runbook | project | 2 | false | false | 84 |  | R-036-review-dry-run | - 待补充 | 2026-05-31T19:36:40.607Z | 285B |
+| backlog/R-037-continue-next.md | runbook | project | 2 | false | false | 93 |  | R-037-continue-next | - 待补充 | 2026-05-31T19:43:00.574Z | 302B |
+| backlog/R-038-resume.md | runbook | project | 2 | false | false | 89 |  | R-038-resume | - 待补充 | 2026-05-31T19:50:50.055Z | 283B |
+| backlog/R-039-status-phase-gate.md | runbook | project | 2 | false | false | 90 |  | R-039-status-phase-gate | - 待补充 | 2026-05-31T20:01:19.674Z | 302B |
+| backlog/R-040-check.md | runbook | project | 2 | false | false | 241 |  | R-040-check | - 开发 R-039 时，`docpath check` 报结构校验失败但没有清晰标出实际读取文件路径与定位。 | 2026-06-01T03:55:59.257Z | 650B |
+| backlog/R-041-tasks-current.md | runbook | project | 2 | false | false | 249 |  | R-041-tasks-current | - 开发 R-039 时，任务目录副本与 `.docpath/tasks/current/*` 存在不同步风险。 | 2026-06-01T04:05:35.318Z | 684B |
+| backlog/R-042-dist.md | runbook | project | 2 | false | false | 206 |  | R-042-dist | - 全量测试并发运行 CLI 子进程时，`tsup --clean` 可能清理正在被其他测试读取的 `dist/chunk-*.js`。 | 2026-06-01T04:59:22.182Z | 565B |
+| backlog/R-043-backlog-id-allocation.md | runbook | project | 2 | false | false | 284 |  | R-043-backlog-id-allocation | - 并发执行多个 `docpath backlog add` 时，多个进程会同时读取相同最大 ID，导致新文件都写入相同 `id`。 | 2026-06-01T03:14:32.826Z | 792B |
+| backlog/R-044.md | runbook | project | 2 | false | false | 86 |  | R-044 | - 待补充 | 2026-06-01T09:04:03.819Z | 283B |
+| backlog/R-045.md | runbook | project | 2 | false | false | 84 |  | R-045 | - 待补充 | 2026-06-01T12:03:28.023Z | 280B |
+| backlog/R-046.md | runbook | project | 2 | false | false | 86 |  | R-046 | - 待补充 | 2026-06-01T12:17:03.307Z | 288B |
+| backlog/R-047.md | runbook | project | 2 | false | false | 81 |  | R-047 | - 待补充 | 2026-06-01T12:27:24.633Z | 274B |
+| backlog/R-048.md | runbook | project | 2 | false | false | 88 |  | R-048 | - 待补充 | 2026-06-01T12:39:40.134Z | 296B |
+| backlog/R-049.md | runbook | project | 2 | false | false | 87 |  | R-049 | - 待补充 | 2026-06-01T12:52:29.374Z | 303B |
+| backlog/R-050.md | runbook | project | 2 | false | false | 87 |  | R-050 | - 待补充 | 2026-06-01T12:58:56.096Z | 292B |
+| backlog/R-051.md | runbook | project | 2 | false | false | 98 |  | R-051 | - 待补充 | 2026-06-01T13:07:07.450Z | 323B |
+| backlog/R-052.md | runbook | project | 2 | false | false | 88 |  | R-052 | - 待补充 | 2026-06-01T13:20:09.279Z | 289B |
+| backlog/R-053.md | runbook | project | 2 | false | false | 90 |  | R-053 | - 待补充 | 2026-06-01T13:25:49.068Z | 295B |
+| backlog/R-054.md | runbook | project | 2 | false | false | 86 |  | R-054 | - 待补充 | 2026-06-01T13:31:04.510Z | 280B |
+| backlog/R-055.md | runbook | project | 2 | false | false | 90 |  | R-055 | - 待补充 | 2026-06-01T14:10:48.525Z | 295B |
+| backlog/R-056.md | runbook | project | 2 | false | false | 91 |  | R-056 | - 待补充 | 2026-06-01T14:17:21.697Z | 298B |
+| backlog/R-057.md | runbook | project | 2 | false | false | 101 |  | R-057 | - 待补充 | 2026-06-01T14:25:12.954Z | 338B |
+| backlog/R-058.md | runbook | project | 2 | false | false | 89 |  | R-058 | - 待补充 | 2026-06-01T14:31:46.710Z | 292B |
+| backlog/R-059.md | runbook | project | 2 | false | false | 96 |  | R-059 | - 待补充 | 2026-06-01T14:37:40.239Z | 319B |
+| backlog/R-060.md | runbook | project | 2 | false | false | 94 |  | R-060 | - 待补充 | 2026-06-01T14:43:45.155Z | 313B |
+| backlog/R-061.md | runbook | project | 2 | false | false | 94 |  | R-061 | - 待补充 | 2026-06-01T14:49:04.465Z | 313B |
+| backlog/R-062.md | runbook | project | 2 | false | false | 100 |  | R-062 | - 待补充 | 2026-06-01T14:54:11.493Z | 334B |
+| backlog/R-063.md | runbook | project | 2 | false | false | 85 |  | R-063 | - 待补充 | 2026-06-01T14:59:31.961Z | 284B |
+| backlog/R-064.md | runbook | project | 2 | false | false | 93 |  | R-064 | - 待补充 | 2026-06-01T15:05:06.409Z | 307B |
+| backlog/R-065.md | runbook | project | 2 | false | false | 89 |  | R-065 | - 待补充 | 2026-06-01T15:11:02.557Z | 292B |
+| backlog/R-066.md | runbook | project | 2 | false | false | 97 |  | R-066 | - 待补充 | 2026-06-01T15:18:29.685Z | 322B |
+| backlog/R-067.md | runbook | project | 2 | false | false | 89 |  | R-067 | - 待补充 | 2026-06-01T15:26:10.150Z | 292B |
+| backlog/R-068.md | runbook | project | 2 | false | false | 91 |  | R-068 | - 待补充 | 2026-06-01T15:32:40.127Z | 314B |
+| backlog/R-069.md | runbook | project | 2 | false | false | 89 |  | R-069 | - 待补充 | 2026-06-01T15:37:27.223Z | 308B |
+| backlog/R-070.md | runbook | project | 2 | false | false | 89 |  | R-070 | - 待补充 | 2026-06-01T15:43:16.104Z | 305B |
+| backlog/R-071.md | runbook | project | 2 | false | false | 87 |  | R-071 | - 待补充 | 2026-06-01T15:50:22.498Z | 283B |
+| backlog/R-072.md | runbook | project | 2 | false | false | 90 |  | R-072 | - 待补充 | 2026-06-01T15:59:48.481Z | 295B |
+| backlog/R-073.md | runbook | project | 2 | false | false | 91 |  | R-073 | - 待补充 | 2026-06-01T16:09:14.039Z | 298B |
+| backlog/R-074.md | runbook | project | 2 | false | false | 92 |  | R-074 | - 待补充 | 2026-06-01T16:15:51.642Z | 304B |
+| backlog/R-075.md | runbook | project | 2 | false | false | 89 |  | R-075 | - 待补充 | 2026-06-01T16:24:53.258Z | 292B |
+| backlog/R-076.md | runbook | project | 2 | false | false | 92 |  | R-076 | - 待补充 | 2026-06-01T16:32:58.800Z | 304B |
+| backlog/R-077.md | runbook | project | 2 | false | false | 82 |  | R-077 | - 待补充 | 2026-06-01T16:39:27.489Z | 277B |
+| backlog/R-078.md | runbook | project | 2 | false | false | 86 |  | R-078 | - 待补充 | 2026-06-02T13:20:35.464Z | 271B |
+| backlog/R-079.md | runbook | project | 2 | false | false | 90 |  | R-079 | - 待补充 | 2026-06-02T14:06:04.420Z | 281B |
+| backlog/R-080.md | runbook | project | 2 | false | false | 83 |  | R-080 | - 待补充 | 2026-06-02T14:46:29.489Z | 266B |
+| backlog/R-081.md | runbook | project | 2 | false | false | 95 |  | R-081 | - 待补充 | 2026-06-03T00:50:31.503Z | 310B |
+| backlog/R-082.md | runbook | project | 2 | false | false | 93 |  | R-082 | - 待补充 | 2026-06-03T00:56:23.379Z | 289B |
+| backlog/R-083.md | runbook | project | 2 | false | false | 91 |  | R-083 | - 待补充 | 2026-06-03T01:00:42.312Z | 304B |
+| backlog/R-084.md | runbook | project | 2 | false | false | 92 |  | R-084 | - 待补充 | 2026-06-03T01:05:25.332Z | 311B |
+| backlog/R-085.md | runbook | project | 2 | false | false | 86 |  | R-085 | - 待补充 | 2026-06-06T08:58:04.078Z | 271B |
+| backlog/R-086.md | runbook | project | 2 | false | false | 89 |  | R-086 | - 待补充 | 2026-06-06T09:10:13.549Z | 286B |
+| backlog/R-087.md | runbook | project | 2 | false | false | 98 |  | R-087 | - 待补充 | 2026-06-06T09:30:09.159Z | 332B |
+| backlog/R-088.md | runbook | project | 2 | false | false | 95 |  | R-088 | - 待补充 | 2026-06-06T09:38:41.512Z | 304B |
+| backlog/R-089.md | runbook | project | 2 | false | false | 96 |  | R-089 | - 待补充 | 2026-06-06T09:57:31.813Z | 311B |
+| backlog/R-090.md | runbook | project | 2 | false | false | 107 |  | R-090 | - 待补充 | 2026-06-06T11:32:39.896Z | 362B |
+| backlog/R-091.md | runbook | project | 2 | false | false | 399 |  | R-091 | - 当前 `docpath backlog add` 只能接收 `--title/--priority/--level`，正文固定生成“待补充”。 | 2026-06-06T13:34:36.449Z | 1.0KB |
+| backlog/R-092.md | runbook | project | 2 | false | false | 367 |  | R-092 | 当前 backlog 条目已经支持 add/list/accept/plan/promote/done/drop/refresh，但缺少 edit 命令。用户若要修正标题、优先级、复杂度或正文，只能手工编辑 markdown/frontmatter，容易造成 schema 错误、索引漂移或状态机语义不一致。R-091 已让新建条目可以写入高质量正文，下一步需 | 2026-06-06T14:19:05.840Z | 1.0KB |
+| backlog/R-093.md | runbook | project | 2 | false | false | 434 |  | R-093 | DocPath 已支持 backlog add 写入高质量正文，也支持 backlog edit 安全修改既有条目。下一步需要一个面向需求池的健康检查入口，帮助用户和 agent 发现低信息密度条目、状态/链接漂移、索引过期和优先级异常等问题。否则 backlog 虽然可以增改，但长期维护仍依赖人工扫描 markdown。 | 2026-06-06T14:52:08.604Z | 1.1KB |
+| backlog/R-094.md | runbook | project | 2 | false | false | 380 |  | R-094 | DocPath 已经具备 check/review/journal、backlog 维护和 git hooks 安装能力，但缺少一个提交前的只读变更收口视图。用户和 agent 需要快速了解当前任务改了哪些文件、验证证据是否满足提交条件、是否存在未跟踪文件或 DocPath 运行态变更，并获得建议 commit message。该命令不应包装 git com | 2026-06-07T15:22:53.496Z | 1.0KB |
+| backlog/R-095.md | runbook | project | 2 | false | false | 262 |  | R-095 | 用户希望添加页面，用来展示 DocPath 当前数据、执行进度和流程时间线。项目当前是 CLI，没有前端应用，适合在 export 命令中新增 HTML 静态页面输出能力。 | 2026-06-08T02:24:41.951Z | 702B |
+| backlog/R-096.md | runbook | project | 2 | false | false | 300 |  | R-096 | 上一轮将‘添加页面展示数据和流程’直接理解为 export HTML 并实现，缺少和用户确认产品形态、入口、数据范围和交互方式。需要在 Agent 协议中加入澄清门禁，防止页面、流程可视化、数据视图等模糊需求被直接开发。 | 2026-06-10T07:27:05.774Z | 763B |
+| backlog/R-133.md | runbook | project | 2 | false | false | 358 |  | R-133 | 用户指出当前流程在遇到重大变更时仍然依赖逐条补规则，缺少根本判断机制。需要把技术栈、架构、数据契约、UI 信息架构、工作流规则、权限/写操作、范围扩大、删除替换已有能力、长期维护成本等统一纳入重大变更门禁，要求先 brainstorm/Decision Brief 和用户确认，再进入实现。 | 2026-06-08T14:07:21.451Z | 928B |
+| backlog/R-142.md | runbook | project | 2 | false | false | 676 |  | R-142 | 对比 ReJeCtAll/ExpertTeam-Codex 后发现，DocPath 有强状态机与质量门禁，但缺少可复用的角色化上下文层。R-146 Fit Assessment 明确建议 R-142 不实现自动专家团编排，而是在 R-143 Payload/Hybrid Context Index 与 R-144 deliverables 索引之上，实现轻量 | 2026-06-09T05:05:20.103Z | 2.0KB |
+| backlog/R-143.md | runbook | project | 2 | false | false | 843 |  | R-143 | R-146 Fit Assessment 认为 WorkFlowX 的 Bus Payload 与 Hybrid Tree 思路值得吸收，但不应照搬外部 orchestrator、MCP 记忆图谱或多 Agent 自动编排。DocPath 的核心仍是文档状态机、CLI 路由、质量门禁和证据闭环；新增能力应作为 state/spec/plan/evidence | 2026-06-09T04:48:16.950Z | 2.3KB |
+| backlog/R-144.md | runbook | project | 2 | false | false | 725 |  | R-144 | ExpertTeam-Codex 的优势在于产物模板明确，例如 PRD、竞品分析、路线图、设计审查、QA 报告，并要求落盘到 deliverables 目录。R-146 Fit Assessment 建议 R-144 在 R-143 之后推进：先定义专家角色和业务交付物如何落盘、索引和被检查，避免后续 R-142 的角色产出只停留在聊天中。 | 2026-06-09T04:55:49.343Z | 1.9KB |
+| backlog/R-145.md | runbook | project | 2 | false | false | 449 |  | R-145 | ExpertTeam-Codex 的 $expert-* 使用体验简单，适合 Codex CLI / Codex App；DocPath 当前已有 install health，但更偏协议文件安装。若能生成 Codex Skill 入口，可把 DocPath 状态机能力包装成低门槛专家团体验。 | 2026-06-09T05:16:20.947Z | 1.3KB |
+| backlog/R-146.md | runbook | project | 2 | false | false | 729 |  | R-146 | R-142~R-145 来源于对 WorkFlowX 与 ExpertTeam-Codex 的参考吸收，但外部项目形态偏 Prompt/Skill/配置包，而 DocPath 的核心是文档状态机、CLI、可验证闭环。直接实现参考能力可能导致产品方向偏移，因此需要先做一次 DocPath Fit Assessment，判断哪些能力应进入核心、哪些只做适配层/模 | 2026-06-09T03:59:40.114Z | 1.9KB |
+| backlog/R-147.md | runbook | project | 2 | false | false | 544 |  | R-147 | DocPath 当前能通过 brainstorm/refine/write-spec 生成规约，也能通过 discover 探测项目，但缺少开发前的系统化准备阶段：需求分析、产品/用户场景分析、UI/UX 分析、技术影响分析与决策记录。用户明确指出：开发前准备能力不足，尤其需求分析和 UI 分析缺口明显。 | 2026-06-09T07:40:22.523Z | 1.4KB |
+| backlog/R-148.md | runbook | project | 2 | false | false | 516 |  | 修复开发前分析能力的 MVP 窄化问题 | 上一轮新增了 `docpath analyze` / `docpath write-analysis` / predev-analysis skill，用于开发前需求、产品、UI、技术影响分析。但实现存在 MVP 取舍过窄：核心产物落为单一 `analysis.md`，不利于后续 UI/产品/技术 skill 分别更新；命令和文档也围绕单文件模型设计。 | 2026-06-09T08:35:58.235Z | 1.4KB |
+| backlog/R-149.md | runbook | project | 2 | false | false | 692 |  | 增强开发前分析深度与质量门禁 | DocPath 已经具备 predev analysis 入口和 analysis/ 分区目录，但当前 analyze 输出仍偏提纲式：缺少结构化问题澄清、用户/业务目标拆解、UI/UX 信息架构、技术可行性与风险分析、分析质量检查，以及不同复杂度下的分析深度控制。用户反馈“分析太过简陋，并且感觉分析不足”。 | 2026-06-09T09:29:53.525Z | 1.8KB |
+| backlog/R-150.md | runbook | project | 2 | false | false | 383 |  | 背景 | Codex 实测显示 `docpath analyze --dry-run` 只回显输入，不能作为开发前分析预览；正式 `analyze` 虽生成 prompt payload 并推进 predev-analysis，但没有足够强制 Agent 写入/读取 `analysis/*`。 | 2026-06-09T10:29:24.022Z | 1.1KB |
+| backlog/R-151.md | runbook | project | 2 | false | false | 314 |  | 瘦身 AGENTS.md，减少与 DocPath Skill 重叠 | 用户确认 AGENTS.md 与 .codex/skills/docpath/SKILL.md 存在重叠，要求可以瘦身。目标是让 AGENTS.md 保留项目级总入口与项目特有规则，避免复制 Skill 的完整操作手册。 | 2026-06-09T12:15:46.825Z | 937B |
+| backlog/R-152.md | runbook | project | 2 | false | false | 376 |  | 允许 AGENTS.md 项目定制但继续校验 Skill manifest 漂移 | 上一轮 AGENTS.md 已瘦身为项目级入口，详细 DocPath 工作流由 Codex Skill 承担。但 install health 仍把根 AGENTS.md 与模板差异视为 install-manifest-drift，导致项目定制 AGENTS.md 后持续报错。 | 2026-06-09T12:32:23.115Z | 1.1KB |
+| backlog/R-153.md | runbook | project | 2 | false | false | 532 |  | 优化 DocPath Codex Skills 文案与触发边界 | 审核发现 DocPath 相关 Codex skills 已安装且模板与安装版一致，但仍存在触发覆盖不足、product/design 与主 skill 流程重复、software skill 缺少开发前技术分析入口、software First Commands 容易在非执行态误导 agent enter 等问题。 | 2026-06-09T12:48:28.861Z | 1.5KB |
+| backlog/R-154.md | runbook | project | 2 | false | false | 52 |  | R-154 | bg | 2026-06-09T15:57:57.419Z | 196B |
+| backlog/R-155.md | runbook | project | 2 | false | false | 530 |  | R-155 | 当前 DocPath Markdown 总量已接近 95 万字节，历史任务归档、workspace 决策日志、模板、设计文档和规则文件处在同一可读取面中。Agent 若默认扫描 .docpath/docs/templates，会产生高 token 消耗，并放大 current/canonical、rules/spec、archive/index 之间的漂移风 | 2026-06-12T14:18:27.684Z | 1.4KB |
+| backlog/backlog.md | runbook | project | 2 | false | false | 3759 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-06-12T14:18:27.709Z | 11.3KB |
+| commands/docpath-agent-done.md | reference | project | 3 | false | false | 278 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-06-09T10:18:05.266Z | 1.1KB |
+| commands/docpath-agent-enter.md | reference | project | 3 | false | false | 235 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-06-09T10:18:05.266Z | 939B |
+| commands/docpath-agent-handoff.md | reference | project | 3 | false | false | 257 |  | /docpath-agent-handoff | Persist a compact handoff package for the next Claude Code session. | 2026-06-09T10:18:05.266Z | 1.0KB |
+| commands/docpath-agent-step.md | reference | project | 3 | false | false | 475 |  | /docpath-agent-step | Record completion or blockage for one DocPath plan step. | 2026-06-09T10:18:05.267Z | 1.9KB |
+| commands/docpath-brainstorm.md | reference | project | 3 | false | false | 236 |  | /docpath-brainstorm | Clarify a vague request and generate a task/spec starting point. | 2026-06-09T10:18:05.267Z | 942B |
+| commands/docpath-changes.md | reference | project | 3 | false | false | 225 |  | docpath-changes | 运行 `docpath changes`，汇总当前 git 工作树变更、DocPath 门禁证据和建议 commit message。 | 2026-06-09T10:18:05.267Z | 803B |
+| commands/docpath-check.md | reference | project | 3 | false | false | 237 |  | /docpath-check — 任务前检查 | 在开始工作前检查环境和前置条件。 | 2026-06-09T10:18:05.268Z | 784B |
+| commands/docpath-compact.md | reference | project | 3 | false | false | 162 |  | /docpath-compact | Persist a compact runtime context package. | 2026-06-09T10:18:05.268Z | 646B |
+| commands/docpath-config.md | reference | project | 3 | false | false | 149 |  | /docpath-config | Inspect or update DocPath configuration. | 2026-06-09T10:18:05.268Z | 593B |
+| commands/docpath-context.md | reference | project | 3 | false | false | 224 |  | /docpath-context — 查看完整上下文 | 获取任务的完整上下文，包括状态、执行日志、规范文档。 | 2026-06-09T10:18:05.268Z | 742B |
+| commands/docpath-continue.md | reference | project | 3 | false | false | 254 |  | /docpath-continue — 继续当前任务 | 恢复中断的任务，读取当前状态继续执行。 | 2026-06-09T10:18:05.268Z | 844B |
+| commands/docpath-debug.md | reference | project | 3 | false | false | 150 |  | /docpath-debug | Run the systematic debugging workflow. | 2026-06-09T10:18:05.269Z | 597B |
+| commands/docpath-diff.md | reference | project | 3 | false | false | 169 |  | /docpath-diff | Inspect changes for the active task or step. | 2026-06-09T10:18:05.269Z | 673B |
+| commands/docpath-disclosure.md | reference | project | 3 | false | false | 160 |  | /docpath-disclosure | Show progressive disclosure output for the current project state. | 2026-06-09T10:18:05.269Z | 640B |
+| commands/docpath-discover.md | reference | project | 3 | false | false | 168 |  | /docpath-discover | Find the key DocPath context files for this project. | 2026-06-09T10:18:05.269Z | 670B |
+| commands/docpath-docs.md | reference | project | 3 | false | false | 158 |  | /docpath-docs | Manage the DocPath document asset index. | 2026-06-09T10:18:05.270Z | 630B |
+| commands/docpath-export.md | reference | project | 3 | false | false | 161 |  | /docpath-export | Export the DocPath workflow state as standalone markdown. | 2026-06-09T10:18:05.270Z | 643B |
+| commands/docpath-go.md | reference | project | 3 | false | false | 209 |  | /docpath-go | Start or continue execution from the current DocPath plan. | 2026-06-09T10:18:05.270Z | 836B |
+| commands/docpath-init.md | reference | project | 3 | false | false | 169 |  | /docpath-init | Initialize `.docpath/` in the current project. | 2026-06-09T10:18:05.270Z | 673B |
+| commands/docpath-install.md | reference | project | 3 | false | false | 186 |  | /docpath-install | Install DocPath agent protocol files into this project. | 2026-06-09T10:18:05.270Z | 743B |
+| commands/docpath-journal.md | reference | project | 3 | false | false | 170 |  | /docpath-journal | Archive lessons from the completed task. | 2026-06-09T10:18:05.271Z | 677B |
+| commands/docpath-learn.md | reference | project | 3 | false | false | 209 |  | /docpath-learn | Extract durable rules from journal entries into project guidance. | 2026-06-09T10:18:05.271Z | 836B |
+| commands/docpath-next.md | reference | project | 3 | false | false | 249 |  | /docpath-next | Use this command as the default entry point before deciding what to do next. | 2026-06-09T10:18:05.271Z | 993B |
+| commands/docpath-plan.md | reference | project | 3 | false | false | 170 |  | /docpath-plan | Generate an execution plan from the active `spec.md`. | 2026-06-09T10:18:05.271Z | 680B |
+| commands/docpath-projects.md | reference | project | 3 | false | false | 156 |  | /docpath-projects | View local projects registered in the DocPath SQLite registry. | 2026-06-09T10:18:05.271Z | 622B |
+| commands/docpath-refine.md | reference | project | 3 | false | false | 167 |  | /docpath-refine | Convert a requirement note into a structured DocPath spec input. | 2026-06-09T10:18:05.271Z | 666B |
+| commands/docpath-resume.md | reference | project | 3 | false | false | 167 |  | /docpath-resume | Resume from the last DocPath interruption point. | 2026-06-09T10:18:05.272Z | 668B |
+| commands/docpath-reveal.md | reference | project | 3 | false | false | 173 |  | /docpath-reveal | Reveal DocPath context at a controlled detail level. | 2026-06-09T10:18:05.272Z | 691B |
+| commands/docpath-review.md | reference | project | 3 | false | false | 170 |  | /docpath-review | Run a structured code review for the active task. | 2026-06-09T10:18:05.272Z | 680B |
+| commands/docpath-run.md | reference | project | 3 | false | false | 166 |  | /docpath-run | Record low-level DocPath runtime lifecycle events. | 2026-06-09T10:18:05.272Z | 662B |
+| commands/docpath-stats.md | reference | project | 3 | false | false | 143 |  | /docpath-stats | Show DocPath project statistics. | 2026-06-09T10:18:05.272Z | 571B |
+| commands/docpath-status.md | reference | project | 3 | false | false | 234 |  | /docpath-status — 查看当前状态 | 快速查看任务状态，不修改任何文件。 | 2026-06-09T10:18:05.272Z | 830B |
+| commands/docpath-tdd.md | reference | project | 3 | false | false | 161 |  | /docpath-tdd | Drive the DocPath TDD workflow. | 2026-06-09T10:18:05.272Z | 644B |
+| commands/docpath-unlink.md | reference | project | 3 | false | false | 169 |  | /docpath-unlink | Remove the current project association from DocPath. | 2026-06-09T10:18:05.272Z | 675B |
+| commands/docpath-write-design.md | reference | project | 3 | false | false | 801 |  | /docpath-write-design — 写入 UI/UX 设计证据 | 为 UI/UX、page、layout、navigation、visual、responsive、Figma、Stitch、v0、Framer 等界面任务写入当前任务的设计证据。 | 2026-06-10T07:23:00.644Z | 2.5KB |
+| commands/docpath-write-journal.md | reference | project | 3 | false | false | 191 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task spec. | 2026-06-09T10:18:05.273Z | 763B |
+| commands/docpath-write-plan.md | reference | project | 3 | false | false | 182 |  | /docpath-write-plan | Write a generated execution plan into the active DocPath task. | 2026-06-09T10:18:05.273Z | 726B |
+| commands/docpath-write-spec.md | reference | project | 3 | false | false | 180 |  | /docpath-write-spec | Write a refined spec into the active DocPath task. | 2026-06-09T10:18:05.273Z | 717B |
+| docs.md | index | project | 2 | false | false | 31936 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-06-12T14:17:14.342Z | 101.9KB |
+| harness.md | index | project | 2 | false | false | 252 |  | DocPath Harness Rules | - [ ] 读取 current.md 确认当前状态 | 2026-05-28T12:29:00.329Z | 786B |
+| protocols/AGENTS.md | index | project | 2 | false | false | 970 |  | DocPath — Agent Workflow Protocol | --- | 2026-06-10T07:32:04.041Z | 3.8KB |
+| protocols/CLAUDE.md | index | project | 2 | false | false | 1008 |  | DocPath — Claude Code Agent Protocol | 1. 先运行 `docpath status --agent` 或读取 `.docpath/workspace/current.md` | 2026-06-10T07:32:03.905Z | 2.8KB |
+| rules/architecture.md | reference | project | 2 | true | false | 382 |  | DocPath Architecture Rules | - `.docpath/rules/style.md` 和 `.docpath/rules/architecture.md` 是 preferred 规则真源；`.docpath/spec/style.md` 和 `.docpath/spec/architecture.md` 仅作 legacy fallback。 | 2026-06-12T14:04:44.391Z | 1.0KB |
+| rules/style.md | reference | project | 2 | true | false | 420 |  | DocPath Agent Style Rules | - 默认先读 `docpath status --agent`、`docpath next --agent`、`.docpath/workspace/current.md`、`.docpath/workspace/breadcrumb.md` 和当前任务的 `spec.md`/`plan.md`。 | 2026-06-12T14:04:31.321Z | 1.1KB |
+| skills/caveman.md | index | project | 2 | false | false | 260 |  | Skill: Caveman Mode (省 token 模式) | 1. **回复极简** — 不解释已知信息，只说做了什么 | 2026-06-09T10:18:05.265Z | 646B |
+| skills/diagnose.md | index | project | 2 | false | false | 258 |  | Skill: Diagnose (诊断) | - 遇到编译错误/运行时异常 | 2026-06-09T10:18:05.265Z | 633B |
+| skills/grill-me.md | index | project | 2 | false | false | 302 |  | Skill: Grill Me (计划压力测试) | - 计划是否能解决实际问题？ | 2026-06-09T10:18:05.265Z | 813B |
+| spec/architecture.md | reference | project | 2 | false | false | 246 |  | 项目架构规范 | <!-- 此文件由 docpath:journal 自动进化，记录项目架构决策和整体设计 --> | 2026-05-30T10:29:22.674Z | 616B |
+| spec/style.md | reference | project | 2 | false | false | 9083 |  | 代码规范与避坑指南 | <!-- 此文件由 docpath:journal 自动进化，记录项目级的编码规范和已知陷阱 --> | 2026-06-10T07:31:11.355Z | 29.9KB |
+| spec/template/architecture.template.md | reference | project | 3 | false | false | 246 |  | 项目架构规范 | <!-- 此文件由 docpath:journal 自动进化，记录项目架构决策和整体设计 --> | 2026-05-30T10:29:22.671Z | 616B |
+| spec/template/check.template.md | reference | project | 3 | false | false | 179 |  | 验证记录: {title} | - [ ] 环境就绪 | 2026-05-30T10:29:22.673Z | 450B |
+| spec/template/plan.template.md | reference | project | 3 | false | false | 249 |  | 执行计划: {title} | **基于**: spec.md (v{version}) | 2026-05-30T10:29:22.673Z | 619B |
+| spec/template/review.template.md | reference | project | 3 | false | false | 131 |  | 审查记录: {title} | <!-- 哪些文件/模块被审查 --> | 2026-05-30T10:29:22.673Z | 349B |
+| spec/template/spec.template.md | reference | project | 3 | false | false | 269 |  | 规约: {title} | **任务 ID**: T-{date}-{slug} | 2026-05-30T10:29:22.672Z | 701B |
+| spec/template/style.template.md | reference | project | 3 | false | false | 157 |  | 代码规范与避坑指南 | <!-- 此文件由 docpath:journal 自动进化，记录项目级的编码规范和已知陷阱 --> | 2026-05-30T10:29:22.672Z | 365B |
+| spec/template/task.template.md | reference | project | 3 | false | false | 125 |  | 任务: {title} | **级别**: Level 1 | 2026-05-30T10:29:22.673Z | 335B |
+| tasks/T-20260609-codex-skill-docpath/plan.md | runbook | task | 1 | false | false | 426 | T-20260609-codex-skill-docpath | plan | - [x] S1: 梳理 增加 Codex Skill 适配器封装 DocPath 专家团入口 | 2026-06-09T05:15:49.854Z | 1.1KB |
+| tasks/T-20260609-codex-skill-docpath/spec.md | runbook | task | 1 | false | false | 2084 | T-20260609-codex-skill-docpath | T-20260609-codex-skill-docpath - 增加 Codex Skill 适配器封装 DocPath 专家团入口 | ExpertTeam-Codex 的 $expert-* 使用体验简单，适合 Codex CLI / Codex App；DocPath 当前已有 install health，但更偏协议文件安装。若能生成 Codex Skill 入口，可把 DocPath 状态机能力包装成低门槛专家团体验。 | 2026-06-09T05:07:38.124Z | 5.6KB |
+| tasks/T-20260609-deliverables/plan.md | runbook | task | 1 | false | false | 421 | T-20260609-deliverables | plan | - [x] S1: 梳理 增加业务交付物模板库与 deliverables 索引 | 2026-06-09T04:53:34.656Z | 1.0KB |
+| tasks/T-20260609-deliverables/spec.md | runbook | task | 1 | false | false | 1768 | T-20260609-deliverables | T-20260609-deliverables - 增加业务交付物模板库与 deliverables 索引 | ExpertTeam-Codex 的优势在于产物模板明确，例如 PRD、竞品分析、路线图、设计审查、QA 报告，并要求落盘到 deliverables 目录。R-146 Fit Assessment 建议 R-144 在 R-143 之后推进：先定义专家角色和业务交付物如何落盘、索引和被检查，避免后续 R-142 的角色产出只停留在聊天中。 | 2026-06-09T04:49:16.568Z | 4.5KB |
+| tasks/T-20260609-docpath-fit-assessment/plan.md | runbook | task | 1 | false | false | 416 | T-20260609-docpath-fit-assessment | plan | - [x] S1: 梳理 对外部参考项目能力进行 DocPath Fit Assessment | 2026-06-09T03:57:31.653Z | 1.0KB |
+| tasks/T-20260609-docpath-fit-assessment/spec.md | runbook | task | 1 | false | false | 1290 | T-20260609-docpath-fit-assessment | T-20260609-docpath-fit-assessment - 对外部参考项目能力进行 DocPath Fit Assessment | R-142~R-145 来源于对 WorkFlowX 与 ExpertTeam-Codex 的参考吸收，但外部项目形态偏 Prompt/Skill/配置包，而 DocPath 的核心是文档状态机、CLI、可验证闭环。直接实现参考能力可能导致产品方向偏移，因此需要先做一次 DocPath Fit Assessment，判断哪些能力应进入核心、哪些只做适配层/模 | 2026-06-09T03:50:05.462Z | 3.3KB |
+| tasks/T-20260609-payload-hybrid-context-index/plan.md | runbook | task | 1 | false | false | 376 | T-20260609-payload-hybrid-context-index | plan | - [x] S1: 梳理 引入结构化 Payload 与 Hybrid Context Index | 2026-06-09T04:46:06.457Z | 1004B |
+| tasks/T-20260609-payload-hybrid-context-index/spec.md | runbook | task | 1 | false | false | 1927 | T-20260609-payload-hybrid-context-index | T-20260609-payload-hybrid-context-index - 引入结构化 Payload 与 Hybrid Context Index | R-146 Fit Assessment 认为 WorkFlowX 的 Bus Payload 与 Hybrid Tree 思路值得吸收，但不应照搬外部 orchestrator、MCP 记忆图谱或多 Agent 自动编排。DocPath 的核心仍是文档状态机、CLI 路由、质量门禁和证据闭环；新增能力应作为 state/spec/plan/evidence | 2026-06-09T04:41:38.203Z | 5.0KB |
+| tasks/T-20260609-role-profile-role-based-context/plan.md | runbook | task | 1 | false | false | 349 | T-20260609-role-profile-role-based-context | plan | - [x] S1: 梳理 引入 Role Profile 与 role-based context | 2026-06-09T04:59:27.594Z | 962B |
+| tasks/T-20260609-role-profile-role-based-context/spec.md | runbook | task | 1 | false | false | 1651 | T-20260609-role-profile-role-based-context | T-20260609-role-profile-role-based-context - 引入 Role Profile 与 role-based context | 对比 ReJeCtAll/ExpertTeam-Codex 后发现，DocPath 有强状态机与质量门禁，但缺少可复用的角色化上下文层。R-146 Fit Assessment 明确建议 R-142 不实现自动专家团编排，而是在 R-143 Payload/Hybrid Context Index 与 R-144 deliverables 索引之上，实现轻量 | 2026-06-09T04:57:02.898Z | 4.4KB |
+| tasks/T-20260609-ui-ux-design-preview-gate-visual-accepta/design-preview.md | runbook | task | 1 | false | false | 675 | T-20260609-ui-ux-design-preview-gate-visual-accepta | Design Preview: UI/UX Design Preview Gate | 为所有 UI/UX、UI、前端页面、组件布局类任务，在进入写代码前冻结可追踪的视觉意图，避免只有 analysis/spec/plan 但没有可评审的界面方向，导致实现完成后才发现“不符合预期”。 | 2026-06-10T07:23:32.378Z | 1.7KB |
+| tasks/T-20260609-ui-ux-design-preview-gate-visual-accepta/plan.md | runbook | task | 1 | false | false | 934 | T-20260609-ui-ux-design-preview-gate-visual-accepta | Plan: 为 UI/UX 任务增加 Design Preview Gate 与 Visual Acceptance | 当前 UI/UX 任务即使完成 analysis/spec/plan，仍可能因缺少可视化意图、HTML snapshot、视觉验收清单和实现前确认门禁，导致 Agent/Codex 直接进入编码并产出不符合偏好的 UI。本任务在 DocPath 流程中加入轻量但强约束的 Design Preview Gate。 | 2026-06-09T16:17:52.092Z | 2.3KB |
+| tasks/T-20260609-ui-ux-design-preview-gate-visual-accepta/spec.md | runbook | task | 1 | false | false | 1864 | T-20260609-ui-ux-design-preview-gate-visual-accepta | T-20260609-ui-ux-design-preview-gate-visual-accepta - 为 UI/UX 任务增加 Design Preview Gate 与 Visual Acceptance | UI/UX 类任务仅有 analysis/spec/plan 不足以约束视觉结果。UI/UX 整体重构虽补充了分析和计划，但实现后用户仍极其不满意，说明流程缺少设计预览冻结、视觉验收与用户确认门禁。 | 2026-06-10T07:23:32.377Z | 4.7KB |
+| tasks/T-20260609-ui-ux-design-preview-gate-visual-accepta/visual-acceptance.md | runbook | task | 1 | false | false | 463 | T-20260609-ui-ux-design-preview-gate-visual-accepta | Visual Acceptance: UI/UX Design Preview Gate | - 对 UI/UX 任务，`docpath check` 能识别相关关键词，并在缺失设计文档时失败。 | 2026-06-10T07:23:32.379Z | 1.2KB |
+| tasks/T-20260610-dashboard-readonly-viewer/plan.md | runbook | task | 1 | false | false | 883 | T-20260610-dashboard-readonly-viewer | plan | - **描述**: 新建 src/utils/ui-gate.ts，导出 resolveUiDesignRequirement(cwd) 返回 'required'|'exempt'|'unknown'（spec 4.1 显式框优先，未勾选时回退到关键词检测），以及 missingDesignArtifacts(cwd) 检查 design-preview. | 2026-06-11T07:18:06.545Z | 2.4KB |
+| tasks/T-20260610-dashboard-readonly-viewer/spec.md | runbook | task | 1 | false | false | 1460 | T-20260610-dashboard-readonly-viewer | T-20260610-ui-gate-hard-constraint - UI 设计门禁硬约束化 | 当前 DocPath 的 UI/UX 设计门禁只在 `docpath check`（实现之后）触发，且依赖正则猜测任务是否为 UI 任务。实测发现 5 条绕过路径，其中最严重两条： | 2026-06-11T06:53:45.874Z | 3.8KB |
+| tasks/T-20260610-ui-gate-hard-constraint/spec.md | runbook | task | 1 | false | false | 645 | T-20260610-ui-gate-hard-constraint | spec | 将 UI 设计门禁从 check 阶段的事后正则检测，前移为 go 进入执行前的硬门禁，并补齐 S5 回归测试，闭合 go/check 共享判定的单一真源。 | 2026-06-12T07:39:01.046Z | 1.7KB |
+| tasks/T-20260612-task/analysis/open-questions.md | runbook | task | 1 | false | false | 997 | T-20260612-task | open-questions | 以下问题已根据用户“正式推进”作出推荐决策，可直接写入 spec 的 Decision Brief： | 2026-06-12T13:31:52.797Z | 2.5KB |
+| tasks/T-20260612-task/analysis/product.md | runbook | task | 1 | false | false | 1565 | T-20260612-task | product | 用户价值： | 2026-06-12T13:29:28.027Z | 3.8KB |
+| tasks/T-20260612-task/analysis/requirements.md | runbook | task | 1 | false | false | 1884 | T-20260612-task | requirements | 目标：将 DocPath 的 Agent 上下文策略从“文档都可被读”收敛为“索引优先、当前任务优先、归档按需读取、规则高信号化”。本任务要降低默认上下文 token 消耗，减少文档真源漂移，同时保留长期记忆和历史追溯能力。 | 2026-06-12T13:28:58.972Z | 4.7KB |
+| tasks/T-20260612-task/analysis/risks.md | runbook | task | 1 | false | false | 1229 | T-20260612-task | risks | - 风险：过度收敛默认上下文后，Agent 可能缺少必要背景。 | 2026-06-12T13:31:07.551Z | 3.1KB |
+| tasks/T-20260612-task/analysis/technical.md | runbook | task | 1 | false | false | 1733 | T-20260612-task | technical | 受影响模块： | 2026-06-12T13:30:30.606Z | 4.7KB |
+| tasks/T-20260612-task/analysis/ui.md | runbook | task | 1 | false | false | 1539 | T-20260612-task | ui | 本任务不新增产品视觉页面的 MVP，但会改变 DocPath CLI/Dashboard 的信息架构。核心 IA 应从“目录树式文档集合”转为“索引入口 + 当前任务包 + 按需展开”。 | 2026-06-12T13:29:56.976Z | 4.0KB |
+| tasks/T-20260612-task/plan.md | runbook | task | 1 | false | false | 1332 | T-20260612-task | plan | - [x] S1: 定义上下文索引与预算模型 | 2026-06-12T14:17:06.036Z | 3.5KB |
+| tasks/T-20260612-task/spec.md | runbook | task | 1 | false | false | 3428 | T-20260612-task | T-20260612-task - 上下文读取策略索引化与规则高信号化 | 当前 DocPath 的长期记忆正在快速增长：Markdown 总量约 947KB，粗略估算约 24 万 token；`.docpath/workspace/decisions.md` 单文件约 58k token；`.docpath/tasks/done` 约 8.5 万 token。历史任务归档、workspace 日志、模板、设计文档、规则文件处在同一 | 2026-06-12T13:33:11.496Z | 8.6KB |
+| tasks/current/analysis/open-questions.md | runbook | task | 1 | false | false | 997 | T-20260612-task | open-questions | 以下问题已根据用户“正式推进”作出推荐决策，可直接写入 spec 的 Decision Brief： | 2026-06-12T13:31:52.797Z | 2.5KB |
+| tasks/current/analysis/product.md | runbook | task | 1 | false | false | 1565 | T-20260612-task | product | 用户价值： | 2026-06-12T13:29:28.027Z | 3.8KB |
+| tasks/current/analysis/requirements.md | runbook | task | 1 | false | false | 1884 | T-20260612-task | requirements | 目标：将 DocPath 的 Agent 上下文策略从“文档都可被读”收敛为“索引优先、当前任务优先、归档按需读取、规则高信号化”。本任务要降低默认上下文 token 消耗，减少文档真源漂移，同时保留长期记忆和历史追溯能力。 | 2026-06-12T13:28:58.972Z | 4.7KB |
+| tasks/current/analysis/risks.md | runbook | task | 1 | false | false | 1229 | T-20260612-task | risks | - 风险：过度收敛默认上下文后，Agent 可能缺少必要背景。 | 2026-06-12T13:31:07.551Z | 3.1KB |
+| tasks/current/analysis/technical.md | runbook | task | 1 | false | false | 1733 | T-20260612-task | technical | 受影响模块： | 2026-06-12T13:30:30.606Z | 4.7KB |
+| tasks/current/analysis/ui.md | runbook | task | 1 | false | false | 1539 | T-20260612-task | ui | 本任务不新增产品视觉页面的 MVP，但会改变 DocPath CLI/Dashboard 的信息架构。核心 IA 应从“目录树式文档集合”转为“索引入口 + 当前任务包 + 按需展开”。 | 2026-06-12T13:29:56.977Z | 4.0KB |
+| tasks/current/plan.md | runbook | task | 1 | true | false | 1332 | T-20260612-task | plan | - [x] S1: 定义上下文索引与预算模型 | 2026-06-12T14:17:06.036Z | 3.5KB |
+| tasks/current/spec.md | runbook | task | 1 | true | false | 3428 | T-20260612-task | T-20260612-task - 上下文读取策略索引化与规则高信号化 | 当前 DocPath 的长期记忆正在快速增长：Markdown 总量约 947KB，粗略估算约 24 万 token；`.docpath/workspace/decisions.md` 单文件约 58k token；`.docpath/tasks/done` 约 8.5 万 token。历史任务归档、workspace 日志、模板、设计文档、规则文件处在同一 | 2026-06-12T13:33:11.496Z | 8.6KB |
+| tasks/done/T-20260528-agent-integration/plan.md | runbook | task | 3 | false | true | 929 | T-20260528-agent-integration | 执行计划 | ``` | 2026-05-28T14:53:27.931Z | 2.6KB |
+| tasks/done/T-20260528-agent-integration/spec.md | runbook | task | 3 | false | true | 847 | T-20260528-agent-integration | 规约: Agent Integration (Phase 1+2) | DocPath 需要面向 AI Agent 的接口层，使其能被 Claude Code / OpenCode 等工具原生使用。 | 2026-05-28T14:37:39.406Z | 2.4KB |
+| tasks/done/T-20260528-harness-lite/plan.md | runbook | task | 3 | false | true | 838 | T-20260528-harness-lite | Plan: Harness Lite Phase 1 | **目标**: 让 `docpath check` 能发现并运行 typecheck 相关脚本 | 2026-05-29T05:13:03.422Z | 2.5KB |
+| tasks/done/T-20260528-harness-lite/spec.md | runbook | task | 3 | false | true | 605 | T-20260528-harness-lite | Spec: Harness Lite for DocPath | DocPath already treats documents as workflow state, but task completion still lacks a lightweight proof mechanism. | 2026-05-29T05:13:03.419Z | 2.4KB |
+| tasks/done/T-20260528-link/plan.md | runbook | task | 3 | false | true | 1102 | T-20260528-link | T-20260528-link 实现计划 | **链接机制**: 在 `.docpath/config.yaml` 中存储 `linked_to` 字段，指向目标项目的 `.docpath/` 目录。 | 2026-05-28T13:08:17.578Z | 3.3KB |
+| tasks/done/T-20260528-link/spec.md | runbook | task | 3 | false | true | 329 | T-20260528-link | T-20260528-link: docpath init --link 关联项目功能 | 支持 `docpath init --link <path>` 命令，允许当前项目关联另一个项目的 `.docpath/` 目录。 | 2026-05-28T13:07:00.238Z | 845B |
+| tasks/done/T-20260528-p2/plan.md | runbook | task | 3 | false | true | 1589 | T-20260528-p2 | 执行计划: Phase 2 — 动态升级引擎与 GSD 上下文编排 | **基于**: spec.md (v1.0) | 2026-05-28T02:05:35.695Z | 4.4KB |
+| tasks/done/T-20260528-p2/spec.md | runbook | task | 3 | false | true | 1520 | T-20260528-p2 | 规约: Phase 2 — 动态升级引擎与 GSD 上下文编排 | **任务 ID**: T-20260528-p2 | 2026-05-28T02:05:10.975Z | 3.9KB |
+| tasks/done/T-20260529-p3/plan.md | runbook | task | 3 | false | true | 1405 | T-20260529-p3 | Plan: Phase 3 — Agent Superpowers | **目标**: 实现 spec→plan→act→check→done 的 agent 纪律循环 | 2026-05-29T11:23:18.038Z | 4.1KB |
+| tasks/done/T-20260529-p3/spec.md | runbook | task | 3 | false | true | 586 | T-20260529-p3 | Spec: Phase 3 — Agent Superpowers (借鉴 Superpowers / Trellis / GSD) | DocPath P0/P1 已完成（state.json 单源、breadcrumb 结构化、verification 门禁、归档自动完成）。但从 Superpowers/Trellis/GSD 三方分析中发现 9 项优化尚未实现： | 2026-05-29T11:23:18.036Z | 1.8KB |
+| tasks/done/T-20260530-g1-g8-learn/plan.md | runbook | task | 3 | false | true | 1383 | T-20260530-g1-g8-learn | 执行计划 — next-phase 路线图尾部收口 | - [ ] **S1**: 哨兵读写模块 pending-done.ts | 2026-05-30T13:07:22.689Z | 4.1KB |
+| tasks/done/T-20260530-g1-g8-learn/spec.md | runbook | task | 3 | false | true | 1756 | T-20260530-g1-g8-learn | spec | title: "完成 next-phase 路线图尾部：生命周期哨兵 + journal→learn 管线 + docs-index 验证" | 2026-05-30T13:07:22.687Z | 5.0KB |
+| tasks/done/T-20260531-agent-done/plan.md | runbook | task | 3 | false | true | 414 | T-20260531-agent-done | plan | - [x] S1: 明确跳过测试理由门禁与参数语义 | 2026-05-31T17:14:16.034Z | 1020B |
+| tasks/done/T-20260531-agent-done/spec.md | runbook | task | 3 | false | true | 347 | T-20260531-agent-done | T-20260531-agent-done - agent done 跳过测试时强制提供结构化理由 | - 待补充 | 2026-05-31T17:02:29.803Z | 942B |
+| tasks/done/T-20260531-agent-handoff-next/plan.md | runbook | task | 3 | false | true | 472 | T-20260531-agent-handoff-next | plan | - [x] S1: 明确 handoff 当前实现与设计目标的差距 | 2026-05-31T19:13:03.766Z | 1.2KB |
+| tasks/done/T-20260531-agent-handoff-next/spec.md | runbook | task | 3 | false | true | 1400 | T-20260531-agent-handoff-next | T-20260531-agent-handoff-next - 增强 agent handoff 交接包并附带 next 路由结果 | 设计文档在 P1.3 / G6.1 中把 `agent handoff` 定位为“真正的 Agent 交接协议”，要求新会话只读 `compact-context.md` 就能恢复：既要看到当前状态、目标、失败证据、必读文件，也要直接看到 `next --agent` 给出的下一步路由。 | 2026-05-31T19:11:25.633Z | 3.6KB |
+| tasks/done/T-20260531-agent-step-skipped-blocked-plan/plan.md | runbook | task | 3 | false | true | 411 | T-20260531-agent-step-skipped-blocked-plan | plan | - [x] S1: 明确 skipped/blocked 与 plan 标记映射 | 2026-05-31T17:50:25.712Z | 1.1KB |
+| tasks/done/T-20260531-agent-step-skipped-blocked-plan/spec.md | runbook | task | 3 | false | true | 351 | T-20260531-agent-step-skipped-blocked-plan | T-20260531-agent-step-skipped-blocked-plan - agent step 在 skipped/blocked 场景下同步 plan 状态 | - 待补充 | 2026-05-31T17:44:47.018Z | 994B |
+| tasks/done/T-20260531-agents-codex-opencode/plan.md | runbook | task | 3 | false | true | 489 | T-20260531-agents-codex-opencode | plan | - [x] S1: 明确 AGENTS 协议模板的漂移点与安装路径 | 2026-05-31T19:00:49.021Z | 1.2KB |
+| tasks/done/T-20260531-agents-codex-opencode/spec.md | runbook | task | 3 | false | true | 1395 | T-20260531-agents-codex-opencode | T-20260531-agents-codex-opencode - 清理过时 AGENTS 协议模板并统一 Codex/OpenCode 协议文案 | 设计文档把 DocPath 定位为“多 Agent 共享的本地协议层”，这意味着 Claude、Codex、OpenCode 三端安装资产都必须指向同一套当前工作流语义，而不能残留历史协议。 | 2026-05-31T18:58:43.820Z | 3.6KB |
+| tasks/done/T-20260531-check/plan.md | runbook | task | 3 | false | true | 423 | T-20260531-check | plan | - [x] S1: 明确 check_fail 与 TDD 恢复语义 | 2026-05-31T18:42:38.725Z | 1.1KB |
+| tasks/done/T-20260531-check/spec.md | runbook | task | 3 | false | true | 1176 | T-20260531-check | T-20260531-check - 细化 check 失败后的恢复路由 | 设计文档 `docs/design/next-phase-tasks.md` 在 `§3.3` / `§11.4` 明确提到：质量门禁失败后，应推荐 `docpath tdd` 或调试流程，而不是只给出笼统的下一步。 | 2026-05-31T18:40:54.477Z | 3.1KB |
+| tasks/done/T-20260531-check-plan-breadcrumb/plan.md | runbook | task | 3 | false | true | 458 | T-20260531-check-plan-breadcrumb | plan | - [x] S1: 明确漂移报告的输出契约与修复建议 | 2026-05-31T18:20:16.468Z | 1.1KB |
+| tasks/done/T-20260531-check-plan-breadcrumb/spec.md | runbook | task | 3 | false | true | 353 | T-20260531-check-plan-breadcrumb | T-20260531-check-plan-breadcrumb - 增强 check 的 plan-breadcrumb 漂移报告与修复建议 | - 待补充 | 2026-05-31T18:18:14.675Z | 978B |
+| tasks/done/T-20260531-claude/plan.md | runbook | task | 3 | false | true | 455 | T-20260531-claude | plan | - [x] S1: 明确 Claude 协议模板的当前真源与漂移点 | 2026-05-31T18:55:32.214Z | 1.1KB |
+| tasks/done/T-20260531-claude/spec.md | runbook | task | 3 | false | true | 1250 | T-20260531-claude | T-20260531-claude - 清理过时协议模板并统一 Claude 协议文案 | 设计文档把 DocPath 定位为“多 Agent 共享的本地协议层”。这意味着不仅安装命令要能生成目标文件，协议模板本身也必须与当前 CLI 真相一致。 | 2026-05-31T18:52:08.982Z | 3.1KB |
+| tasks/done/T-20260531-codex/plan.md | runbook | task | 3 | false | true | 443 | T-20260531-codex | plan | - [x] S1: 明确 codex 独立安装的目标产物与边界 | 2026-05-31T18:48:11.683Z | 1.1KB |
+| tasks/done/T-20260531-codex/spec.md | runbook | task | 3 | false | true | 1163 | T-20260531-codex | T-20260531-codex - 补齐 codex 安装目标的独立验收 | 设计文档 `docs/design/next-phase-tasks.md` 的 P3 明确把 `codex|claude|opencode|universal` 列为对外承诺的安装目标。 | 2026-05-31T18:46:36.540Z | 2.9KB |
+| tasks/done/T-20260531-continue-next/plan.md | runbook | task | 3 | false | true | 414 | T-20260531-continue-next | plan | - [x] S1: 明确 continue 的旧路由漂移点与测试入口 | 2026-05-31T19:41:55.049Z | 1022B |
+| tasks/done/T-20260531-continue-next/spec.md | runbook | task | 3 | false | true | 764 | T-20260531-continue-next | T-20260531-continue-next - 让 continue 命令对齐 next 路由与新状态模型 | `docpath continue` 目前仍依赖旧的 `state` 映射和硬编码的 `docpath:brainstorm` / `planning_done` / `build_pass` 等历史术语，没有复用当前 `phase/gate + next --agent` 的单一真源路由。结果是恢复命令给出的建议和真实工作流可能不一致，削弱了断线恢复的可信 | 2026-05-31T19:38:41.380Z | 1.9KB |
+| tasks/done/T-20260531-docpath-plan-go-plan/plan.md | runbook | task | 3 | false | true | 458 | T-20260531-docpath-plan-go-plan | plan | - [x] S1: 明确 plan→go 断点的文件契约与复现边界 | 2026-05-31T19:09:04.517Z | 1.2KB |
+| tasks/done/T-20260531-docpath-plan-go-plan/spec.md | runbook | task | 3 | false | true | 1322 | T-20260531-docpath-plan-go-plan | T-20260531-docpath-plan-go-plan - 修复 docpath plan 与 go 之间的 plan 写入断点 | 当前 DocPath 的标准任务主路径是：`backlog promote` → `write-spec` / `plan` → `go --step ...` → `agent step/done`。理论上 `docpath plan` 应该把当前任务推进到“可执行计划就绪”，让 `docpath go` 能直接读取 plan 并进入第一个子任务。 | 2026-05-31T19:07:29.281Z | 3.5KB |
+| tasks/done/T-20260531-fail-loud/plan.md | runbook | task | 3 | false | true | 510 | T-20260531-fail-loud | plan | - [x] S1: 明确未知位置参数的当前缺口与安全边界 | 2026-05-31T19:27:01.165Z | 1.2KB |
+| tasks/done/T-20260531-fail-loud/spec.md | runbook | task | 3 | false | true | 1390 | T-20260531-fail-loud | T-20260531-fail-loud - 补齐未知位置参数的 fail-loud 校验 | 设计文档在 Dogfooding 章节里明确保留了一个后续缺口：当前 fail-loud 只覆盖了“未知命令 / 未知 flag / 缺失必填参数”，但对“命令已匹配后额外塞入未知位置参数”的情况还没有统一拦截。 | 2026-05-31T19:20:19.897Z | 3.3KB |
+| tasks/done/T-20260531-go-plan/plan.md | runbook | task | 3 | false | true | 422 | T-20260531-go-plan | plan | - [x] S1: 明确 go 收尾模式的命令语义 | 2026-05-31T17:57:33.300Z | 1.1KB |
+| tasks/done/T-20260531-go-plan/spec.md | runbook | task | 3 | false | true | 345 | T-20260531-go-plan | T-20260531-go-plan - 为 go 命令增加步骤收尾状态并同步 plan | - 待补充 | 2026-05-31T17:53:13.989Z | 932B |
+| tasks/done/T-20260531-journal-decisions/plan.md | runbook | task | 3 | false | true | 466 | T-20260531-journal-decisions | plan | - [x] S1: 明确 journal 决策提取规则 | 2026-05-31T18:23:48.879Z | 1.1KB |
+| tasks/done/T-20260531-journal-decisions/spec.md | runbook | task | 3 | false | true | 352 | T-20260531-journal-decisions | T-20260531-journal-decisions - journal 自动提取架构决策并追加 decisions 日志 | - 待补充 | 2026-05-31T18:21:37.005Z | 966B |
+| tasks/done/T-20260531-learn/plan.md | runbook | task | 3 | false | true | 492 | T-20260531-learn | plan | - [x] S1: 明确 learn 的稳定键与历史去重边界 | 2026-05-31T18:30:44.181Z | 1.2KB |
+| tasks/done/T-20260531-learn/spec.md | runbook | task | 3 | false | true | 1449 | T-20260531-learn | T-20260531-learn - 强化 learn 的去重与来源策略 | 当前 `learn` 已支持 `--from-journal` 与 `--dry-run`，但去重仍主要依赖本轮提取结果的文本唯一性： | 2026-05-31T18:27:06.299Z | 3.5KB |
+| tasks/done/T-20260531-learn-from-journal-dry-run/plan.md | runbook | task | 3 | false | true | 369 | T-20260531-learn-from-journal-dry-run | plan | - [x] S1: 明确 learn 数据源优先级与预览语义 | 2026-05-31T17:31:09.336Z | 953B |
+| tasks/done/T-20260531-learn-from-journal-dry-run/spec.md | runbook | task | 3 | false | true | 347 | T-20260531-learn-from-journal-dry-run | T-20260531-learn-from-journal-dry-run - 为 learn 增加 from-journal 管线与 dry-run 预览 | - 待补充 | 2026-05-31T17:19:17.475Z | 976B |
+| tasks/done/T-20260531-opencode/plan.md | runbook | task | 3 | false | true | 490 | T-20260531-opencode | plan | - [x] S1: 明确 OpenCode 协议模板的漂移点与测试边界 | 2026-05-31T19:05:31.397Z | 1.2KB |
+| tasks/done/T-20260531-opencode/spec.md | runbook | task | 3 | false | true | 1347 | T-20260531-opencode | T-20260531-opencode - 清理过时 OpenCode 协议模板并统一安装文案 | 设计文档将 DocPath 定位为“多 Agent 共享的本地协议层”。经过前两轮任务，Claude、AGENTS/Codex 侧协议已经回到当前 CLI 语义，但 OpenCode 入口模板仍保留一套更早期的操作说明。 | 2026-05-31T19:03:56.789Z | 3.4KB |
+| tasks/done/T-20260531-resume/plan.md | runbook | task | 3 | false | true | 428 | T-20260531-resume | plan | - [x] S1: 明确 resume 的旧协议漂移点与测试场景 | 2026-05-31T19:50:14.790Z | 1.0KB |
+| tasks/done/T-20260531-resume/spec.md | runbook | task | 3 | false | true | 783 | T-20260531-resume | T-20260531-resume - 让 resume 命令对齐当前状态真源与路由 | `docpath resume` 目前直接从 `current.md` 用正则提取旧字段，并输出固定的 `docpath:go` / `docpath:review` 等历史命令名，没有复用当前 `state.json` 真源和 `next --agent` 的统一路由。因此在 drafting 或 completed 等状态下，它会给出和真实工作流不一致的 | 2026-05-31T19:45:20.898Z | 2.0KB |
+| tasks/done/T-20260531-review/plan.md | runbook | task | 3 | false | true | 391 | T-20260531-review | plan | - [x] S1: 复核 review 输出缺口与测试入口 | 2026-05-31T19:31:04.635Z | 950B |
+| tasks/done/T-20260531-review/spec.md | runbook | task | 3 | false | true | 678 | T-20260531-review | T-20260531-review - 修复 review 提示中的文件名占位符输出 | review 命令在输出 info 级提示时，把文件名前缀误写成了字面量 `[f.file]`，导致审查报告对用户不可追踪。这个问题虽然不影响 exit code，但会直接破坏 review 结果的可读性和定位价值。 | 2026-05-31T19:29:38.960Z | 1.7KB |
+| tasks/done/T-20260531-review-dry-run/plan.md | runbook | task | 3 | false | true | 391 | T-20260531-review-dry-run | plan | - [x] S1: 复核 review dry-run 缺口与副作用边界 | 2026-05-31T19:35:58.131Z | 986B |
+| tasks/done/T-20260531-review-dry-run/spec.md | runbook | task | 3 | false | true | 796 | T-20260531-review-dry-run | T-20260531-review-dry-run - 补齐 review --dry-run 预览模式 | 当前测试和部分工作流假定 `docpath review --dry-run` 可用，但 CLI 实际未注册该选项，运行时会因未知参数直接失败。这导致测试以“只要有输出就算通过”的方式掩盖了命令契约缺口，也让用户无法安全预览 review 结果。 | 2026-05-31T19:33:45.352Z | 1.9KB |
+| tasks/done/T-20260531-stale-pending-done-24h/plan.md | runbook | task | 3 | false | true | 428 | T-20260531-stale-pending-done-24h | plan | - [x] S1: 明确 stale pending-done 的统一触发语义 | 2026-05-31T18:37:10.420Z | 1.1KB |
+| tasks/done/T-20260531-stale-pending-done-24h/spec.md | runbook | task | 3 | false | true | 1244 | T-20260531-stale-pending-done-24h | T-20260531-stale-pending-done-24h - 统一 stale pending-done 的 24h 告警入口 | 设计文档 `docs/design/next-phase-tasks.md` 在 `§11.2 G1` 明确要求：当 `pending-done.md` 超过 24 小时未清理时，应自动向 breadcrumb 追加 `[WARN] Task active >24h without done`。 | 2026-05-31T18:33:20.484Z | 3.3KB |
+| tasks/done/T-20260531-status-agent-plan-breadcrumb/plan.md | runbook | task | 3 | false | true | 440 | T-20260531-status-agent-plan-breadcrumb | plan | - [x] S1: 明确 status --agent 漂移摘要的数据契约 | 2026-05-31T18:11:48.190Z | 1.1KB |
+| tasks/done/T-20260531-status-agent-plan-breadcrumb/spec.md | runbook | task | 3 | false | true | 346 | T-20260531-status-agent-plan-breadcrumb | T-20260531-status-agent-plan-breadcrumb - 为 status --agent 增加 plan/breadcrumb 漂移摘要 | - 待补充 | 2026-05-31T17:59:37.296Z | 980B |
+| tasks/done/T-20260531-status-pending-done/plan.md | runbook | task | 3 | false | true | 496 | T-20260531-status-pending-done | plan | - [x] S1: 明确 status 告警触发条件与输出边界 | 2026-05-31T17:41:25.296Z | 1.2KB |
+| tasks/done/T-20260531-status-pending-done/spec.md | runbook | task | 3 | false | true | 348 | T-20260531-status-pending-done | T-20260531-status-pending-done - status 在 pending-done 场景下输出未收尾告警 | - 待补充 | 2026-05-31T17:34:15.853Z | 962B |
+| tasks/done/T-20260531-status-phase-gate/plan.md | runbook | task | 3 | false | true | 400 | T-20260531-status-phase-gate | plan | - [x] S1: 明确 status 输出的真源漂移点与测试场景 | 2026-05-31T19:58:01.909Z | 1001B |
+| tasks/done/T-20260531-status-phase-gate/spec.md | runbook | task | 3 | false | true | 758 | T-20260531-status-phase-gate | T-20260531-status-phase-gate - 让 status 人类输出对齐 phase/gate 真源 | 当前 `docpath status` 的人类可读输出只展示派生后的 `state`，还把 `.docpath/workspace/current.md` 当作主要状态文件来提示。现在工作流的真实状态已经稳定在 `state.json -> phase/gate/state` 三元组上，因此 `status` 的人类输出如果不展示 `phase/gate`， | 2026-05-31T19:57:47.432Z | 1.9KB |
+| tasks/done/T-20260531-task/plan.md | runbook | task | 3 | false | true | 492 | T-20260531-task | plan | - [x] S1: 明确非法转移提示的当前缺口与恢复语义 | 2026-05-31T19:17:04.878Z | 1.2KB |
+| tasks/done/T-20260531-task/spec.md | runbook | task | 3 | false | true | 1238 | T-20260531-task | T-20260531-task - 增强非法工作流状态转移的错误提示 | 设计文档在 G2.3 中明确要求：当 `transitionWorkflow()` 拒绝非法状态转移时，错误信息不应只停留在“不能从某个 phase 运行某事件”，而应同时给出当前 phase、允许的目标/来源和建议的下一步命令，帮助 Agent 直接恢复。 | 2026-05-31T19:15:23.212Z | 3.0KB |
+| tasks/done/T-20260601-abort-reset/plan.md | runbook | task | 3 | false | true | 442 | T-20260601-abort-reset | plan | - [x] S1: 明确 abort/reset 语义和命令边界 | 2026-06-01T12:02:29.544Z | 1.1KB |
+| tasks/done/T-20260601-abort-reset/spec.md | runbook | task | 3 | false | true | 1211 | T-20260601-abort-reset | T-20260601-abort-reset - 新增任务 abort/reset 状态流转 | - 在实际 Pair Programming 或 Agent 执行中，任务可能因需求错误、方向走偏或需要暂停而不应继续推进。 | 2026-06-01T11:59:25.189Z | 3.1KB |
+| tasks/done/T-20260601-agent-prompt-console-log/plan.md | runbook | task | 3 | false | true | 370 | T-20260601-agent-prompt-console-log | plan | - [x] S1: 梳理 移除 agent-prompt 生产 console.log 警告 | 2026-06-01T15:31:56.650Z | 983B |
+| tasks/done/T-20260601-agent-prompt-console-log/spec.md | runbook | task | 3 | false | true | 690 | T-20260601-agent-prompt-console-log | T-20260601-agent-prompt-console-log - 移除 agent-prompt 生产 console.log 警告 | - `src/utils/agent-prompt.ts` 的 `emitPrompt` 使用多处 `console.log` 逐行输出 YAML prompt。 | 2026-06-01T15:31:50.375Z | 1.9KB |
+| tasks/done/T-20260601-agentcommand/plan.md | runbook | task | 3 | false | true | 400 | T-20260601-agentcommand | plan | - [x] S1: 梳理 拆分 agentCommand 降低函数复杂度警告 | 2026-06-01T15:10:19.603Z | 997B |
+| tasks/done/T-20260601-agentcommand/spec.md | runbook | task | 3 | false | true | 348 | T-20260601-agentcommand | T-20260601-agentcommand - 拆分 agentCommand 降低函数复杂度警告 | - 待补充 | 2026-06-01T15:06:59.198Z | 953B |
+| tasks/done/T-20260601-backlog-add-id/plan.md | runbook | task | 3 | false | true | 476 | T-20260601-backlog-add-id | plan | - [x] S1: 明确 backlog ID 并发分配缺陷与最小修复边界 | 2026-06-01T03:13:41.200Z | 1.1KB |
+| tasks/done/T-20260601-backlog-add-id/spec.md | runbook | task | 3 | false | true | 907 | T-20260601-backlog-add-id | T-20260601-backlog-add-id - backlog add 分配 ID 时避免并发重复 | 并发执行多个 `docpath backlog add` 时，多个进程会同时读取相同最大 ID，导致新文件都写入相同 `id`。 | 2026-06-01T02:46:13.304Z | 2.3KB |
+| tasks/done/T-20260601-backlog-promote-task-id/plan.md | runbook | task | 3 | false | true | 242 | T-20260601-backlog-promote-task-id | plan | - [x] S1: 实现唯一 task_id 分配 | 2026-06-01T12:49:36.507Z | 631B |
+| tasks/done/T-20260601-backlog-promote-task-id/spec.md | runbook | task | 3 | false | true | 655 | T-20260601-backlog-promote-task-id | T-20260601-backlog-promote-task-id - backlog promote 生成唯一 task_id | - `backlog promote` 当前 task_id 由日期和标题 slug 组成。 | 2026-06-01T12:45:52.860Z | 1.8KB |
+| tasks/done/T-20260601-backlog-refresh/plan.md | runbook | task | 3 | false | true | 344 | T-20260601-backlog-refresh | plan | - [x] S1: 定义 refresh 命令行为 | 2026-06-01T12:58:23.906Z | 906B |
+| tasks/done/T-20260601-backlog-refresh/spec.md | runbook | task | 3 | false | true | 338 | T-20260601-backlog-refresh | T-20260601-backlog-refresh - 暴露 backlog refresh 命令重建索引 | - 待补充 | 2026-06-01T12:57:27.898Z | 941B |
+| tasks/done/T-20260601-brainstormcommand/plan.md | runbook | task | 3 | false | true | 409 | T-20260601-brainstormcommand | plan | - [x] S1: 梳理 拆分 brainstormCommand 降低函数复杂度警告 | 2026-06-01T15:04:23.506Z | 1.0KB |
+| tasks/done/T-20260601-brainstormcommand/spec.md | runbook | task | 3 | false | true | 354 | T-20260601-brainstormcommand | T-20260601-brainstormcommand - 拆分 brainstormCommand 降低函数复杂度警告 | - 待补充 | 2026-06-01T15:01:22.760Z | 978B |
+| tasks/done/T-20260601-breadcrumb-console-log/plan.md | runbook | task | 3 | false | true | 367 | T-20260601-breadcrumb-console-log | plan | - [x] S1: 梳理 移除 breadcrumb 生产 console.log 警告 | 2026-06-01T15:36:48.663Z | 969B |
+| tasks/done/T-20260601-breadcrumb-console-log/spec.md | runbook | task | 3 | false | true | 718 | T-20260601-breadcrumb-console-log | T-20260601-breadcrumb-console-log - 移除 breadcrumb 生产 console.log 警告 | - `src/engine/breadcrumb.ts` 的 `writeBreadcrumb` 在发生面包屑轮转时直接调用 `console.log` 输出提示。 | 2026-06-01T15:36:42.955Z | 1.9KB |
+| tasks/done/T-20260601-check/plan.md | runbook | task | 3 | false | true | 509 | T-20260601-check | plan | - [x] S1: 定位 check 结构校验错误来源 | 2026-06-01T03:54:32.434Z | 1.2KB |
+| tasks/done/T-20260601-check/spec.md | runbook | task | 3 | false | true | 760 | T-20260601-check | T-20260601-check - check 结构校验报错显示实际文件路径与定位 | - 开发 R-039 时，`docpath check` 报结构校验失败但没有清晰标出实际读取文件路径与定位。 | 2026-06-01T03:55:11.496Z | 1.9KB |
+| tasks/done/T-20260601-check-fail-debug-reproduce/plan.md | runbook | task | 3 | false | true | 437 | T-20260601-check-fail-debug-reproduce | plan | - [x] S1: 梳理 修复 check_fail 路由推荐不存在的 debug reproduce 命令 | 2026-06-01T14:24:35.738Z | 1.1KB |
+| tasks/done/T-20260601-check-fail-debug-reproduce/spec.md | runbook | task | 3 | false | true | 370 | T-20260601-check-fail-debug-reproduce | T-20260601-check-fail-debug-reproduce - 修复 check_fail 路由推荐不存在的 debug reproduce 命令 | - 待补充 | 2026-06-01T14:19:09.656Z | 1.0KB |
+| tasks/done/T-20260601-check-ts-any/plan.md | runbook | task | 3 | false | true | 370 | T-20260601-check-ts-any | plan | - [x] S1: 梳理 消除 check.ts 中的 any 类型警告 | 2026-06-01T14:58:44.772Z | 941B |
+| tasks/done/T-20260601-check-ts-any/spec.md | runbook | task | 3 | false | true | 335 | T-20260601-check-ts-any | T-20260601-check-ts-any - 消除 check.ts 中的 any 类型警告 | - 待补充 | 2026-06-01T14:56:14.317Z | 929B |
+| tasks/done/T-20260601-checkcommand/plan.md | runbook | task | 3 | false | true | 568 | T-20260601-checkcommand | plan | - [x] S1: 梳理 拆分 `checkCommand` 中的常规检查、任务文档检查、报告输出、状态/证据写入逻辑 | 2026-06-01T16:24:13.092Z | 1.4KB |
+| tasks/done/T-20260601-checkcommand/spec.md | runbook | task | 3 | false | true | 798 | T-20260601-checkcommand | T-20260601-checkcommand - 拆分 checkCommand 降低函数复杂度警告 | - `docpath review` 仍报告 `src/commands/check.ts` 中 `checkCommand` 函数过长。 | 2026-06-01T16:19:02.671Z | 2.1KB |
+| tasks/done/T-20260601-debugcommand/plan.md | runbook | task | 3 | false | true | 400 | T-20260601-debugcommand | plan | - [x] S1: 梳理 拆分 debugCommand 降低函数复杂度警告 | 2026-06-01T14:30:54.419Z | 997B |
+| tasks/done/T-20260601-debugcommand/spec.md | runbook | task | 3 | false | true | 348 | T-20260601-debugcommand | T-20260601-debugcommand - 拆分 debugCommand 降低函数复杂度警告 | - 待补充 | 2026-06-01T14:27:10.565Z | 953B |
+| tasks/done/T-20260601-dist/plan.md | runbook | task | 3 | false | true | 349 | T-20260601-dist | plan | - [x] S1: 明确测试构建竞争点与脚本边界 | 2026-06-01T04:58:47.518Z | 850B |
+| tasks/done/T-20260601-dist/spec.md | runbook | task | 3 | false | true | 774 | T-20260601-dist | T-20260601-dist - 隔离测试构建产物避免 dist 清理竞争 | - 全量测试并发运行 CLI 子进程时，`tsup --clean` 可能清理正在被其他测试读取的 `dist/chunk-*.js`。 | 2026-06-01T04:56:43.770Z | 1.9KB |
+| tasks/done/T-20260601-docpath-gc/plan.md | runbook | task | 3 | false | true | 313 | T-20260601-docpath-gc | plan | - [x] S1: 梳理任务目录枚举与安全边界 | 2026-06-01T08:57:22.367Z | 783B |
+| tasks/done/T-20260601-docpath-gc/spec.md | runbook | task | 3 | false | true | 849 | T-20260601-docpath-gc | T-20260601-docpath-gc - 实现 docpath gc 清理历史任务目录 | - 运行一段时间后，`.docpath/tasks/` 会堆积大量历史 `T-XXXX` 目录。 | 2026-06-01T08:51:02.820Z | 2.1KB |
+| tasks/done/T-20260601-docpath-plan-plan-md/plan.md | runbook | task | 3 | false | true | 391 | T-20260601-docpath-plan-plan-md | plan | - [x] S1: 明确 plan 自动写入策略 | 2026-06-01T13:06:29.795Z | 1.0KB |
+| tasks/done/T-20260601-docpath-plan-plan-md/spec.md | runbook | task | 3 | false | true | 367 | T-20260601-docpath-plan-plan-md | T-20260601-docpath-plan-plan-md - 修复 docpath plan 只输出提示不写入 plan.md 的断点 | - 待补充 | 2026-06-01T13:03:15.737Z | 1014B |
+| tasks/done/T-20260601-docsscan/plan.md | runbook | task | 3 | false | true | 393 | T-20260601-docsscan | plan | - [x] S1: 梳理 拆分 docsScan 降低函数复杂度警告 | 2026-06-01T13:30:11.183Z | 969B |
+| tasks/done/T-20260601-docsscan/spec.md | runbook | task | 3 | false | true | 343 | T-20260601-docsscan | T-20260601-docsscan - 拆分 docsScan 降低函数复杂度警告 | - 待补充 | 2026-06-01T13:27:44.062Z | 933B |
+| tasks/done/T-20260601-drift-auto-fix/plan.md | runbook | task | 3 | false | true | 430 | T-20260601-drift-auto-fix | plan | - [x] S1: 定位漂移检测与路由入口 | 2026-06-01T12:16:20.014Z | 1.1KB |
+| tasks/done/T-20260601-drift-auto-fix/spec.md | runbook | task | 3 | false | true | 1063 | T-20260601-drift-auto-fix | T-20260601-drift-auto-fix - 降低 tasks/current 漂移修复摩擦 | - DocPath 已经能检测 `tasks/current` 与 canonical 任务目录之间的漂移，并通过 `docpath tasks sync --from canonical|current` 显式修复。 | 2026-06-01T12:12:36.028Z | 2.8KB |
+| tasks/done/T-20260601-extractpatternsfromjournal/plan.md | runbook | task | 3 | false | true | 425 | T-20260601-extractpatternsfromjournal | plan | - [x] S1: 梳理 拆分 extractPatternsFromJournal 降低函数复杂度警告 | 2026-06-01T14:52:55.452Z | 1.1KB |
+| tasks/done/T-20260601-extractpatternsfromjournal/spec.md | runbook | task | 3 | false | true | 365 | T-20260601-extractpatternsfromjournal | T-20260601-extractpatternsfromjournal - 拆分 extractPatternsFromJournal 降低函数复杂度警告 | - 待补充 | 2026-06-01T14:50:32.129Z | 1023B |
+| tasks/done/T-20260601-generateagentoutput/plan.md | runbook | task | 3 | false | true | 412 | T-20260601-generateagentoutput | plan | - [x] S1: 梳理 拆分 generateAgentOutput 降低函数复杂度警告 | 2026-06-01T14:48:32.507Z | 1.0KB |
+| tasks/done/T-20260601-generateagentoutput/spec.md | runbook | task | 3 | false | true | 356 | T-20260601-generateagentoutput | T-20260601-generateagentoutput - 拆分 generateAgentOutput 降低函数复杂度警告 | - 待补充 | 2026-06-01T14:45:58.438Z | 988B |
+| tasks/done/T-20260601-gocommand/plan.md | runbook | task | 3 | false | true | 395 | T-20260601-gocommand | plan | - [x] S1: 梳理 拆分 goCommand 降低函数复杂度警告 | 2026-06-01T15:49:41.314Z | 976B |
+| tasks/done/T-20260601-gocommand/spec.md | runbook | task | 3 | false | true | 733 | T-20260601-gocommand | T-20260601-gocommand - 拆分 goCommand 降低函数复杂度警告 | - `src/commands/go.ts` 的 `goCommand` 当前承担输入校验、任务文件读取、目标步骤选择、上下文渲染、状态推进和完成态同步等多项职责。 | 2026-06-01T15:49:30.035Z | 1.9KB |
+| tasks/done/T-20260601-installcommand/plan.md | runbook | task | 3 | false | true | 404 | T-20260601-installcommand | plan | - [x] S1: 梳理 拆分 installCommand 降低函数复杂度警告 | 2026-06-01T14:16:20.036Z | 1011B |
+| tasks/done/T-20260601-installcommand/spec.md | runbook | task | 3 | false | true | 350 | T-20260601-installcommand | T-20260601-installcommand - 拆分 installCommand 降低函数复杂度警告 | - 待补充 | 2026-06-01T14:12:38.553Z | 963B |
+| tasks/done/T-20260601-journalcommand/plan.md | runbook | task | 3 | false | true | 404 | T-20260601-journalcommand | plan | - [x] S1: 梳理 拆分 journalCommand 降低函数复杂度警告 | 2026-06-01T16:08:24.191Z | 1011B |
+| tasks/done/T-20260601-journalcommand/spec.md | runbook | task | 3 | false | true | 779 | T-20260601-journalcommand | T-20260601-journalcommand - 拆分 journalCommand 降低函数复杂度警告 | - `src/commands/journal.ts` 的 `journalCommand` 同时承担归档门禁、任务摘要计算、Agent prompt 输出、任务目录归档、backlog 回填、lesson 候选、workspace meta、决策日志和架构决策提取等职责。 | 2026-06-01T16:08:13.463Z | 2.1KB |
+| tasks/done/T-20260601-learncommand/plan.md | runbook | task | 3 | false | true | 400 | T-20260601-learncommand | plan | - [x] S1: 梳理 拆分 learnCommand 降低函数复杂度警告 | 2026-06-01T15:24:42.653Z | 997B |
+| tasks/done/T-20260601-learncommand/spec.md | runbook | task | 3 | false | true | 348 | T-20260601-learncommand | T-20260601-learncommand - 拆分 learnCommand 降低函数复杂度警告 | - 待补充 | 2026-06-01T15:20:45.588Z | 953B |
+| tasks/done/T-20260601-lifecycle-console-log/plan.md | runbook | task | 3 | false | true | 365 | T-20260601-lifecycle-console-log | plan | - [x] S1: 梳理 移除 lifecycle 生产 console.log 警告 | 2026-06-01T15:42:19.536Z | 962B |
+| tasks/done/T-20260601-lifecycle-console-log/spec.md | runbook | task | 3 | false | true | 736 | T-20260601-lifecycle-console-log | T-20260601-lifecycle-console-log - 移除 lifecycle 生产 console.log 警告 | - `src/hooks/lifecycle.ts` 的内置生命周期钩子通过多处 `console.log` 输出会话恢复、自动压缩、检查点和任务结束提示。 | 2026-06-01T15:42:13.811Z | 2.0KB |
+| tasks/done/T-20260601-next-lesson/plan.md | runbook | task | 3 | false | true | 400 | T-20260601-next-lesson | plan | - [x] S1: 定位 next 路由与 lesson 候选格式 | 2026-06-01T12:26:43.661Z | 1.1KB |
+| tasks/done/T-20260601-next-lesson/spec.md | runbook | task | 3 | false | true | 987 | T-20260601-next-lesson | T-20260601-next-lesson - next 引导 lesson 候选固化 | - `docpath journal` 会把可复用经验写入 `.docpath/workspace/lesson-candidates.md`。 | 2026-06-01T12:23:35.844Z | 2.7KB |
+| tasks/done/T-20260601-next-lesson-pending/plan.md | runbook | task | 3 | false | true | 238 | T-20260601-next-lesson-pending | plan | - [x] S1: 实现未吸收 lesson 检测 | 2026-06-01T12:38:47.157Z | 630B |
+| tasks/done/T-20260601-next-lesson-pending/spec.md | runbook | task | 3 | false | true | 714 | T-20260601-next-lesson-pending | T-20260601-next-lesson-pending - next 仅提示未吸收 lesson 候选 | - R-047 已让 `next --agent` 在存在 lesson 候选时推荐 `docpath learn`。 | 2026-06-01T12:36:29.358Z | 1.9KB |
+| tasks/done/T-20260601-plancommand/plan.md | runbook | task | 3 | false | true | 398 | T-20260601-plancommand | plan | - [x] S1: 梳理 拆分 planCommand 降低函数复杂度警告 | 2026-06-01T13:19:28.030Z | 990B |
+| tasks/done/T-20260601-plancommand/spec.md | runbook | task | 3 | false | true | 346 | T-20260601-plancommand | T-20260601-plancommand - 拆分 planCommand 降低函数复杂度警告 | - 待补充 | 2026-06-01T13:16:50.484Z | 948B |
+| tasks/done/T-20260601-readlegacycurrentmd/plan.md | runbook | task | 3 | false | true | 412 | T-20260601-readlegacycurrentmd | plan | - [x] S1: 梳理 拆分 readLegacyCurrentMd 降低函数复杂度警告 | 2026-06-01T14:42:54.211Z | 1.0KB |
+| tasks/done/T-20260601-readlegacycurrentmd/spec.md | runbook | task | 3 | false | true | 356 | T-20260601-readlegacycurrentmd | T-20260601-readlegacycurrentmd - 拆分 readLegacyCurrentMd 降低函数复杂度警告 | - 待补充 | 2026-06-01T14:39:39.159Z | 988B |
+| tasks/done/T-20260601-refinecommand/plan.md | runbook | task | 3 | false | true | 402 | T-20260601-refinecommand | plan | - [x] S1: 梳理 拆分 refineCommand 降低函数复杂度警告 | 2026-06-01T13:24:46.508Z | 1004B |
+| tasks/done/T-20260601-refinecommand/spec.md | runbook | task | 3 | false | true | 349 | T-20260601-refinecommand | T-20260601-refinecommand - 拆分 refineCommand 降低函数复杂度警告 | - 待补充 | 2026-06-01T13:22:37.424Z | 958B |
+| tasks/done/T-20260601-registercommands/plan.md | runbook | task | 3 | false | true | 430 | T-20260601-registercommands | plan | - [x] S1: 梳理 按命令域拆分 `registerCommands` 中的 CLI 注册逻辑 | 2026-06-01T16:30:17.073Z | 1.1KB |
+| tasks/done/T-20260601-registercommands/spec.md | runbook | task | 3 | false | true | 734 | T-20260601-registercommands | T-20260601-registercommands - 拆分 registerCommands 降低函数复杂度警告 | - `docpath review` 仅剩 `src/commands/register.ts` 中 `registerCommands` 函数过长警告。 | 2026-06-01T16:27:01.024Z | 1.9KB |
+| tasks/done/T-20260601-rendercompactedcontext/plan.md | runbook | task | 3 | false | true | 418 | T-20260601-rendercompactedcontext | plan | - [x] S1: 梳理 拆分 renderCompactedContext 降低函数复杂度警告 | 2026-06-01T15:17:26.631Z | 1.0KB |
+| tasks/done/T-20260601-rendercompactedcontext/spec.md | runbook | task | 3 | false | true | 360 | T-20260601-rendercompactedcontext | T-20260601-rendercompactedcontext - 拆分 renderCompactedContext 降低函数复杂度警告 | - 待补充 | 2026-06-01T15:13:10.803Z | 1003B |
+| tasks/done/T-20260601-rendercurrentdocument/plan.md | runbook | task | 3 | false | true | 416 | T-20260601-rendercurrentdocument | plan | - [x] S1: 梳理 拆分 renderCurrentDocument 降低函数复杂度警告 | 2026-06-01T14:36:55.679Z | 1.0KB |
+| tasks/done/T-20260601-rendercurrentdocument/spec.md | runbook | task | 3 | false | true | 359 | T-20260601-rendercurrentdocument | T-20260601-rendercurrentdocument - 拆分 renderCurrentDocument 降低函数复杂度警告 | - 待补充 | 2026-06-01T14:33:42.617Z | 998B |
+| tasks/done/T-20260601-review-todo/plan.md | runbook | task | 3 | false | true | 421 | T-20260601-review-todo | plan | - [x] S1: 梳理 移除 review 扫描规则中的自触发 TODO 文本 | 2026-06-01T16:38:43.744Z | 1.0KB |
+| tasks/done/T-20260601-review-todo/spec.md | runbook | task | 3 | false | true | 661 | T-20260601-review-todo | T-20260601-review-todo - 清理 review TODO 自触发提示 | - `docpath review` 已无 warning，但仍报告 `src/commands/review.ts` 中的 info 级提示。 | 2026-06-01T16:35:29.126Z | 1.7KB |
+| tasks/done/T-20260601-reviewcommand/plan.md | runbook | task | 3 | false | true | 402 | T-20260601-reviewcommand | plan | - [x] S1: 梳理 拆分 reviewCommand 降低函数复杂度警告 | 2026-06-01T15:58:50.843Z | 1004B |
+| tasks/done/T-20260601-reviewcommand/spec.md | runbook | task | 3 | false | true | 769 | T-20260601-reviewcommand | T-20260601-reviewcommand - 拆分 reviewCommand 降低函数复杂度警告 | - `src/commands/review.ts` 的 `reviewCommand` 同时负责收集变更文件、静态分析、输出报告、处理 dry-run/approve、写入 breadcrumb/review.md/决策日志和推进状态机。 | 2026-06-01T15:58:43.128Z | 2.0KB |
+| tasks/done/T-20260601-runharnesschecks/plan.md | runbook | task | 3 | false | true | 407 | T-20260601-runharnesschecks | plan | - [x] S1: 梳理 拆分 runHarnessChecks 降低函数复杂度警告 | 2026-06-01T16:15:10.068Z | 1.0KB |
+| tasks/done/T-20260601-runharnesschecks/spec.md | runbook | task | 3 | false | true | 753 | T-20260601-runharnesschecks | T-20260601-runharnesschecks - 拆分 runHarnessChecks 降低函数复杂度警告 | - `docpath review` 仍报告 `src/commands/check.ts` 中 `runHarnessChecks` 函数过长。 | 2026-06-01T16:12:11.973Z | 2.0KB |
+| tasks/done/T-20260601-statuscommand/plan.md | runbook | task | 3 | false | true | 402 | T-20260601-statuscommand | plan | - [x] S1: 梳理 拆分 statusCommand 降低函数复杂度警告 | 2026-06-01T14:08:27.507Z | 1004B |
+| tasks/done/T-20260601-statuscommand/spec.md | runbook | task | 3 | false | true | 349 | T-20260601-statuscommand | T-20260601-statuscommand - 拆分 statusCommand 降低函数复杂度警告 | - 待补充 | 2026-06-01T13:33:00.458Z | 958B |
+| tasks/done/T-20260601-tasks-current/plan.md | runbook | task | 3 | false | true | 469 | T-20260601-tasks-current | plan | - [x] S1: 定位 current/canonical 任务文件链路 | 2026-06-01T04:04:56.096Z | 1.1KB |
+| tasks/done/T-20260601-tasks-current/spec.md | runbook | task | 3 | false | true | 893 | T-20260601-tasks-current | T-20260601-tasks-current - 检测并同步 tasks/current 与任务目录漂移 | - 开发 R-039 时，任务目录副本与 `.docpath/tasks/current/*` 存在不同步风险。 | 2026-06-01T03:58:48.510Z | 2.3KB |
+| tasks/done/T-20260602-registercommands/plan.md | runbook | task | 3 | false | true | 428 | T-20260602-registercommands | plan | - [x] S1: 梳理 重构 registerCommands 拆分为独立命令文件注册 | 2026-06-03T00:49:19.088Z | 1.0KB |
+| tasks/done/T-20260602-registercommands/spec.md | runbook | task | 3 | false | true | 362 | T-20260602-registercommands | T-20260602-registercommands - 重构 registerCommands 拆分为独立命令文件注册 | - 待补充 | 2026-06-02T15:47:55.894Z | 991B |
+| tasks/done/T-20260602-task/plan.md | runbook | task | 3 | false | true | 483 | T-20260602-task | plan | - [x] S1: 复现并定位红测 | 2026-06-02T13:19:45.528Z | 1.3KB |
+| tasks/done/T-20260602-task/spec.md | runbook | task | 3 | false | true | 728 | T-20260602-task | T-20260602-task - 修复状态机边界并恢复测试全绿 | - 项目当前已具备 Agent 工作流内核的基础能力，但 `pnpm test` 存在 1 个红测。 | 2026-06-02T13:12:49.703Z | 1.8KB |
+| tasks/done/T-20260602-task-2/plan.md | runbook | task | 3 | false | true | 299 | T-20260602-task-2 | plan | - [x] S1: 确认清理范围 | 2026-06-02T14:05:08.832Z | 760B |
+| tasks/done/T-20260602-task-2/spec.md | runbook | task | 3 | false | true | 702 | T-20260602-task-2 | T-20260602-task-2 - 清理明确冗余目录和运行态备份文件 | - 上一轮评估发现仓库存在空目录、运行态备份文件和疑似历史测试夹具。 | 2026-06-02T14:03:54.529Z | 1.8KB |
+| tasks/done/T-20260602-task-3/plan.md | runbook | task | 3 | false | true | 297 | T-20260602-task-3 | plan | - [x] S1: 确认夹具目录去留 | 2026-06-02T14:45:25.973Z | 791B |
+| tasks/done/T-20260602-task-3/spec.md | runbook | task | 3 | false | true | 612 | T-20260602-task-3 | T-20260602-task-3 - 评估并清理历史夹具目录 | - 上一轮清理保留了 `e2e-test/` 和 `temp-test/`，因为二者均被 Git 跟踪。 | 2026-06-02T14:45:25.972Z | 1.6KB |
+| tasks/done/T-20260603-check/plan.md | runbook | task | 3 | false | true | 451 | T-20260603-check | plan | - [x] S1: 梳理 在 check 检测到漂移时支持交互式或自动修复 | 2026-06-03T00:55:21.319Z | 1.0KB |
+| tasks/done/T-20260603-check/spec.md | runbook | task | 3 | false | true | 366 | T-20260603-check | T-20260603-check - 在 check 检测到漂移时支持交互式或自动修复 | - 待补充 | 2026-06-03T00:51:02.143Z | 972B |
+| tasks/done/T-20260603-git-hooks-pre-commit/plan.md | runbook | task | 3 | false | true | 395 | T-20260603-git-hooks-pre-commit | plan | - [x] S1: 梳理 实现 git hooks 安装与 pre-commit 门禁校验 | 2026-06-03T01:04:25.216Z | 1018B |
+| tasks/done/T-20260603-git-hooks-pre-commit/spec.md | runbook | task | 3 | false | true | 349 | T-20260603-git-hooks-pre-commit | T-20260603-git-hooks-pre-commit - 实现 git hooks 安装与 pre-commit 门禁校验 | - 待补充 | 2026-06-03T01:01:08.699Z | 978B |
+| tasks/done/T-20260603-learn-next-agent/plan.md | runbook | task | 3 | false | true | 402 | T-20260603-learn-next-agent | plan | - [x] S1: 梳理 打通 learn 机制到 next --agent 智能引导流 | 2026-06-03T00:59:44.096Z | 1.0KB |
+| tasks/done/T-20260603-learn-next-agent/spec.md | runbook | task | 3 | false | true | 350 | T-20260603-learn-next-agent | T-20260603-learn-next-agent - 打通 learn 机制到 next --agent 智能引导流 | - 待补充 | 2026-06-03T00:56:46.693Z | 973B |
+| tasks/done/T-20260606-backlog-add/plan.md | runbook | task | 3 | false | true | 589 | T-20260606-backlog-add | plan | - [x] S1: 梳理 `docpath backlog add` 支持 `--background <text>` 和 `--acceptance <text>`，用于生成标准 `## 背景` / `## 验收` 正文。 | 2026-06-06T13:33:24.383Z | 1.6KB |
+| tasks/done/T-20260606-backlog-add/spec.md | runbook | task | 3 | false | true | 1174 | T-20260606-backlog-add | T-20260606-backlog-add - 支持 backlog add 写入背景与验收正文 | - 当前 `docpath backlog add` 只能接收 `--title/--priority/--level`，正文固定生成空白占位内容。 | 2026-06-06T13:23:55.968Z | 3.0KB |
+| tasks/done/T-20260606-backlog-edit/plan.md | runbook | task | 3 | false | true | 428 | T-20260606-backlog-edit | plan | - [x] S1: 梳理 `docpath backlog edit <id>` 支持修改 `--title`、`--priority`、`--level`。 | 2026-06-06T14:17:48.287Z | 1.3KB |
+| tasks/done/T-20260606-backlog-edit/spec.md | runbook | task | 3 | false | true | 1173 | T-20260606-backlog-edit | T-20260606-backlog-edit - 支持 backlog edit 安全修改条目 | 当前 backlog 条目已经支持 add/list/accept/plan/promote/done/drop/refresh，但缺少 edit 命令。用户若要修正标题、优先级、复杂度或正文，只能手工编辑 markdown/frontmatter，容易造成 schema 错误、索引漂移或状态机语义不一致。R-091 已让新建条目可以写入高质量正文，下一步需 | 2026-06-06T14:13:02.873Z | 3.2KB |
+| tasks/done/T-20260606-backlog-groom/plan.md | runbook | task | 3 | false | true | 456 | T-20260606-backlog-groom | plan | - [x] S1: 梳理 `docpath backlog groom` 默认只读检查 backlog 条目健康状况。 | 2026-06-06T14:50:26.642Z | 1.2KB |
+| tasks/done/T-20260606-backlog-groom/spec.md | runbook | task | 3 | false | true | 1268 | T-20260606-backlog-groom | T-20260606-backlog-groom - 实现 backlog groom 需求池健康检查 | DocPath 已支持 backlog add 写入高质量正文，也支持 backlog edit 安全修改既有条目。下一步需要一个面向需求池的健康检查入口，帮助用户和 agent 发现低信息密度条目、状态/链接漂移、索引过期和优先级异常等问题。否则 backlog 虽然可以增改，但长期维护仍依赖人工扫描 markdown。 | 2026-06-06T14:32:44.244Z | 3.3KB |
+| tasks/done/T-20260606-brainstorm-spec/plan.md | runbook | task | 3 | false | true | 505 | T-20260606-brainstorm-spec | plan | - [x] S1: 梳理 `brainstorm --dry-run` 基于 input 或 file 生成结构化需求分析输出 | 2026-06-06T09:54:20.651Z | 1.3KB |
+| tasks/done/T-20260606-brainstorm-spec/spec.md | runbook | task | 3 | false | true | 1361 | T-20260606-brainstorm-spec | T-20260606-brainstorm-spec - 增强 brainstorm 生成可执行 spec 草稿与澄清问题 | - DocPath 已有 `brainstorm` 命令，但当前主要输出苏格拉底式 prompt，`--dry-run` 只预览现有 spec，不能直接帮助用户把一句模糊需求转成可执行 spec 草稿。 | 2026-06-06T09:51:04.338Z | 3.5KB |
+| tasks/done/T-20260606-docpath-backlog-task-workspace-spec/plan.md | runbook | task | 3 | false | true | 508 | T-20260606-docpath-backlog-task-workspace-spec | plan | - [x] S1: 梳理 引入 `.docpath/rules` 作为全局规则目录，并保留 `.docpath/spec` 兼容读取 | 2026-06-06T11:28:53.274Z | 1.3KB |
+| tasks/done/T-20260606-docpath-backlog-task-workspace-spec/spec.md | runbook | task | 3 | false | true | 1302 | T-20260606-docpath-backlog-task-workspace-spec | T-20260606-docpath-backlog-task-workspace-spec - 梳理 DocPath 信息架构并降低 backlog/task/workspace/spec 重叠 | - 当前 DocPath 同时存在 backlog、tasks、workspace、`.docpath/spec` 等目录，职责本身合理，但命名和输出容易让用户误以为有多套需求真源。 | 2026-06-06T11:06:05.157Z | 3.5KB |
+| tasks/done/T-20260606-docs-install/plan.md | runbook | task | 3 | false | true | 442 | T-20260606-docs-install | plan | - [x] S1: 梳理 拆分 docs-install 注册逻辑降低函数复杂度警告 | 2026-06-06T09:37:34.269Z | 1.1KB |
+| tasks/done/T-20260606-docs-install/spec.md | runbook | task | 3 | false | true | 366 | T-20260606-docs-install | T-20260606-docs-install - 拆分 docs-install 注册逻辑降低函数复杂度警告 | - 待补充 | 2026-06-06T09:32:53.060Z | 989B |
+| tasks/done/T-20260606-install-manifest-check-only/plan.md | runbook | task | 3 | false | true | 394 | T-20260606-install-manifest-check-only | plan | - [x] S1: 明确 check-only 接口与退出码 | 2026-06-06T09:28:53.276Z | 1.0KB |
+| tasks/done/T-20260606-install-manifest-check-only/spec.md | runbook | task | 3 | false | true | 1380 | T-20260606-install-manifest-check-only | T-20260606-install-manifest-check-only - 为 install manifest 漂移检测增加 check-only 模式 | - 上一阶段已经为 `docpath install` 写入 `.docpath/.install-meta.json`，并在 `docpath status` 中提示安装资产 manifest 漂移。 | 2026-06-06T09:24:13.703Z | 3.5KB |
+| tasks/done/T-20260606-manifest/plan.md | runbook | task | 3 | false | true | 398 | T-20260606-manifest | plan | - [x] S1: 设计安装资产 manifest 结构 | 2026-06-06T09:09:35.188Z | 1.1KB |
+| tasks/done/T-20260606-manifest/spec.md | runbook | task | 3 | false | true | 938 | T-20260606-manifest | T-20260606-manifest - 补齐安装模板资产 manifest 与漂移检测 | R-085 已经让项目能看到安装资产对应的 DocPath package 版本，但仍存在一个边界： | 2026-06-06T09:06:38.380Z | 2.4KB |
+| tasks/done/T-20260606-task/plan.md | runbook | task | 3 | false | true | 406 | T-20260606-task | plan | - [x] S1: 明确版本同步检测口径 | 2026-06-06T08:56:56.205Z | 1.0KB |
+| tasks/done/T-20260606-task/spec.md | runbook | task | 3 | false | true | 943 | T-20260606-task | T-20260606-task - 补齐版本号与安装资产同步检测 | Ferrum 项目同步 DocPath 新安装资产时暴露了一个问题：CLI 与项目安装记录都显示 | 2026-06-06T08:50:51.510Z | 2.4KB |
+| tasks/done/T-20260607-changes/plan.md | runbook | task | 3 | false | true | 360 | T-20260607-changes | plan | - [x] S1: 梳理 新增 changes 变更收口命令 | 2026-06-07T15:14:55.210Z | 899B |
+| tasks/done/T-20260607-changes/spec.md | runbook | task | 3 | false | true | 627 | T-20260607-changes | T-20260607-changes - 新增 changes 变更收口命令 | DocPath 已经具备 check/review/journal、backlog 维护和 git hooks 安装能力，但缺少一个提交前的只读变更收口视图。用户和 agent 需要快速了解当前任务改了哪些文件、验证证据是否满足提交条件、是否存在未跟踪文件或 DocPath 运行态变更，并获得建议 commit message。该命令不应包装 git com | 2026-06-07T12:06:00.282Z | 1.7KB |
+| tasks/done/T-20260608-html/plan.md | runbook | task | 3 | false | true | 386 | T-20260608-html | plan | - [x] S1: 梳理 新增 HTML 页面展示数据和流程 | 2026-06-08T02:20:37.269Z | 941B |
+| tasks/done/T-20260608-html/spec.md | runbook | task | 3 | false | true | 517 | T-20260608-html | T-20260608-html - 新增 HTML 页面展示数据和流程 | 用户希望添加页面，用来展示 DocPath 当前数据、执行进度和流程时间线。项目当前是 CLI，没有前端应用，适合在 export 命令中新增 HTML 静态页面输出能力。 | 2026-06-08T02:16:40.959Z | 1.3KB |
+| tasks/done/T-20260609-agents-md-docpath-skill/plan.md | runbook | task | 3 | false | true | 379 | T-20260609-agents-md-docpath-skill | plan | - [x] S1: 梳理 瘦身 AGENTS.md 减少与 DocPath Skill 重叠 | 2026-06-09T12:14:31.316Z | 997B |
+| tasks/done/T-20260609-agents-md-docpath-skill/spec.md | runbook | task | 3 | false | true | 1131 | T-20260609-agents-md-docpath-skill | T-20260609-agents-md-docpath-skill - 瘦身 AGENTS.md 减少与 DocPath Skill 重叠 | 用户确认 AGENTS.md 与 .codex/skills/docpath/SKILL.md 存在重叠，要求可以瘦身。目标是让 AGENTS.md 保留项目级总入口与项目特有规则，避免复制 Skill 的完整操作手册。 | 2026-06-09T12:14:31.315Z | 3.0KB |
+| tasks/done/T-20260609-agents-md-skill-manifest/plan.md | runbook | task | 3 | false | true | 423 | T-20260609-agents-md-skill-manifest | plan | - [x] S1: 梳理 允许 AGENTS.md 定制但继续校验 Skill manifest 漂移 | 2026-06-09T12:31:14.429Z | 1.1KB |
+| tasks/done/T-20260609-agents-md-skill-manifest/spec.md | runbook | task | 3 | false | true | 1333 | T-20260609-agents-md-skill-manifest | T-20260609-agents-md-skill-manifest - 允许 AGENTS.md 定制但继续校验 Skill manifest 漂移 | 上一轮 AGENTS.md 已瘦身为项目级入口，详细 DocPath 工作流由 Codex Skill 承担。但 install health 仍把根 AGENTS.md 与模板差异视为 install-manifest-drift，导致项目定制 AGENTS.md 后持续报错。 | 2026-06-09T12:31:14.428Z | 3.5KB |
+| tasks/done/T-20260609-analyze-dry-run-skill/plan.md | runbook | task | 3 | false | true | 418 | T-20260609-analyze-dry-run-skill | plan | - [x] S1: 梳理 修正 analyze dry-run 语义与 Skill 前置分析指引 | 2026-06-09T10:25:32.643Z | 1.0KB |
+| tasks/done/T-20260609-analyze-dry-run-skill/spec.md | runbook | task | 3 | false | true | 1905 | T-20260609-analyze-dry-run-skill | T-20260609-analyze-dry-run-skill - 修正 analyze dry-run 语义与 Skill 前置分析指引 | Codex 实测显示 `docpath analyze --dry-run` 只回显输入，不能作为开发前分析预览；正式 `analyze` 虽生成 prompt payload 并推进 predev-analysis，但没有足够强制 Agent 写入/读取 `analysis/*`。 | 2026-06-09T10:25:32.642Z | 5.1KB |
+| tasks/done/T-20260609-docpath-codex-skills/plan.md | runbook | task | 3 | false | true | 393 | T-20260609-docpath-codex-skills | plan | - [x] S1: 梳理 优化 DocPath Codex Skills 文案与触发边界 | 2026-06-09T12:47:14.778Z | 1011B |
+| tasks/done/T-20260609-docpath-codex-skills/spec.md | runbook | task | 3 | false | true | 1457 | T-20260609-docpath-codex-skills | T-20260609-docpath-codex-skills - 优化 DocPath Codex Skills 文案与触发边界 | 审核发现 DocPath 相关 Codex skills 已安装且模板与安装版一致，但仍存在触发覆盖不足、product/design 与主 skill 流程重复、software skill 缺少开发前技术分析入口、software First Commands 容易在非执行态误导 agent enter 等问题。 | 2026-06-09T12:47:14.514Z | 3.8KB |
+| tasks/done/T-20260609-task/plan.md | runbook | task | 3 | false | true | 410 | T-20260609-task | plan | - [x] done | 2026-06-09T09:28:53.042Z | 973B |
+| tasks/done/T-20260609-task/spec.md | runbook | task | 3 | false | true | 1648 | T-20260609-task | T-20260609-task - 增强开发前分析深度与质量门禁 | DocPath 已经具备 predev analysis 入口和 analysis/ 分区目录，但当前 analyze 输出仍偏提纲式：缺少结构化问题澄清、用户/业务目标拆解、UI/UX 信息架构、技术可行性与风险分析、分析质量检查，以及不同复杂度下的分析深度控制。用户反馈“分析太过简陋，并且感觉分析不足”。 | 2026-06-09T09:17:45.164Z | 4.1KB |
+| tasks/done/T-20260609-ui-ux-ui-prompt-brief-design-approval-ga/plan.md | runbook | task | 3 | false | true | 1401 | T-20260609-ui-ux-ui-prompt-brief-design-approval-ga | plan | - [x] S1: 盘点现有 UI/UX gate、模板与 skill 入口 | 2026-06-10T07:23:32.381Z | 3.9KB |
+| tasks/done/T-20260609-ui-ux-ui-prompt-brief-design-approval-ga/spec.md | runbook | task | 3 | false | true | 3267 | T-20260609-ui-ux-ui-prompt-brief-design-approval-ga | 规约: 为 UI/UX 任务增加 UI Prompt Brief、Design Approval Gate 与 Codex Skill | **任务 ID**: T-20260609-ui-ux-ui-prompt-brief-design-approval-ga | 2026-06-10T07:23:32.380Z | 9.0KB |
+| tasks/done/T-20260610-dashboard-readonly-viewer/design-preview.md | runbook | task | 3 | false | true | 762 | T-20260610-dashboard-readonly-viewer | Design Preview | DocPath dashboard 是本地只读管理工作台，首屏由左侧导航、项目列表、顶部当前项目栏、主内容区组成。四个路由分别承载总览、任务、门禁、Backlog，所有数据来自只读 GET API，不提供命令执行、写文件、编辑表单或 mutation 控件。 | 2026-06-10T14:33:29.958Z | 1.9KB |
+| tasks/done/T-20260610-dashboard-readonly-viewer/plan.md | runbook | task | 3 | false | true | 1147 | T-20260610-dashboard-readonly-viewer | plan | - [x] S1: 恢复前端栈与 dashboard 命令骨架 | 2026-06-10T14:34:56.042Z | 3.1KB |
+| tasks/done/T-20260610-dashboard-readonly-viewer/spec.md | runbook | task | 3 | false | true | 1940 | T-20260610-dashboard-readonly-viewer | T-20260610-dashboard-readonly-viewer - DocPath 只读管理仪表盘 | DocPath 已有多项目 SQLite 注册表 (`~/.docpath/projects.sqlite`)、每项目 state.json、check-history.json、review.md、backlog/ 等运行时产物，但只能通过 CLI 零散查看。需要一个本地只读 Web 仪表盘，把这些分散的状态聚合成可视化总览。 | 2026-06-10T14:33:04.180Z | 4.9KB |
+| tasks/done/T-20260610-dashboard-readonly-viewer/visual-acceptance.md | runbook | task | 3 | false | true | 635 | T-20260610-dashboard-readonly-viewer | Visual Acceptance | - 生产构建: pnpm run build:dashboard 必须生成 dashboard-dist/index.html 与 assets，docpath dashboard 必须从同源 server 托管页面和只读 API。 | 2026-06-10T14:33:48.987Z | 1.7KB |
+| tasks/done/T-20260610-ui-gate-hard-constraint/plan.md | runbook | task | 3 | false | true | 971 | T-20260610-ui-gate-hard-constraint | plan | - [x] S1: 抽出共享 UI 门禁判定模块 | 2026-06-12T07:07:49.753Z | 2.6KB |
+| tasks/done/T-20260610-ui-gate-hard-constraint/spec.md | runbook | task | 3 | false | true | 1460 | T-20260610-ui-gate-hard-constraint | T-20260610-ui-gate-hard-constraint - UI 设计门禁硬约束化 | 当前 DocPath 的 UI/UX 设计门禁只在 `docpath check`（实现之后）触发，且依赖正则猜测任务是否为 UI 任务。实测发现 5 条绕过路径，其中最严重两条： | 2026-06-12T07:07:49.752Z | 3.8KB |
+| tasks/done/unknown/design-preview.md | runbook | project | 3 | false | true | 505 |  | Design Preview — 项目总览仪表盘与侧边栏布局 | ``` | 2026-06-10T09:20:54.029Z | 2.0KB |
+| tasks/done/unknown/plan.md | runbook | project | 3 | false | true | 704 |  | plan | - [x] S1: 搭建 UI 构建基础设施 | 2026-06-10T09:18:50.174Z | 1.8KB |
+| tasks/done/unknown/spec.md | runbook | project | 3 | false | true | 1462 |  | 规约: 项目总览仪表盘与侧边栏布局 | **任务 ID**: T-20260610-mgmt-ui-layout | 2026-06-10T09:13:56.625Z | 3.6KB |
+| tasks/done/unknown/visual-acceptance.md | runbook | project | 3 | false | true | 330 |  | Visual Acceptance — 项目总览仪表盘与侧边栏布局 | visual-acceptance | 2026-06-10T09:20:54.037Z | 871B |
+| workflows/bugfix.md | index | project | 2 | false | false | 160 |  | Workflow: Bug Fix | - 收集错误信息 (日志、截图、复现步骤) | 2026-06-09T10:18:05.263Z | 463B |
+| workflows/debug.md | index | project | 2 | false | false | 145 |  | Workflow: Debug | - 收集症状 (日志、指标、复现步骤) | 2026-06-09T10:18:05.264Z | 416B |
+| workflows/feature.md | index | project | 2 | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-06-09T10:18:05.264Z | 753B |
+| workflows/refactor.md | index | project | 2 | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-06-09T10:18:05.264Z | 424B |
+| workflows/research.md | index | project | 2 | false | false | 146 |  | Workflow: Research | - 明确调研目标 | 2026-06-09T10:18:05.264Z | 409B |
+| workspace/breadcrumb.md | index | project | 0 | false | false | 3615 |  | 面包屑 — 上下文恢复索引 | --- | 2026-06-12T14:18:27.710Z | 12.5KB |
+| workspace/current.md | index | project | 0 | true | false | 434 |  | 📍 当前工作流状态 | ```yaml | 2026-06-12T14:18:27.621Z | 1.3KB |
+| workspace/decisions.md | log | project | 3 | false | true | 80314 |  | 决策日志 — DocPath 自动归档 | --- | 2026-06-12T14:18:27.713Z | 228.5KB |
+| workspace/journal.md | index | project | 0 | false | false | 120 |  | 📖 工作日志 | - 新增 write-design 命令 | 2026-06-10T04:44:31.299Z | 361B |
+| workspace/last-check.md | index | project | 0 | true | false | 197 |  | Last Check Evidence | **时间**: 2026-06-12T14:18:27.492Z | 2026-06-12T14:18:27.494Z | 592B |
+| workspace/lesson-candidates.md | log | project | 0 | false | false | 6 |  | Lesson Candidates | lesson-candidates | 2026-06-12T14:18:59.556Z | 21B |
+| workspace/review.md | index | project | 0 | true | false | 165 |  | Code Review Report | **时间**: 2026-06-12T14:18:27.617Z | 2026-06-12T14:18:27.618Z | 523B |
 
 ## 用途说明
 
-- **kind**: 文档类型 (reference|runbook|template|index|log)
+- **type**: 文档类型 (reference|runbook|template|index|log)
 - **scope**: 作用域 (project|task|backend|frontend|infra|shared)
 - **level**: 渐进式披露层级 (0|1|2|3)
+- **default_read**: 默认上下文允许读取的高信号文档；归档、模板、大日志默认 false
+- **archive**: 历史归档或大日志，只应通过 topic/task-id/include-archive 按需展开
+- **tokens**: 粗略 token 估算，用于预算门禁和上下文裁剪
 - **title**: 文档标题或用途
+- **summary**: 文档首段摘要

@@ -463,7 +463,8 @@ describe('journal to learn loop', () => {
   it('learn does not solidify low-value workflow statistics into rules by default', () => {
     const cwd = mkWorkspace();
     const dp = join(cwd, '.docpath');
-    writeFileSync(join(dp, 'workspace', 'lesson-candidates.md'), [
+    const lessonsPath = join(dp, 'workspace', 'lesson-candidates.md');
+    writeFileSync(lessonsPath, [
       '# Lesson Candidates',
       '',
       '## T-LOW — 2026-06-01T00:00:00.000Z',
@@ -496,10 +497,43 @@ describe('journal to learn loop', () => {
 
     execSync(`node ${BIN} learn --cwd ${cwd}`, { cwd, encoding: 'utf-8', timeout: 20000 });
     const style = readFileSync(join(dp, 'spec', 'style.md'), 'utf-8');
+    const lessons = readFileSync(lessonsPath, 'utf-8');
 
     assert.doesNotMatch(style, /T-LOW-workflow/);
     assert.doesNotMatch(style, /完成 3\/3 步，阻塞 0 步/);
     assert.match(style, /cli-contract/);
+    assert.equal(lessons, '# Lesson Candidates\n\n');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('learn does not fall back to journal extraction when all lesson candidates are low signal', () => {
+    const cwd = mkWorkspace();
+    const dp = join(cwd, '.docpath');
+    writeFileSync(join(dp, 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## T-LOW — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LOW',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: T-LOW-workflow',
+      '',
+      '### Lesson',
+      '',
+      '✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。',
+      '',
+    ].join('\n'));
+
+    const styleBefore = readFileSync(join(dp, 'spec', 'style.md'), 'utf-8');
+    const output = execSync(`node ${BIN} learn --cwd ${cwd} --dry-run`, { cwd, encoding: 'utf-8', timeout: 20000 });
+    const styleAfter = readFileSync(join(dp, 'spec', 'style.md'), 'utf-8');
+
+    assert.match(output, /候选分类: 保留 0 \/ 归档 1 \/ 跳过 0/);
+    assert.match(output, /未发现可沉淀到长期 rules 的规则模式/);
+    assert.doesNotMatch(output, /发现 1 条规则/);
+    assert.equal(styleAfter, styleBefore);
     rmSync(cwd, { recursive: true, force: true });
   });
 

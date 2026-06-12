@@ -13248,3 +13248,430 @@ agent-step: S6
 - .docpath/tasks/T-20260610-dashboard-readonly-viewer/plan.md
 
 ---
+## ADR-20260612-001 — review
+
+- task_id: T-20260610-ui-gate-hard-constraint
+- created_at: 2026-06-12T07:10:03.719Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+需修改: 2 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260612-002 — review
+
+- task_id: T-20260610-ui-gate-hard-constraint
+- created_at: 2026-06-12T07:32:38.002Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260612-003 — journal.archive
+
+- task_id: T-20260610-ui-gate-hard-constraint
+- created_at: 2026-06-12T07:36:11.140Z
+- category: journal.archive
+
+### 背景
+
+agent-step: S3
+agent-step: S1
+agent-step: S2
+agent-step: S4
+agent-step: S5
+质量检查失败: 任务文件 current/canonical 漂移检查
+质量检查通过 (8 项)
+代码审查: 2 错误, 0 警告, 0 提示
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260610-ui-gate-hard-constraint
+
+### 影响
+
+任务进入归档状态；完成 5/5 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260610-ui-gate-hard-constraint/spec.md
+- .docpath/tasks/T-20260610-ui-gate-hard-constraint/plan.md
+
+---
+## ADR-20260612-004 — review
+
+- task_id: T-20260612-task
+- created_at: 2026-06-12T14:18:27.613Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 5 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260612-005 — journal.archive
+
+- task_id: T-20260612-task
+- created_at: 2026-06-12T14:18:27.712Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 定义上下文索引与预算模型
+agent-step: S1
+开始执行: 扩展 docs scan / index 生成
+agent-step: S2
+开始执行: 收敛 context/reveal 默认读取行为
+agent-step: S3
+开始执行: 增加归档按需展开入口
+agent-step: S4
+开始执行: 高信号化 rules 与 learn 沉淀
+agent-step: S5
+开始执行: 增加上下文健康 check 门禁
+agent-step: S6
+开始执行: 测试与验证闭环
+agent-step: S7
+质量检查通过 (14 项)
+代码审查: 0 错误, 5 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260612-task
+
+### 影响
+
+任务进入归档状态；完成 7/7 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260612-task/spec.md
+- .docpath/tasks/T-20260612-task/plan.md
+
+---
+## ADR-20260612-006 — review
+
+- task_id: T-20260612-cli
+- created_at: 2026-06-12T15:33:18.097Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260612-007 — review
+
+- task_id: T-20260612-cli
+- created_at: 2026-06-12T15:35:08.995Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 0 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260612-008 — journal.archive
+
+- task_id: T-20260612-cli
+- created_at: 2026-06-12T15:35:17.553Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 定义 init interactive 契约与测试夹具
+agent-step: S1
+开始执行: 实现 init --interactive 与参数校验
+agent-step: S2
+开始执行: 改进初始化相关错误提示
+agent-step: S3
+开始执行: 补充 Getting Started 文档与示例
+agent-step: S4
+开始执行: 补充测试并运行聚焦验证
+agent-step: S5
+开始执行: DocPath 收口验证
+质量检查失败: 子任务完成度 (5/6)
+agent-step: S6
+质量检查通过 (13 项)
+代码审查: 0 错误, 1 警告, 0 提示
+质量检查通过 (13 项)
+代码审查: 0 错误, 0 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260612-cli
+
+### 影响
+
+任务进入归档状态；完成 6/6 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260612-cli/spec.md
+- .docpath/tasks/T-20260612-cli/plan.md
+
+---
+## ADR-20260612-009 — review
+
+- task_id: T-20260612-learn
+- created_at: 2026-06-12T16:06:21.612Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260612-010 — journal.archive
+
+- task_id: T-20260612-learn
+- created_at: 2026-06-12T16:06:40.735Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 `learn` 必须过滤 `完成 N/N 步`、`阻塞 N 步`、`推荐保留本次任务的执行经验` 等低信号统计或口号型 lesson。
+agent-step: S1
+开始执行: 实现 `learn` 必须过滤 `完成 N/N 步`、`阻塞 N 步`、`推荐保留本次任务的执行经验` 等低信号统计或口号型 lesson。
+agent-step: S2
+开始执行: 验证门禁并归档
+质量检查失败: 任务文件 current/canonical 漂移检查, ⚠️  Checklist 同步 (2/3)
+agent-step: S3
+质量检查通过 (13 项)
+代码审查: 0 错误, 1 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260612-learn
+
+### 影响
+
+任务进入归档状态；完成 3/3 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260612-learn/spec.md
+- .docpath/tasks/T-20260612-learn/plan.md
+
+---
+## ADR-20260612-011 — review
+
+- task_id: T-20260612-decisions-md
+- created_at: 2026-06-12T16:43:44.274Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260612-012 — journal.archive
+
+- task_id: T-20260612-decisions-md
+- created_at: 2026-06-12T16:44:08.588Z
+- category: journal.archive
+
+### 背景
+
+开始执行: 梳理 decisions.md 老化策略避免无限增长
+agent-step: S1
+开始执行: 集成到 journal 命令
+agent-step: S2
+开始执行: 更新文档与 CLI 帮助
+agent-step: S3
+开始执行: 验证门禁并归档
+agent-step: S4
+质量检查通过 (14 项)
+代码审查: 0 错误, 4 警告, 0 提示
+
+### 决策
+
+归档任务 T-20260612-decisions-md
+
+### 影响
+
+任务进入归档状态；完成 4/4 步，阻塞 0 步。
+
+### 替代方案
+
+- 继续保留在 tasks/current 中
+- 只写 breadcrumb 不生成长期 decision
+
+### 相关文件
+
+- .docpath/workspace/breadcrumb.md
+- .docpath/workspace/last-check.md
+- .docpath/tasks/T-20260612-decisions-md/spec.md
+- .docpath/tasks/T-20260612-decisions-md/plan.md
+
+---
+## ADR-20260612-013 — review
+
+- task_id: T-20260612-journal-decisions-md-adr
+- created_at: 2026-06-12T17:30:39.861Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 4 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---

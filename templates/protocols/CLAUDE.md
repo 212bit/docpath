@@ -53,6 +53,15 @@ docpath agent handoff                       # 生成 compact-context.md 交接�
 - `plan.md` 与 `breadcrumb.md` 的同步应通过 CLI 命令完成
 - 质量门禁失败时，优先遵循 `next --agent` 给出的恢复路线
 
+## 决策日志老化
+
+- `workspace/decisions.md` 只保留最近 30 天内的 ADR；`docpath journal` 会自动把更早条目按月轮转到 `workspace/decisions-YYYY-MM.md`。
+- 查询历史决策时，应显式读取对应月份归档文件，不要把全部历史决策加载进默认上下文。
+- 需要手动触发时运行 `docpath gc-decisions`。
+- `workspace/breadcrumb.md` 是执行恢复证据，记录步骤状态、检查、审查和 journal 完成事件。
+- `workspace/decisions.md` 是高信号 ADR 索引，普通 `journal.archive` 摘要、完成步数、检查结果和 review 计数不得写入决策日志。
+- `docpath journal` 仅在提取到可复用的架构、工作流或行为决策时写入 `decisions.md`，并保留背景、影响、边界和替代方案。
+
 ## 有效命令范围
 
 当前可依赖的核心命令包括：
@@ -69,6 +78,7 @@ docpath go
 docpath check
 docpath review
 docpath journal
+docpath gc-decisions
 docpath write-journal
 docpath continue
 docpath compact

@@ -9,9 +9,10 @@ const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 
 let appendDecision;
 let getRecentDecisions;
+let gcDecisions;
 
 before(async () => {
-  ({ appendDecision, getRecentDecisions } = await import('../dist/governance/decisions.js'));
+  ({ appendDecision, getRecentDecisions, gcDecisions } = await import('../dist/governance/decisions.js'));
 });
 
 function mkWorkspace() {
@@ -36,6 +37,43 @@ function mkWorkspace() {
   writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), '# Spec\n\nUse structured decisions.\n');
   writeFileSync(join(dp, 'tasks', 'current', 'plan.md'), '# Plan\n\n- [ ] S1: Add ADR\n');
   return cwd;
+}
+
+function decisionBlock(id, createdAt, category = 'architecture') {
+  return [
+    `## ${id} — ${category}`,
+    '',
+    '- task_id: T-ADR',
+    `- created_at: ${createdAt}`,
+    `- category: ${category}`,
+    '',
+    '### 背景',
+    '',
+    `背景 ${id}`,
+    '',
+    '### 决策',
+    '',
+    `决策 ${id}`,
+    '',
+    '### 影响',
+    '',
+    `影响 ${id}`,
+    '',
+    '### 替代方案',
+    '',
+    '- 方案 A',
+    '',
+    '### 相关文件',
+    '',
+    '- .docpath/workspace/decisions.md',
+    '',
+    '---',
+    '',
+  ].join('\n');
+}
+
+function countAdr(content, id) {
+  return [...content.matchAll(new RegExp(`^## ${id}\\b`, 'gm'))].length;
 }
 
 describe('structured decisions ADR', () => {
@@ -81,6 +119,72 @@ describe('structured decisions ADR', () => {
     assert.match(output, /ADR-\d{8}-001 — architecture/);
     assert.match(output, /Reveal 需要包含最近 ADR/);
     assert.match(output, /task_id: T-ADR/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('gcDecisions rotates old ADRs into monthly archives and is idempotent', async () => {
+    const cwd = mkWorkspace();
+    const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');
+    writeFileSync(decisionsPath, [
+      '# 决策日志 — DocPath ADR',
+      '',
+      '> test decisions',
+      '',
+      '---',
+      '',
+      decisionBlock('ADR-20260410-001', '2026-04-10T00:00:00.000Z'),
+      decisionBlock('ADR-20260520-001', '2026-05-20T00:00:00.000Z'),
+      decisionBlock('ADR-20260620-001', '2026-06-20T00:00:00.000Z'),
+    ].join('\n'));
+
+    const first = await gcDecisions(cwd, {
+      retentionDays: 30,
+      now: new Date('2026-06-30T00:00:00.000Z'),
+    });
+    const second = await gcDecisions(cwd, {
+      retentionDays: 30,
+      now: new Date('2026-06-30T00:00:00.000Z'),
+    });
+
+    const current = readFileSync(decisionsPath, 'utf-8');
+    const april = readFileSync(join(cwd, '.docpath', 'workspace', 'decisions-2026-04.md'), 'utf-8');
+    const may = readFileSync(join(cwd, '.docpath', 'workspace', 'decisions-2026-05.md'), 'utf-8');
+
+    assert.equal(first.archived, 2);
+    assert.equal(first.retained, 1);
+    assert.equal(first.archiveFiles.length, 2);
+    assert.equal(second.archived, 0);
+    assert.doesNotMatch(current, /ADR-20260410-001/);
+    assert.doesNotMatch(current, /ADR-20260520-001/);
+    assert.match(current, /ADR-20260620-001/);
+    assert.equal(countAdr(april, 'ADR-20260410-001'), 1);
+    assert.equal(countAdr(may, 'ADR-20260520-001'), 1);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('gc-decisions command rotates old decisions and reports a summary', () => {
+    const cwd = mkWorkspace();
+    const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');
+    writeFileSync(decisionsPath, [
+      '# 决策日志 — DocPath ADR',
+      '',
+      '> test decisions',
+      '',
+      '---',
+      '',
+      decisionBlock('ADR-20260410-001', '2026-04-10T00:00:00.000Z'),
+    ].join('\n'));
+
+    const output = execSync(`node ${BIN} gc-decisions --cwd ${cwd} --retention-days 30`, {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 20000,
+    });
+
+    assert.match(output, /DocPath Decisions GC/);
+    assert.match(output, /归档条目: 1/);
+    assert.doesNotMatch(readFileSync(decisionsPath, 'utf-8'), /ADR-20260410-001/);
+    assert.match(readFileSync(join(cwd, '.docpath', 'workspace', 'decisions-2026-04.md'), 'utf-8'), /ADR-20260410-001/);
     rmSync(cwd, { recursive: true, force: true });
   });
 });

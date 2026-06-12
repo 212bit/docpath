@@ -27,6 +27,17 @@
 
 ---
 
+## Decisions Log Aging
+
+- `workspace/decisions.md` keeps recent ADR entries only; `docpath journal` automatically rotates entries older than 30 days into `workspace/decisions-YYYY-MM.md`.
+- Historical decision queries should read the monthly archive files explicitly instead of loading every decision into default context.
+- Run `docpath gc-decisions` when you need to manually trigger the rotation.
+- `workspace/breadcrumb.md` is execution recovery evidence; keep step status, checks, reviews, and journal completion there.
+- `workspace/decisions.md` is a high-signal ADR index; ordinary `journal.archive` summaries, completion counts, check results, and review counts must not be written as decisions.
+- `docpath journal` should write `decisions.md` only when it extracts a reusable architecture, workflow, or behavior decision with context, impact, boundaries, and alternatives.
+
+---
+
 
 
 ## Agent Lifecycle Commands
@@ -57,6 +68,7 @@ Rules:
 | `docpath continue` | Resume from breadcrumb |
 | `docpath check` | Run quality gates |
 | `docpath review` | Structured code review |
+| `docpath gc-decisions` | Rotate old decisions into monthly archives |
 | `docpath reveal --level N` | Progressive context (0-3) |
 
 ---

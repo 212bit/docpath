@@ -14,7 +14,7 @@ import { emitPrompt } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { evaluateCompletionPolicy } from '../engine/policy.js';
-import { appendDecision } from '../governance/decisions.js';
+import { appendDecision, gcDecisions } from '../governance/decisions.js';
 import { listBacklogItems, setBacklogStatus } from '../engine/backlog.js';
 import {
   archivedTaskDir,
@@ -28,6 +28,7 @@ import {
 interface JournalOptions {
   cwd: string;
   skipAi?: boolean;
+  skipDecisionGc?: boolean;
   /** 归档模式: 'always' = 默认行为 | 'skip' = 跳过归档 | 'dry-run' = 预览归档 */
   archiveMode?: 'always' | 'skip' | 'dry-run';
 }
@@ -71,6 +72,7 @@ function extractArchitectureDecisionCandidates(lines: string[]): Array<{
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
+    if (isLowSignalJournalLine(line)) continue;
 
     const looksArchitectural = /架构|architecture|边界|模块|接口|数据模型|状态机/i.test(line);
     const looksDecision = /决策|采用|改为|统一|使用|保留|拆分/i.test(line);
@@ -93,6 +95,17 @@ function extractArchitectureDecisionCandidates(lines: string[]): Array<{
   }
 
   return candidates;
+}
+
+function isLowSignalJournalLine(line: string): boolean {
+  return [
+    /^完成\s*\d+\s*\/\s*\d+\s*步/,
+    /^知识归档完成\s*\(\s*\d+\s*\/\s*\d+\s*步\s*\)/,
+    /^质量检查(?:通过|失败)/,
+    /^代码审查[:：]/,
+    /^agent-step[:：]/,
+    /^开始执行[:：]/,
+  ].some((pattern) => pattern.test(line));
 }
 
 export async function journalCommand(options: JournalOptions): Promise<void> {
@@ -126,7 +139,7 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
     return;
   }
 
-  await finalizeJournal(cwd, context, archive, summary);
+  await finalizeJournal(cwd, context, archive, summary, !!options.skipDecisionGc);
 }
 
 async function assertJournalGate(cwd: string): Promise<void> {
@@ -227,6 +240,7 @@ async function finalizeJournal(
   context: JournalContext,
   archive: ArchiveResult,
   summary: TaskSummary,
+  skipDecisionGc: boolean,
 ): Promise<void> {
   await transitionWorkflow(cwd, 'journal.archived', { currentStep: '知识归档完成' });
   await completeLinkedBacklog(cwd, context.taskId);
@@ -239,6 +253,7 @@ async function finalizeJournal(
   await writeLessonCandidate(context.docpathDir, context.taskId, summary);
   await updateWorkspaceMeta(context.docpathDir, context.meta);
   await writeJournalDecisions(cwd, archive.taskDirName, summary);
+  await gcJournalDecisions(cwd, skipDecisionGc);
   console.log('─── 完成 ───');
   console.log('所有步骤已归档。运行 `docpath:init` 开始新任务。\n');
 }
@@ -349,21 +364,12 @@ async function updateWorkspaceMeta(docpathDir: string, meta: Record<string, unkn
 
 async function writeJournalDecisions(cwd: string, taskDirName: string, summary: TaskSummary): Promise<void> {
   try {
-    await appendDecision(cwd, 'journal.archive', `归档任务 ${summary.taskId}`, `完成 ${summary.completedSteps}/${summary.totalSteps} 步，阻塞 ${summary.blockedSteps} 步`, {
-      taskId: summary.taskId,
-      context: summary.keyDecisions.filter((d) => d.trim()).join('\n') || '任务完成后由 journal 自动归档。',
-      impact: `任务进入归档状态；完成 ${summary.completedSteps}/${summary.totalSteps} 步，阻塞 ${summary.blockedSteps} 步。`,
-      alternatives: ['继续保留在 tasks/current 中', '只写 breadcrumb 不生成长期 decision'],
-      relatedFiles: [
-        '.docpath/workspace/breadcrumb.md',
-        '.docpath/workspace/last-check.md',
-        `.docpath/${canonicalTaskRelativePath(taskDirName, 'spec.md')}`,
-        `.docpath/${canonicalTaskRelativePath(taskDirName, 'plan.md')}`,
-      ],
-    });
-    console.log('📝  决策日志已更新: workspace/decisions.md');
-
     const architectureDecisions = extractArchitectureDecisionCandidates(summary.keyDecisions);
+    if (architectureDecisions.length === 0) {
+      console.log('📝  未发现可复用 ADR，跳过 decisions.md 写入');
+      return;
+    }
+
     for (const candidate of architectureDecisions) {
       await appendDecision(cwd, 'architecture', candidate.decision, candidate.context, {
         taskId: summary.taskId,
@@ -377,10 +383,25 @@ async function writeJournalDecisions(cwd: string, taskDirName: string, summary: 
         ],
       });
     }
-    if (architectureDecisions.length > 0) {
-      console.log(`🏗️  已从 journal 提取 ${architectureDecisions.length} 条架构决策`);
-    }
+    console.log('📝  决策日志已更新: workspace/decisions.md');
+    console.log(`🏗️  已从 journal 提取 ${architectureDecisions.length} 条架构决策`);
   } catch (e) {
     console.warn('⚠️  决策日志写入失败（非致命）:', (e as Error).message);
+  }
+}
+
+async function gcJournalDecisions(cwd: string, skipDecisionGc: boolean): Promise<void> {
+  if (skipDecisionGc) {
+    console.log('⏭️  decisions.md 老化已跳过 (--skip-gc)');
+    return;
+  }
+
+  try {
+    const result = await gcDecisions(cwd);
+    if (result.archived > 0) {
+      console.log(`🧹  decisions.md 已老化: 归档 ${result.archived} 条，保留 ${result.retained} 条`);
+    }
+  } catch (e) {
+    console.warn('⚠️  decisions.md 老化失败（非致命）:', (e as Error).message);
   }
 }

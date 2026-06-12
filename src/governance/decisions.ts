@@ -20,6 +20,18 @@ export interface DecisionRecordInput {
   taskId?: string;
 }
 
+export interface GcDecisionsOptions {
+  retentionDays?: number;
+  now?: Date;
+}
+
+export interface GcDecisionsResult {
+  decisionsPath: string;
+  retained: number;
+  archived: number;
+  archiveFiles: string[];
+}
+
 const DECISIONS_HEADER = [
   '# 决策日志 — DocPath ADR',
   '',
@@ -28,6 +40,17 @@ const DECISIONS_HEADER = [
   '---',
   '',
 ].join('\n');
+
+function archiveHeader(month: string): string {
+  return [
+    `# 决策日志归档 — ${month}`,
+    '',
+    '> 历史 ADR 由 `docpath gc-decisions` 从 workspace/decisions.md 按月轮转生成。',
+    '',
+    '---',
+    '',
+  ].join('\n');
+}
 
 function dateStamp(date: Date): string {
   return date.toISOString().slice(0, 10).replace(/-/g, '');
@@ -78,6 +101,67 @@ function renderDecision(record: Required<DecisionRecordInput> & { id: string; cr
   ].join('\n');
 }
 
+interface DecisionBlock {
+  id: string;
+  createdAt?: Date;
+  month?: string;
+  raw: string;
+}
+
+function splitDecisionDocument(content: string): { header: string; blocks: DecisionBlock[] } {
+  const parts = content.split(/(?=^##\s+ADR-)/m);
+  const header = parts[0]?.trim()
+    ? `${parts[0].trimEnd()}\n\n`
+    : DECISIONS_HEADER;
+  const blocks = parts.slice(1)
+    .map((part) => parseDecisionBlock(part))
+    .filter((block): block is DecisionBlock => Boolean(block));
+  return { header, blocks };
+}
+
+function parseDecisionBlock(rawBlock: string): DecisionBlock | null {
+  const raw = rawBlock.trimEnd() + '\n\n';
+  const id = raw.match(/^##\s+(ADR-\d{8}-\d{3})\b/m)?.[1];
+  if (!id) return null;
+
+  const createdAtRaw = raw.match(/^- created_at:\s*(.+)$/m)?.[1]?.trim();
+  const createdAt = createdAtRaw ? new Date(createdAtRaw) : undefined;
+  const validCreatedAt = createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt : undefined;
+  return {
+    id,
+    createdAt: validCreatedAt,
+    month: validCreatedAt ? validCreatedAt.toISOString().slice(0, 7) : undefined,
+    raw,
+  };
+}
+
+function renderDecisionDocument(header: string, blocks: DecisionBlock[]): string {
+  return header.trimEnd() + '\n\n' + blocks.map((block) => block.raw.trimEnd()).join('\n\n') + (blocks.length > 0 ? '\n\n' : '');
+}
+
+function cutoffTime(now: Date, retentionDays: number): number {
+  return now.getTime() - retentionDays * 24 * 60 * 60 * 1000;
+}
+
+function isArchivable(block: DecisionBlock, cutoff: number): boolean {
+  return Boolean(block.createdAt && block.month && block.createdAt.getTime() < cutoff);
+}
+
+async function appendArchiveBlocks(archivePath: string, month: string, blocks: DecisionBlock[]): Promise<boolean> {
+  const existing = existsSync(archivePath) ? await readFile(archivePath, 'utf-8') : archiveHeader(month);
+  const existingIds = new Set(splitDecisionDocument(existing).blocks.map((block) => block.id));
+  const newBlocks = blocks.filter((block) => !existingIds.has(block.id));
+  if (newBlocks.length === 0) return false;
+
+  const separator = existing.trimEnd().length > 0 ? '\n\n' : '';
+  await writeFile(
+    archivePath,
+    existing.trimEnd() + separator + newBlocks.map((block) => block.raw.trimEnd()).join('\n\n') + '\n\n',
+    'utf-8',
+  );
+  return true;
+}
+
 /**
  * 追加一条决策记录
  */
@@ -114,6 +198,57 @@ export async function appendDecision(
   });
 
   await appendFile(decisionsPath, entry, 'utf-8');
+}
+
+/**
+ * 按 created_at 将超过保留窗口的 ADR 轮转到 decisions-YYYY-MM.md。
+ * 缺失或无法解析 created_at 的条目保留在主文件，避免误归档。
+ */
+export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {}): Promise<GcDecisionsResult> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const workspaceDir = join(docpathDir, 'workspace');
+  const decisionsPath = join(workspaceDir, 'decisions.md');
+  const retentionDays = options.retentionDays ?? 30;
+  const now = options.now ?? new Date();
+
+  if (!existsSync(decisionsPath)) {
+    return {
+      decisionsPath,
+      retained: 0,
+      archived: 0,
+      archiveFiles: [],
+    };
+  }
+
+  const content = await readFile(decisionsPath, 'utf-8');
+  const { header, blocks } = splitDecisionDocument(content);
+  const cutoff = cutoffTime(now, retentionDays);
+  const retained = blocks.filter((block) => !isArchivable(block, cutoff));
+  const archivable = blocks.filter((block) => isArchivable(block, cutoff));
+  const archiveFiles: string[] = [];
+
+  const byMonth = new Map<string, DecisionBlock[]>();
+  for (const block of archivable) {
+    if (!block.month) continue;
+    byMonth.set(block.month, [...(byMonth.get(block.month) || []), block]);
+  }
+
+  for (const [month, monthBlocks] of byMonth.entries()) {
+    const archivePath = join(workspaceDir, `decisions-${month}.md`);
+    const changed = await appendArchiveBlocks(archivePath, month, monthBlocks);
+    if (changed) archiveFiles.push(archivePath);
+  }
+
+  if (archivable.length > 0) {
+    await writeFile(decisionsPath, renderDecisionDocument(header, retained), 'utf-8');
+  }
+
+  return {
+    decisionsPath,
+    retained: retained.length,
+    archived: archivable.length,
+    archiveFiles,
+  };
 }
 
 /**

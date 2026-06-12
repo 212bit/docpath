@@ -19,6 +19,7 @@ interface LearnOptions {
 }
 
 type LearnTarget = 'style' | 'architecture';
+type CandidateAction = 'keep' | 'archive' | 'skip';
 
 interface Pattern {
   type: 'anti-pattern' | 'best-practice' | 'convention' | 'architecture';
@@ -32,6 +33,7 @@ interface Pattern {
 const AUTO_STYLE_MARKER = '<!-- docpath:auto-learn:style -->';
 const AUTO_ARCH_MARKER = '<!-- docpath:auto-learn:architecture -->';
 const LESSON_META_PREFIX = '<!-- docpath:lesson-meta ';
+const EMPTY_LESSON_CANDIDATES = '# Lesson Candidates\n\n';
 
 interface ExistingRuleSummary {
   keys: Set<string>;
@@ -54,6 +56,8 @@ interface LearnPaths {
 interface PatternSelection {
   patterns: Pattern[];
   sourceMode: string;
+  classifications: CandidateClassification[];
+  shouldClearLessonCandidates: boolean;
 }
 
 interface CandidateBlock {
@@ -70,6 +74,13 @@ interface CandidateBlock {
 interface GroomIssue {
   block: CandidateBlock;
   reasons: string[];
+}
+
+interface CandidateClassification {
+  block: CandidateBlock;
+  action: CandidateAction;
+  reasons: string[];
+  pattern?: Pattern;
 }
 
 interface PatternMergePlan {
@@ -177,38 +188,11 @@ function isOrphanCandidate(candidate: CandidateBlock): boolean {
   return !taskId || taskId === 'unknown';
 }
 
-function extractCandidateLessons(content: string): Pattern[] {
-  const patterns: Pattern[] = [];
-
-  for (const candidate of parseCandidateBlocks(content)) {
-    if (isOrphanCandidate(candidate)) continue;
-    if (isLowValueWorkflowLesson(candidate)) continue;
-    if (isVagueLesson(candidate)) continue;
-    const typeValue = candidate.type;
-    const targetValue = candidate.target;
-    const type: Pattern['type'] = targetValue === 'architecture' || typeValue === 'architecture'
-      ? 'architecture'
-      : typeValue === 'anti-pattern' || typeValue === 'best-practice' || typeValue === 'convention'
-        ? typeValue
-        : 'best-practice';
-
-    if (candidate.description) {
-      patterns.push({
-        type,
-        keyword: candidate.key,
-        description: candidate.description.slice(0, 300),
-        source: candidate.source,
-        taskId: candidate.taskId,
-        target: targetValue === 'architecture' || type === 'architecture' ? 'architecture' : 'style',
-      });
-    }
-  }
-
-  return patterns;
-}
-
 function isLowValueWorkflowLesson(candidate: CandidateBlock): boolean {
-  return /^✅\s*推荐保留本次任务的执行经验：完成\s*\d+\/\d+\s*步，阻塞\s*\d+\s*步。?$/u.test(candidate.description.trim());
+  const description = candidate.description.replace(/\s+/g, ' ').trim();
+  return /推荐保留本次任务的执行经验/u.test(description)
+    || /完成\s*\d+\s*\/\s*\d+\s*步/u.test(description)
+    || /阻塞\s*\d+\s*步/u.test(description);
 }
 
 function isVagueLesson(candidate: CandidateBlock): boolean {
@@ -217,23 +201,93 @@ function isVagueLesson(candidate: CandidateBlock): boolean {
   return /^(待补充|暂无|无|none|n\/a)$/i.test(description);
 }
 
-function analyzeCandidateQuality(candidates: CandidateBlock[]): GroomIssue[] {
-  const issues: GroomIssue[] = [];
-  const seen = new Set<string>();
+function candidateToPattern(candidate: CandidateBlock): Pattern | undefined {
+  const typeValue = candidate.type;
+  const targetValue = candidate.target;
+  const type: Pattern['type'] = targetValue === 'architecture' || typeValue === 'architecture'
+    ? 'architecture'
+    : typeValue === 'anti-pattern' || typeValue === 'best-practice' || typeValue === 'convention'
+      ? typeValue
+      : 'best-practice';
 
-  for (const candidate of candidates) {
-    const reasons: string[] = [];
-    const key = `${candidate.type || 'best-practice'}:${candidate.target || 'style'}:${candidate.key}:${candidate.source}:${candidate.taskId || ''}`.toLowerCase();
-    if (seen.has(key)) reasons.push('重复候选');
-    seen.add(key);
-    if (isOrphanCandidate(candidate)) reasons.push('task_id 缺失/unknown 的孤儿候选（状态漂移产物）');
-    if (isLowValueWorkflowLesson(candidate)) reasons.push('低信息密度的任务完成统计');
-    if (isVagueLesson(candidate)) reasons.push('经验描述过短或占位');
-    if (!candidate.key || candidate.key === candidate.title) reasons.push('缺少稳定 key');
-    if (reasons.length > 0) issues.push({ block: candidate, reasons });
+  if (!candidate.description) return undefined;
+
+  return {
+    type,
+    keyword: candidate.key,
+    description: candidate.description.slice(0, 300),
+    source: candidate.source,
+    taskId: candidate.taskId,
+    target: targetValue === 'architecture' || type === 'architecture' ? 'architecture' : 'style',
+  };
+}
+
+function lessonQualityReasons(candidate: CandidateBlock): string[] {
+  const normalized = candidate.description
+    .replace(/[✅⚠️📋🏗️]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const reasons: string[] = [];
+
+  const hasTrigger = /当|在|若|如果|遇到|默认|执行|运行|新增|修改|处理|模式|场景|入口|CLI|Agent|任务|工作流|候选|输出|命令|文件|状态|规则|lesson|journal|learn|check|next|go|plan/i.test(normalized);
+  const hasExpectedBehavior = /必须|应|应该|需要|推荐|保持|避免|不要|不应|只能|清理|写入|输出|使用|保留|跳过|归档|过滤|显示/i.test(normalized);
+  const hasBoundary = /避免|不要|不应|不得|只能|只|边界|除非|否则|兼容|稳定|漂移|恢复|不依赖|不新增|防止|跳过|归档|过滤|清理|模式|目录/i.test(normalized);
+
+  if (!hasTrigger) reasons.push('缺少触发条件');
+  if (!hasExpectedBehavior) reasons.push('缺少期望行为');
+  if (!hasBoundary) reasons.push('缺少边界');
+  return reasons;
+}
+
+function classifyCandidate(candidate: CandidateBlock, seen: Set<string>): CandidateClassification {
+  const reasons: string[] = [];
+  const key = `${candidate.type || 'best-practice'}:${candidate.target || 'style'}:${candidate.key}:${candidate.source}:${candidate.taskId || ''}`.toLowerCase();
+  const duplicate = seen.has(key);
+  seen.add(key);
+
+  if (duplicate) reasons.push('重复候选');
+  if (isOrphanCandidate(candidate)) reasons.push('task_id 缺失/unknown 的孤儿候选（状态漂移产物）');
+  if (isLowValueWorkflowLesson(candidate)) reasons.push('低信息密度的任务完成统计');
+  if (isVagueLesson(candidate)) reasons.push('经验描述过短或占位');
+  if (!candidate.key || candidate.key === candidate.title) reasons.push('缺少稳定 key');
+
+  if (duplicate || isOrphanCandidate(candidate) || isVagueLesson(candidate) || !candidate.key || candidate.key === candidate.title) {
+    return { block: candidate, action: 'skip', reasons };
   }
 
-  return issues;
+  if (isLowValueWorkflowLesson(candidate)) {
+    return { block: candidate, action: 'archive', reasons };
+  }
+
+  const qualityReasons = lessonQualityReasons(candidate);
+  if (qualityReasons.length > 0) {
+    return {
+      block: candidate,
+      action: 'archive',
+      reasons: qualityReasons,
+    };
+  }
+
+  return {
+    block: candidate,
+    action: 'keep',
+    reasons: ['具备触发条件、期望行为和边界'],
+    pattern: candidateToPattern(candidate),
+  };
+}
+
+function classifyCandidateBlocks(candidates: CandidateBlock[]): CandidateClassification[] {
+  const seen = new Set<string>();
+  return candidates.map((candidate) => classifyCandidate(candidate, seen));
+}
+
+function analyzeCandidateQuality(candidates: CandidateBlock[]): GroomIssue[] {
+  return classifyCandidateBlocks(candidates)
+    .filter((classification) => classification.action !== 'keep')
+    .map((classification) => ({
+      block: classification.block,
+      reasons: classification.reasons,
+    }));
 }
 
 function renderGroomedCandidates(original: string, issues: GroomIssue[]): string {
@@ -486,14 +540,32 @@ function sourceModeForLearn(options: LearnOptions, paths: LearnPaths): string {
         : 'journal';
 }
 
+function shouldReadLessonCandidates(options: LearnOptions, paths: LearnPaths): boolean {
+  return !options.journalPath && !options.fromJournal && existsSync(paths.lessonCandidatesPath);
+}
+
 function selectPatterns(journalContent: string, options: LearnOptions, paths: LearnPaths): PatternSelection {
-  const candidatePatterns = extractCandidateLessons(journalContent);
-  const rawPatterns = candidatePatterns.length > 0
-    ? candidatePatterns
-    : extractPatternsFromJournal(journalContent, options.journalPath ? options.journalPath : 'journal');
+  if (shouldReadLessonCandidates(options, paths)) {
+    const candidates = parseCandidateBlocks(journalContent);
+    const classifications = classifyCandidateBlocks(candidates);
+    return {
+      patterns: uniquePatterns(
+        classifications
+          .filter((classification) => classification.action === 'keep' && classification.pattern)
+          .map((classification) => classification.pattern as Pattern)
+      ),
+      sourceMode: sourceModeForLearn(options, paths),
+      classifications,
+      shouldClearLessonCandidates: candidates.length > 0,
+    };
+  }
+
+  const rawPatterns = extractPatternsFromJournal(journalContent, options.journalPath ? options.journalPath : 'journal');
   return {
     patterns: uniquePatterns(rawPatterns),
     sourceMode: sourceModeForLearn(options, paths),
+    classifications: [],
+    shouldClearLessonCandidates: false,
   };
 }
 
@@ -503,6 +575,22 @@ function printPatterns(patterns: Pattern[]): void {
     const icon = p.type === 'anti-pattern' ? '⚠️' : p.type === 'best-practice' ? '✅' : p.type === 'architecture' ? '🏗️' : '📋';
     console.log(`  ${icon} [${p.type}] ${p.keyword}: ${p.description.slice(0, 80)}...`);
   }
+}
+
+function countClassifications(classifications: CandidateClassification[], action: CandidateAction): number {
+  return classifications.filter((classification) => classification.action === action).length;
+}
+
+function printCandidateClassifications(classifications: CandidateClassification[]): void {
+  if (classifications.length === 0) return;
+
+  console.log(`📎  候选分类: 保留 ${countClassifications(classifications, 'keep')} / 归档 ${countClassifications(classifications, 'archive')} / 跳过 ${countClassifications(classifications, 'skip')}\n`);
+  for (const classification of classifications.slice(0, 20)) {
+    const label = classification.action === 'keep' ? '保留' : classification.action === 'archive' ? '归档' : '跳过';
+    console.log(`  - [${label}] ${classification.block.taskId || '-'} / ${classification.block.key}: ${classification.reasons.join('、')}`);
+  }
+  if (classifications.length > 20) console.log(`  ... 省略 ${classifications.length - 20} 条候选`);
+  console.log('');
 }
 
 async function buildPatternMergePlan(paths: LearnPaths, patterns: Pattern[]): Promise<PatternMergePlan> {
@@ -545,6 +633,10 @@ async function writeMergedPatterns(paths: LearnPaths, plan: PatternMergePlan): P
   if (architectureSection) await writeFile(paths.architecturePath, cleanedArchitecture + architectureSection, 'utf-8');
 }
 
+async function clearLessonCandidates(paths: LearnPaths): Promise<void> {
+  await writeFile(paths.lessonCandidatesPath, EMPTY_LESSON_CANDIDATES, 'utf-8');
+}
+
 export async function learnCommand(options: LearnOptions): Promise<void> {
   if (options.action === 'groom' || options.action === 'prune') {
     await groomLessonCandidates(options);
@@ -564,10 +656,22 @@ export async function learnCommand(options: LearnOptions): Promise<void> {
     return;
   }
 
-  const { patterns, sourceMode } = selectPatterns(journalContent, options, paths);
+  const { patterns, sourceMode, classifications, shouldClearLessonCandidates } = selectPatterns(journalContent, options, paths);
+  printCandidateClassifications(classifications);
 
   if (patterns.length === 0) {
-    console.log('📭  未发现可提取的规则模式。\n');
+    console.log('📭  未发现可沉淀到长期 rules 的规则模式。\n');
+    if (options.dryRun) {
+      console.log('📝  [dry-run] 预览模式，不写入 style.md / architecture.md / lesson-candidates.md');
+      console.log(`   - 来源模式: ${sourceMode}`);
+      console.log(`   - 候选处理: 保留 ${countClassifications(classifications, 'keep')} / 归档 ${countClassifications(classifications, 'archive')} / 跳过 ${countClassifications(classifications, 'skip')}\n`);
+      return;
+    }
+    if (shouldClearLessonCandidates) {
+      await clearLessonCandidates(paths);
+      console.log('🧹  lesson-candidates.md 已清理\n');
+      return;
+    }
     console.log('💡  在 journal 中使用以下标记可被自动提取:');
     console.log('   ⚠️ 反模式/避免    ✅ 最佳实践/推荐    📋 规范/格式\n');
     return;
@@ -582,6 +686,10 @@ export async function learnCommand(options: LearnOptions): Promise<void> {
   }
 
   await writeMergedPatterns(paths, plan);
+  if (shouldClearLessonCandidates) {
+    await clearLessonCandidates(paths);
+    console.log('🧹  lesson-candidates.md 已清理');
+  }
 
   console.log(`\n✅  已更新 style.md (+${plan.filteredStyle.added.length} 条规则, 跳过 ${plan.filteredStyle.skipped.length} 条重复), architecture.md (+${plan.filteredArchitecture.added.length} 条经验, 跳过 ${plan.filteredArchitecture.skipped.length} 条重复)\n`);
   console.log('💡  下次 `docpath:go` 将自动应用这些规则。\n');

@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260610-dashboard-readonly-viewer",
-  "task_title": "DocPath 只读管理仪表盘",
+  "task_id": "T-20260612-journal-decisions-md-adr",
+  "task_title": "收紧 journal 到 decisions.md 的 ADR 写入规则",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-10T14:36:20.945Z",
-  "updated_at": "2026-06-10T14:36:20.944Z"
+  "started_at": "2026-06-12T17:31:00.354Z",
+  "updated_at": "2026-06-12T17:31:00.353Z"
 }

@@ -3,13 +3,13 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260610-dashboard-readonly-viewer
-task_title: DocPath 只读管理仪表盘
+task_id: T-20260612-journal-decisions-md-adr
+task_title: 收紧 journal 到 decisions.md 的 ADR 写入规则
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-10T14:36:20.945Z
-updated_at: 2026-06-10T14:36:20.944Z
+started_at: 2026-06-12T17:31:00.354Z
+updated_at: 2026-06-12T17:31:00.353Z
 ```
 
 > 📖 规约: [spec.md](../tasks/current/spec.md)
@@ -21,8 +21,8 @@ updated_at: 2026-06-10T14:36:20.944Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-10T14:35:53.662Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260610-dashboard-readonly-viewer] — 2026-06-10T14:36:03.166Z · 状态: done · 代码审查: 0 错误, 5 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 12 项 · 2026-06-12T17:30:32.646Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260612-journal-decisions-md-adr] — 2026-06-12T17:30:39.863Z · 状态: done · 代码审查: 0 错误, 4 警告, 0 提示
 
 ## 🔄 同步说明
 

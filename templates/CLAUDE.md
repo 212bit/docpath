@@ -130,6 +130,17 @@ gates:
 
 ---
 
+## 🧹 决策日志老化
+
+- `workspace/decisions.md` 只保留最近 30 天内的 ADR；`docpath journal` 会自动把更早条目按月轮转到 `workspace/decisions-YYYY-MM.md`。
+- 查询历史决策时，应显式读取对应月份归档文件，不要把全部历史决策加载进默认上下文。
+- 需要手动触发时运行 `docpath gc-decisions`。
+- `workspace/breadcrumb.md` 是执行恢复证据，记录步骤状态、检查、审查和 journal 完成事件。
+- `workspace/decisions.md` 是高信号 ADR 索引，普通 `journal.archive` 摘要、完成步数、检查结果和 review 计数不得写入决策日志。
+- `docpath journal` 仅在提取到可复用的架构、工作流或行为决策时写入 `decisions.md`，并保留背景、影响、边界和替代方案。
+
+---
+
 ## 🤖 Agent Lifecycle Commands
 
 For Codex / Claude Code / OpenCode, use these enforceable lifecycle commands:
@@ -169,6 +180,7 @@ docpath agent handoff                       # compact context before session swi
 | `docpath check` | 执行完成后 | 质量门禁 |
 | `docpath review` | 验证通过后 | 代码审查 |
 | `docpath journal` | 任务完成后 | 知识归档 |
+| `docpath gc-decisions` | 需要维护决策日志时 | 按月轮转历史 ADR |
 | `docpath continue` | 断点续接 | 读 breadcrumb 恢复执行 |
 | `docpath compact` | 上下文长时 | 持久化压缩 |
 
