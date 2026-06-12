@@ -4,7 +4,10 @@
  * 命令层只发出业务事件；phase/gate/state 的具体落盘规则集中在这里。
  */
 
+import { join } from 'node:path';
 import { readCurrentState, writeCurrentState, type CurrentState } from '../utils/workspace.js';
+import { resolveDocpathDir } from '../utils/file.js';
+import { withLock } from '../utils/lock.js';
 import { normalizeWorkflowSnapshot, type GateStatus, type WorkflowPhase } from './state-machine.js';
 
 export type WorkflowEvent =
@@ -98,36 +101,43 @@ export async function transitionWorkflow(
   const target = EVENT_TARGETS[event];
   if (!target) throw new Error(`[docpath] Unsupported workflow event: ${event}`);
 
-  const previous = await readCurrentState(cwd) || fallbackState();
-  if (!target.from.includes(previous.phase)) {
-    const allowedFrom = target.from.join(', ');
-    const suggested = EVENT_RECOVERY_COMMAND[event] || 'docpath next --agent';
-    throw new Error(
-      `[docpath] Illegal workflow transition: ${event} cannot run from phase=${previous.phase}` +
-      `（允许来源: ${allowedFrom}；建议下一步: ${suggested}）`,
-    );
-  }
+  // 整个 read-modify-write 序列持锁执行，防止并发 Agent（codex / hive 守护进程 / 人类）
+  // 各自读到同一旧状态、各自写回，导致后写者覆盖先写者的转移（lost update）。
+  // 锁文件与 state.json 同目录；.gitignore 末尾的 `.docpath` 兜底规则会忽略
+  // 所有未追踪的 .docpath/ 文件，故 state.lock 不会泄漏进 git status。
+  const lockPath = join(await resolveDocpathDir(cwd), 'workspace', 'state.lock');
+  return withLock(lockPath, async () => {
+    const previous = await readCurrentState(cwd) || fallbackState();
+    if (!target.from.includes(previous.phase)) {
+      const allowedFrom = target.from.join(', ');
+      const suggested = EVENT_RECOVERY_COMMAND[event] || 'docpath next --agent';
+      throw new Error(
+        `[docpath] Illegal workflow transition: ${event} cannot run from phase=${previous.phase}` +
+        `（允许来源: ${allowedFrom}；建议下一步: ${suggested}）`,
+      );
+    }
 
-  const snapshot = normalizeWorkflowSnapshot({ phase: target.phase, gate: target.gate });
-  if (!snapshot) {
-    throw new Error(`[docpath] Invalid transition target for ${event}: phase=${target.phase}, gate=${target.gate}`);
-  }
+    const snapshot = normalizeWorkflowSnapshot({ phase: target.phase, gate: target.gate });
+    if (!snapshot) {
+      throw new Error(`[docpath] Invalid transition target for ${event}: phase=${target.phase}, gate=${target.gate}`);
+    }
 
-  const next: CurrentState = {
-    ...previous,
-    state: snapshot.state,
-    phase: snapshot.phase,
-    gate: snapshot.gate,
-    task_id: payload.taskId ?? previous.task_id,
-    task_title: payload.taskTitle ?? previous.task_title,
-    current_step: payload.currentStep ?? DEFAULT_STEP[event],
-    updated_at: nowIso(),
-  };
+    const next: CurrentState = {
+      ...previous,
+      state: snapshot.state,
+      phase: snapshot.phase,
+      gate: snapshot.gate,
+      task_id: payload.taskId ?? previous.task_id,
+      task_title: payload.taskTitle ?? previous.task_title,
+      current_step: payload.currentStep ?? DEFAULT_STEP[event],
+      updated_at: nowIso(),
+    };
 
-  if (previous.phase !== next.phase) {
-    next.started_at = nowIso();
-  }
+    if (previous.phase !== next.phase) {
+      next.started_at = nowIso();
+    }
 
-  await writeCurrentState(cwd, next);
-  return next;
+    await writeCurrentState(cwd, next);
+    return next;
+  });
 }

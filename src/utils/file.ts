@@ -2,7 +2,7 @@
  * DocPath 文件工具
  */
 
-import { readFile, writeFile, mkdir, access, constants } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, access, rename, constants } from 'node:fs/promises';
 import { join, dirname, resolve, isAbsolute, relative } from 'node:path';
 
 /** 确保目录存在 */
@@ -24,6 +24,23 @@ export async function exists(filePath: string): Promise<boolean> {
 export async function writeFileSafe(filePath: string, content: string): Promise<void> {
   await ensureDir(dirname(filePath));
   await writeFile(filePath, content, 'utf-8');
+}
+
+/**
+ * 原子写入：先写 `.tmp` 再 rename 到目标路径。
+ *
+ * rename 在同一文件系统上是原子操作，因此并发读者只会看到「旧的完整内容」
+ * 或「新的完整内容」，绝不会读到写到一半的截断文件。用于派生产物
+ * （current.md、breadcrumb 轮转）等无法靠锁保护、但必须保持文件完整性的写入。
+ *
+ * 注意：这只保证「单次写的原子性」，不保证「读-改-写序列的原子性」——
+ * 后者由 {@link withLock} 负责。
+ */
+export async function writeFileAtomic(filePath: string, content: string): Promise<void> {
+  await ensureDir(dirname(filePath));
+  const tmpPath = `${filePath}.${process.pid}.tmp`;
+  await writeFile(tmpPath, content, 'utf-8');
+  await rename(tmpPath, filePath);
 }
 
 /** 读取模板文件内容 */

@@ -11,6 +11,7 @@
 
 import { join, dirname } from 'path';
 import { readFile, appendFile, writeFile, mkdir } from 'fs/promises';
+import { writeFileAtomic } from '../utils/file.js';
 
 /** 面包屑最大保留条数 */
 export const MAX_ENTRIES = 50;
@@ -140,8 +141,8 @@ export async function truncateBreadcrumb(projectRoot: string): Promise<number> {
 
   const body = keep.map((e) => formatEntry(e)).join('');
   const newContent = BREADCRUMB_HEADER + body;
-  await mkdir(dirname(breadcrumbPath), { recursive: true });
-  await writeFile(breadcrumbPath, newContent, 'utf-8');
+  // 原子轮转：tmp+rename，防止并发读者读到写到一半的截断面包屑。
+  await writeFileAtomic(breadcrumbPath, newContent);
 
   return trimmedCount;
 }

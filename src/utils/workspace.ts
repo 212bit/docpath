@@ -8,7 +8,7 @@ import { readFile, writeFile, rename } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import * as readline from 'readline';
-import { resolveDocpathDir } from './file.js';
+import { resolveDocpathDir, writeFileAtomic } from './file.js';
 import { resolveActiveTaskDocPath } from './task-files.js';
 import {
   normalizeWorkflowSnapshot,
@@ -142,7 +142,7 @@ export async function writeCurrentState(cwd: string, state: CurrentState): Promi
     extractLatestBreadcrumbSummary(breadcrumbContent),
     state.escalation,
   );
-  await writeFile(currentPath, rendered, 'utf-8');
+  await writeFileAtomic(currentPath, rendered);
 }
 
 /**
@@ -515,7 +515,7 @@ export async function syncCurrentDocument(cwd: string): Promise<void> {
   );
   
   const currentPath = join(docpathDir, 'workspace', 'current.md');
-  await writeFile(currentPath, rendered, 'utf-8');
+  await writeFileAtomic(currentPath, rendered);
 }
 
 /**
