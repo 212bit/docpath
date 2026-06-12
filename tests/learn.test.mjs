@@ -473,4 +473,95 @@ describe('journal to learn loop', () => {
     assert.match(lessons, /.docpath\/workspace\/breadcrumb.md/);
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('journal skips lesson candidate (fail-loud) when task_id is unbound', () => {
+    const cwd = mkWorkspace();
+    // 把 task_id 置空，模拟状态漂移/未绑定任务的归档。
+    const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+    const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    state.task_id = '';
+    state.task_title = '';
+    writeFileSync(statePath, JSON.stringify(state, null, 2));
+
+    // 警告走 stderr，合并到 stdout 一并断言。
+    const output = execSync(`node ${BIN} journal --cwd ${cwd} --optional-archive skip 2>&1`, { cwd, encoding: 'utf-8', timeout: 20000 });
+
+    // 归档本身不报错，但 lesson 候选被显式跳过，且发出警告。
+    assert.match(output, /跳过 lesson 候选写入/);
+    const lessonsPath = join(cwd, '.docpath', 'workspace', 'lesson-candidates.md');
+    if (existsSync(lessonsPath)) {
+      const lessons = readFileSync(lessonsPath, 'utf-8');
+      assert.doesNotMatch(lessons, /## unknown/);
+      assert.doesNotMatch(lessons, /- key: unknown-workflow/);
+    }
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('learn does not solidify an orphan (task_id: unknown) candidate into style.md', () => {
+    const cwd = mkWorkspace();
+    const lessonsPath = join(cwd, '.docpath', 'workspace', 'lesson-candidates.md');
+    writeFileSync(lessonsPath, [
+      '# Lesson Candidates',
+      '',
+      '## unknown — 2026-06-10T00:00:00.000Z',
+      '',
+      '- task_id: unknown',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: unknown-workflow',
+      '',
+      '### Lesson',
+      '',
+      '✅ 这条经验本身描述具体到足以越过低信息密度过滤，但 task_id 是孤儿，不该固化。',
+      '',
+      '---',
+      '',
+      '## T-KEEP — 2026-06-10T00:00:00.000Z',
+      '',
+      '- task_id: T-KEEP',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: cli-contract',
+      '',
+      '### Lesson',
+      '',
+      '✅ CLI 机器输出字段必须保持稳定，避免 agent 路由解析漂移。',
+      '',
+    ].join('\n'));
+
+    execSync(`node ${BIN} learn --cwd ${cwd}`, { cwd, encoding: 'utf-8', timeout: 20000 });
+    const style = readFileSync(join(cwd, '.docpath', 'spec', 'style.md'), 'utf-8');
+
+    // 孤儿候选不应进入 style.md；正常候选应进入。
+    assert.doesNotMatch(style, /unknown-workflow/);
+    assert.match(style, /cli-contract/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('learn groom flags an orphan (task_id: unknown) candidate for cleanup', () => {
+    const cwd = mkWorkspace();
+    const lessonsPath = join(cwd, '.docpath', 'workspace', 'lesson-candidates.md');
+    writeFileSync(lessonsPath, [
+      '# Lesson Candidates',
+      '',
+      '## unknown — 2026-06-10T00:00:00.000Z',
+      '',
+      '- task_id: unknown',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: unknown-workflow',
+      '',
+      '### Lesson',
+      '',
+      '✅ 描述足够具体以越过其它过滤器，仅 task_id 孤儿这一项触发清理。',
+      '',
+    ].join('\n'));
+
+    const output = execSync(`node ${BIN} learn groom --cwd ${cwd} --dry-run`, { cwd, encoding: 'utf-8', timeout: 20000 });
+    assert.match(output, /孤儿候选/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

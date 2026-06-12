@@ -295,6 +295,15 @@ async function completeLinkedBacklog(cwd: string, taskId: string): Promise<void>
 }
 
 async function writeLessonCandidate(docpathDir: string, taskId: string, summary: TaskSummary): Promise<void> {
+  // fail-loud guard：没有合法 task_id 的归档不该产生可固化的全局经验。
+  // taskId 为 'unknown'/空通常是状态漂移或未绑定任务的征兆（见 docpath-go-taskid-gate）；
+  // 容错写入只会在 lesson-candidates.md 留下 `## unknown` 孤儿块，污染后续 learn 固化。
+  // 归档本身仍可继续（journal.ts:143 的容错保留），但 lesson 候选在此处显式跳过。
+  const normalizedTaskId = (taskId || '').trim();
+  if (!normalizedTaskId || normalizedTaskId === 'unknown') {
+    console.warn(`⚠️  跳过 lesson 候选写入：task_id 缺失或无效（taskId=${taskId || '<empty>'}）。请确认任务已正确绑定后再归档。`);
+    return;
+  }
   try {
     const lessonsPath = join(docpathDir, 'workspace', 'lesson-candidates.md');
     const now = new Date().toISOString();

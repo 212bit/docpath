@@ -169,10 +169,19 @@ function parseCandidateBlocks(content: string): CandidateBlock[] {
   return candidates;
 }
 
+function isOrphanCandidate(candidate: CandidateBlock): boolean {
+  // task_id 缺失/为 'unknown' 的候选是状态漂移的产物（见 docpath-go-taskid-gate），
+  // 不应被固化进全局 style.md / architecture.md。生产端已加 fail-loud guard，
+  // 此处为纵深防御，拦截历史遗留的孤儿块。
+  const taskId = (candidate.taskId || '').trim().toLowerCase();
+  return !taskId || taskId === 'unknown';
+}
+
 function extractCandidateLessons(content: string): Pattern[] {
   const patterns: Pattern[] = [];
 
   for (const candidate of parseCandidateBlocks(content)) {
+    if (isOrphanCandidate(candidate)) continue;
     const typeValue = candidate.type;
     const targetValue = candidate.target;
     const type: Pattern['type'] = targetValue === 'architecture' || typeValue === 'architecture'
@@ -215,6 +224,7 @@ function analyzeCandidateQuality(candidates: CandidateBlock[]): GroomIssue[] {
     const key = `${candidate.type || 'best-practice'}:${candidate.target || 'style'}:${candidate.key}:${candidate.source}:${candidate.taskId || ''}`.toLowerCase();
     if (seen.has(key)) reasons.push('重复候选');
     seen.add(key);
+    if (isOrphanCandidate(candidate)) reasons.push('task_id 缺失/unknown 的孤儿候选（状态漂移产物）');
     if (isLowValueWorkflowLesson(candidate)) reasons.push('低信息密度的任务完成统计');
     if (isVagueLesson(candidate)) reasons.push('经验描述过短或占位');
     if (!candidate.key || candidate.key === candidate.title) reasons.push('缺少稳定 key');
