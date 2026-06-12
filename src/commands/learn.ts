@@ -182,6 +182,8 @@ function extractCandidateLessons(content: string): Pattern[] {
 
   for (const candidate of parseCandidateBlocks(content)) {
     if (isOrphanCandidate(candidate)) continue;
+    if (isLowValueWorkflowLesson(candidate)) continue;
+    if (isVagueLesson(candidate)) continue;
     const typeValue = candidate.type;
     const targetValue = candidate.target;
     const type: Pattern['type'] = targetValue === 'architecture' || typeValue === 'architecture'

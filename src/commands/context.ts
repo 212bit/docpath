@@ -11,19 +11,20 @@ import { join } from 'path';
 import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
-import { readRuleFile } from '../utils/rules.js';
-
-interface DocsIndexEntry {
-  path: string;
-  type?: string;
-  kind?: string;
-  scope?: string;
-  level?: string;
-  title?: string;
-  summary?: string;
-  updated_at?: string;
-  size?: number;
-}
+import { compactRuleContent, readRuleFile } from '../utils/rules.js';
+import {
+  DEFAULT_CONTEXT_TOKEN_BUDGET,
+  documentIndexStats,
+  estimateTokens,
+  matchesDocumentSelection,
+  readProjectDocumentIndex,
+  resolveDocpathDocumentPath,
+  shouldReadDocumentBody,
+  sortDocumentEntries,
+  validateTaskId,
+  type DocumentSelectionOptions,
+  type ProjectDocumentIndexEntry,
+} from '../utils/document-index.js';
 
 interface ContextOptions {
   cwd: string;
@@ -39,15 +40,12 @@ interface ContextOptions {
   output?: string;
   /** Agent 可读 YAML 输出 */
   agent?: boolean;
-}
-
-/**
- * 粗略 token 估算：中文 ~1.5 token/char, 英文 ~4 char/token
- */
-function estimateTokens(text: string): number {
-  const cjk = (text.match(/[\u4e00-\u9fff]/g) || []).length;
-  const ascii = text.length - cjk;
-  return Math.ceil(cjk * 1.5 + ascii / 4);
+  /** 按文档 path/title/summary/scope/type/topic_tags 过滤 */
+  topic?: string;
+  /** 按任务 ID 展开相关文档 */
+  taskId?: string;
+  /** 显式允许归档正文参与预算竞争 */
+  includeArchive?: boolean;
 }
 
 /**
@@ -66,58 +64,91 @@ function compressMarkdown(text: string, maxChars: number): string {
   return result;
 }
 
-async function readDocsIndex(docpathDir: string): Promise<DocsIndexEntry[]> {
-  const indexPath = join(docpathDir, 'docs-index.json');
-  if (!existsSync(indexPath)) return [];
-
+async function readDocsIndexSafe(
+  docpathDir: string,
+  currentTaskId?: string,
+): Promise<ProjectDocumentIndexEntry[]> {
   try {
-    const parsed = JSON.parse(await readFile(indexPath, 'utf-8')) as { entries?: DocsIndexEntry[] };
-    return Array.isArray(parsed.entries) ? parsed.entries : [];
+    return (await readProjectDocumentIndex(docpathDir, currentTaskId))?.entries || [];
   } catch {
     return [];
   }
 }
 
-function docPriority(entry: DocsIndexEntry): number {
-  let score = 0;
-  const path = entry.path.replace(/\\/g, '/');
-  const level = parseInt(entry.level || '3', 10);
+function renderDocsIndexSummary(entries: ProjectDocumentIndexEntry[], selection: DocumentSelectionOptions): string | null {
+  if (entries.length === 0) return null;
+  const stats = documentIndexStats(entries, selection);
+  const selected = sortDocumentEntries(entries.filter((entry) => matchesDocumentSelection(entry, selection))).slice(0, 14);
+  const lines: string[] = [
+    '## 文档索引摘要 (index-first)',
+    `- total_docs: ${stats.total}`,
+    `- default_read_docs: ${stats.defaultRead}`,
+    `- archive_docs: ${stats.archive}`,
+    `- selected_docs: ${stats.selected}`,
+    `- estimated_tokens_all_docs: ~${stats.estimatedTokens}`,
+    `- estimated_tokens_default_read: ~${stats.defaultReadTokens}`,
+    `- estimated_tokens_selected: ~${stats.selectedTokens}`,
+    `- archive_policy: 默认不读取归档正文；使用 --topic、--task-id 或 --include-archive 后才展开片段`,
+    '',
+    '### 优先索引条目',
+  ];
 
-  if (entry.scope === 'task') score += 100;
-  if (path.includes('tasks/current/')) score += 90;
-  if (path.includes('workspace/current.md')) score += 80;
-  if (path.includes('workspace/breadcrumb.md')) score += 70;
-  if (path.includes('workspace/last-check.md')) score += 60;
-  if (path.includes('rules/style.md') || path.includes('rules/architecture.md')) score += 55;
-  if (path.includes('spec/style.md') || path.includes('spec/architecture.md')) score += 50;
-  if (entry.type === 'runbook' || entry.kind === 'runbook') score += 20;
-  if (!Number.isNaN(level)) score += Math.max(0, 10 - level);
+  for (const entry of selected) {
+    lines.push([
+      `- path: ${entry.path}`,
+      `  type: ${entry.type || entry.kind}`,
+      `  scope: ${entry.scope}`,
+      `  default_read: ${entry.default_read}`,
+      `  archive: ${entry.archive}`,
+      `  tokens: ~${entry.token_estimate}`,
+      `  task_id: ${entry.task_id || ''}`,
+      `  summary: ${entry.summary || ''}`,
+    ].join('\n'));
+  }
 
-  return score;
+  if (selected.length === 0) lines.push('- 无匹配索引条目');
+  return lines.join('\n');
 }
 
-async function renderIndexedDocs(docpathDir: string, maxChars: number): Promise<string[]> {
-  const entries = await readDocsIndex(docpathDir);
+async function renderIndexedDocs(
+  docpathDir: string,
+  maxChars: number,
+  selection: DocumentSelectionOptions,
+): Promise<string[]> {
+  const entries = await readDocsIndexSafe(docpathDir, selection.currentTaskId);
   if (entries.length === 0) return [];
 
   const sections: string[] = [];
-  const sorted = entries
-    .filter((entry) => entry.path && entry.path.endsWith('.md'))
-    .sort((a, b) => docPriority(b) - docPriority(a));
+  const summary = renderDocsIndexSummary(entries, selection);
+  if (summary) sections.push(summary);
 
-  let remaining = Math.max(1200, Math.floor(maxChars * 0.25));
+  if (selection.taskId && !entries.some((entry) => entry.task_id === selection.taskId)) {
+    throw new Error(`未在 docs-index 中找到 task_id: ${selection.taskId}`);
+  }
+
+  const sorted = sortDocumentEntries(entries)
+    .filter((entry) => entry.path.endsWith('.md') && entry.path !== 'docs.md')
+    .filter((entry) => shouldReadDocumentBody(entry, selection));
+
+  if (sorted.length === 0) return sections;
+
+  let remaining = Math.max(1000, Math.floor(maxChars * 0.2));
+  const snippetSections: string[] = [];
   for (const entry of sorted) {
     if (remaining <= 0) break;
-    const fullPath = join(docpathDir, entry.path);
+    const fullPath = resolveDocpathDocumentPath(docpathDir, entry.path);
+    if (!fullPath) throw new Error(`docs-index path escapes .docpath: ${entry.path}`);
     if (!existsSync(fullPath)) continue;
     const content = await readFile(fullPath, 'utf-8');
     if (!content.trim()) continue;
     const slice = compressMarkdown(content, Math.min(remaining, 1600));
-    sections.push([
-      `## 相关文档: ${entry.title || entry.path}`,
+    snippetSections.push([
+      `### ${entry.title || entry.path}`,
       `- path: ${entry.path}`,
       `- type: ${entry.type || entry.kind || 'unknown'}`,
       `- scope: ${entry.scope || 'project'}`,
+      `- archive: ${entry.archive}`,
+      `- tokens: ~${entry.token_estimate}`,
       `- summary: ${entry.summary || ''}`,
       '',
       slice,
@@ -125,11 +156,16 @@ async function renderIndexedDocs(docpathDir: string, maxChars: number): Promise<
     remaining -= slice.length;
   }
 
+  if (snippetSections.length > 0) {
+    sections.push(['## 按需展开文档片段', ...snippetSections].join('\n\n'));
+  }
+
   return sections;
 }
 
 export async function contextCommand(options: ContextOptions): Promise<void> {
-  const { cwd, format = 'prompt', maxTokens = 8000 } = options;
+  const { cwd, format = 'prompt', maxTokens = DEFAULT_CONTEXT_TOKEN_BUDGET } = options;
+  validateTaskId(options.taskId);
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
@@ -139,9 +175,11 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
 
   const maxChars = Math.floor(maxTokens * 3); // 粗略 1 token ≈ 3 chars
   const sections: string[] = [];
+  let currentTaskId: string | undefined;
 
   // ── 1. 当前状态 ──
   const state = await readCurrentMd(cwd);
+  currentTaskId = state?.task_id;
   if (state) {
     sections.push(`## 当前状态\n\`\`\`yaml\nlevel: ${state.level}\nstate: ${state.state}\ntask_id: ${state.task_id}\ntask_title: ${state.task_title}\nphase: ${state.phase}\nstarted_at: ${state.started_at}\nupdated_at: ${state.updated_at}\n\`\`\``);
   }
@@ -185,12 +223,18 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
 
   // ── 6. 全局规则 ──
   const { content: style, file: styleFile } = await readRuleFile(docpathDir, 'style');
-  if (style.trim()) {
-    sections.push(`## 全局规则: 编码规范 (${styleFile.displayPath})\n${compressMarkdown(style, Math.floor(maxChars * 0.2))}`);
+  const compactStyle = compactRuleContent(style);
+  if (compactStyle.trim()) {
+    sections.push(`## 全局规则: 编码规范 (${styleFile.displayPath})\n${compressMarkdown(compactStyle, Math.floor(maxChars * 0.16))}`);
   }
 
-  // ── 7. 结构化文档索引：小预算下优先保留当前任务相关文档 ──
-  const indexedDocs = await renderIndexedDocs(docpathDir, maxChars);
+  // ── 7. 结构化文档索引：默认只输出摘要，正文按 topic/task/archive 显式展开 ──
+  const indexedDocs = await renderIndexedDocs(docpathDir, maxChars, {
+    topic: options.topic,
+    taskId: options.taskId,
+    includeArchive: options.includeArchive,
+    currentTaskId,
+  });
   sections.push(...indexedDocs);
 
   // ── 组装输出 ──

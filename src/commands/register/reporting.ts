@@ -31,15 +31,21 @@ function registerContextCommand(cli: CAC): void {
     .option('--format <format>', '输出格式: prompt(默认) | raw')
     .option('--no-spec', '不包含 spec')
     .option('--no-plan', '不包含 plan')
+    .option('--topic <topic>', '按文档 path/title/summary/scope/type/topic_tags 过滤并按需展开')
+    .option('--task-id <taskId>', '按任务 ID 定位并按需展开相关文档')
+    .option('--include-archive', '允许归档正文参与预算竞争')
     .option('--output <file>', '保存到文件')
     .option('--agent', '输出 Agent 可读 YAML 状态')
-    .action(async (options: { cwd?: string; 'max-tokens'?: string; format?: string; spec?: boolean; plan?: boolean; output?: string; agent?: boolean }) => {
+    .action(async (options: { cwd?: string; 'max-tokens'?: string; format?: string; spec?: boolean; plan?: boolean; topic?: string; taskId?: string; 'task-id'?: string; includeArchive?: boolean; 'include-archive'?: boolean; output?: string; agent?: boolean }) => {
       await contextCommand({
         cwd: options.cwd || process.cwd(),
         maxTokens: options['max-tokens'] ? parseInt(options['max-tokens'], 10) : undefined,
         format: options.format as 'prompt' | 'raw' | undefined,
         withSpec: options.spec !== false,
         withPlan: options.plan !== false,
+        topic: options.topic,
+        taskId: options.taskId || options['task-id'],
+        includeArchive: !!(options.includeArchive || options['include-archive']),
         output: options.output,
         agent: !!options.agent,
       });

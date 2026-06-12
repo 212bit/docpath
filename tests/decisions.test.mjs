@@ -77,10 +77,10 @@ describe('structured decisions ADR', () => {
       timeout: 20000,
     });
 
-    assert.match(output, /相关决策 \(decisions\)/);
+    assert.match(output, /相关决策摘要 \(decisions\)/);
     assert.match(output, /ADR-\d{8}-001 — architecture/);
     assert.match(output, /Reveal 需要包含最近 ADR/);
-    assert.match(output, /- task_id: T-ADR/);
+    assert.match(output, /task_id: T-ADR/);
     rmSync(cwd, { recursive: true, force: true });
   });
 });

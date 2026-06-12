@@ -45,6 +45,20 @@ function run(args, cwd) {
   return execSync(`node ${BIN} ${args}`, { cwd, encoding: 'utf-8', timeout: 20000 });
 }
 
+function runResult(args, cwd) {
+  try {
+    return {
+      ok: true,
+      output: execSync(`node ${BIN} ${args}`, { cwd, encoding: 'utf-8', timeout: 20000, stdio: ['pipe', 'pipe', 'pipe'] }),
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      output: `${err.stdout?.toString('utf-8') || ''}${err.stderr?.toString('utf-8') || ''}`,
+    };
+  }
+}
+
 describe('structured docs index', () => {
   it('docs scan writes a machine-readable index with required fields', () => {
     const cwd = mkWorkspace();
@@ -55,16 +69,24 @@ describe('structured docs index', () => {
     const index = JSON.parse(readFileSync(indexPath, 'utf-8'));
     assert.ok(Array.isArray(index.entries));
 
-    const specEntry = index.entries.find((entry) => entry.path === 'tasks/T-DOCS/spec.md');
-    assert.ok(specEntry, 'canonical task spec should be indexed');
+    const specEntry = index.entries.find((entry) => entry.path === 'tasks/current/spec.md');
+    assert.ok(specEntry, 'current task spec should be indexed');
     assert.equal(specEntry.type, 'runbook');
     assert.equal(specEntry.scope, 'task');
     assert.equal(specEntry.title, 'Current Task Spec');
     assert.match(specEntry.summary, /Current task summary/);
     assert.match(specEntry.updated_at, /^\d{4}-\d{2}-\d{2}T/);
+    assert.equal(specEntry.default_read, true);
+    assert.equal(specEntry.archive, false);
+    assert.equal(specEntry.task_id, 'T-DOCS');
+    assert.equal(typeof specEntry.token_estimate, 'number');
+    assert.ok(Array.isArray(specEntry.topic_tags));
+    const canonicalSpec = index.entries.find((entry) => entry.path === 'tasks/T-DOCS/spec.md');
+    assert.equal(canonicalSpec?.task_id, 'T-DOCS');
+    assert.equal(canonicalSpec?.default_read, false);
 
     const docsMd = readFileSync(join(cwd, '.docpath', 'docs.md'), 'utf-8');
-    assert.match(docsMd, /\| 路径 \| type \| scope \| level \| 标题 \| 摘要 \| 更新时间 \| 大小 \|/);
+    assert.match(docsMd, /\| 路径 \| type \| scope \| level \| default_read \| archive \| tokens \| task_id \| 标题 \| 摘要 \| 更新时间 \| 大小 \|/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -82,17 +104,29 @@ describe('structured docs index', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('context uses docs-index to include current task documents first under a small budget', () => {
+  it('context defaults to index-first output without reading archived task bodies', () => {
     const cwd = mkWorkspace();
     run(`docs scan --cwd ${cwd}`, cwd);
 
     const output = run(`context --cwd ${cwd} --format raw --max-tokens 500`, cwd);
-    const currentIdx = output.indexOf('path: tasks/T-DOCS/spec.md');
-    const oldIdx = output.indexOf('path: tasks/done/T-OLD/notes.md');
+    const currentIdx = output.indexOf('path: tasks/current/spec.md');
 
-    assert.notEqual(currentIdx, -1, 'canonical task spec should be included from docs-index');
-    assert.match(output, /相关文档: Current Task Spec/);
-    if (oldIdx !== -1) assert.ok(currentIdx < oldIdx, 'current task docs should appear before old task docs');
+    assert.notEqual(currentIdx, -1, 'current task spec should be listed in docs-index summary');
+    assert.match(output, /文档索引摘要 \(index-first\)/);
+    assert.match(output, /archive_policy: 默认不读取归档正文/);
+    assert.doesNotMatch(output, /Old archived notes should be lower priority/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('context expands archived task bodies only when task-id is explicit', () => {
+    const cwd = mkWorkspace();
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    const output = run(`context --cwd ${cwd} --format raw --max-tokens 900 --task-id T-OLD`, cwd);
+
+    assert.match(output, /按需展开文档片段/);
+    assert.match(output, /path: tasks\/done\/T-OLD\/notes.md/);
+    assert.match(output, /Old archived notes should be lower priority/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -102,10 +136,57 @@ describe('structured docs index', () => {
 
     const output = run(`reveal --cwd ${cwd} --level 2 --topic backend --format raw`, cwd);
 
-    assert.match(output, /文档索引 \(docs-index: backend\)/);
+    assert.match(output, /文档索引 \(docs-index: topic=backend\)/);
     assert.match(output, /path: spec\/backend\/api.md/);
     assert.match(output, /Backend API reference summary/);
     assert.doesNotMatch(output, /path: tasks\/current\/spec.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('reveal level 3 does not dump full history unless archive selection is explicit', () => {
+    const cwd = mkWorkspace();
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    const defaultOutput = run(`reveal --cwd ${cwd} --level 3 --format raw`, cwd);
+    assert.doesNotMatch(defaultOutput, /完整执行历史/);
+    assert.doesNotMatch(defaultOutput, /Old archived notes should be lower priority/);
+
+    const archiveOutput = run(`reveal --cwd ${cwd} --level 3 --format raw --task-id T-OLD`, cwd);
+    assert.match(archiveOutput, /按需展开文档片段/);
+    assert.match(archiveOutput, /Old archived notes should be lower priority/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('fails loudly for invalid task-id and docs-index paths outside .docpath', () => {
+    const cwd = mkWorkspace();
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    const invalidTask = runResult(`context --cwd ${cwd} --format raw --task-id ../bad`, cwd);
+    assert.equal(invalidTask.ok, false);
+    assert.match(invalidTask.output, /非法 task_id/);
+
+    const indexPath = join(cwd, '.docpath', 'docs-index.json');
+    const index = JSON.parse(readFileSync(indexPath, 'utf-8'));
+    index.entries.unshift({
+      path: '../outside.md',
+      type: 'reference',
+      kind: 'reference',
+      scope: 'project',
+      level: '3',
+      title: 'Outside',
+      summary: 'Outside path',
+      updated_at: new Date().toISOString(),
+      size: 1,
+      token_estimate: 1,
+      default_read: false,
+      archive: false,
+      topic_tags: ['outside'],
+    });
+    writeFileSync(indexPath, JSON.stringify(index, null, 2));
+
+    const outsidePath = runResult(`context --cwd ${cwd} --format raw --include-archive`, cwd);
+    assert.equal(outsidePath.ok, false);
+    assert.match(outsidePath.output, /docs-index path escapes \.docpath/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

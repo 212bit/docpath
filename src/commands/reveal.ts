@@ -5,8 +5,8 @@
  *
  * Level 0 — Micro:   项目名 + 当前任务 + 下一步（~100 tokens）
  * Level 1 — Brief:   + 阶段概览 + 阻塞项 + spec 摘要（~500 tokens）
- * Level 2 — Standard: + 架构 + 决策 + 依赖 + style 规则（~2000 tokens）
- * Level 3 — Full:    + 全量文档 + journal + harness + 完整历史（~8000 tokens）
+ * Level 2 — Standard: + 架构 + 决策 + 依赖 + style 规则 + 索引摘要（~2000 tokens）
+ * Level 3 — Indexed: + 扩展索引 + harness 摘要 + topic/task/archive 按需片段（~8000 tokens）
  *
  * 设计理念：
  *   AI 不需要一次性读完所有文档。渐进式披露让 agent 按需获取上下文，
@@ -14,24 +14,25 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, readdir } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { getRecentDecisions } from '../governance/decisions.js';
-import { readRuleFile } from '../utils/rules.js';
-
-interface DocsIndexEntry {
-  path: string;
-  type?: string;
-  kind?: string;
-  scope?: string;
-  level?: string;
-  title?: string;
-  summary?: string;
-  updated_at?: string;
-}
+import { compactRuleContent, readRuleFile } from '../utils/rules.js';
+import {
+  documentIndexStats,
+  estimateTokens,
+  matchesDocumentSelection,
+  readProjectDocumentIndex,
+  resolveDocpathDocumentPath,
+  shouldReadDocumentBody,
+  sortDocumentEntries,
+  validateTaskId,
+  type DocumentSelectionOptions,
+  type ProjectDocumentIndexEntry,
+} from '../utils/document-index.js';
 
 interface RevealOptions {
   cwd: string;
@@ -39,6 +40,10 @@ interface RevealOptions {
   level?: number;
   /** 按文档 path/title/summary/scope/type 过滤 */
   topic?: string;
+  /** 按任务 ID 定位文档 */
+  taskId?: string;
+  /** 显式允许归档正文参与预算竞争 */
+  includeArchive?: boolean;
   /** 输出格式：text（默认）| raw */
   format?: 'text' | 'raw';
   /** 输出到文件 */
@@ -46,12 +51,6 @@ interface RevealOptions {
 }
 
 // ── 辅助函数 ──
-
-function estimateTokens(text: string): number {
-  const cjk = (text.match(/[\u4e00-\u9fff]/g) || []).length;
-  const ascii = text.length - cjk;
-  return Math.ceil(cjk * 1.5 + ascii / 4);
-}
 
 function header(emoji: string, title: string): string {
   return `${emoji}  ${title}\n${'─'.repeat(title.length * 2 + 4)}`;
@@ -97,45 +96,108 @@ function planSummary(text: string): string {
   return summary;
 }
 
-async function readDocsIndex(docpathDir: string): Promise<DocsIndexEntry[]> {
-  const indexPath = join(docpathDir, 'docs-index.json');
-  if (!existsSync(indexPath)) return [];
+function decisionSummary(block: string): string {
+  const heading = block.match(/^##\s+(.+)$/m)?.[1]?.trim() || 'decision';
+  const taskId = block.match(/^- task_id:\s*(.+)$/m)?.[1]?.trim();
+  const category = block.match(/^- category:\s*(.+)$/m)?.[1]?.trim();
+  const decisionMatch = block.match(/^### 决策\s*\n([\s\S]*?)(?=\n###|\n---|$)/m);
+  const decision = decisionMatch ? firstNLines(decisionMatch[1], 3) : '';
+  return [
+    `- ${heading}`,
+    taskId ? `  task_id: ${taskId}` : '',
+    category ? `  category: ${category}` : '',
+    decision ? `  decision: ${decision.replace(/\n/g, ' / ')}` : '',
+  ].filter(Boolean).join('\n');
+}
+
+async function readDocsIndex(docpathDir: string, currentTaskId?: string): Promise<ProjectDocumentIndexEntry[]> {
   try {
-    const parsed = JSON.parse(await readFile(indexPath, 'utf-8')) as { entries?: DocsIndexEntry[] };
-    return Array.isArray(parsed.entries) ? parsed.entries : [];
+    return (await readProjectDocumentIndex(docpathDir, currentTaskId))?.entries || [];
   } catch {
     return [];
   }
 }
 
-function renderDocsIndex(entries: DocsIndexEntry[], maxEntries: number): string {
-  return entries.slice(0, maxEntries).map((entry) => [
+function renderDocsIndex(entries: ProjectDocumentIndexEntry[], maxEntries: number, selection: DocumentSelectionOptions): string {
+  const stats = documentIndexStats(entries, selection);
+  const selected = sortDocumentEntries(entries.filter((entry) => matchesDocumentSelection(entry, selection)));
+  const lines: string[] = [
+    `- total_docs: ${stats.total}`,
+    `- default_read_docs: ${stats.defaultRead}`,
+    `- archive_docs: ${stats.archive}`,
+    `- selected_docs: ${stats.selected}`,
+    `- estimated_tokens_selected: ~${stats.selectedTokens}`,
+    `- archive_policy: 默认只展示索引；归档正文需 --topic、--task-id 或 --include-archive`,
+    '',
+  ];
+
+  lines.push(...selected.slice(0, maxEntries).map((entry) => [
     `- path: ${entry.path}`,
     `  type: ${entry.type || entry.kind || 'unknown'}`,
     `  scope: ${entry.scope || 'project'}`,
+    `  default_read: ${entry.default_read}`,
+    `  archive: ${entry.archive}`,
+    `  tokens: ~${entry.token_estimate}`,
+    `  task_id: ${entry.task_id || ''}`,
     `  title: ${entry.title || ''}`,
     `  summary: ${entry.summary || ''}`,
     `  updated_at: ${entry.updated_at || ''}`,
-  ].join('\n')).join('\n');
+  ].join('\n')));
+
+  if (selected.length === 0) lines.push('- 无匹配索引条目');
+  return lines.join('\n');
 }
 
-function filterDocsByTopic(entries: DocsIndexEntry[], topic?: string): DocsIndexEntry[] {
-  const q = topic?.trim().toLowerCase();
-  if (!q) return entries;
-  return entries.filter((entry) => [
-    entry.path,
-    entry.type,
-    entry.kind,
-    entry.scope,
-    entry.title,
-    entry.summary,
-  ].filter(Boolean).join(' ').toLowerCase().includes(q));
+async function renderDocumentSnippets(
+  docpathDir: string,
+  entries: ProjectDocumentIndexEntry[],
+  selection: DocumentSelectionOptions,
+): Promise<string> {
+  const selected = sortDocumentEntries(entries)
+    .filter((entry) => entry.path.endsWith('.md') && entry.path !== 'docs.md')
+    .filter((entry) => shouldReadDocumentBody(entry, selection));
+  const snippets: string[] = [];
+  let remaining = 9000;
+
+  if (selection.taskId && !entries.some((entry) => entry.task_id === selection.taskId)) {
+    throw new Error(`未在 docs-index 中找到 task_id: ${selection.taskId}`);
+  }
+
+  for (const entry of selected) {
+    if (remaining <= 0) break;
+    const fullPath = resolveDocpathDocumentPath(docpathDir, entry.path);
+    if (!fullPath) throw new Error(`docs-index path escapes .docpath: ${entry.path}`);
+    if (!existsSync(fullPath)) continue;
+    const content = await safeRead(fullPath);
+    if (!content.trim()) continue;
+    const slice = firstNLines(content, Math.min(60, Math.max(8, Math.floor(remaining / 180))));
+    remaining -= slice.length;
+    snippets.push([
+      `### ${entry.title || entry.path}`,
+      `- path: ${entry.path}`,
+      `- archive: ${entry.archive}`,
+      `- tokens: ~${entry.token_estimate}`,
+      '',
+      slice,
+    ].join('\n'));
+  }
+
+  return snippets.join('\n\n');
+}
+
+function selectionLabel(options: DocumentSelectionOptions): string {
+  return [
+    options.topic ? `topic=${options.topic}` : '',
+    options.taskId ? `task_id=${options.taskId}` : '',
+    options.includeArchive ? 'include_archive=true' : '',
+  ].filter(Boolean).join(', ') || 'default_read';
 }
 
 // ── 核心命令 ──
 
 export async function revealCommand(options: RevealOptions): Promise<void> {
-  const { cwd, level = 1, topic, format = 'text', output } = options;
+  const { cwd, level = 1, topic, taskId, includeArchive, format = 'text', output } = options;
+  validateTaskId(taskId);
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
@@ -161,6 +223,12 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
   // Level 0 — Micro: 项目 + 任务 + 下一步
   // ══════════════════════════════════════════
   const current = await readCurrentMd(cwd);
+  const selection: DocumentSelectionOptions = {
+    topic,
+    taskId,
+    includeArchive,
+    currentTaskId: current?.task_id,
+  };
   if (current) {
     const projectName = cwd.split('/').pop() || 'unknown';
     sections.push(
@@ -231,53 +299,55 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
   if (level >= 2) {
     // Style 规则
     const { content: style, file: styleFile } = await readRuleFile(docpathDir, 'style');
-    if (style.trim()) {
+    const compactStyle = compactRuleContent(style);
+    if (compactStyle.trim()) {
       sections.push(
         header('📏', `全局规则: 编码规范 (${styleFile.displayPath})`) + '\n' +
-        style.trim()
+        compactStyle.trim()
       );
     }
 
     // Architecture（如果存在）
     const { content: arch, file: archFile } = await readRuleFile(docpathDir, 'architecture');
-    if (arch.trim()) {
+    const compactArch = compactRuleContent(arch);
+    if (compactArch.trim()) {
       sections.push(
         header('🏗️', `全局规则: 架构 (${archFile.displayPath})`) + '\n' +
-        firstNLines(arch, 30)
+        firstNLines(compactArch, 30)
       );
     }
 
     // 结构化文档索引
-    const docsIndex = filterDocsByTopic(await readDocsIndex(docpathDir), topic);
+    const docsIndex = await readDocsIndex(docpathDir, current?.task_id);
     if (docsIndex.length > 0) {
       sections.push(
-        header('📚', topic ? `文档索引 (docs-index: ${topic})` : '文档索引 (docs-index)') + '\n' +
-        renderDocsIndex(docsIndex, level >= 3 ? 20 : 10)
+        header('📚', `文档索引 (docs-index: ${selectionLabel(selection)})`) + '\n' +
+        renderDocsIndex(docsIndex, level >= 3 ? 30 : 12, selection)
       );
     } else {
       const docsPath = join(docpathDir, 'docs.md');
       if (existsSync(docsPath)) {
-      const docs = await safeRead(docsPath);
-      if (docs.trim()) {
-        sections.push(
-          header('📚', '文档索引 (docs.md)') + '\n' +
-          docs.trim()
-        );
-      }
+        const docs = await safeRead(docsPath);
+        if (docs.trim()) {
+          sections.push(
+            header('📚', '文档索引 (docs.md 摘要)') + '\n' +
+            firstNLines(docs, 40)
+          );
+        }
       }
     }
 
     const decisions = await getRecentDecisions(cwd, 5);
     if (decisions.length > 0) {
       sections.push(
-        header('🧭', '相关决策 (decisions)') + '\n' +
-        decisions.join('\n\n')
+        header('🧭', '相关决策摘要 (decisions)') + '\n' +
+        decisions.map(decisionSummary).join('\n')
       );
     }
   }
 
   // ══════════════════════════════════════════
-  // Level 3 — Full: + journal + harness + 完整历史
+  // Level 3 — Indexed: + harness 摘要 + 显式选择的文档片段
   // ══════════════════════════════════════════
   if (level >= 3) {
     // Harness 规则
@@ -286,70 +356,19 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
       const harness = await safeRead(harnessPath);
       if (harness.trim()) {
         sections.push(
-          header('🛡️', '工作流护栏 (harness)') + '\n' +
-          harness.trim()
+          header('🛡️', '工作流护栏摘要 (harness)') + '\n' +
+          firstNLines(harness, 80)
         );
       }
     }
 
-    // Journal 经验
-    const journalDir = join(docpathDir, 'workspace', 'journal');
-    if (existsSync(journalDir)) {
-      try {
-        const files = await readdir(journalDir);
-        const mdFiles = files.filter(f => f.endsWith('.md')).sort();
-        if (mdFiles.length > 0) {
-          const journalEntries: string[] = [];
-          for (const f of mdFiles.slice(-5)) { // 最近 5 篇
-            const content = await safeRead(join(journalDir, f));
-            if (content.trim()) {
-              journalEntries.push(`### ${f}\n${firstNLines(content, 15)}`);
-            }
-          }
-          if (journalEntries.length > 0) {
-            sections.push(
-              header('📓', '经验库 (journal)') + '\n' +
-              journalEntries.join('\n\n')
-            );
-          }
-        }
-      } catch { /* ignore */ }
-    }
-
-    // 完整 breadcrumb 历史
-    const bc = await readBreadcrumb(cwd);
-    if (bc.entries.length > 5) {
-      const allLines = bc.entries.map(e => {
-        const emoji = e.status === 'done' ? '✅' : e.status === 'in_progress' ? '🔄' : '🚫';
-        return `  ${emoji} ${e.step}: ${e.context}`;
-      });
+    const docsIndex = await readDocsIndex(docpathDir, current?.task_id);
+    const snippets = await renderDocumentSnippets(docpathDir, docsIndex, selection);
+    if (snippets.trim()) {
       sections.push(
-        header('📜', '完整执行历史') + '\n' +
-        allLines.join('\n')
+        header('📖', `按需展开文档片段 (${selectionLabel(selection)})`) + '\n' +
+        snippets
       );
-    }
-
-    // 完整 spec + plan
-    const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
-    if (existsSync(specPath)) {
-      const spec = await safeRead(specPath);
-      if (spec.trim()) {
-        sections.push(
-          header('📄', '完整需求规约 (spec)') + '\n' +
-          spec.trim()
-        );
-      }
-    }
-
-    const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-    if (existsSync(planPath)) {
-      const plan = await safeRead(planPath);
-      if (plan.trim()) {
-        sections.push(
-          header('🗺️', '完整执行计划 (plan)') + '\n' +
-          plan.trim()
-        );
-      }
     }
   }
 
@@ -360,7 +379,7 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
   if (format === 'raw') {
     console.log(fullContext);
   } else {
-    const levelNames = ['Micro', 'Brief', 'Standard', 'Full'];
+    const levelNames = ['Micro', 'Brief', 'Standard', 'Indexed'];
     console.log(`\n🔍  DocPath Reveal — Level ${level} (${levelNames[level]})\n`);
     console.log(`📊  估算 token: ~${tokenEst} / ${budget}`);
     console.log(`${'─'.repeat(50)}\n`);
@@ -369,7 +388,7 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
     if (level < 3) {
       console.log(`💡  使用 --level ${level + 1} 获取更多上下文\n`);
     } else {
-      console.log(`💡  已是最高级别，包含全部上下文\n`);
+      console.log(`💡  已是最高级别；归档正文仍需 topic/task-id/include-archive 按需命中\n`);
     }
   }
 

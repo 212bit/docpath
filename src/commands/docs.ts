@@ -9,6 +9,11 @@ import { existsSync } from 'fs';
 import { readFile, readdir, writeFile, stat } from 'fs/promises';
 import { join, relative, extname, basename } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
+import {
+  PROJECT_DOCS_INDEX_VERSION,
+  buildProjectDocumentEntry,
+  type ProjectDocumentIndexEntry,
+} from '../utils/document-index.js';
 
 interface DocsOptions {
   cwd: string;
@@ -18,102 +23,24 @@ interface DocsOptions {
   args?: string[];
 }
 
-/** 文档条目 */
-interface DocEntry {
-  path: string;
-  type: string;
-  kind: string;
-  scope: string;
-  level: string;
-  title: string;
-  summary: string;
-  updated_at: string;
-  lastModified: string;
-  size: number;
-}
-
-/** 根据文件路径推断 kind */
-function inferKind(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, '/');
-
-  if (normalized.startsWith('spec/') || normalized.includes('/spec/')) return 'reference';
-  if (normalized.startsWith('tasks/') || normalized.includes('/tasks/')) return 'runbook';
-  if (normalized.startsWith('workspace/') || normalized.includes('/workspace/')) return 'index';
-  if (normalized.startsWith('journal/') || normalized.includes('/journal/')) return 'log';
-  if (normalized.startsWith('templates/') || normalized.includes('/templates/')) return 'template';
-
-  // 根据文件名推断
-  const name = basename(filePath).toLowerCase();
-  if (name === 'current.md') return 'runbook';
-  if (name === 'breadcrumb.md') return 'log';
-  if (name === 'style.md') return 'reference';
-  if (name === 'config.yaml') return 'reference';
-
-  return 'index';
-}
-
-/** 根据文件路径推断 scope */
-function inferScope(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, '/');
-
-  if (normalized.startsWith('spec/backend/') || normalized.includes('/spec/backend/')) return 'backend';
-  if (normalized.startsWith('spec/frontend/') || normalized.includes('/spec/frontend/')) return 'frontend';
-  if (normalized.startsWith('spec/infra/') || normalized.includes('/spec/infra/')) return 'infra';
-  if (normalized.startsWith('spec/shared/') || normalized.includes('/spec/shared/')) return 'shared';
-  if (normalized.startsWith('tasks/current/') || normalized.includes('/tasks/current/')) return 'task';
-  if (/^tasks\/T-[^/]+\//.test(normalized) || /\/tasks\/T-[^/]+\//.test(normalized)) return 'task';
-
-  return 'project';
-}
-
-/** 根据文件路径推断 level */
-function inferLevel(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, '/');
-
-  // 任务级文档默认 level 1
-  if (normalized.startsWith('tasks/') || normalized.includes('/tasks/')) return '1';
-
-  // 规范文档默认 level 2
-  if (normalized.startsWith('spec/') || normalized.includes('/spec/')) return '2';
-
-  // 工作区文档默认 level 0
-  if (normalized.startsWith('workspace/') || normalized.includes('/workspace/')) return '0';
-
-  return '0';
-}
-
 /** 从 markdown 中提取标题 */
-async function extractTitle(filePath: string): Promise<string> {
-  try {
-    const content = await readFile(filePath, 'utf-8');
-    const lines = content.split('\n');
-
-    // 查找第一个 # 标题
-    for (const line of lines) {
-      const match = line.match(/^#\s+(.+)/);
-      if (match) return match[1].trim();
-    }
-
-    // 没有标题，使用文件名
-    return basename(filePath, extname(filePath));
-  } catch {
-    return basename(filePath, extname(filePath));
+function extractTitleFromContent(filePath: string, content: string): string {
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const match = line.match(/^#\s+(.+)/);
+    if (match) return match[1].trim();
   }
+  return basename(filePath, extname(filePath));
 }
 
 /** 从 markdown 中提取简短摘要 */
-async function extractSummary(filePath: string): Promise<string> {
-  try {
-    const content = await readFile(filePath, 'utf-8');
-    const lines = content
-      .replace(/^---[\s\S]*?---\s*\n?/, '')
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith('#') && !line.startsWith('|') && !line.startsWith('>'));
-    return (lines[0] || basename(filePath, extname(filePath))).replace(/\s+/g, ' ').slice(0, 180);
-  } catch {
-    return basename(filePath, extname(filePath));
-  }
+function extractSummaryFromContent(filePath: string, content: string): string {
+  const lines = content
+    .replace(/^---[\s\S]*?---\s*\n?/, '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#') && !line.startsWith('|') && !line.startsWith('>'));
+  return (lines[0] || basename(filePath, extname(filePath))).replace(/\s+/g, ' ').slice(0, 180);
 }
 
 /** 递归扫描目录 */
@@ -153,23 +80,23 @@ function formatDate(date: Date): string {
 }
 
 /** 生成 docs.md 内容 */
-function generateDocsMd(entries: DocEntry[]): string {
+function generateDocsMd(entries: ProjectDocumentIndexEntry[]): string {
   const lines: string[] = [
     '# DocPath 文档索引',
     '',
-    '> 自动生成，AI 可直接读写',
+    '> 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。',
     '',
     `> 扫描时间: ${new Date().toISOString()}`,
     '',
     '## 文档列表',
     '',
-    '| 路径 | type | scope | level | 标题 | 摘要 | 更新时间 | 大小 |',
-    '|------|------|-------|-------|------|----------|------|',
+    '| 路径 | type | scope | level | default_read | archive | tokens | task_id | 标题 | 摘要 | 更新时间 | 大小 |',
+    '|------|------|-------|-------|--------------|---------|--------|---------|------|------|----------|------|',
   ];
 
   for (const entry of entries) {
     lines.push(
-      `| ${entry.path} | ${entry.type} | ${entry.scope} | ${entry.level} | ${entry.title} | ${entry.summary} | ${entry.updated_at} | ${entry.size} |`
+      `| ${entry.path} | ${entry.type} | ${entry.scope} | ${entry.level} | ${entry.default_read} | ${entry.archive} | ${entry.token_estimate} | ${entry.task_id || ''} | ${entry.title} | ${entry.summary} | ${entry.updated_at} | ${formatSize(entry.size)} |`
     );
   }
 
@@ -179,6 +106,9 @@ function generateDocsMd(entries: DocEntry[]): string {
   lines.push('- **type**: 文档类型 (reference|runbook|template|index|log)');
   lines.push('- **scope**: 作用域 (project|task|backend|frontend|infra|shared)');
   lines.push('- **level**: 渐进式披露层级 (0|1|2|3)');
+  lines.push('- **default_read**: 默认上下文允许读取的高信号文档；归档、模板、大日志默认 false');
+  lines.push('- **archive**: 历史归档或大日志，只应通过 topic/task-id/include-archive 按需展开');
+  lines.push('- **tokens**: 粗略 token 估算，用于预算门禁和上下文裁剪');
   lines.push('- **title**: 文档标题或用途');
   lines.push('- **summary**: 文档首段摘要');
   lines.push('');
@@ -197,37 +127,54 @@ async function ensureDocpathDir(cwd: string): Promise<string> {
   return docpathDir;
 }
 
-async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<DocEntry[]> {
-  const entries: DocEntry[] = [];
+async function readCurrentTaskId(docpathDir: string): Promise<string | undefined> {
+  try {
+    const state = JSON.parse(await readFile(join(docpathDir, 'workspace', 'state.json'), 'utf-8')) as { task_id?: string };
+    return state.task_id || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<ProjectDocumentIndexEntry[]> {
+  const entries: ProjectDocumentIndexEntry[] = [];
+  const currentTaskId = await readCurrentTaskId(docpathDir);
+  const hasPreferredRules = existsSync(join(docpathDir, 'rules'));
 
   for (const file of mdFiles) {
     const fullPath = join(docpathDir, file);
     const fileStat = await stat(fullPath);
-    const kind = inferKind(file);
-    const updated = fileStat.mtime.toISOString();
-    entries.push({
+    const content = await readFile(fullPath, 'utf-8');
+    entries.push(buildProjectDocumentEntry({
       path: file,
-      type: kind,
-      kind,
-      scope: inferScope(file),
-      level: inferLevel(file),
-      title: await extractTitle(fullPath),
-      summary: await extractSummary(fullPath),
-      updated_at: updated,
-      lastModified: formatDate(fileStat.mtime),
       size: fileStat.size,
-    });
+      mtime: fileStat.mtime,
+      content,
+      title: extractTitleFromContent(fullPath, content),
+      summary: extractSummaryFromContent(fullPath, content),
+      currentTaskId,
+      hasPreferredRules,
+    }));
   }
 
   return entries;
 }
 
-async function writeDocsIndexes(docpathDir: string, entries: DocEntry[]): Promise<string> {
+async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentIndexEntry[]): Promise<string> {
   const docsMdPath = join(docpathDir, 'docs.md');
   const docsIndexPath = join(docpathDir, 'docs-index.json');
 
   await writeFile(docsMdPath, generateDocsMd(entries), 'utf-8');
-  await writeFile(docsIndexPath, JSON.stringify({ generated_at: new Date().toISOString(), entries }, null, 2), 'utf-8');
+  await writeFile(docsIndexPath, JSON.stringify({
+    version: PROJECT_DOCS_INDEX_VERSION,
+    generated_at: new Date().toISOString(),
+    policy: {
+      mode: 'index-first',
+      default_context_token_budget: 15000,
+      archive_body_requires: ['--topic', '--task-id', '--include-archive'],
+    },
+    entries,
+  }, null, 2), 'utf-8');
 
   return docsMdPath;
 }
@@ -292,7 +239,7 @@ async function docsAdd(cwd: string, args: string[]): Promise<void> {
   const lines = content.split('\n');
   const tableEnd = lines.findIndex((line, i) => i > 5 && !line.startsWith('|'));
 
-  const newLine = `| ${docPath} | ${kind} | ${scope} | ${level} | ${basename(docPath, extname(docPath))} | ${formatDate(new Date())} | - |`;
+  const newLine = `| ${docPath} | ${kind} | ${scope} | ${level} | false | false | 0 |  | ${basename(docPath, extname(docPath))} | - | ${formatDate(new Date())} | - |`;
 
   if (tableEnd > 0) {
     lines.splice(tableEnd, 0, newLine);

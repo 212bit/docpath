@@ -460,6 +460,49 @@ describe('journal to learn loop', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('learn does not solidify low-value workflow statistics into rules by default', () => {
+    const cwd = mkWorkspace();
+    const dp = join(cwd, '.docpath');
+    writeFileSync(join(dp, 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## T-LOW — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LOW',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: T-LOW-workflow',
+      '',
+      '### Lesson',
+      '',
+      '✅ 推荐保留本次任务的执行经验：完成 3/3 步，阻塞 0 步。',
+      '',
+      '---',
+      '',
+      '## T-KEEP — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-KEEP',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: cli-contract',
+      '',
+      '### Lesson',
+      '',
+      '✅ CLI 机器输出字段必须保持稳定，避免 agent 路由解析漂移。',
+      '',
+    ].join('\n'));
+
+    execSync(`node ${BIN} learn --cwd ${cwd}`, { cwd, encoding: 'utf-8', timeout: 20000 });
+    const style = readFileSync(join(dp, 'spec', 'style.md'), 'utf-8');
+
+    assert.doesNotMatch(style, /T-LOW-workflow/);
+    assert.doesNotMatch(style, /完成 3\/3 步，阻塞 0 步/);
+    assert.match(style, /cli-contract/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('journal writes lesson candidates after successful archive', () => {
     const cwd = mkWorkspace();
     execSync(`node ${BIN} journal --cwd ${cwd} --optional-archive skip`, { cwd, encoding: 'utf-8', timeout: 20000 });

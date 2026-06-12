@@ -8,7 +8,7 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, stat, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { isCancel, select } from '@clack/prompts';
@@ -21,6 +21,13 @@ import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js
 import { ANALYSIS_SECTIONS, detectActiveTaskFileDrift, readActiveAnalysisSummary, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts, approvalState, hasUiImplementationIntent } from '../utils/ui-gate.js';
+import {
+  DEFAULT_CONTEXT_TOKEN_BUDGET,
+  documentIndexStats,
+  isProjectDocumentIndexStale,
+  readProjectDocumentIndex,
+} from '../utils/document-index.js';
+import { resolveRulePaths, type RuleName } from '../utils/rules.js';
 
 interface CheckOptions {
   cwd: string;
@@ -48,7 +55,8 @@ interface CheckResult {
   name: string;
   passed: boolean;
   output: string;
-  category?: 'compile' | 'test' | 'lint' | 'plan' | 'analysis' | 'preflight' | 'boundary' | 'pattern';
+  category?: 'compile' | 'test' | 'lint' | 'plan' | 'analysis' | 'context' | 'preflight' | 'boundary' | 'pattern';
+  severity?: 'error' | 'warning';
 }
 
 interface GitBaseline {
@@ -952,6 +960,158 @@ async function checkDeliverablesIndex(cwd: string): Promise<CheckResult[]> {
   }];
 }
 
+function warningResult(name: string, output: string): CheckResult {
+  return {
+    name,
+    passed: true,
+    output,
+    category: 'context',
+    severity: 'warning',
+  };
+}
+
+function contextFailureResult(name: string, output: string): CheckResult {
+  return {
+    name,
+    passed: false,
+    output,
+    category: 'context',
+    severity: 'error',
+  };
+}
+
+async function checkContextIndexHealth(docpathDir: string, currentTaskId: string | undefined): Promise<CheckResult[]> {
+  const indexPath = join(docpathDir, 'docs-index.json');
+  if (!existsSync(indexPath)) {
+    return [warningResult(
+      'docs-index 缺失',
+      '未找到 .docpath/docs-index.json。修复建议: 运行 `docpath docs scan` 生成索引，避免 Agent 回退为全量文档搜索。',
+    )];
+  }
+
+  try {
+    const index = await readProjectDocumentIndex(docpathDir, currentTaskId);
+    if (!index) {
+      return [warningResult('docs-index 缺失', '未找到可读取的 docs-index。修复建议: 运行 `docpath docs scan`。')];
+    }
+
+    const stats = documentIndexStats(index.entries, { currentTaskId });
+    const results: CheckResult[] = [{
+      name: '上下文预算估算',
+      passed: true,
+      output: `default_read 估算: ~${stats.defaultReadTokens} / ${DEFAULT_CONTEXT_TOKEN_BUDGET} tokens；索引总量: ${stats.total} docs / ~${stats.estimatedTokens} tokens`,
+      category: 'context',
+    }];
+
+    if (stats.defaultReadTokens > DEFAULT_CONTEXT_TOKEN_BUDGET) {
+      results.push(warningResult(
+        '默认上下文预算超限',
+        [
+          `default_read 估算 ~${stats.defaultReadTokens} tokens，超过 MVP 预算 ${DEFAULT_CONTEXT_TOKEN_BUDGET}。`,
+          '修复建议:',
+          '  - 运行 `docpath docs scan` 刷新索引字段',
+          '  - 将归档、模板、大日志标记为 default_read=false',
+          '  - 将规则沉淀到 .docpath/rules/* 并清理低信号经验',
+        ].join('\n'),
+      ));
+    }
+
+    if (await isProjectDocumentIndexStale(docpathDir, index.generated_at)) {
+      results.push(warningResult(
+        'docs-index 可能陈旧',
+        '检测到 .docpath 下存在比 docs-index 更新的 Markdown。修复建议: 运行 `docpath docs scan`。',
+      ));
+    }
+
+    return results;
+  } catch (err) {
+    return [contextFailureResult(
+      'docs-index 结构损坏',
+      `无法解析 .docpath/docs-index.json。修复建议: 运行 \`docpath docs scan\` 重新生成。\n${err instanceof Error ? err.message : String(err)}`,
+    )];
+  }
+}
+
+async function checkCurrentTaskContextFiles(docpathDir: string): Promise<CheckResult[]> {
+  const required = [
+    join(docpathDir, 'tasks', 'current', 'spec.md'),
+    join(docpathDir, 'tasks', 'current', 'plan.md'),
+  ];
+  const missing = required.filter((path) => !existsSync(path));
+  if (missing.length === 0) {
+    return [{
+      name: '当前任务上下文文件完整性',
+      passed: true,
+      output: 'tasks/current/spec.md 与 tasks/current/plan.md 均存在',
+      category: 'context',
+    }];
+  }
+
+  return [contextFailureResult(
+    '当前任务上下文文件缺失',
+    [
+      '缺少当前任务必要文件:',
+      ...missing.map((path) => `  - ${path}`),
+      '修复建议: 回到 drafting/planning 阶段补齐 spec/plan，或运行 active task 文件同步命令修复漂移。',
+    ].join('\n'),
+  )];
+}
+
+async function checkRuleTruthSources(docpathDir: string): Promise<CheckResult[]> {
+  const paths = resolveRulePaths(docpathDir);
+  const results: CheckResult[] = [];
+
+  for (const name of ['style', 'architecture'] as RuleName[]) {
+    const preferredPath = join(paths.rulesDir, `${name}.md`);
+    const legacyPath = join(paths.legacySpecDir, `${name}.md`);
+    const hasPreferred = existsSync(preferredPath);
+    const hasLegacy = existsSync(legacyPath);
+    if (!hasPreferred || !hasLegacy) continue;
+
+    const [preferredContent, legacyContent, preferredStat, legacyStat] = await Promise.all([
+      readFile(preferredPath, 'utf-8').catch(() => ''),
+      readFile(legacyPath, 'utf-8').catch(() => ''),
+      stat(preferredPath).catch(() => null),
+      stat(legacyPath).catch(() => null),
+    ]);
+
+    if (!preferredContent.trim() && legacyContent.trim()) {
+      results.push(contextFailureResult(
+        `规则真源冲突: ${name}`,
+        `.docpath/rules/${name}.md 为空但 legacy .docpath/spec/${name}.md 仍有内容。修复建议: 迁移高信号规则到 .docpath/rules/${name}.md，legacy 只作兼容回退。`,
+      ));
+      continue;
+    }
+
+    if (preferredStat && legacyStat && legacyStat.mtimeMs > preferredStat.mtimeMs + 1000) {
+      results.push(contextFailureResult(
+        `规则真源冲突: ${name}`,
+        `.docpath/spec/${name}.md 比 preferred .docpath/rules/${name}.md 更新，存在双真源风险。修复建议: 将有效变更迁移到 .docpath/rules/${name}.md，避免继续写 legacy 规则。`,
+      ));
+      continue;
+    }
+
+    results.push({
+      name: `规则真源: ${name}`,
+      passed: true,
+      output: `.docpath/rules/${name}.md 为 preferred；legacy .docpath/spec/${name}.md 仅作兼容回退`,
+      category: 'context',
+    });
+  }
+
+  return results;
+}
+
+async function checkContextHealth(cwd: string, docpathDir: string): Promise<CheckResult[]> {
+  const workflowState = await readCurrentState(cwd);
+  if ((workflowState?.level || 0) < 2) return [];
+  return [
+    ...await checkCurrentTaskContextFiles(docpathDir),
+    ...await checkContextIndexHealth(docpathDir, workflowState?.task_id),
+    ...await checkRuleTruthSources(docpathDir),
+  ];
+}
+
 async function runTaskDocumentChecks(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
   results.push(...await checkTaskFileDrift(cwd, docpathDir, options));
@@ -961,6 +1121,7 @@ async function runTaskDocumentChecks(cwd: string, docpathDir: string, options: C
   results.push(...await checkCurrentChecklist(cwd, docpathDir, progress));
   results.push(...await checkPlanBreadcrumbDrift(cwd));
   results.push(...await checkDeliverablesIndex(cwd));
+  results.push(...await checkContextHealth(cwd, docpathDir));
   return results;
 }
 
@@ -987,6 +1148,8 @@ function printCheckReport(results: CheckResult[], allPassed: boolean): void {
     test: '🧪 测试检查',
     lint: '🔍 Lint 检查',
     plan: '📋 计划检查',
+    analysis: '🧭 分析检查',
+    context: '📚 上下文健康检查',
     preflight: '🚀 Pre-flight 检查',
     boundary: '🛡️  Boundary 检查',
     pattern: '📊 Pattern 检查',
@@ -996,9 +1159,9 @@ function printCheckReport(results: CheckResult[], allPassed: boolean): void {
   for (const [category, categoryResults] of Object.entries(groupCheckResults(results))) {
     console.log(`\n${categoryNames[category] || category}:`);
     for (const result of categoryResults) {
-      const icon = result.passed ? '✅' : '❌';
+      const icon = result.severity === 'warning' ? '⚠️' : result.passed ? '✅' : '❌';
       console.log(`  ${icon}  ${result.name}`);
-      if (!result.passed && result.output) {
+      if ((!result.passed || result.severity === 'warning') && result.output) {
         for (const line of formatFailedOutput(result.output)) {
           console.log(line);
         }
@@ -1042,7 +1205,8 @@ async function writeLastCheckEvidence(cwd: string, results: CheckResult[], allPa
   }
   checkLines.push('');
   for (const result of results) {
-    checkLines.push(`- ${result.passed ? '✅' : '❌'} ${result.name}`);
+    const icon = result.severity === 'warning' ? '⚠️' : result.passed ? '✅' : '❌';
+    checkLines.push(`- ${icon} ${result.name}`);
   }
   checkLines.push('');
   await writeFile(lastCheckPath, checkLines.join('\n'), 'utf-8');

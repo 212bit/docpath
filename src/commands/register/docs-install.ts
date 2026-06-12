@@ -23,9 +23,11 @@ export function registerDocsInstallCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--level <level>', '披露级别: 0(micro)|1(brief)|2(standard)|3(full)')
     .option('--topic <topic>', '按文档 path/title/summary/scope/type 过滤')
+    .option('--task-id <taskId>', '按任务 ID 定位相关文档')
+    .option('--include-archive', '允许归档正文参与预算竞争')
     .option('--format <format>', '输出格式: text(默认)|raw')
     .option('--output <file>', '保存到文件')
-    .action(async (options: { cwd?: string; level?: string; topic?: string; format?: string; output?: string }) => {
+    .action(async (options: { cwd?: string; level?: string; topic?: string; taskId?: string; 'task-id'?: string; includeArchive?: boolean; 'include-archive'?: boolean; format?: string; output?: string }) => {
       const argv = process.argv;
       const getArg = (flag: string): string | undefined => {
         const idx = argv.indexOf(flag);
@@ -37,6 +39,8 @@ export function registerDocsInstallCommands(cli: CAC): void {
         cwd: options.cwd || process.cwd(),
         level: parseInt(levelStr, 10),
         topic: options.topic || getArg('--topic'),
+        taskId: options.taskId || options['task-id'] || getArg('--task-id'),
+        includeArchive: !!(options.includeArchive || options['include-archive'] || argv.includes('--include-archive')),
         format: (options.format || getArg('--format') || 'text') as 'text' | 'raw',
         output: options.output || getArg('--output'),
       });

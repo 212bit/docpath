@@ -61,6 +61,27 @@ export async function readRuleFile(docpathDir: string, name: RuleName): Promise<
   };
 }
 
+export function compactRuleContent(content: string): string {
+  const lines = content.split('\n');
+  const kept: string[] = [];
+  let skipNextLessonMeta = false;
+
+  for (const line of lines) {
+    if (/^- \*\*.+?\*\*: ✅ 推荐保留本次任务的执行经验：完成\s*\d+\/\d+\s*步，阻塞\s*\d+\s*步。?/.test(line.trim())) {
+      skipNextLessonMeta = true;
+      continue;
+    }
+    if (skipNextLessonMeta && /^<!--\s*docpath:lesson-meta\s+/.test(line.trim())) {
+      skipNextLessonMeta = false;
+      continue;
+    }
+    skipNextLessonMeta = false;
+    kept.push(line);
+  }
+
+  return kept.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 export function ruleDisplayPaths(): string[] {
   return ['.docpath/rules/architecture.md', '.docpath/rules/style.md'];
 }
