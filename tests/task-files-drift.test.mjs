@@ -150,8 +150,9 @@ describe('active task file drift', () => {
     );
 
     const passed = run(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+    const lastCheck = readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
     assert.equal(passed.code, 0);
-    assert.match(passed.out, /任务文件 current\/canonical 漂移检查/);
+    assert.match(lastCheck, /任务文件 current\/canonical 漂移检查/);
     assert.match(passed.out, /全部通过/);
     rmSync(cwd, { recursive: true, force: true });
   });

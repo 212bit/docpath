@@ -698,8 +698,9 @@ async function validateTaskDocuments(cwd: string, docpathDir: string): Promise<{
     });
   }
 
-  progress.planDoneCount = (planContent.match(/- \[x\]/gi) || []).length;
-  progress.planTotalCount = (planContent.match(/- \[[ x]\]/gi) || []).length;
+  const planTasks = parsePlanTasks(planContent);
+  progress.planDoneCount = planTasks.filter((task) => task.done).length;
+  progress.planTotalCount = planTasks.length;
   if (progress.planTotalCount > 0) {
     const passed = progress.planDoneCount === progress.planTotalCount;
     results.push({
@@ -713,40 +714,9 @@ async function validateTaskDocuments(cwd: string, docpathDir: string): Promise<{
   return { results, progress };
 }
 
-async function checkCurrentChecklist(cwd: string, docpathDir: string, progress: TaskPlanProgress): Promise<CheckResult[]> {
+async function syncCurrentChecklistView(cwd: string): Promise<CheckResult[]> {
   await syncCurrentDocument(cwd);
-
-  const currentMdPath = join(docpathDir, 'workspace', 'current.md');
-  if (!existsSync(currentMdPath)) return [];
-
-  try {
-    const currentContent = await readFile(currentMdPath, 'utf-8');
-    const checklistMatch = currentContent.match(/##[^\n]*?执行检查清单\s*\n([\s\S]*?)(?=\n##|\n---|\n```|$)/);
-    if (!checklistMatch) return [];
-
-    const checklistBlock = checklistMatch[1];
-    const currentDoneCount = (checklistBlock.match(/- \[x\]/gi) || []).length;
-    const currentTotalCount = (checklistBlock.match(/- \[[ x]\]/gi) || []).length;
-    const planFullyDone = progress.planTotalCount > 0 && progress.planDoneCount === progress.planTotalCount;
-
-    if (currentTotalCount > 0 && planFullyDone && currentDoneCount < currentTotalCount) {
-      return [{
-        name: `⚠️  Checklist 同步 (${currentDoneCount}/${currentTotalCount})`,
-        passed: false,
-        output: `plan.md 全部完成但渲染出的 current.md checklist 仍有 ${currentTotalCount - currentDoneCount} 项未完成，请通过 docpath agent step 或 plan 同步修复`,
-        category: 'plan',
-      }];
-    }
-    if (currentTotalCount > 0) {
-      return [{
-        name: `Checklist 同步 (${currentDoneCount}/${currentTotalCount})`,
-        passed: true,
-        output: planFullyDone ? 'current.md 渲染 checklist 与执行状态一致' : '渲染 checklist 已记录 (plan.md 未全部完成，暂不交叉校验)',
-        category: 'plan',
-      }];
-    }
-  } catch { /* skip */ }
-
+  // current.md 是渲染视图，不是任务完成真源；真源一致性由 plan.md 与 breadcrumb.md 检查负责。
   return [];
 }
 
@@ -1034,7 +1004,7 @@ async function checkContextIndexHealth(docpathDir: string, currentTaskId: string
   }
 }
 
-async function checkCurrentTaskContextFiles(docpathDir: string): Promise<CheckResult[]> {
+async function checkCurrentTaskContextFiles(cwd: string, docpathDir: string): Promise<CheckResult[]> {
   const required = [
     join(docpathDir, 'tasks', 'current', 'spec.md'),
     join(docpathDir, 'tasks', 'current', 'plan.md'),
@@ -1045,6 +1015,21 @@ async function checkCurrentTaskContextFiles(docpathDir: string): Promise<CheckRe
       name: '当前任务上下文文件完整性',
       passed: true,
       output: 'tasks/current/spec.md 与 tasks/current/plan.md 均存在',
+      category: 'context',
+    }];
+  }
+
+  const workflowState = await readCurrentState(cwd);
+  const archivedRequired = workflowState?.task_id ? [
+    join(docpathDir, 'tasks', 'done', workflowState.task_id, 'spec.md'),
+    join(docpathDir, 'tasks', 'done', workflowState.task_id, 'plan.md'),
+  ] : [];
+  const archivedComplete = archivedRequired.length > 0 && archivedRequired.every((path) => existsSync(path));
+  if (workflowState?.phase === 'completed' && workflowState.gate === 'review_pass' && archivedComplete) {
+    return [{
+      name: '当前任务上下文文件完整性',
+      passed: true,
+      output: `任务已归档，使用 tasks/done/${workflowState.task_id}/spec.md 与 plan.md 作为完成态上下文`,
       category: 'context',
     }];
   }
@@ -1108,7 +1093,7 @@ async function checkContextHealth(cwd: string, docpathDir: string): Promise<Chec
   const workflowState = await readCurrentState(cwd);
   if ((workflowState?.level || 0) < 2) return [];
   return [
-    ...await checkCurrentTaskContextFiles(docpathDir),
+    ...await checkCurrentTaskContextFiles(cwd, docpathDir),
     ...await checkContextIndexHealth(docpathDir, workflowState?.task_id),
     ...await checkRuleTruthSources(docpathDir),
   ];
@@ -1117,10 +1102,10 @@ async function checkContextHealth(cwd: string, docpathDir: string): Promise<Chec
 async function runTaskDocumentChecks(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
   results.push(...await checkTaskFileDrift(cwd, docpathDir, options));
-  const { results: documentResults, progress } = await validateTaskDocuments(cwd, docpathDir);
+  const { results: documentResults } = await validateTaskDocuments(cwd, docpathDir);
   results.push(...documentResults);
   results.push(...await checkUiUxDesignGate(cwd, docpathDir));
-  results.push(...await checkCurrentChecklist(cwd, docpathDir, progress));
+  results.push(...await syncCurrentChecklistView(cwd));
   results.push(...await checkPlanBreadcrumbDrift(cwd));
   results.push(...await checkDeliverablesIndex(cwd));
   results.push(...await checkContextHealth(cwd, docpathDir));

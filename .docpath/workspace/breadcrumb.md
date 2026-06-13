@@ -4,114 +4,6 @@
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ S1 [T-20260613-handoff-agent] — 2026-06-13T12:54:22.954Z
-
----
-taskId: T-20260613-handoff-agent
-step: S1
-status: done
-timestamp: 2026-06-13T12:54:22.954Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### ✅ S1 [T-20260613-handoff-agent] — 2026-06-13T12:54:40.213Z
-
----
-taskId: T-20260613-handoff-agent
-step: S1
-status: done
-timestamp: 2026-06-13T12:54:40.213Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### 🔄 S2 [T-20260613-handoff-agent] — 2026-06-13T12:54:46.347Z
-
----
-taskId: T-20260613-handoff-agent
-step: S2
-status: in_progress
-timestamp: 2026-06-13T12:54:46.347Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 `docpath agent handoff` 输出必须包含下一步推荐、剩余风险、验证状态、修改范围和接手提示。
-
-### ✅ S2 [T-20260613-handoff-agent] — 2026-06-13T12:59:56.132Z
-
----
-taskId: T-20260613-handoff-agent
-step: S2
-status: done
-timestamp: 2026-06-13T12:59:56.132Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260613-handoff-agent] — 2026-06-13T13:00:24.322Z
-
----
-taskId: T-20260613-handoff-agent
-step: S3
-status: in_progress
-timestamp: 2026-06-13T13:00:24.322Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证门禁并归档
-
-### 🚫 check [T-20260613-handoff-agent] — 2026-06-13T13:01:25.864Z
-
----
-taskId: T-20260613-handoff-agent
-step: check
-status: blocked
-timestamp: 2026-06-13T13:01:25.864Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: TypeScript 编译, ⚠️  Checklist 同步 (2/3)
-
-### ✅ S3 [T-20260613-handoff-agent] — 2026-06-13T13:01:59.744Z
-
----
-taskId: T-20260613-handoff-agent
-step: S3
-status: done
-timestamp: 2026-06-13T13:01:59.744Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### 🚫 check [T-20260613-handoff-agent] — 2026-06-13T13:03:05.406Z
-
----
-taskId: T-20260613-handoff-agent
-step: check
-status: blocked
-timestamp: 2026-06-13T13:03:05.406Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 测试
-
-### ✅ check [T-20260613-handoff-agent] — 2026-06-13T13:05:08.485Z
-
----
-taskId: T-20260613-handoff-agent
-step: check
-status: done
-timestamp: 2026-06-13T13:05:08.485Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
 ### ✅ review [T-20260613-handoff-agent] — 2026-06-13T13:05:16.454Z
 
 ---
@@ -603,3 +495,111 @@ timestamp: 2026-06-13T15:02:19.794Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (5/5 步)
+
+### 🔄 S1 [T-20260613-check-checklist] — 2026-06-13T15:20:24.281Z
+
+---
+taskId: T-20260613-check-checklist
+step: S1
+status: in_progress
+timestamp: 2026-06-13T15:20:24.281Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理 修正 check checklist 同步门禁语义
+
+### ✅ S1 [T-20260613-check-checklist] — 2026-06-13T15:20:40.796Z
+
+---
+taskId: T-20260613-check-checklist
+step: S1
+status: done
+timestamp: 2026-06-13T15:20:40.796Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S2 [T-20260613-check-checklist] — 2026-06-13T15:20:50.394Z
+
+---
+taskId: T-20260613-check-checklist
+step: S2
+status: in_progress
+timestamp: 2026-06-13T15:20:50.394Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 修正 check checklist 同步门禁语义
+
+### ✅ S2 [T-20260613-check-checklist] — 2026-06-13T15:28:41.943Z
+
+---
+taskId: T-20260613-check-checklist
+step: S2
+status: done
+timestamp: 2026-06-13T15:28:41.943Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+
+### 🔄 S3 [T-20260613-check-checklist] — 2026-06-13T15:28:52.735Z
+
+---
+taskId: T-20260613-check-checklist
+step: S3
+status: in_progress
+timestamp: 2026-06-13T15:28:52.735Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 验证门禁并归档
+
+### ✅ S3 [T-20260613-check-checklist] — 2026-06-13T15:31:41.761Z
+
+---
+taskId: T-20260613-check-checklist
+step: S3
+status: done
+timestamp: 2026-06-13T15:31:41.761Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+
+### ✅ check [T-20260613-check-checklist] — 2026-06-13T15:32:45.578Z
+
+---
+taskId: T-20260613-check-checklist
+step: check
+status: done
+timestamp: 2026-06-13T15:32:45.578Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260613-check-checklist] — 2026-06-13T15:32:54.794Z
+
+---
+taskId: T-20260613-check-checklist
+step: review
+status: done
+timestamp: 2026-06-13T15:32:54.794Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 4 警告, 2 提示
+
+### ✅ journal [T-20260613-check-checklist] — 2026-06-13T15:33:08.140Z
+
+---
+taskId: T-20260613-check-checklist
+step: journal
+status: done
+timestamp: 2026-06-13T15:33:08.140Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (3/3 步)

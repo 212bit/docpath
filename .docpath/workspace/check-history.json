@@ -1,15 +1,5 @@
 [
   {
-    "timestamp": "2026-06-13T13:03:05.525Z",
-    "passed": false,
-    "failedChecks": [
-      "测试"
-    ],
-    "gitRef": "b6926c5951c70d8cc09d2b26b24d83aecdbd8ce8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
     "timestamp": "2026-06-13T13:05:08.588Z",
     "passed": true,
     "failedChecks": [],
@@ -201,6 +191,14 @@
     "passed": true,
     "failedChecks": [],
     "gitRef": "0101ed900e43733a506e4daa4afc3ab7081ea7f5",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-13T15:32:45.664Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "c9464f52e15ada2e82532de4e17084f31815da16",
     "branch": "main",
     "worktreeDirty": true
   }

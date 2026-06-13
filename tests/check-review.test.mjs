@@ -29,6 +29,27 @@ const runResult = (args, cwd) => {
   }
 };
 
+function writeDoneBreadcrumb(workspace, taskId, steps) {
+  writeFileSync(join(workspace, 'breadcrumb.md'), [
+    '# breadcrumb.md',
+    '',
+    ...steps.flatMap((step, index) => [
+      `### ✅ ${step} [${taskId}] — 2026-06-01T00:0${index}:00.000Z`,
+      '',
+      '---',
+      `taskId: ${taskId}`,
+      `step: ${step}`,
+      'status: done',
+      `timestamp: 2026-06-01T00:0${index}:00.000Z`,
+      '---',
+      '',
+      '- **状态**: done',
+      '- **上下文**: 已完成',
+      '',
+    ]),
+  ].join('\n'));
+}
+
 describe('check and review commands', () => {
   let tmpdir_path;
   before(() => {
@@ -165,6 +186,108 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check counts plan progress with parsed steps and ignores duplicate checklist rows', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-plan-parser-'));
+    const { tasks, workspace } = mkExecWorkspace(cwd);
+    writeFileSync(join(tasks, 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: First step',
+      '- [x] S1: First step',
+      '- **描述**: 完成第一步',
+      '- **验收条件**: 第一项完成',
+      '- **依赖**: 无',
+      '',
+      '### S2: Second step',
+      '- [x] S2: Second step',
+      '- **描述**: 完成第二步',
+      '- **验收条件**: 第二项完成',
+      '- **依赖**: S1',
+      '',
+      '## Checklist',
+      '- [ ] S1',
+      '- [ ] S2',
+      '',
+    ].join('\n'));
+    writeDoneBreadcrumb(workspace, 'T-AGENT', ['S1', 'S2']);
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+    const lastCheck = readFileSync(join(workspace, 'last-check.md'), 'utf-8');
+
+    assert.equal(result.code, 0);
+    assert.match(lastCheck, /子任务完成度 \(2\/2\)/);
+    assert.doesNotMatch(lastCheck, /子任务完成度 \(2\/4\)/);
+    assert.doesNotMatch(lastCheck, /Checklist 同步/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check accepts global checklist markers when sections have no inline checkbox', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-global-checklist-'));
+    const { tasks, workspace } = mkExecWorkspace(cwd);
+    writeFileSync(join(tasks, 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: First step',
+      '- **描述**: 完成第一步',
+      '- **验收条件**: 第一项完成',
+      '- **依赖**: 无',
+      '',
+      '### S2: Second step',
+      '- **描述**: 完成第二步',
+      '- **验收条件**: 第二项完成',
+      '- **依赖**: S1',
+      '',
+      '## Checklist',
+      '- [x] S1',
+      '- [x] S2',
+      '',
+    ].join('\n'));
+    writeDoneBreadcrumb(workspace, 'T-AGENT', ['S1', 'S2']);
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+    const current = readFileSync(join(workspace, 'current.md'), 'utf-8');
+    const lastCheck = readFileSync(join(workspace, 'last-check.md'), 'utf-8');
+
+    assert.equal(result.code, 0);
+    assert.match(current, /- \[x\] S1: First step/);
+    assert.match(current, /- \[x\] S2: Second step/);
+    assert.match(lastCheck, /子任务完成度 \(2\/2\)/);
+    assert.doesNotMatch(lastCheck, /Checklist 同步/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check keeps completed archived tasks completed when tasks/current is gone', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-completed-archive-'));
+    const { workspace } = mkExecWorkspace(cwd);
+    const doneTask = join(cwd, '.docpath', 'tasks', 'done', 'T-DONE');
+    mkdirSync(doneTask, { recursive: true });
+    writeFileSync(join(doneTask, 'spec.md'), readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8'));
+    writeFileSync(join(doneTask, 'plan.md'), readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8'));
+    rmSync(join(cwd, '.docpath', 'tasks', 'current'), { recursive: true, force: true });
+    writeFileSync(join(workspace, 'state.json'), JSON.stringify({
+      level: 2,
+      task_id: 'T-DONE',
+      task_title: 'Archived task',
+      phase: 'completed',
+      gate: 'review_pass',
+      state: 'completed',
+      current_step: '知识归档完成',
+      started_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z',
+    }, null, 2));
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+    const state = JSON.parse(readFileSync(join(workspace, 'state.json'), 'utf-8'));
+    const lastCheck = readFileSync(join(workspace, 'last-check.md'), 'utf-8');
+
+    assert.equal(result.code, 0);
+    assert.equal(state.phase, 'completed');
+    assert.equal(state.gate, 'review_pass');
+    assert.match(lastCheck, /当前任务上下文文件完整性/);
+    assert.doesNotMatch(lastCheck, /当前任务上下文文件缺失/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('check blocks major dependency additions without a confirmed Decision Brief', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-major-decision-'));
     const { tasks } = mkExecWorkspace(cwd);
@@ -222,9 +345,10 @@ describe('check and review commands', () => {
     writeFileSync(join(tasks, 'spec.md'), confirmedSpec);
 
     const confirmed = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+    const confirmedLastCheck = readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
 
     assert.equal(confirmed.code, 0);
-    assert.match(confirmed.out, /重大决策确认检查/);
+    assert.match(confirmedLastCheck, /重大决策确认检查/);
     assert.match(confirmed.out, /全部通过/);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -281,9 +405,10 @@ describe('check and review commands', () => {
     writeFileSync(join(tasks, 'spec.md'), confirmedSpec);
 
     const confirmed = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+    const confirmedLastCheck = readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
 
     assert.equal(confirmed.code, 0);
-    assert.match(confirmed.out, /重大决策确认检查/);
+    assert.match(confirmedLastCheck, /重大决策确认检查/);
     assert.match(confirmed.out, /全部通过/);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -458,9 +583,10 @@ describe('check and review commands', () => {
     ].join('\n'));
 
     const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+    const lastCheck = readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
 
     assert.equal(result.code, 0);
-    assert.match(result.out, /UI\/UX Design Approval Gate/);
+    assert.match(lastCheck, /UI\/UX Design Approval Gate/);
     assert.match(result.out, /全部通过/);
     rmSync(cwd, { recursive: true, force: true });
   });

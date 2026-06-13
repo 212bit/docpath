@@ -103,6 +103,23 @@ export function validateSpecContent(content: string): ValidationResult {
 
 export function parsePlanSteps(planContent: string): PlanStep[] {
   const tasks: PlanStep[] = [];
+  const checklistById = new Map<string, {
+    marker: ' ' | 'x' | '~' | '!';
+    lineText: string;
+    index: number;
+  }>();
+  const checkboxLineRegex = /^- \[([ xX~!])\]\s*(?:\*\*)?(S\d+(?:\.\d+)?|T[\w-]*)(?:\*\*)?(?:\s*[:：]\s*(.+))?\s*$/gmi;
+  let checkboxMatch: RegExpExecArray | null;
+
+  while ((checkboxMatch = checkboxLineRegex.exec(planContent)) !== null) {
+    const id = checkboxMatch[2];
+    if (checklistById.has(id)) continue;
+    checklistById.set(id, {
+      marker: checkboxMatch[1].toLowerCase() as ' ' | 'x' | '~' | '!',
+      lineText: checkboxMatch[0],
+      index: checkboxMatch.index,
+    });
+  }
 
   const sectionRegex = /^###\s+(S\d+(?:\.\d+)?)[：:]\s*(.+)$/gm;
   let match: RegExpExecArray | null;
@@ -121,7 +138,10 @@ export function parsePlanSteps(planContent: string): PlanStep[] {
     const accMatch = block.match(/- \*\*验收条件\*\*[:：]\s*(.+)/);
     const depMatch = block.match(/- \*\*依赖\*\*[:：]\s*(.+)/);
     const checklistMatch = block.match(new RegExp(`^- \\[([ xX~!])\\]\\s*(?:\\*\\*)?${sec.id}(?:\\*\\*)?\\s*[:：]\\s*(.+)$`, 'mi'));
-    const marker = checklistMatch ? checklistMatch[1].toLowerCase() as ' ' | 'x' | '~' | '!' : ' ';
+    const fallbackChecklist = checklistById.get(sec.id);
+    const marker = checklistMatch
+      ? checklistMatch[1].toLowerCase() as ' ' | 'x' | '~' | '!'
+      : fallbackChecklist?.marker ?? ' ';
 
     tasks.push({
       id: sec.id,
@@ -131,9 +151,9 @@ export function parsePlanSteps(planContent: string): PlanStep[] {
       dependencies: depMatch?.[1]?.trim() || '',
       done: marker === 'x',
       marker,
-      lineText: checklistMatch?.[0] || '',
+      lineText: checklistMatch?.[0] || fallbackChecklist?.lineText || '',
       sectionIndex: sec.index,
-      checklistIndex: checklistMatch ? sec.index + block.indexOf(checklistMatch[0]) : -1,
+      checklistIndex: checklistMatch ? sec.index + block.indexOf(checklistMatch[0]) : fallbackChecklist?.index ?? -1,
     });
   }
 
