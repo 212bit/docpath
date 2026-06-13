@@ -1,13 +1,12 @@
 /** plan.md 与 breadcrumb.md 的同步/漂移检测工具。 */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { readFile } from 'fs/promises';
 import { readBreadcrumb, type BreadcrumbEntry } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
 import { parsePlanTasks, readCurrentState } from './workspace.js';
 import { parsePlanSteps } from './doc-parser.js';
-import { resolveActiveTaskDocPath, writeActiveTaskFile } from './task-files.js';
+import { readActiveTaskFile, resolveActiveTaskDocPath, writeActiveTaskFile } from './task-files.js';
 
 export interface PlanSyncResult {
   updated: boolean;
@@ -37,14 +36,13 @@ function latestByStep(entries: BreadcrumbEntry[], taskId?: string): Map<string, 
 }
 
 export async function resolveEffectivePlanTasks(cwd: string): Promise<EffectivePlanTask[]> {
-  const planPath = await planPathFor(cwd);
-  if (!existsSync(planPath)) return [];
-
-  const [planContent, breadcrumb, state] = await Promise.all([
-    readFile(planPath, 'utf-8'),
+  const docpathDir = await resolveDocpathDir(cwd);
+  const state = await readCurrentState(cwd);
+  const [planContent, breadcrumb] = await Promise.all([
+    readActiveTaskFile(docpathDir, state?.task_id, 'plan.md'),
     readBreadcrumb(cwd),
-    readCurrentState(cwd),
   ]);
+  if (!planContent.trim()) return [];
 
   const tasks = parsePlanTasks(planContent);
   const steps = parsePlanSteps(planContent);
@@ -81,7 +79,9 @@ export async function markPlanStep(cwd: string, step: string, status: PlanStepSt
   if (!existsSync(planPath)) return { updated: false, reason: 'plan.md 不存在' };
 
   const state = await readCurrentState(cwd);
-  const content = await readFile(planPath, 'utf-8');
+  const docpathDir = await resolveDocpathDir(cwd);
+  const content = await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md');
+  if (!content.trim()) return { updated: false, reason: 'plan.md 不存在' };
   const steps = parsePlanSteps(content);
   const target = steps.find((item) => item.id.toLowerCase() === step.toLowerCase());
   if (!target) return { updated: false, reason: `plan.md 未找到步骤 ${step}` };
@@ -98,20 +98,18 @@ export async function markPlanStep(cwd: string, step: string, status: PlanStepSt
 
   if (next === content) return { updated: false, reason: `步骤 ${step} 已是目标状态` };
 
-  const docpathDir = await resolveDocpathDir(cwd);
   await writeActiveTaskFile(docpathDir, state?.task_id || 'current', 'plan.md', next);
   return { updated: true, reason: `已同步 plan.md 步骤 ${step}` };
 }
 
 export async function detectPlanBreadcrumbDrift(cwd: string): Promise<PlanBreadcrumbDrift> {
-  const planPath = await planPathFor(cwd);
-  if (!existsSync(planPath)) return { planDoneWithoutBreadcrumb: [], breadcrumbDoneWithoutPlan: [] };
-
-  const [planContent, breadcrumb, state] = await Promise.all([
-    readFile(planPath, 'utf-8'),
+  const docpathDir = await resolveDocpathDir(cwd);
+  const state = await readCurrentState(cwd);
+  const [planContent, breadcrumb] = await Promise.all([
+    readActiveTaskFile(docpathDir, state?.task_id, 'plan.md'),
     readBreadcrumb(cwd),
-    readCurrentState(cwd),
   ]);
+  if (!planContent.trim()) return { planDoneWithoutBreadcrumb: [], breadcrumbDoneWithoutPlan: [] };
   const planTasks = parsePlanTasks(planContent);
   const planSteps = parsePlanSteps(planContent);
   const planById = new Map(planTasks.map((task) => [task.id, task]));

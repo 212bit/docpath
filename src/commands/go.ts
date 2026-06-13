@@ -19,6 +19,7 @@ import { parsePlanSteps, type PlanStep } from '../utils/doc-parser.js';
 import { markPlanStep, type PlanStepStatus } from '../utils/plan-sync.js';
 import { runCommand } from './runtime.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts } from '../utils/ui-gate.js';
+import { readActiveTaskFile } from '../utils/task-files.js';
 
 interface GoOptions {
   cwd: string;
@@ -92,13 +93,13 @@ async function readSpecFields(specPath: string): Promise<Record<string, string>>
   return extraFields;
 }
 
-async function readPlanSteps(planPath: string): Promise<PlanStep[]> {
-  if (!existsSync(planPath)) {
+async function readPlanSteps(docpathDir: string, taskId: string | undefined): Promise<PlanStep[]> {
+  const planContent = await readActiveTaskFile(docpathDir, taskId, 'plan.md');
+  if (!planContent.trim()) {
     console.error('❌  未找到 plan.md。请先运行 `docpath:plan` 生成计划。');
     process.exit(1);
   }
 
-  const planContent = await readFile(planPath, 'utf-8');
   const tasks = parsePlanSteps(planContent);
   if (tasks.length === 0) {
     console.error('❌  plan.md 中未找到子任务。格式须为 `### S1: 名称` 或 `- [ ] 任务`');
@@ -202,10 +203,10 @@ async function startStep(
 
 export async function goCommand(options: GoOptions): Promise<void> {
   const { cwd, step, status, dryRun } = options;
-  const { planPath, specPath } = await resolveGoContext(cwd);
+  const { docpathDir, specPath } = await resolveGoContext(cwd);
   const extraFields = await readSpecFields(specPath);
-  const tasks = await readPlanSteps(planPath);
   const current = await readCurrentMd(cwd);
+  const tasks = await readPlanSteps(docpathDir, current?.task_id);
   const target = selectTargetStep(tasks, step, status, current?.current_step);
   if (!target) {
     if (tasks.every(t => t.done)) {

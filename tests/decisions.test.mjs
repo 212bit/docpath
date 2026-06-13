@@ -1,7 +1,7 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -87,6 +87,8 @@ describe('structured decisions ADR', () => {
     await appendDecision(cwd, 'review', 'review 通过后追加候选 decision');
 
     const decisions = readFileSync(join(cwd, '.docpath', 'workspace', 'decisions.md'), 'utf-8');
+    const decisionsJsonlPath = join(cwd, '.docpath', 'workspace', 'decisions.jsonl');
+    const jsonl = readFileSync(decisionsJsonlPath, 'utf-8').trim().split('\n').map((line) => JSON.parse(line));
     assert.match(decisions, /## ADR-\d{8}-001 — architecture/);
     assert.match(decisions, /## ADR-\d{8}-002 — review/);
     assert.match(decisions, /- task_id: T-ADR/);
@@ -96,6 +98,10 @@ describe('structured decisions ADR', () => {
     assert.match(decisions, /### 替代方案/);
     assert.match(decisions, /### 相关文件/);
     assert.match(decisions, /.docpath\/workspace\/decisions.md/);
+    assert.equal(jsonl.length, 2);
+    assert.equal(jsonl[0].schema_version, 1);
+    assert.equal(jsonl[0].kind, 'decision');
+    assert.equal(jsonl[0].taskId, 'T-ADR');
 
     const recent = await getRecentDecisions(cwd, 1);
     assert.equal(recent.length, 1);
@@ -147,6 +153,7 @@ describe('structured decisions ADR', () => {
     });
 
     const current = readFileSync(decisionsPath, 'utf-8');
+    const decisionsJsonl = readFileSync(join(cwd, '.docpath', 'workspace', 'decisions.jsonl'), 'utf-8');
     const april = readFileSync(join(cwd, '.docpath', 'workspace', 'decisions-2026-04.md'), 'utf-8');
     const may = readFileSync(join(cwd, '.docpath', 'workspace', 'decisions-2026-05.md'), 'utf-8');
 
@@ -157,6 +164,9 @@ describe('structured decisions ADR', () => {
     assert.doesNotMatch(current, /ADR-20260410-001/);
     assert.doesNotMatch(current, /ADR-20260520-001/);
     assert.match(current, /ADR-20260620-001/);
+    assert.doesNotMatch(decisionsJsonl, /ADR-20260410-001/);
+    assert.doesNotMatch(decisionsJsonl, /ADR-20260520-001/);
+    assert.match(decisionsJsonl, /ADR-20260620-001/);
     assert.equal(countAdr(april, 'ADR-20260410-001'), 1);
     assert.equal(countAdr(may, 'ADR-20260520-001'), 1);
     rmSync(cwd, { recursive: true, force: true });
@@ -183,8 +193,20 @@ describe('structured decisions ADR', () => {
 
     assert.match(output, /DocPath Decisions GC/);
     assert.match(output, /归档条目: 1/);
+    assert.ok(existsSync(join(cwd, '.docpath', 'workspace', 'decisions.jsonl')));
     assert.doesNotMatch(readFileSync(decisionsPath, 'utf-8'), /ADR-20260410-001/);
     assert.match(readFileSync(join(cwd, '.docpath', 'workspace', 'decisions-2026-04.md'), 'utf-8'), /ADR-20260410-001/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('getRecentDecisions fails loud when decisions.jsonl is corrupt', async () => {
+    const cwd = mkWorkspace();
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'decisions.jsonl'), '{not-json\n');
+
+    await assert.rejects(
+      () => getRecentDecisions(cwd, 1),
+      /decisions\.jsonl 第 1 行不是合法 JSON/,
+    );
     rmSync(cwd, { recursive: true, force: true });
   });
 });

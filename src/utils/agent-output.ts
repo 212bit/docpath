@@ -13,6 +13,7 @@ import { parsePlanTasks, readCurrentMd, readOptionalFile } from './workspace.js'
 import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
 import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from './plan-sync.js';
+import { readActiveTaskFile } from './task-files.js';
 import { listBacklogItems, type BacklogItem } from '../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.js';
 import { readRuleFile, ruleDisplayPaths } from './rules.js';
@@ -624,8 +625,8 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   const state = await readCurrentMd(cwd);
   const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
   const hasSpec = existsSync(join(docpathDir, 'tasks', 'current', 'spec.md'));
-  const specContent = hasSpec ? await readOptionalFile(join(docpathDir, 'tasks', 'current', 'spec.md')) : '';
-  const planContent = await readOptionalFile(join(docpathDir, 'tasks', 'current', 'plan.md'));
+  const specContent = hasSpec ? await readActiveTaskFile(docpathDir, state?.task_id, 'spec.md') : '';
+  const planContent = await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md');
   const planTasks = await resolveEffectivePlanTasks(cwd);
   const rawBreadcrumb = await readBreadcrumb(cwd);
   const bc = summarizeCurrentTaskBreadcrumbs(rawBreadcrumb, state?.task_id || '');

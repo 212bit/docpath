@@ -19,6 +19,7 @@ import { readCurrentMd, updateLevel } from '../utils/workspace.js';
 import { evaluateEscalation } from '../engine/escalation.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
+import { readActiveTaskFile } from '../utils/task-files.js';
 
 interface ContinueOptions {
   cwd: string;
@@ -99,13 +100,8 @@ async function maybeEscalateLevel(cwd: string, docpathDir: string): Promise<void
   const current = await readCurrentMd(cwd);
   if (!current) return;
 
-  const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
-  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-
-  let specContent: string | undefined;
-  let planContent: string | undefined;
-  try { specContent = await readFile(specPath, 'utf-8'); } catch { /* no spec */ }
-  try { planContent = await readFile(planPath, 'utf-8'); } catch { /* no plan */ }
+  const specContent = await readActiveTaskFile(docpathDir, current.task_id, 'spec.md');
+  const planContent = await readActiveTaskFile(docpathDir, current.task_id, 'plan.md');
 
   const taskDescription = [specContent, planContent].filter(Boolean).join('\n\n') || 'unknown task';
   const escalation = evaluateEscalation(

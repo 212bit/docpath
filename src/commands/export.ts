@@ -12,6 +12,7 @@ import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { LEVEL_NAMES, type ComplexityLevel } from '../engine/state-machine.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { readActiveTaskFile } from '../utils/task-files.js';
 
 interface ExportOptions {
   cwd: string;
@@ -80,9 +81,8 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
   sections.push(`## 📈 进度时间线\n\n${renderTimeline(bc)}`);
 
   // ── Spec 摘要 ──
-  const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
-  if (existsSync(specPath)) {
-    const spec = await readFile(specPath, 'utf-8');
+  const spec = await readActiveTaskFile(docpathDir, state?.task_id, 'spec.md');
+  if (spec.trim()) {
     if (options.full) {
       sections.push(`## 📝 需求规约 (完整)\n\n${spec}`);
     } else {
@@ -91,9 +91,8 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
   }
 
   // ── Plan 摘要 ──
-  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-  if (existsSync(planPath)) {
-    const plan = await readFile(planPath, 'utf-8');
+  const plan = await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md');
+  if (plan.trim()) {
     if (options.full) {
       sections.push(`## 📋 执行计划 (完整)\n\n${plan}`);
     } else {

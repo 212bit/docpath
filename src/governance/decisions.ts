@@ -10,6 +10,8 @@ import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 
+export const DECISIONS_JSONL_SCHEMA_VERSION = 1;
+
 export interface DecisionRecordInput {
   category: string;
   decision: string;
@@ -31,6 +33,22 @@ export interface GcDecisionsResult {
   archived: number;
   archiveFiles: string[];
 }
+
+export interface DecisionJsonlRecord {
+  schema_version: number;
+  kind: 'decision';
+  id: string;
+  taskId: string;
+  createdAt: string;
+  category: string;
+  context: string;
+  decision: string;
+  impact: string;
+  alternatives: string[];
+  relatedFiles: string[];
+}
+
+type RenderableDecisionRecord = Required<DecisionRecordInput> & { id: string; createdAt: string };
 
 const DECISIONS_HEADER = [
   '# 决策日志 — DocPath ADR',
@@ -68,7 +86,7 @@ function normalizeList(items: string[] | undefined, fallback: string): string[] 
   return normalized.length > 0 ? normalized : [fallback];
 }
 
-function renderDecision(record: Required<DecisionRecordInput> & { id: string; createdAt: string }): string {
+function renderDecision(record: RenderableDecisionRecord): string {
   return [
     `## ${record.id} — ${record.category}`,
     '',
@@ -99,6 +117,40 @@ function renderDecision(record: Required<DecisionRecordInput> & { id: string; cr
     '---',
     '',
   ].join('\n');
+}
+
+function decisionsJsonlPath(workspaceDir: string): string {
+  return join(workspaceDir, 'decisions.jsonl');
+}
+
+function toJsonlRecord(record: RenderableDecisionRecord): DecisionJsonlRecord {
+  return {
+    schema_version: DECISIONS_JSONL_SCHEMA_VERSION,
+    kind: 'decision',
+    id: record.id,
+    taskId: record.taskId || 'unknown',
+    createdAt: record.createdAt,
+    category: record.category,
+    context: record.context || '未记录背景。',
+    decision: record.decision,
+    impact: record.impact || '影响待后续观察。',
+    alternatives: record.alternatives || [],
+    relatedFiles: record.relatedFiles || [],
+  };
+}
+
+function fromJsonlRecord(record: DecisionJsonlRecord): RenderableDecisionRecord {
+  return {
+    id: record.id,
+    createdAt: record.createdAt,
+    taskId: record.taskId,
+    category: record.category,
+    context: record.context,
+    decision: record.decision,
+    impact: record.impact,
+    alternatives: record.alternatives,
+    relatedFiles: record.relatedFiles,
+  };
 }
 
 interface DecisionBlock {
@@ -133,6 +185,125 @@ function parseDecisionBlock(rawBlock: string): DecisionBlock | null {
     month: validCreatedAt ? validCreatedAt.toISOString().slice(0, 7) : undefined,
     raw,
   };
+}
+
+function extractDecisionSection(raw: string, heading: string): string {
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = raw.match(new RegExp(`^###\\s+${escaped}\\s*$`, 'm'));
+  if (!match) return '';
+  const start = (match.index ?? 0) + match[0].length;
+  const rest = raw.slice(start);
+  const next = rest.search(/\n###\s+/);
+  return (next === -1 ? rest : rest.slice(0, next))
+    .replace(/\n---\s*$/m, '')
+    .trim();
+}
+
+function parseMarkdownList(section: string): string[] {
+  return section
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('- '))
+    .map((line) => line.slice(2).trim())
+    .filter(Boolean);
+}
+
+function parseDecisionRecordFromBlock(block: DecisionBlock): DecisionJsonlRecord | null {
+  const createdAt = block.raw.match(/^- created_at:\s*(.+)$/m)?.[1]?.trim();
+  const category = block.raw.match(/^- category:\s*(.+)$/m)?.[1]?.trim()
+    || block.raw.match(/^##\s+ADR-\d{8}-\d{3}\s+—\s+(.+)$/m)?.[1]?.trim()
+    || 'unknown';
+  const taskId = block.raw.match(/^- task_id:\s*(.+)$/m)?.[1]?.trim() || 'unknown';
+  const decision = extractDecisionSection(block.raw, '决策');
+  if (!createdAt || !decision) return null;
+
+  const record = toJsonlRecord({
+    id: block.id,
+    createdAt,
+    taskId,
+    category,
+    context: extractDecisionSection(block.raw, '背景') || '未记录背景。',
+    decision,
+    impact: extractDecisionSection(block.raw, '影响') || '影响待后续观察。',
+    alternatives: parseMarkdownList(extractDecisionSection(block.raw, '替代方案')),
+    relatedFiles: parseMarkdownList(extractDecisionSection(block.raw, '相关文件')),
+  });
+  return record;
+}
+
+function validateDecisionRecord(value: unknown, line: number): DecisionJsonlRecord {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(`decisions.jsonl 第 ${line} 行必须是 JSON object`);
+  }
+  const record = value as Partial<DecisionJsonlRecord>;
+  if (record.schema_version !== DECISIONS_JSONL_SCHEMA_VERSION) {
+    throw new Error(`decisions.jsonl 第 ${line} 行 schema_version 必须为 ${DECISIONS_JSONL_SCHEMA_VERSION}`);
+  }
+  if (record.kind !== 'decision') throw new Error(`decisions.jsonl 第 ${line} 行 kind 必须为 decision`);
+  for (const field of ['id', 'taskId', 'createdAt', 'category', 'context', 'decision', 'impact']) {
+    if (typeof record[field as keyof DecisionJsonlRecord] !== 'string') {
+      throw new Error(`decisions.jsonl 第 ${line} 行 ${field} 必须是字符串`);
+    }
+  }
+  if (!Array.isArray(record.alternatives)) throw new Error(`decisions.jsonl 第 ${line} 行 alternatives 必须是数组`);
+  if (!Array.isArray(record.relatedFiles)) throw new Error(`decisions.jsonl 第 ${line} 行 relatedFiles 必须是数组`);
+  return record as DecisionJsonlRecord;
+}
+
+async function readDecisionJsonl(workspaceDir: string): Promise<DecisionJsonlRecord[] | null> {
+  const path = decisionsJsonlPath(workspaceDir);
+  if (!existsSync(path)) return null;
+  const content = await readFile(path, 'utf-8');
+  const records: DecisionJsonlRecord[] = [];
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(line);
+    } catch (error) {
+      throw new Error(`decisions.jsonl 第 ${i + 1} 行不是合法 JSON: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    records.push(validateDecisionRecord(parsed, i + 1));
+  }
+  return records;
+}
+
+async function writeDecisionJsonl(workspaceDir: string, records: DecisionJsonlRecord[]): Promise<void> {
+  const content = records.map((record) => JSON.stringify(record)).join('\n');
+  await writeFile(decisionsJsonlPath(workspaceDir), content ? `${content}\n` : '', 'utf-8');
+}
+
+async function appendDecisionJsonl(workspaceDir: string, record: DecisionJsonlRecord): Promise<void> {
+  await appendFile(decisionsJsonlPath(workspaceDir), `${JSON.stringify(record)}\n`, 'utf-8');
+}
+
+function renderDecisionRecords(records: DecisionJsonlRecord[]): string {
+  return renderDecisionDocument(
+    DECISIONS_HEADER,
+    records.map((record) => ({
+      id: record.id,
+      createdAt: new Date(record.createdAt),
+      month: record.createdAt.slice(0, 7),
+      raw: renderDecision(fromJsonlRecord(record)),
+    })),
+  );
+}
+
+async function ensureDecisionJsonl(workspaceDir: string): Promise<DecisionJsonlRecord[]> {
+  const existing = await readDecisionJsonl(workspaceDir);
+  if (existing !== null) return existing;
+
+  const decisionsPath = join(workspaceDir, 'decisions.md');
+  if (!existsSync(decisionsPath)) return [];
+  const content = await readFile(decisionsPath, 'utf-8');
+  const { blocks } = splitDecisionDocument(content);
+  const records = blocks
+    .map((block) => parseDecisionRecordFromBlock(block))
+    .filter((record): record is DecisionJsonlRecord => Boolean(record));
+  await writeDecisionJsonl(workspaceDir, records);
+  return records;
 }
 
 function renderDecisionDocument(header: string, blocks: DecisionBlock[]): string {
@@ -173,8 +344,10 @@ export async function appendDecision(
   details: Partial<Omit<DecisionRecordInput, 'category' | 'decision'>> = {},
 ): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
-  const decisionsPath = join(docpathDir, 'workspace', 'decisions.md');
+  const workspaceDir = join(docpathDir, 'workspace');
+  const decisionsPath = join(workspaceDir, 'decisions.md');
   const state = await readCurrentState(cwd);
+  await ensureDecisionJsonl(workspaceDir);
 
   let existing = '';
   if (!existsSync(decisionsPath)) {
@@ -185,7 +358,7 @@ export async function appendDecision(
   }
 
   const now = new Date();
-  const entry = renderDecision({
+  const record = {
     id: nextDecisionId(existing, now),
     createdAt: now.toISOString(),
     category,
@@ -195,9 +368,11 @@ export async function appendDecision(
     alternatives: details.alternatives || [],
     relatedFiles: details.relatedFiles || [],
     taskId: details.taskId || state?.task_id || 'unknown',
-  });
+  };
+  const entry = renderDecision(record);
 
   await appendFile(decisionsPath, entry, 'utf-8');
+  await appendDecisionJsonl(workspaceDir, toJsonlRecord(record));
 }
 
 /**
@@ -220,17 +395,30 @@ export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {})
     };
   }
 
-  const content = await readFile(decisionsPath, 'utf-8');
-  const { header, blocks } = splitDecisionDocument(content);
+  const records = await ensureDecisionJsonl(workspaceDir);
   const cutoff = cutoffTime(now, retentionDays);
-  const retained = blocks.filter((block) => !isArchivable(block, cutoff));
-  const archivable = blocks.filter((block) => isArchivable(block, cutoff));
+  const retainedRecords = records.filter((record) => {
+    const createdAt = new Date(record.createdAt);
+    return Number.isNaN(createdAt.getTime()) || createdAt.getTime() >= cutoff;
+  });
+  const archivableRecords = records.filter((record) => {
+    const createdAt = new Date(record.createdAt);
+    return !Number.isNaN(createdAt.getTime()) && createdAt.getTime() < cutoff;
+  });
   const archiveFiles: string[] = [];
 
   const byMonth = new Map<string, DecisionBlock[]>();
-  for (const block of archivable) {
-    if (!block.month) continue;
-    byMonth.set(block.month, [...(byMonth.get(block.month) || []), block]);
+  for (const record of archivableRecords) {
+    const createdAt = new Date(record.createdAt);
+    const month = Number.isNaN(createdAt.getTime()) ? '' : createdAt.toISOString().slice(0, 7);
+    if (!month) continue;
+    const block = {
+      id: record.id,
+      createdAt,
+      month,
+      raw: renderDecision(fromJsonlRecord(record)),
+    };
+    byMonth.set(month, [...(byMonth.get(month) || []), block]);
   }
 
   for (const [month, monthBlocks] of byMonth.entries()) {
@@ -239,14 +427,15 @@ export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {})
     if (changed) archiveFiles.push(archivePath);
   }
 
-  if (archivable.length > 0) {
-    await writeFile(decisionsPath, renderDecisionDocument(header, retained), 'utf-8');
+  if (archivableRecords.length > 0) {
+    await writeDecisionJsonl(workspaceDir, retainedRecords);
+    await writeFile(decisionsPath, renderDecisionRecords(retainedRecords), 'utf-8');
   }
 
   return {
     decisionsPath,
-    retained: retained.length,
-    archived: archivable.length,
+    retained: retainedRecords.length,
+    archived: archivableRecords.length,
     archiveFiles,
   };
 }
@@ -256,7 +445,13 @@ export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {})
  */
 export async function getRecentDecisions(cwd: string, count: number = 5): Promise<string[]> {
   const docpathDir = await resolveDocpathDir(cwd);
-  const decisionsPath = join(docpathDir, 'workspace', 'decisions.md');
+  const workspaceDir = join(docpathDir, 'workspace');
+  const records = await readDecisionJsonl(workspaceDir);
+  if (records !== null) {
+    return records.slice(-count).map((record) => renderDecision(fromJsonlRecord(record)).trim());
+  }
+
+  const decisionsPath = join(workspaceDir, 'decisions.md');
   if (!existsSync(decisionsPath)) return [];
 
   const content = await readFile(decisionsPath, 'utf-8');

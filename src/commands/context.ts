@@ -11,6 +11,7 @@ import { join } from 'path';
 import { readCurrentMd } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { readActiveTaskFile } from '../utils/task-files.js';
 import { compactRuleContent, readRuleFile } from '../utils/rules.js';
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
@@ -196,18 +197,16 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
 
   // ── 3. Spec ──
   if (options.withSpec !== false) {
-    const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
-    if (existsSync(specPath)) {
-      const spec = await readFile(specPath, 'utf-8');
+    const spec = await readActiveTaskFile(docpathDir, currentTaskId, 'spec.md');
+    if (spec.trim()) {
       sections.push(`## 需求规约 (spec.md)\n${compressMarkdown(spec, Math.floor(maxChars * 0.3))}`);
     }
   }
 
   // ── 4. Plan ──
   if (options.withPlan !== false) {
-    const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-    if (existsSync(planPath)) {
-      const plan = await readFile(planPath, 'utf-8');
+    const plan = await readActiveTaskFile(docpathDir, currentTaskId, 'plan.md');
+    if (plan.trim()) {
       sections.push(`## 执行计划 (plan.md)\n${compressMarkdown(plan, Math.floor(maxChars * 0.3))}`);
     }
   }

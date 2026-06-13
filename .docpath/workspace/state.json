@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260613-check-checklist",
-  "task_title": "修正 check checklist 同步门禁语义",
+  "task_id": "T-20260613-schema-first-json-jsonl",
+  "task_title": "Schema-first JSON/JSONL 真源迁移",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-13T15:33:08.041Z",
-  "updated_at": "2026-06-13T15:33:08.040Z"
+  "started_at": "2026-06-13T17:52:30.324Z",
+  "updated_at": "2026-06-13T17:52:30.323Z"
 }

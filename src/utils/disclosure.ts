@@ -14,6 +14,7 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
+import { readActiveTaskFile } from './task-files.js';
 
 // ── 展示层级 ──
 
@@ -55,11 +56,13 @@ function shouldShow(item: DisclosureItem, ctx: DisclosureContext): boolean {
 export async function collectDisclosureItems(cwd: string): Promise<DisclosureItem[]> {
   const docpathDir = await resolveDocpathDir(cwd);
   const items: DisclosureItem[] = [];
+  let taskId: string | undefined;
 
   // 1. state.json — summary
   const statePath = join(docpathDir, 'workspace', 'state.json');
   if (existsSync(statePath)) {
     const state = JSON.parse(await readFile(statePath, 'utf-8'));
+    taskId = typeof state.task_id === 'string' ? state.task_id : undefined;
     items.push({
       id: 'state',
       summary: `Phase: ${state.phase || 'unknown'} | Status: ${state.status || 'unknown'}`,
@@ -69,9 +72,8 @@ export async function collectDisclosureItems(cwd: string): Promise<DisclosureIte
   }
 
   // 2. plan.md — summary + detail
-  const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-  if (existsSync(planPath)) {
-    const plan = await readFile(planPath, 'utf-8');
+  const plan = await readActiveTaskFile(docpathDir, taskId, 'plan.md');
+  if (plan.trim()) {
     const lines = plan.split('\n');
     const headings = lines.filter(l => l.startsWith('##') || l.startsWith('###'));
     const unchecked = lines.filter(l => /^- \[ \]/.test(l));

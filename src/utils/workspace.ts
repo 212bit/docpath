@@ -9,7 +9,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import * as readline from 'readline';
 import { resolveDocpathDir, writeFileAtomic } from './file.js';
-import { resolveActiveTaskDocPath } from './task-files.js';
+import { readActiveTaskFile, resolveActiveTaskDocPath } from './task-files.js';
 import {
   normalizeWorkflowSnapshot,
   snapshotFromState,
@@ -127,7 +127,7 @@ export async function writeCurrentState(cwd: string, state: CurrentState): Promi
   // 重建 current.md
   const activePlanPath = resolveActiveTaskDocPath(docpathDir, state.task_id || '', 'plan.md');
   const activeSpecPath = resolveActiveTaskDocPath(docpathDir, state.task_id || '', 'spec.md');
-  const planContent = await readOptionalFile(activePlanPath);
+  const planContent = await readActiveTaskFile(docpathDir, state.task_id || '', 'plan.md');
   const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
   const breadcrumbContent = await readOptionalFile(join(docpathDir, 'workspace', 'breadcrumb.md'));
   const specLink = `../${activeSpecPath.slice(docpathDir.length + 1).replace(/\\/g, '/')}`;
@@ -498,7 +498,7 @@ export async function syncCurrentDocument(cwd: string): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
   const activePlanPath = resolveActiveTaskDocPath(docpathDir, current.task_id || '', 'plan.md');
   const activeSpecPath = resolveActiveTaskDocPath(docpathDir, current.task_id || '', 'spec.md');
-  const planContent = await readOptionalFile(activePlanPath);
+  const planContent = await readActiveTaskFile(docpathDir, current.task_id || '', 'plan.md');
   const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
   const breadcrumbContent = await readOptionalFile(join(docpathDir, 'workspace', 'breadcrumb.md'));
   const specLink = `../${activeSpecPath.slice(docpathDir.length + 1).replace(/\\/g, '/')}`;

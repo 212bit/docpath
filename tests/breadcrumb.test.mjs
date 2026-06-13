@@ -6,10 +6,11 @@ import { tmpdir } from 'os';
 import { execSync } from 'child_process';
 
 // 从 dist 直接 import — 只用导出的函数
-const { writeBreadcrumb, readBreadcrumb, truncateBreadcrumb, MAX_ENTRIES } =
+const { writeBreadcrumb, readBreadcrumb, readRecentBreadcrumbEntries, truncateBreadcrumb, MAX_ENTRIES } =
   await import('../dist/engine/breadcrumb.js');
 
 const BC_PATH = (dp) => join(dp, '.docpath', 'workspace', 'breadcrumb.md');
+const BC_JSONL_PATH = (dp) => join(dp, '.docpath', 'workspace', 'breadcrumb.jsonl');
 const readRaw = (dp) => readFileSync(BC_PATH(dp), 'utf-8');
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 
@@ -78,6 +79,7 @@ describe('Breadcrumb write and read', () => {
 
   it('file exists after write', () => {
     assert.ok(existsSync(BC_PATH(dp)), 'breadcrumb.md should exist');
+    assert.ok(existsSync(BC_JSONL_PATH(dp)), 'breadcrumb.jsonl should exist');
   });
 
   it('reads two entries', async () => {
@@ -99,11 +101,63 @@ describe('Breadcrumb write and read', () => {
     assert.equal(s.latest.status, 'in_progress');
   });
 
+  it('reads recent entries from structured JSONL source', async () => {
+    const recent = await readRecentBreadcrumbEntries(dp, 1);
+    assert.equal(recent.length, 1);
+    assert.equal(recent[0].step, 'S2');
+    const jsonl = readFileSync(BC_JSONL_PATH(dp), 'utf-8').trim().split('\n').map((line) => JSON.parse(line));
+    assert.equal(jsonl[0].schema_version, 1);
+    assert.equal(jsonl[0].kind, 'breadcrumb');
+  });
+
   it('correct status counts', async () => {
     const s = await readBreadcrumb(dp);
     assert.equal(s.done, 1);
     assert.equal(s.inProgress, 1);
     assert.equal(s.blocked, 0);
+  });
+});
+
+describe('Breadcrumb JSONL migration and validation', () => {
+  it('migrates existing breadcrumb.md before appending JSONL records', async () => {
+    const dp = mkdtempSync(join(tmpdir(), 'bc-jsonl-migrate-'));
+    mkdirSync(join(dp, '.docpath', 'workspace'), { recursive: true });
+    writeFileSync(BC_PATH(dp), [
+      '# Breadcrumb',
+      '',
+      '### ✅ S1 [T-MIGRATE] — 2026-06-01T00:00:00.000Z',
+      '',
+      '---',
+      'taskId: T-MIGRATE',
+      'step: S1',
+      'status: done',
+      'timestamp: 2026-06-01T00:00:00.000Z',
+      '---',
+      '',
+      '- **状态**: done',
+      '- **上下文**: legacy',
+      '',
+    ].join('\n'));
+
+    await writeBreadcrumb(dp, { taskId: 'T-MIGRATE', step: 'S2', status: 'done', context: 'jsonl' });
+
+    const summary = await readBreadcrumb(dp);
+    assert.equal(summary.total, 2);
+    assert.deepEqual(summary.entries.map((entry) => entry.step), ['S1', 'S2']);
+    assert.equal(readFileSync(BC_JSONL_PATH(dp), 'utf-8').trim().split('\n').length, 2);
+    rmSync(dp, { recursive: true, force: true });
+  });
+
+  it('fails loud when breadcrumb.jsonl is corrupt', async () => {
+    const dp = mkdtempSync(join(tmpdir(), 'bc-jsonl-corrupt-'));
+    mkdirSync(join(dp, '.docpath', 'workspace'), { recursive: true });
+    writeFileSync(BC_JSONL_PATH(dp), '{not-json\n');
+
+    await assert.rejects(
+      () => readBreadcrumb(dp),
+      /breadcrumb\.jsonl 第 1 行不是合法 JSON/,
+    );
+    rmSync(dp, { recursive: true, force: true });
   });
 });
 

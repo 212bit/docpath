@@ -1,6 +1,11 @@
 import { existsSync } from 'fs';
 import { mkdir, readFile, readdir, rm, stat, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { dirname, join } from 'path';
+import {
+  readStructuredTaskMarkdown,
+  writeStructuredTaskJson,
+  type StructuredTaskMarkdownFile,
+} from './structured-docs.js';
 
 export function currentTaskDir(docpathDir: string): string {
   return join(docpathDir, 'tasks', 'current');
@@ -34,6 +39,10 @@ export async function writeActiveTaskFile(
   const currentPath = join(currentTaskDir(docpathDir), file);
   await writeFile(canonicalPath, content, 'utf-8');
   await writeFile(currentPath, content, 'utf-8');
+  if (isStructuredTaskMarkdownFile(file)) {
+    await writeStructuredTaskJson(canonicalTaskDir(docpathDir, taskId), file, content);
+    await writeStructuredTaskJson(currentTaskDir(docpathDir), file, content);
+  }
   return { canonicalPath, currentPath };
 }
 
@@ -111,10 +120,18 @@ export async function readActiveTaskFile(
   file: string,
 ): Promise<string> {
   const canonicalPath = taskId ? join(canonicalTaskDir(docpathDir, taskId), file) : '';
+  if (taskId && isStructuredTaskMarkdownFile(file)) {
+    const structured = await readStructuredTaskMarkdown(canonicalTaskDir(docpathDir, taskId), file);
+    if (structured !== null) return structured;
+  }
   if (canonicalPath && existsSync(canonicalPath)) {
     return readFile(canonicalPath, 'utf-8');
   }
 
+  if (isStructuredTaskMarkdownFile(file)) {
+    const structured = await readStructuredTaskMarkdown(currentTaskDir(docpathDir), file);
+    if (structured !== null) return structured;
+  }
   const currentPath = join(currentTaskDir(docpathDir), file);
   if (existsSync(currentPath)) {
     return readFile(currentPath, 'utf-8');
@@ -212,8 +229,15 @@ export async function syncActiveTaskFiles(
     }
     const content = await readFile(fromPath, 'utf-8');
     await writeFile(toPath, content, 'utf-8');
+    if (isStructuredTaskMarkdownFile(file)) {
+      await writeStructuredTaskJson(dirname(toPath), file, content);
+    }
     synced.push({ file, fromPath, toPath });
   }
 
   return synced;
+}
+
+function isStructuredTaskMarkdownFile(file: string): file is StructuredTaskMarkdownFile {
+  return file === 'spec.md' || file === 'plan.md';
 }

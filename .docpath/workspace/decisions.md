@@ -13810,3 +13810,30 @@ agent-step: S4
 - 未记录相关文件。
 
 ---
+## ADR-20260613-006 — review
+
+- task_id: T-20260613-schema-first-json-jsonl
+- created_at: 2026-06-13T17:52:08.411Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 12 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---

@@ -1,21 +1,5 @@
 [
   {
-    "timestamp": "2026-06-13T13:05:08.588Z",
-    "passed": true,
-    "failedChecks": [],
-    "gitRef": "b6926c5951c70d8cc09d2b26b24d83aecdbd8ce8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-13T13:05:22.221Z",
-    "passed": true,
-    "failedChecks": [],
-    "gitRef": "b6926c5951c70d8cc09d2b26b24d83aecdbd8ce8",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
     "timestamp": "2026-06-13T14:04:14.359Z",
     "passed": false,
     "failedChecks": [
@@ -199,6 +183,24 @@
     "passed": true,
     "failedChecks": [],
     "gitRef": "c9464f52e15ada2e82532de4e17084f31815da16",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-13T17:50:31.231Z",
+    "passed": false,
+    "failedChecks": [
+      "TypeScript 编译"
+    ],
+    "gitRef": "3ea23e6d517cb4f9d9646533a902ad8c546e181a",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-13T17:52:00.472Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "3ea23e6d517cb4f9d9646533a902ad8c546e181a",
     "branch": "main",
     "worktreeDirty": true
   }

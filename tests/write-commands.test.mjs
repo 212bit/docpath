@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -131,6 +131,11 @@ describe('write commands', () => {
     assert.match(output, /spec\.md 已写入/);
     assert.match(readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8'), /FR-1/);
     assert.match(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.md'), 'utf-8'), /FR-1/);
+    const specJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.json'), 'utf-8'));
+    assert.equal(specJson.schema_version, 1);
+    assert.equal(specJson.kind, 'spec');
+    assert.equal(specJson.functional_requirements[0].id, 'FR-1');
+    assert.ok(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.json')));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -151,12 +156,53 @@ describe('write commands', () => {
     const plan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
     assert.match(plan, /S1: implement write-plan/);
     assert.match(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.md'), 'utf-8'), /S1: implement write-plan/);
+    const planJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.json'), 'utf-8'));
+    assert.equal(planJson.schema_version, 1);
+    assert.equal(planJson.kind, 'plan');
+    assert.equal(planJson.steps[0].id, 'S1');
+    assert.ok(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.json')));
 
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
     assert.equal(state.phase, 'planning');
 
     const next = run(`next --cwd ${cwd} --agent`, cwd);
     assert.match(next, /recommended_command: docpath go/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('go reads plan.json before stale plan.md and fails loud on corrupt plan.json', () => {
+    const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+    const content = [
+      '## 执行计划',
+      '',
+      '### S1: JSON backed step',
+      '- **描述**: 从 JSON 真源读取',
+      '- **验收条件**: go 输出 JSON 中的步骤名',
+      '- **依赖**: 无',
+      '',
+    ].join('\n');
+    runWithInput(`write-plan --cwd ${cwd} --stdin`, cwd, content);
+
+    const stale = [
+      '## 执行计划',
+      '',
+      '### S1: Stale markdown step',
+      '- **描述**: 这行不应被 go 读取',
+      '- **验收条件**: stale',
+      '- **依赖**: 无',
+      '',
+    ].join('\n');
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), stale);
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.md'), stale);
+
+    const output = run(`go --cwd ${cwd} --step S1 --dry-run`, cwd);
+    assert.match(output, /JSON backed step/);
+    assert.doesNotMatch(output, /Stale markdown step/);
+
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.json'), '{not-json');
+    const corrupt = runResult(`go --cwd ${cwd} --step S1 --dry-run`, cwd);
+    assert.equal(corrupt.code, 1);
+    assert.match(corrupt.out, /plan\.json .*不是合法 JSON/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

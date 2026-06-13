@@ -171,8 +171,7 @@ async function loadJournalContext(cwd: string, docpathDir: string): Promise<Jour
 }
 
 async function buildTaskSummary(context: JournalContext): Promise<TaskSummary> {
-  const planContent = await readOptionalFile(context.planPath);
-  const planTasks = planContent ? parsePlanTasks(planContent) : [];
+  const planTasks = context.plan ? parsePlanTasks(context.plan) : [];
   const latestByStep = new Map<string, (typeof context.breadcrumb.entries)[number]>();
   for (const entry of context.breadcrumb.entries.filter(e => e.taskId === context.taskId)) {
     latestByStep.set(entry.step, entry);

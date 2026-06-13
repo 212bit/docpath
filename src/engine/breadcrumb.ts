@@ -15,6 +15,7 @@ import { writeFileAtomic } from '../utils/file.js';
 
 /** 面包屑最大保留条数 */
 export const MAX_ENTRIES = 50;
+export const BREADCRUMB_JSONL_SCHEMA_VERSION = 1;
 
 export interface BreadcrumbEntry {
   /** 任务 ID */
@@ -46,12 +47,19 @@ export interface BreadcrumbSummary {
   entries: BreadcrumbEntry[];
 }
 
+export interface BreadcrumbJsonlRecord extends BreadcrumbEntry {
+  schema_version: number;
+  kind: 'breadcrumb';
+  timestamp: string;
+}
+
 export type BreadcrumbReporter = (message: string) => void;
 
 export const BREADCRUMB_HEADER = `# 面包屑 — 上下文恢复索引
 
 > 此文件由 DocPath 自动生成。每完成一个子任务追加一条记录。
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
+> 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 ${MAX_ENTRIES} 条记录时自动裁剪最旧条目。
 `;
 
@@ -129,7 +137,6 @@ export function formatEntry(entry: BreadcrumbEntry): string {
  * 重新写入文件。返回被裁剪的数量。
  */
 export async function truncateBreadcrumb(projectRoot: string): Promise<number> {
-  const breadcrumbPath = join(projectRoot, '.docpath', 'workspace', 'breadcrumb.md');
   const summary = await readBreadcrumb(projectRoot);
 
   if (summary.entries.length <= MAX_ENTRIES) {
@@ -139,10 +146,8 @@ export async function truncateBreadcrumb(projectRoot: string): Promise<number> {
   const keep = summary.entries.slice(-MAX_ENTRIES);
   const trimmedCount = summary.entries.length - keep.length;
 
-  const body = keep.map((e) => formatEntry(e)).join('');
-  const newContent = BREADCRUMB_HEADER + body;
-  // 原子轮转：tmp+rename，防止并发读者读到写到一半的截断面包屑。
-  await writeFileAtomic(breadcrumbPath, newContent);
+  await writeBreadcrumbJsonl(projectRoot, keep);
+  await renderBreadcrumbMarkdown(projectRoot, keep);
 
   return trimmedCount;
 }
@@ -153,6 +158,119 @@ export async function truncateBreadcrumb(projectRoot: string): Promise<number> {
 function normalizeStepName(step: string): string {
   const match = step.match(/^(S\d+(?:\.\d+)?)/);
   return match ? match[1] : step;
+}
+
+function breadcrumbPath(projectRoot: string): string {
+  return join(projectRoot, '.docpath', 'workspace', 'breadcrumb.md');
+}
+
+function breadcrumbJsonlPath(projectRoot: string): string {
+  return join(projectRoot, '.docpath', 'workspace', 'breadcrumb.jsonl');
+}
+
+function toJsonlRecord(entry: BreadcrumbEntry): BreadcrumbJsonlRecord {
+  return {
+    schema_version: BREADCRUMB_JSONL_SCHEMA_VERSION,
+    kind: 'breadcrumb',
+    taskId: entry.taskId,
+    step: entry.step,
+    status: entry.status,
+    context: entry.context,
+    timestamp: entry.timestamp || new Date().toISOString(),
+    ...(entry.escalation ? { escalation: entry.escalation } : {}),
+  };
+}
+
+function validateBreadcrumbRecord(value: unknown, line: number): BreadcrumbJsonlRecord {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(`breadcrumb.jsonl 第 ${line} 行必须是 JSON object`);
+  }
+  const record = value as Partial<BreadcrumbJsonlRecord>;
+  const statuses = ['done', 'in_progress', 'blocked', 'skipped'];
+  if (record.schema_version !== BREADCRUMB_JSONL_SCHEMA_VERSION) {
+    throw new Error(`breadcrumb.jsonl 第 ${line} 行 schema_version 必须为 ${BREADCRUMB_JSONL_SCHEMA_VERSION}`);
+  }
+  if (record.kind !== 'breadcrumb') throw new Error(`breadcrumb.jsonl 第 ${line} 行 kind 必须为 breadcrumb`);
+  if (typeof record.taskId !== 'string') throw new Error(`breadcrumb.jsonl 第 ${line} 行 taskId 必须是字符串`);
+  if (typeof record.step !== 'string') throw new Error(`breadcrumb.jsonl 第 ${line} 行 step 必须是字符串`);
+  if (typeof record.status !== 'string' || !statuses.includes(record.status)) {
+    throw new Error(`breadcrumb.jsonl 第 ${line} 行 status 非法`);
+  }
+  if (typeof record.context !== 'string') throw new Error(`breadcrumb.jsonl 第 ${line} 行 context 必须是字符串`);
+  if (typeof record.timestamp !== 'string') throw new Error(`breadcrumb.jsonl 第 ${line} 行 timestamp 必须是字符串`);
+  return record as BreadcrumbJsonlRecord;
+}
+
+function summarizeBreadcrumb(entries: BreadcrumbEntry[]): BreadcrumbSummary {
+  const done = entries.filter((e) => e.status === 'done').length;
+  const inProgress = entries.filter((e) => e.status === 'in_progress').length;
+  const blocked = entries.filter((e) => e.status === 'blocked').length;
+  return {
+    total: entries.length,
+    done,
+    inProgress,
+    blocked,
+    latest: entries.length > 0 ? entries[entries.length - 1] : null,
+    entries,
+  };
+}
+
+async function readBreadcrumbJsonl(projectRoot: string): Promise<BreadcrumbEntry[] | null> {
+  const path = breadcrumbJsonlPath(projectRoot);
+  let content = '';
+  try {
+    content = await readFile(path, 'utf-8');
+  } catch {
+    return null;
+  }
+
+  const entries: BreadcrumbEntry[] = [];
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(line);
+    } catch (error) {
+      throw new Error(`breadcrumb.jsonl 第 ${i + 1} 行不是合法 JSON: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    const record = validateBreadcrumbRecord(parsed, i + 1);
+    entries.push({
+      taskId: record.taskId,
+      step: record.step,
+      status: record.status,
+      context: record.context,
+      timestamp: record.timestamp,
+      ...(record.escalation ? { escalation: record.escalation } : {}),
+    });
+  }
+  return entries;
+}
+
+async function writeBreadcrumbJsonl(projectRoot: string, entries: BreadcrumbEntry[]): Promise<void> {
+  const path = breadcrumbJsonlPath(projectRoot);
+  await mkdir(dirname(path), { recursive: true });
+  const content = entries.map((entry) => JSON.stringify(toJsonlRecord(entry))).join('\n');
+  await writeFileAtomic(path, content ? `${content}\n` : '');
+}
+
+async function appendBreadcrumbJsonl(projectRoot: string, entry: BreadcrumbEntry): Promise<void> {
+  const path = breadcrumbJsonlPath(projectRoot);
+  await mkdir(dirname(path), { recursive: true });
+  await appendFile(path, `${JSON.stringify(toJsonlRecord(entry))}\n`, 'utf-8');
+}
+
+async function renderBreadcrumbMarkdown(projectRoot: string, entries: BreadcrumbEntry[]): Promise<void> {
+  const body = entries.map((entry) => formatEntry(entry)).join('');
+  await writeFileAtomic(breadcrumbPath(projectRoot), BREADCRUMB_HEADER + body);
+}
+
+async function ensureBreadcrumbJsonl(projectRoot: string): Promise<void> {
+  if (await readBreadcrumbJsonl(projectRoot) !== null) return;
+  const legacy = await readBreadcrumbMarkdown(projectRoot);
+  if (legacy.entries.length === 0) return;
+  await writeBreadcrumbJsonl(projectRoot, legacy.entries.slice(-MAX_ENTRIES));
 }
 
 /**
@@ -169,8 +287,9 @@ export async function writeBreadcrumb(
   entry: BreadcrumbEntry,
   reporter: BreadcrumbReporter = (message) => process.stdout.write(`${message}\n`),
 ): Promise<void> {
-  const breadcrumbPath = join(projectRoot, '.docpath', 'workspace', 'breadcrumb.md');
+  const path = breadcrumbPath(projectRoot);
   const ts = entry.timestamp || new Date().toISOString();
+  await ensureBreadcrumbJsonl(projectRoot);
 
   // 去重检查：只针对 done 状态
   if (entry.status === 'done') {
@@ -188,17 +307,19 @@ export async function writeBreadcrumb(
     }
   }
 
-  const line = formatEntry({ ...entry, timestamp: ts });
+  const nextEntry = { ...entry, timestamp: ts };
+  const line = formatEntry(nextEntry);
 
   try {
     // 检查文件是否存在，不存在则写入 header
-    await readFile(breadcrumbPath, 'utf-8');
+    await readFile(path, 'utf-8');
   } catch {
-    await mkdir(dirname(breadcrumbPath), { recursive: true });
-    await writeFile(breadcrumbPath, BREADCRUMB_HEADER, 'utf-8');
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, BREADCRUMB_HEADER, 'utf-8');
   }
 
-  await appendFile(breadcrumbPath, line, 'utf-8');
+  await appendFile(path, line, 'utf-8');
+  await appendBreadcrumbJsonl(projectRoot, nextEntry);
 
   // 截断轮转：超过 MAX_ENTRIES 时裁剪最旧记录
   const trimmed = await truncateBreadcrumb(projectRoot);
@@ -218,11 +339,17 @@ export async function writeBreadcrumb(
  * @param projectRoot 项目根目录
  */
 export async function readBreadcrumb(projectRoot: string): Promise<BreadcrumbSummary> {
-  const breadcrumbPath = join(projectRoot, '.docpath', 'workspace', 'breadcrumb.md');
+  const jsonlEntries = await readBreadcrumbJsonl(projectRoot);
+  if (jsonlEntries !== null) return summarizeBreadcrumb(jsonlEntries);
+  return readBreadcrumbMarkdown(projectRoot);
+}
+
+async function readBreadcrumbMarkdown(projectRoot: string): Promise<BreadcrumbSummary> {
+  const path = breadcrumbPath(projectRoot);
   let content = '';
 
   try {
-    content = await readFile(breadcrumbPath, 'utf-8');
+    content = await readFile(path, 'utf-8');
   } catch {
     return { total: 0, done: 0, inProgress: 0, blocked: 0, latest: null, entries: [] };
   }
@@ -237,18 +364,12 @@ export async function readBreadcrumb(projectRoot: string): Promise<BreadcrumbSum
     if (entry) entries.push(entry);
   }
 
-  const done = entries.filter((e) => e.status === 'done').length;
-  const inProgress = entries.filter((e) => e.status === 'in_progress').length;
-  const blocked = entries.filter((e) => e.status === 'blocked').length;
+  return summarizeBreadcrumb(entries);
+}
 
-  return {
-    total: entries.length,
-    done,
-    inProgress,
-    blocked,
-    latest: entries.length > 0 ? entries[entries.length - 1] : null,
-    entries,
-  };
+export async function readRecentBreadcrumbEntries(projectRoot: string, count: number): Promise<BreadcrumbEntry[]> {
+  const summary = await readBreadcrumb(projectRoot);
+  return summary.entries.slice(-count);
 }
 
 /**

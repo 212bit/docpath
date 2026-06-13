@@ -18,7 +18,7 @@ import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
-import { ANALYSIS_SECTIONS, detectActiveTaskFileDrift, readActiveAnalysisSummary, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
+import { ANALYSIS_SECTIONS, detectActiveTaskFileDrift, readActiveAnalysisSummary, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts, approvalState, hasUiImplementationIntent } from '../utils/ui-gate.js';
 import {
@@ -317,8 +317,7 @@ async function checkMajorDecisionGate(cwd: string, docpathDir: string): Promise<
   if ((state?.level || 0) < 2) return [];
   const signals = collectMajorDecisionSignals(cwd);
   if (signals.length === 0) return [];
-  const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
-  const specContent = existsSync(specPath) ? await readFile(specPath, 'utf-8') : '';
+  const specContent = await readActiveTaskFile(docpathDir, state?.task_id, 'spec.md');
   const confirmed = specHasMajorDecisionConfirmation(specContent);
   return [{
     name: '重大决策确认检查',
@@ -461,9 +460,9 @@ async function evaluateBoundaryRule(ruleId: string, cwd: string, docpathDir: str
 
     case 'bound_scope': {
       try {
-        const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
-        if (!existsSync(planPath)) return { passed: true, output: '无 plan.md，跳过范围检查' };
-        const planContent = await readFile(planPath, 'utf-8');
+        const state = await readCurrentState(cwd);
+        const planContent = await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md');
+        if (!planContent.trim()) return { passed: true, output: '无 plan.md，跳过范围检查' };
         const taskCount = (planContent.match(/- \[[ x]\]/gi) || []).length;
         const passed = taskCount <= 20;
         return { passed, output: passed ? `任务数量: ${taskCount}` : `任务数量过多: ${taskCount}，建议拆分` };
@@ -673,7 +672,7 @@ async function validateTaskDocuments(cwd: string, docpathDir: string): Promise<{
   const progress: TaskPlanProgress = { planDoneCount: 0, planTotalCount: 0 };
 
   if (shouldValidateTaskDocs && existsSync(specPath)) {
-    const specContent = await readFile(specPath, 'utf-8');
+    const specContent = await readActiveTaskFile(docpathDir, workflowState?.task_id, 'spec.md');
     const validation = validateSpecContent(specContent);
     results.push({
       name: 'spec.md 结构校验',
@@ -685,9 +684,9 @@ async function validateTaskDocuments(cwd: string, docpathDir: string): Promise<{
 
   results.push(...await checkMajorDecisionGate(cwd, docpathDir));
 
-  if (!existsSync(planPath)) return { results, progress };
+  const planContent = await readActiveTaskFile(docpathDir, workflowState?.task_id, 'plan.md');
+  if (!planContent.trim()) return { results, progress };
 
-  const planContent = await readFile(planPath, 'utf-8');
   if (shouldValidateTaskDocs) {
     const validation = validatePlanContent(planContent);
     results.push({
@@ -777,7 +776,9 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
   const analysisPath = join(docpathDir, 'tasks', 'current', 'analysis.md');
   const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
   const haystack = [title];
-  for (const file of [specPath, analysisPath, planPath]) {
+  if (existsSync(specPath)) haystack.push(await readActiveTaskFile(docpathDir, taskId, 'spec.md'));
+  if (existsSync(planPath)) haystack.push(await readActiveTaskFile(docpathDir, taskId, 'plan.md'));
+  for (const file of [analysisPath]) {
     if (existsSync(file)) {
       try { haystack.push(await readFile(file, 'utf-8')); } catch { /* ignore */ }
     }

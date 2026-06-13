@@ -13,7 +13,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { transitionWorkflow } from '../engine/transitions.js';
-import { detectActiveTaskFileDrift, syncActiveTaskFiles } from '../utils/task-files.js';
+import { detectActiveTaskFileDrift, readActiveTaskFile, syncActiveTaskFiles } from '../utils/task-files.js';
 import { syncCurrentDocument } from '../utils/workspace.js';
 import { writeHybridContextIndex, readHybridContextIndexSummary } from '../utils/context-index.js';
 import { parsePlanSteps } from '../utils/doc-parser.js';
@@ -502,7 +502,7 @@ export async function compactCommand(options: CompactOptions): Promise<void> {
   const agentOutput = await generateAgentOutput(cwd);
   const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
   const reviewContent = await readOptionalFile(join(docpathDir, 'workspace', 'review.md'));
-  const planContent = await readOptionalFile(join(docpathDir, 'tasks', 'current', 'plan.md'));
+  const planContent = await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md');
   const changeScope = await summarizeChangeScope(cwd);
   const content = renderCompactedContext(
     state,

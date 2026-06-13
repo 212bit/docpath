@@ -2,223 +2,8 @@
 
 > 此文件由 DocPath 自动生成。每完成一个子任务追加一条记录。
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
+> 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
-
-### ✅ review [T-20260613-handoff-agent] — 2026-06-13T13:05:16.454Z
-
----
-taskId: T-20260613-handoff-agent
-step: review
-status: done
-timestamp: 2026-06-13T13:05:16.454Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 3 警告, 0 提示
-
-### ✅ check [T-20260613-handoff-agent] — 2026-06-13T13:05:22.123Z
-
----
-taskId: T-20260613-handoff-agent
-step: check
-status: done
-timestamp: 2026-06-13T13:05:22.123Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ journal [T-20260613-handoff-agent] — 2026-06-13T13:05:38.597Z
-
----
-taskId: T-20260613-handoff-agent
-step: journal
-status: done
-timestamp: 2026-06-13T13:05:38.597Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260613-handoff-agent] — 2026-06-13T13:55:11.392Z
-
----
-taskId: T-20260613-handoff-agent
-step: S1
-status: in_progress
-timestamp: 2026-06-13T13:55:11.392Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 创建 prompt.ts 基础结构
-
-### ✅ S1 [T-20260613-prompt-omx] — 2026-06-13T14:02:38.185Z
-
----
-taskId: T-20260613-prompt-omx
-step: S1
-status: done
-timestamp: 2026-06-13T14:02:38.185Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### ✅ S2 [T-20260613-prompt-omx] — 2026-06-13T14:02:44.807Z
-
----
-taskId: T-20260613-prompt-omx
-step: S2
-status: done
-timestamp: 2026-06-13T14:02:44.807Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### ✅ S3 [T-20260613-prompt-omx] — 2026-06-13T14:02:51.500Z
-
----
-taskId: T-20260613-prompt-omx
-step: S3
-status: done
-timestamp: 2026-06-13T14:02:51.500Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ S4 [T-20260613-prompt-omx] — 2026-06-13T14:03:21.055Z
-
----
-taskId: T-20260613-prompt-omx
-step: S4
-status: done
-timestamp: 2026-06-13T14:03:21.055Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-
-### 🚫 check [T-20260613-prompt-omx] — 2026-06-13T14:04:14.278Z
-
----
-taskId: T-20260613-prompt-omx
-step: check
-status: blocked
-timestamp: 2026-06-13T14:04:14.278Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 任务文件 current/canonical 漂移检查, plan.md 结构校验, Plan/Breadcrumb 漂移检查
-
-### 🚫 check [T-20260613-prompt-omx] — 2026-06-13T14:06:50.732Z
-
----
-taskId: T-20260613-prompt-omx
-step: check
-status: blocked
-timestamp: 2026-06-13T14:06:50.732Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: plan.md 结构校验, ⚠️  Checklist 同步 (0/4), Plan/Breadcrumb 漂移检查
-
-### 🚫 check [T-20260613-prompt-omx] — 2026-06-13T14:08:02.428Z
-
----
-taskId: T-20260613-prompt-omx
-step: check
-status: blocked
-timestamp: 2026-06-13T14:08:02.428Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (0/4), Plan/Breadcrumb 漂移检查
-
-### 🚫 check [T-20260613-prompt-omx] — 2026-06-13T14:09:44.849Z
-
----
-taskId: T-20260613-prompt-omx
-step: check
-status: blocked
-timestamp: 2026-06-13T14:09:44.849Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (0/4), Plan/Breadcrumb 漂移检查
-
-### 🚫 check [T-20260613-prompt-omx] — 2026-06-13T14:11:01.245Z
-
----
-taskId: T-20260613-prompt-omx
-step: check
-status: blocked
-timestamp: 2026-06-13T14:11:01.245Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (0/4)
-
-### ✅ check [T-20260613-prompt-omx] — 2026-06-13T14:13:31.243Z
-
----
-taskId: T-20260613-prompt-omx
-step: check
-status: done
-timestamp: 2026-06-13T14:13:31.243Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260613-prompt-omx] — 2026-06-13T14:13:40.120Z
-
----
-taskId: T-20260613-prompt-omx
-step: review
-status: done
-timestamp: 2026-06-13T14:13:40.120Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 1 警告, 0 提示
-
-### ✅ journal [T-20260613-prompt-omx] — 2026-06-13T14:13:48.326Z
-
----
-taskId: T-20260613-prompt-omx
-step: journal
-status: done
-timestamp: 2026-06-13T14:13:48.326Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (4/4 步)
-
-### 🔄 S1 [T-20260613-prompt-omx] — 2026-06-13T14:25:27.068Z
-
----
-taskId: T-20260613-prompt-omx
-step: S1
-status: in_progress
-timestamp: 2026-06-13T14:25:27.068Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 修复 plan 生成格式
-
-### ✅ S1 [T-20260613-optimize-workflow] — 2026-06-13T14:31:05.270Z
-
----
-taskId: T-20260613-optimize-workflow
-step: S1
-status: done
-timestamp: 2026-06-13T14:31:05.270Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
 
 ### 🔄 S2 [T-20260613-optimize-workflow] — 2026-06-13T14:31:11.672Z
 
@@ -603,3 +388,219 @@ timestamp: 2026-06-13T15:33:08.140Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (3/3 步)
+
+### 🔄 S1 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:29:10.010Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S1
+status: in_progress
+timestamp: 2026-06-13T17:29:10.010Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理 引入 schema-first 结构化真源
+
+### ✅ S1 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:30:10.877Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S1
+status: done
+timestamp: 2026-06-13T17:30:10.877Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S2 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:30:53.302Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S2
+status: in_progress
+timestamp: 2026-06-13T17:30:53.302Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 plan.json 与 spec.json 真源
+
+### ✅ S2 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:36:37.607Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S2
+status: done
+timestamp: 2026-06-13T17:36:37.607Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+
+### 🔄 S3 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:36:48.732Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S3
+status: in_progress
+timestamp: 2026-06-13T17:36:48.732Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 breadcrumb.jsonl 事件流
+
+### ✅ S3 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:38:59.076Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S3
+status: done
+timestamp: 2026-06-13T17:38:59.076Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+
+### 🔄 S4 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:39:07.713Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S4
+status: in_progress
+timestamp: 2026-06-13T17:39:07.713Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 decisions.jsonl 事件流
+
+### ✅ S4 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:44:39.782Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S4
+status: done
+timestamp: 2026-06-13T17:44:39.782Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+
+### 🔄 S5 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:44:49.087Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S5
+status: in_progress
+timestamp: 2026-06-13T17:44:49.087Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 收敛核心命令读路径与迁移入口
+
+### ✅ S5 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:44:56.070Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S5
+status: done
+timestamp: 2026-06-13T17:44:56.070Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S5
+
+### 🔄 S6 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:45:04.734Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S6
+status: in_progress
+timestamp: 2026-06-13T17:45:04.734Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 补充兼容与回归测试
+
+### ✅ S6 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:48:07.845Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S6
+status: done
+timestamp: 2026-06-13T17:48:07.845Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S6
+
+### 🔄 S7 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:48:16.925Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S7
+status: in_progress
+timestamp: 2026-06-13T17:48:16.925Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 验证门禁并归档
+
+### ✅ S7 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:49:30.943Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: S7
+status: done
+timestamp: 2026-06-13T17:49:30.943Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S7
+
+### 🚫 check [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:50:31.149Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: check
+status: blocked
+timestamp: 2026-06-13T17:50:31.149Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: TypeScript 编译
+
+### ✅ check [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:52:00.386Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: check
+status: done
+timestamp: 2026-06-13T17:52:00.386Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:52:08.411Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: review
+status: done
+timestamp: 2026-06-13T17:52:08.411Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 12 警告, 0 提示
+
+### ✅ journal [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:52:30.423Z
+
+---
+taskId: T-20260613-schema-first-json-jsonl
+step: journal
+status: done
+timestamp: 2026-06-13T17:52:30.423Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (7/7 步)
