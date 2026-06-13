@@ -36,6 +36,8 @@ export interface AgentOutput {
   next_action: string;
   /** 推荐的 docpath 命令 */
   recommended_command: string;
+  /** 快速修复建议（检测到常见错误时提供） */
+  quick_fix?: string;
   /** 需要读取的上下文文件列表 */
   required_context: string[];
   /** required_context 的机器友好别名 */
@@ -267,6 +269,7 @@ type AgentOutputContext = {
   state: Awaited<ReturnType<typeof readCurrentMd>>;
   lastCheckContent: string;
   hasSpec: boolean;
+  planContent: string;
   planTasks: Array<{ id: string; title: string; done: boolean }>;
   bc: BreadcrumbSummary;
   drift: PlanBreadcrumbDrift;
@@ -622,6 +625,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
   const hasSpec = existsSync(join(docpathDir, 'tasks', 'current', 'spec.md'));
   const specContent = hasSpec ? await readOptionalFile(join(docpathDir, 'tasks', 'current', 'spec.md')) : '';
+  const planContent = await readOptionalFile(join(docpathDir, 'tasks', 'current', 'plan.md'));
   const planTasks = await resolveEffectivePlanTasks(cwd);
   const rawBreadcrumb = await readBreadcrumb(cwd);
   const bc = summarizeCurrentTaskBreadcrumbs(rawBreadcrumb, state?.task_id || '');
@@ -645,6 +649,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     state,
     lastCheckContent,
     hasSpec,
+    planContent,
     planTasks,
     bc,
     drift,
@@ -659,6 +664,31 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     contextIndexTrunk,
     contextIndexLeaves,
   };
+}
+
+/**
+ * 生成快速修复建议
+ */
+function generateQuickFix(context: AgentOutputContext): string | undefined {
+  const { drift, state, planContent } = context;
+
+  // 1. plan 缺少 checklist
+  if (planContent && !planContent.includes('## Checklist')) {
+    return 'docpath tasks sync --from current';
+  }
+
+  // 2. breadcrumb 漂移
+  if (drift.breadcrumbDoneWithoutPlan.length > 0) {
+    const firstStep = drift.breadcrumbDoneWithoutPlan[0];
+    return `docpath agent step --step "${firstStep}" --status done`;
+  }
+
+  // 3. plan/canonical 不同步
+  if (state?.gate === 'check_fail' && state.current_step?.includes('任务文件 current/canonical 漂移')) {
+    return 'docpath tasks sync --from current';
+  }
+
+  return undefined;
 }
 
 function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof inferNextAction> {
@@ -715,6 +745,7 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
 
   const context = await loadAgentOutputContext(cwd, docpathDir);
   const inferred = inferRouteFromContext(context);
+  const quickFix = generateQuickFix(context);
 
   const output: AgentOutput = {
     state: context.state?.state || 'unknown',
@@ -724,6 +755,7 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
     phase: context.state?.phase || '',
     gate: context.state?.gate || 'none',
     ...inferred,
+    ...(quickFix ? { quick_fix: quickFix } : {}),
     required_context: [...inferred.required_context],
     required_files: [...inferred.required_files],
     must_update: [...inferred.must_update],

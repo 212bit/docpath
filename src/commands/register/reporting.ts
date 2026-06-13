@@ -4,6 +4,7 @@ import { contextCommand } from '../context.js';
 import { dashboardCommand } from '../dashboard.js';
 import { deliverablesCommand } from '../deliverables.js';
 import { exportCommand } from '../export.js';
+import { promptAction } from '../prompt.js';
 import { projectsCommand } from '../projects.js';
 import { rolesCommand } from '../roles.js';
 import { statsCommand } from '../stats.js';
@@ -136,6 +137,18 @@ function registerDashboardCommand(cli: CAC): void {
     });
 }
 
+function registerPromptCommand(cli: CAC): void {
+  cli.command('prompt', '输出结构化 prompt（支持 OMX 风格）')
+    .option('--cwd <path>', '项目目录')
+    .option('--style <style>', '输出风格: omx(默认)', { default: 'omx' })
+    .action(async (options: { cwd?: string; style?: string }) => {
+      await promptAction({
+        cwd: options.cwd || process.cwd(),
+        style: options.style,
+      });
+    });
+}
+
 export function registerReportingCommands(cli: CAC): void {
   registerChangesCommand(cli);
   registerContextCommand(cli);
@@ -145,4 +158,5 @@ export function registerReportingCommands(cli: CAC): void {
   registerStatsCommand(cli);
   registerProjectsCommand(cli);
   registerDashboardCommand(cli);
+  registerPromptCommand(cli);
 }

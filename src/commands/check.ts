@@ -49,6 +49,8 @@ interface CheckOptions {
   force?: boolean;
   /** 检测到 active task 文件漂移时按指定来源自动同步 */
   fixDrift?: 'canonical' | 'current';
+  /** 显示所有检查项（包括成功项） */
+  verbose?: boolean;
 }
 
 interface CheckResult {
@@ -1142,7 +1144,7 @@ function groupCheckResults(results: CheckResult[]): Record<string, CheckResult[]
   return categories;
 }
 
-function printCheckReport(results: CheckResult[], allPassed: boolean): void {
+function printCheckReport(results: CheckResult[], allPassed: boolean, verbose = false): void {
   const categoryNames: Record<string, string> = {
     compile: '📝 编译检查',
     test: '🧪 测试检查',
@@ -1157,13 +1159,28 @@ function printCheckReport(results: CheckResult[], allPassed: boolean): void {
   };
 
   for (const [category, categoryResults] of Object.entries(groupCheckResults(results))) {
+    // 非 verbose 模式：统计成功项
+    const passed = categoryResults.filter(r => r.passed && !r.severity);
+    const failed = categoryResults.filter(r => !r.passed);
+    const warnings = categoryResults.filter(r => r.severity === 'warning');
+
+    if (!verbose && failed.length === 0 && warnings.length === 0) {
+      // 只显示汇总
+      console.log(`\n${categoryNames[category] || category}:`);
+      console.log(`  ✅  ${passed.length} 项通过`);
+      continue;
+    }
+
     console.log(`\n${categoryNames[category] || category}:`);
     for (const result of categoryResults) {
-      const icon = result.severity === 'warning' ? '⚠️' : result.passed ? '✅' : '❌';
-      console.log(`  ${icon}  ${result.name}`);
-      if ((!result.passed || result.severity === 'warning') && result.output) {
-        for (const line of formatFailedOutput(result.output)) {
-          console.log(line);
+      // verbose 模式显示所有项，否则只显示失败和警告
+      if (verbose || !result.passed || result.severity === 'warning') {
+        const icon = result.severity === 'warning' ? '⚠️' : result.passed ? '✅' : '❌';
+        console.log(`  ${icon}  ${result.name}`);
+        if ((!result.passed || result.severity === 'warning') && result.output) {
+          for (const line of formatFailedOutput(result.output)) {
+            console.log(line);
+          }
         }
       }
     }
@@ -1294,7 +1311,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   }
 
   const allPassed = results.every(r => r.passed);
-  printCheckReport(results, allPassed);
+  printCheckReport(results, allPassed, options.verbose);
   await persistCheckEvidence(cwd, docpathDir, current?.task_id || 'unknown', results, allPassed);
 
   if (!allPassed) {

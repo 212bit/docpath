@@ -148,8 +148,17 @@ export async function truncateBreadcrumb(projectRoot: string): Promise<number> {
 }
 
 /**
+ * 归一化步骤名：S1: xxx → S1, S1 → S1
+ */
+function normalizeStepName(step: string): string {
+  const match = step.match(/^(S\d+(?:\.\d+)?)/);
+  return match ? match[1] : step;
+}
+
+/**
  * 写入一条面包屑记录
  *
+ * 追加前检查去重：如果同一任务中已有相同步骤（归一化后）的 done 记录，则跳过。
  * 追加后自动执行截断轮转（保留最近 MAX_ENTRIES 条）。
  *
  * @param projectRoot 项目根目录 (包含 .docpath/ 的目录)
@@ -162,6 +171,23 @@ export async function writeBreadcrumb(
 ): Promise<void> {
   const breadcrumbPath = join(projectRoot, '.docpath', 'workspace', 'breadcrumb.md');
   const ts = entry.timestamp || new Date().toISOString();
+
+  // 去重检查：只针对 done 状态
+  if (entry.status === 'done') {
+    const summary = await readBreadcrumb(projectRoot);
+    const normalizedStep = normalizeStepName(entry.step);
+    const existingDone = summary.entries.find(
+      (e) => e.taskId === entry.taskId &&
+             normalizeStepName(e.step) === normalizedStep &&
+             e.status === 'done'
+    );
+
+    if (existingDone) {
+      reporter(`⚠️  步骤 ${entry.step} 已完成（记录时间: ${existingDone.timestamp}），跳过重复记录`);
+      return;
+    }
+  }
+
   const line = formatEntry({ ...entry, timestamp: ts });
 
   try {

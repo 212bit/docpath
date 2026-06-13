@@ -3,13 +3,13 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260613-handoff-agent
-task_title: 强化 handoff 交接包，支持多人 / 多 Agent 接力恢复
+task_id: T-20260613-optimize-workflow
+task_title: 优化 DocPath 工作流效率，减少 token 浪费
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-13T13:05:38.596Z
-updated_at: 2026-06-13T13:05:38.596Z
+started_at: 2026-06-13T15:02:19.717Z
+updated_at: 2026-06-13T15:02:19.716Z
 ```
 
 > 📖 规约: [spec.md](../tasks/current/spec.md)
@@ -21,8 +21,8 @@ updated_at: 2026-06-13T13:05:38.596Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-13T13:05:22.221Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ journal [T-20260613-handoff-agent] — 2026-06-13T13:05:38.597Z · 状态: done · 知识归档完成 (3/3 步)
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-13T15:01:49.128Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260613-optimize-workflow] — 2026-06-13T15:02:05.790Z · 状态: done · 代码审查: 0 错误, 6 警告, 0 提示
 
 ## 🔄 同步说明
 

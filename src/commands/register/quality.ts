@@ -15,7 +15,8 @@ export function registerQualityCommands(cli: CAC): void {
     .option('--boundary', '仅执行 boundary 检查')
     .option('--only-harness', '仅执行 harness 检查，跳过编译/测试/lint')
     .option('--fix-drift <source>', '检测到任务文件漂移时自动同步: canonical | current')
-    .action(async (options: { cwd?: string; 'skip-tests'?: boolean; 'skip-lint'?: boolean; harness?: boolean; preflight?: boolean; boundary?: boolean; 'only-harness'?: boolean; 'fix-drift'?: string; fixDrift?: string }) => {
+    .option('--verbose', '显示所有检查项（包括成功项）')
+    .action(async (options: { cwd?: string; 'skip-tests'?: boolean; 'skip-lint'?: boolean; harness?: boolean; preflight?: boolean; boundary?: boolean; 'only-harness'?: boolean; 'fix-drift'?: string; fixDrift?: string; verbose?: boolean }) => {
       const argv = process.argv.slice(2);
       const hasFlag = (flag: string) => argv.includes(flag);
       const skipTests = options['skip-tests'] || hasFlag('--skip-tests');
@@ -25,6 +26,7 @@ export function registerQualityCommands(cli: CAC): void {
       const boundary = options.boundary || hasFlag('--boundary');
       const onlyHarness = options['only-harness'] || hasFlag('--only-harness');
       const fixDrift = normalizeTaskFileSyncSource(options['fix-drift'] || options.fixDrift || getOptionValue(argv, '--fix-drift'), 'check --fix-drift');
+      const verbose = options.verbose || hasFlag('--verbose');
 
       await checkCommand({
         cwd: options.cwd || process.cwd(),
@@ -35,6 +37,7 @@ export function registerQualityCommands(cli: CAC): void {
         boundary,
         onlyHarness,
         fixDrift,
+        verbose,
       });
     });
 

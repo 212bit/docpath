@@ -13729,3 +13729,57 @@ agent-step: S4
 - 未记录相关文件。
 
 ---
+## ADR-20260613-003 — review
+
+- task_id: T-20260613-prompt-omx
+- created_at: 2026-06-13T14:13:40.118Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 1 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+## ADR-20260613-004 — review
+
+- task_id: T-20260613-optimize-workflow
+- created_at: 2026-06-13T15:02:05.788Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 6 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---

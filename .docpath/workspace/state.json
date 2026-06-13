@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260613-handoff-agent",
-  "task_title": "强化 handoff 交接包，支持多人 / 多 Agent 接力恢复",
+  "task_id": "T-20260613-optimize-workflow",
+  "task_title": "优化 DocPath 工作流效率，减少 token 浪费",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-13T13:05:38.596Z",
-  "updated_at": "2026-06-13T13:05:38.596Z"
+  "started_at": "2026-06-13T15:02:19.717Z",
+  "updated_at": "2026-06-13T15:02:19.716Z"
 }

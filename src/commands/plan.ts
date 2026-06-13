@@ -50,6 +50,11 @@ const PLAN_SYSTEM_PROMPT = `你是一个项目计划专家。根据用户提供�
 
 ...（继续直到所有需求被覆盖）
 
+## Checklist
+- [ ] S1
+- [ ] S2
+...
+
 ## 依赖关系图
 S1 → S2 → S4
 S1 → S3 → S5
@@ -96,6 +101,11 @@ function renderDraftPlan(spec: string): string {
     '- **描述**: 运行相关测试、docpath check/review/journal，完成任务归档。',
     '- **验收条件**: 质量门禁通过，任务状态进入 completed。',
     '- **依赖**: S2',
+    '',
+    '## Checklist',
+    '- [ ] S1',
+    '- [ ] S2',
+    '- [ ] S3',
     '',
     '## 依赖关系图',
     'S1 → S2 → S3',
@@ -161,6 +171,10 @@ function emitPlanPrompt(spec: string, analysis = ''): void {
       '- **描述**: xxx',
       '- **验收条件**: xxx',
       '- **依赖**: S1',
+      '',
+      '## Checklist',
+      '- [ ] S1',
+      '- [ ] S2',
       '',
       '## 依赖关系图',
       'S1 → S2 → S4',
