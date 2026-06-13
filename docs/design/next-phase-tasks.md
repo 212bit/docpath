@@ -6,6 +6,8 @@
 
 ## 1. 背景
 
+2026-06-13 定位更新：DocPath 当前阶段定位为“多人 / 多 Agent 开发团队的 AI 工作流状态层”，详见 [DocPath 多人团队定位与协作路线图](./team-workflow-positioning.md)。后续路线图应优先围绕交接、恢复、任务归属、门禁可见和多 Agent 冲突检测展开；完整 RBAC、SSO、法务审计报表、不可篡改账本和多租户企业控制台暂不进入当前主线。
+
 DocPath 当前已经具备三类基础能力：
 
 - 状态机与 `.docpath/workspace/state.json`，用于保存任务状态。

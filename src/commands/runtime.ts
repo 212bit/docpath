@@ -3,8 +3,10 @@
  * lightweight discovery, and next-action routing.
  */
 
+import { execFile } from 'node:child_process';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
+import { promisify } from 'node:util';
 import { parse as parseYaml } from 'yaml';
 import { readCurrentState, readOptionalFile } from '../utils/workspace.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -14,6 +16,9 @@ import { transitionWorkflow } from '../engine/transitions.js';
 import { detectActiveTaskFileDrift, syncActiveTaskFiles } from '../utils/task-files.js';
 import { syncCurrentDocument } from '../utils/workspace.js';
 import { writeHybridContextIndex, readHybridContextIndexSummary } from '../utils/context-index.js';
+import { parsePlanSteps } from '../utils/doc-parser.js';
+
+const execFileAsync = promisify(execFile);
 
 type RuntimeState = NonNullable<Awaited<ReturnType<typeof readCurrentState>>>;
 
@@ -159,6 +164,94 @@ function summarizeLastCheck(lastCheckContent: string): string {
     : `${result} (${time})`;
 }
 
+function summarizeReview(reviewContent: string): string {
+  if (!reviewContent.trim()) return '未找到 review.md';
+  const status = reviewContent.match(/^\*\*(?:状态|结果)\*\*:\s*(.+)$/m)?.[1]?.trim() || '未知';
+  const time = reviewContent.match(/^\*\*时间\*\*:\s*(.+)$/m)?.[1]?.trim() || '未知时间';
+  const findings = reviewContent
+    .split('\n')
+    .filter((line) => /^-\s*(?:❌|⚠️)/.test(line.trim()))
+    .map((line) => line.replace(/^-\s*/, '').trim())
+    .slice(0, 5);
+  return findings.length > 0
+    ? `${status} (${time}); 关注项: ${findings.join(', ')}`
+    : `${status} (${time})`;
+}
+
+function summarizePlanForHandoff(planContent: string): string {
+  const steps = parsePlanSteps(planContent);
+  if (steps.length === 0) return '未找到可解析计划步骤';
+  const done = steps.filter((step) => step.done).length;
+  const blocked = steps.filter((step) => step.marker === '!').length;
+  const next = steps.find((step) => !step.done && step.marker !== '~');
+  return next
+    ? `${done}/${steps.length} 完成，${blocked} 阻塞；下一步 ${next.id}: ${next.name}`
+    : `${done}/${steps.length} 完成，${blocked} 阻塞；计划步骤已全部处理`;
+}
+
+function isPassSummary(summary: string): boolean {
+  return /PASS|✅/.test(summary) && !/FAIL|❌|未找到|未知/.test(summary);
+}
+
+function buildReadiness(state: RuntimeState, view: CompactedContextView): { status: string; guidance: string; risks: string[] } {
+  const risks: string[] = [];
+  const gate = state.gate || 'none';
+
+  if (/fail|blocked/.test(gate)) {
+    risks.push(`当前 gate=${gate}，必须先处理失败门禁或阻塞项。`);
+  }
+  if (view.blockedSteps.length > 0) {
+    risks.push(`存在 ${view.blockedSteps.length} 个阻塞 breadcrumb。`);
+  }
+  if (!isPassSummary(view.lastCheckSummary)) {
+    risks.push(`check 未通过或缺失：${view.lastCheckSummary}`);
+  }
+  if (!isPassSummary(view.reviewSummary)) {
+    risks.push(`review 未通过或缺失：${view.reviewSummary}`);
+  }
+
+  if (/fail|blocked/.test(gate) || view.blockedSteps.length > 0) {
+    return {
+      status: 'blocked',
+      guidance: '不要直接继续完成任务；先按 recommended_command 处理阻塞，再重新运行 check/review。',
+      risks,
+    };
+  }
+
+  if (risks.length > 0) {
+    return {
+      status: 'not_ready_to_finish',
+      guidance: '可以继续接手执行，但不能声明完成；先补齐或修复 check/review 证据。',
+      risks,
+    };
+  }
+
+  return {
+    status: 'ready_for_handoff',
+    guidance: '可以接手下一步；执行前仍需确认工作区未发生新的外部变更。',
+    risks: ['未发现阻塞态；仍需按 recommended_command 恢复。'],
+  };
+}
+
+async function summarizeChangeScope(cwd: string): Promise<string[]> {
+  try {
+    const { stdout } = await execFileAsync('git', ['status', '--short'], { cwd, timeout: 5000 });
+    const lines = stdout
+      .split('\n')
+      .map((line) => line.trimEnd())
+      .filter(Boolean);
+
+    if (lines.length === 0) return ['- git_status: clean'];
+    return [
+      `- git_status: ${lines.length} dirty paths`,
+      ...lines.slice(0, 12).map((line) => `- ${line}`),
+      ...(lines.length > 12 ? [`- ... ${lines.length - 12} more paths`] : []),
+    ];
+  } catch {
+    return ['- git_status: unavailable (not a git repository or git not available)'];
+  }
+}
+
 type CompactedContextView = {
   entries: Awaited<ReturnType<typeof readBreadcrumb>>['entries'];
   latestEntries: Awaited<ReturnType<typeof readBreadcrumb>>['entries'];
@@ -170,6 +263,9 @@ type CompactedContextView = {
   progressLine: string;
   recentFailures: string[];
   lastCheckSummary: string;
+  reviewSummary: string;
+  planSummary: string;
+  changeScope: string[];
 };
 
 function buildCompactedContextView(
@@ -177,6 +273,9 @@ function buildCompactedContextView(
   keepEntries: number,
   agentOutput: string,
   lastCheckContent: string,
+  reviewContent: string,
+  planContent: string,
+  changeScope: string[],
 ): CompactedContextView {
   const entries = breadcrumb.entries.slice(-keepEntries);
   const latestEntries = uniqueLatestByStep(breadcrumb.entries);
@@ -186,6 +285,8 @@ function buildCompactedContextView(
   const nextAction = extractScalarFromAgentYaml(agentOutput, 'next_action') || '运行 docpath next --agent';
   const requiredFiles = extractRequiredFiles(agentOutput);
   const lastCheckSummary = summarizeLastCheck(lastCheckContent);
+  const reviewSummary = summarizeReview(reviewContent);
+  const planSummary = summarizePlanForHandoff(planContent);
   return {
     entries,
     latestEntries,
@@ -199,6 +300,9 @@ function buildCompactedContextView(
       ? blockedSteps.map((e) => `${e.step}: ${e.context || 'blocked'}`)
       : [lastCheckSummary],
     lastCheckSummary,
+    reviewSummary,
+    planSummary,
+    changeScope,
   };
 }
 
@@ -231,6 +335,7 @@ function renderBreadcrumbList(
 }
 
 function renderCompactedOverview(state: RuntimeState, view: CompactedContextView): string[] {
+  const readiness = buildReadiness(state, view);
   return [
     `# Context Handoff — ${state.task_id || 'unknown'}`,
     '',
@@ -251,6 +356,24 @@ function renderCompactedOverview(state: RuntimeState, view: CompactedContextView
     `- next_action: ${view.nextAction}`,
     `- recommended_command: ${view.recommendedCommand}`,
     '',
+    '## Handoff Readiness',
+    '',
+    `- status: ${readiness.status}`,
+    `- guidance: ${readiness.guidance}`,
+    '',
+    '## Remaining Risks',
+    '',
+    ...readiness.risks.map((item) => `- ${item}`),
+    '',
+    '## Verification Status',
+    '',
+    `- last_check: ${view.lastCheckSummary}`,
+    `- review: ${view.reviewSummary}`,
+    '',
+    '## Change Scope',
+    '',
+    ...view.changeScope,
+    '',
     '## Required Reading',
     '',
     ...renderRequiredFiles(view.requiredFiles),
@@ -261,9 +384,10 @@ function renderResumeProtocol(): string[] {
   return [
     '## Resume Protocol',
     '',
-    '1. 先读 `.docpath/workspace/current.md`。',
-    '2. 再读本文件中的 `Next Agent Route`。',
-    '3. 按 `recommended_command` 执行下一步，除非当前工作区状态已经变化。',
+    '1. 下一个人 / 下一个 Agent 先读 `.docpath/workspace/compact-context.md` 与 `.docpath/workspace/current.md`。',
+    '2. 再核对 `Verification Status`、`Remaining Risks`、`Change Scope` 与 `Next Agent Route`。',
+    '3. 如果 readiness 是 `blocked` 或 `not_ready_to_finish`，先处理阻塞或补齐验证，不要直接声明完成。',
+    '4. 按 `recommended_command` 执行下一步，除非当前工作区状态已经变化。',
   ];
 }
 
@@ -301,11 +425,20 @@ function renderProgressDetails(view: CompactedContextView): string[] {
     '## Verification Evidence',
     '',
     `- last_check: ${view.lastCheckSummary}`,
+    `- review: ${view.reviewSummary}`,
+    `- plan: ${view.planSummary}`,
     `- breadcrumb_events_kept: ${view.entries.length}`,
     '',
     '## Required Files Before Resume',
     '',
-    ...renderRequiredFiles(view.requiredFiles),
+    ...[
+      '.docpath/workspace/current.md',
+      '.docpath/workspace/breadcrumb.md',
+      '.docpath/workspace/last-check.md',
+      '.docpath/workspace/review.md',
+      '.docpath/tasks/current/plan.md',
+      ...view.requiredFiles,
+    ].filter((file, index, list) => list.indexOf(file) === index).map((file) => `- ${file}`),
   ];
 }
 
@@ -329,9 +462,20 @@ function renderCompactedContext(
   keepEntries: number,
   agentOutput: string,
   lastCheckContent: string,
+  reviewContent: string,
+  planContent: string,
+  changeScope: string[],
   contextIndexSummary: Awaited<ReturnType<typeof readHybridContextIndexSummary>>,
 ): string {
-  const view = buildCompactedContextView(breadcrumb, keepEntries, agentOutput, lastCheckContent);
+  const view = buildCompactedContextView(
+    breadcrumb,
+    keepEntries,
+    agentOutput,
+    lastCheckContent,
+    reviewContent,
+    planContent,
+    changeScope,
+  );
   return [
     ...renderCompactedOverview(state, view),
     ...renderContextIndexReference(contextIndexSummary),
@@ -357,7 +501,20 @@ export async function compactCommand(options: CompactOptions): Promise<void> {
   const contextIndexSummary = await readHybridContextIndexSummary(cwd);
   const agentOutput = await generateAgentOutput(cwd);
   const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
-  const content = renderCompactedContext(state, breadcrumb, keepEntries, agentOutput, lastCheckContent, contextIndexSummary);
+  const reviewContent = await readOptionalFile(join(docpathDir, 'workspace', 'review.md'));
+  const planContent = await readOptionalFile(join(docpathDir, 'tasks', 'current', 'plan.md'));
+  const changeScope = await summarizeChangeScope(cwd);
+  const content = renderCompactedContext(
+    state,
+    breadcrumb,
+    keepEntries,
+    agentOutput,
+    lastCheckContent,
+    reviewContent,
+    planContent,
+    changeScope,
+    contextIndexSummary,
+  );
   const output = join(docpathDir, 'workspace', 'compact-context.md');
 
   if (options.dryRun) {

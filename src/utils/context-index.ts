@@ -90,7 +90,7 @@ function extractGoal(specContent: string, taskTitle: string): string {
   ];
   for (const pattern of patterns) {
     const summary = sectionSummary(specContent, pattern, '');
-    if (summary && summary.length > 20) return summary;
+    if (summary) return summary;
   }
   return taskTitle || '未提取目标';
 }

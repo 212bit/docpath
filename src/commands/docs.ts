@@ -162,8 +162,8 @@ async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<P
 
 async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentIndexEntry[]): Promise<string> {
   const docsIndexPath = join(docpathDir, 'docs-index.json');
+  const docsMdPath = join(docpathDir, 'docs.md');
 
-  // 不再生成 docs.md (已替换为静态 INDEX.md)
   await writeFile(docsIndexPath, JSON.stringify({
     version: PROJECT_DOCS_INDEX_VERSION,
     generated_at: new Date().toISOString(),
@@ -174,6 +174,8 @@ async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentInde
     },
     entries,
   }, null, 2), 'utf-8');
+  // 保留 docs.md 作为人类可读兼容索引；机器读取以 docs-index.json 为准。
+  await writeFile(docsMdPath, generateDocsMd(entries), 'utf-8');
 
   return docsIndexPath;
 }
