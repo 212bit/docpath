@@ -52,14 +52,17 @@ async function scanDirectory(dir: string, baseDir: string): Promise<string[]> {
 
     for (const entry of entries) {
       const fullPath = join(dir, entry.name);
+      const relativePath = relative(baseDir, fullPath);
 
       if (entry.isDirectory()) {
         // 跳过 node_modules 和隐藏目录
         if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+        // R-179: 跳过运行时目录（workspace/commands/bin/ 等）
+        if (relativePath === 'workspace/commands' || relativePath === 'workspace/bin' || relativePath === 'workspace/leases' || relativePath === 'workspace/sessions') continue;
         const subResults = await scanDirectory(fullPath, baseDir);
         results.push(...subResults);
       } else if (entry.isFile() && extname(entry.name) === '.md') {
-        results.push(relative(baseDir, fullPath));
+        results.push(relativePath);
       }
     }
   } catch { /* ignore permission errors */ }
@@ -140,12 +143,14 @@ async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<P
   const entries: ProjectDocumentIndexEntry[] = [];
   const currentTaskId = await readCurrentTaskId(docpathDir);
   const hasPreferredRules = existsSync(join(docpathDir, 'rules'));
+  const now = Date.now();
+  const ARCHIVE_AGE_THRESHOLD = 180 * 24 * 60 * 60 * 1000; // 180 天
 
   for (const file of mdFiles) {
     const fullPath = join(docpathDir, file);
     const fileStat = await stat(fullPath);
     const content = await readFile(fullPath, 'utf-8');
-    entries.push(buildProjectDocumentEntry({
+    const entry = buildProjectDocumentEntry({
       path: file,
       size: fileStat.size,
       mtime: fileStat.mtime,
@@ -154,7 +159,18 @@ async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<P
       summary: extractSummaryFromContent(fullPath, content),
       currentTaskId,
       hasPreferredRules,
-    }));
+    });
+
+    // R-179: 物理移除 180 天前的归档条目（跳过不索引）
+    if (entry.archive) {
+      const age = now - fileStat.mtime.getTime();
+      if (age > ARCHIVE_AGE_THRESHOLD) {
+        // 跳过此归档条目，不添加到索引中
+        continue;
+      }
+    }
+
+    entries.push(entry);
   }
 
   return entries;

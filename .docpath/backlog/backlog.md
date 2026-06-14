@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-14T17:29:33.262Z
+> 扫描时间: 2026-06-14T17:37:12.789Z
 
 ## 条目列表
 
@@ -31,6 +31,8 @@
 | R-165 | 修复 dogfood 暴露的生命周期与证据模型问题 | done | P0 | 3 | T-20260614-dogfood |
 | R-168 | 建立 backlog 需求成熟度门禁与 spec 回填闭环 | done | P0 | 3 | T-20260614-backlog-spec |
 | R-170 | 收紧文档索引生成视图与空任务路由边界 | done | P0 | 3 | T-20260614-task |
+| R-178 | workspace 老化策略 — 实现自动清理 | proposed | P0 | 2 |  |
+| R-179 | docs-index 归档策略 — 物理移除旧条目 | proposed | P0 | 2 |  |
 | R-010 | 需求管理 / Backlog 层 | done | P1 | 2 | current |
 | R-011 | 实现 write-plan / write-journal 命令并打通断头引用 | done | P1 | 2 | T-20260531-write-plan-write-journal |
 | R-012 | 接活 lifecycle.ts 事件系统并打通 agent enter/done 哨兵副作用 | done | P1 | 2 | T-20260531-lifecycle-ts-agent-enter-done |
@@ -134,6 +136,7 @@
 | R-175 | 修复 backlog capture 无活跃任务时 analyze 建议缺少 --dry-run | done | P2 | 2 | T-20260614-backlog-capture-analyze-dry-run |
 | R-176 | 将 agent 启动协议改为单命令 next --agent | done | P2 | 2 | T-20260614-agent-next-agent |
 | R-177 | 前置重大变更门禁、明确 next/go 边界并统一 next_hint 输出 | done | P2 | 3 | T-20260614-next-go-next-hint |
+| R-180 | 技术债务清理 — 删除废弃文件和未使用依赖 | proposed | P2 | 1 |  |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 
 ## 用途说明
