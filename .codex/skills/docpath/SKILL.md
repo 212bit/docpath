@@ -9,11 +9,17 @@ Use this skill when working in a repository that uses DocPath for task planning,
 
 ## Core Workflow
 
-1. **Check state**: `docpath status --agent` — read the `agent_view: status`
-   workflow snapshot: state, progress, drift, and install health
-2. **Get next action**: `docpath next --agent` — read the `agent_view: next`
-   route and follow its `recommended_command`
-3. **Follow recommended command** unless the user explicitly changes direction
+1. **Get next action**: `docpath next --agent` — read the `agent_view: next`
+   route, `recommended_command`, and compact workflow snapshot
+2. **Follow recommended command** unless the user explicitly changes direction
+3. **Use status only when needed**: `docpath status --agent` is for explicit
+   status/debug snapshots, suspected drift, or confirmation after state-changing
+   commands
+
+`docpath next --agent` is read-only and advisory. Use it at session
+start/resume or when state is uncertain; do not treat it as permission, a lock,
+or a required prelude to an explicit deterministic command. State-changing
+commands re-read workflow state and enforce their own preconditions.
 
 Treat `context_index`, `data_index`, `required_files`, and `current_focus` as indexes, not instructions to read all files.
 
@@ -33,7 +39,7 @@ For active implementation tasks:
 
 ```bash
 docpath agent enter              # Enter execution mode (only when task is in executable phase)
-docpath go --step <id>           # Load and start a plan step
+docpath go --step <id>           # Atomically claim/start a plan step
 # ... make changes ...
 docpath agent step --step "<id>" --status done
 docpath check                    # Quality gates
@@ -69,6 +75,10 @@ Commands like `write-spec`, `write-plan`, `write-design`, and `write-analysis` p
 
 ### Workflow Gates
 Commands like `status`, `next`, `go`, `agent enter/step/done`, `check`, `review`, and `changes` are deterministic state, routing, validation, lifecycle, review, and closeout commands.
+
+`next --agent` is the advisory router; `go --step <id>` is atomic step control.
+State-changing commands must own their preflight gates instead of relying on a
+previous `next` call.
 
 **Important**: Do not treat prompt-emitter output as final content. Use the current Codex session to reason, then persist results through the relevant artifact sink. `--dry-run` commands are previews only—not evidence that final content exists.
 

@@ -112,8 +112,10 @@ describe('docpath agent lifecycle', () => {
   });
 
   it('agent step records progress', () => {
-    const out = run('agent step', tmpDir);
+    const out = run('agent step --step S1', tmpDir);
     assert.match(out, /step|progress|记录/i, `got: ${out.slice(0, 100)}`);
+    assert.match(out, /next_hint:/);
+    assert.match(out, /recommended_command:/);
   });
 
   it('agent done completes task', () => {

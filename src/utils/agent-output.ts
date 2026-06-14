@@ -20,6 +20,7 @@ import { readRuleFile, ruleDisplayPaths } from './rules.js';
 import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } from '../commands/install.js';
 import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridContextIndexLeaves, type HybridContextIndexSummary, type HybridContextIndexEntry } from './context-index.js';
 import { readGitCloseoutSummary, type GitCloseoutSummary } from './git-closeout.js';
+import { resolveMajorChangeGateStatus, type MajorChangeGateStatus } from './major-change.js';
 
 export interface AgentOutput {
   /** 输出视图: status --agent 是状态快照, next --agent 是下一步路由。 */
@@ -319,6 +320,7 @@ type AgentOutputContext = {
   hasIncompleteSpec: boolean;
   installHealth: InstallDoctorReport | null;
   gitCloseout: GitCloseoutSummary | null;
+  majorChangeGate: MajorChangeGateStatus;
   contextIndex: HybridContextIndexSummary | null;
   contextIndexTrunk: HybridContextIndexEntry[] | null;
   contextIndexLeaves: HybridContextIndexEntry[] | null;
@@ -731,6 +733,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   const gitCloseout = (state?.state === 'completed' || state?.phase === 'completed')
     ? await readGitCloseoutSummary(cwd, docpathDir, state?.task_id || undefined)
     : null;
+  const majorChangeGate = await resolveMajorChangeGateStatus(cwd, docpathDir, state?.task_id || undefined);
   const contextIndex = await readHybridContextIndexSummary(cwd);
   const contextIndexTrunk = await readHybridContextIndexTrunk(cwd);
   const contextIndexLeaves = await readHybridContextIndexLeaves(cwd);
@@ -752,6 +755,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     hasIncompleteSpec: hasSpec ? isIncompleteSpec(specContent) : false,
     installHealth,
     gitCloseout,
+    majorChangeGate,
     contextIndex,
     contextIndexTrunk,
     contextIndexLeaves,
@@ -800,6 +804,18 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
     context.gitCloseout,
   );
 
+  if (shouldRouteToMajorChangeGate(context, inferred.recommended_command)) {
+    const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md'];
+    return {
+      next_action: '重大变更门禁未完成，先补齐 spec Decision Brief 和用户确认',
+      recommended_command: 'docpath write-spec',
+      required_context: required,
+      required_files: required,
+      must_update: ['.docpath/tasks/current/spec.md'],
+      exit_criteria: 'spec.md 的重大变更门禁已勾选“是，需要用户确认”，Decision Brief 已填写，用户确认已记录',
+    };
+  }
+
   if (pendingDone && state?.phase === 'executing' && pendingDone.task_id === state.task_id) {
     const hasActiveOrOpenPlanWork = context.bc.inProgress > 0 || context.planTasks.some((task) => !task.done);
     if (hasActiveOrOpenPlanWork) {
@@ -830,6 +846,14 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
   }
 
   return inferred;
+}
+
+function shouldRouteToMajorChangeGate(context: AgentOutputContext, recommendedCommand: string): boolean {
+  if (context.majorChangeGate.confirmed || context.majorChangeGate.signals.length === 0) return false;
+  const phase = context.state?.phase || '';
+  if (phase === 'completed' || phase === 'reviewing') return false;
+  if (/^docpath (?:plan|go|agent step|agent enter)\b/.test(recommendedCommand)) return true;
+  return ['drafting', 'planning', 'executing', 'checking'].includes(phase);
 }
 
 /**

@@ -3,13 +3,13 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260614-backlog-capture-analyze-dry-run
-task_title: 修复 backlog capture 无活跃任务时 analyze 建议缺少 --dry-run
+task_id: T-20260614-next-go-next-hint
+task_title: 前置重大变更门禁、明确 next/go 边界并统一 next_hint 输出
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-14T15:26:04.768Z
-updated_at: 2026-06-14T15:26:04.767Z
+started_at: 2026-06-14T17:29:33.168Z
+updated_at: 2026-06-14T17:29:33.167Z
 ```
 
 > 📖 规约: [spec.md](../tasks/current/spec.md)
@@ -21,8 +21,8 @@ updated_at: 2026-06-14T15:26:04.767Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-14T15:25:41.147Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260614-backlog-capture-analyze-dry-run] — 2026-06-14T15:25:53.266Z · 状态: done · 代码审查: 0 错误, 4 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-14T17:26:46.083Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260614-next-go-next-hint] — 2026-06-14T17:28:35.809Z · 状态: done · 代码审查: 0 错误, 18 警告, 3 提示
 
 ## 🔄 同步说明
 

@@ -26,6 +26,7 @@ import {
   resolveActiveTaskDocPath,
 } from '../utils/task-files.js';
 import type { StructuredSpecDocument } from '../utils/structured-docs.js';
+import { emitNextHint } from '../utils/next-hint.js';
 
 interface JournalOptions {
   cwd: string;
@@ -258,7 +259,8 @@ async function finalizeJournal(
   await writeJournalDecisions(cwd, archive.taskDirName, summary);
   await gcJournalDecisions(cwd, skipDecisionGc);
   console.log('─── 完成 ───');
-  console.log('所有步骤已归档。运行 `docpath:init` 开始新任务。\n');
+  console.log('所有步骤已归档。运行 `docpath init` 开始新任务。');
+  await emitNextHint(cwd);
 }
 
 async function archiveCurrentTask(

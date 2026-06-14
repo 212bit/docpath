@@ -222,7 +222,6 @@ describe('init command', () => {
     for (const command of [
       'docpath init --interactive',
       'docpath init --level 2',
-      'docpath status --agent',
       'docpath next --agent',
       'docpath backlog capture',
       'docpath backlog add',
@@ -237,5 +236,8 @@ describe('init command', () => {
     ]) {
       assert.match(doc, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     }
+    assert.match(doc, /status --agent` 只在显式查看状态、诊断漂移或状态变更后确认时使用/);
+    assert.match(doc, /`next --agent` 是只读的 advisory router/);
+    assert.match(doc, /不是授权、锁或所有命令的必需前置/);
   });
 });

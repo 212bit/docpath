@@ -21,6 +21,8 @@ import { runCommand } from './runtime.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts } from '../utils/ui-gate.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { acquireExecutionLease, releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
+import { assertMajorChangeGateReady } from '../utils/major-change.js';
+import { emitNextHint } from '../utils/next-hint.js';
 
 interface GoOptions {
   cwd: string;
@@ -189,7 +191,7 @@ async function finalizeStep(
   });
 
   console.log(`✅  已记录步骤状态: ${target.id} -> ${status}`);
-  console.log('💡  下一步可运行 `docpath next --agent` 或 `docpath go` 继续推进。\n');
+  await emitNextHint(cwd);
 }
 
 async function startStep(
@@ -222,9 +224,8 @@ async function startStep(
   });
 
   console.log('─── Claude Code 指令 ───');
-  console.log('请执行子任务 ' + target.id + '，完成后运行 `docpath:agent step --step ' + target.id + ' --auto-next` 自动标记完成并加载下一个任务。');
-
-  console.log('');
+  console.log('请执行子任务 ' + target.id + '，完成后运行 `docpath agent step --step ' + target.id + ' --status done` 记录完成，再用 `docpath next --agent` 查看后续路由。');
+  await emitNextHint(cwd);
 }
 
 export async function goCommand(options: GoOptions): Promise<void> {
@@ -246,8 +247,8 @@ export async function goCommand(options: GoOptions): Promise<void> {
     process.exit(1);
   }
 
-  await renderExecutionContext(cwd, tasks, target, current?.level || 0);
   if (dryRun) {
+    await renderExecutionContext(cwd, tasks, target, current?.level || 0);
     console.log('📝  [dry-run] 仅预览，不更新状态\n');
     return;
   }
@@ -264,6 +265,8 @@ export async function goCommand(options: GoOptions): Promise<void> {
     console.error('    确保 .docpath/tasks/current/spec.md 存在且首行为 `# T-<date>-<slug> - <标题>`，再运行 `docpath plan` 与 `docpath go`。');
     process.exit(1);
   }
+  await assertMajorChangeGateReady(cwd, docpathDir, resolvedTaskId, 'go');
+  await renderExecutionContext(cwd, tasks, target, current?.level || 0);
   await touchSession(cwd, {
     sessionId: session.sessionId,
     taskId: resolvedTaskId,

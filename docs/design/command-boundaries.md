@@ -54,11 +54,15 @@ or closeout logic.
 - It should not require language-model reasoning to decide its output.
 - It should fail loud when required state or evidence is missing.
 - It is the source agents use to route work and verify completion.
+- `next --agent` is read-only advisory routing, not a permission grant or lock.
+- State-changing gates must re-read state and enforce their own preconditions;
+  `go --step <id>` is atomic step control that claims/starts a step only when it
+  is allowed now.
 
 Examples:
 
-- `docpath status --agent`
 - `docpath next --agent`
+- `docpath status --agent`
 - `docpath go --step S1`
 - `docpath agent enter|step|done|handoff`
 - `docpath check`

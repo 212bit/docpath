@@ -7,12 +7,13 @@
 
 ## First Steps
 
-1. Run `docpath status --agent` for the `agent_view: status` workflow snapshot.
-2. Run `docpath next --agent` for the `agent_view: next` route and
-   `recommended_command`.
-3. Follow the returned `recommended_command`.
-4. Use `context_index`, `data_index`, and `current_focus` as indexes before
+1. Run `docpath next --agent` for the `agent_view: next` route,
+   `recommended_command`, and compact workflow snapshot.
+2. Follow the returned `recommended_command`.
+3. Use `context_index`, `data_index`, and `current_focus` as indexes before
    reading any files.
+4. Use `docpath status --agent` only for explicit status/debug snapshots,
+   suspected drift, or confirmation after state-changing commands.
 5. Expand only when needed with `docpath reveal --topic <keyword> --level 1-3`
    or `docpath context --max-tokens 5000 --topic <keyword>`.
 6. Record progress with `docpath agent step` after each meaningful step.
@@ -21,7 +22,7 @@
 
 | Artifact | Role | OpenCode access |
 | --- | --- | --- |
-| `.docpath/workspace/state.json` | Runtime state truth | Use `docpath status --agent`; direct read only for debug. |
+| `.docpath/workspace/state.json` | Runtime state truth | Use `docpath next --agent` for start/resume; use `docpath status --agent` for diagnostics. |
 | `.docpath/workspace/current.md` | Human rendered state view | Do not read by default. |
 | `.docpath/workspace/breadcrumb.jsonl` | Execution event truth | Use CLI summaries; direct tail only for debug. |
 | `.docpath/workspace/breadcrumb.md` | Human rendered progress view | Do not read by default. |
@@ -45,6 +46,12 @@ tail range.
   generated or selected.
 - `status`, `next`, `go`, `agent`, `check`, `review`, and `changes` are
   deterministic workflow gates.
+- `docpath next --agent` is read-only and advisory. Use it at session
+  start/resume or when state is uncertain; do not treat it as permission, a
+  lock, or a required prelude to an explicit deterministic command.
+- State-changing commands must re-read workflow state and enforce their own
+  preconditions. `docpath go --step <id>` is atomic step control: it
+  claims/starts that step only if it is allowed now.
 - Treat `--dry-run` output as preview material, not final evidence.
 
 ## OpenCode Workflow
@@ -52,8 +59,8 @@ tail range.
 ### Start or Resume
 
 ```bash
-docpath agent enter
 docpath next --agent
+docpath agent enter  # only when the route points to an executable task
 ```
 
 ### Execute a Step

@@ -606,6 +606,8 @@ created_at: 2026-05-31
 
     const out = run('backlog promote R-001', cwd);
     assert.match(out, /已 promote backlog 条目: R-001/);
+    assert.match(out, /next_hint:/);
+    assert.match(out, /recommended_command: docpath plan/);
 
     const spec = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8');
     assert.match(spec, /^# T-\d{8}-alpha-promote - Alpha Promote/m);

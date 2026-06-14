@@ -59,6 +59,15 @@ function writeCanonicalTaskCopy(cwd, taskId, tasks) {
   return canonical;
 }
 
+function markReadyForReview(cwd) {
+  const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+  const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+  state.phase = 'checking';
+  state.gate = 'check_pass';
+  state.current_step = '质量检查通过，下一步: docpath review';
+  writeFileSync(statePath, JSON.stringify(state, null, 2));
+}
+
 function structuredSpecJson(markdown, overrides = {}) {
   return {
     schema_version: 1,
@@ -114,8 +123,10 @@ describe('check and review commands', () => {
   });
 
   it('check --skip-tests --skip-lint runs without errors', () => {
-    const out = run('check --skip-tests --skip-lint', tmpdir_path);
+    const out = run('check --skip-tests --skip-lint --fix-drift current', tmpdir_path);
     assert.ok(out.length > 0, 'should produce output');
+    assert.match(out, /next_hint:/);
+    assert.match(out, /recommended_command:/);
   });
 
   it('check reports active task document paths and field locations for structure errors', () => {
@@ -218,6 +229,7 @@ describe('check and review commands', () => {
   it('review result does not write ordinary review summaries into decisions', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-no-decisions-'));
     mkExecWorkspace(cwd);
+    markReadyForReview(cwd);
     execSync('git init', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'todo.ts'), '// TODO review evidence stays out of ADR\n');
 
@@ -225,6 +237,8 @@ describe('check and review commands', () => {
     const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');
 
     assert.match(out, /审查通过/);
+    assert.match(out, /next_hint:/);
+    assert.match(out, /recommended_command:/);
     assert.equal(existsSync(decisionsPath), false);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -232,6 +246,7 @@ describe('check and review commands', () => {
   it('review --approve does not write manual approvals into decisions', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-approve-no-decisions-'));
     mkExecWorkspace(cwd);
+    markReadyForReview(cwd);
     execSync('git init', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'manual.ts'), 'export const manual = true;\n');
 
@@ -240,6 +255,8 @@ describe('check and review commands', () => {
     const reviewPath = join(cwd, '.docpath', 'workspace', 'review.md');
 
     assert.match(out, /手动批准/);
+    assert.match(out, /next_hint:/);
+    assert.match(out, /recommended_command:/);
     assert.equal(existsSync(reviewPath), true);
     assert.equal(existsSync(decisionsPath), false);
     rmSync(cwd, { recursive: true, force: true });

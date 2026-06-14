@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260614-backlog-capture-analyze-dry-run",
-  "task_title": "修复 backlog capture 无活跃任务时 analyze 建议缺少 --dry-run",
+  "task_id": "T-20260614-next-go-next-hint",
+  "task_title": "前置重大变更门禁、明确 next/go 边界并统一 next_hint 输出",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-14T15:26:04.768Z",
-  "updated_at": "2026-06-14T15:26:04.767Z"
+  "started_at": "2026-06-14T17:29:33.168Z",
+  "updated_at": "2026-06-14T17:29:33.167Z"
 }

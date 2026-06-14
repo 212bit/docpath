@@ -427,11 +427,14 @@ function renderResumeProtocol(): string[] {
   return [
     '## Resume Protocol',
     '',
-    '1. Start with `docpath status --agent` and `docpath next --agent`.',
+    '1. Start with `docpath next --agent` when resuming or when state is uncertain.',
     '2. Read this compact context only as a handoff summary, not as a replacement for the CLI route.',
-    '3. Check `Verification Status`, `Remaining Risks`, `Change Scope`, and `Next Agent Route`.',
-    '4. If readiness is `blocked` or `not_ready_to_finish`, handle the blocker or missing verification before claiming completion.',
-    '5. Follow `recommended_command` unless the workspace state has changed.',
+    '3. Treat `next --agent` as advisory routing, not as permission, a lock, or a replacement for command preflight gates.',
+    '4. Check `Verification Status`, `Remaining Risks`, `Change Scope`, and `Next Agent Route`.',
+    '5. If readiness is `blocked` or `not_ready_to_finish`, handle the blocker or missing verification before claiming completion.',
+    '6. Use `docpath status --agent` only for explicit status/debug snapshots, suspected drift, or confirmation after state-changing commands.',
+    '7. Explicit deterministic commands may run directly, but state-changing commands must re-read state and enforce their own gates.',
+    '8. Follow `recommended_command` unless the workspace state has changed.',
   ];
 }
 
@@ -475,7 +478,7 @@ function renderProgressDetails(view: CompactedContextView): string[] {
     '',
     '## Required Files Before Resume',
     '',
-    '- Prefer CLI summaries first: `docpath status --agent`, `docpath next --agent`, `docpath reveal --topic <keyword> --level 1-3`.',
+    '- Prefer CLI summaries first: `docpath next --agent`, `docpath reveal --topic <keyword> --level 1-3`; use `docpath status --agent` only for diagnostics.',
     '- Treat the paths below as direct-read candidates for debugging or deep context, not as files to read by default.',
     ...[
       '.docpath/workspace/current.md',

@@ -237,7 +237,10 @@ DocPath 的最终定位不是单一 CLI，而是多 Agent 共享的本地协议�
 
 - 不同 target 生成的协议文件不互相覆盖无关内容。
 - 重新 install 时支持安全覆盖和 diff 提示。
-- Agent 协议文件明确要求先读 `docpath next --agent` 或 `docpath status --agent`。
+- Agent 协议文件明确要求启动/恢复先读 `docpath next --agent`；
+  `docpath status --agent` 仅作为诊断或显式状态查看入口。
+- `next --agent` 是只读 advisory router，不是授权或锁；显式确定性命令可以
+  直接执行，状态变更命令必须自行重读状态并执行 gate；`go --step` 是原子步骤控制。
 
 ## 7. 推荐执行顺序
 

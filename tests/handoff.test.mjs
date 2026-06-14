@@ -157,7 +157,10 @@ describe('agent handoff package', () => {
     assert.match(handoff, /## Required Reading/);
     assert.match(handoff, /.docpath\/workspace\/last-check.md/);
     assert.match(handoff, /## Resume Protocol/);
-    assert.match(handoff, /Start with `docpath status --agent` and `docpath next --agent`/);
+    assert.match(handoff, /Start with `docpath next --agent`/);
+    assert.match(handoff, /Treat `next --agent` as advisory routing/);
+    assert.match(handoff, /Explicit deterministic commands may run directly/);
+    assert.match(handoff, /Use `docpath status --agent` only for explicit status\/debug snapshots/);
     assert.match(handoff, /handoff summary, not as a replacement for the CLI route/);
     assert.match(handoff, /## Current Goal/);
     assert.match(handoff, /## Current Blockers/);
@@ -189,7 +192,10 @@ describe('agent handoff package', () => {
     assert.match(handoff, /## Change Scope/);
     assert.match(handoff, /git_status: unavailable/);
     assert.match(handoff, /## Resume Protocol/);
-    assert.match(handoff, /Start with `docpath status --agent` and `docpath next --agent`/);
+    assert.match(handoff, /Start with `docpath next --agent`/);
+    assert.match(handoff, /Treat `next --agent` as advisory routing/);
+    assert.match(handoff, /Explicit deterministic commands may run directly/);
+    assert.match(handoff, /Use `docpath status --agent` only for explicit status\/debug snapshots/);
     assert.match(handoff, /plan: 2\/2 完成/);
     assert.doesNotMatch(handoff, /不要直接继续完成任务/);
     rmSync(cwd, { recursive: true, force: true });

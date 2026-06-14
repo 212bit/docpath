@@ -11,10 +11,11 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
-import { nextCommand } from './runtime.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { readActiveAnalysisSummary, writeActiveTaskFile } from '../utils/task-files.js';
+import { assertMajorChangeGateReady } from '../utils/major-change.js';
+import { emitNextHint } from '../utils/next-hint.js';
 
 interface PlanOptions {
   cwd: string;
@@ -208,6 +209,9 @@ export async function planCommand(options: PlanOptions): Promise<void> {
     return;
   }
 
+  const current = await readCurrentState(cwd);
+  await assertMajorChangeGateReady(cwd, docpathDir, current?.task_id, 'plan');
+
   emitPlanPrompt(spec, analysis);
 
   // 已有计划时同步 active alias；无计划时生成保守草案，避免 planning 状态缺 plan.md。
@@ -216,5 +220,5 @@ export async function planCommand(options: PlanOptions): Promise<void> {
 
   await transitionWorkflow(cwd, 'plan.ready', { currentStep: '计划已生成，下一步: docpath go' });
   console.log('\n✅ 状态已更新为 planning');
-  await nextCommand({ cwd });
+  await emitNextHint(cwd);
 }

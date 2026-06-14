@@ -26,8 +26,8 @@ Avoid one-line product conclusions. If details are missing, write explicit assum
 ## Useful DocPath context
 
 ```bash
-docpath status --agent
 docpath next --agent
+docpath status --agent  # diagnostics only
 docpath roles context --role product-director
 docpath roles context --role requirement-analyst
 docpath roles context --role user-researcher

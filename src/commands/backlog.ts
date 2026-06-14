@@ -26,6 +26,7 @@ import { today, resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { archivedTaskDir, canonicalTaskRelativePath, canonicalTaskDir, clearCurrentTaskAlias, writeActiveTaskFile } from '../utils/task-files.js';
+import { emitNextHint } from '../utils/next-hint.js';
 
 interface BacklogCommandOptions {
   cwd: string;
@@ -627,6 +628,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   console.log(`✅  已 promote backlog 条目: ${item.id}`);
   console.log(`   task_id: ${taskId}`);
   console.log(`   spec: .docpath/${canonicalTaskRelativePath(taskId, 'spec.md')}`);
+  await emitNextHint(options.cwd);
 }
 
 async function backlogAdvanceStatus(

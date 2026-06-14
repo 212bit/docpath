@@ -7,7 +7,7 @@ description: Product quality lens for requirements PRDs user value journeys metr
 
 Use this skill when a DocPath task needs **product analysis**: requirements clarity, PRDs, user value, success metrics, journeys, scope decisions, or stakeholder tradeoffs.
 
-This is a **quality lens** that integrates with the main `docpath` workflow. Use the main `docpath` skill for lifecycle routing (`status`, `next`, `go`, `check`, `done`).
+This is a **quality lens** that integrates with the main `docpath` workflow. Use the main `docpath` skill for lifecycle routing (`next`, `go`, `check`, `done`; `status` for diagnostics).
 
 ## When to Use
 

@@ -108,6 +108,8 @@ describe('backlog journal integration', () => {
     const out = run('journal --skip-ai --optional-archive skip', cwd);
 
     assert.match(out, /backlog 已自动回填完成: R-001/);
+    assert.match(out, /next_hint:/);
+    assert.match(out, /recommended_command:/);
     const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8');
     assert.match(item, /status: done/);
     rmSync(cwd, { recursive: true, force: true });

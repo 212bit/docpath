@@ -7,12 +7,13 @@
 
 ## First Steps
 
-1. Run `/docpath-status` or `docpath status --agent` for the
-   `agent_view: status` workflow snapshot.
-2. Run `/docpath-next` or `docpath next --agent` for the `agent_view: next`
-   route and `recommended_command`.
-3. Follow the returned `recommended_command`.
-4. Use `context_index`, `data_index`, and `current_focus` before reading files.
+1. Run `/docpath-next` or `docpath next --agent` for the `agent_view: next`
+   route, `recommended_command`, and compact workflow snapshot.
+2. Follow the returned `recommended_command`.
+3. Use `context_index`, `data_index`, and `current_focus` before reading files.
+4. Use `/docpath-status` or `docpath status --agent` only for explicit
+   status/debug snapshots, suspected drift, or confirmation after state-changing
+   commands.
 5. Use `/docpath-reveal` or `docpath reveal --topic <keyword> --level 1-3`
    when more detail is needed.
 6. Use `/docpath-context` or `docpath context --max-tokens 5000 --topic <keyword>`
@@ -53,7 +54,7 @@ Claude-only state file.
 
 | Artifact | Role | Claude access |
 | --- | --- | --- |
-| `state.json` | Runtime state truth | Use `/docpath-status` or `docpath status --agent`. |
+| `state.json` | Runtime state truth | Use `/docpath-next` or `docpath next --agent` for start/resume; use `/docpath-status` or `docpath status --agent` for diagnostics. |
 | `current.md` | Human rendered state view | Do not read by default. |
 | `breadcrumb.jsonl` | Execution event truth | Use CLI summaries; direct tail only for debug. |
 | `breadcrumb.md` | Human rendered progress view | Do not read by default. |
@@ -77,6 +78,13 @@ tail range.
   generated or selected.
 - `status`, `next`, `go`, `agent`, `check`, `review`, and `changes` are
   deterministic workflow gates.
+- `/docpath-next` / `docpath next --agent` is read-only and advisory. Use it at
+  session start/resume or when state is uncertain; do not treat it as
+  permission, a lock, or a required prelude to an explicit deterministic
+  command.
+- State-changing commands must re-read workflow state and enforce their own
+  preconditions. `docpath go --step <id>` is atomic step control: it
+  claims/starts that step only if it is allowed now.
 - Treat `--dry-run` output as preview material, not final evidence.
 
 ## Lifecycle
@@ -93,7 +101,7 @@ docpath agent handoff
 Workflow:
 
 1. Enter with `docpath agent enter` before code or protocol edits.
-2. Load the active step with `docpath go --step <id>`.
+2. Atomically claim/start the active step with `docpath go --step <id>`.
 3. Make the scoped change.
 4. Record completion with `docpath agent step --step "<id>" --status done`.
 5. Run `docpath check` and `docpath agent done` before claiming completion.
@@ -101,7 +109,10 @@ Workflow:
 
 ## Required Gates
 
-- Do not skip status and next route checks.
+- Do not skip the next route check at start/resume or when state is uncertain.
+  Do not require it before an explicit deterministic command; that command must
+  enforce its own gate. Use status only for explicit status/debug snapshots,
+  suspected drift, or confirmation after state-changing commands.
 - Do not act from memory alone.
 - Do not hand-edit `state.json`, workspace runtime views, or generated Markdown
   views.

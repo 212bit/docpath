@@ -5,258 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🔄 S2 [T-20260614-docpath-changes-git-closeout] — 2026-06-14T08:43:41.749Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: S2
-status: in_progress
-timestamp: 2026-06-14T08:43:41.749Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 接入完成态 git closeout 路由
-- **Session**: default
-
-### ✅ S2 [T-20260614-docpath-changes-git-closeout] — 2026-06-14T08:47:42.509Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: S2
-status: done
-timestamp: 2026-06-14T08:47:42.509Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### 🔄 S3 [T-20260614-docpath-changes-git-closeout] — 2026-06-14T08:48:02.120Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: S3
-status: in_progress
-timestamp: 2026-06-14T08:48:02.120Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 精炼 `docpath changes` readiness 语义
-- **Session**: default
-
-### ✅ S3 [T-20260614-docpath-changes-git-closeout] — 2026-06-14T08:48:19.215Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: S3
-status: done
-timestamp: 2026-06-14T08:48:19.215Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-- **Session**: default
-
-### 🔄 S4 [T-20260614-docpath-changes-git-closeout] — 2026-06-14T08:48:38.898Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: S4
-status: in_progress
-timestamp: 2026-06-14T08:48:38.898Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 补充测试与 agent protocol 文档
-- **Session**: default
-
-### 🚫 check [T-20260614-docpath-changes-git-closeout] — 2026-06-14T08:51:43.933Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: check
-status: blocked
-timestamp: 2026-06-14T08:51:43.933Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 测试, 子任务完成度 (3/5)
-
-### ✅ S4 [T-20260614-docpath-changes-git-closeout] — 2026-06-14T09:00:44.442Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: S4
-status: done
-timestamp: 2026-06-14T09:00:44.442Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-- **Session**: default
-
-### ✅ check [T-20260614-docpath-changes-git-closeout] — 2026-06-14T09:01:35.646Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: check
-status: done
-timestamp: 2026-06-14T09:01:35.646Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: check
-- **Session**: default
-
-### 🔄 S5 [T-20260614-docpath-changes-git-closeout] — 2026-06-14T09:02:02.952Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: S5
-status: in_progress
-timestamp: 2026-06-14T09:02:02.952Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 运行质量门禁并归档
-- **Session**: default
-
-### 🚫 check [T-20260614-docpath-changes-git-closeout] — 2026-06-14T09:04:18.056Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: check
-status: blocked
-timestamp: 2026-06-14T09:04:18.056Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 重大决策确认检查
-
-### ✅ review [T-20260614-docpath-changes-git-closeout] — 2026-06-14T09:06:36.889Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: review
-status: done
-timestamp: 2026-06-14T09:06:36.889Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 2 警告, 0 提示
-
-### ✅ journal [T-20260614-docpath-changes-git-closeout] — 2026-06-14T09:08:13.774Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: journal
-status: done
-timestamp: 2026-06-14T09:08:13.774Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (4/5 步)
-
-### ✅ check [T-20260614-docpath-changes-git-closeout] — 2026-06-14T09:14:57.639Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: check
-status: done
-timestamp: 2026-06-14T09:14:57.639Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### 🚫 review [T-20260614-docpath-changes-git-closeout] — 2026-06-14T09:16:17.350Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: review
-status: blocked
-timestamp: 2026-06-14T09:16:17.350Z
----
-
-- **状态**: blocked
-- **上下文**: 代码审查: 1 错误, 3 警告, 0 提示
-
-### ✅ review [T-20260614-docpath-changes-git-closeout] — 2026-06-14T09:17:09.348Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: review
-status: done
-timestamp: 2026-06-14T09:17:09.348Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 3 警告, 0 提示
-
-### ✅ S5 [T-20260614-docpath-changes-git-closeout] — 2026-06-14T09:18:17.655Z
-
----
-taskId: T-20260614-docpath-changes-git-closeout
-step: S5
-status: done
-timestamp: 2026-06-14T09:18:17.655Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-done: S5
-- **Session**: default
-
-### 🔄 S1 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:05:07.810Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S1
-status: in_progress
-timestamp: 2026-06-14T14:05:07.810Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 固化命令边界与现有行为证据
-- **Session**: default
-
-### 🔄 S1 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:08:26.186Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S1
-status: in_progress
-timestamp: 2026-06-14T14:08:26.186Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 固化命令边界与现有行为证据
-- **Session**: default
-
-### ✅ S1 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:08:35.706Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S1
-status: done
-timestamp: 2026-06-14T14:08:35.706Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
 ### 🔄 S2 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:09:02.926Z
 
 ---
@@ -668,3 +416,253 @@ timestamp: 2026-06-14T15:26:04.866Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (1/1 步)
+
+### 🔄 S1 [T-20260614-agent-next-agent] — 2026-06-14T15:39:13.656Z
+
+---
+taskId: T-20260614-agent-next-agent
+step: S1
+status: in_progress
+timestamp: 2026-06-14T15:39:13.656Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理 将 agent 启动协议改为单命令 next --agent
+- **Session**: default
+
+### ✅ S1 [T-20260614-agent-next-agent] — 2026-06-14T15:39:30.613Z
+
+---
+taskId: T-20260614-agent-next-agent
+step: S1
+status: done
+timestamp: 2026-06-14T15:39:30.613Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260614-agent-next-agent] — 2026-06-14T15:39:44.170Z
+
+---
+taskId: T-20260614-agent-next-agent
+step: S2
+status: in_progress
+timestamp: 2026-06-14T15:39:44.170Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 将 agent 启动协议改为单命令 next --agent
+- **Session**: default
+
+### ✅ S2 [T-20260614-agent-next-agent] — 2026-06-14T15:50:19.274Z
+
+---
+taskId: T-20260614-agent-next-agent
+step: S2
+status: done
+timestamp: 2026-06-14T15:50:19.274Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🚫 check [T-20260614-agent-next-agent] — 2026-06-14T15:51:15.405Z
+
+---
+taskId: T-20260614-agent-next-agent
+step: check
+status: blocked
+timestamp: 2026-06-14T15:51:15.405Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 重大决策确认检查
+
+### ✅ check [T-20260614-agent-next-agent] — 2026-06-14T15:55:27.970Z
+
+---
+taskId: T-20260614-agent-next-agent
+step: check
+status: done
+timestamp: 2026-06-14T15:55:27.970Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260614-agent-next-agent] — 2026-06-14T15:55:45.737Z
+
+---
+taskId: T-20260614-agent-next-agent
+step: review
+status: done
+timestamp: 2026-06-14T15:55:45.737Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 3 警告, 0 提示
+
+### ✅ journal [T-20260614-agent-next-agent] — 2026-06-14T15:56:25.165Z
+
+---
+taskId: T-20260614-agent-next-agent
+step: journal
+status: done
+timestamp: 2026-06-14T15:56:25.165Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (2/2 步)
+
+### 🔄 S1 [T-20260614-next-go-next-hint] — 2026-06-14T16:48:59.405Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: S1
+status: in_progress
+timestamp: 2026-06-14T16:48:59.405Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: R-B 前置重大变更门禁
+- **Session**: default
+
+### ✅ S1 [T-20260614-next-go-next-hint] — 2026-06-14T17:04:12.491Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: S1
+status: done
+timestamp: 2026-06-14T17:04:12.491Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260614-next-go-next-hint] — 2026-06-14T17:04:31.139Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: S2
+status: in_progress
+timestamp: 2026-06-14T17:04:31.139Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: R-A 明确 next/go 协议边界
+- **Session**: default
+
+### ✅ S2 [T-20260614-next-go-next-hint] — 2026-06-14T17:12:25.574Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: S2
+status: done
+timestamp: 2026-06-14T17:12:25.574Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260614-next-go-next-hint] — 2026-06-14T17:12:41.104Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: S3
+status: in_progress
+timestamp: 2026-06-14T17:12:41.104Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: R-C 统一 state-changing command next_hint
+- **Session**: default
+
+### 🔄 S3 [T-20260614-next-go-next-hint] — 2026-06-14T17:22:21.889Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: S3
+status: in_progress
+timestamp: 2026-06-14T17:22:21.889Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: R-C 统一 state-changing command next_hint
+- **Session**: default
+
+### ✅ S3 [T-20260614-next-go-next-hint] — 2026-06-14T17:22:30.995Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: S3
+status: done
+timestamp: 2026-06-14T17:22:30.995Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### ✅ check [T-20260614-next-go-next-hint] — 2026-06-14T17:24:34.577Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: check
+status: done
+timestamp: 2026-06-14T17:24:34.577Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### 🚫 review [T-20260614-next-go-next-hint] — 2026-06-14T17:26:56.597Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: review
+status: blocked
+timestamp: 2026-06-14T17:26:56.597Z
+---
+
+- **状态**: blocked
+- **上下文**: 代码审查: 1 错误, 18 警告, 3 提示
+
+### ✅ review [T-20260614-next-go-next-hint] — 2026-06-14T17:28:35.809Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: review
+status: done
+timestamp: 2026-06-14T17:28:35.809Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 18 警告, 3 提示
+
+### ✅ journal [T-20260614-next-go-next-hint] — 2026-06-14T17:29:33.263Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: journal
+status: done
+timestamp: 2026-06-14T17:29:33.263Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (3/3 步)

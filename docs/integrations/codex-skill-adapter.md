@@ -54,7 +54,6 @@ $docpath-software implement the current plan and run the gates
 The Skills are adapters. They should route Codex back to DocPath commands such as:
 
 ```bash
-docpath status --agent
 docpath next --agent
 docpath agent enter
 docpath roles context --role software-engineer
@@ -63,6 +62,16 @@ docpath check
 docpath review
 docpath agent done
 ```
+
+Use `docpath status --agent` only for explicit status/debug snapshots, suspected
+drift, or confirmation after state-changing commands.
+
+`docpath next --agent` is an advisory router for session start/resume and
+uncertain state. It is not a permission grant or lock, and explicit
+deterministic commands such as `docpath go --step S1`, `docpath check`,
+`docpath review`, and `docpath changes --agent` do not need a fresh `next`
+prelude. Commands that change workflow state must re-read state and enforce
+their own gates.
 
 ## Boundaries
 

@@ -12,11 +12,10 @@ This skill complements the main `docpath` lifecycle route. It must not force imp
 ## First Commands
 
 ```bash
-docpath status --agent
 docpath next --agent
 ```
 
-Run `docpath agent enter` only when `docpath status --agent` / `docpath next --agent` shows an active executable task or an explicit `go` route. If no active task exists, follow the route from `docpath next --agent` instead of starting from memory.
+Run `docpath agent enter` only when `docpath next --agent` shows an active executable task or an explicit `go` route. If no active task exists, follow the route from `docpath next --agent` instead of starting from memory. Use `docpath status --agent` only for explicit status/debug snapshots, suspected drift, or confirmation after state-changing commands. Treat `next --agent` as advisory, not as a lock or permission grant; state-changing commands still enforce their own gates.
 
 ## Technical analysis quality bar
 

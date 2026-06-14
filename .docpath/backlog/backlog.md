@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-14T15:26:04.864Z
+> 扫描时间: 2026-06-14T17:29:33.262Z
 
 ## 条目列表
 
@@ -132,6 +132,8 @@
 | R-173 | 明确 AI 辅助命令边界：prompt emitter vs artifact sink vs workflow gate | done | P2 | 2 | T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo |
 | R-174 | 明确 current alias、任务归档与多 agent install target 语义 | done | P2 | 2 | T-20260614-current-alias-agent-install-target |
 | R-175 | 修复 backlog capture 无活跃任务时 analyze 建议缺少 --dry-run | done | P2 | 2 | T-20260614-backlog-capture-analyze-dry-run |
+| R-176 | 将 agent 启动协议改为单命令 next --agent | done | P2 | 2 | T-20260614-agent-next-agent |
+| R-177 | 前置重大变更门禁、明确 next/go 边界并统一 next_hint 输出 | done | P2 | 3 | T-20260614-next-go-next-hint |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 
 ## 用途说明

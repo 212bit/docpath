@@ -59,12 +59,16 @@ docpath init --link /path/to/initialized-project
 
 ## 3. 查看下一步
 
-初始化后先读取当前状态和路由建议：
+初始化后先读取当前路由建议。`next --agent` 已包含紧凑状态快照，
+`status --agent` 只在显式查看状态、诊断漂移或状态变更后确认时使用：
 
 ```bash
-docpath status --agent
 docpath next --agent
 ```
+
+`next --agent` 是只读的 advisory router，适合启动、恢复或状态不确定时使用。
+它不是授权、锁或所有命令的必需前置。用户已经明确指定的确定性命令可以直接
+执行；会修改状态的命令会自行重读状态并执行 gate。
 
 如果你使用 Codex 项目技能或 Agent 协议，可以安装本仓库的项目级适配文件：
 
@@ -152,7 +156,7 @@ docpath write-plan --stdin
 
 ## 6. 执行任务
 
-进入计划中的第一步：
+原子地认领/启动计划中的第一步：
 
 ```bash
 docpath go --step S1

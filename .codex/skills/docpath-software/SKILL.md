@@ -7,7 +7,7 @@ description: Software engineering quality lens for architecture implementation t
 
 Use this skill when a DocPath task needs **engineering analysis or implementation**: architecture, technical analysis, refactoring, debugging, tests, QA, or code review.
 
-This is a **quality lens** that integrates with the main `docpath` workflow. Use the main `docpath` skill for lifecycle routing (`status`, `next`, `go`, `check`, `done`).
+This is a **quality lens** that integrates with the main `docpath` workflow. Use the main `docpath` skill for lifecycle routing (`next`, `go`, `check`, `done`; `status` for diagnostics).
 
 ## When to Use
 
@@ -23,11 +23,10 @@ This is a **quality lens** that integrates with the main `docpath` workflow. Use
 Always start with:
 
 ```bash
-docpath status --agent
 docpath next --agent
 ```
 
-Only run `docpath agent enter` when status/next shows an **active executable task** or explicit `go` route. If no active task exists, follow the route from `docpath next --agent` instead of starting from memory.
+Only run `docpath agent enter` when `docpath next --agent` shows an **active executable task** or explicit `go` route. If no active task exists, follow the route from `docpath next --agent` instead of starting from memory. Use `docpath status --agent` only for explicit status/debug snapshots, suspected drift, or confirmation after state-changing commands. Treat `next --agent` as advisory, not as a lock or permission grant; state-changing commands still enforce their own gates.
 
 ## Technical Analysis Quality Bar
 
@@ -86,7 +85,7 @@ When implementing (not just analyzing), follow the DocPath execution lifecycle:
 
 ```bash
 docpath agent enter              # Enter execution mode
-docpath go --step <id>           # Load and start a plan step
+docpath go --step <id>           # Atomically claim/start a plan step
 # ... make changes, write tests ...
 docpath agent step --step "<id>" --status done
 docpath check                    # Run quality gates

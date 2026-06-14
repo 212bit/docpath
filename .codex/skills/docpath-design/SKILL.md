@@ -7,7 +7,7 @@ description: Design quality lens for UX information architecture interaction dec
 
 Use this skill when a DocPath task needs **UX/design analysis**: new pages, management screens, workflow views, information architecture, interaction decisions, or design-to-implementation handoff.
 
-This is a **quality lens** that integrates with the main `docpath` workflow. Use the main `docpath` skill for lifecycle routing (`status`, `next`, `go`, `check`, `done`).
+This is a **quality lens** that integrates with the main `docpath` workflow. Use the main `docpath` skill for lifecycle routing (`next`, `go`, `check`, `done`; `status` for diagnostics).
 
 ## When to Use
 

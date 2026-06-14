@@ -5,10 +5,11 @@
 
 ## Start Here
 
-1. Run `docpath status --agent` for the `agent_view: status` workflow snapshot.
-2. Run `docpath next --agent` for the `agent_view: next` route and
-   `recommended_command`.
-3. Use the returned route and indexes before reading files.
+1. Run `docpath next --agent` for the `agent_view: next` route,
+   `recommended_command`, and compact workflow snapshot.
+2. Use the returned route and indexes before reading files.
+3. Use `docpath status --agent` only for explicit status/debug snapshots,
+   suspected drift, or confirmation after state-changing commands.
 4. Expand details with `docpath reveal --topic <keyword> --level 1-3` or
    `docpath context --max-tokens 5000 --topic <keyword>`.
 
@@ -32,6 +33,12 @@
   sinks for content Codex has already generated or selected.
 - `status`, `next`, `go`, `agent`, `check`, `review`, and `changes` are
   deterministic workflow gates.
+- `docpath next --agent` is read-only and advisory. Use it at session
+  start/resume or when state is uncertain; do not treat it as permission, a
+  lock, or a required prelude to an explicit deterministic command.
+- State-changing commands must re-read workflow state and enforce their own
+  preconditions. `docpath go --step <id>` is atomic step control: it
+  claims/starts that step only if it is allowed now.
 - Treat `--dry-run` output as preview material, not final evidence.
 
 ## Lifecycle

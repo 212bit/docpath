@@ -317,7 +317,8 @@ describe('write commands', () => {
     writeFileSync(join(canonicalDir, 'plan.md'), plan);
 
     const output = run(`plan --cwd ${cwd}`, cwd);
-    assert.match(output, /建议命令: docpath go --step S1/);
+    assert.match(output, /next_hint:/);
+    assert.match(output, /recommended_command: docpath go --step S1/);
 
     const currentPlan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
     assert.match(currentPlan, /continue after plan/);
@@ -437,7 +438,8 @@ describe('write commands', () => {
     const output = run(`plan --cwd ${cwd}`, cwd);
 
     assert.match(output, /plan\.md 已写入/);
-    assert.match(output, /建议命令: docpath go --step S1/);
+    assert.match(output, /next_hint:/);
+    assert.match(output, /recommended_command: docpath go --step S1/);
     const currentPlan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
     assert.match(currentPlan, /S1: 梳理 自动生成计划草案/);
     assert.match(currentPlan, /S2: 实现 自动生成计划草案/);

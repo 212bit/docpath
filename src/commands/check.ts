@@ -21,6 +21,8 @@ import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js
 import { ANALYSIS_SECTIONS, detectActiveTaskFileDrift, readActiveAnalysisSummary, readActiveStructuredSpecDocument, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts, approvalState, hasUiImplementationIntent } from '../utils/ui-gate.js';
+import { resolveMajorChangeGateStatus } from '../utils/major-change.js';
+import { emitNextHint } from '../utils/next-hint.js';
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
   documentIndexStats,
@@ -66,69 +68,6 @@ interface GitBaseline {
   branch: string;
   worktreeDirty: boolean;
 }
-
-interface MajorDecisionSignal {
-  label: string;
-  detail: string;
-}
-
-interface StructuredMajorChangeGate {
-  required: boolean;
-  types: string[];
-  user_confirmed: string | null;
-  decision_brief_markdown: string;
-}
-
-const MAJOR_DEPENDENCY_PATTERNS = [
-  /^react$/,
-  /^react-dom$/,
-  /^vue$/,
-  /^svelte$/,
-  /^@angular\//,
-  /^antd$/,
-  /^@ant-design\//,
-  /^@mui\//,
-  /^@mantine\//,
-  /^@radix-ui\//,
-  /^tailwindcss$/,
-  /^vite$/,
-  /^webpack$/,
-  /^rollup$/,
-  /^prisma$/,
-  /^typeorm$/,
-  /^sequelize$/,
-  /^mongoose$/,
-  /^firebase$/,
-  /^@aws-sdk\//,
-  /^openai$/,
-];
-
-const MAJOR_CONFIG_FILE_PATTERNS = [
-  /^vite\.config\./,
-  /^webpack\.config\./,
-  /^rollup\.config\./,
-  /^tailwind\.config\./,
-  /^postcss\.config\./,
-  /^tsconfig\.json$/,
-  /^prisma\//,
-  /^migrations\//,
-  /^schema\//,
-  /^src\/db\//,
-  /^src\/database\//,
-  /^src\/api\//,
-  /^src\/security\//,
-  /^src\/auth\//,
-];
-
-const STRATEGIC_CHANGE_FILE_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
-  { pattern: /^templates\/spec\.template\.md$/, label: '任务规约模板变更' },
-  { pattern: /^templates\/(?:AGENTS|CODEX|CLAUDE|OPENCODE)\.md$/, label: 'Agent 协议模板变更' },
-  { pattern: /^templates\/protocols\/(?:AGENTS|CODEX|CLAUDE|OPENCODE)\.md$/, label: 'Agent 协议模板变更' },
-  { pattern: /^src\/commands\/(?:check|review|next|go|agent|backlog|brainstorm|refine)\.ts$/, label: '工作流/Agent 行为变更' },
-  { pattern: /^src\/engine\//, label: '工作流状态机变更' },
-  { pattern: /^src\/governance\//, label: '治理规则变更' },
-  { pattern: /^\.docpath\/rules\//, label: '全局工作规则变更' },
-];
 
 function formatValidationIssue(issue: { message: string; line?: number; section?: string; field?: string }): string {
   const details = [
@@ -264,100 +203,15 @@ function readGitBaseline(cwd: string): GitBaseline | null {
   };
 }
 
-function parseChangedPaths(statusOutput: string): string[] {
-  return statusOutput
-    .split('\n')
-    .map((line) => line.trimEnd())
-    .filter(Boolean)
-    .map((line) => {
-      const rawPath = line.slice(3).trim();
-      return rawPath.includes(' -> ') ? rawPath.split(' -> ').at(-1) || rawPath : rawPath;
-    });
-}
-
-function extractAddedMajorDependencies(diffOutput: string): string[] {
-  const added = new Set<string>();
-  const dependencyLine = /^\+\s+"([^"]+)"\s*:/;
-  for (const line of diffOutput.split('\n')) {
-    const name = line.match(dependencyLine)?.[1];
-    if (!name) continue;
-    if (MAJOR_DEPENDENCY_PATTERNS.some((pattern) => pattern.test(name))) added.add(name);
-  }
-  return Array.from(added).sort();
-}
-
-function isMeaningfulUserConfirmation(value: string | null | undefined): boolean {
-  if (!value) return false;
-  return value.trim().length > 0 && !/^(待确认|无|N\/A|-)?$/i.test(value.trim());
-}
-
-function specHasMajorDecisionConfirmation(specContent: string): boolean {
-  const gateMatch = specContent.match(/##\s+4\.1\s+重大(?:决策|变更)门禁([\s\S]*?)(?=\n##\s+5\.|\n##\s+\d+\.|$)/);
-  if (!gateMatch) return false;
-  const gate = gateMatch[1];
-  const requiresConfirmation = /^- \[[xX]\] 是，需要用户确认\s*$/m.test(gate);
-  const hasUserConfirmation = /^- 用户确认:\s*\S.+$/m.test(gate) && !/^- 用户确认:\s*(待确认|无|N\/A|-)?\s*$/mi.test(gate);
-  return requiresConfirmation && hasUserConfirmation;
-}
-
-function structuredMajorGateConfirmation(gate: StructuredMajorChangeGate | undefined): boolean | null {
-  if (!gate) return null;
-  return gate.required && isMeaningfulUserConfirmation(gate.user_confirmed) && gate.decision_brief_markdown.trim().length > 0;
-}
-
-function collectMajorDecisionSignals(cwd: string): MajorDecisionSignal[] {
-  const statusOutput = runGitOptional(cwd, ['status', '--porcelain=v1', '--untracked-files=all']) || '';
-  const paths = parseChangedPaths(statusOutput);
-  const signals: MajorDecisionSignal[] = [];
-  const packageChanged = paths.includes('package.json') || paths.includes('pnpm-lock.yaml') || paths.includes('package-lock.json') || paths.includes('yarn.lock');
-  if (packageChanged) {
-    const diff = [
-      runGitOptional(cwd, ['diff', '--', 'package.json', 'pnpm-lock.yaml', 'package-lock.json', 'yarn.lock']) || '',
-      runGitOptional(cwd, ['diff', '--cached', '--', 'package.json', 'pnpm-lock.yaml', 'package-lock.json', 'yarn.lock']) || '',
-    ].join('\n');
-    const deps = extractAddedMajorDependencies(diff);
-    if (deps.length > 0) signals.push({ label: '新增重大依赖', detail: deps.join(', ') });
-  }
-  const configPaths = paths.filter((path) => MAJOR_CONFIG_FILE_PATTERNS.some((pattern) => pattern.test(path)));
-  if (configPaths.length > 0) signals.push({ label: '重大配置/契约文件变更', detail: configPaths.slice(0, 12).join(', ') });
-  const strategicGroups = new Map<string, string[]>();
-  for (const path of paths) {
-    for (const { pattern, label } of STRATEGIC_CHANGE_FILE_PATTERNS) {
-      if (!pattern.test(path)) continue;
-      const items = strategicGroups.get(label) || [];
-      items.push(path);
-      strategicGroups.set(label, items);
-      break;
-    }
-  }
-  for (const [label, items] of strategicGroups) {
-    signals.push({ label, detail: Array.from(new Set(items)).slice(0, 12).join(', ') });
-  }
-  return signals;
-}
-
 async function checkMajorDecisionGate(cwd: string, docpathDir: string): Promise<CheckResult[]> {
   const state = await readCurrentState(cwd);
   if ((state?.level || 0) < 2) return [];
-  const signals = collectMajorDecisionSignals(cwd);
-  if (signals.length === 0) return [];
-  const structuredSpec = await readActiveStructuredSpecDocument(docpathDir, state?.task_id);
-  const structuredConfirmed = structuredMajorGateConfirmation(structuredSpec?.major_change_gate);
-  const specContent = structuredConfirmed === null ? await readActiveTaskFile(docpathDir, state?.task_id, 'spec.md') : '';
-  const confirmed = structuredConfirmed ?? specHasMajorDecisionConfirmation(specContent);
+  const gate = await resolveMajorChangeGateStatus(cwd, docpathDir, state?.task_id);
+  if (gate.signals.length === 0) return [];
   return [{
     name: '重大决策确认检查',
-    passed: confirmed,
-    output: confirmed
-      ? `已确认重大变更:\n${signals.map((signal) => `- ${signal.label}: ${signal.detail}`).join('\n')}`
-      : [
-          '检测到重大变更，但当前 spec 未记录 Decision Brief 和用户确认。',
-          ...signals.map((signal) => `- ${signal.label}: ${signal.detail}`),
-          '修复方式:',
-          '  1. 在 spec.md 的 `## 4.1 重大变更门禁` 填写 Decision Brief',
-          '  2. 勾选 `是，需要用户确认`',
-          '  3. 在 `用户确认:` 记录明确确认内容后再继续实现',
-        ].join('\n'),
+    passed: gate.confirmed,
+    output: gate.output,
     category: 'plan',
   }];
 }
@@ -611,7 +465,7 @@ function normalizeHarnessOptions(options: CheckOptions): void {
 function warnWhenOutsideAgentSession(current: Awaited<ReturnType<typeof readCurrentMd>>, options: CheckOptions): void {
   if (current?.task_id || options.force) return;
   console.warn('⚠️  当前无活跃 agent 会话 (current.md 无 task_id)');
-  console.warn('   这些检查通常应在 agent 流程内执行 (docpath:agent done)');
+  console.warn('   这些检查通常应在 agent 流程内执行 (docpath agent done)');
   console.warn('   如需独立运行，添加 --force 标志');
   console.warn('');
 }
@@ -1365,9 +1219,10 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   await persistCheckEvidence(cwd, docpathDir, current?.task_id || 'unknown', results, allPassed);
 
   if (!allPassed) {
-    console.log('请修复失败项后重新运行 `docpath:check`\n');
+    console.log('请修复失败项后重新运行 `docpath check`\n');
     throw new Error(`docpath check failed: ${results.filter(r => !r.passed).map(r => r.name).join(', ')}`);
   } else {
-    console.log('下一步: `docpath:review` 进行代码审查\n');
+    console.log('下一步: `docpath review` 进行代码审查');
+    await emitNextHint(cwd);
   }
 }

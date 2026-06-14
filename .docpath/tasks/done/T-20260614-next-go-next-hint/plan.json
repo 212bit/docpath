@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-14T17:22:31.002Z",
+    "updated_at": "2026-06-14T17:22:31.002Z",
+    "content_sha256": "5d946ac3526af69be7b43ddebda4d29f60fb25d44ee0f9835d748c12b87e8107"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: R-B 前置重大变更门禁\n- **描述**: 在 route 和 execution 前置检查重大变更门禁。`next --agent` 应在门禁缺失时推荐补 spec/refine；`plan`、`go --step`、`agent enter` 应 fail loud，避免实现后才由 `check` 发现。\n- **验收条件**: 未完成 Decision Brief 的 workflow/agent 行为任务无法进入 plan/go/agent enter；错误信息包含修复建议；新增测试覆盖 next/plan/go/agent enter。\n- **依赖**: 无\n\n### S2: R-A 明确 next/go 协议边界\n- **描述**: 更新 agent protocol、skills、templates 和文档，说明 `next --agent` 是 start/resume/uncertain state 的只读路由器，不是显式 deterministic commands 的硬性前置；`go` 是 atomic step control，state-changing commands 必须自行校验。\n- **验收条件**: 顶层协议、安装模板、Codex skills、handoff 文案和 getting-started 文档同步新边界；测试断言更新。\n- **依赖**: S1\n\n### S3: R-C 统一 state-changing command next_hint\n- **描述**: 为核心 state-changing commands 成功输出统一 `next_hint` 文本块，复用现有 route builder 或等价字段，减少 agent 机械重复运行 `next --agent`。\n- **验收条件**: plan/go/agent step/check/review/journal/backlog promote 等核心命令成功输出 `next_hint`；输出不破坏既有 human 文案；新增测试覆盖至少 plan、go、agent step、check/review、backlog promote。\n- **依赖**: S2\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n\n## 依赖关系图\nS1 -> S2 -> S3\n",
+  "generated_at": "2026-06-14T17:22:31.002Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "R-B 前置重大变更门禁",
+      "description": "在 route 和 execution 前置检查重大变更门禁。`next --agent` 应在门禁缺失时推荐补 spec/refine；`plan`、`go --step`、`agent enter` 应 fail loud，避免实现后才由 `check` 发现。",
+      "acceptance": "未完成 Decision Brief 的 workflow/agent 行为任务无法进入 plan/go/agent enter；错误信息包含修复建议；新增测试覆盖 next/plan/go/agent enter。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "R-A 明确 next/go 协议边界",
+      "description": "更新 agent protocol、skills、templates 和文档，说明 `next --agent` 是 start/resume/uncertain state 的只读路由器，不是显式 deterministic commands 的硬性前置；`go` 是 atomic step control，state-changing commands 必须自行校验。",
+      "acceptance": "顶层协议、安装模板、Codex skills、handoff 文案和 getting-started 文档同步新边界；测试断言更新。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "R-C 统一 state-changing command next_hint",
+      "description": "为核心 state-changing commands 成功输出统一 `next_hint` 文本块，复用现有 route builder 或等价字段，减少 agent 机械重复运行 `next --agent`。",
+      "acceptance": "plan/go/agent step/check/review/journal/backlog promote 等核心命令成功输出 `next_hint`；输出不破坏既有 human 文案；新增测试覆盖至少 plan、go、agent step、check/review、backlog promote。",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

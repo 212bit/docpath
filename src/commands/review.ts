@@ -15,6 +15,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { readCurrentMd, readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
+import { emitNextHint } from '../utils/next-hint.js';
 
 interface ReviewOptions {
   cwd: string;
@@ -207,7 +208,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const current = await readCurrentMd(opts.cwd);
   if (!current?.task_id && !opts.force) {
     console.warn('\n⚠️  当前无活跃 agent 会话 (current.md 无 task_id)');
-    console.warn('   审查通常应在 agent 流程内执行 (docpath:agent done)');
+    console.warn('   审查通常应在 agent 流程内执行 (docpath agent done)');
     console.warn('   如需独立运行，添加 --force 标志\n');
   }
   const groups = groupFindings(findings);
@@ -219,10 +220,12 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const taskId = current?.task_id || 'review';
   if (opts.approve) {
     await handleApprove(opts.cwd, docpathDir, taskId);
+    await emitNextHint(opts.cwd);
     return;
   }
   const approved = groups.errors.length === 0;
   console.log(`\n${approved ? '✅ 审查通过' : '❌ 需要修改'} (${groups.errors.length} 错误, ${groups.warns.length} 警告)`);
   await persistReviewResult(opts.cwd, taskId, groups);
   await writeReviewReport(docpathDir, changedFiles, findings);
+  await emitNextHint(opts.cwd);
 }

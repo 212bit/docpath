@@ -50,8 +50,8 @@ For management pages, explicitly analyze read/write boundaries, confirmation poi
 ## Useful DocPath context
 
 ```bash
-docpath status --agent
 docpath next --agent
+docpath status --agent  # diagnostics only
 docpath roles context --role design-lead
 docpath roles context --role prototype-builder
 ```

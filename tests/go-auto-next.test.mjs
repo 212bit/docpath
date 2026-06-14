@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkExecWorkspace } from './helpers.mjs';
 
-const CLI = '/Users/mac/project/docpath/dist/index.js';
+const CLI = new URL('../dist/index.js', import.meta.url).pathname;
 const run = (args, cwd) => {
   try {
     return execSync(`node ${CLI} ${args}`, { cwd, encoding: 'utf-8', timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'] });
@@ -42,6 +42,8 @@ describe('go --auto-next', () => {
   it('go shows current step', () => {
     const out = run('go', tmpdir_path);
     assert.ok(out.length > 0, 'should produce output');
+    assert.match(out, /next_hint:/);
+    assert.match(out, /recommended_command:/);
   });
 
   it('go --step S1 --status done marks plan and breadcrumb as done', () => {
@@ -63,6 +65,8 @@ describe('go --auto-next', () => {
     const breadcrumb = readFileSync(join(cwd, '.docpath', 'workspace', 'breadcrumb.md'), 'utf-8');
 
     assert.match(out, /S1 -> done/);
+    assert.match(out, /next_hint:/);
+    assert.match(out, /recommended_command:/);
     assert.match(plan, /- \[x\] S1: Finish go step/);
     assert.match(breadcrumb, /status: done/);
     rmSync(cwd, { recursive: true, force: true });

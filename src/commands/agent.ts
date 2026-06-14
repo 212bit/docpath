@@ -15,7 +15,7 @@
 import { checkCommand } from './check.js';
 import { journalCommand } from './journal.js';
 import { reviewCommand } from './review.js';
-import { compactCommand, nextCommand, runCommand } from './runtime.js';
+import { compactCommand, runCommand } from './runtime.js';
 import { goCommand } from './go.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { transitionWorkflow } from '../engine/transitions.js';
@@ -25,6 +25,9 @@ import { markPlanStep } from '../utils/plan-sync.js';
 import { emit } from '../hooks/lifecycle.js';
 import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
+import { resolveDocpathDir } from '../utils/file.js';
+import { assertMajorChangeGateReady } from '../utils/major-change.js';
+import { emitNextHint } from '../utils/next-hint.js';
 
 type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
 
@@ -92,6 +95,11 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
   const { cwd } = options;
   const current = await readCurrentState(cwd);
   const session = resolveSessionContext(options.session);
+  const phase = current?.phase || '';
+  if (current?.task_id && !['completed', 'reviewing'].includes(phase)) {
+    const docpathDir = await resolveDocpathDir(cwd);
+    await assertMajorChangeGateReady(cwd, docpathDir, current.task_id, 'agent enter');
+  }
   await touchSession(cwd, {
     sessionId: session.sessionId,
     taskId: current?.task_id || 'runtime',
@@ -108,6 +116,7 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
 
   console.log('\n# agent_context');
   console.log(await generateAgentOutput(cwd));
+  await emitNextHint(cwd);
 }
 
 async function handleAgentStep(options: AgentOptions): Promise<void> {
@@ -147,6 +156,7 @@ async function handleAgentStep(options: AgentOptions): Promise<void> {
     console.log('\n─── 自动加载下一个任务 ───\n');
     await goCommand({ cwd, dryRun: true });
   }
+  await emitNextHint(cwd);
 }
 
 async function runAgentCheckGate(options: AgentOptions): Promise<void> {
@@ -272,7 +282,7 @@ async function handleAgentDone(options: AgentOptions): Promise<void> {
   }
   await finishAgentDoneTask(options, finalStatus);
   await emitAgentTaskEnd(cwd, finalStatus);
-  await nextCommand({ cwd, agent: true });
+  await emitNextHint(cwd);
 }
 
 async function handleAgentHandoff(options: AgentOptions): Promise<void> {
