@@ -634,7 +634,7 @@ export async function nextCommand(options: NextOptions): Promise<void> {
       }
     }
   }
-  const output = await generateAgentOutput(options.cwd);
+  const output = await generateAgentOutput(options.cwd, { view: 'next' });
   if (options.agent) {
     console.log(output);
     return;

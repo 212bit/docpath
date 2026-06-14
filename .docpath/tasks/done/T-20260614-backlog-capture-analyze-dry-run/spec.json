@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-14T15:23:01.341Z",
+    "updated_at": "2026-06-14T15:23:01.341Z",
+    "content_sha256": "aba25aa66faa7970eb5b006ab4afa8b2ebdd7cea4cdf8aa76533f34ae721d6aa"
+  },
+  "task_id": "T-20260614-backlog-capture-analyze-dry-run",
+  "backlog_id": "R-175",
+  "title": "T-20260614-backlog-capture-analyze-dry-run - 修复 backlog capture 无活跃任务时 analyze 建议缺少 --dry-run",
+  "markdown": "# T-20260614-backlog-capture-analyze-dry-run - 修复 backlog capture 无活跃任务时 analyze 建议缺少 --dry-run\n\n> backlog_id: R-175\n> implemented_with: R-174\n> backlog_source: docpath backlog capture\n\n## 1. 背景与动机\n\n无活跃任务时，docpath backlog capture 会创建 raw backlog，并提示下一步运行 docpath analyze --mode deep --content <title>。但非 dry-run analyze 需要当前活跃任务写入 analysis/*，在 completed/idle 场景会失败。CLI 的错误提示已经要求使用 docpath analyze --dry-run，因此 capture 的下一步建议必须与 analyze 的写入边界一致。\n\n## 2. 需求清单\n\n### 功能需求\n\n- [x] FR-1: backlog capture 输出下一步建议时使用 docpath analyze --dry-run --mode deep --content <title>。\n- [x] FR-2: 保留通过 docpath backlog edit 回填 evidence 的流程。\n- [x] FR-3: getting-started 文档说明 promote 前使用 analyze --dry-run。\n\n### 非功能需求\n\n- [x] NFR-1: 不改变 backlog capture 的状态写入行为。\n- [x] NFR-2: 不让 dry-run 输出被当作 durable analysis evidence。\n- [x] NFR-3: 增加回归测试防止 capture 再次推荐会失败的写入式 analyze。\n\n## 3. 范围界定\n\n### 包含\n\n- backlog capture 输出提示修复。\n- backlog-command 测试断言。\n- getting-started 文档一致性说明。\n\n### 不包含\n\n- 不改变 analyze 写入式命令的活跃任务要求。\n- 不新增自动写回 backlog evidence 的命令。\n- 不删除 brainstorm/refine/analyze prompt emitter 流程。\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | capture 后分析入口 | 写入式 analyze / dry-run analyze | dry-run analyze | raw backlog 尚未成为活跃任务，不能写 analysis/* |\n| 2 | evidence 回填 | 自动写回 / 用户或 agent edit 回填 | edit 回填 | 保持 prompt emitter 与 artifact sink 边界 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### Decision Brief\n\n- 当前问题: backlog capture 推荐的 analyze 命令与 analyze 的无活跃任务失败边界冲突。\n- 目标: capture 输出可直接执行的 dry-run 分析建议，避免用户在 completed/idle 场景遇到必然失败。\n- 背景: R-175 由实际 dogfood 复现产生，用户要求与 R-174 一并完成。\n- 可选方案: A 保持现状；B capture 推荐 analyze --dry-run；C 让 analyze 自动写 backlog evidence；D 取消 capture 后的下一步提示。\n- 推荐方案: 采用 B。最小修改，符合 prompt emitter 边界，并保留 artifact sink/edit 回填流程。\n- 不做什么: 不放宽 analyze 对活跃任务的写入要求，不自动生成最终 analysis evidence。\n- 成本: 低，涉及一行提示、文档和测试。\n- 风险: 用户仍需手动或由 agent 通过 backlog edit 回填 evidence；但这符合现有工作流。\n- 回滚方案: 恢复 capture 原提示，同时保留 analyze 的 fail-loud 错误提示。\n- 用户确认: 2026-06-14 用户明确同意并要求不间断完成 R-174 和 R-175。\n\n## 5. 验收标准\n\n- [x] AC-1: backlog capture 输出 docpath analyze --dry-run --mode deep --content <title>。\n- [x] AC-2: 测试断言输出不再包含无 dry-run 的写入式 analyze 建议。\n- [x] AC-3: docs/getting-started.md 对 promote 前 dry-run 分析保持一致。\n- [x] AC-4: 全量 pnpm test 已通过，DocPath check/review 通过。\n",
+  "generated_at": "2026-06-14T15:23:01.341Z",
+  "scope": {
+    "included": [
+      "backlog capture 输出提示修复。",
+      "backlog-command 测试断言。",
+      "getting-started 文档一致性说明。"
+    ],
+    "excluded": [
+      "不改变 analyze 写入式命令的活跃任务要求。",
+      "不新增自动写回 backlog evidence 的命令。",
+      "不删除 brainstorm/refine/analyze prompt emitter 流程。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界"
+    ],
+    "user_confirmed": "2026-06-14 用户明确同意并要求不间断完成 R-174 和 R-175。",
+    "decision_brief_markdown": "- 当前问题: backlog capture 推荐的 analyze 命令与 analyze 的无活跃任务失败边界冲突。\n- 目标: capture 输出可直接执行的 dry-run 分析建议，避免用户在 completed/idle 场景遇到必然失败。\n- 背景: R-175 由实际 dogfood 复现产生，用户要求与 R-174 一并完成。\n- 可选方案: A 保持现状；B capture 推荐 analyze --dry-run；C 让 analyze 自动写 backlog evidence；D 取消 capture 后的下一步提示。\n- 推荐方案: 采用 B。最小修改，符合 prompt emitter 边界，并保留 artifact sink/edit 回填流程。\n- 不做什么: 不放宽 analyze 对活跃任务的写入要求，不自动生成最终 analysis evidence。\n- 成本: 低，涉及一行提示、文档和测试。\n- 风险: 用户仍需手动或由 agent 通过 backlog edit 回填 evidence；但这符合现有工作流。\n- 回滚方案: 恢复 capture 原提示，同时保留 analyze 的 fail-loud 错误提示。\n- 用户确认: 2026-06-14 用户明确同意并要求不间断完成 R-174 和 R-175。"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "backlog capture 输出下一步建议时使用 docpath analyze --dry-run --mode deep --content <title>。",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "保留通过 docpath backlog edit 回填 evidence 的流程。",
+      "done": true
+    },
+    {
+      "id": "FR-3",
+      "text": "getting-started 文档说明 promote 前使用 analyze --dry-run。",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不改变 backlog capture 的状态写入行为。",
+      "done": true
+    },
+    {
+      "id": "NFR-2",
+      "text": "不让 dry-run 输出被当作 durable analysis evidence。",
+      "done": true
+    },
+    {
+      "id": "NFR-3",
+      "text": "增加回归测试防止 capture 再次推荐会失败的写入式 analyze。",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "backlog capture 输出 docpath analyze --dry-run --mode deep --content <title>。",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "测试断言输出不再包含无 dry-run 的写入式 analyze 建议。",
+      "done": true
+    },
+    {
+      "id": "AC-3",
+      "text": "docs/getting-started.md 对 promote 前 dry-run 分析保持一致。",
+      "done": true
+    },
+    {
+      "id": "AC-4",
+      "text": "全量 pnpm test 已通过，DocPath check/review 通过。",
+      "done": true
+    }
+  ],
+  "decision_brief": "- 当前问题: backlog capture 推荐的 analyze 命令与 analyze 的无活跃任务失败边界冲突。\n- 目标: capture 输出可直接执行的 dry-run 分析建议，避免用户在 completed/idle 场景遇到必然失败。\n- 背景: R-175 由实际 dogfood 复现产生，用户要求与 R-174 一并完成。\n- 可选方案: A 保持现状；B capture 推荐 analyze --dry-run；C 让 analyze 自动写 backlog evidence；D 取消 capture 后的下一步提示。\n- 推荐方案: 采用 B。最小修改，符合 prompt emitter 边界，并保留 artifact sink/edit 回填流程。\n- 不做什么: 不放宽 analyze 对活跃任务的写入要求，不自动生成最终 analysis evidence。\n- 成本: 低，涉及一行提示、文档和测试。\n- 风险: 用户仍需手动或由 agent 通过 backlog edit 回填 evidence；但这符合现有工作流。\n- 回滚方案: 恢复 capture 原提示，同时保留 analyze 的 fail-loud 错误提示。\n- 用户确认: 2026-06-14 用户明确同意并要求不间断完成 R-174 和 R-175。"
+}

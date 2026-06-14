@@ -161,7 +161,7 @@ async function printInstallMetadata(cwd: string): Promise<void> {
 export async function statusCommand(options: StatusOptions): Promise<void> {
   const cwd = options.cwd;
   if (options.agent) {
-    console.log(await generateAgentOutput(cwd));
+    console.log(await generateAgentOutput(cwd, { view: 'status' }));
     return;
   }
 

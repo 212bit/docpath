@@ -535,10 +535,26 @@ describe('install agent adapters', () => {
     const parsed = parse(output);
 
     assert.equal(parsed.install_health.target, 'codex');
+    assert.deepEqual(parsed.install_health.adapters, ['codex']);
+    assert.equal(parsed.install_health.current_agent, null);
     assert.equal(parsed.install_health.passed, false);
     assert.ok(parsed.install_health.errors >= 1);
     assert.ok(parsed.install_health.issue_ids.includes('codex-config-missing'));
     assert.equal(parsed.install_health.recommended_command, 'docpath install --target codex');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('status --agent expands universal install health into adapter coverage', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target universal`, cwd);
+
+    const output = run(`status --cwd ${cwd} --agent`, cwd);
+    const parsed = parse(output);
+
+    assert.equal(parsed.install_health.target, 'universal');
+    assert.deepEqual(parsed.install_health.adapters, ['codex', 'claude', 'opencode']);
+    assert.equal(parsed.install_health.current_agent, null);
+    assert.equal(parsed.install_health.passed, true);
     rmSync(cwd, { recursive: true, force: true });
   });
 

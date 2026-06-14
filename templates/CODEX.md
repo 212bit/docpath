@@ -5,8 +5,9 @@
 
 ## Start Here
 
-1. Run `docpath status --agent`.
-2. Run `docpath next --agent`.
+1. Run `docpath status --agent` for the `agent_view: status` workflow snapshot.
+2. Run `docpath next --agent` for the `agent_view: next` route and
+   `recommended_command`.
 3. Use the returned route and indexes before reading files.
 4. Expand details with `docpath reveal --topic <keyword> --level 1-3` or
    `docpath context --max-tokens 5000 --topic <keyword>`.

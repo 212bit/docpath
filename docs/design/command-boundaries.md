@@ -104,6 +104,48 @@ Runtime or alias paths that should not be default commit targets:
 - `.docpath/bin/*`
 - `.docpath/docs-index.json`
 
+## Task Alias And Archive Boundary
+
+`.docpath/tasks/<task_id>/` is the canonical task evidence directory.
+`.docpath/tasks/current/` is a runtime alias for the current task, used for
+agent ergonomics and structured mirrors. It is not a durable evidence path and
+must not be force-added by default.
+
+When `docpath backlog promote <id>` creates a new task, it clears
+`.docpath/tasks/current/` before writing the new spec alias. This prevents stale
+`plan.json`, stale checklist completion, or old `analysis/*` files from leaking
+from a completed task into the newly promoted task.
+
+Completed canonical task directories are intentionally not moved by
+`docpath agent done`, `docpath review`, or `docpath changes --agent`. Commit
+readiness must be checked while canonical evidence paths are stable. Historical
+directories can be previewed with:
+
+```bash
+docpath gc
+```
+
+After closeout and human confirmation, `docpath gc --force` archives inactive
+canonical task directories into `.docpath/tasks/done/`. GC does not make
+`.docpath/tasks/current/*` a commit target.
+
+## Agent Adapter Coverage
+
+`docpath install --target <target>` records installation metadata for adapter
+coverage, not the identity of the current session. A project may support several
+agents at once:
+
+- `target=codex` covers Codex project instructions and skills.
+- `target=claude` covers Claude Code protocol and slash commands.
+- `target=opencode` covers OpenCode protocol and commands.
+- `target=universal` covers Codex, Claude Code, and OpenCode adapters.
+
+Agent output keeps the legacy `install_health.target` field and also exposes
+`install_health.adapters` so agents can distinguish project-level installed
+adapter coverage from the current host agent. `install_health.current_agent` is
+reserved for explicit session identity such as `DOCPATH_AGENT`; it should not be
+inferred from install target alone.
+
 ## Compatibility
 
 Do not delete or rename existing commands as part of boundary cleanup. Prefer:

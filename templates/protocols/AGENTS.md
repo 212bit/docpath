@@ -9,8 +9,10 @@
 
 ## First Steps
 
-1. Run `docpath status --agent`.
-2. Run `docpath next --agent`.
+1. Run `docpath status --agent` to read the `agent_view: status` workflow
+   snapshot: state, progress, drift, and install health.
+2. Run `docpath next --agent` to read the `agent_view: next` route:
+   `next_action`, `recommended_command`, required context, and exit criteria.
 3. Follow the `recommended_command` unless the user explicitly changes direction.
 4. Use `context_index`, `data_index`, `required_files`, and `current_focus` as an
    index. Do not expand files just because they are mentioned.
@@ -107,8 +109,8 @@ Rules:
 
 | Command | Purpose |
 | --- | --- |
-| `docpath status --agent` | Machine-readable workflow state and indexes |
-| `docpath next --agent` | Machine-readable next-action route |
+| `docpath status --agent` | Machine-readable workflow state snapshot and health indexes |
+| `docpath next --agent` | Machine-readable next-action route and command contract |
 | `docpath reveal --level N --topic <keyword>` | Progressive context expansion |
 | `docpath context --max-tokens 5000 --topic <keyword>` | Budgeted context package |
 | `docpath go --step S1` | Load the selected plan step |
@@ -116,6 +118,7 @@ Rules:
 | `docpath review` | Structured review |
 | `docpath changes --agent` | Read-only git closeout and commit readiness view |
 | `docpath journal` | Knowledge archive |
+| `docpath gc` | Preview historical task directory archive candidates after closeout |
 | `docpath gc-decisions` | Rotate old decision logs |
 
 ## Decision Log Aging

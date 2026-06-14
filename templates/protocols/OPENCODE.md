@@ -7,8 +7,9 @@
 
 ## First Steps
 
-1. Run `docpath status --agent`.
-2. Run `docpath next --agent`.
+1. Run `docpath status --agent` for the `agent_view: status` workflow snapshot.
+2. Run `docpath next --agent` for the `agent_view: next` route and
+   `recommended_command`.
 3. Follow the returned `recommended_command`.
 4. Use `context_index`, `data_index`, and `current_focus` as indexes before
    reading any files.

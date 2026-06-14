@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parse } from 'yaml';
@@ -67,6 +67,8 @@ describe('backlog commands', () => {
 
     assert.match(out, /已捕获 raw backlog 条目: R-001/);
     assert.match(out, /readiness: raw/);
+    assert.match(out, /docpath analyze --dry-run --mode deep --content "记录一个想法"/);
+    assert.doesNotMatch(out, /docpath analyze --mode deep --content "记录一个想法"/);
     const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001.md'), 'utf-8');
     assert.match(item, /source: docpath backlog capture/);
     assert.match(item, /readiness: raw/);
@@ -593,6 +595,14 @@ created_at: 2026-05-31
       started_at: '2026-05-31T00:00:00.000Z',
       updated_at: '2026-05-31T00:00:00.000Z',
     }, null, 2));
+    mkdirSync(join(cwd, '.docpath', 'tasks', 'current', 'analysis'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.json'), JSON.stringify({
+      schema_version: 1,
+      kind: 'plan',
+      title: 'Stale Plan',
+      steps: [{ id: 'S1', name: 'Old', description: 'old', acceptance: 'old', dependencies: 'none', status: 'done' }],
+    }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'analysis', 'technical.md'), 'stale analysis\n');
 
     const out = run('backlog promote R-001', cwd);
     assert.match(out, /已 promote backlog 条目: R-001/);
@@ -607,6 +617,10 @@ created_at: 2026-05-31
     assert.ok(taskId, 'task id should be rendered into promoted spec');
     const canonicalSpec = readFileSync(join(cwd, '.docpath', 'tasks', taskId, 'spec.md'), 'utf-8');
     assert.equal(canonicalSpec, spec);
+    const currentSpecJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.json'), 'utf-8'));
+    assert.equal(currentSpecJson.task_id, taskId);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.json')), false);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'analysis', 'technical.md')), false);
 
     const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8');
     assert.match(item, /status: active/);

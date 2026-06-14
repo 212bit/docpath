@@ -445,10 +445,17 @@ export interface DoctorIssue {
 export interface InstallDoctorReport {
   passed: boolean;
   target: Target;
+  adapters: Array<'codex' | 'claude' | 'opencode'>;
+  current_agent: string | null;
   errors: number;
   warnings: number;
   issues: DoctorIssue[];
   recommended_command: string | null;
+}
+
+function adaptersForTarget(target: Target): Array<'codex' | 'claude' | 'opencode'> {
+  if (target === 'universal') return ['codex', 'claude', 'opencode'];
+  return [target];
 }
 
 async function checkShimExecutable(context: InstallContext): Promise<DoctorIssue[]> {
@@ -606,6 +613,8 @@ function buildDoctorReport(context: InstallContext, issues: DoctorIssue[]): Inst
   return {
     passed: errors === 0,
     target: context.target,
+    adapters: adaptersForTarget(context.target),
+    current_agent: process.env.DOCPATH_AGENT || null,
     errors,
     warnings,
     issues,

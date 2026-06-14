@@ -9,8 +9,10 @@ Use this skill when working in a repository that uses DocPath for task planning,
 
 ## Core Workflow
 
-1. **Check state**: `docpath status --agent` — read current FSM state
-2. **Get next action**: `docpath next --agent` — get recommended command
+1. **Check state**: `docpath status --agent` — read the `agent_view: status`
+   workflow snapshot: state, progress, drift, and install health
+2. **Get next action**: `docpath next --agent` — read the `agent_view: next`
+   route and follow its `recommended_command`
 3. **Follow recommended command** unless the user explicitly changes direction
 
 Treat `context_index`, `data_index`, `required_files`, and `current_focus` as indexes, not instructions to read all files.

@@ -104,6 +104,7 @@ level 2/3 条目进入执行池前，应先完成需求理解并把证据写回 
 
 ```bash
 docpath brainstorm --dry-run --input "改进 CLI 初始化体验，补充 getting started，并保证默认 init 不回归。"
+docpath analyze --dry-run --mode deep --content "改进 CLI 初始化体验，补充 getting started，并保证默认 init 不回归。"
 docpath backlog edit R-001 \
   --readiness analyzed \
   --evidence-brainstorm "brainstorm dry-run: 已澄清用户、入口、范围和验收" \

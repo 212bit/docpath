@@ -4,7 +4,7 @@
 
 import { stringify } from 'yaml';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 import {
   type BacklogItem,
@@ -25,7 +25,7 @@ import {
 import { today, resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
-import { archivedTaskDir, canonicalTaskRelativePath, canonicalTaskDir, currentTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
+import { archivedTaskDir, canonicalTaskRelativePath, canonicalTaskDir, clearCurrentTaskAlias, writeActiveTaskFile } from '../utils/task-files.js';
 
 interface BacklogCommandOptions {
   cwd: string;
@@ -544,7 +544,7 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
   console.log(`   priority: ${item.priority}`);
   console.log(`   level: ${item.level}`);
   console.log('   readiness: raw');
-  console.log(`   下一步: docpath analyze --mode deep --content "${item.title}"，再用 docpath backlog edit ${item.id} 补充 evidence`);
+  console.log(`   下一步: docpath analyze --dry-run --mode deep --content "${item.title}"，再用 docpath backlog edit ${item.id} 补充 evidence`);
 }
 
 async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
@@ -607,13 +607,8 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   const docpathDir = await resolveDocpathDir(options.cwd);
   const nextStatus = transitionBacklog(item.status, 'active');
   const taskId = generateUniqueTaskId(docpathDir, item.title);
-  const tasksCurrentDir = currentTaskDir(docpathDir);
-  const planPath = join(tasksCurrentDir, 'plan.md');
 
-  await mkdir(tasksCurrentDir, { recursive: true });
-  if (existsSync(planPath)) {
-    await rm(planPath, { force: true });
-  }
+  await clearCurrentTaskAlias(docpathDir);
 
   const specContent = renderPromotedSpec(item, taskId);
   await writeActiveTaskFile(docpathDir, taskId, 'spec.md', specContent);

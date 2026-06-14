@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-14T15:24:40.938Z",
+    "updated_at": "2026-06-14T15:24:40.938Z",
+    "content_sha256": "90d014a68b2c00943814eb002f5c2a507157c66d18fa56dc3be2ceb06037d929"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: 验证 backlog capture dry-run analyze 提示\n- **描述**: 确认 R-175 的实现已在 R-174 中完成：backlog capture 输出 dry-run analyze，getting-started 文档一致，回归测试覆盖。\n- **验收条件**: backlog-command 测试和 DocPath 门禁通过；R-175 可标记完成。\n- **依赖**: 无\n\n## Checklist\n- [x] S1\n\n## 依赖关系图\nS1\n",
+  "generated_at": "2026-06-14T15:24:40.938Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "验证 backlog capture dry-run analyze 提示",
+      "description": "确认 R-175 的实现已在 R-174 中完成：backlog capture 输出 dry-run analyze，getting-started 文档一致，回归测试覆盖。",
+      "acceptance": "backlog-command 测试和 DocPath 门禁通过；R-175 可标记完成。",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

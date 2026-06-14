@@ -22,6 +22,10 @@ import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridC
 import { readGitCloseoutSummary, type GitCloseoutSummary } from './git-closeout.js';
 
 export interface AgentOutput {
+  /** 输出视图: status --agent 是状态快照, next --agent 是下一步路由。 */
+  agent_view: 'status' | 'next';
+  /** 视图契约说明，帮助 Agent 区分读状态和执行路由。 */
+  agent_contract: string;
   /** 当前状态 (state machine state) */
   state: string;
   /** 复杂度级别 */
@@ -70,6 +74,8 @@ export interface AgentOutput {
   /** 安装资产与 Agent 配置健康摘要 */
   install_health: {
     target: string;
+    adapters: string[];
+    current_agent: string | null;
     passed: boolean;
     errors: number;
     warnings: number;
@@ -829,12 +835,20 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
 /**
  * 生成 Agent YAML 输出
  */
-export async function generateAgentOutput(cwd: string): Promise<string> {
+export async function generateAgentOutput(
+  cwd: string,
+  options: { view?: 'status' | 'next' } = {},
+): Promise<string> {
+  const view = options.view || 'next';
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     // 无 .docpath 时返回最小状态
     return stringify({
+      agent_view: view,
+      agent_contract: view === 'status'
+        ? 'status_snapshot: read workflow state and health; recommended_command is a route hint'
+        : 'next_route: follow recommended_command unless the user explicitly redirects',
       state: 'uninitialized',
       next_action: '运行 docpath init 初始化项目',
       recommended_command: 'docpath init',
@@ -847,6 +861,10 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
   const quickFix = generateQuickFix(context);
 
   const output: AgentOutput = {
+    agent_view: view,
+    agent_contract: view === 'status'
+      ? 'status_snapshot: read workflow state, progress, drift, and health; recommended_command is a route hint'
+      : 'next_route: use next_action and recommended_command as the active workflow route',
     state: context.state?.state || 'unknown',
     level: context.state?.level ?? null,
     task_id: context.state?.task_id || '',
@@ -875,6 +893,8 @@ export async function generateAgentOutput(cwd: string): Promise<string> {
     },
     install_health: context.installHealth ? {
       target: context.installHealth.target,
+      adapters: [...context.installHealth.adapters],
+      current_agent: context.installHealth.current_agent,
       passed: context.installHealth.passed,
       errors: context.installHealth.errors,
       warnings: context.installHealth.warnings,

@@ -39,6 +39,11 @@ function nextAgent(cwd) {
   return parse(output);
 }
 
+function statusAgent(cwd) {
+  const output = execSync(`node ${BIN} status --cwd ${cwd} --agent`, { encoding: 'utf-8' });
+  return parse(output);
+}
+
 function git(cwd, args) {
   return execSync(`git ${args}`, { cwd, encoding: 'utf-8', timeout: 20000 });
 }
@@ -52,6 +57,21 @@ function initGitRepo(cwd) {
 }
 
 describe('next --agent routing', () => {
+  it('distinguishes status and next agent contracts while keeping route fields compatible', () => {
+    const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
+    const status = statusAgent(cwd);
+    const next = nextAgent(cwd);
+
+    assert.equal(status.agent_view, 'status');
+    assert.equal(next.agent_view, 'next');
+    assert.match(status.agent_contract, /status_snapshot/);
+    assert.match(next.agent_contract, /next_route/);
+    assert.equal(status.recommended_command, next.recommended_command);
+    assert.equal(status.next_action, next.next_action);
+    assert.notDeepEqual(status, next);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('recommends backlog capture for a newly initialized project without accepted backlog', () => {
     const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
     const output = nextAgent(cwd);

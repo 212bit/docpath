@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo",
-  "task_title": "明确 AI 辅助命令边界：prompt emitter vs artifact sink vs workflow gate",
+  "task_id": "T-20260614-backlog-capture-analyze-dry-run",
+  "task_title": "修复 backlog capture 无活跃任务时 analyze 建议缺少 --dry-run",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-14T14:27:06.060Z",
-  "updated_at": "2026-06-14T14:27:06.060Z"
+  "started_at": "2026-06-14T15:26:04.768Z",
+  "updated_at": "2026-06-14T15:26:04.767Z"
 }
