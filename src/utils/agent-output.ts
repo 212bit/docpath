@@ -19,6 +19,7 @@ import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.j
 import { readRuleFile, ruleDisplayPaths } from './rules.js';
 import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } from '../commands/install.js';
 import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridContextIndexLeaves, type HybridContextIndexSummary, type HybridContextIndexEntry } from './context-index.js';
+import { readGitCloseoutSummary, type GitCloseoutSummary } from './git-closeout.js';
 
 export interface AgentOutput {
   /** 当前状态 (state machine state) */
@@ -311,6 +312,7 @@ type AgentOutputContext = {
   lessonSummary: { pendingCount: number; pendingKeys: string[] };
   hasIncompleteSpec: boolean;
   installHealth: InstallDoctorReport | null;
+  gitCloseout: GitCloseoutSummary | null;
   contextIndex: HybridContextIndexSummary | null;
   contextIndexTrunk: HybridContextIndexEntry[] | null;
   contextIndexLeaves: HybridContextIndexEntry[] | null;
@@ -359,6 +361,7 @@ function inferNextAction(
   historicalTaskDirCount: number,
   lessonSummary: { pendingCount: number; pendingKeys: string[] },
   hasIncompleteSpec: boolean,
+  gitCloseout: GitCloseoutSummary | null,
 ): {
   next_action: string;
   recommended_command: string;
@@ -513,6 +516,16 @@ function inferNextAction(
 
   if (currentState === 'completed' || phase === 'completed') {
     const required = ['.docpath/workspace/current.md'];
+    if (gitCloseout?.needs_closeout) {
+      return {
+        next_action: '任务已完成，先运行 git closeout 只读检查',
+        recommended_command: 'docpath changes --agent',
+        required_context: required,
+        required_files: required,
+        must_update: [],
+        exit_criteria: 'docpath changes --agent 已确认提交范围、canonical ignored evidence 与门禁证据',
+      };
+    }
     if (acceptedBacklog) {
       return {
         next_action: `从 backlog 拉起下一项任务: ${acceptedBacklog.id} ${acceptedBacklog.title}`,
@@ -709,6 +722,9 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     (await readRuleFile(docpathDir, 'architecture')).content,
   );
   const installHealth = await readInstallHealth(cwd, docpathDir);
+  const gitCloseout = (state?.state === 'completed' || state?.phase === 'completed')
+    ? await readGitCloseoutSummary(cwd, docpathDir, state?.task_id || undefined)
+    : null;
   const contextIndex = await readHybridContextIndexSummary(cwd);
   const contextIndexTrunk = await readHybridContextIndexTrunk(cwd);
   const contextIndexLeaves = await readHybridContextIndexLeaves(cwd);
@@ -729,6 +745,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     lessonSummary,
     hasIncompleteSpec: hasSpec ? isIncompleteSpec(specContent) : false,
     installHealth,
+    gitCloseout,
     contextIndex,
     contextIndexTrunk,
     contextIndexLeaves,
@@ -774,6 +791,7 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
     context.historicalTaskDirCount,
     context.lessonSummary,
     context.hasIncompleteSpec,
+    context.gitCloseout,
   );
 
   if (pendingDone && state?.phase === 'executing' && pendingDone.task_id === state.task_id) {

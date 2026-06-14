@@ -66,6 +66,10 @@ Rules:
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath agent done` before claiming a task is complete.
 - Run `docpath agent handoff` when another session may resume the task.
+- Before any local `git commit`, run `docpath changes --agent`. Treat it as a
+  read-only closeout report; only force-add exact canonical evidence paths it
+  recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by
+  default.
 
 ## Required Gates
 
@@ -95,6 +99,7 @@ Rules:
 | `docpath go --step S1` | Load the selected plan step |
 | `docpath check` | Quality gates |
 | `docpath review` | Structured review |
+| `docpath changes --agent` | Read-only git closeout and commit readiness view |
 | `docpath journal` | Knowledge archive |
 | `docpath gc-decisions` | Rotate old decision logs |
 

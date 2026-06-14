@@ -315,14 +315,13 @@ export async function writeBreadcrumb(
     if (entry.status === 'done') {
       const summary = await readBreadcrumb(projectRoot);
       const normalizedStep = normalizeStepName(entry.step);
-      const existingDone = summary.entries.find(
+      const latestForStep = [...summary.entries].reverse().find(
         (e) => e.taskId === entry.taskId &&
-               normalizeStepName(e.step) === normalizedStep &&
-               e.status === 'done'
+               normalizeStepName(e.step) === normalizedStep
       );
 
-      if (existingDone) {
-        reporter(`⚠️  步骤 ${entry.step} 已完成（记录时间: ${existingDone.timestamp}），跳过重复记录`);
+      if (latestForStep?.status === 'done') {
+        reporter(`⚠️  步骤 ${entry.step} 已完成（记录时间: ${latestForStep.timestamp}），跳过重复记录`);
         return;
       }
     }

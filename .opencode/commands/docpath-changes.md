@@ -4,6 +4,11 @@ description: Read-only pre-commit change summary
 
 Run `docpath changes` to summarize the current git working tree, DocPath gate evidence, and a suggested commit message.
 
+This command is read-only. In agent mode, use it before local `git commit`.
+If it reports ignored canonical evidence, only force-add the exact paths from
+`ignored_evidence.add_command`. Do not force-add `.docpath/tasks/current/*`
+alias evidence by default.
+
 ## Run
 
 ```bash

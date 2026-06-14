@@ -24,6 +24,7 @@ High-signal trigger phrases include:
 6. Before code or document edits in an active task, run `docpath agent enter` only when the route says the task is in an executable phase.
 7. After each meaningful sub-task, run `docpath agent step --step "<step>"`.
 8. Before claiming completion, run `docpath agent done` or follow the `docpath next --agent` completion route.
+9. Before any local `git commit`, run `docpath changes --agent`. Treat it as a read-only closeout report; only force-add exact canonical evidence paths it recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by default.
 
 If there is **no active task**, do not invent hidden state and do not hand-write `.docpath/workspace/current.md`. Use `docpath next --agent`, backlog/refine/write-spec/plan/go, or the explicit command recommended by DocPath.
 

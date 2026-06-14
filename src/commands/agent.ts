@@ -19,6 +19,7 @@ import { compactCommand, nextCommand, runCommand } from './runtime.js';
 import { goCommand } from './go.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { transitionWorkflow } from '../engine/transitions.js';
+import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { recordSkipReason } from '../engine/policy.js';
 import { markPlanStep } from '../utils/plan-sync.js';
 import { emit } from '../hooks/lifecycle.js';
@@ -220,6 +221,31 @@ async function finishAgentDoneTask(options: AgentOptions, finalStatus: NonNullab
   throw new Error(`docpath agent done 暂不支持状态 ${finalStatus}`);
 }
 
+function normalizePlanStepCandidate(step: string | undefined): string | null {
+  const match = step?.trim().match(/^(S\d+(?:\.\d+)?)/);
+  return match ? match[1] : null;
+}
+
+async function completeFinalPlanStepIfNeeded(options: AgentOptions, taskId: string, step: string | null): Promise<void> {
+  if (!step) return;
+  const session = resolveSessionContext(options.session);
+  const sync = await markPlanStep(options.cwd, step, 'done');
+  if (!sync.updated) return;
+  await writeBreadcrumb(options.cwd, {
+    taskId,
+    step,
+    status: 'done',
+    context: `agent-done: ${step}`,
+    sessionId: session.sessionId,
+  });
+  await releaseExecutionLease(options.cwd, {
+    sessionId: session.sessionId,
+    taskId,
+    step,
+    command: 'agent done',
+  });
+}
+
 async function emitAgentTaskEnd(cwd: string, finalStatus: NonNullable<AgentOptions['status']>): Promise<void> {
   try {
     const current = await readCurrentState(cwd);
@@ -234,11 +260,16 @@ async function emitAgentTaskEnd(cwd: string, finalStatus: NonNullable<AgentOptio
 
 async function handleAgentDone(options: AgentOptions): Promise<void> {
   const { cwd } = options;
-  await requireBoundTask('done', cwd);
+  const taskId = await requireBoundTask('done', cwd);
+  const stateAtStart = await readCurrentState(cwd);
+  const finalPlanStep = normalizePlanStepCandidate(options.step || stateAtStart?.current_step);
   const finalStatus = options.status || 'done';
 
   await runAgentCheckGate(options);
   await runAgentReviewGate(options);
+  if (finalStatus === 'done') {
+    await completeFinalPlanStepIfNeeded(options, taskId, finalPlanStep);
+  }
   await finishAgentDoneTask(options, finalStatus);
   await emitAgentTaskEnd(cwd, finalStatus);
   await nextCommand({ cwd, agent: true });

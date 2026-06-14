@@ -39,6 +39,18 @@ function nextAgent(cwd) {
   return parse(output);
 }
 
+function git(cwd, args) {
+  return execSync(`git ${args}`, { cwd, encoding: 'utf-8', timeout: 20000 });
+}
+
+function initGitRepo(cwd) {
+  git(cwd, 'init');
+  git(cwd, 'config user.email test@example.com');
+  git(cwd, 'config user.name Test');
+  git(cwd, 'add .');
+  git(cwd, 'commit -m initial');
+}
+
 describe('next --agent routing', () => {
   it('recommends backlog capture for a newly initialized project without accepted backlog', () => {
     const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
@@ -74,6 +86,89 @@ describe('next --agent routing', () => {
     assert.equal(output.lesson_summary.pending_count, 1);
     assert.equal(output.lesson_summary.pending_keys.length, 1);
     assert.match(output.lesson_summary.pending_keys[0], /t-lesson-workflow/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('keeps clean completed git worktrees on the normal completed route', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    writeFileSync(join(cwd, 'README.md'), '# clean\n');
+    initGitRepo(cwd);
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('routes completed dirty git worktrees into changes before accepted backlog', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: accepted
+priority: P0
+level: 2
+source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Alpha
+`);
+    writeFileSync(join(cwd, 'README.md'), '# initial\n');
+    initGitRepo(cwd);
+    writeFileSync(join(cwd, 'README.md'), '# changed\n');
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath changes --agent');
+    assert.match(output.next_action, /git closeout/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('routes completed canonical ignored evidence into changes even with a clean worktree', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass', taskId: 'T-NEXT' });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), '# spec\n\n> backlog_id: R-999\n');
+    writeFileSync(join(cwd, '.gitignore'), '.docpath/backlog/\n');
+    writeFileSync(join(cwd, 'README.md'), '# clean\n');
+    initGitRepo(cwd);
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-999.md'), `---
+id: R-999
+title: Ignored Backlog
+status: done
+priority: P2
+level: 2
+source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Ignored backlog
+`);
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath changes --agent');
     rmSync(cwd, { recursive: true, force: true });
   });
 

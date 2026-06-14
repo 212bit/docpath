@@ -115,6 +115,22 @@ describe('Breadcrumb write and read', () => {
     rmSync(root, { recursive: true, force: true });
   });
 
+  it('allows a done record after the same step was blocked later', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'bc-blocked-done-'));
+    const messages = [];
+    await writeBreadcrumb(root, { taskId: 'T-RECOVER', step: 'check', status: 'done', context: 'first pass' }, (message) => messages.push(message));
+    await writeBreadcrumb(root, { taskId: 'T-RECOVER', step: 'check', status: 'blocked', context: 'regression found' }, (message) => messages.push(message));
+    await writeBreadcrumb(root, { taskId: 'T-RECOVER', step: 'check', status: 'done', context: 'fixed again' }, (message) => messages.push(message));
+
+    const summary = await readBreadcrumb(root);
+    const entries = summary.entries.filter((entry) => entry.taskId === 'T-RECOVER' && entry.step === 'check');
+
+    assert.equal(entries.length, 3);
+    assert.equal(entries.at(-1).status, 'done');
+    assert.equal(messages.some((message) => /跳过重复记录/.test(message)), false);
+    rmSync(root, { recursive: true, force: true });
+  });
+
   it('latest points to last entry', async () => {
     const s = await readBreadcrumb(dp);
     assert.ok(s.latest, 'latest should exist');

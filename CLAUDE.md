@@ -98,6 +98,10 @@ Workflow:
   or long-term maintenance cost require brainstorm/refine plus a Decision Brief
   and explicit user confirmation before implementation.
 - Run `docpath check` before marking work complete.
+- Before any local `git commit`, run `docpath changes --agent`. Treat it as a
+  read-only closeout report; only force-add exact canonical evidence paths it
+  recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by
+  default.
 
 ## Decision Log Aging
 

@@ -150,20 +150,47 @@ describe('changes command', () => {
     assert.match(human, /.docpath\/backlog\/R-999\.md/);
     assert.match(human, /.docpath\/tasks\/T-CHANGES\/spec\.md/);
     assert.match(human, /git add -f .*\.docpath\/backlog\/R-999\.md .*\.docpath\/tasks\/T-CHANGES\/spec\.md/);
-    assert.match(human, /存在被 gitignore 忽略的 DocPath evidence/);
+    assert.match(human, /存在被 gitignore 忽略的 DocPath canonical evidence/);
 
     const agent = run('changes --agent', cwd);
     assert.match(agent, /ignored_evidence:/);
+    assert.match(agent, /check: "checked"/);
     assert.match(agent, /count: 2/);
+    assert.match(agent, /canonical_count: 2/);
+    assert.match(agent, /alias_count: 0/);
     assert.match(agent, /add_command: "git add -f .*\.docpath\/backlog\/R-999\.md .*\.docpath\/tasks\/T-CHANGES\/spec\.md"/);
 
     const parsed = JSON.parse(run('changes --json', cwd));
+    assert.equal(parsed.ignored_evidence.check, 'checked');
     assert.equal(parsed.ignored_evidence.files.length, 2);
+    assert.equal(parsed.ignored_evidence.canonical_files.length, 2);
+    assert.equal(parsed.ignored_evidence.alias_files.length, 0);
     assert.equal(parsed.ignored_evidence.files.includes('.docpath/backlog/R-999.md'), true);
     assert.equal(parsed.ignored_evidence.files.includes('.docpath/tasks/T-CHANGES/spec.md'), true);
     assert.match(parsed.ignored_evidence.add_command, /git add -f/);
     assert.equal(parsed.ready_to_commit, false);
-    assert.equal(parsed.blocking_reasons.some((reason) => /gitignore 忽略的 DocPath evidence/.test(reason)), true);
+    assert.equal(parsed.blocking_reasons.some((reason) => /gitignore 忽略的 DocPath canonical evidence/.test(reason)), true);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('does not suggest force-adding tasks/current alias evidence by default', () => {
+    const cwd = mkGitWorkspace();
+    writeFileSync(join(cwd, '.gitignore'), '.docpath/tasks/current/\n');
+    git(cwd, 'add .gitignore');
+    git(cwd, 'commit -m ignore-current');
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.json'), '{"alias":true}\n');
+    writeFileSync(join(cwd, 'README.md'), '# changed\n');
+
+    const parsed = JSON.parse(run('changes --json', cwd));
+
+    assert.equal(parsed.ignored_evidence.check, 'checked');
+    assert.equal(parsed.ignored_evidence.files.length, 1);
+    assert.equal(parsed.ignored_evidence.canonical_files.length, 0);
+    assert.equal(parsed.ignored_evidence.alias_files.length, 1);
+    assert.equal(parsed.ignored_evidence.alias_files[0], '.docpath/tasks/current/spec.json');
+    assert.equal(parsed.ignored_evidence.add_command, null);
+    assert.equal(parsed.ready_to_commit, true);
+    assert.equal(parsed.blocking_reasons.some((reason) => /canonical evidence/.test(reason)), false);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -178,6 +205,8 @@ describe('changes command', () => {
 
     assert.match(out, /mode: "since"/);
     assert.match(out, /since: "HEAD~1"/);
+    assert.match(out, /check: "skipped"/);
+    assert.match(out, /skip_reason: "since mode summarizes committed diff and skips pre-commit ignored evidence readiness"/);
     assert.match(out, /src\/feature\.ts/);
     assert.doesNotMatch(out, /存在未跟踪文件/);
     rmSync(cwd, { recursive: true, force: true });

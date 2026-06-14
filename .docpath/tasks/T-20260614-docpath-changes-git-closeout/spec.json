@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-14T09:05:15.594Z",
+    "updated_at": "2026-06-14T09:05:15.594Z",
+    "content_sha256": "999a57e4a97343ab73154cc35c6a22999cfb41ff2454cfdb31f6c0261def88d2"
+  },
+  "task_id": "T-20260614-docpath-changes-git-closeout",
+  "backlog_id": "R-172",
+  "title": "T-20260614-docpath-changes-git-closeout - 将 docpath changes 纳入完成态 git closeout 路由",
+  "markdown": "# T-20260614-docpath-changes-git-closeout - 将 docpath changes 纳入完成态 git closeout 路由\n\n> backlog_id: R-172\n> backlog_source: docpath backlog capture\n\n## 1. 背景与动机\n\n# R-172 Analysis - 将 docpath changes 纳入完成态 git closeout 路由\n\n## 背景\n\n上一任务完成后本地已生成 commit，但 DocPath 完成态路由没有提示运行 `docpath changes --agent`。现有 `docpath changes` 已能提供提交前只读变更收口视图，但它没有进入 `docpath next --agent` / 任务完成 closeout 路径，导致 agent 容易直接执行 `git add` / `git commit`，跳过 DocPath 对未提交证据、ignored evidence 和提交范围的检查。\n\n这会产生两个实际问题：\n\n- 完成态没有把 Git closeout 作为显式步骤，agent 难以知道何时该运行 `docpath changes --agent`。\n- `.docpath/backlog/*.md` 和 `.docpath/tasks/<taskId>/*` 这类 canonical evidence 可能被 `.gitignore` 忽略。当前 `docpath changes` 会列出 ignored evidence，但建议包含 `.docpath/tasks/current/*` alias，容易让 agent 盲目 `git add -f` 运行态别名文件。\n\n## 目标\n\n- 在任务完成且 review 通过后，如果工作区存在可提交变更或 canonical ignored evidence，`docpath next --agent` 应优先推荐 `docpath changes --agent`。\n- `docpath changes` 保持只读，不自动执行 `git add` 或 `git commit`。\n- ignored evidence 检查应区分 canonical evidence 与 `tasks/current` alias，避免把 alias 当成默认提交对象。\n- `changes --since` 明确定位为 commit summary，而不是 pre-commit readiness 检查。\n- agent 协议说明应要求本地 git commit 前先运行 `docpath changes --agent`。\n\n## 范围\n\n### 包含\n\n- 完成态 / review_pass 路由中的 git closeout next action。\n- `docpath changes --agent` 输出中 ignored evidence 的分类和建议文案。\n- `changes --since` 输出补充跳过 ignored evidence readiness 检查的信号。\n- 覆盖 completed task routing、ignored evidence classification、since semantics 的自动化测试。\n- 更新 Codex/OpenCode 等安装模板中的 DocPath agent protocol。\n\n### 不包含\n\n- 不自动运行 `git add`、`git commit`、`git push`。\n- 不改变 `.gitignore` 策略。\n- 不默认提交 `.docpath/tasks/current/*` 运行态 alias。\n- 不引入远端仓库、PR 或发布流程。\n\n## Decision Brief\n\n- 当前问题: Git closeout 是真实 workflow 步骤，但 DocPath FSM 没有把已有 `docpath changes` 接入完成态路由，导致提交前证据检查容易被跳过。\n- 目标: 让 agent 在任务完成后先看到只读 Git readiness，再由用户或 agent 显式执行 Git 命令。\n- 背景: 用户在 `T-20260614-session` 本地提交后指出“没有把 git 放入 docpath 流程”，并确认继续推进该流程改进。\n- 可选方案: A 只更新文档；B 完成态路由推荐 `docpath changes --agent`；C `agent done` 自动运行 changes；D DocPath 自动执行 git commit。\n- 推荐方案: 采用 B，并补充 `changes` 输出语义与协议文档。B 能把 closeout 纳入 FSM，同时保持 Git 写操作由显式命令完成。\n- 不做什么: 不自动提交，不自动 force-add ignored 文件，不把 `tasks/current` alias 作为 canonical evidence，不把 `changes --since` 当作 pre-commit readiness。\n- 成本: 小到中等，涉及 `agent-output` 路由、`changes` 报告、测试和协议模板。\n- 风险: Git 状态检测过于激进会打断已完成任务后的 backlog 路由；ignored evidence 分类错误会产生错误提交建议；文档模板遗漏会让新安装的 agent 协议不同步。\n- 回滚方案: 移除 completed-state closeout 分支，保留 `docpath changes` 独立命令；或只在存在 unstaged/staged changes 时推荐，不检查 ignored evidence。\n- 用户确认: 2026-06-14 用户确认继续推进将 git closeout 纳入 DocPath 流程。\n\n## 功能需求\n\n- FR-1: `docpath next --agent` 在 completed/review_pass 且 git closeout 未完成时推荐 `docpath changes --agent`。\n- FR-2: `docpath changes --agent` 将 ignored evidence 分类为 canonical evidence 和 alias evidence。\n- FR-3: canonical ignored evidence 可以影响 `ready_to_commit` 并给出精确 `git add -f` 建议。\n- FR-4: alias evidence 只作为信息或低优先级提示，不默认进入 `git add -f` 建议。\n- FR-5: `changes --since` 输出明确 `ignored_evidence_check` 被跳过或不适用。\n- FR-6: agent protocol 文档写明本地 commit 前应运行 `docpath changes --agent`。\n\n## 验收\n\n- AC-1: 完成态有未提交变更或 canonical ignored evidence 时，`docpath next --agent` 的 `recommended_command` 是 `docpath changes --agent`，而不是直接进入 backlog/learn/gc。\n- AC-2: 只有 `.docpath/tasks/current/*` alias evidence 时，`docpath changes --agent` 不建议盲目 `git add -f .docpath/tasks/current/*`。\n- AC-3: 存在 `.docpath/backlog/R-xxx.md` 或 `.docpath/tasks/T-xxx/*` canonical ignored evidence 时，`docpath changes --agent` 明确列出并建议精确 force-add。\n- AC-4: `docpath changes --since <ref> --agent` 明确标记 ignored evidence readiness 检查被跳过，避免和 pre-commit readiness 混淆。\n- AC-5: `pnpm test`、`docpath check`、`docpath review` 通过。\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: 将 docpath changes 纳入完成态 git closeout 路由\n  - 来源 backlog: R-172\n\n### 非功能需求\n- [ ] NFR-1: 保持与现有 DocPath 工作流兼容\n\n## 3. 范围界定\n\n### 包含\n- 将 docpath changes 纳入完成态 git closeout 路由\n\n### 不包含\n- 待在后续规划中补充\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [x] 长期维护成本增加\n- [ ] 其他\n\n### Decision Brief\n- 当前问题: Git closeout 是真实 workflow 步骤，但 DocPath FSM 没有把已有 `docpath changes` 接入完成态路由，导致提交前证据检查容易被跳过。\n- 目标: 让 agent 在任务完成后先看到只读 Git readiness，再由用户或 agent 显式执行 Git 命令。\n- 背景: 用户在 `T-20260614-session` 本地提交后指出“没有把 git 放入 docpath 流程”，并确认继续推进该流程改进。\n- 可选方案: A 只更新文档；B 完成态路由推荐 `docpath changes --agent`；C `agent done` 自动运行 changes；D DocPath 自动执行 git commit。\n- 推荐方案: 采用 B，并补充 `changes` 输出语义与协议文档。B 能把 closeout 纳入 FSM，同时保持 Git 写操作由显式命令完成。\n- 不做什么: 不自动提交，不自动 force-add ignored 文件，不把 `tasks/current` alias 作为 canonical evidence，不把 `changes --since` 当作 pre-commit readiness。\n- 成本: 小到中等，涉及 `agent-output` 路由、`changes` 报告、测试和协议模板。\n- 风险: Git 状态检测过于激进会打断已完成任务后的 backlog 路由；ignored evidence 分类错误会产生错误提交建议；文档模板遗漏会让新安装的 agent 协议不同步。\n- 回滚方案: 移除 completed-state closeout 分支，保留 `docpath changes` 独立命令；或只在存在 unstaged/staged changes 时推荐，不检查 ignored evidence。\n- 用户确认: 2026-06-14 用户确认继续推进将 git closeout 纳入 DocPath 流程。\n\n## 5. 验收标准\n\n- [ ] AC-1: 生成的 spec 可直接进入 `docpath plan`\n- [ ] AC-2: backlog 条目 R-172 与任务 T-20260614-docpath-changes-git-closeout 建立双向关联\n\n---\n\n*此文件由 `docpath backlog promote` 生成。*\n",
+  "generated_at": "2026-06-14T09:05:15.594Z",
+  "scope": {
+    "included": [
+      "完成态 / review_pass 路由中的 git closeout next action。",
+      "`docpath changes --agent` 输出中 ignored evidence 的分类和建议文案。",
+      "`changes --since` 输出补充跳过 ignored evidence readiness 检查的信号。",
+      "覆盖 completed task routing、ignored evidence classification、since semantics 的自动化测试。",
+      "更新 Codex/OpenCode 等安装模板中的 DocPath agent protocol。"
+    ],
+    "excluded": [
+      "不自动运行 `git add`、`git commit`、`git push`。",
+      "不改变 `.gitignore` 策略。",
+      "不默认提交 `.docpath/tasks/current/*` 运行态 alias。",
+      "不引入远端仓库、PR 或发布流程。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "2026-06-14 用户确认继续推进将 git closeout 纳入 DocPath 流程。",
+    "decision_brief_markdown": "- 当前问题: Git closeout 是真实 workflow 步骤，但 DocPath FSM 没有把已有 `docpath changes` 接入完成态路由，导致提交前证据检查容易被跳过。\n- 目标: 让 agent 在任务完成后先看到只读 Git readiness，再由用户或 agent 显式执行 Git 命令。\n- 背景: 用户在 `T-20260614-session` 本地提交后指出“没有把 git 放入 docpath 流程”，并确认继续推进该流程改进。\n- 可选方案: A 只更新文档；B 完成态路由推荐 `docpath changes --agent`；C `agent done` 自动运行 changes；D DocPath 自动执行 git commit。\n- 推荐方案: 采用 B，并补充 `changes` 输出语义与协议文档。B 能把 closeout 纳入 FSM，同时保持 Git 写操作由显式命令完成。\n- 不做什么: 不自动提交，不自动 force-add ignored 文件，不把 `tasks/current` alias 作为 canonical evidence，不把 `changes --since` 当作 pre-commit readiness。\n- 成本: 小到中等，涉及 `agent-output` 路由、`changes` 报告、测试和协议模板。\n- 风险: Git 状态检测过于激进会打断已完成任务后的 backlog 路由；ignored evidence 分类错误会产生错误提交建议；文档模板遗漏会让新安装的 agent 协议不同步。\n- 回滚方案: 移除 completed-state closeout 分支，保留 `docpath changes` 独立命令；或只在存在 unstaged/staged changes 时推荐，不检查 ignored evidence。\n- 用户确认: 2026-06-14 用户确认继续推进将 git closeout 纳入 DocPath 流程。"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "将 docpath changes 纳入完成态 git closeout 路由",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-172 与任务 T-20260614-docpath-changes-git-closeout 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: Git closeout 是真实 workflow 步骤，但 DocPath FSM 没有把已有 `docpath changes` 接入完成态路由，导致提交前证据检查容易被跳过。\n- 目标: 让 agent 在任务完成后先看到只读 Git readiness，再由用户或 agent 显式执行 Git 命令。\n- 背景: 用户在 `T-20260614-session` 本地提交后指出“没有把 git 放入 docpath 流程”，并确认继续推进该流程改进。\n- 可选方案: A 只更新文档；B 完成态路由推荐 `docpath changes --agent`；C `agent done` 自动运行 changes；D DocPath 自动执行 git commit。\n- 推荐方案: 采用 B，并补充 `changes` 输出语义与协议文档。B 能把 closeout 纳入 FSM，同时保持 Git 写操作由显式命令完成。\n- 不做什么: 不自动提交，不自动 force-add ignored 文件，不把 `tasks/current` alias 作为 canonical evidence，不把 `changes --since` 当作 pre-commit readiness。\n- 成本: 小到中等，涉及 `agent-output` 路由、`changes` 报告、测试和协议模板。\n- 风险: Git 状态检测过于激进会打断已完成任务后的 backlog 路由；ignored evidence 分类错误会产生错误提交建议；文档模板遗漏会让新安装的 agent 协议不同步。\n- 回滚方案: 移除 completed-state closeout 分支，保留 `docpath changes` 独立命令；或只在存在 unstaged/staged changes 时推荐，不检查 ignored evidence。\n- 用户确认: 2026-06-14 用户确认继续推进将 git closeout 纳入 DocPath 流程。"
+}

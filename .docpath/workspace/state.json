@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260614-session",
-  "task_title": "新增多 session 隔离与并发",
+  "task_id": "T-20260614-docpath-changes-git-closeout",
+  "task_title": "将 docpath changes 纳入完成态 git closeout 路由",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-14T08:24:07.072Z",
-  "updated_at": "2026-06-14T08:24:07.072Z"
+  "started_at": "2026-06-14T09:08:13.647Z",
+  "updated_at": "2026-06-14T09:18:17.664Z"
 }

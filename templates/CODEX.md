@@ -45,6 +45,10 @@ docpath agent handoff
 - For major architecture, data, workflow, permission, or long-term maintenance
   changes, run brainstorm/refine and record a Decision Brief before coding.
 - Run `docpath check` before marking work complete.
+- Before any local `git commit`, run `docpath changes --agent`. Treat it as a
+  read-only closeout report; only force-add exact canonical evidence paths it
+  recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by
+  default.
 
 ## Linked Project
 

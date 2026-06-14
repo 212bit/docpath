@@ -2,10 +2,16 @@
  * docpath changes — 提交前只读变更收口视图。
  */
 
-import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
+import {
+  readIgnoredEvidenceReport,
+  readLinkedBacklogId,
+  runGit,
+  skippedIgnoredEvidenceReport,
+  type IgnoredEvidenceReport,
+} from '../utils/git-closeout.js';
 
 interface ChangesOptions {
   cwd: string;
@@ -44,10 +50,7 @@ export interface ChangesReport {
     untracked: number;
   };
   groups: Record<ChangeGroupName, string[]>;
-  ignored_evidence: {
-    files: string[];
-    add_command: string | null;
-  };
+  ignored_evidence: IgnoredEvidenceReport;
   ready_to_commit: boolean;
   blocking_reasons: string[];
   suggested_commit_message: string;
@@ -60,15 +63,6 @@ const GROUP_LABELS: Record<ChangeGroupName, string> = {
   templates_docs: '模板/文档',
   other: '其他',
 };
-
-function runGit(cwd: string, args: string[]): string {
-  return execFileSync('git', args, {
-    cwd,
-    encoding: 'utf-8',
-    timeout: 10000,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-}
 
 function ensureGitRepo(cwd: string): string {
   try {
@@ -198,65 +192,19 @@ function groupChangedFiles(files: ChangedFile[]): Record<ChangeGroupName, string
   return groups;
 }
 
-function shellQuotePath(path: string): string {
-  if (/^[A-Za-z0-9_./:@%+=,-]+$/.test(path)) return path;
-  return `'${path.replace(/'/g, `'\\''`)}'`;
-}
-
-function buildForceAddCommand(files: string[]): string | null {
-  if (files.length === 0) return null;
-  return `git add -f ${files.map(shellQuotePath).join(' ')}`;
-}
-
-async function readLinkedBacklogId(docpathDir: string, taskId: string | undefined): Promise<string | null> {
-  const candidates = [
-    join(docpathDir, 'tasks', 'current', 'spec.md'),
-    ...(taskId ? [
-      join(docpathDir, 'tasks', taskId, 'spec.md'),
-      join(docpathDir, 'tasks', 'done', taskId, 'spec.md'),
-    ] : []),
-  ];
-  for (const path of candidates) {
-    const raw = await readFileSafe(path);
-    const match = raw?.match(/^>\s*backlog_id:\s*(R-\d+)/m);
-    if (match) return match[1];
-  }
-  return null;
-}
-
-function readIgnoredEvidenceFiles(gitRoot: string, taskId: string | undefined, backlogId: string | null): string[] {
-  const paths = [
-    '.docpath/backlog/backlog.md',
-    ...(backlogId ? [`.docpath/backlog/${backlogId}.md`] : []),
-    '.docpath/tasks/current',
-    ...(taskId ? [`.docpath/tasks/${taskId}`, `.docpath/tasks/done/${taskId}`] : []),
-  ];
-  try {
-    return Array.from(new Set(
-      runGit(gitRoot, ['ls-files', '--others', '--ignored', '--exclude-standard', '--', ...paths])
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .filter((file) => !file.endsWith('/')),
-    )).sort();
-  } catch {
-    return [];
-  }
-}
-
 function buildBlockingReasons(args: {
   files: ChangedFile[];
   since: string | null;
   hasTask: boolean;
   lastCheckPass: boolean;
   reviewPass: boolean;
-  ignoredEvidenceFiles: string[];
+  ignoredEvidence: IgnoredEvidenceReport;
 }): string[] {
   const blockingReasons: string[] = [];
   if (args.files.length === 0) blockingReasons.push(args.since ? `相对 ${args.since} 没有变更` : '当前工作树没有可提交变更');
   if (!args.since && args.files.some((file) => file.untracked)) blockingReasons.push('存在未跟踪文件，请确认是否需要纳入提交');
-  if (!args.since && args.ignoredEvidenceFiles.length > 0) {
-    blockingReasons.push('存在被 gitignore 忽略的 DocPath evidence，请使用 git add -f 纳入提交');
+  if (!args.since && args.ignoredEvidence.canonical_files.length > 0) {
+    blockingReasons.push('存在被 gitignore 忽略的 DocPath canonical evidence，请使用 git add -f 纳入提交');
   }
   if (!args.hasTask) blockingReasons.push('当前没有关联的 DocPath 任务');
   if (!args.lastCheckPass) blockingReasons.push('last-check.md 未显示 PASS，请先运行 docpath check');
@@ -274,14 +222,16 @@ export async function buildChangesReport(cwd: string, options: Pick<ChangesOptio
     : parsePorcelainStatus(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
   const groups = groupChangedFiles(files);
   const backlogId = await readLinkedBacklogId(docpathDir, current?.task_id);
-  const ignoredEvidenceFiles = since ? [] : readIgnoredEvidenceFiles(gitRoot, current?.task_id, backlogId);
+  const ignoredEvidence = since
+    ? skippedIgnoredEvidenceReport('since mode summarizes committed diff and skips pre-commit ignored evidence readiness')
+    : readIgnoredEvidenceReport(gitRoot, current?.task_id, backlogId);
   const blockingReasons = buildBlockingReasons({
     files,
     since,
     hasTask: !!current?.task_id,
     lastCheckPass: await readLastCheckPass(docpathDir),
     reviewPass: await readReviewPass(docpathDir),
-    ignoredEvidenceFiles,
+    ignoredEvidence,
   });
 
   const partial: Omit<ChangesReport, 'suggested_commit_message'> = {
@@ -302,10 +252,7 @@ export async function buildChangesReport(cwd: string, options: Pick<ChangesOptio
       untracked: files.filter((file) => file.untracked).length,
     },
     groups,
-    ignored_evidence: {
-      files: ignoredEvidenceFiles,
-      add_command: buildForceAddCommand(ignoredEvidenceFiles),
-    },
+    ignored_evidence: ignoredEvidence,
     ready_to_commit: blockingReasons.length === 0,
     blocking_reasons: blockingReasons,
   };
@@ -343,9 +290,17 @@ function renderAgentYaml(report: ChangesReport): string {
     for (const file of report.groups[group]) lines.push(`    - ${yamlString(file)}`);
   }
   lines.push('ignored_evidence:');
+  lines.push(`  check: ${yamlString(report.ignored_evidence.check)}`);
+  lines.push(`  skip_reason: ${report.ignored_evidence.skip_reason === null ? 'null' : yamlString(report.ignored_evidence.skip_reason)}`);
   lines.push(`  count: ${report.ignored_evidence.files.length}`);
   lines.push('  files:');
   for (const file of report.ignored_evidence.files) lines.push(`    - ${yamlString(file)}`);
+  lines.push(`  canonical_count: ${report.ignored_evidence.canonical_files.length}`);
+  lines.push('  canonical_files:');
+  for (const file of report.ignored_evidence.canonical_files) lines.push(`    - ${yamlString(file)}`);
+  lines.push(`  alias_count: ${report.ignored_evidence.alias_files.length}`);
+  lines.push('  alias_files:');
+  for (const file of report.ignored_evidence.alias_files) lines.push(`    - ${yamlString(file)}`);
   lines.push(`  add_command: ${report.ignored_evidence.add_command === null ? 'null' : yamlString(report.ignored_evidence.add_command)}`);
   lines.push('blocking_reasons:');
   for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
@@ -370,9 +325,19 @@ function renderHuman(report: ChangesReport): string {
     for (const file of files) lines.push(`    - ${file}`);
   }
 
-  if (report.ignored_evidence.files.length > 0) {
+  if (report.ignored_evidence.check === 'skipped') {
+    lines.push('\n  被 gitignore 忽略的 DocPath evidence');
+    lines.push(`    检查已跳过: ${report.ignored_evidence.skip_reason || '当前模式不适用'}`);
+  } else if (report.ignored_evidence.files.length > 0) {
     lines.push(`\n  被 gitignore 忽略的 DocPath evidence (${report.ignored_evidence.files.length})`);
-    for (const file of report.ignored_evidence.files) lines.push(`    - ${file}`);
+    if (report.ignored_evidence.canonical_files.length > 0) {
+      lines.push(`    canonical evidence (${report.ignored_evidence.canonical_files.length})`);
+      for (const file of report.ignored_evidence.canonical_files) lines.push(`      - ${file}`);
+    }
+    if (report.ignored_evidence.alias_files.length > 0) {
+      lines.push(`    alias evidence (${report.ignored_evidence.alias_files.length})`);
+      for (const file of report.ignored_evidence.alias_files) lines.push(`      - ${file}`);
+    }
     if (report.ignored_evidence.add_command) {
       lines.push('  提交提示');
       lines.push(`    ${report.ignored_evidence.add_command}`);

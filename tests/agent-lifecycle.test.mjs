@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-const CLI = '/Users/mac/project/docpath/dist/index.js';
+const CLI = new URL('../dist/index.js', import.meta.url).pathname;
 
 function mkExecWorkspace() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dp-agent-'));
@@ -120,6 +120,72 @@ describe('docpath agent lifecycle', () => {
     const out = run('agent done', tmpDir);
     assert.match(out, /done|完成|归档/i, `got: ${out.slice(0, 100)}`);
     assert.equal(fs.existsSync(path.join(tmpDir, '.docpath', 'workspace', 'pending-done.md')), false);
+  });
+
+  it('agent done marks the active terminal verification step as done', () => {
+    const cwd = mkExecWorkspace();
+    const statePath = path.join(cwd, '.docpath', 'workspace', 'state.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    state.current_step = 'S2';
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+    const plan = [
+      '## 执行计划',
+      '',
+      '### S1: Implement feature',
+      '- [x] S1: Implement feature',
+      '- **描述**: 完成功能实现',
+      '- **验收条件**: 功能已实现',
+      '- **依赖**: 无',
+      '',
+      '### S2: 验证门禁并归档',
+      '- **描述**: 运行相关测试、docpath check/review/journal，完成任务归档。',
+      '- **验收条件**: 质量门禁通过，任务状态进入 completed。',
+      '- **依赖**: S1',
+      '',
+      '## Checklist',
+      '- [x] S1',
+      '- [ ] S2',
+      '',
+    ].join('\n');
+    fs.writeFileSync(path.join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), plan);
+    fs.writeFileSync(path.join(cwd, '.docpath', 'tasks', 'T-AGENT', 'plan.md'), plan);
+    fs.writeFileSync(path.join(cwd, '.docpath', 'workspace', 'breadcrumb.md'), [
+      '# breadcrumb.md',
+      '',
+      '### ✅ S1 [T-AGENT] — 2026-06-01T00:00:00.000Z',
+      '',
+      '---',
+      'taskId: T-AGENT',
+      'step: S1',
+      'status: done',
+      'timestamp: 2026-06-01T00:00:00.000Z',
+      '---',
+      '',
+      '- **状态**: done',
+      '- **上下文**: 已完成',
+      '',
+      '### 🔄 S2 [T-AGENT] — 2026-06-01T00:01:00.000Z',
+      '',
+      '---',
+      'taskId: T-AGENT',
+      'step: S2',
+      'status: in_progress',
+      'timestamp: 2026-06-01T00:01:00.000Z',
+      '---',
+      '',
+      '- **状态**: in_progress',
+      '- **上下文**: 开始验证门禁',
+      '',
+    ].join('\n'));
+
+    const out = run('agent done', cwd);
+    const nextPlan = fs.readFileSync(path.join(cwd, '.docpath', 'tasks', 'T-AGENT', 'plan.md'), 'utf-8');
+    const breadcrumb = fs.readFileSync(path.join(cwd, '.docpath', 'workspace', 'breadcrumb.jsonl'), 'utf-8');
+
+    assert.match(out, /done|完成|归档/i);
+    assert.match(nextPlan, /- \[x\] S2/);
+    assert.match(breadcrumb, /"step":"S2","status":"done"/);
+    fs.rmSync(cwd, { recursive: true, force: true });
   });
 
   it('agent done --skip-tests fails loudly when reason is missing', () => {

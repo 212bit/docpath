@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-14T08:24:07.208Z
+> 扫描时间: 2026-06-14T09:18:17.783Z
 
 ## 条目列表
 
@@ -128,6 +128,7 @@
 | R-167 | Phase 2&3: 索引增强 + 按需深读 | done | P2 | 2 | T-20260614-phase-2-3 |
 | R-169 | probe | dropped | P2 | 2 |  |
 | R-171 | 新增多 session 隔离与并发 | done | P2 | 2 | T-20260614-session |
+| R-172 | 将 docpath changes 纳入完成态 git closeout 路由 | done | P2 | 2 | T-20260614-docpath-changes-git-closeout |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 
 ## 用途说明
