@@ -25,7 +25,7 @@ fi
 
 1. Confirm `.docpath/workspace/compact-context.md` was written.
 2. Summarize the `recommended_command` from the embedded `Next Agent Route`.
-3. Tell the next session to read `compact-context.md`, `current.md`, then run `/docpath-next`.
+3. Tell the next session to run `/docpath-status` and `/docpath-next`; read `compact-context.md` only when the handoff command or route explicitly requires the extra context.
 
 ## Expected Result
 

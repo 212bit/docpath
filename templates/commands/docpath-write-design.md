@@ -1,9 +1,8 @@
-# /docpath-write-design — 写入 UI/UX 设计证据
+# /docpath-write-design
 
-## 用途
-为 UI/UX、page、layout、navigation、visual、responsive、Figma、Stitch、v0、Framer 等界面任务写入当前任务的设计证据。
+Write UI/UX design evidence for the active DocPath task.
 
-强约束流程：
+Required flow:
 
 ```text
 UI Prompt Brief
@@ -14,9 +13,9 @@ UI Prompt Brief
 → Visual Acceptance
 ```
 
-用户同意采用这套流程，不等于批准某个具体视觉方案。只有 `design-approval.md` 中 `approval.state: approved`，并记录批准来源、批准时间、批准说明与禁止方向后，才允许进入产品 UI 实现。
+User agreement to use this workflow is not approval of a specific visual direction. Product UI implementation may start only after `design-approval.md` has `approval.state: approved` with the approval source, approval time, approval rationale, and rejected directions recorded.
 
-## 命令
+## Run
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
   ./.docpath/bin/docpath write-design $ARGUMENTS
@@ -35,13 +34,13 @@ fi
 ```
 
 ## kind
-- `brief` / `ui-brief` / `ui-prompt-brief`: 写入 `ui-brief.md`。
-- `handoff` / `external-design-handoff` / `design-handoff`: 写入 `external-design-handoff.md`。
-- `preview` / `design-preview`: 写入 `design-preview.md`。
-- `approval` / `design-approval`: 写入 `design-approval.md`。
-- `acceptance` / `visual-acceptance`: 写入 `visual-acceptance.md`。
+- `brief` / `ui-brief` / `ui-prompt-brief`: write `ui-brief.md`.
+- `handoff` / `external-design-handoff` / `design-handoff`: write `external-design-handoff.md`.
+- `preview` / `design-preview`: write `design-preview.md`.
+- `approval` / `design-approval`: write `design-approval.md`.
+- `acceptance` / `visual-acceptance`: write `visual-acceptance.md`.
 
-## 推荐顺序
+## Recommended Order
 ```bash
 docpath write-design --kind brief --stdin
 docpath write-design --kind handoff --stdin
@@ -50,16 +49,16 @@ docpath write-design --kind approval --stdin
 docpath write-design --kind acceptance --stdin
 ```
 
-## 外部设计工具交接
-`external-design-handoff.md` 应记录 Stitch、Figma、v0、Framer 或其他设计工具的 prompt、输出链接或快照、选定方向、拒绝方向和实现约束。没有外部工具时，也要记录等价的设计输入、候选方向和拒绝方向，避免实现阶段只凭口头偏好编码。
+## External Design Handoff
+`external-design-handoff.md` should record prompts, output links or snapshots, selected directions, rejected directions, and implementation constraints from Stitch, Figma, v0, Framer, or another design tool. If no external tool is used, record equivalent design inputs, candidate directions, and rejected directions so implementation is not based only on verbal preference.
 
 ## Check Gate
-`docpath check` 会在 UI/UX 任务存在实现步骤或产品 UI 文件改动时检查：
+`docpath check` verifies the following when a UI/UX task has implementation steps or product UI file changes:
 
 - `ui-brief.md`
 - `external-design-handoff.md`
 - `design-preview.md`
 - `visual-acceptance.md`
-- `design-approval.md`，且 `approval.state` 必须是 `approved`
+- `design-approval.md`, with `approval.state` set to `approved`
 
-approval 为 `pending`、`rejected`、缺少批准来源、缺少批准时间或缺少禁止方向时，必须停止实现并请求用户审批具体视觉方案。
+If approval is `pending` or `rejected`, or if the approval source, approval time, or rejected directions are missing, stop implementation and ask the user to approve a specific visual direction.

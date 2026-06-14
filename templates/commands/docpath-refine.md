@@ -22,4 +22,3 @@ fi
 ```
 
 Prefer `--file <path>` for existing notes, `--content "..."` for short input, or `--stdin` when piping content.
-

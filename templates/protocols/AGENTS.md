@@ -1,100 +1,114 @@
-# DocPath — Agent Workflow Protocol
+# DocPath Agent Protocol
 
-> This project uses **DocPath** as the development workflow engine.
-> **Document as FSM** — all task states are driven by files in `.docpath/`.
+> This project uses DocPath as the shared workflow engine for Codex, Claude Code,
+> OpenCode, and compatible coding agents.
+>
+> Default rule: agents consume DocPath through CLI summaries. JSON/JSONL files are
+> machine truth sources. Markdown files are rendered human views and are not
+> default agent inputs.
 
----
+## First Steps
 
-## First Thing You Do
+1. Run `docpath status --agent`.
+2. Run `docpath next --agent`.
+3. Follow the `recommended_command` unless the user explicitly changes direction.
+4. Use `context_index`, `data_index`, `required_files`, and `current_focus` as an
+   index. Do not expand files just because they are mentioned.
+5. When details are needed, prefer `docpath reveal --topic <keyword> --level 1-3`
+   or `docpath context --max-tokens 5000 --topic <keyword>`.
+6. Record progress with DocPath lifecycle commands after each meaningful step.
 
-1. Run `docpath status --agent` or read `.docpath/workspace/current.md` to know the current state.
-2. Run `docpath next --agent` to choose the next safe action.
-3. Read `.docpath/workspace/breadcrumb.md` to understand recent progress.
-4. **Follow the route**: the `recommended_command` from `next --agent` is the default next step.
-5. **Update state after each step**: use DocPath lifecycle commands instead of manual state edits.
+## Access Model
 
----
+DocPath is JSON-first internally and CLI-first for agents.
+
+| Artifact | Role | Agent access |
+| --- | --- | --- |
+| `.docpath/workspace/state.json` | Runtime state truth | Use `docpath status --agent`; direct read only for debug. |
+| `.docpath/workspace/current.md` | Human rendered state view | Do not read by default. |
+| `.docpath/workspace/breadcrumb.jsonl` | Execution event truth | Use `status`, `next`, `reveal`, or `context`; direct tail only for debug. |
+| `.docpath/workspace/breadcrumb.md` | Human rendered progress view | Do not read by default. |
+| `.docpath/tasks/current/spec.json` | Structured task spec truth | Prefer CLI summaries; direct read only when schema detail is needed. |
+| `.docpath/tasks/current/spec.md` | Human spec view | Read on demand for full narrative requirements. |
+| `.docpath/tasks/current/plan.json` | Structured task plan truth | Prefer `next`, `go`, and `reveal`. |
+| `.docpath/tasks/current/plan.md` | Human plan view | Do not parse manually by default. |
+| `.docpath/docs-index.json` | Document index truth | Never read in full; use CLI filtered summaries. |
+
+Direct file reads are acceptable only when the CLI route or the debugging task
+requires them. Keep direct reads scoped to the smallest file, topic, task id, or
+tail range that answers the question.
 
 ## Project Context
 
-- **Backlog**: `.docpath/backlog/` — candidate work pool; priority and acceptance live here before a task starts.
-- **Task Directory**: `.docpath/tasks/`
-- **Spec**: `.docpath/tasks/<id>/spec.md`
-- **Plan**: `.docpath/tasks/<id>/plan.md`
-- **Review**: `.docpath/tasks/<id>/review.md`
-- **Workspace**: `.docpath/workspace/` — rendered runtime state and execution evidence; `current.md` is generated from `state.json`.
-- **Rules**: `.docpath/rules/` — global style, architecture, and learned conventions.
-
----
-
-## Decisions Log Aging
-
-- `workspace/decisions.md` keeps recent ADR entries only; `docpath journal` automatically rotates entries older than 30 days into `workspace/decisions-YYYY-MM.md`.
-- Historical decision queries should read the monthly archive files explicitly instead of loading every decision into default context.
-- Run `docpath gc-decisions` when you need to manually trigger the rotation.
-- `workspace/breadcrumb.md` is execution recovery evidence; keep step status, checks, reviews, and journal completion there.
-- `workspace/decisions.md` is a high-signal ADR index; ordinary `journal.archive` summaries, completion counts, check results, and review counts must not be written as decisions.
-- `docpath journal` should write `decisions.md` only when it extracts a reusable architecture, workflow, or behavior decision with context, impact, boundaries, and alternatives.
-
----
+- `.docpath/backlog/` holds candidate work before it becomes an active task.
+- `.docpath/tasks/` holds task artifacts: spec, plan, review, journal, and
+  structured JSON mirrors.
+- `.docpath/workspace/` holds runtime state, evidence, and rendered views.
+- `.docpath/rules/` holds global style, architecture, and learned conventions.
+- `.docpath/protocols/` and `templates/` hold installable agent protocol assets.
 
 ## Agent Lifecycle Commands
 
-For Codex / Claude Code / OpenCode, prefer these enforceable lifecycle commands over manual file edits:
+Use lifecycle commands instead of manual state edits:
 
 ```bash
-docpath agent enter                         # start: load state + print agent context
-docpath agent step --step "<sub-task>"      # after each meaningful step
-docpath agent done --step "<task>"          # run check/review + record completion
-docpath agent handoff                       # compact context before session switch
+docpath agent enter
+docpath go --step S1
+docpath agent step --step "S1" --status done
+docpath check
+docpath agent done --step "<task>"
+docpath agent handoff
 ```
 
 Rules:
-- Run `docpath agent enter` before changing code.
-- Run `docpath agent step` after each sub-task or major decision.
-- Run `docpath agent done` before claiming completion.
-- Run `docpath agent handoff` when context is getting long or another agent may resume.
 
-## Commands
+- Run `docpath agent enter` before code or protocol edits in an executable task.
+- Run `docpath agent step` after each meaningful sub-task or major decision.
+- Run `docpath agent done` before claiming a task is complete.
+- Run `docpath agent handoff` when another session may resume the task.
 
-| Command | Description |
-|---------|-------------|
-| `docpath status` | View workflow state |
-| `docpath status --agent` | Machine-readable workflow state |
+## Required Gates
+
+1. Do not skip `docpath status --agent` and `docpath next --agent`.
+2. Do not act from memory alone.
+3. When a product/UI request lacks target user, entry point, data scope, or
+   interaction model, clarify or run brainstorm/refine before implementation.
+4. When a request may change technology stack, architecture or module
+   boundaries, data/API contracts, UI information architecture, workflow or
+   agent behavior, permission or write boundaries, task scope, existing
+   capabilities, or long-term maintenance cost, run brainstorm/refine first.
+   Record a Decision Brief in the task spec and wait for explicit user
+   confirmation before implementation.
+5. Do not hand-edit `state.json`, `current.md`, `breadcrumb.md`, or other
+   workspace runtime views.
+6. Run `docpath check` before marking work complete.
+7. Let `docpath agent step` update breadcrumb and plan checklist state.
+
+## Useful Commands
+
+| Command | Purpose |
+| --- | --- |
+| `docpath status --agent` | Machine-readable workflow state and indexes |
 | `docpath next --agent` | Machine-readable next-action route |
-| `docpath go` | Execute next step from plan |
-| `docpath continue` | Resume from breadcrumb |
-| `docpath check` | Run quality gates |
-| `docpath review` | Structured code review |
-| `docpath gc-decisions` | Rotate old decisions into monthly archives |
-| `docpath reveal --level N` | Progressive context (0-3) |
+| `docpath reveal --level N --topic <keyword>` | Progressive context expansion |
+| `docpath context --max-tokens 5000 --topic <keyword>` | Budgeted context package |
+| `docpath go --step S1` | Load the selected plan step |
+| `docpath check` | Quality gates |
+| `docpath review` | Structured review |
+| `docpath journal` | Knowledge archive |
+| `docpath gc-decisions` | Rotate old decision logs |
 
----
+## Decision Log Aging
 
-## Level System
-
-- **L0**: Quick fixes (1-2 steps, no docs)
-- **L1**: Light tasks (task.md, execute/verify)
-- **L2**: Standard tasks (spec → plan → execute → check → review)
-- **L3**: Complex tasks (full lifecycle, cross-session)
-
----
-
-## Rules
-
-1. Do NOT skip state checks
-2. Do NOT execute from memory alone
-3. When a request describes a product/UI surface such as a page, workflow visualization, or data view but does not define the target user, entry point, data scope, and interaction model, stop and clarify before creating a backlog item, promoting a task, or writing code.
-4. When a request may change technology stack, architecture/module boundaries, data model/API contract, UI information architecture/user journey, workflow/Agent behavior, permission or write-operation boundaries, task scope, existing capabilities, or long-term maintenance cost, stop and run brainstorm/refine first. Write a Decision Brief in the task spec and wait for explicit user confirmation before promoting an implementation task or writing implementation code.
-5. Do NOT hand-edit `current.md`; it is a rendered view of `workspace/state.json`
-6. Always record progress with DocPath lifecycle commands after each sub-task
-7. Run `docpath check` before marking tasks complete
-8. Let `docpath agent step` update breadcrumb and plan checklist state
-
----
+- `workspace/decisions.md` keeps recent ADR entries only.
+- `docpath journal` rotates older entries into `workspace/decisions-YYYY-MM.md`.
+- Historical decision queries should read the relevant monthly archive
+  explicitly, not the full decision history.
+- `docpath journal` should write decisions only for reusable architecture,
+  workflow, or behavior decisions with context, impact, boundaries, and
+  alternatives.
 
 ## Linked Project
 
-<!-- DocPath:install will set this -->
 Linked to: **{{PROJECT_NAME}}**
 Config: `.docpath/config.yaml`

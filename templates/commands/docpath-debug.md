@@ -22,4 +22,3 @@ fi
 ```
 
 Use one action: `reproduce`, `isolate`, `hypothesize`, `verify`, or `fix`.
-

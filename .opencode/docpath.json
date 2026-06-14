@@ -1,0 +1,14 @@
+{
+  "protocol": "OPENCODE.md",
+  "state": ".docpath/workspace/current.md",
+  "breadcrumb": ".docpath/workspace/breadcrumb.md",
+  "commands": {
+    "status": "docpath status --agent",
+    "next": "docpath next --agent",
+    "context": "docpath context --agent",
+    "check": "docpath check",
+    "review": "docpath review",
+    "journal": "docpath journal",
+    "handoff": "docpath agent handoff"
+  }
+}

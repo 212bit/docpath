@@ -1,28 +1,28 @@
-# /docpath-context — 查看完整上下文
+# /docpath-context
 
-## 用途
-获取任务的完整上下文，包括状态、执行日志、规范文档。
+Get a budgeted DocPath context package through the CLI.
 
-## 命令
+## Run
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
-  ./.docpath/bin/docpath context
+  ./.docpath/bin/docpath context $ARGUMENTS
 elif command -v docpath >/dev/null 2>&1; then
-  docpath context
+  docpath context $ARGUMENTS
 elif [ -x ./node_modules/.bin/docpath ]; then
-  ./node_modules/.bin/docpath context
+  ./node_modules/.bin/docpath context $ARGUMENTS
 elif [ -f ./bin/docpath.js ]; then
-  node ./bin/docpath.js context
+  node ./bin/docpath.js context $ARGUMENTS
 elif [ -f ./dist/index.js ]; then
-  node ./dist/index.js context
+  node ./dist/index.js context $ARGUMENTS
 else
   echo "DocPath CLI not found. Install it or run from the DocPath project root."
   exit 127
 fi
 ```
 
-## 输出内容
-- current.md 完整内容
-- breadcrumb.md 最近 N 条记录
-- task spec/plan 摘要
-- --agent: 机器可读格式
+## Output
+
+- A scoped state, progress, spec, and plan summary selected by DocPath.
+- Use `--max-tokens <n>` and `--topic <keyword>` when the agent needs bounded context.
+- Prefer this command or `/docpath-reveal` over direct reads of `current.md`, `breadcrumb.md`, or `plan.md`.
+- Markdown files remain human views; JSON/JSONL files are the machine truth sources.

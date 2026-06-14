@@ -22,4 +22,3 @@ fi
 ```
 
 Use `--output <file>` to save the export, and `--full` when full spec/plan content is required.
-

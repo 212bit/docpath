@@ -22,4 +22,3 @@ fi
 ```
 
 Use `--dry-run` to preview without writing files. After planning, route with `/docpath-next`.
-

@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260614-dogfood",
-  "task_title": "修复 dogfood 暴露的生命周期与证据模型问题",
+  "task_id": "T-20260614-phase-2-3",
+  "task_title": "Phase 2&3: 索引增强 + 按需深读",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-14T02:11:16.766Z",
-  "updated_at": "2026-06-14T02:11:16.766Z"
+  "started_at": "2026-06-14T05:48:49.614Z",
+  "updated_at": "2026-06-14T05:48:49.613Z"
 }

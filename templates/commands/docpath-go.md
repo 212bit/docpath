@@ -21,10 +21,11 @@ else
 fi
 ```
 
-If `$ARGUMENTS` is empty, run the next pending step from `plan.md`.
+If `$ARGUMENTS` is empty, let DocPath select the next pending step from the structured plan state.
 
 ## Follow-up
 
 1. Read the command output and any listed required files.
-2. Implement only the selected step.
-3. Record progress with `/docpath-agent-step`, then route with `/docpath-next`.
+2. Treat listed files as indexes; request focused context before opening generated Markdown views.
+3. Implement only the selected step.
+4. Record progress with `/docpath-agent-step`, then route with `/docpath-next`.

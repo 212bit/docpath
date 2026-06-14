@@ -21,13 +21,13 @@ else
 fi
 ```
 
-If `$ARGUMENTS` is empty, use the current task title from `.docpath/workspace/current.md`.
+If `$ARGUMENTS` is empty, let the CLI resolve the active task from structured state.
 
 ## Rules
 
 - Do not claim completion before this command succeeds.
 - Do not use `--skip-check` or `--skip-review` unless the user explicitly asks and a reason is recorded with `--note`.
-- If the command fails, read `.docpath/workspace/last-check.md` and route via `/docpath-next`.
+- If the command fails, route via `/docpath-next` and read failure evidence only when the CLI points to it.
 
 ## Expected Result
 

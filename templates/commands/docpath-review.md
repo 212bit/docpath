@@ -22,4 +22,3 @@ fi
 ```
 
 Common arguments: `--scope staged`, `--scope last_commit`, `--no-ai`, or `--approve`.
-

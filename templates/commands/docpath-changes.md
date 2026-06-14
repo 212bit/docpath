@@ -1,10 +1,10 @@
 ---
-description: 提交前只读变更收口视图
+description: Read-only pre-commit change summary
 ---
 
-运行 `docpath changes`，汇总当前 git 工作树变更、DocPath 门禁证据和建议 commit message。
+Run `docpath changes` to summarize the current git working tree, DocPath gate evidence, and a suggested commit message.
 
-## 命令
+## Run
 
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
@@ -23,7 +23,7 @@ else
 fi
 ```
 
-常用参数：
+Common arguments:
 
 ```bash
 docpath changes --agent

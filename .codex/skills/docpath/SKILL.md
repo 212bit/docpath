@@ -9,21 +9,31 @@ Use this skill when working in a repository that uses DocPath and the user asks 
 
 High-signal trigger phrases include:
 
-- "先做开发前分析", "需求分析", "产品分析", "UI 分析", "UX 分析", "技术分析"
-- "不要直接写代码", "先帮我分析", "先明确问题", "先列确认问题"
-- "用 DocPath 做分析 / 规划 / 继续 / 收尾"
-- "添加一个页面 / 管理页面 / workflow / settings page" before implementation details are settled
+- "do pre-development analysis first", "requirements analysis", "product analysis", "UI analysis", "UX analysis", "technical analysis"
+- "do not write code yet", "analyze first", "clarify the problem first", "list confirmation questions"
+- "use DocPath to analyze / plan / continue / review / close"
+- "add a page / management page / workflow / settings page" before implementation details are settled
 
 ## Required Route
 
 1. Run `docpath status --agent` to read the current finite-state-machine state.
 2. Run `docpath next --agent` and follow its `recommended_command` unless the user explicitly changes direction.
-3. Read `.docpath/workspace/breadcrumb.md` before making changes when it exists.
-4. Before code or document edits in an active task, run `docpath agent enter` only when the route says the task is in an executable phase.
-5. After each meaningful sub-task, run `docpath agent step --step "<step>"`.
-6. Before claiming completion, run `docpath agent done` or follow the `docpath next --agent` completion route.
+3. Treat `context_index`, `data_index`, `required_files`, and `current_focus` as indexes, not as permission to read every file.
+4. Prefer `docpath reveal --topic <keyword> --level 1-3` or `docpath context --max-tokens 5000 --topic <keyword>` for deeper context.
+5. Do not default-read `.docpath/workspace/current.md`, `.docpath/workspace/breadcrumb.md`, `.docpath/tasks/current/plan.md`, or `.docpath/docs-index.json`.
+6. Before code or document edits in an active task, run `docpath agent enter` only when the route says the task is in an executable phase.
+7. After each meaningful sub-task, run `docpath agent step --step "<step>"`.
+8. Before claiming completion, run `docpath agent done` or follow the `docpath next --agent` completion route.
 
 If there is **no active task**, do not invent hidden state and do not hand-write `.docpath/workspace/current.md`. Use `docpath next --agent`, backlog/refine/write-spec/plan/go, or the explicit command recommended by DocPath.
+
+## Access Model
+
+- Agent context should come from DocPath CLI output by default.
+- JSON/JSONL files are machine truth sources.
+- Markdown files are human rendered views or narrative task documents.
+- Direct file reads are allowed only when the CLI route, debugging need, or user request requires them.
+- Keep direct reads scoped to the smallest file, topic, task id, or tail range that answers the question.
 
 ## Pre-development analysis route
 
@@ -91,5 +101,6 @@ Deliverables do not replace `spec`, `plan`, `analysis`, `check`, `review`, or `j
 - Do not bypass `spec -> plan -> go -> check -> review -> journal` for implementation tasks.
 - Do not create a hidden expert-team state outside `.docpath/`.
 - Do not hand-edit `.docpath/workspace/current.md`.
+- Do not hand-edit `.docpath/workspace/breadcrumb.md` or parse it as a default input.
 - Do not mark work complete from conversation alone; use DocPath gates and evidence.
 - Do not treat a pre-development analysis request as permission to write product code.

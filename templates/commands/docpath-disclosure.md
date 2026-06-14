@@ -22,4 +22,3 @@ fi
 ```
 
 Use `--level summary`, `--level detail`, or `--level debug`.
-

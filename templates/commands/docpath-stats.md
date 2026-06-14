@@ -22,4 +22,3 @@ fi
 ```
 
 Use `--format json` when Claude needs structured data.
-

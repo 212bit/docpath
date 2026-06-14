@@ -22,4 +22,3 @@ fi
 ```
 
 Use arguments such as `--level 1`, `--force`, or `--link <path>` only when explicitly needed.
-

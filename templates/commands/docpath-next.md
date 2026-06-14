@@ -24,10 +24,11 @@ fi
 ## Follow-up
 
 1. Read the YAML output.
-2. Open every file listed in `required_files` before editing.
-3. Execute `recommended_command` unless the workspace state has changed.
-4. Do not invent a different next step without recording the reason in breadcrumb or decisions.
+2. Treat `context_index`, `data_index`, `required_context`, and `required_files` as indexes, not mandatory full-file reads.
+3. Expand details with `/docpath-reveal` or `/docpath-context --max-tokens <n> --topic <keyword>` before opening generated Markdown views.
+4. Execute `recommended_command` unless the workspace state has changed.
+5. Do not invent a different next step without recording the reason through a DocPath lifecycle command.
 
 ## Expected Result
 
-Claude should report the `next_action`, the `recommended_command`, and the files it will read before acting.
+Claude should report the `next_action`, the `recommended_command`, and any additional context it will request before acting.

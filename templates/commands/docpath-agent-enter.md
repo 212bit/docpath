@@ -24,8 +24,9 @@ fi
 ## Follow-up
 
 1. Read the generated `agent_context` YAML.
-2. Open every file listed in `required_files`.
+2. Treat listed files and context entries as indexes; do not open every generated Markdown view by default.
 3. Continue with `/docpath-next` unless `recommended_command` already gives a more specific action.
+4. Use `/docpath-reveal` or `/docpath-context --max-tokens <n> --topic <keyword>` when deeper context is required.
 
 ## Expected Result
 

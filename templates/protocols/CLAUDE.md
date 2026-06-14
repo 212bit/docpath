@@ -1,19 +1,28 @@
-# DocPath — Claude Code Agent Protocol
+# DocPath Claude Code Protocol
 
-> 本协议文件是 Claude Code 侧的 DocPath 参考宪法。
-> **单一真源原则**：以 `docpath status --agent` / `docpath next --agent` 和 `.docpath/workspace/*` 为运行时真源，不维护平行状态。
+> This project uses DocPath as the workflow state machine for Claude Code.
+> Claude should use DocPath CLI routes and slash commands as the default
+> interface. JSON/JSONL files are machine truth sources; Markdown files are
+> rendered human views or narrative task documents.
 
-## 首要顺序
+## First Steps
 
-1. 先运行 `docpath status --agent` 或读取 `.docpath/workspace/current.md`
-2. 再运行 `docpath next --agent`
-3. 按 `recommended_command` 推进，而不是凭记忆猜下一步
-4. 每完成一个步骤，使用 `docpath agent step`
-5. 完成任务时，使用 `docpath agent done`
+1. Run `/docpath-status` or `docpath status --agent`.
+2. Run `/docpath-next` or `docpath next --agent`.
+3. Follow the returned `recommended_command`.
+4. Use `context_index`, `data_index`, and `current_focus` before reading files.
+5. Use `/docpath-reveal` or `docpath reveal --topic <keyword> --level 1-3`
+   when more detail is needed.
+6. Use `/docpath-context` or `docpath context --max-tokens 5000 --topic <keyword>`
+   for a budgeted context package.
 
-## Claude Slash Commands
+Do not default-read `.docpath/workspace/current.md`,
+`.docpath/workspace/breadcrumb.md`, `.docpath/tasks/current/plan.md`, or
+`.docpath/docs-index.json`.
 
-安装 Claude 适配后，优先使用以下 `/docpath-*` 命令：
+## Slash Commands
+
+Prefer the installed slash commands over long pasted prompts:
 
 ```text
 /docpath-status
@@ -31,61 +40,69 @@
 /docpath-continue
 /docpath-compact
 /docpath-refine
+/docpath-reveal
+/docpath-context
 ```
 
-这些命令都应指向同一个 `.docpath/` 真源。不要再维护另一套 Claude 专用状态文件。
+All commands must point at the same `.docpath/` state. Do not create a parallel
+Claude-only state file.
 
-## 生命周期命令
+## JSON-First Access Model
 
-```bash
-docpath agent enter                         # 进入 DocPath 管理会话
-docpath agent step --step "<sub-task>"      # 完成一个子任务后记录 breadcrumb + 同步 plan
-docpath agent done --step "<task>"          # 执行 check/review/journal 并结束任务
-docpath agent handoff                       # 生成 compact-context.md 交接包
-```
+| Artifact | Role | Claude access |
+| --- | --- | --- |
+| `state.json` | Runtime state truth | Use `/docpath-status` or `docpath status --agent`. |
+| `current.md` | Human rendered state view | Do not read by default. |
+| `breadcrumb.jsonl` | Execution event truth | Use CLI summaries; direct tail only for debug. |
+| `breadcrumb.md` | Human rendered progress view | Do not read by default. |
+| `spec.json` | Structured task spec truth | Prefer CLI summaries and schema-aware routes. |
+| `spec.md` | Human narrative spec | Read on demand for full requirements. |
+| `plan.json` | Structured plan truth | Prefer `/docpath-next`, `/docpath-go`, and reveal. |
+| `plan.md` | Human plan view | Do not parse manually by default. |
+| `docs-index.json` | Document index truth | Never read in full; use filtered CLI summaries. |
 
-## 协议规则
+Direct file reads are allowed only when the CLI route, debugging need, or user
+request requires them. Keep the read scoped by topic, task id, exact path, or
+tail range.
 
-- 禁止手工编辑 `state.json`、`current.md` 中的 `phase/gate/state`
-- 禁止跳过 `status --agent` / `next --agent` 直接从记忆执行
-- 当用户提出页面、流程可视化、数据视图、工作台等产品/UI 形态需求，但未明确目标用户、入口位置、数据范围或交互方式时，必须先澄清或进入 brainstorm/refine，不得直接创建任务、promote backlog 或写代码。
-- 当请求可能改变技术栈、架构/模块边界、数据模型/API 契约、UI 信息架构/用户主路径、工作流/Agent 行为、权限或写操作边界、任务范围、已有能力或长期维护成本时，必须先进入 brainstorm/refine，在任务 spec 写 Decision Brief 并等待用户明确确认；确认前不得 promote 实现任务或写实现代码。
-- `plan.md` 与 `breadcrumb.md` 的同步应通过 CLI 命令完成
-- 质量门禁失败时，优先遵循 `next --agent` 给出的恢复路线
-
-## 决策日志老化
-
-- `workspace/decisions.md` 只保留最近 30 天内的 ADR；`docpath journal` 会自动把更早条目按月轮转到 `workspace/decisions-YYYY-MM.md`。
-- 查询历史决策时，应显式读取对应月份归档文件，不要把全部历史决策加载进默认上下文。
-- 需要手动触发时运行 `docpath gc-decisions`。
-- `workspace/breadcrumb.md` 是执行恢复证据，记录步骤状态、检查、审查和 journal 完成事件。
-- `workspace/decisions.md` 是高信号 ADR 索引，普通 `journal.archive` 摘要、完成步数、检查结果和 review 计数不得写入决策日志。
-- `docpath journal` 仅在提取到可复用的架构、工作流或行为决策时写入 `decisions.md`，并保留背景、影响、边界和替代方案。
-
-## 有效命令范围
-
-当前可依赖的核心命令包括：
+## Lifecycle
 
 ```bash
-docpath status --agent
-docpath next --agent
-docpath brainstorm
-docpath refine
-docpath write-spec
-docpath plan
-docpath write-plan
-docpath go
-docpath check
-docpath review
-docpath journal
-docpath gc-decisions
-docpath write-journal
-docpath continue
-docpath compact
 docpath agent enter
-docpath agent step
-docpath agent done
+docpath go --step S1
+docpath agent step --step "S1" --status done
+docpath check
+docpath agent done --step "<task>"
 docpath agent handoff
 ```
 
-不要引用任何已移除、未实现或历史遗留的命令名称。
+Workflow:
+
+1. Enter with `docpath agent enter` before code or protocol edits.
+2. Load the active step with `docpath go --step <id>`.
+3. Make the scoped change.
+4. Record completion with `docpath agent step --step "<id>" --status done`.
+5. Run `docpath check` and `docpath agent done` before claiming completion.
+6. Use `docpath agent handoff` when another session may resume the work.
+
+## Required Gates
+
+- Do not skip status and next route checks.
+- Do not act from memory alone.
+- Do not hand-edit `state.json`, workspace runtime views, or generated Markdown
+  views.
+- Product/UI work must clarify target user, entry point, data scope, and
+  interaction model before implementation.
+- Major changes to architecture, data contracts, UI information architecture,
+  workflow behavior, permission boundaries, task scope, existing capabilities,
+  or long-term maintenance cost require brainstorm/refine plus a Decision Brief
+  and explicit user confirmation before implementation.
+- Run `docpath check` before marking work complete.
+
+## Decision Log Aging
+
+- `workspace/decisions.md` keeps recent ADR entries only.
+- `docpath journal` rotates older entries into `workspace/decisions-YYYY-MM.md`.
+- Read historical monthly archives explicitly instead of loading all decisions.
+- Write decisions only for reusable architecture, workflow, or behavior choices
+  with context, impact, boundaries, and alternatives.

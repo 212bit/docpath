@@ -22,4 +22,3 @@ fi
 ```
 
 Common arguments: `list`, `get <key>`, or `set <key> <value>`.
-

@@ -1,9 +1,8 @@
-# /docpath-status — 查看当前状态
+# /docpath-status
 
-## 用途
-快速查看任务状态，不修改任何文件。
+Show the current DocPath state without modifying files.
 
-## 命令
+## Run
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
   ./.docpath/bin/docpath status $ARGUMENTS
@@ -21,9 +20,10 @@ else
 fi
 ```
 
-## 输出内容
-- task_id + task_title
-- state (planning/executing/done/blocked)
-- current_step
-- 最近一条 breadcrumb 记录
-- --agent: YAML 格式 (next_action/recommended_command/exit_criteria)
+## Output
+
+- `task_id` and `task_title`
+- `state`, `phase`, and `gate`
+- Progress counters and the current focus
+- `--agent`: machine-readable YAML with `next_action`, `recommended_command`, indexes, and `exit_criteria`
+- Treat `required_context` and `required_files` as indexes, not instructions to read every file.

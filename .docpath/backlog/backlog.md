@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-14T02:11:16.867Z
+> 扫描时间: 2026-06-14T05:48:49.738Z
 
 ## 条目列表
 
@@ -122,6 +122,8 @@
 | R-151 | 瘦身 AGENTS.md 减少与 DocPath Skill 重叠 | done | P2 | 1 | T-20260609-agents-md-docpath-skill |
 | R-152 | 允许 AGENTS.md 定制但继续校验 Skill manifest 漂移 | done | P2 | 2 | T-20260609-agents-md-skill-manifest |
 | R-153 | 优化 DocPath Codex Skills 文案与触发边界 | done | P2 | 2 | T-20260609-docpath-codex-skills |
+| R-166 | 智能索引架构：CLI 返回索引，Agent 按需深读 | done | P2 | 2 | T-20260614-cli-agent |
+| R-167 | Phase 2&3: 索引增强 + 按需深读 | done | P2 | 2 | T-20260614-phase-2-3 |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 
 ## 用途说明

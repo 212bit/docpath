@@ -1,9 +1,8 @@
-# /docpath-continue — 继续当前任务
+# /docpath-continue
 
-## 用途
-恢复中断的任务，读取当前状态继续执行。
+Resume an interrupted task through the DocPath CLI.
 
-## 命令
+## Run
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
   ./.docpath/bin/docpath continue $ARGUMENTS
@@ -21,8 +20,9 @@ else
 fi
 ```
 
-## 执行步骤
-1. 读取 `.docpath/workspace/current.md`
-2. 解析 state + current_step + task_id
-3. 输出当前状态摘要和下一步建议
-4. 如果 state=blocked，提示解除阻塞条件
+## Follow-up
+
+1. Read the command output as the resume summary.
+2. Run `/docpath-next` to select the next safe action.
+3. Treat any listed files as context indexes; do not open generated Markdown views unless the route, a debug need, or the user explicitly requires it.
+4. If the state is blocked, report the blocker and the condition required to unblock it.

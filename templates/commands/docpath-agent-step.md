@@ -42,10 +42,10 @@ fi
 
 ## Follow-up
 
-1. Confirm `.docpath/workspace/breadcrumb.md` contains the new step record.
-2. If status is `done`, confirm `.docpath/tasks/current/plan.md` has the matching checklist item checked.
+1. Read the command output and confirm the step was recorded.
+2. If verification is needed, use `/docpath-status --agent` or `/docpath-next` before reading generated Markdown views.
 3. Run `/docpath-next` to route the next action.
 
 ## Expected Result
 
-Claude should state the recorded step, whether plan sync succeeded, and the next recommended command.
+Claude should state the recorded step, whether plan sync succeeded according to the CLI output, and the next recommended command.

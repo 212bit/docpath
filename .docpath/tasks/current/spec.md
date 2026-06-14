@@ -1,62 +1,59 @@
-# T-20260614-dogfood - 修复 dogfood 暴露的生命周期与证据模型问题
+# T-20260614-phase-2-3 - Phase 2&3: 索引增强 + 按需深读
 
-> backlog_id: R-165
+> backlog_id: R-167
 > backlog_source: docpath backlog add
 
 ## 1. 背景与动机
 
-R-164 dogfood 暴露出 DocPath 在多人团队场景下的几类流程问题：状态机本身可以落账，但部分路由和证据模型会诱导 Agent 先标记完成再验证、过早收尾、读取 stale JSON、把低价值统计写入 decisions，以及在提交阶段漏掉被 git ignore 的审计证据。
+Phase 1 已完成 CLI-only 基线，建立了"Agent 只通过 CLI 读写状态"的架构约束。所有 Agent 指令都通过 CLI 获取状态，不再直接读取 current.md/breadcrumb.md。
 
-这些问题不适合拆成多个小 backlog，因为它们共同影响同一条工作流主路径：spec/plan/go/check/review/journal 和团队交接审计。当前任务把它们作为一个流程模型修复包处理，目标是让 DocPath 的机器真源、路由建议和审计证据更自洽。
+现在需要完成 Phase 2（索引增强）和 Phase 3（按需深读），让 Agent 在保持架构约束的前提下，获得按需深读的能力，解决"控制 vs 能力"的矛盾。
 
 ## 2. 需求清单
 
 ### 功能需求
-- [ ] FR-1: 修复 terminal verification step 与 check 子任务完成度的自指死结
-  - `docpath check` 不应要求当前 terminal verification step 预先标记 done 才能通过，或 plan 生成不再把 check/review/journal 类收尾动作作为业务 checklist。
-- [ ] FR-2: 修复 pending-done 哨兵的路由优先级
-  - 当仍存在 in_progress step 或未完成 plan step 时，pending-done 只能作为 warning，不应把推荐命令切到 `docpath agent done`。
-- [ ] FR-3: 增加 structured JSON 与 Markdown 视图的 stale/hash drift 检查
-  - `spec.json`/`plan.json` 需要记录对应 Markdown 内容 hash；读路径或 check 发现 JSON 与 Markdown 失步时 fail loud，并提示 `docpath tasks sync --from current|canonical`。
-- [ ] FR-4: 禁止 review/check 统计污染 decisions.md
-  - `decisions.md` 只保存可复用 ADR；review/check 的普通统计只能写入 `review.md`、`last-check.md`、breadcrumb 或 JSONL 证据。
-- [ ] FR-5: 暴露 ignored backlog/task evidence 的提交提示
-  - `docpath changes` 或相关 agent 输出需要列出已变更但被 git ignore 的 `.docpath/backlog`、`.docpath/tasks/current`、`.docpath/tasks/done` 证据，并提示需要 `git add -f`。
-- [ ] FR-6: 保持 R-164 schema-first 行为兼容
-  - 新增 hash/drift 逻辑不得破坏旧任务缺少 JSON 时的 Markdown fallback，也不得让损坏 JSON 静默 fallback。
+
+- [ ] FR-1: Phase 2 - 索引增强
+  - 设计 `data_index` schema（path, schema, size_kb, line_count, summary）
+  - 增强 `docpath status --agent` 输出，在现有基础上增加 `data_index` 字段
+  - CLI 自动附加文件元信息（`fs.statSync` + schema 引用）
+  - 在 CLAUDE.md 中文档化索引格式，提供示例输出
+
+- [ ] FR-2: Phase 3 - 按需深读
+  - 更新 CLAUDE.md "📊 数据访问协议"章节，增加 Phase 3 规则（允许按需深读）
+  - 明确约束：写操作必须走 CLI（强制），读操作推荐 CLI，允许深读（只读）
+  - 在 CLAUDE.md 中增加"何时深读"章节，编写最佳实践和正反例
+  - 验证：简单任务不触发深读，复杂任务能正确识别并深读
 
 ### 非功能需求
-- [ ] NFR-1: 保持现有 DocPath CLI 主命令兼容
-- [ ] NFR-2: 所有状态和证据写入继续通过 DocPath CLI 或既有工具路径落账
-- [ ] NFR-3: 新增门禁必须 fail loud，错误信息包含修复命令
-- [ ] NFR-4: 变更需要覆盖路由、check、review、changes 和 structured-docs 的回归测试
+
+- [ ] NFR-1: CLI 响应时间 < 100ms（索引生成不能拖慢 status 命令）
+- [ ] NFR-2: 向后兼容现有 DocPath 工作流（不破坏已有 skills 和 CLI 命令）
+- [ ] NFR-3: 索引自动生成（不需要手工维护元数据）
+- [ ] NFR-4: 写操作仍然必须走 CLI（保证并发安全和审计日志）
 
 ## 3. 范围界定
 
 ### 包含
-- `next/status` 的 pending-done 路由优先级修复。
-- `check` 的 plan 完成度判定或 terminal verification step 豁免规则。
-- `structured-docs` 的 Markdown hash 字段生成、校验和 stale drift 检测。
-- `task-files`/`tasks sync` 的 JSON/Markdown 同步策略。
-- `review` 或 decisions 写入路径的低价值 ADR 禁写修复。
-- `changes` 或 agent 状态输出的 ignored evidence 提示。
-- 覆盖以上行为的回归测试。
+- Phase 2: CLI 索引返回逻辑（`status --agent` 输出增强）
+- Phase 3: CLAUDE.md 按需深读协议（分级权限 + 最佳实践）
+- 索引格式文档化（在 CLAUDE.md 中）
+- 验证测试（简单任务 vs 复杂任务）
 
 ### 不包含
-- 不重写完整 FSM。
-- 不引入数据库或外部审计系统。
-- 不删除 `spec.md`/`plan.md` 视图。
-- 不改变 R-164 已建立的 JSON/JSONL 真源方向。
-- 不在本任务内处理 install manifest drift。
-- 不清理历史 `decisions.md` 中已有的低价值记录，只防止新增污染。
+- 不改变底层存储格式（JSON/JSONL 已在 R-164 完成）
+- 不添加审计日志（未来可选特性）
+- 不限制 Agent 读取频率（只在文档层面建议）
+- 不处理 skills 的自动化测试（超出本任务范围）
+- 不改变 Phase 1 已建立的 CLI-only 约束
 
 ## 4. 关键决策
 
 | # | 决策 | 选项 | 结论 | 理由 |
 |---|------|------|------|------|
-| 1 | 合并修复 dogfood 问题 | 拆成多个 backlog / 一个流程修复包 | 一个流程修复包 | 这些问题共同影响 spec/plan/go/check/review/journal 主路径，拆开容易只修局部症状。 |
-| 2 | JSON/Markdown 失步策略 | 静默选择 JSON / 静默选择 Markdown / hash drift fail loud | hash drift fail loud | 多人团队需要清晰知道真源失步，不能继续读旧上下文。 |
-| 3 | decisions 写入边界 | review/check 也写 ADR / 只写可复用决策 | 只写可复用决策 | 普通统计进入 decisions 会降低审计信噪比。 |
+| 1 | Phase 2&3 合并实施 | 分两个任务 / 合并为一个任务 | 合并为一个任务 | Phase 2 是 Phase 3 的基础，合并减少切换成本 |
+| 2 | 索引生成时机 | 实时生成 / 缓存 / 按需生成 | 实时生成 | 保证索引总是最新，性能足够（< 100ms） |
+| 3 | 深读权限边界 | 完全禁止 / 只读允许 / 完全放开 | 只读允许 | 平衡控制与能力，写操作走 CLI 保证安全 |
 
 ## 4.1 重大变更门禁
 
@@ -65,51 +62,51 @@ R-164 dogfood 暴露出 DocPath 在多人团队场景下的几类流程问题：
 - [x] 是，需要用户确认
 
 ### 变更类型
-- [ ] 技术栈 / 框架
-- [ ] UI 框架 / 设计系统
-- [ ] 构建工具 / 打包方式
-- [x] 数据库 / 存储模型
-- [x] API / 数据契约
-- [ ] 部署 / 运行方式
-- [ ] 安全 / 权限边界
-- [ ] 外部 SDK / 大依赖
+- [x] API / 数据契约（CLI 输出增加 data_index）
 - [x] 架构 / 模块边界
-- [ ] UI 信息架构 / 用户主路径
-- [x] 工作流 / Agent 行为
+- [x] 工作流 / Agent 行为（允许按需深读）
 - [x] 权限 / 写操作边界
-- [ ] 范围扩大
-- [ ] 删除 / 替换已有能力
-- [x] 长期维护成本增加
-- [ ] 其他
 
 ### UI 设计门禁
 - [x] 本任务不涉及产品 UI 实现（豁免设计五件套）
 - [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）
 
 ### Decision Brief
-- 当前问题: Dogfood 证明 DocPath 的状态落账能力存在，但 lifecycle route、计划完成度、structured doc 真源和 decisions 写入边界仍会制造错误激励。
-- 目标: 修复最影响多人团队协作的 5 个流程问题，让 Agent 不需要先假完成再验证，不会因 pending-done 过早收尾，不会静默读取 stale JSON，不会污染 decisions，也不会漏提交被 ignore 的任务证据。
-- 背景: 用户要求把这些问题放入同一个 backlog 并进行修复。
+- 当前问题: Phase 1 建立了 CLI-only 基线，但完全禁止 Agent 读文件会限制其能力。
+- 目标: 在保持架构约束（写操作走 CLI）的前提下，给 Agent 按需深读的能力。
+- 背景: Phase 1 已完成，需要继续完成智能索引架构的 Phase 2&3。
 - 可选方案:
-  1. 逐个 backlog 修复：粒度清楚，但容易跨任务留下半套流程语义。
-  2. 一个流程修复包：影响面更大，但可以用同一批回归测试锁住主路径。
-- 推荐方案: 采用方案 2，保持每个修复点边界小，但统一在一个任务中完成主路径一致性修复。
-- 不做什么: 不重写 FSM，不做安装资产漂移修复，不清理历史 decisions 噪音。
-- 成本: 需要改动 next/check/review/changes/structured-docs，并补多组回归测试。
-- 风险: 新的 hash drift 门禁可能暴露既有任务中的失步文件，需要错误提示足够明确。
-- 回滚方案: hash drift 可先限定在 active task 的 spec/plan；pending-done 路由和 decisions 禁写均可独立回滚。
-- 用户确认: 用户明确要求把 dogfood 发现的问题放到一个 backlog 内进行修复。
+  1. 继续完全禁止 → 限制 Agent 能力
+  2. 索引增强 + 按需深读 → 平衡方案
+  3. 完全放开 → 破坏架构
+- 推荐方案: 方案 2，先索引增强（Phase 2），再解除只读限制（Phase 3）
+- 不做什么: 不改底层存储，不加审计日志，不限制读频率，不改 Phase 1 约束
+- 成本: Phase 2 约 3h，Phase 3 约 2h，总计约 5h
+- 风险: Agent 可能滥用深读 → 在文档层面要求说明理由
+- 回滚方案: Phase 2&3 可独立回滚，不影响 Phase 1 的 CLI-only 基线
+- 用户确认: 用户已确认合并实施 Phase 2&3
 
 ## 5. 验收标准
 
-- [ ] AC-1: 仍有未完成业务 step 或 in_progress step 时，`docpath next --agent` 不再因为 pending-done 推荐 `docpath agent done`。
-- [ ] AC-2: terminal verification step 不再造成 check 自指死结；Agent 可以在不提前假完成验证步骤的情况下运行 check。
-- [ ] AC-3: `spec.json`/`plan.json` 记录 Markdown hash；JSON 与 Markdown 失步时 check/read 路径 fail loud，并提示同步命令。
-- [ ] AC-4: 旧任务缺少 JSON 时仍可 Markdown fallback；损坏 JSON 仍 fail loud。
-- [ ] AC-5: `docpath review`/`docpath check` 不再新增普通统计类 `decisions.md` ADR，并有测试覆盖。
-- [ ] AC-6: `docpath changes` 或 agent 输出能提示 ignored backlog/task evidence 及 `git add -f` 修复方式。
-- [ ] AC-7: 补充上述流程回归测试，`pnpm test`、`docpath check`、`docpath review`、`docpath journal` 通过。
-- [ ] AC-8: backlog 条目 R-165 与任务 T-20260614-dogfood 建立双向关联并完成归档。
+- [ ] AC-1: `docpath status --agent` 返回 `data_index` 字段，包含 state.json, breadcrumb.jsonl, plan.md 等文件信息
+- [ ] AC-2: 索引生成不影响 CLI 性能（< 100ms）
+- [ ] AC-3: CLAUDE.md 中有索引格式文档和示例输出
+- [ ] AC-4: CLAUDE.md "📊 数据访问协议"增加 Phase 3 规则（分级权限）
+- [ ] AC-5: CLAUDE.md 增加"何时深读"章节，包含正反例
+- [ ] AC-6: 验证：简单任务（查看 task_id/phase）不触发深读
+- [ ] AC-7: 验证：复杂任务（调试状态机、分析历史）能正确识别并深读
+- [ ] AC-8: backlog 条目 R-167 与任务 T-20260614-phase-2-3 建立双向关联并完成归档
+
+## 6. 风险与依赖
+
+### 依赖
+- Phase 1 已完成（CLI-only 基线）
+- 现有 CLI 架构支持输出格式扩展
+
+### 风险
+1. **索引生成性能** → 对策：使用同步 fs.statSync，避免异步开销
+2. **Agent 滥用深读** → 对策：文档要求说明理由，未来可加审计日志
+3. **破坏架构约束** → 对策：只允许只读，写操作永远走 CLI
 
 ---
 

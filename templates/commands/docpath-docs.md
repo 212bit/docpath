@@ -22,4 +22,3 @@ fi
 ```
 
 Common arguments: `--scan`, `--list`, or `--add <path>`.
-

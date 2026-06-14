@@ -84,9 +84,11 @@ function formatOMXPrompt(data: AgentOutput): string {
   sections.push(`- **Command**: \`${data.recommended_command}\``);
   sections.push('');
 
-  // Section 4: 必需文件
+  // Section 4: context index / direct-read candidates
   if (data.required_files && data.required_files.length > 0) {
-    sections.push('## 必需文件');
+    sections.push('## Context Index / Direct-Read Candidates');
+    sections.push('');
+    sections.push('Use CLI summaries first. Treat these paths as candidates for scoped debug or deep context, not as files to read by default.');
     sections.push('');
     for (const file of data.required_files) {
       sections.push(`- ${file}`);

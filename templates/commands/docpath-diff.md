@@ -22,4 +22,3 @@ fi
 ```
 
 Common arguments: `--scope staged`, `--scope last`, `--scope step --step S1`, or `--scope all`.
-

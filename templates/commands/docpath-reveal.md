@@ -22,4 +22,3 @@ fi
 ```
 
 Common arguments: `--level 1`, `--level 2 --topic api`, `--format raw`, or `--output <file>`.
-

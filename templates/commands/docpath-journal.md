@@ -22,4 +22,3 @@ fi
 ```
 
 Use `--dry-run` to preview, or `--skip-ai` when no model-assisted summary is desired.
-

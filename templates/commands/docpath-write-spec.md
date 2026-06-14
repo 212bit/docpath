@@ -22,4 +22,3 @@ fi
 ```
 
 Use `--content "..."` or `--stdin`. After success, route with `/docpath-plan` or `/docpath-next`.
-

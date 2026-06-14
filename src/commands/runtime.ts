@@ -384,10 +384,11 @@ function renderResumeProtocol(): string[] {
   return [
     '## Resume Protocol',
     '',
-    '1. 下一个人 / 下一个 Agent 先读 `.docpath/workspace/compact-context.md` 与 `.docpath/workspace/current.md`。',
-    '2. 再核对 `Verification Status`、`Remaining Risks`、`Change Scope` 与 `Next Agent Route`。',
-    '3. 如果 readiness 是 `blocked` 或 `not_ready_to_finish`，先处理阻塞或补齐验证，不要直接声明完成。',
-    '4. 按 `recommended_command` 执行下一步，除非当前工作区状态已经变化。',
+    '1. Start with `docpath status --agent` and `docpath next --agent`.',
+    '2. Read this compact context only as a handoff summary, not as a replacement for the CLI route.',
+    '3. Check `Verification Status`, `Remaining Risks`, `Change Scope`, and `Next Agent Route`.',
+    '4. If readiness is `blocked` or `not_ready_to_finish`, handle the blocker or missing verification before claiming completion.',
+    '5. Follow `recommended_command` unless the workspace state has changed.',
   ];
 }
 
@@ -431,6 +432,8 @@ function renderProgressDetails(view: CompactedContextView): string[] {
     '',
     '## Required Files Before Resume',
     '',
+    '- Prefer CLI summaries first: `docpath status --agent`, `docpath next --agent`, `docpath reveal --topic <keyword> --level 1-3`.',
+    '- Treat the paths below as direct-read candidates for debugging or deep context, not as files to read by default.',
     ...[
       '.docpath/workspace/current.md',
       '.docpath/workspace/breadcrumb.md',

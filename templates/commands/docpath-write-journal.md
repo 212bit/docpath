@@ -1,6 +1,6 @@
 # /docpath-write-journal
 
-Append a generated knowledge record into the active DocPath task spec.
+Append a generated knowledge record into the active DocPath task through the CLI.
 
 ## Run
 
@@ -21,4 +21,4 @@ else
 fi
 ```
 
-Use `--content "..."` or `--stdin`. This command persists the journal record into `tasks/current/spec.md`.
+Use `--content "..."` or `--stdin`. Let the CLI persist the record into the active task's structured and rendered artifacts.

@@ -22,4 +22,3 @@ fi
 ```
 
 After the command succeeds, run `/docpath-next` to select the next action.
-

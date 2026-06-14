@@ -22,4 +22,3 @@ fi
 ```
 
 Common arguments: `--action start`, `--action next`, `--action done`, or `--dry-run`.
-

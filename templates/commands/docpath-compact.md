@@ -22,4 +22,3 @@ fi
 ```
 
 Common arguments: `--max-entries 20` or `--dry-run`.
-

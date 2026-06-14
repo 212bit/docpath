@@ -1,9 +1,8 @@
-# /docpath-check — 任务前检查
+# /docpath-check
 
-## 用途
-在开始工作前检查环境和前置条件。
+Run DocPath quality gates and workspace consistency checks.
 
-## 命令
+## Run
 ```bash
 if [ -x ./.docpath/bin/docpath ]; then
   ./.docpath/bin/docpath check $ARGUMENTS
@@ -21,9 +20,10 @@ else
 fi
 ```
 
-## 检查项
-1. .docpath 目录结构完整性
-2. current.md 存在且可解析
-3. breadcrumb.md 存在
-4. config.yaml 存在且有效
-5. 无进行中的冲突任务
+## Checks
+
+1. `.docpath` workspace structure and configuration validity.
+2. Runtime state consistency between structured sources and rendered views.
+3. Plan, breadcrumb, check, review, and journal gate evidence.
+4. No conflicting active task state.
+5. Any project-specific quality gates configured for the current task.

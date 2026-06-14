@@ -2,7 +2,7 @@
 
 > 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。
 
-> 扫描时间: 2026-06-13T07:52:08.274Z
+> 扫描时间: 2026-06-14T05:58:04.912Z
 
 ## 文档列表
 
@@ -128,54 +128,63 @@
 | backlog/R-157.md | runbook | project | 2 | false | false | 344 |  | R-157 | learn 当前会把完成 N/N 步、阻塞 N 步等流水统计识别为可沉淀规则，并已把低信号内容误写入 .docpath/rules/style.md。需要实现 style.md 规则沉淀约束，执行后清理 lesson-candidates.md，并增强可复用 lesson 的智能判断。 | 2026-06-12T16:06:40.708Z | 924B |
 | backlog/R-158.md | runbook | project | 2 | false | false | 873 |  | 背景 | `decisions.md` 当前 230KB / 13517 行 / 78K token,journal 每次归档都追加,从未修剪。虽然正常命令(enter/status/go)不读它(路由的 required_context 不含),但某些分析/查询场景会全量加载,逐渐吃掉上下文预算。 | 2026-06-12T16:44:08.559Z | 2.2KB |
 | backlog/R-159.md | runbook | project | 2 | false | false | 472 |  | R-159 | 当前 journal 会把普通 journal.archive 和 breadcrumb 上下文写入 workspace/decisions.md，导致 decisions.md 与 breadcrumb.md 内容重复，并把“完成 N/N 步”“质量检查通过”“review 计数”等低信号流水长期保留。需要把 decisions.md 定位收窄为长期 AD | 2026-06-12T17:31:00.422Z | 1.3KB |
-| backlog/R-160.md | runbook | project | 2 | false | false | 538 |  | R-160 | 当前产品定位已从“企业级审计合规层”收敛为“多人 / 多 Agent 团队的 AI 工作流状态层”。需要将这次定位结论沉淀为可执行的产品方向，明确 CLI/FSM/check/review/breadcrumb/handoff 在团队协作语境下的价值，避免后续路线图继续向过重的企业合规能力漂移。 | 2026-06-13T07:29:13.428Z | 1.3KB |
-| backlog/backlog.md | runbook | project | 2 | false | false | 3932 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-06-13T07:29:13.509Z | 11.8KB |
-| commands/docpath-agent-done.md | reference | project | 3 | false | false | 278 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-06-12T14:47:27.834Z | 1.1KB |
-| commands/docpath-agent-enter.md | reference | project | 3 | false | false | 235 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-06-12T14:47:27.835Z | 939B |
-| commands/docpath-agent-handoff.md | reference | project | 3 | false | false | 257 |  | /docpath-agent-handoff | Persist a compact handoff package for the next Claude Code session. | 2026-06-12T14:47:27.835Z | 1.0KB |
-| commands/docpath-agent-step.md | reference | project | 3 | false | false | 475 |  | /docpath-agent-step | Record completion or blockage for one DocPath plan step. | 2026-06-12T14:47:27.835Z | 1.9KB |
-| commands/docpath-brainstorm.md | reference | project | 3 | false | false | 236 |  | /docpath-brainstorm | Clarify a vague request and generate a task/spec starting point. | 2026-06-12T14:47:27.835Z | 942B |
-| commands/docpath-changes.md | reference | project | 3 | false | false | 225 |  | docpath-changes | 运行 `docpath changes`，汇总当前 git 工作树变更、DocPath 门禁证据和建议 commit message。 | 2026-06-12T14:47:27.836Z | 803B |
-| commands/docpath-check.md | reference | project | 3 | false | false | 237 |  | /docpath-check — 任务前检查 | 在开始工作前检查环境和前置条件。 | 2026-06-12T14:47:27.836Z | 784B |
-| commands/docpath-compact.md | reference | project | 3 | false | false | 162 |  | /docpath-compact | Persist a compact runtime context package. | 2026-06-12T14:47:27.836Z | 646B |
-| commands/docpath-config.md | reference | project | 3 | false | false | 149 |  | /docpath-config | Inspect or update DocPath configuration. | 2026-06-12T14:47:27.837Z | 593B |
-| commands/docpath-context.md | reference | project | 3 | false | false | 224 |  | /docpath-context — 查看完整上下文 | 获取任务的完整上下文，包括状态、执行日志、规范文档。 | 2026-06-12T14:47:27.837Z | 742B |
-| commands/docpath-continue.md | reference | project | 3 | false | false | 254 |  | /docpath-continue — 继续当前任务 | 恢复中断的任务，读取当前状态继续执行。 | 2026-06-12T14:47:27.837Z | 844B |
-| commands/docpath-debug.md | reference | project | 3 | false | false | 150 |  | /docpath-debug | Run the systematic debugging workflow. | 2026-06-12T14:47:27.837Z | 597B |
-| commands/docpath-diff.md | reference | project | 3 | false | false | 169 |  | /docpath-diff | Inspect changes for the active task or step. | 2026-06-12T14:47:27.838Z | 673B |
-| commands/docpath-disclosure.md | reference | project | 3 | false | false | 160 |  | /docpath-disclosure | Show progressive disclosure output for the current project state. | 2026-06-12T14:47:27.838Z | 640B |
-| commands/docpath-discover.md | reference | project | 3 | false | false | 168 |  | /docpath-discover | Find the key DocPath context files for this project. | 2026-06-12T14:47:27.838Z | 670B |
-| commands/docpath-docs.md | reference | project | 3 | false | false | 158 |  | /docpath-docs | Manage the DocPath document asset index. | 2026-06-12T14:47:27.838Z | 630B |
-| commands/docpath-export.md | reference | project | 3 | false | false | 161 |  | /docpath-export | Export the DocPath workflow state as standalone markdown. | 2026-06-12T14:47:27.839Z | 643B |
-| commands/docpath-go.md | reference | project | 3 | false | false | 209 |  | /docpath-go | Start or continue execution from the current DocPath plan. | 2026-06-12T14:47:27.839Z | 836B |
-| commands/docpath-init.md | reference | project | 3 | false | false | 169 |  | /docpath-init | Initialize `.docpath/` in the current project. | 2026-06-12T14:47:27.839Z | 673B |
-| commands/docpath-install.md | reference | project | 3 | false | false | 186 |  | /docpath-install | Install DocPath agent protocol files into this project. | 2026-06-12T14:47:27.840Z | 743B |
-| commands/docpath-journal.md | reference | project | 3 | false | false | 170 |  | /docpath-journal | Archive lessons from the completed task. | 2026-06-12T14:47:27.840Z | 677B |
-| commands/docpath-learn.md | reference | project | 3 | false | false | 209 |  | /docpath-learn | Extract durable rules from journal entries into project guidance. | 2026-06-12T14:47:27.840Z | 836B |
-| commands/docpath-next.md | reference | project | 3 | false | false | 249 |  | /docpath-next | Use this command as the default entry point before deciding what to do next. | 2026-06-12T14:47:27.840Z | 993B |
-| commands/docpath-plan.md | reference | project | 3 | false | false | 170 |  | /docpath-plan | Generate an execution plan from the active `spec.md`. | 2026-06-12T14:47:27.840Z | 680B |
-| commands/docpath-projects.md | reference | project | 3 | false | false | 156 |  | /docpath-projects | View local projects registered in the DocPath SQLite registry. | 2026-06-12T14:47:27.841Z | 622B |
-| commands/docpath-refine.md | reference | project | 3 | false | false | 167 |  | /docpath-refine | Convert a requirement note into a structured DocPath spec input. | 2026-06-12T14:47:27.841Z | 666B |
-| commands/docpath-resume.md | reference | project | 3 | false | false | 167 |  | /docpath-resume | Resume from the last DocPath interruption point. | 2026-06-12T14:47:27.841Z | 668B |
-| commands/docpath-reveal.md | reference | project | 3 | false | false | 173 |  | /docpath-reveal | Reveal DocPath context at a controlled detail level. | 2026-06-12T14:47:27.841Z | 691B |
-| commands/docpath-review.md | reference | project | 3 | false | false | 170 |  | /docpath-review | Run a structured code review for the active task. | 2026-06-12T14:47:27.841Z | 680B |
-| commands/docpath-run.md | reference | project | 3 | false | false | 166 |  | /docpath-run | Record low-level DocPath runtime lifecycle events. | 2026-06-12T14:47:27.842Z | 662B |
-| commands/docpath-stats.md | reference | project | 3 | false | false | 143 |  | /docpath-stats | Show DocPath project statistics. | 2026-06-12T14:47:27.842Z | 571B |
-| commands/docpath-status.md | reference | project | 3 | false | false | 234 |  | /docpath-status — 查看当前状态 | 快速查看任务状态，不修改任何文件。 | 2026-06-12T14:47:27.842Z | 830B |
-| commands/docpath-tdd.md | reference | project | 3 | false | false | 161 |  | /docpath-tdd | Drive the DocPath TDD workflow. | 2026-06-12T14:47:27.842Z | 644B |
-| commands/docpath-unlink.md | reference | project | 3 | false | false | 169 |  | /docpath-unlink | Remove the current project association from DocPath. | 2026-06-12T14:47:27.842Z | 675B |
-| commands/docpath-write-design.md | reference | project | 3 | false | false | 801 |  | /docpath-write-design — 写入 UI/UX 设计证据 | 为 UI/UX、page、layout、navigation、visual、responsive、Figma、Stitch、v0、Framer 等界面任务写入当前任务的设计证据。 | 2026-06-12T14:47:27.843Z | 2.5KB |
-| commands/docpath-write-journal.md | reference | project | 3 | false | false | 191 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task spec. | 2026-06-12T14:47:27.843Z | 763B |
-| commands/docpath-write-plan.md | reference | project | 3 | false | false | 182 |  | /docpath-write-plan | Write a generated execution plan into the active DocPath task. | 2026-06-12T14:47:27.843Z | 726B |
-| commands/docpath-write-spec.md | reference | project | 3 | false | false | 180 |  | /docpath-write-spec | Write a refined spec into the active DocPath task. | 2026-06-12T14:47:27.843Z | 717B |
+| backlog/R-160.md | runbook | project | 2 | false | false | 538 |  | R-160 | 当前产品定位已从“企业级审计合规层”收敛为“多人 / 多 Agent 团队的 AI 工作流状态层”。需要将这次定位结论沉淀为可执行的产品方向，明确 CLI/FSM/check/review/breadcrumb/handoff 在团队协作语境下的价值，避免后续路线图继续向过重的企业合规能力漂移。 | 2026-06-13T07:54:14.253Z | 1.3KB |
+| backlog/R-161.md | runbook | project | 2 | false | false | 571 |  | R-161 | DocPath 已明确定位为多人 / 多 Agent 开发团队的 AI 工作流状态层。当前 handoff 已能生成可恢复上下文，但需要进一步围绕团队接力场景强化：下一个人或下一个 Agent 应能从 handoff 中直接看到当前任务位置、下一步推荐、验证状态、剩余风险、修改范围和阻塞原因。该任务是多人团队定位下的 P0 协作闭环能力，不涉及企业权限、SS | 2026-06-13T13:05:38.563Z | 1.4KB |
+| backlog/R-162.md | runbook | project | 2 | false | false | 339 |  | R-162 | 当前 docpath check 将 current.md 渲染出的执行 checklist 作为 blocking 门禁，导致 plan.md 全部完成后如果 current.md 渲染未同步会误报 Checklist 同步失败。current.md 是派生视图，不应作为完成真源；完成态归档后再次 check 还可能因 tasks/current 缺失污染 | 2026-06-13T15:33:08.114Z | 966B |
+| backlog/R-163.md | runbook | project | 2 | false | false | 688 |  | R-163 | 当前 DocPath 仍有多处以 Markdown 作为任务计划、执行日志、决策和展示文档的混合真源，导致 check/go/next/review/journal 需要用正则解析半结构化 Markdown。R-162 已证明 current.md 这类派生视图不应作为完成门禁真源。下一步需要把 DocPath 的状态和任务真源统一迁向 schema-fir | 2026-06-13T17:52:30.393Z | 1.8KB |
+| backlog/R-164.md | runbook | project | 2 | false | false | 500 |  | R-164 | R-163 已建立 schema-first JSON/JSONL 真源，但 spec.json 仍是第一版结构化外壳，主要包含 title、FR/NFR、AC、Decision Brief 和 markdown 原文。为了让 spec 真正成为 check/next/context-index/UI/重大变更门禁的机器契约，需要继续把 task/backl | 2026-06-13T18:26:27.102Z | 1.5KB |
+| backlog/R-165.md | runbook | project | 2 | false | false | 578 |  | R-165 | 本次 R-164 dogfood 暴露出 DocPath 流程模型和证据模型的系统性问题：1. check 子任务完成度与 terminal verification step 形成自指死结，Agent 必须先把验证步骤标记 done 才能运行 check。2. pending-done 哨兵会在仍有 in_progress 或未完成步骤时劫持 next r | 2026-06-14T02:11:16.843Z | 1.6KB |
+| backlog/R-166.md | runbook | project | 2 | false | false | 92 |  | R-166 | - 待补充 | 2026-06-14T04:16:43.087Z | 297B |
+| backlog/R-167.md | runbook | project | 2 | false | false | 84 |  | R-167 | - 待补充 | 2026-06-14T05:48:49.696Z | 279B |
+| backlog/backlog.md | runbook | project | 2 | false | false | 4164 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-06-14T05:48:49.739Z | 12.5KB |
+| commands/docpath-agent-done.md | reference | project | 3 | false | false | 280 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-06-14T05:57:24.548Z | 1.1KB |
+| commands/docpath-agent-enter.md | reference | project | 3 | false | false | 279 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-06-14T05:57:24.549Z | 1.1KB |
+| commands/docpath-agent-handoff.md | reference | project | 3 | false | false | 277 |  | /docpath-agent-handoff | Persist a compact handoff package for the next Claude Code session. | 2026-06-14T05:57:24.549Z | 1.1KB |
+| commands/docpath-agent-step.md | reference | project | 3 | false | false | 482 |  | /docpath-agent-step | Record completion or blockage for one DocPath plan step. | 2026-06-14T05:57:24.549Z | 1.9KB |
+| commands/docpath-brainstorm.md | reference | project | 3 | false | false | 236 |  | /docpath-brainstorm | Clarify a vague request and generate a task/spec starting point. | 2026-06-14T05:57:24.550Z | 942B |
+| commands/docpath-changes.md | reference | project | 3 | false | false | 204 |  | docpath-changes | Run `docpath changes` to summarize the current git working tree, DocPath gate evidence, and a suggested commit message. | 2026-06-14T05:57:24.550Z | 814B |
+| commands/docpath-check.md | reference | project | 3 | false | false | 229 |  | /docpath-check | Run DocPath quality gates and workspace consistency checks. | 2026-06-14T05:57:24.550Z | 916B |
+| commands/docpath-compact.md | reference | project | 3 | false | false | 162 |  | /docpath-compact | Persist a compact runtime context package. | 2026-06-14T05:57:24.551Z | 646B |
+| commands/docpath-config.md | reference | project | 3 | false | false | 149 |  | /docpath-config | Inspect or update DocPath configuration. | 2026-06-14T05:57:24.551Z | 593B |
+| commands/docpath-context.md | reference | project | 3 | false | false | 242 |  | /docpath-context | Get a budgeted DocPath context package through the CLI. | 2026-06-14T05:57:24.551Z | 968B |
+| commands/docpath-continue.md | reference | project | 3 | false | false | 242 |  | /docpath-continue | Resume an interrupted task through the DocPath CLI. | 2026-06-14T05:57:24.552Z | 965B |
+| commands/docpath-debug.md | reference | project | 3 | false | false | 150 |  | /docpath-debug | Run the systematic debugging workflow. | 2026-06-14T05:57:24.552Z | 597B |
+| commands/docpath-diff.md | reference | project | 3 | false | false | 169 |  | /docpath-diff | Inspect changes for the active task or step. | 2026-06-14T05:57:24.552Z | 673B |
+| commands/docpath-disclosure.md | reference | project | 3 | false | false | 160 |  | /docpath-disclosure | Show progressive disclosure output for the current project state. | 2026-06-14T05:57:24.552Z | 640B |
+| commands/docpath-discover.md | reference | project | 3 | false | false | 168 |  | /docpath-discover | Find the key DocPath context files for this project. | 2026-06-14T05:57:24.553Z | 670B |
+| commands/docpath-docs.md | reference | project | 3 | false | false | 158 |  | /docpath-docs | Manage the DocPath document asset index. | 2026-06-14T05:57:24.553Z | 630B |
+| commands/docpath-export.md | reference | project | 3 | false | false | 161 |  | /docpath-export | Export the DocPath workflow state as standalone markdown. | 2026-06-14T05:57:24.553Z | 643B |
+| commands/docpath-go.md | reference | project | 3 | false | false | 242 |  | /docpath-go | Start or continue execution from the current DocPath plan. | 2026-06-14T05:57:24.553Z | 966B |
+| commands/docpath-init.md | reference | project | 3 | false | false | 169 |  | /docpath-init | Initialize `.docpath/` in the current project. | 2026-06-14T05:57:24.554Z | 673B |
+| commands/docpath-install.md | reference | project | 3 | false | false | 186 |  | /docpath-install | Install DocPath agent protocol files into this project. | 2026-06-14T05:57:24.554Z | 743B |
+| commands/docpath-journal.md | reference | project | 3 | false | false | 170 |  | /docpath-journal | Archive lessons from the completed task. | 2026-06-14T05:57:24.554Z | 677B |
+| commands/docpath-learn.md | reference | project | 3 | false | false | 209 |  | /docpath-learn | Extract durable rules from journal entries into project guidance. | 2026-06-14T05:57:24.554Z | 836B |
+| commands/docpath-next.md | reference | project | 3 | false | false | 305 |  | /docpath-next | Use this command as the default entry point before deciding what to do next. | 2026-06-14T05:57:24.554Z | 1.2KB |
+| commands/docpath-plan.md | reference | project | 3 | false | false | 170 |  | /docpath-plan | Generate an execution plan from the active `spec.md`. | 2026-06-14T05:57:24.555Z | 680B |
+| commands/docpath-projects.md | reference | project | 3 | false | false | 156 |  | /docpath-projects | View local projects registered in the DocPath SQLite registry. | 2026-06-14T05:57:24.555Z | 622B |
+| commands/docpath-refine.md | reference | project | 3 | false | false | 167 |  | /docpath-refine | Convert a requirement note into a structured DocPath spec input. | 2026-06-14T05:57:24.555Z | 666B |
+| commands/docpath-resume.md | reference | project | 3 | false | false | 167 |  | /docpath-resume | Resume from the last DocPath interruption point. | 2026-06-14T05:57:24.556Z | 668B |
+| commands/docpath-reveal.md | reference | project | 3 | false | false | 173 |  | /docpath-reveal | Reveal DocPath context at a controlled detail level. | 2026-06-14T05:57:24.556Z | 691B |
+| commands/docpath-review.md | reference | project | 3 | false | false | 170 |  | /docpath-review | Run a structured code review for the active task. | 2026-06-14T05:57:24.556Z | 680B |
+| commands/docpath-run.md | reference | project | 3 | false | false | 166 |  | /docpath-run | Record low-level DocPath runtime lifecycle events. | 2026-06-14T05:57:24.556Z | 662B |
+| commands/docpath-stats.md | reference | project | 3 | false | false | 143 |  | /docpath-stats | Show DocPath project statistics. | 2026-06-14T05:57:24.556Z | 571B |
+| commands/docpath-status.md | reference | project | 3 | false | false | 229 |  | /docpath-status | Show the current DocPath state without modifying files. | 2026-06-14T05:57:24.557Z | 915B |
+| commands/docpath-tdd.md | reference | project | 3 | false | false | 161 |  | /docpath-tdd | Drive the DocPath TDD workflow. | 2026-06-14T05:57:24.557Z | 644B |
+| commands/docpath-unlink.md | reference | project | 3 | false | false | 169 |  | /docpath-unlink | Remove the current project association from DocPath. | 2026-06-14T05:57:24.557Z | 675B |
+| commands/docpath-write-design.md | reference | project | 3 | false | false | 639 |  | /docpath-write-design | Write UI/UX design evidence for the active DocPath task. | 2026-06-14T05:57:24.557Z | 2.5KB |
+| commands/docpath-write-journal.md | reference | project | 3 | false | false | 198 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task through the CLI. | 2026-06-14T05:57:24.557Z | 792B |
+| commands/docpath-write-plan.md | reference | project | 3 | false | false | 182 |  | /docpath-write-plan | Write a generated execution plan into the active DocPath task. | 2026-06-14T05:57:24.558Z | 726B |
+| commands/docpath-write-spec.md | reference | project | 3 | false | false | 180 |  | /docpath-write-spec | Write a refined spec into the active DocPath task. | 2026-06-14T05:57:24.558Z | 717B |
+| docs.md | index | project | 2 | false | false | 34292 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-06-13T07:52:08.275Z | 108.7KB |
 | harness.md | index | project | 2 | false | false | 252 |  | DocPath Harness Rules | - [ ] 读取 current.md 确认当前状态 | 2026-05-28T12:29:00.329Z | 786B |
-| protocols/AGENTS.md | index | project | 2 | false | false | 1568 |  | DocPath — Agent Workflow Protocol | --- | 2026-06-12T18:32:29.007Z | 6.2KB |
-| protocols/CLAUDE.md | index | project | 2 | false | false | 1316 |  | DocPath — Claude Code Agent Protocol | 1. 先运行 `docpath status --agent` 或读取 `.docpath/workspace/current.md` | 2026-06-12T17:25:52.538Z | 3.6KB |
+| protocols/AGENTS.md | index | project | 2 | false | false | 1301 |  | DocPath Agent Protocol | 1. Run `docpath status --agent`. | 2026-06-14T05:57:24.546Z | 5.1KB |
+| protocols/CLAUDE.md | index | project | 2 | false | false | 1011 |  | DocPath Claude Code Protocol | 1. Run `/docpath-status` or `docpath status --agent`. | 2026-06-14T05:57:24.547Z | 3.9KB |
+| protocols/OPENCODE.md | index | project | 2 | false | false | 711 |  | DocPath OpenCode Protocol | 1. Run `docpath status --agent`. | 2026-06-14T05:57:24.547Z | 2.8KB |
 | rules/architecture.md | reference | project | 2 | true | false | 382 |  | DocPath Architecture Rules | - `.docpath/rules/style.md` 和 `.docpath/rules/architecture.md` 是 preferred 规则真源；`.docpath/spec/style.md` 和 `.docpath/spec/architecture.md` 仅作 legacy fallback。 | 2026-06-12T14:04:44.391Z | 1.0KB |
-| rules/style.md | reference | project | 2 | true | false | 420 |  | DocPath Agent Style Rules | - 默认先读 `docpath status --agent`、`docpath next --agent`、`.docpath/workspace/current.md`、`.docpath/workspace/breadcrumb.md` 和当前任务的 `spec.md`/`plan.md`。 | 2026-06-12T16:01:40.614Z | 1.1KB |
-| skills/caveman.md | index | project | 2 | false | false | 260 |  | Skill: Caveman Mode (省 token 模式) | 1. **回复极简** — 不解释已知信息，只说做了什么 | 2026-06-12T14:47:27.832Z | 646B |
-| skills/diagnose.md | index | project | 2 | false | false | 258 |  | Skill: Diagnose (诊断) | - 遇到编译错误/运行时异常 | 2026-06-12T14:47:27.832Z | 633B |
-| skills/grill-me.md | index | project | 2 | false | false | 302 |  | Skill: Grill Me (计划压力测试) | - 计划是否能解决实际问题？ | 2026-06-12T14:47:27.833Z | 813B |
+| rules/style.md | reference | project | 2 | true | false | 294 |  | DocPath Agent Style Rules | - Start with `docpath status --agent` and `docpath next --agent`. | 2026-06-14T05:40:10.523Z | 1.1KB |
+| skills/caveman.md | index | project | 2 | false | false | 260 |  | Skill: Caveman Mode (省 token 模式) | 1. **回复极简** — 不解释已知信息，只说做了什么 | 2026-06-14T05:57:24.544Z | 646B |
+| skills/diagnose.md | index | project | 2 | false | false | 258 |  | Skill: Diagnose (诊断) | - 遇到编译错误/运行时异常 | 2026-06-14T05:57:24.545Z | 633B |
+| skills/grill-me.md | index | project | 2 | false | false | 302 |  | Skill: Grill Me (计划压力测试) | - 计划是否能解决实际问题？ | 2026-06-14T05:57:24.545Z | 813B |
 | tasks/T-20260609-codex-skill-docpath/plan.md | runbook | task | 1 | false | false | 426 | T-20260609-codex-skill-docpath | plan | - [x] S1: 梳理 增加 Codex Skill 适配器封装 DocPath 专家团入口 | 2026-06-09T05:15:49.854Z | 1.1KB |
 | tasks/T-20260609-codex-skill-docpath/spec.md | runbook | task | 1 | false | false | 2084 | T-20260609-codex-skill-docpath | T-20260609-codex-skill-docpath - 增加 Codex Skill 适配器封装 DocPath 专家团入口 | ExpertTeam-Codex 的 $expert-* 使用体验简单，适合 Codex CLI / Codex App；DocPath 当前已有 install health，但更偏协议文件安装。若能生成 Codex Skill 入口，可把 DocPath 状态机能力包装成低门槛专家团体验。 | 2026-06-09T05:07:38.124Z | 5.6KB |
 | tasks/T-20260609-deliverables/plan.md | runbook | task | 1 | false | false | 421 | T-20260609-deliverables | plan | - [x] S1: 梳理 增加业务交付物模板库与 deliverables 索引 | 2026-06-09T04:53:34.656Z | 1.0KB |
@@ -201,10 +210,16 @@
 | tasks/T-20260612-task/analysis/ui.md | runbook | task | 1 | false | false | 1539 | T-20260612-task | ui | 本任务不新增产品视觉页面的 MVP，但会改变 DocPath CLI/Dashboard 的信息架构。核心 IA 应从“目录树式文档集合”转为“索引入口 + 当前任务包 + 按需展开”。 | 2026-06-12T13:29:56.976Z | 4.0KB |
 | tasks/T-20260612-task/plan.md | runbook | task | 1 | false | false | 1332 | T-20260612-task | plan | - [x] S1: 定义上下文索引与预算模型 | 2026-06-12T14:17:06.036Z | 3.5KB |
 | tasks/T-20260612-task/spec.md | runbook | task | 1 | false | false | 3428 | T-20260612-task | T-20260612-task - 上下文读取策略索引化与规则高信号化 | 当前 DocPath 的长期记忆正在快速增长：Markdown 总量约 947KB，粗略估算约 24 万 token；`.docpath/workspace/decisions.md` 单文件约 58k token；`.docpath/tasks/done` 约 8.5 万 token。历史任务归档、workspace 日志、模板、设计文档、规则文件处在同一 | 2026-06-12T13:33:11.496Z | 8.6KB |
-| tasks/T-20260613-docpath/plan.md | runbook | task | 1 | false | false | 446 | T-20260613-docpath | plan | - [x] S1: 梳理 明确 DocPath 多人团队定位并重排协作路线图 | 2026-06-13T07:38:25.872Z | 1.0KB |
-| tasks/T-20260613-docpath/spec.md | runbook | task | 1 | false | false | 3058 | T-20260613-docpath | T-20260613-docpath - 明确 DocPath 多人团队定位并重排协作路线图 | DocPath 的产品叙事需要从“企业级审计合规层”收敛为“多人 / 多 Agent 团队的 AI 工作流状态层”。企业合规叙事虽然能解释 CLI、FSM、check/review、breadcrumb、handoff 的强约束价值，但会把路线图过早拖向 RBAC、SSO、审计报表、不可篡改账本和多租户控制台。 | 2026-06-13T07:34:35.674Z | 7.2KB |
-| tasks/current/plan.md | runbook | task | 1 | true | false | 446 | T-20260613-docpath | plan | - [x] S1: 梳理 明确 DocPath 多人团队定位并重排协作路线图 | 2026-06-13T07:38:25.873Z | 1.0KB |
-| tasks/current/spec.md | runbook | task | 1 | true | false | 3058 | T-20260613-docpath | T-20260613-docpath - 明确 DocPath 多人团队定位并重排协作路线图 | DocPath 的产品叙事需要从“企业级审计合规层”收敛为“多人 / 多 Agent 团队的 AI 工作流状态层”。企业合规叙事虽然能解释 CLI、FSM、check/review、breadcrumb、handoff 的强约束价值，但会把路线图过早拖向 RBAC、SSO、审计报表、不可篡改账本和多租户控制台。 | 2026-06-13T07:38:00.967Z | 7.2KB |
+| tasks/T-20260613-handoff-agent/plan.md | runbook | task | 1 | false | false | 541 | T-20260613-handoff-agent | plan | - **描述**: 根据 spec 明确 新增 `src/commands/prompt.ts`，导出 `promptAction(options)` 函数，支持 `--style omx` 参数（默认），复用 `src/utils/agent-output.ts` 的 `generateAgentOutput()` 和 `AgentOutput` 类型 的 | 2026-06-13T13:54:00.252Z | 1.6KB |
+| tasks/T-20260613-handoff-agent/spec.md | runbook | task | 1 | false | false | 879 | T-20260613-handoff-agent | T-20260613-prompt-omx - 实现 docpath prompt --style omx | 现在 `docpath status --agent` 输出的是 YAML 格式，Agent 需要自己解析。OMX 使用结构化 Markdown prompt，包含当前状态、上下文索引、推荐动作。 | 2026-06-13T13:53:54.461Z | 2.4KB |
+| tasks/T-20260613-prompt-omx/plan.md | runbook | task | 1 | false | false | 582 | T-20260613-prompt-omx | plan | - **描述**: 修改 `src/commands/plan.ts`，生成 plan.md 时自动追加 `## Checklist` section，格式为 `- [ ] S1` `- [ ] S2` 等 | 2026-06-13T14:22:41.432Z | 1.6KB |
+| tasks/T-20260613-prompt-omx/spec.md | runbook | task | 1 | false | false | 1305 | T-20260613-prompt-omx | T-20260613-optimize-workflow - 优化 DocPath 工作流效率，减少 token 浪费 | 从任务 T-20260613-prompt-omx 的执行中发现，token 消耗达到 91k，远超预期的 40-50k。分析发现 4 个主要浪费源： | 2026-06-13T14:22:41.432Z | 3.5KB |
+| tasks/T-20260614-cli-agent/plan.md | runbook | task | 1 | false | false | 232 | T-20260614-cli-agent | plan | - **描述**: 根据 spec 明确 Phase 1 - 建立 CLI-only 基线 的实现边界和验收口径。 | 2026-06-14T04:13:20.418Z | 627B |
+| tasks/T-20260614-cli-agent/spec.md | runbook | task | 1 | false | false | 2139 | T-20260614-cli-agent | T-20260614-cli-agent - 智能索引架构：CLI 返回索引，Agent 按需深读 | 当前 DocPath 架构在 Agent 数据访问权限上存在三重矛盾： | 2026-06-14T03:35:26.514Z | 5.4KB |
+| tasks/T-20260614-phase-2-3/plan.md | runbook | task | 1 | false | false | 289 | T-20260614-phase-2-3 | plan | - **描述**: Confirm the implementation boundary and acceptance criteria for the CLI-only baseline. | 2026-06-14T05:47:09.685Z | 1.0KB |
+| tasks/T-20260614-phase-2-3/spec.md | runbook | task | 1 | false | false | 2047 | T-20260614-phase-2-3 | T-20260614-phase-2-3 - Phase 2&3: 索引增强 + 按需深读 | Phase 1 已完成 CLI-only 基线，建立了"Agent 只通过 CLI 读写状态"的架构约束。所有 Agent 指令都通过 CLI 获取状态，不再直接读取 current.md/breadcrumb.md。 | 2026-06-14T04:41:04.194Z | 5.2KB |
+| tasks/current/plan.md | runbook | task | 1 | true | false | 289 | T-20260614-phase-2-3 | plan | - **描述**: Confirm the implementation boundary and acceptance criteria for the CLI-only baseline. | 2026-06-14T05:47:09.686Z | 1.0KB |
+| tasks/current/spec.md | runbook | task | 1 | true | false | 2047 | T-20260614-phase-2-3 | T-20260614-phase-2-3 - Phase 2&3: 索引增强 + 按需深读 | Phase 1 已完成 CLI-only 基线，建立了"Agent 只通过 CLI 读写状态"的架构约束。所有 Agent 指令都通过 CLI 获取状态，不再直接读取 current.md/breadcrumb.md。 | 2026-06-14T04:29:33.115Z | 5.2KB |
 | tasks/done/T-20260528-agent-integration/plan.md | runbook | task | 3 | false | true | 929 | T-20260528-agent-integration | 执行计划 | ``` | 2026-05-28T14:53:27.931Z | 2.6KB |
 | tasks/done/T-20260528-agent-integration/spec.md | runbook | task | 3 | false | true | 847 | T-20260528-agent-integration | 规约: Agent Integration (Phase 1+2) | DocPath 需要面向 AI Agent 的接口层，使其能被 Claude Code / OpenCode 等工具原生使用。 | 2026-05-28T14:37:39.406Z | 2.4KB |
 | tasks/done/T-20260528-harness-lite/plan.md | runbook | task | 3 | false | true | 838 | T-20260528-harness-lite | Plan: Harness Lite Phase 1 | **目标**: 让 `docpath check` 能发现并运行 typecheck 相关脚本 | 2026-05-29T05:13:03.422Z | 2.5KB |
@@ -409,24 +424,40 @@
 | tasks/done/T-20260612-journal-decisions-md-adr/spec.md | runbook | task | 3 | false | true | 2501 | T-20260612-journal-decisions-md-adr | T-20260612-journal-decisions-md-adr - 收紧 journal 到 decisions.md 的 ADR 写入规则 | `breadcrumb.md` 是短期执行轨迹，服务于断点恢复、plan/breadcrumb 漂移检测、`continue`、`next` 和当前任务执行证据。 | 2026-06-12T17:21:18.317Z | 6.3KB |
 | tasks/done/T-20260612-learn/plan.md | runbook | task | 3 | false | true | 695 | T-20260612-learn | plan | - [x] S1: 梳理 `learn` 必须过滤 `完成 N/N 步`、`阻塞 N 步`、`推荐保留本次任务的执行经验` 等低信号统计或口号型 lesson。 | 2026-06-12T16:05:18.268Z | 1.7KB |
 | tasks/done/T-20260612-learn/spec.md | runbook | task | 3 | false | true | 2745 | T-20260612-learn | T-20260612-learn - 修复 learn 低信号过滤与智能规则分类 | `docpath learn` 当前会把 `完成 N/N 步，阻塞 N 步` 这类 journal 流水统计误识别为可沉淀经验，并已将低信号内容写入 `.docpath/rules/style.md` 的 auto-learn 区域。现有 `style.md` 已明确长期规则沉淀标准：只保留可复用、可执行、能降低未来错误概率的经验；流水统计只能留在 jour | 2026-06-12T15:54:38.310Z | 6.7KB |
+| tasks/done/T-20260613-check-checklist/plan.md | runbook | task | 3 | false | true | 349 | T-20260613-check-checklist | plan | - [x] S1: 梳理 修正 check checklist 同步门禁语义 | 2026-06-13T15:31:41.766Z | 905B |
+| tasks/done/T-20260613-check-checklist/spec.md | runbook | task | 3 | false | true | 1410 | T-20260613-check-checklist | T-20260613-check-checklist - 修正 check checklist 同步门禁语义 | 当前 docpath check 将 current.md 渲染出的执行 checklist 作为 blocking 门禁，导致 plan.md 全部完成后如果 current.md 渲染未同步会误报 Checklist 同步失败。current.md 是派生视图，不应作为完成真源；完成态归档后再次 check 还可能因 tasks/current 缺失污染 | 2026-06-13T15:18:59.396Z | 3.6KB |
+| tasks/done/T-20260613-docpath/plan.md | runbook | task | 3 | false | true | 446 | T-20260613-docpath | plan | - [x] S1: 梳理 明确 DocPath 多人团队定位并重排协作路线图 | 2026-06-13T07:38:25.872Z | 1.0KB |
+| tasks/done/T-20260613-docpath/spec.md | runbook | task | 3 | false | true | 3058 | T-20260613-docpath | T-20260613-docpath - 明确 DocPath 多人团队定位并重排协作路线图 | DocPath 的产品叙事需要从“企业级审计合规层”收敛为“多人 / 多 Agent 团队的 AI 工作流状态层”。企业合规叙事虽然能解释 CLI、FSM、check/review、breadcrumb、handoff 的强约束价值，但会把路线图过早拖向 RBAC、SSO、审计报表、不可篡改账本和多租户控制台。 | 2026-06-13T07:34:35.674Z | 7.2KB |
+| tasks/done/T-20260613-handoff-agent/plan.md | runbook | task | 3 | false | true | 632 | T-20260613-handoff-agent | plan | - [x] S1: 梳理 `docpath agent handoff` 输出必须包含下一步推荐、剩余风险、验证状态、修改范围和接手提示。 | 2026-06-13T13:01:59.748Z | 1.5KB |
+| tasks/done/T-20260613-handoff-agent/spec.md | runbook | task | 3 | false | true | 2867 | T-20260613-handoff-agent | T-20260613-handoff-agent - 强化 handoff 交接包，支持多人 / 多 Agent 接力恢复 | DocPath 已明确定位为多人 / 多 Agent 开发团队的 AI 工作流状态层。当前 handoff 已能生成可恢复上下文，但需要进一步围绕团队接力场景强化：下一个人或下一个 Agent 应能从 handoff 中直接看到当前任务位置、下一步推荐、验证状态、剩余风险、修改范围和阻塞原因。该任务是多人团队定位下的 P0 协作闭环能力，不涉及企业权限、SS | 2026-06-13T12:59:33.297Z | 6.9KB |
+| tasks/done/T-20260613-optimize-workflow/plan.md | runbook | task | 3 | false | true | 627 | T-20260613-optimize-workflow | plan | - [x] S1: 修复 plan 生成格式 | 2026-06-13T15:01:04.880Z | 1.7KB |
+| tasks/done/T-20260613-optimize-workflow/spec.md | runbook | task | 3 | false | true | 1522 | T-20260613-optimize-workflow | T-20260613-optimize-workflow - 优化 DocPath 工作流效率，减少 token 浪费 | 从任务 T-20260613-prompt-omx 的执行中发现，token 消耗达到 91k，远超预期的 40-50k。分析发现 4 个主要浪费源： | 2026-06-13T14:58:46.140Z | 4.0KB |
+| tasks/done/T-20260613-prompt-omx/plan.md | runbook | task | 3 | false | true | 547 | T-20260613-prompt-omx | plan | - [x] **S1**: 创建 prompt.ts 基础结构 | 2026-06-13T14:12:41.253Z | 1.4KB |
+| tasks/done/T-20260613-prompt-omx/spec.md | runbook | task | 3 | false | true | 879 | T-20260613-prompt-omx | T-20260613-prompt-omx - 实现 docpath prompt --style omx | 现在 `docpath status --agent` 输出的是 YAML 格式，Agent 需要自己解析。OMX 使用结构化 Markdown prompt，包含当前状态、上下文索引、推荐动作。 | 2026-06-13T14:12:41.253Z | 2.4KB |
+| tasks/done/T-20260613-schema-first-json-jsonl/plan.md | runbook | task | 3 | false | true | 891 | T-20260613-schema-first-json-jsonl | plan | - **描述**: 明确 JSON/JSONL 真源的 schema version、类型、校验策略、fallback 规则和 CLI 写边界。 | 2026-06-13T17:49:30.949Z | 2.4KB |
+| tasks/done/T-20260613-schema-first-json-jsonl/spec.md | runbook | task | 3 | false | true | 2937 | T-20260613-schema-first-json-jsonl | T-20260613-schema-first-json-jsonl - Schema-first JSON/JSONL 真源迁移 | 当前 DocPath 仍有多处以 Markdown 作为任务计划、执行日志、决策和展示文档的混合真源，导致 check/go/next/review/journal 需要用正则解析半结构化 Markdown。R-162 已证明 current.md 这类派生视图不应作为完成门禁真源。下一步需要把 DocPath 的状态和任务真源统一迁向 schema-fir | 2026-06-13T17:28:03.141Z | 7.4KB |
+| tasks/done/T-20260613-spec-json-schema/plan.md | runbook | task | 3 | false | true | 320 | T-20260613-spec-json-schema | plan | - **描述**: 根据 spec 明确 深化 spec.json schema 与门禁字段 的实现边界和验收口径。 | 2026-06-13T18:25:10.565Z | 836B |
+| tasks/done/T-20260613-spec-json-schema/spec.md | runbook | task | 3 | false | true | 2596 | T-20260613-spec-json-schema | T-20260613-spec-json-schema - 深化 spec.json schema 与门禁字段 | R-163 已建立 schema-first JSON/JSONL 真源，但 spec.json 仍是第一版结构化外壳，主要包含 title、FR/NFR、AC、Decision Brief 和 markdown 原文。为了让 spec 真正成为 check/next/context-index/UI/重大变更门禁的机器契约，需要继续把 task/backl | 2026-06-13T18:24:08.063Z | 7.1KB |
+| tasks/done/T-20260614-dogfood/plan.md | runbook | task | 3 | false | true | 684 | T-20260614-dogfood | plan | - **描述**: 定位 pending-done 路由、plan 完成度检查、structured-docs 读写、review/check decisions 写入和 changes 输出相关代码与测试入口。 | 2026-06-14T02:08:41.738Z | 1.8KB |
+| tasks/done/T-20260614-dogfood/spec.md | runbook | task | 3 | false | true | 2755 | T-20260614-dogfood | T-20260614-dogfood - 修复 dogfood 暴露的生命周期与证据模型问题 | R-164 dogfood 暴露出 DocPath 在多人团队场景下的几类流程问题：状态机本身可以落账，但部分路由和证据模型会诱导 Agent 先标记完成再验证、过早收尾、读取 stale JSON、把低价值统计写入 decisions，以及在提交阶段漏掉被 git ignore 的审计证据。 | 2026-06-14T01:46:59.405Z | 7.1KB |
 | tasks/done/unknown/design-preview.md | runbook | project | 3 | false | true | 505 |  | Design Preview — 项目总览仪表盘与侧边栏布局 | ``` | 2026-06-10T09:20:54.029Z | 2.0KB |
 | tasks/done/unknown/plan.md | runbook | project | 3 | false | true | 704 |  | plan | - [x] S1: 搭建 UI 构建基础设施 | 2026-06-10T09:18:50.174Z | 1.8KB |
 | tasks/done/unknown/spec.md | runbook | project | 3 | false | true | 1462 |  | 规约: 项目总览仪表盘与侧边栏布局 | **任务 ID**: T-20260610-mgmt-ui-layout | 2026-06-10T09:13:56.625Z | 3.6KB |
 | tasks/done/unknown/visual-acceptance.md | runbook | project | 3 | false | true | 330 |  | Visual Acceptance — 项目总览仪表盘与侧边栏布局 | visual-acceptance | 2026-06-10T09:20:54.037Z | 871B |
-| workflows/bugfix.md | index | project | 2 | false | false | 160 |  | Workflow: Bug Fix | - 收集错误信息 (日志、截图、复现步骤) | 2026-06-12T14:47:27.830Z | 463B |
-| workflows/debug.md | index | project | 2 | false | false | 145 |  | Workflow: Debug | - 收集症状 (日志、指标、复现步骤) | 2026-06-12T14:47:27.831Z | 416B |
-| workflows/feature.md | index | project | 2 | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-06-12T14:47:27.831Z | 753B |
-| workflows/refactor.md | index | project | 2 | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-06-12T14:47:27.831Z | 424B |
-| workflows/research.md | index | project | 2 | false | false | 146 |  | Workflow: Research | - 明确调研目标 | 2026-06-12T14:47:27.832Z | 409B |
-| workspace/breadcrumb.md | index | project | 0 | false | false | 2138 |  | 面包屑 — 上下文恢复索引 | --- | 2026-06-13T07:39:44.728Z | 7.3KB |
+| workflows/bugfix.md | index | project | 2 | false | false | 160 |  | Workflow: Bug Fix | - 收集错误信息 (日志、截图、复现步骤) | 2026-06-14T05:57:24.542Z | 463B |
+| workflows/debug.md | index | project | 2 | false | false | 145 |  | Workflow: Debug | - 收集症状 (日志、指标、复现步骤) | 2026-06-14T05:57:24.543Z | 416B |
+| workflows/feature.md | index | project | 2 | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-06-14T05:57:24.543Z | 753B |
+| workflows/refactor.md | index | project | 2 | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-06-14T05:57:24.543Z | 424B |
+| workflows/research.md | index | project | 2 | false | false | 146 |  | Workflow: Research | - 明确调研目标 | 2026-06-14T05:57:24.544Z | 409B |
+| workspace/breadcrumb.md | index | project | 0 | false | false | 4027 |  | 面包屑 — 上下文恢复索引 | --- | 2026-06-14T05:48:49.743Z | 13.6KB |
 | workspace/compact-context.md | index | project | 0 | false | false | 2597 |  | Context Handoff — T-20260612-journal-decisions-md-adr | - ✅ PASS (2026-06-12T17:30:32.646Z) | 2026-06-12T19:00:05.968Z | 7.7KB |
-| workspace/current.md | index | project | 0 | true | false | 395 |  | 📍 当前工作流状态 | ```yaml | 2026-06-13T07:39:44.729Z | 1.1KB |
-| workspace/decisions.md | log | project | 3 | false | true | 82036 |  | 决策日志 — DocPath 自动归档 | --- | 2026-06-12T17:30:39.863Z | 233.3KB |
+| workspace/current.md | index | project | 0 | true | false | 341 |  | 📍 当前工作流状态 | ```yaml | 2026-06-14T05:56:21.924Z | 1.1KB |
+| workspace/decisions.md | log | project | 3 | false | true | 82794 |  | 决策日志 — DocPath 自动归档 | --- | 2026-06-13T18:28:07.653Z | 235.5KB |
 | workspace/journal.md | index | project | 0 | false | false | 120 |  | 📖 工作日志 | - 新增 write-design 命令 | 2026-06-10T04:44:31.299Z | 361B |
-| workspace/last-check.md | index | project | 0 | true | false | 164 |  | Last Check Evidence | **时间**: 2026-06-13T07:39:44.726Z | 2026-06-13T07:39:44.727Z | 502B |
-| workspace/lesson-candidates.md | log | project | 0 | false | false | 6 |  | Lesson Candidates | lesson-candidates | 2026-06-12T17:32:12.580Z | 21B |
-| workspace/pending-done.md | index | project | 0 | false | false | 26 |  | pending-done | pending-done | 2026-06-13T07:30:09.424Z | 104B |
-| workspace/review.md | index | project | 0 | true | false | 149 |  | Code Review Report | **时间**: 2026-06-12T17:30:39.870Z | 2026-06-12T17:30:39.871Z | 481B |
+| workspace/last-check.md | index | project | 0 | true | false | 169 |  | Last Check Evidence | **时间**: 2026-06-14T05:56:21.920Z | 2026-06-14T05:56:21.922Z | 504B |
+| workspace/lesson-candidates.md | log | project | 0 | false | false | 6 |  | Lesson Candidates | lesson-candidates | 2026-06-14T05:50:24.393Z | 21B |
+| workspace/pending-done.md | index | project | 0 | false | false | 27 |  | pending-done | pending-done | 2026-06-14T05:27:49.624Z | 106B |
+| workspace/review.md | index | project | 0 | true | false | 106 |  | Code Review Report | **时间**: 2026-06-14T05:56:27.921Z | 2026-06-14T05:56:27.923Z | 334B |
 
 ## 用途说明
 
