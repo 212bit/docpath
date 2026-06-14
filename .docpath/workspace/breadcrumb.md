@@ -5,162 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ S1 [T-20260614-dogfood] — 2026-06-14T01:48:27.244Z
-
----
-taskId: T-20260614-dogfood
-step: S1
-status: done
-timestamp: 2026-06-14T01:48:27.244Z
----
-
-- **状态**: done
-- **上下文**: 定位完成：next/status agent route 在 agent-output/runtime；check 子任务完成度在 check.ts；plan 草案生成在 plan.ts；structured hash 在 structured-docs/task-files；review 统计污染来自 review.ts appendDecision；ignored evidence 提示在 changes.ts。
-
-### 🔄 S2 [T-20260614-dogfood] — 2026-06-14T01:48:35.141Z
-
----
-taskId: T-20260614-dogfood
-step: S2
-status: in_progress
-timestamp: 2026-06-14T01:48:35.141Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 修复 pending-done 路由与 terminal verification 策略
-
-### ✅ S2 [T-20260614-dogfood] — 2026-06-14T01:56:34.260Z
-
----
-taskId: T-20260614-dogfood
-step: S2
-status: done
-timestamp: 2026-06-14T01:56:34.260Z
----
-
-- **状态**: done
-- **上下文**: 修复 pending-done 不再覆盖未完成计划步骤；末尾验证门禁步骤由 check/review/journal 生命周期覆盖；plan 草案移除收尾步骤；针对 next/write/check 的 59 项回归通过。
-
-### 🔄 S3 [T-20260614-dogfood] — 2026-06-14T01:56:40.298Z
-
----
-taskId: T-20260614-dogfood
-step: S3
-status: in_progress
-timestamp: 2026-06-14T01:56:40.298Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 增加 spec/plan JSON 与 Markdown hash drift 检查
-
-### ✅ S3 [T-20260614-dogfood] — 2026-06-14T02:02:54.480Z
-
----
-taskId: T-20260614-dogfood
-step: S3
-status: done
-timestamp: 2026-06-14T02:02:54.480Z
----
-
-- **状态**: done
-- **上下文**: 为 spec.json/plan.json 写入 source.content_sha256；读取 structured JSON 时校验 sibling Markdown hash；check/tasks drift 报告 JSON/Markdown hash 不一致并提示 tasks sync；旧 source 字符串和缺 hash JSON 兼容 normalize；相关 47 项回归通过。
-
-### 🔄 S4 [T-20260614-dogfood] — 2026-06-14T02:03:01.092Z
-
----
-taskId: T-20260614-dogfood
-step: S4
-status: in_progress
-timestamp: 2026-06-14T02:03:01.092Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 收紧 decisions.md 写入边界
-
-### ✅ S4 [T-20260614-dogfood] — 2026-06-14T02:05:44.782Z
-
----
-taskId: T-20260614-dogfood
-step: S4
-status: done
-timestamp: 2026-06-14T02:05:44.782Z
----
-
-- **状态**: done
-- **上下文**: 移除 review 普通结果和手动 approve 写入 decisions.md 的 appendDecision 调用；review 证据仍留在 review/breadcrumb/state；新增普通 review 与 --approve 不生成 decisions 的回归；decisions ADR 自身测试仍通过。
-
-### 🔄 S5 [T-20260614-dogfood] — 2026-06-14T02:05:53.123Z
-
----
-taskId: T-20260614-dogfood
-step: S5
-status: in_progress
-timestamp: 2026-06-14T02:05:53.123Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 暴露 ignored evidence 提交提示并补齐回归测试
-
-### ✅ S5 [T-20260614-dogfood] — 2026-06-14T02:08:41.713Z
-
----
-taskId: T-20260614-dogfood
-step: S5
-status: done
-timestamp: 2026-06-14T02:08:41.713Z
----
-
-- **状态**: done
-- **上下文**: changes 报告新增 ignored_evidence，扫描被 gitignore 忽略的 backlog/task evidence；human/agent/json 均输出文件列表和 git add -f 提示；存在 ignored evidence 时阻塞 ready_to_commit；changes 8 项回归通过。
-
-### ✅ check [T-20260614-dogfood] — 2026-06-14T02:11:16.637Z
-
----
-taskId: T-20260614-dogfood
-step: check
-status: done
-timestamp: 2026-06-14T02:11:16.637Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260614-dogfood] — 2026-06-14T02:11:16.758Z
-
----
-taskId: T-20260614-dogfood
-step: review
-status: done
-timestamp: 2026-06-14T02:11:16.758Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 8 警告, 3 提示
-
-### ✅ journal [T-20260614-dogfood] — 2026-06-14T02:11:16.868Z
-
----
-taskId: T-20260614-dogfood
-step: journal
-status: done
-timestamp: 2026-06-14T02:11:16.868Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (5/5 步)
-
-### ✅ task.abort [T-20260614-dogfood] — 2026-06-14T03:32:45.023Z
-
----
-taskId: T-20260614-dogfood
-step: task.abort
-status: done
-timestamp: 2026-06-14T03:32:45.023Z
----
-
-- **状态**: done
-- **上下文**: 任务已废弃并回到 idle
-
 ### 🔄 S1 [T-20260614-cli-agent] — 2026-06-14T03:36:08.548Z
 
 ---
@@ -604,3 +448,173 @@ timestamp: 2026-06-14T07:24:21.225Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (4/4 步)
+
+### 🔄 S1 [T-20260614-session] — 2026-06-14T08:04:39.300Z
+
+---
+taskId: T-20260614-session
+step: S1
+status: in_progress
+timestamp: 2026-06-14T08:04:39.300Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 固化规格与并发边界
+
+### ✅ S1 [T-20260614-session] — 2026-06-14T08:05:19.683Z
+
+---
+taskId: T-20260614-session
+step: S1
+status: done
+timestamp: 2026-06-14T08:05:19.683Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S2 [T-20260614-session] — 2026-06-14T08:05:28.377Z
+
+---
+taskId: T-20260614-session
+step: S2
+status: in_progress
+timestamp: 2026-06-14T08:05:28.377Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 session 与 lease 基础设施
+
+### ✅ S2 [T-20260614-session] — 2026-06-14T08:13:40.342Z
+
+---
+taskId: T-20260614-session
+step: S2
+status: done
+timestamp: 2026-06-14T08:13:40.342Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260614-session] — 2026-06-14T08:13:51.233Z
+
+---
+taskId: T-20260614-session
+step: S3
+status: in_progress
+timestamp: 2026-06-14T08:13:51.233Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 接入 agent/go/breadcrumb/plan 写入路径
+- **Session**: default
+
+### ✅ S3 [T-20260614-session] — 2026-06-14T08:17:54.260Z
+
+---
+taskId: T-20260614-session
+step: S3
+status: done
+timestamp: 2026-06-14T08:17:54.260Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### 🔄 S4 [T-20260614-session] — 2026-06-14T08:18:02.247Z
+
+---
+taskId: T-20260614-session
+step: S4
+status: in_progress
+timestamp: 2026-06-14T08:18:02.247Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 增加测试与协议文档
+- **Session**: default
+
+### ✅ S4 [T-20260614-session] — 2026-06-14T08:18:49.078Z
+
+---
+taskId: T-20260614-session
+step: S4
+status: done
+timestamp: 2026-06-14T08:18:49.078Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### 🔄 S5 [T-20260614-session] — 2026-06-14T08:18:58.412Z
+
+---
+taskId: T-20260614-session
+step: S5
+status: in_progress
+timestamp: 2026-06-14T08:18:58.412Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 运行质量门禁并归档
+- **Session**: default
+
+### ✅ S5 [T-20260614-session] — 2026-06-14T08:20:18.085Z
+
+---
+taskId: T-20260614-session
+step: S5
+status: done
+timestamp: 2026-06-14T08:20:18.085Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S5
+- **Session**: default
+
+### ✅ check [T-20260614-session] — 2026-06-14T08:21:28.343Z
+
+---
+taskId: T-20260614-session
+step: check
+status: done
+timestamp: 2026-06-14T08:21:28.343Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260614-session] — 2026-06-14T08:22:56.194Z
+
+---
+taskId: T-20260614-session
+step: review
+status: done
+timestamp: 2026-06-14T08:22:56.194Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 3 警告, 0 提示
+
+### ✅ journal [T-20260614-session] — 2026-06-14T08:24:07.209Z
+
+---
+taskId: T-20260614-session
+step: journal
+status: done
+timestamp: 2026-06-14T08:24:07.209Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (5/5 步)

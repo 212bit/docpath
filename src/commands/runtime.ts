@@ -17,6 +17,12 @@ import { detectActiveTaskFileDrift, readActiveTaskFile, syncActiveTaskFiles } fr
 import { syncCurrentDocument } from '../utils/workspace.js';
 import { writeHybridContextIndex, readHybridContextIndexSummary } from '../utils/context-index.js';
 import { parsePlanSteps } from '../utils/doc-parser.js';
+import {
+  acquireExecutionLease,
+  releaseExecutionLease,
+  resolveSessionContext,
+  touchSession,
+} from '../utils/session.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -28,6 +34,8 @@ type RunOptions = {
   step?: string;
   note?: string;
   status?: 'done' | 'blocked' | 'skipped';
+  session?: string;
+  releaseLease?: boolean;
 };
 
 type CompactOptions = {
@@ -71,12 +79,30 @@ async function getState(cwd: string): Promise<RuntimeState> {
   return (await readCurrentState(cwd)) || fallbackState(cwd);
 }
 
-async function appendRuntimeEvent(cwd: string, state: RuntimeState, step: string, status: 'done' | 'in_progress' | 'blocked' | 'skipped', context: string): Promise<void> {
+async function appendRuntimeEvent(
+  cwd: string,
+  state: RuntimeState,
+  step: string,
+  status: 'done' | 'in_progress' | 'blocked' | 'skipped',
+  context: string,
+  sessionId?: string,
+): Promise<void> {
   await writeBreadcrumb(cwd, {
     taskId: state.task_id || 'runtime',
     step,
     status,
     context,
+    ...(sessionId ? { sessionId } : {}),
+  });
+}
+
+async function claimRuntimeLease(cwd: string, state: RuntimeState, step: string, sessionId: string, command: string): Promise<void> {
+  if (!state.task_id || state.task_id === 'runtime') return;
+  await acquireExecutionLease(cwd, {
+    sessionId,
+    taskId: state.task_id,
+    step,
+    command,
   });
 }
 
@@ -92,18 +118,35 @@ export async function runCommand(options: RunOptions): Promise<void> {
   const state = await getState(cwd);
   const step = options.step || state.current_step || options.action;
   const note = options.note || '';
+  const session = resolveSessionContext(options.session);
+  await touchSession(cwd, {
+    sessionId: session.sessionId,
+    taskId: state.task_id || 'runtime',
+    step,
+    command: `run ${options.action}`,
+  });
 
   if (options.action === 'start') {
+    await claimRuntimeLease(cwd, state, step, session.sessionId, 'run start');
     const next = await transitionWorkflow(cwd, 'step.started', { currentStep: step });
-    await appendRuntimeEvent(cwd, next, step, 'in_progress', note || 'run-start: agent execution started');
+    await appendRuntimeEvent(cwd, next, step, 'in_progress', note || 'run-start: agent execution started', session.sessionId);
     console.log(`▶️  run-start: ${step}`);
     return;
   }
 
   if (options.action === 'end') {
+    await claimRuntimeLease(cwd, state, step, session.sessionId, 'run end');
     const status = options.status || 'done';
     const next = await transitionWorkflow(cwd, 'step.completed', { currentStep: step });
-    await appendRuntimeEvent(cwd, next, step, status, note || `run-end: ${status}`);
+    await appendRuntimeEvent(cwd, next, step, status, note || `run-end: ${status}`, session.sessionId);
+    if (options.releaseLease !== false && state.task_id && state.task_id !== 'runtime') {
+      await releaseExecutionLease(cwd, {
+        sessionId: session.sessionId,
+        taskId: state.task_id,
+        step,
+        command: 'run end',
+      });
+    }
     console.log(`⏹️  run-end: ${step} (${status})`);
     return;
   }

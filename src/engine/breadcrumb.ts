@@ -12,6 +12,7 @@
 import { join, dirname } from 'path';
 import { readFile, appendFile, writeFile, mkdir } from 'fs/promises';
 import { writeFileAtomic } from '../utils/file.js';
+import { withLock } from '../utils/lock.js';
 
 /** 面包屑最大保留条数 */
 export const MAX_ENTRIES = 50;
@@ -30,6 +31,8 @@ export interface BreadcrumbEntry {
   timestamp?: string;
   /** 升级类型 */
   escalation?: string;
+  /** 写入该事件的 agent/session 标识 */
+  sessionId?: string;
 }
 
 export interface BreadcrumbSummary {
@@ -121,11 +124,13 @@ export function formatEntry(entry: BreadcrumbEntry): string {
     `step: ${yamlEscape(entry.step)}`,
     `status: ${entry.status}`,
     `timestamp: ${ts}`,
+    ...(entry.sessionId ? [`sessionId: ${yamlEscape(entry.sessionId)}`] : []),
     ...(entry.escalation ? [`escalation: ${yamlEscape(entry.escalation)}`] : []),
     '---',
     '',
     `- **状态**: ${entry.status}`,
     `- **上下文**: ${entry.context}`,
+    ...(entry.sessionId ? [`- **Session**: ${entry.sessionId}`] : []),
     '',
   ].join('\n');
 }
@@ -136,7 +141,7 @@ export function formatEntry(entry: BreadcrumbEntry): string {
  * 解析 breadcrumb.md 中所有条目，只保留最后 MAX_ENTRIES 条，
  * 重新写入文件。返回被裁剪的数量。
  */
-export async function truncateBreadcrumb(projectRoot: string): Promise<number> {
+async function truncateBreadcrumbUnlocked(projectRoot: string): Promise<number> {
   const summary = await readBreadcrumb(projectRoot);
 
   if (summary.entries.length <= MAX_ENTRIES) {
@@ -150,6 +155,12 @@ export async function truncateBreadcrumb(projectRoot: string): Promise<number> {
   await renderBreadcrumbMarkdown(projectRoot, keep);
 
   return trimmedCount;
+}
+
+export async function truncateBreadcrumb(projectRoot: string): Promise<number> {
+  const lockPath = breadcrumbLockPath(projectRoot);
+  await mkdir(dirname(lockPath), { recursive: true });
+  return withLock(lockPath, () => truncateBreadcrumbUnlocked(projectRoot));
 }
 
 /**
@@ -168,6 +179,10 @@ function breadcrumbJsonlPath(projectRoot: string): string {
   return join(projectRoot, '.docpath', 'workspace', 'breadcrumb.jsonl');
 }
 
+function breadcrumbLockPath(projectRoot: string): string {
+  return join(projectRoot, '.docpath', 'workspace', 'breadcrumb.lock');
+}
+
 function toJsonlRecord(entry: BreadcrumbEntry): BreadcrumbJsonlRecord {
   return {
     schema_version: BREADCRUMB_JSONL_SCHEMA_VERSION,
@@ -177,6 +192,7 @@ function toJsonlRecord(entry: BreadcrumbEntry): BreadcrumbJsonlRecord {
     status: entry.status,
     context: entry.context,
     timestamp: entry.timestamp || new Date().toISOString(),
+    ...(entry.sessionId ? { sessionId: entry.sessionId } : {}),
     ...(entry.escalation ? { escalation: entry.escalation } : {}),
   };
 }
@@ -242,6 +258,7 @@ async function readBreadcrumbJsonl(projectRoot: string): Promise<BreadcrumbEntry
       status: record.status,
       context: record.context,
       timestamp: record.timestamp,
+      ...(record.sessionId ? { sessionId: record.sessionId } : {}),
       ...(record.escalation ? { escalation: record.escalation } : {}),
     });
   }
@@ -287,45 +304,49 @@ export async function writeBreadcrumb(
   entry: BreadcrumbEntry,
   reporter: BreadcrumbReporter = (message) => process.stdout.write(`${message}\n`),
 ): Promise<void> {
-  const path = breadcrumbPath(projectRoot);
-  const ts = entry.timestamp || new Date().toISOString();
-  await ensureBreadcrumbJsonl(projectRoot);
+  const lockPath = breadcrumbLockPath(projectRoot);
+  await mkdir(dirname(lockPath), { recursive: true });
+  return withLock(lockPath, async () => {
+    const path = breadcrumbPath(projectRoot);
+    const ts = entry.timestamp || new Date().toISOString();
+    await ensureBreadcrumbJsonl(projectRoot);
 
-  // 去重检查：只针对 done 状态
-  if (entry.status === 'done') {
-    const summary = await readBreadcrumb(projectRoot);
-    const normalizedStep = normalizeStepName(entry.step);
-    const existingDone = summary.entries.find(
-      (e) => e.taskId === entry.taskId &&
-             normalizeStepName(e.step) === normalizedStep &&
-             e.status === 'done'
-    );
+    // 去重检查：只针对 done 状态
+    if (entry.status === 'done') {
+      const summary = await readBreadcrumb(projectRoot);
+      const normalizedStep = normalizeStepName(entry.step);
+      const existingDone = summary.entries.find(
+        (e) => e.taskId === entry.taskId &&
+               normalizeStepName(e.step) === normalizedStep &&
+               e.status === 'done'
+      );
 
-    if (existingDone) {
-      reporter(`⚠️  步骤 ${entry.step} 已完成（记录时间: ${existingDone.timestamp}），跳过重复记录`);
-      return;
+      if (existingDone) {
+        reporter(`⚠️  步骤 ${entry.step} 已完成（记录时间: ${existingDone.timestamp}），跳过重复记录`);
+        return;
+      }
     }
-  }
 
-  const nextEntry = { ...entry, timestamp: ts };
-  const line = formatEntry(nextEntry);
+    const nextEntry = { ...entry, timestamp: ts };
+    const line = formatEntry(nextEntry);
 
-  try {
-    // 检查文件是否存在，不存在则写入 header
-    await readFile(path, 'utf-8');
-  } catch {
-    await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, BREADCRUMB_HEADER, 'utf-8');
-  }
+    try {
+      // 检查文件是否存在，不存在则写入 header
+      await readFile(path, 'utf-8');
+    } catch {
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, BREADCRUMB_HEADER, 'utf-8');
+    }
 
-  await appendFile(path, line, 'utf-8');
-  await appendBreadcrumbJsonl(projectRoot, nextEntry);
+    await appendFile(path, line, 'utf-8');
+    await appendBreadcrumbJsonl(projectRoot, nextEntry);
 
-  // 截断轮转：超过 MAX_ENTRIES 时裁剪最旧记录
-  const trimmed = await truncateBreadcrumb(projectRoot);
-  if (trimmed > 0) {
-    reporter(`🔄 面包屑轮转: 裁剪了 ${trimmed} 条旧记录（保留最近 ${MAX_ENTRIES} 条）`);
-  }
+    // 截断轮转：超过 MAX_ENTRIES 时裁剪最旧记录
+    const trimmed = await truncateBreadcrumbUnlocked(projectRoot);
+    if (trimmed > 0) {
+      reporter(`🔄 面包屑轮转: 裁剪了 ${trimmed} 条旧记录（保留最近 ${MAX_ENTRIES} 条）`);
+    }
+  });
 }
 
 /**
@@ -396,6 +417,7 @@ function parseEntryBlock(block: string): BreadcrumbEntry | null {
       status: status || 'done',
       context,
       timestamp: yamlUnquote(yamlBlock.match(/^timestamp:\s*(.+)$/m)?.[1] || '') || timestamp,
+      ...(yamlBlock.match(/^sessionId:\s*(.+)$/m)?.[1] ? { sessionId: yamlUnquote(yamlBlock.match(/^sessionId:\s*(.+)$/m)?.[1]!) } : {}),
       ...(yamlBlock.match(/^escalation:\s*(.+)$/m)?.[1] ? { escalation: yamlUnquote(yamlBlock.match(/^escalation:\s*(.+)$/m)?.[1]!) } : {}),
     };
   }
@@ -410,6 +432,7 @@ function parseEntryBlock(block: string): BreadcrumbEntry | null {
     status: (statusLine as BreadcrumbEntry['status']) || 'done',
     context: contextLine,
     timestamp,
+    ...(block.match(/^[-*] \*\*Session\*\*:\s*(.+)$/m)?.[1] ? { sessionId: block.match(/^[-*] \*\*Session\*\*:\s*(.+)$/m)![1].trim() } : {}),
     ...(block.match(/^[-*] \*\*升级\*\*:\s*(.+)$/m)?.[1] ? { escalation: block.match(/^[-*] \*\*升级\*\*:\s*(.+)$/m)![1].trim() } : {}),
   };
 }

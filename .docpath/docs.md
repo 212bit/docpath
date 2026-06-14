@@ -2,7 +2,7 @@
 
 > 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。
 
-> 扫描时间: 2026-06-14T07:25:26.111Z
+> 扫描时间: 2026-06-14T08:21:39.578Z
 
 ## 文档列表
 
@@ -139,7 +139,9 @@
 | backlog/R-168.md | runbook | project | 2 | false | false | 1273 |  | R-168 | 当前 backlog add 既承担原始想法捕获，也承担可执行需求录入，导致一些条目没有经过 brainstorm/analyze/refine 或用户确认就进入执行。现有 groom 只检查章节/占位和链接，不知道条目是否经过需求理解；journal 也只回填状态，不把成熟 spec 摘要同步回 backlog。 | 2026-06-14T06:59:52.546Z | 3.2KB |
 | backlog/R-169.md | runbook | project | 2 | false | false | 89 |  | R-169 | - 待补充 | 2026-06-14T07:08:25.352Z | 325B |
 | backlog/R-170.md | runbook | project | 2 | false | false | 529 |  | R-170 | Dogfood 暴露两个同源边界问题：reveal/context 的 topic docs 会把 docs.md、archive/docs-legacy 等生成或历史大索引纳入普通候选，导致 selected token 预算信号失真；completed/idle 无活跃任务时 analyze/write-analysis 仍可能复用上一 task_id， | 2026-06-14T07:24:21.179Z | 1.5KB |
-| backlog/backlog.md | runbook | project | 2 | false | false | 4252 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-06-14T07:24:21.225Z | 12.7KB |
+| backlog/R-171.md | runbook | project | 2 | false | false | 479 |  | R-171 | 希望新增多 session 隔离与并发能力，使多个 agent/session 在同一项目中可控协作。核心问题是当前 state/current/breadcrumb/check/review/handoff 等运行态偏全局单例，多个会话可能覆盖当前焦点、计划进度或证据。头脑风暴建议先做 session identity + lease + lock har | 2026-06-14T07:59:09.059Z | 1.3KB |
+| backlog/backlog.md | runbook | project | 2 | false | false | 4279 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-06-14T07:59:09.160Z | 12.8KB |
+| backlog/evidence/R-171-brainstorm.md | runbook | project | 2 | false | false | 2676 |  | R-171 Brainstorm: Multi-session Isolation and Concurrency | Date: 2026-06-14 | 2026-06-14T07:57:03.165Z | 10.4KB |
 | commands/docpath-agent-done.md | reference | project | 3 | false | false | 280 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-06-14T06:09:46.780Z | 1.1KB |
 | commands/docpath-agent-enter.md | reference | project | 3 | false | false | 279 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-06-14T06:09:46.781Z | 1.1KB |
 | commands/docpath-agent-handoff.md | reference | project | 3 | false | false | 277 |  | /docpath-agent-handoff | Persist a compact handoff package for the next Claude Code session. | 2026-06-14T06:09:46.782Z | 1.1KB |
@@ -178,7 +180,7 @@
 | commands/docpath-write-journal.md | reference | project | 3 | false | false | 198 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task through the CLI. | 2026-06-14T06:09:46.792Z | 792B |
 | commands/docpath-write-plan.md | reference | project | 3 | false | false | 182 |  | /docpath-write-plan | Write a generated execution plan into the active DocPath task. | 2026-06-14T06:09:46.793Z | 726B |
 | commands/docpath-write-spec.md | reference | project | 3 | false | false | 179 |  | /docpath-write-spec | Write a refined spec into the active DocPath task. | 2026-06-14T06:09:46.793Z | 716B |
-| docs.md | index | project | 2 | false | false | 38459 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-06-14T07:22:16.969Z | 121.3KB |
+| docs.md | index | project | 2 | false | false | 38288 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-06-14T07:25:26.112Z | 120.8KB |
 | harness.md | index | project | 2 | false | false | 252 |  | DocPath Harness Rules | - [ ] 读取 current.md 确认当前状态 | 2026-05-28T12:29:00.329Z | 786B |
 | protocols/AGENTS.md | index | project | 2 | false | false | 1301 |  | DocPath Agent Protocol | 1. Run `docpath status --agent`. | 2026-06-14T06:09:46.778Z | 5.1KB |
 | protocols/CLAUDE.md | index | project | 2 | false | false | 1011 |  | DocPath Claude Code Protocol | 1. Run `/docpath-status` or `docpath status --agent`. | 2026-06-14T06:09:46.778Z | 3.9KB |
@@ -221,6 +223,10 @@
 | tasks/T-20260614-cli-agent/spec.md | runbook | task | 1 | false | false | 2139 | T-20260614-cli-agent | T-20260614-cli-agent - 智能索引架构：CLI 返回索引，Agent 按需深读 | 当前 DocPath 架构在 Agent 数据访问权限上存在三重矛盾： | 2026-06-14T03:35:26.514Z | 5.4KB |
 | tasks/T-20260614-phase-2-3/plan.md | runbook | task | 1 | false | false | 289 | T-20260614-phase-2-3 | plan | - **描述**: Confirm the implementation boundary and acceptance criteria for the CLI-only baseline. | 2026-06-14T05:47:09.685Z | 1.0KB |
 | tasks/T-20260614-phase-2-3/spec.md | runbook | task | 1 | false | false | 2047 | T-20260614-phase-2-3 | T-20260614-phase-2-3 - Phase 2&3: 索引增强 + 按需深读 | Phase 1 已完成 CLI-only 基线，建立了"Agent 只通过 CLI 读写状态"的架构约束。所有 Agent 指令都通过 CLI 获取状态，不再直接读取 current.md/breadcrumb.md。 | 2026-06-14T04:41:04.194Z | 5.2KB |
+| tasks/T-20260614-session/plan.md | runbook | task | 1 | false | false | 661 | T-20260614-session | plan | - **描述**: 核对 spec、现有 session/lock/breadcrumb/plan-sync 代码路径，明确 MVP 不做 multi-active task 和 status --team。 | 2026-06-14T08:20:18.092Z | 1.8KB |
+| tasks/T-20260614-session/spec.md | runbook | task | 1 | false | false | 2567 | T-20260614-session | T-20260614-session - 新增多 session 隔离与并发 | DocPath 当前运行态以项目全局单例为主：`workspace/state.json`、`current.md`、`breadcrumb.*`、`last-check.md`、`review.md`、`compact-context.md` 和 `tasks/current` 都默认服务一个当前任务和一个当前执行焦点。多个 agent/session 同 | 2026-06-14T08:04:05.268Z | 6.8KB |
+| tasks/current/plan.md | runbook | task | 1 | true | false | 661 | T-20260614-session | plan | - **描述**: 核对 spec、现有 session/lock/breadcrumb/plan-sync 代码路径，明确 MVP 不做 multi-active task 和 status --team。 | 2026-06-14T08:20:18.092Z | 1.8KB |
+| tasks/current/spec.md | runbook | task | 1 | true | false | 2567 | T-20260614-session | T-20260614-session - 新增多 session 隔离与并发 | DocPath 当前运行态以项目全局单例为主：`workspace/state.json`、`current.md`、`breadcrumb.*`、`last-check.md`、`review.md`、`compact-context.md` 和 `tasks/current` 都默认服务一个当前任务和一个当前执行焦点。多个 agent/session 同 | 2026-06-14T08:04:05.269Z | 6.8KB |
 | tasks/done/T-20260528-agent-integration/plan.md | runbook | task | 3 | false | true | 929 | T-20260528-agent-integration | 执行计划 | ``` | 2026-05-28T14:53:27.931Z | 2.6KB |
 | tasks/done/T-20260528-agent-integration/spec.md | runbook | task | 3 | false | true | 847 | T-20260528-agent-integration | 规约: Agent Integration (Phase 1+2) | DocPath 需要面向 AI Agent 的接口层，使其能被 Claude Code / OpenCode 等工具原生使用。 | 2026-05-28T14:37:39.406Z | 2.4KB |
 | tasks/done/T-20260528-harness-lite/plan.md | runbook | task | 3 | false | true | 838 | T-20260528-harness-lite | Plan: Harness Lite Phase 1 | **目标**: 让 `docpath check` 能发现并运行 typecheck 相关脚本 | 2026-05-29T05:13:03.422Z | 2.5KB |
@@ -454,14 +460,14 @@
 | workflows/feature.md | index | project | 2 | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-06-14T06:09:46.775Z | 753B |
 | workflows/refactor.md | index | project | 2 | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-06-14T06:09:46.775Z | 424B |
 | workflows/research.md | index | project | 2 | false | false | 146 |  | Workflow: Research | - 明确调研目标 | 2026-06-14T06:09:46.776Z | 409B |
-| workspace/breadcrumb.md | index | project | 0 | false | false | 3931 |  | 面包屑 — 上下文恢复索引 | --- | 2026-06-14T07:24:21.228Z | 13.2KB |
+| workspace/breadcrumb.md | index | project | 0 | false | false | 3586 |  | 面包屑 — 上下文恢复索引 | --- | 2026-06-14T08:21:28.346Z | 12.3KB |
 | workspace/compact-context.md | index | project | 0 | false | false | 2597 |  | Context Handoff — T-20260612-journal-decisions-md-adr | - ✅ PASS (2026-06-12T17:30:32.646Z) | 2026-06-12T19:00:05.968Z | 7.7KB |
-| workspace/current.md | index | project | 0 | true | false | 335 |  | 📍 当前工作流状态 | ```yaml | 2026-06-14T07:24:21.092Z | 1.0KB |
+| workspace/current.md | index | project | 0 | true | false | 397 |  | 📍 当前工作流状态 | ```yaml | 2026-06-14T08:21:28.347Z | 1.2KB |
 | workspace/decisions.md | log | project | 3 | false | true | 82794 |  | 决策日志 — DocPath 自动归档 | --- | 2026-06-13T18:28:07.653Z | 235.5KB |
 | workspace/journal.md | index | project | 0 | false | false | 120 |  | 📖 工作日志 | - 新增 write-design 命令 | 2026-06-10T04:44:31.299Z | 361B |
-| workspace/last-check.md | index | project | 0 | true | false | 169 |  | Last Check Evidence | **时间**: 2026-06-14T07:23:42.151Z | 2026-06-14T07:23:42.152Z | 504B |
+| workspace/last-check.md | index | project | 0 | true | false | 169 |  | Last Check Evidence | **时间**: 2026-06-14T08:21:28.341Z | 2026-06-14T08:21:28.343Z | 504B |
 | workspace/lesson-candidates.md | log | project | 0 | false | false | 6 |  | Lesson Candidates | lesson-candidates | 2026-06-14T07:25:02.401Z | 21B |
-| workspace/pending-done.md | index | project | 0 | false | false | 26 |  | pending-done | pending-done | 2026-06-14T07:12:13.076Z | 101B |
+| workspace/pending-done.md | index | project | 0 | false | false | 26 |  | pending-done | pending-done | 2026-06-14T08:04:48.613Z | 104B |
 | workspace/review.md | index | project | 0 | true | false | 288 |  | Code Review Report | **时间**: 2026-06-14T07:23:58.552Z | 2026-06-14T07:23:58.553Z | 915B |
 
 ## 用途说明

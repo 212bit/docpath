@@ -20,6 +20,7 @@ import { markPlanStep, type PlanStepStatus } from '../utils/plan-sync.js';
 import { runCommand } from './runtime.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts } from '../utils/ui-gate.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
+import { acquireExecutionLease, releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 
 interface GoOptions {
   cwd: string;
@@ -29,6 +30,8 @@ interface GoOptions {
   status?: 'done' | 'skipped' | 'blocked';
   /** 仅输出上下文，不更新状态 */
   dryRun?: boolean;
+  /** agent/session 标识 */
+  session?: string;
 }
 
 interface GoContext {
@@ -156,13 +159,21 @@ async function renderExecutionContext(cwd: string, tasks: PlanStep[], target: Pl
   }
 }
 
-async function finalizeStep(cwd: string, target: PlanStep, status: NonNullable<GoOptions['status']>): Promise<void> {
+async function finalizeStep(
+  cwd: string,
+  target: PlanStep,
+  status: NonNullable<GoOptions['status']>,
+  taskId: string,
+  sessionId: string,
+): Promise<void> {
   await runCommand({
     cwd,
     action: 'end',
     step: target.id,
     status,
     note: `go-status: ${target.id} -> ${status}`,
+    session: sessionId,
+    releaseLease: false,
   });
 
   const syncStatus: PlanStepStatus = status === 'done' ? 'done' : status === 'skipped' ? 'skipped' : 'blocked';
@@ -170,6 +181,12 @@ async function finalizeStep(cwd: string, target: PlanStep, status: NonNullable<G
   if (!sync.updated) {
     console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
   }
+  await releaseExecutionLease(cwd, {
+    sessionId,
+    taskId,
+    step: target.id,
+    command: 'go status',
+  });
 
   console.log(`✅  已记录步骤状态: ${target.id} -> ${status}`);
   console.log('💡  下一步可运行 `docpath next --agent` 或 `docpath go` 继续推进。\n');
@@ -178,14 +195,23 @@ async function finalizeStep(cwd: string, target: PlanStep, status: NonNullable<G
 async function startStep(
   cwd: string,
   target: PlanStep,
-  taskId: string | undefined,
+  taskId: string,
   extraFields: Record<string, string>,
+  sessionId: string,
 ): Promise<void> {
+  await acquireExecutionLease(cwd, {
+    sessionId,
+    taskId,
+    step: target.id,
+    command: 'go start',
+  });
+
   await writeBreadcrumb(cwd, {
-    taskId: taskId || 'unknown',
+    taskId,
     step: target.id,
     status: 'in_progress',
     context: `开始执行: ${target.name}`,
+    sessionId,
   });
 
   // 更新 current.md：phase 表示工作流阶段，current_step 表示正在执行的子任务
@@ -203,6 +229,7 @@ async function startStep(
 
 export async function goCommand(options: GoOptions): Promise<void> {
   const { cwd, step, status, dryRun } = options;
+  const session = resolveSessionContext(options.session);
   const { docpathDir, specPath } = await resolveGoContext(cwd);
   const extraFields = await readSpecFields(specPath);
   const current = await readCurrentMd(cwd);
@@ -237,9 +264,15 @@ export async function goCommand(options: GoOptions): Promise<void> {
     console.error('    确保 .docpath/tasks/current/spec.md 存在且首行为 `# T-<date>-<slug> - <标题>`，再运行 `docpath plan` 与 `docpath go`。');
     process.exit(1);
   }
+  await touchSession(cwd, {
+    sessionId: session.sessionId,
+    taskId: resolvedTaskId,
+    step: target.id,
+    command: status ? 'go status' : 'go start',
+  });
 
   if (status) {
-    await finalizeStep(cwd, target, status);
+    await finalizeStep(cwd, target, status, resolvedTaskId, session.sessionId);
     return;
   }
 
@@ -264,5 +297,5 @@ export async function goCommand(options: GoOptions): Promise<void> {
     }
   }
 
-  await startStep(cwd, target, current?.task_id, extraFields);
+  await startStep(cwd, target, resolvedTaskId, extraFields, session.sessionId);
 }

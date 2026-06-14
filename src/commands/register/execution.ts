@@ -20,12 +20,14 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--step <step>', '指定子任务编号 (e.g. S1)')
     .option('--status <status>', '收尾状态: done | skipped | blocked')
     .option('--dry-run', '仅预览，不更新状态')
-    .action(async (options: { cwd?: string; step?: string; status?: 'done' | 'skipped' | 'blocked'; dryRun?: boolean; 'dry-run'?: boolean }) => {
+    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
+    .action(async (options: { cwd?: string; step?: string; status?: 'done' | 'skipped' | 'blocked'; dryRun?: boolean; 'dry-run'?: boolean; session?: string }) => {
       await goCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
         status: options.status,
         dryRun: options.dryRun ?? options['dry-run'],
+        session: options.session,
       });
     });
 
@@ -34,13 +36,15 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--step <step>', '当前步骤/子任务')
     .option('--note <note>', '事件备注')
     .option('--status <status>', 'end 状态: done | blocked | skipped')
-    .action(async (action: 'start' | 'end' | 'recover', options: { cwd?: string; step?: string; note?: string; status?: 'done' | 'blocked' | 'skipped' }) => {
+    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
+    .action(async (action: 'start' | 'end' | 'recover', options: { cwd?: string; step?: string; note?: string; status?: 'done' | 'blocked' | 'skipped'; session?: string }) => {
       await runCommand({
         cwd: options.cwd || process.cwd(),
         action,
         step: options.step,
         note: options.note,
         status: options.status,
+        session: options.session,
       });
     });
 
@@ -55,7 +59,8 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--skip-lint', 'check 时跳过 lint')
     .option('--approve-review', 'review 时手动批准')
     .option('--max-entries <n>', 'handoff 压缩时保留 breadcrumb 条数')
-    .action(async (action: 'enter' | 'step' | 'done' | 'handoff', options: { cwd?: string; step?: string; note?: string; status?: 'done' | 'blocked' | 'skipped'; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; maxEntries?: string; 'max-entries'?: string }) => {
+    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
+    .action(async (action: 'enter' | 'step' | 'done' | 'handoff', options: { cwd?: string; step?: string; note?: string; status?: 'done' | 'blocked' | 'skipped'; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; maxEntries?: string; 'max-entries'?: string; session?: string }) => {
       await agentCommand({
         cwd: options.cwd || process.cwd(),
         action,
@@ -68,6 +73,7 @@ export function registerExecutionCommands(cli: CAC): void {
         skipLint: !!(options.skipLint || options['skip-lint']),
         approveReview: !!(options.approveReview || options['approve-review']),
         maxEntries: options.maxEntries || options['max-entries'] ? parseInt((options.maxEntries || options['max-entries'])!, 10) : undefined,
+        session: options.session,
       });
     });
 }

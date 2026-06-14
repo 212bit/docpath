@@ -104,6 +104,11 @@ DocPath CLI 的价值应从“企业审计控制”改写为“团队共享事�
 
 目标：让多个会话或多个工具在同一项目中有可控协作边界。
 
+第一步实现边界见 `docs/design/session-isolation-mvp.md`：先保持单 active task，
+通过 session identity、task/step lease、breadcrumb attribution 和关键写入锁来
+解决多会话覆盖与归属问题；`status --team` 与真正 multi-active task runtime
+放到后续阶段。
+
 - Agent/session 标识：记录当前执行者和会话来源，支撑交接与冲突判断。
 - 冲突检测：发现多个执行者同时推进同一任务或修改同一状态路径时 fail-loud。
 - 团队状态视图：提供 `status --team` 或等价视图，展示可接手、阻塞、执行中和待验证任务。

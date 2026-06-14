@@ -23,6 +23,7 @@ import { recordSkipReason } from '../engine/policy.js';
 import { markPlanStep } from '../utils/plan-sync.js';
 import { emit } from '../hooks/lifecycle.js';
 import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
+import { releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 
 type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
 
@@ -40,6 +41,7 @@ type AgentOptions = {
   maxEntries?: number;
   autoNext?: boolean;
   enforce?: boolean;
+  session?: string;
 };
 
 function requireStep(action: AgentAction, step?: string): string {
@@ -55,7 +57,7 @@ function requireStep(action: AgentAction, step?: string): string {
  * 「无任务」状态下记录进度/跑完门禁，导致 state.json 与代码漂移
  * （与 go 同源的漂移根因；底层原语 run 不走此门禁，保留为逃生通道）。
  */
-async function requireBoundTask(action: AgentAction, cwd: string): Promise<void> {
+async function requireBoundTask(action: AgentAction, cwd: string): Promise<string> {
   const taskId = await resolveBoundTaskId(cwd);
   if (!taskId) {
     throw new Error(
@@ -65,6 +67,7 @@ async function requireBoundTask(action: AgentAction, cwd: string): Promise<void>
       `.docpath/tasks/current/spec.md 存在且首行为 \`# T-<date>-<slug> - <标题>\`。`,
     );
   }
+  return taskId;
 }
 
 function requireSkipReason(flag: '--skip-tests' | '--skip-check' | '--skip-review', note?: string): string {
@@ -84,8 +87,16 @@ function syncStatusForAgentStep(status: NonNullable<AgentOptions['status']>): 'd
         : 'pending';
 }
 
-async function handleAgentEnter(cwd: string): Promise<void> {
+async function handleAgentEnter(options: AgentOptions): Promise<void> {
+  const { cwd } = options;
   const current = await readCurrentState(cwd);
+  const session = resolveSessionContext(options.session);
+  await touchSession(cwd, {
+    sessionId: session.sessionId,
+    taskId: current?.task_id || 'runtime',
+    step: current?.current_step || 'agent enter',
+    command: 'agent enter',
+  });
   try {
     await emit('task_start', cwd, current?.task_id || undefined, {
       phase: current?.phase || 'executing',
@@ -100,7 +111,8 @@ async function handleAgentEnter(cwd: string): Promise<void> {
 
 async function handleAgentStep(options: AgentOptions): Promise<void> {
   const { cwd } = options;
-  await requireBoundTask('step', cwd);
+  const taskId = await requireBoundTask('step', cwd);
+  const session = resolveSessionContext(options.session);
   const step = requireStep(options.action, options.step);
   const status = options.status || 'done';
   await runCommand({
@@ -109,10 +121,18 @@ async function handleAgentStep(options: AgentOptions): Promise<void> {
     step,
     status,
     note: options.note || `agent-step: ${step}`,
+    session: session.sessionId,
+    releaseLease: false,
   });
 
   const sync = await markPlanStep(cwd, step, syncStatusForAgentStep(status));
   if (!sync.updated) console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
+  await releaseExecutionLease(cwd, {
+    sessionId: session.sessionId,
+    taskId,
+    step,
+    command: 'agent step',
+  });
 
   if (status !== 'done') {
     await runCommand({
@@ -120,6 +140,7 @@ async function handleAgentStep(options: AgentOptions): Promise<void> {
       action: 'start',
       step,
       note: 'agent-step: ready for next action',
+      session: session.sessionId,
     });
   } else if (options.autoNext) {
     console.log('\n─── 自动加载下一个任务 ───\n');
@@ -224,6 +245,14 @@ async function handleAgentDone(options: AgentOptions): Promise<void> {
 }
 
 async function handleAgentHandoff(options: AgentOptions): Promise<void> {
+  const current = await readCurrentState(options.cwd);
+  const session = resolveSessionContext(options.session);
+  await touchSession(options.cwd, {
+    sessionId: session.sessionId,
+    taskId: current?.task_id || 'runtime',
+    step: current?.current_step || 'handoff',
+    command: 'agent handoff',
+  });
   await compactCommand({
     cwd: options.cwd,
     maxEntries: options.maxEntries,
@@ -231,6 +260,7 @@ async function handleAgentHandoff(options: AgentOptions): Promise<void> {
   await runCommand({
     cwd: options.cwd,
     action: 'recover',
+    session: session.sessionId,
   });
 }
 
@@ -241,7 +271,7 @@ export async function agentCommand(options: AgentOptions): Promise<void> {
     throw new Error(`Unsupported agent action: ${action}. Expected enter | step | done | handoff`);
   }
 
-  if (action === 'enter') return handleAgentEnter(cwd);
+  if (action === 'enter') return handleAgentEnter(options);
   if (action === 'step') return handleAgentStep(options);
   if (action === 'done') return handleAgentDone(options);
   return handleAgentHandoff(options);

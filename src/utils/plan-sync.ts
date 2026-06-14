@@ -1,12 +1,14 @@
 /** plan.md 与 breadcrumb.md 的同步/漂移检测工具。 */
 
 import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
+import { mkdir, readFile } from 'fs/promises';
+import { dirname, join } from 'path';
 import { readBreadcrumb, type BreadcrumbEntry } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
 import { parsePlanTasks, readCurrentState } from './workspace.js';
 import { parsePlanSteps } from './doc-parser.js';
 import { readActiveTaskFile, resolveActiveTaskDocPath, writeActiveTaskFile } from './task-files.js';
+import { withLock } from './lock.js';
 
 export interface PlanSyncResult {
   updated: boolean;
@@ -80,26 +82,31 @@ export async function markPlanStep(cwd: string, step: string, status: PlanStepSt
 
   const state = await readCurrentState(cwd);
   const docpathDir = await resolveDocpathDir(cwd);
-  const content = await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md');
-  if (!content.trim()) return { updated: false, reason: 'plan.md 不存在' };
-  const steps = parsePlanSteps(content);
-  const target = steps.find((item) => item.id.toLowerCase() === step.toLowerCase());
-  if (!target) return { updated: false, reason: `plan.md 未找到步骤 ${step}` };
+  const taskId = state?.task_id || 'current';
+  const lockPath = join(docpathDir, 'tasks', taskId, 'plan.lock');
+  await mkdir(dirname(lockPath), { recursive: true });
+  return withLock(lockPath, async () => {
+    const content = await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md');
+    if (!content.trim()) return { updated: false, reason: 'plan.md 不存在' };
+    const steps = parsePlanSteps(content);
+    const target = steps.find((item) => item.id.toLowerCase() === step.toLowerCase());
+    if (!target) return { updated: false, reason: `plan.md 未找到步骤 ${step}` };
 
-  let next = content;
-  const mark = markerForStatus(status);
-  if (target.lineText && target.checklistIndex >= 0) {
-    next = `${content.slice(0, target.checklistIndex)}${target.lineText.replace(/^- \[[ xX~!]\]/, `- [${mark}]`)}${content.slice(target.checklistIndex + target.lineText.length)}`;
-  } else if (target.sectionIndex >= 0) {
-    const line = `- [${mark}] ${target.id}: ${target.name}\n`;
-    const insertAt = content.indexOf('\n', target.sectionIndex);
-    next = `${content.slice(0, insertAt + 1)}${line}${content.slice(insertAt + 1)}`;
-  }
+    let next = content;
+    const mark = markerForStatus(status);
+    if (target.lineText && target.checklistIndex >= 0) {
+      next = `${content.slice(0, target.checklistIndex)}${target.lineText.replace(/^- \[[ xX~!]\]/, `- [${mark}]`)}${content.slice(target.checklistIndex + target.lineText.length)}`;
+    } else if (target.sectionIndex >= 0) {
+      const line = `- [${mark}] ${target.id}: ${target.name}\n`;
+      const insertAt = content.indexOf('\n', target.sectionIndex);
+      next = `${content.slice(0, insertAt + 1)}${line}${content.slice(insertAt + 1)}`;
+    }
 
-  if (next === content) return { updated: false, reason: `步骤 ${step} 已是目标状态` };
+    if (next === content) return { updated: false, reason: `步骤 ${step} 已是目标状态` };
 
-  await writeActiveTaskFile(docpathDir, state?.task_id || 'current', 'plan.md', next);
-  return { updated: true, reason: `已同步 plan.md 步骤 ${step}` };
+    await writeActiveTaskFile(docpathDir, taskId, 'plan.md', next);
+    return { updated: true, reason: `已同步 plan.md 步骤 ${step}` };
+  });
 }
 
 export async function detectPlanBreadcrumbDrift(cwd: string): Promise<PlanBreadcrumbDrift> {

@@ -94,6 +94,27 @@ describe('Breadcrumb write and read', () => {
     assert.equal(s.entries[0].taskId, 'T-001');
   });
 
+  it('round-trips optional sessionId through JSONL and Markdown view', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'bc-session-'));
+    await writeBreadcrumb(root, {
+      taskId: 'T-SESSION',
+      step: 'S1',
+      status: 'in_progress',
+      context: 'session aware',
+      sessionId: 'alpha',
+    });
+
+    const summary = await readBreadcrumb(root);
+    const jsonl = readFileSync(BC_JSONL_PATH(root), 'utf-8').trim().split('\n').map((line) => JSON.parse(line));
+    const md = readRaw(root);
+
+    assert.equal(summary.entries[0].sessionId, 'alpha');
+    assert.equal(jsonl[0].sessionId, 'alpha');
+    assert.match(md, /sessionId: alpha/);
+    assert.match(md, /\*\*Session\*\*: alpha/);
+    rmSync(root, { recursive: true, force: true });
+  });
+
   it('latest points to last entry', async () => {
     const s = await readBreadcrumb(dp);
     assert.ok(s.latest, 'latest should exist');
