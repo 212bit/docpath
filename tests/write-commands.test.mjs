@@ -328,6 +328,70 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('plan --dry-run previews without writing plan files or changing state', () => {
+    const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+    const canonicalDir = join(cwd, '.docpath', 'tasks', 'T-WRITE');
+    mkdirSync(canonicalDir, { recursive: true });
+    writeFileSync(join(canonicalDir, 'spec.md'), '# T-WRITE - Dry Run Spec\n');
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), '# T-WRITE - Dry Run Spec\n');
+    const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+    const beforeState = readFileSync(statePath, 'utf-8');
+
+    const output = run(`plan --cwd ${cwd} --dry-run`, cwd);
+
+    assert.match(output, /\[dry-run\]/);
+    assert.doesNotMatch(output, /plan\.md 已写入/);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md')), false);
+    assert.equal(existsSync(join(canonicalDir, 'plan.md')), false);
+    assert.equal(readFileSync(statePath, 'utf-8'), beforeState);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('plan ignores stale current plan when canonical plan is missing for the active task', () => {
+    const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+    const canonicalDir = join(cwd, '.docpath', 'tasks', 'T-WRITE');
+    mkdirSync(canonicalDir, { recursive: true });
+
+    const spec = [
+      '# T-WRITE - 新任务计划',
+      '',
+      '## 2. 需求清单',
+      '',
+      '### 功能需求',
+      '- [ ] FR-1: 新任务功能',
+      '',
+      '## 5. 验收标准',
+      '',
+      '- [ ] AC-1: 新计划不能继承旧 checklist',
+      '',
+    ].join('\n');
+    writeFileSync(join(canonicalDir, 'spec.md'), spec);
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), spec);
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: Old completed task',
+      '- **描述**: stale',
+      '- **验收条件**: stale',
+      '- **依赖**: 无',
+      '',
+      '## Checklist',
+      '- [x] S1',
+      '',
+    ].join('\n'));
+
+    const output = run(`plan --cwd ${cwd}`, cwd);
+
+    assert.match(output, /plan\.md 已写入/);
+    const currentPlan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
+    const canonicalPlan = readFileSync(join(canonicalDir, 'plan.md'), 'utf-8');
+    assert.match(currentPlan, /新任务功能/);
+    assert.doesNotMatch(currentPlan, /Old completed task/);
+    assert.doesNotMatch(currentPlan, /- \[x\] S1/);
+    assert.equal(canonicalPlan, currentPlan);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('plan generates a draft plan when no plan.md exists yet', () => {
     const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
     const canonicalDir = join(cwd, '.docpath', 'tasks', 'T-WRITE');

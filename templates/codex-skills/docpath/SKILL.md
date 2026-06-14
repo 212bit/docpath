@@ -36,6 +36,14 @@ If there is **no active task**, do not invent hidden state and do not hand-write
 - Direct file reads are allowed only when the CLI route, debugging need, or user request requires them.
 - Keep direct reads scoped to the smallest file, topic, task id, or tail range that answers the question.
 
+## Command Boundaries
+
+- Prompt emitters such as `brainstorm`, `refine`, `analyze --dry-run`, and `plan --dry-run` output structured prompt contracts or payload previews for the current Codex session. They do not call a hidden LLM and do not replace current-session reasoning.
+- Artifact sinks such as `write-spec`, `write-plan`, `write-design`, and `write-analysis` persist content that Codex has already generated or selected in the current conversation.
+- Workflow gates such as `status`, `next`, `go`, `agent enter/step/done`, `check`, `review`, and `changes` are deterministic state, routing, validation, lifecycle, review, and closeout commands.
+- Do not treat prompt-emitter output as final content. Use the current Codex session to reason, then persist results through the relevant artifact sink.
+- `--dry-run` commands must be treated as previews only; they should not be used as evidence that final analysis/spec/plan content exists.
+
 ## Pre-development analysis route
 
 When the user asks to analyze first, clarify requirements, analyze a page/workflow, or explicitly says not to code:

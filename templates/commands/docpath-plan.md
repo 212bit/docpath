@@ -1,6 +1,8 @@
 # /docpath-plan
 
-Generate an execution plan from the active `spec.md`.
+Emit the planning prompt and sync a conservative local plan for continuity.
+Complex planning should be done by the current agent session and persisted with
+`/docpath-write-plan`.
 
 ## Run
 
@@ -21,4 +23,5 @@ else
 fi
 ```
 
-Use `--dry-run` to preview without writing files. After planning, route with `/docpath-next`.
+Use `--dry-run` to preview the prompt without writing files or state. After
+planning, route with `/docpath-next`.

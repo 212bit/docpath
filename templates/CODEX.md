@@ -23,6 +23,16 @@
   narrative requirements after the CLI route indicates that more detail is
   needed.
 
+## Command Boundaries
+
+- `brainstorm`, `refine`, `analyze --dry-run`, and `plan --dry-run` are prompt
+  emitters for the current Codex session; they do not call a hidden LLM.
+- `write-spec`, `write-plan`, `write-design`, and `write-analysis` are artifact
+  sinks for content Codex has already generated or selected.
+- `status`, `next`, `go`, `agent`, `check`, `review`, and `changes` are
+  deterministic workflow gates.
+- Treat `--dry-run` output as preview material, not final evidence.
+
 ## Lifecycle
 
 ```bash

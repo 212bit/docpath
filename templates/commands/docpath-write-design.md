@@ -1,6 +1,7 @@
 # /docpath-write-design
 
-Write UI/UX design evidence for the active DocPath task.
+Artifact sink: write UI/UX design evidence already generated or selected by the
+current agent session into the active DocPath task.
 
 Required flow:
 

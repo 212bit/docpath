@@ -5,186 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🔄 S2 [T-20260614-backlog-spec] — 2026-06-14T06:52:24.594Z
-
----
-taskId: T-20260614-backlog-spec
-step: S2
-status: in_progress
-timestamp: 2026-06-14T06:52:24.594Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 完成 CLI 工作流闭环
-
-### ✅ S2 [T-20260614-backlog-spec] — 2026-06-14T06:55:16.413Z
-
----
-taskId: T-20260614-backlog-spec
-step: S2
-status: done
-timestamp: 2026-06-14T06:55:16.413Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260614-backlog-spec] — 2026-06-14T06:55:24.239Z
-
----
-taskId: T-20260614-backlog-spec
-step: S3
-status: in_progress
-timestamp: 2026-06-14T06:55:24.239Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 补齐测试与文档并运行门禁
-
-### ✅ S3 [T-20260614-backlog-spec] — 2026-06-14T06:58:12.212Z
-
----
-taskId: T-20260614-backlog-spec
-step: S3
-status: done
-timestamp: 2026-06-14T06:58:12.212Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ check [T-20260614-backlog-spec] — 2026-06-14T06:59:21.007Z
-
----
-taskId: T-20260614-backlog-spec
-step: check
-status: done
-timestamp: 2026-06-14T06:59:21.007Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260614-backlog-spec] — 2026-06-14T06:59:32.195Z
-
----
-taskId: T-20260614-backlog-spec
-step: review
-status: done
-timestamp: 2026-06-14T06:59:32.195Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 6 警告, 0 提示
-
-### ✅ journal [T-20260614-backlog-spec] — 2026-06-14T06:59:52.584Z
-
----
-taskId: T-20260614-backlog-spec
-step: journal
-status: done
-timestamp: 2026-06-14T06:59:52.584Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### ✅ task.reset [T-20260614-backlog-spec] — 2026-06-14T07:07:18.515Z
-
----
-taskId: T-20260614-backlog-spec
-step: task.reset
-status: done
-timestamp: 2026-06-14T07:07:18.515Z
----
-
-- **状态**: done
-- **上下文**: 任务上下文已清空并回到 idle
-
-### 🔄 S1 [T-20260614-task] — 2026-06-14T07:12:03.643Z
-
----
-taskId: T-20260614-task
-step: S1
-status: in_progress
-timestamp: 2026-06-14T07:12:03.643Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 定位文档索引和空任务路由边界
-
-### ✅ S1 [T-20260614-task] — 2026-06-14T07:12:55.585Z
-
----
-taskId: T-20260614-task
-step: S1
-status: done
-timestamp: 2026-06-14T07:12:55.585Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### 🔄 S2 [T-20260614-task] — 2026-06-14T07:13:03.924Z
-
----
-taskId: T-20260614-task
-step: S2
-status: in_progress
-timestamp: 2026-06-14T07:13:03.924Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 generated view 分类、降权和预算过滤
-
-### ✅ S2 [T-20260614-task] — 2026-06-14T07:16:26.186Z
-
----
-taskId: T-20260614-task
-step: S2
-status: done
-timestamp: 2026-06-14T07:16:26.186Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260614-task] — 2026-06-14T07:16:37.045Z
-
----
-taskId: T-20260614-task
-step: S3
-status: in_progress
-timestamp: 2026-06-14T07:16:37.045Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现空任务 analyze/write-analysis 与 next 路由保护
-
-### ✅ S3 [T-20260614-task] — 2026-06-14T07:20:07.702Z
-
----
-taskId: T-20260614-task
-step: S3
-status: done
-timestamp: 2026-06-14T07:20:07.702Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### 🔄 S4 [T-20260614-task] — 2026-06-14T07:20:15.553Z
-
----
-taskId: T-20260614-task
-step: S4
-status: in_progress
-timestamp: 2026-06-14T07:20:15.553Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 补齐测试、文档和质量门禁
-
 ### ✅ S4 [T-20260614-task] — 2026-06-14T07:22:29.086Z
 
 ---
@@ -640,3 +460,205 @@ sessionId: default
 - **状态**: done
 - **上下文**: agent-done: S5
 - **Session**: default
+
+### 🔄 S1 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:05:07.810Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S1
+status: in_progress
+timestamp: 2026-06-14T14:05:07.810Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 固化命令边界与现有行为证据
+- **Session**: default
+
+### 🔄 S1 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:08:26.186Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S1
+status: in_progress
+timestamp: 2026-06-14T14:08:26.186Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 固化命令边界与现有行为证据
+- **Session**: default
+
+### ✅ S1 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:08:35.706Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S1
+status: done
+timestamp: 2026-06-14T14:08:35.706Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:09:02.926Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S2
+status: in_progress
+timestamp: 2026-06-14T14:09:02.926Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 修复 dry-run 与 stale plan 边界问题
+- **Session**: default
+
+### ✅ S2 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:11:33.005Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S2
+status: done
+timestamp: 2026-06-14T14:11:33.005Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:11:57.382Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S3
+status: in_progress
+timestamp: 2026-06-14T14:11:57.382Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 更新命令语义与文档边界
+- **Session**: default
+
+### ✅ S3 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:14:05.919Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S3
+status: done
+timestamp: 2026-06-14T14:14:05.919Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### 🔄 S4 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:14:59.620Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S4
+status: in_progress
+timestamp: 2026-06-14T14:14:59.620Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 同步 Agent 协议、skill 与 slash command 模板
+- **Session**: default
+
+### ✅ S4 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:20:36.049Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S4
+status: done
+timestamp: 2026-06-14T14:20:36.049Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### 🔄 S5 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:20:59.423Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S5
+status: in_progress
+timestamp: 2026-06-14T14:20:59.423Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 验证、review 与 closeout
+- **Session**: default
+
+### 🚫 check [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:24:30.540Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: check
+status: blocked
+timestamp: 2026-06-14T14:24:30.540Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 子任务完成度 (4/5)
+
+### ✅ S5 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:24:42.595Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: S5
+status: done
+timestamp: 2026-06-14T14:24:42.595Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S5
+- **Session**: default
+
+### ✅ check [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:25:46.166Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: check
+status: done
+timestamp: 2026-06-14T14:25:46.166Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:26:03.864Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: review
+status: done
+timestamp: 2026-06-14T14:26:03.864Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### ✅ journal [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:27:06.171Z
+
+---
+taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
+step: journal
+status: done
+timestamp: 2026-06-14T14:27:06.171Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (5/5 步)

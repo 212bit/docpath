@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-14T13:57:45.898Z
+> 扫描时间: 2026-06-14T14:27:06.170Z
 
 ## 条目列表
 
@@ -129,7 +129,7 @@
 | R-169 | probe | dropped | P2 | 2 |  |
 | R-171 | 新增多 session 隔离与并发 | done | P2 | 2 | T-20260614-session |
 | R-172 | 将 docpath changes 纳入完成态 git closeout 路由 | done | P2 | 2 | T-20260614-docpath-changes-git-closeout |
-| R-173 | 明确 AI 辅助命令边界：prompt emitter vs artifact sink vs workflow gate | accepted | P2 | 2 |  |
+| R-173 | 明确 AI 辅助命令边界：prompt emitter vs artifact sink vs workflow gate | done | P2 | 2 | T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 
 ## 用途说明

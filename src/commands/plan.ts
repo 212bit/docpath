@@ -7,6 +7,7 @@
  */
 
 import { existsSync } from 'fs';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
@@ -181,11 +182,19 @@ function emitPlanPrompt(spec: string, analysis = ''): void {
 
 async function writeGeneratedPlan(cwd: string, docpathDir: string, spec: string): Promise<string> {
   const current = await readCurrentState(cwd);
-  const existingPlan = await readTaskFile(cwd, 'plan.md');
-  const planContent = existingPlan.trim() ? existingPlan : renderDraftPlan(spec || '');
   const taskId = current?.task_id || 'current';
+  const existingPlan = taskId === 'current'
+    ? ''
+    : await readCanonicalPlan(docpathDir, taskId);
+  const planContent = existingPlan.trim() ? existingPlan : renderDraftPlan(spec || '');
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'plan.md', planContent);
   return canonicalPath;
+}
+
+async function readCanonicalPlan(docpathDir: string, taskId: string): Promise<string> {
+  const canonicalPlanPath = join(docpathDir, 'tasks', taskId, 'plan.md');
+  if (!existsSync(canonicalPlanPath)) return '';
+  return readFile(canonicalPlanPath, 'utf-8');
 }
 
 export async function planCommand(options: PlanOptions): Promise<void> {

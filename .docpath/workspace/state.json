@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260614-docpath-changes-git-closeout",
-  "task_title": "将 docpath changes 纳入完成态 git closeout 路由",
+  "task_id": "T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo",
+  "task_title": "明确 AI 辅助命令边界：prompt emitter vs artifact sink vs workflow gate",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-14T09:08:13.647Z",
-  "updated_at": "2026-06-14T09:18:17.664Z"
+  "started_at": "2026-06-14T14:27:06.060Z",
+  "updated_at": "2026-06-14T14:27:06.060Z"
 }

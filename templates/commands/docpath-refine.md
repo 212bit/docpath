@@ -1,6 +1,8 @@
 # /docpath-refine
 
-Convert a requirement note into a structured DocPath spec input.
+Emit a requirement-refinement prompt contract for the current agent session.
+The current agent generates the final spec content, then persists it with
+`/docpath-write-spec`.
 
 ## Run
 
@@ -21,4 +23,6 @@ else
 fi
 ```
 
-Prefer `--file <path>` for existing notes, `--content "..."` for short input, or `--stdin` when piping content.
+Prefer `--file <path>` for existing notes, `--content "..."` for short input,
+or `--stdin` when piping content. Use `--dry-run` to preview without writing
+files or state.

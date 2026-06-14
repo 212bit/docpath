@@ -34,6 +34,18 @@ Direct file reads are allowed only when the route or debugging task requires
 them. Keep direct reads scoped to the smallest useful file, topic, task id, or
 tail range.
 
+## Command Boundaries
+
+- `docpath brainstorm`, `docpath refine`, `docpath analyze --dry-run`, and
+  `docpath plan --dry-run` are prompt emitters for the current OpenCode session;
+  they do not call a hidden LLM.
+- `docpath write-spec`, `docpath write-plan`, `docpath write-design`, and
+  `docpath write-analysis` are artifact sinks for content OpenCode has already
+  generated or selected.
+- `status`, `next`, `go`, `agent`, `check`, `review`, and `changes` are
+  deterministic workflow gates.
+- Treat `--dry-run` output as preview material, not final evidence.
+
 ## OpenCode Workflow
 
 ### Start or Resume

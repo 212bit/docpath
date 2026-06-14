@@ -65,6 +65,18 @@ Direct file reads are allowed only when the CLI route, debugging need, or user
 request requires them. Keep the read scoped by topic, task id, exact path, or
 tail range.
 
+## Command Boundaries
+
+- `/docpath-brainstorm`, `/docpath-refine`, `docpath analyze --dry-run`, and
+  `docpath plan --dry-run` are prompt emitters for the current Claude session;
+  they do not call a hidden LLM.
+- `/docpath-write-spec`, `/docpath-write-plan`, `/docpath-write-design`, and
+  `docpath write-analysis` are artifact sinks for content Claude has already
+  generated or selected.
+- `status`, `next`, `go`, `agent`, `check`, `review`, and `changes` are
+  deterministic workflow gates.
+- Treat `--dry-run` output as preview material, not final evidence.
+
 ## Lifecycle
 
 ```bash

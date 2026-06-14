@@ -38,6 +38,21 @@ Direct file reads are acceptable only when the CLI route or the debugging task
 requires them. Keep direct reads scoped to the smallest file, topic, task id, or
 tail range that answers the question.
 
+## Command Boundaries
+
+- Prompt emitters such as `brainstorm`, `refine`, `analyze --dry-run`, and
+  `plan --dry-run` output structured prompt contracts or payload previews for the
+  current agent session. They do not call a hidden LLM and do not replace
+  current-session reasoning.
+- Artifact sinks such as `write-spec`, `write-plan`, `write-design`, and
+  `write-analysis` persist content already generated or selected by the current
+  agent session.
+- Workflow gates such as `status`, `next`, `go`, `agent enter/step/done`,
+  `check`, `review`, and `changes` are deterministic state, routing, validation,
+  lifecycle, review, and closeout commands.
+- Treat `--dry-run` output as preview material only, not as durable final
+  analysis/spec/plan evidence.
+
 ## Project Context
 
 - `.docpath/backlog/` holds candidate work before it becomes an active task.
