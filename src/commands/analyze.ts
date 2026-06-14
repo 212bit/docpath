@@ -8,6 +8,7 @@ import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { nextCommand } from './runtime.js';
+import { readCurrentState, type CurrentState } from '../utils/workspace.js';
 
 export interface AnalyzeOptions {
   cwd: string;
@@ -87,6 +88,22 @@ async function ensureWorkspace(cwd: string): Promise<void> {
   }
 }
 
+function hasActiveAnalysisTask(current: CurrentState | null): boolean {
+  return Boolean(current?.task_id && current.phase !== 'idle' && current.phase !== 'completed');
+}
+
+async function assertCanWriteAnalysis(cwd: string): Promise<void> {
+  const current = await readCurrentState(cwd);
+  if (hasActiveAnalysisTask(current)) return;
+  throw new Error([
+    'docpath analyze: 当前没有可写入 analysis 的活跃任务',
+    '修复建议:',
+    '- 若只是理解需求，运行 `docpath analyze --dry-run --mode deep --content "<requirement>"`',
+    '- 若是新想法，先运行 `docpath backlog capture --title <title>`',
+    '- 若需求已成熟，先运行 `docpath backlog promote <id>` 创建当前任务',
+  ].join('\n'));
+}
+
 export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   const { cwd } = options;
   await ensureWorkspace(cwd);
@@ -106,6 +123,8 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
     console.log(JSON.stringify(payload, null, 2));
     return;
   }
+
+  await assertCanWriteAnalysis(cwd);
 
   console.log(JSON.stringify(payload, null, 2));
 

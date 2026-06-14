@@ -143,6 +143,72 @@ describe('structured docs index', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('reveal keeps generated index views discoverable but excludes them from selected token budget', () => {
+    const cwd = mkWorkspace();
+    run(`docs scan --cwd ${cwd}`, cwd);
+    const indexPath = join(cwd, '.docpath', 'docs-index.json');
+    const index = JSON.parse(readFileSync(indexPath, 'utf-8'));
+    index.entries.push(
+      {
+        path: 'docs.md',
+        type: 'index',
+        kind: 'index',
+        scope: 'project',
+        level: '2',
+        title: 'DocPath docs generated view',
+        summary: 'Generated docs index view for humans.',
+        updated_at: new Date().toISOString(),
+        size: 180000,
+        token_estimate: 60000,
+        default_read: false,
+        archive: false,
+        topic_tags: ['docs', 'index'],
+      },
+      {
+        path: 'archive/docs-legacy-20260613.md',
+        type: 'index',
+        kind: 'index',
+        scope: 'project',
+        level: '3',
+        title: 'Legacy docs archive',
+        summary: 'Legacy generated docs archive.',
+        updated_at: new Date().toISOString(),
+        size: 120000,
+        token_estimate: 40000,
+        default_read: false,
+        archive: false,
+        topic_tags: ['docs', 'legacy', 'archive'],
+      },
+    );
+    writeFileSync(indexPath, JSON.stringify(index, null, 2));
+
+    const output = run(`reveal --cwd ${cwd} --level 2 --topic docs --format raw`, cwd);
+    const selectedTokens = Number(output.match(/estimated_tokens_selected: ~(\d+)/)?.[1]);
+
+    assert.ok(selectedTokens < 10000, `expected generated views to be excluded from selected budget, got ${selectedTokens}`);
+    assert.match(output, /path: docs\.md/);
+    assert.match(output, /path: archive\/docs-legacy-20260613\.md/);
+    assert.match(output, /selected_index_only_docs: 2/);
+    assert.match(output, /estimated_tokens_index_only: ~100000/);
+    assert.match(output, /budget_excluded: true/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('context does not expand generated index bodies for topic selection', () => {
+    const cwd = mkWorkspace();
+    const archiveDir = join(cwd, '.docpath', 'archive');
+    mkdirSync(archiveDir, { recursive: true });
+    writeFileSync(join(archiveDir, 'docs-legacy-20260613.md'), '# Legacy Docs\n\nLegacy generated docs summary.\n\nHidden generated docs body marker should not expand.\n');
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    const output = run(`context --cwd ${cwd} --format raw --max-tokens 1200 --topic docs`, cwd);
+
+    assert.match(output, /path: archive\/docs-legacy-20260613\.md/);
+    assert.match(output, /budget_excluded: true/);
+    assert.doesNotMatch(output, /Hidden generated docs body marker should not expand/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('reveal level 3 does not dump full history unless archive selection is explicit', () => {
     const cwd = mkWorkspace();
     run(`docs scan --cwd ${cwd}`, cwd);

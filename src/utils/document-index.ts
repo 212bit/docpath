@@ -19,6 +19,8 @@ export interface ProjectDocumentIndexEntry {
   token_estimate: number;
   default_read: boolean;
   archive: boolean;
+  generated_view?: boolean;
+  index_only?: boolean;
   stale?: boolean;
   task_id?: string;
   topic_tags: string[];
@@ -57,6 +59,8 @@ export interface DocumentIndexStats {
   defaultReadTokens: number;
   selectedTokens: number;
   archiveTokens: number;
+  selectedIndexOnly: number;
+  selectedIndexOnlyTokens: number;
 }
 
 export function normalizeDocPath(filePath: string): string {
@@ -110,9 +114,22 @@ export function inferDocumentScope(filePath: string): string {
 export function isArchiveDocPath(filePath: string): boolean {
   const normalized = normalizeDocPath(filePath);
   return normalized.startsWith('tasks/done/')
+    || normalized.startsWith('archive/')
     || normalized.startsWith('workspace/journal/')
     || normalized === 'workspace/decisions.md'
     || normalized === 'workspace/check-history.md';
+}
+
+export function isGeneratedViewDocPath(filePath: string): boolean {
+  const normalized = normalizeDocPath(filePath);
+  return normalized === 'docs.md'
+    || normalized === 'backlog/backlog.md'
+    || normalized.startsWith('archive/')
+    || normalized.startsWith('workspace/');
+}
+
+export function isIndexOnlyDocument(entry: Pick<ProjectDocumentIndexEntry, 'path' | 'generated_view' | 'index_only'>): boolean {
+  return Boolean(entry.index_only || entry.generated_view || isGeneratedViewDocPath(entry.path));
 }
 
 export function isTemplateDocPath(filePath: string): boolean {
@@ -176,6 +193,7 @@ export function shouldDefaultReadDocPath(filePath: string, currentTaskId?: strin
   if (normalized === 'workspace/breadcrumb.md') return false;
   if (normalized === 'backlog/backlog.md') return false;
   if (normalized === 'docs.md') return false;
+  if (normalized.startsWith('archive/')) return false;
   if (normalized.startsWith('rules/')) return true;
   if (!hasPreferredRules && (normalized === 'spec/style.md' || normalized === 'spec/architecture.md')) return true;
   if (normalized.startsWith('tasks/current/') && /\/?(spec|plan)\.md$/.test(normalized)) return true;
@@ -200,6 +218,7 @@ export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): Proje
   const title = input.title || basename(normalizedPath, extname(normalizedPath));
   const summary = input.summary || compactFirstLine(input.content, title);
   const archive = isArchiveDocPath(normalizedPath);
+  const generatedView = isGeneratedViewDocPath(normalizedPath);
 
   return {
     path: normalizedPath,
@@ -215,6 +234,8 @@ export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): Proje
     token_estimate: estimateTokens(input.content),
     default_read: shouldDefaultReadDocPath(normalizedPath, input.currentTaskId, input.hasPreferredRules),
     archive,
+    generated_view: generatedView,
+    index_only: generatedView,
     task_id: taskId,
     topic_tags: inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId }),
   };
@@ -232,6 +253,12 @@ export function normalizeProjectDocumentEntry(
   const title = raw.title || basename(normalizedPath, extname(normalizedPath));
   const summary = raw.summary || title;
   const size = typeof raw.size === 'number' ? raw.size : 0;
+  const generatedView = typeof raw.generated_view === 'boolean'
+    ? raw.generated_view
+    : isGeneratedViewDocPath(normalizedPath);
+  const indexOnly = typeof raw.index_only === 'boolean'
+    ? raw.index_only
+    : generatedView;
   const tokenEstimate = typeof raw.token_estimate === 'number'
     ? raw.token_estimate
     : estimateTokens(summary || '') + estimateTokensFromBytes(size);
@@ -252,6 +279,8 @@ export function normalizeProjectDocumentEntry(
       ? raw.default_read
       : shouldDefaultReadDocPath(normalizedPath, currentTaskId, hasPreferredRules),
     archive: typeof raw.archive === 'boolean' ? raw.archive : isArchiveDocPath(normalizedPath),
+    generated_view: generatedView,
+    index_only: indexOnly,
     stale: raw.stale,
     task_id: taskId,
     topic_tags: Array.isArray(raw.topic_tags) && raw.topic_tags.length > 0
@@ -312,6 +341,8 @@ export function matchesDocumentSelection(entry: ProjectDocumentIndexEntry, optio
 export function shouldReadDocumentBody(entry: ProjectDocumentIndexEntry, options: DocumentSelectionOptions): boolean {
   const explicitSelection = !!options.topic?.trim() || !!options.taskId?.trim() || !!options.includeArchive;
   if (!explicitSelection) return false;
+  if (isIndexOnlyDocument(entry) && !options.includeArchive) return false;
+  if (normalizeDocPath(entry.path) === 'docs.md') return false;
   return matchesDocumentSelection(entry, options);
 }
 
@@ -330,6 +361,8 @@ export function documentPriority(entry: ProjectDocumentIndexEntry): number {
   if (path.includes('rules/style.md') || path.includes('rules/architecture.md')) score += 55;
   if (path.includes('spec/style.md') || path.includes('spec/architecture.md')) score += 50;
   if (entry.archive) score -= 120;
+  if (isIndexOnlyDocument(entry)) score -= 90;
+  if (entry.token_estimate > DEFAULT_CONTEXT_TOKEN_BUDGET) score -= 35;
   if (entry.kind === 'template') score -= 80;
   if (!Number.isNaN(level)) score += Math.max(0, 10 - level);
 
@@ -345,6 +378,8 @@ export function sortDocumentEntries(entries: ProjectDocumentIndexEntry[]): Proje
 
 export function documentIndexStats(entries: ProjectDocumentIndexEntry[], options: DocumentSelectionOptions = {}): DocumentIndexStats {
   const selected = entries.filter((entry) => matchesDocumentSelection(entry, options));
+  const selectedIndexOnly = selected.filter(isIndexOnlyDocument);
+  const selectedBudgeted = selected.filter((entry) => !isIndexOnlyDocument(entry));
   const defaultRead = entries.filter((entry) => entry.default_read);
   const archive = entries.filter((entry) => entry.archive);
   return {
@@ -354,8 +389,10 @@ export function documentIndexStats(entries: ProjectDocumentIndexEntry[], options
     selected: selected.length,
     estimatedTokens: entries.reduce((sum, entry) => sum + entry.token_estimate, 0),
     defaultReadTokens: defaultRead.reduce((sum, entry) => sum + entry.token_estimate, 0),
-    selectedTokens: selected.reduce((sum, entry) => sum + entry.token_estimate, 0),
+    selectedTokens: selectedBudgeted.reduce((sum, entry) => sum + entry.token_estimate, 0),
     archiveTokens: archive.reduce((sum, entry) => sum + entry.token_estimate, 0),
+    selectedIndexOnly: selectedIndexOnly.length,
+    selectedIndexOnlyTokens: selectedIndexOnly.reduce((sum, entry) => sum + entry.token_estimate, 0),
   };
 }
 

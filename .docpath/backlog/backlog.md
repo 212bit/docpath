@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-14T05:48:49.738Z
+> 扫描时间: 2026-06-14T07:24:21.224Z
 
 ## 条目列表
 
@@ -29,6 +29,8 @@
 | R-162 | 修正 check checklist 同步门禁语义 | done | P0 | 2 | T-20260613-check-checklist |
 | R-163 | Schema-first JSON/JSONL 真源迁移 | done | P0 | 3 | T-20260613-schema-first-json-jsonl |
 | R-165 | 修复 dogfood 暴露的生命周期与证据模型问题 | done | P0 | 3 | T-20260614-dogfood |
+| R-168 | 建立 backlog 需求成熟度门禁与 spec 回填闭环 | done | P0 | 3 | T-20260614-backlog-spec |
+| R-170 | 收紧文档索引生成视图与空任务路由边界 | done | P0 | 3 | T-20260614-task |
 | R-010 | 需求管理 / Backlog 层 | done | P1 | 2 | current |
 | R-011 | 实现 write-plan / write-journal 命令并打通断头引用 | done | P1 | 2 | T-20260531-write-plan-write-journal |
 | R-012 | 接活 lifecycle.ts 事件系统并打通 agent enter/done 哨兵副作用 | done | P1 | 2 | T-20260531-lifecycle-ts-agent-enter-done |
@@ -124,6 +126,7 @@
 | R-153 | 优化 DocPath Codex Skills 文案与触发边界 | done | P2 | 2 | T-20260609-docpath-codex-skills |
 | R-166 | 智能索引架构：CLI 返回索引，Agent 按需深读 | done | P2 | 2 | T-20260614-cli-agent |
 | R-167 | Phase 2&3: 索引增强 + 按需深读 | done | P2 | 2 | T-20260614-phase-2-3 |
+| R-169 | probe | dropped | P2 | 2 |  |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 
 ## 用途说明

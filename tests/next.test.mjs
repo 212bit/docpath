@@ -8,7 +8,7 @@ import { parse } from 'yaml';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 
-function mkWorkspace({ phase = 'idle', gate = 'none', plan = '', lastCheck = '', breadcrumb = '# Breadcrumb\n' } = {}) {
+function mkWorkspace({ phase = 'idle', gate = 'none', taskId = 'T-NEXT', taskTitle = 'Next routing', plan = '', lastCheck = '', breadcrumb = '# Breadcrumb\n' } = {}) {
   const cwd = mkdtempSync(join(tmpdir(), 'dp-next-'));
   const dp = join(cwd, '.docpath');
   mkdirSync(join(dp, 'workspace'), { recursive: true });
@@ -19,8 +19,8 @@ function mkWorkspace({ phase = 'idle', gate = 'none', plan = '', lastCheck = '',
   writeFileSync(join(dp, 'spec', 'style.md'), '# Style\n');
   writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
     level: 1,
-    task_id: 'T-NEXT',
-    task_title: 'Next routing',
+    task_id: taskId,
+    task_title: taskTitle,
     phase,
     gate,
     current_step: 'routing',
@@ -40,12 +40,12 @@ function nextAgent(cwd) {
 }
 
 describe('next --agent routing', () => {
-  it('recommends backlog add for a newly initialized project without accepted backlog', () => {
+  it('recommends backlog capture for a newly initialized project without accepted backlog', () => {
     const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath backlog add');
-    assert.match(output.next_action, /backlog 条目/);
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
+    assert.match(output.next_action, /捕获 raw backlog/);
     assert.ok(output.required_files.includes('.docpath/workspace/current.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -108,6 +108,13 @@ status: accepted
 priority: P1
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -123,6 +130,13 @@ status: accepted
 priority: P0
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -160,6 +174,13 @@ status: accepted
 priority: P0
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -181,7 +202,7 @@ Alpha
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath backlog add');
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -214,7 +235,7 @@ Alpha
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath backlog add');
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -248,7 +269,7 @@ Alpha
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath backlog add');
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
     assert.equal(output.lesson_summary.pending_count, 0);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -283,6 +304,13 @@ status: proposed
 priority: P1
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -298,6 +326,13 @@ status: proposed
 priority: P0
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -311,6 +346,72 @@ Alpha
 
     assert.equal(output.recommended_command, 'docpath backlog accept R-001');
     assert.match(output.next_action, /先接收 backlog 条目: R-001 Alpha/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('routes raw proposed backlog through analysis before accept', () => {
+    const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-raw.md'), `---
+id: R-001
+title: Raw Idea
+status: proposed
+priority: P0
+level: 2
+source: test
+readiness: raw
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+- 待补充
+
+## 验收
+
+- 待补充
+`);
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath brainstorm --dry-run --input "Raw Idea"');
+    assert.match(output.next_action, /先分析 backlog 条目/);
+    assert.ok(output.must_update.includes('.docpath/backlog/'));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('ignores stale in-progress breadcrumbs when idle has no task id', () => {
+    const cwd = mkWorkspace({
+      phase: 'idle',
+      gate: 'none',
+      taskId: '',
+      taskTitle: '',
+      breadcrumb: [
+        '# Breadcrumb',
+        '',
+        '### 🔄 S9 [T-OLD] — 2026-05-29T00:00:00.000Z',
+        '',
+        '---',
+        'taskId: T-OLD',
+        'step: S9',
+        'status: in_progress',
+        'timestamp: 2026-05-29T00:00:00.000Z',
+        '---',
+        '',
+        '- **状态**: in_progress',
+        '- **上下文**: stale old step',
+        '',
+      ].join('\n'),
+    });
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
+    assert.doesNotMatch(output.next_action, /S9/);
+    assert.equal(output.progress.in_progress, 0);
     rmSync(cwd, { recursive: true, force: true });
   });
 

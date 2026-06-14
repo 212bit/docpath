@@ -224,6 +224,7 @@ describe('init command', () => {
       'docpath init --level 2',
       'docpath status --agent',
       'docpath next --agent',
+      'docpath backlog capture',
       'docpath backlog add',
       'docpath backlog accept R-001',
       'docpath backlog promote R-001',

@@ -15,15 +15,17 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { evaluateCompletionPolicy } from '../engine/policy.js';
 import { appendDecision, gcDecisions } from '../governance/decisions.js';
-import { listBacklogItems, setBacklogStatus } from '../engine/backlog.js';
+import { listBacklogItems, transitionBacklog, writeBacklogItem } from '../engine/backlog.js';
 import {
   archivedTaskDir,
   canonicalTaskDir,
   canonicalTaskRelativePath,
   clearCurrentTaskAlias,
+  readActiveStructuredSpecDocument,
   readActiveTaskFile,
   resolveActiveTaskDocPath,
 } from '../utils/task-files.js';
+import type { StructuredSpecDocument } from '../utils/structured-docs.js';
 
 interface JournalOptions {
   cwd: string;
@@ -51,6 +53,7 @@ interface JournalContext {
   planPath: string;
   spec: string;
   plan: string;
+  structuredSpec: StructuredSpecDocument | null;
   breadcrumb: Awaited<ReturnType<typeof readBreadcrumb>>;
   meta: Record<string, unknown> | null;
 }
@@ -165,6 +168,7 @@ async function loadJournalContext(cwd: string, docpathDir: string): Promise<Jour
     planPath,
     spec: await readActiveTaskFile(docpathDir, current?.task_id, 'spec.md'),
     plan: await readActiveTaskFile(docpathDir, current?.task_id, 'plan.md'),
+    structuredSpec: await readActiveStructuredSpecDocument(docpathDir, current?.task_id),
     breadcrumb: await readBreadcrumb(cwd),
     meta: await readWorkspaceMeta(cwd),
   };
@@ -242,7 +246,7 @@ async function finalizeJournal(
   skipDecisionGc: boolean,
 ): Promise<void> {
   await transitionWorkflow(cwd, 'journal.archived', { currentStep: '知识归档完成' });
-  await completeLinkedBacklog(cwd, context.taskId);
+  await completeLinkedBacklog(cwd, context.taskId, context.spec, context.structuredSpec);
   await writeBreadcrumb(cwd, {
     taskId: context.taskId,
     step: 'journal',
@@ -293,19 +297,98 @@ async function archiveCurrentTask(
   };
 }
 
-async function completeLinkedBacklog(cwd: string, taskId: string): Promise<void> {
+async function completeLinkedBacklog(
+  cwd: string,
+  taskId: string,
+  specMarkdown: string,
+  structuredSpec: StructuredSpecDocument | null,
+): Promise<void> {
   try {
     const linkedBacklog = (await listBacklogItems(cwd)).find((item) =>
       item.links.task === taskId
       || (item.links.task === 'current' && item.status === 'active')
     );
-    if (linkedBacklog && linkedBacklog.status !== 'done') {
-      await setBacklogStatus(cwd, linkedBacklog.id, 'done');
+    if (linkedBacklog) {
+      if (shouldBackfillBacklogBody(linkedBacklog.body)) {
+        linkedBacklog.body = renderBacklogBodyFromSpec(specMarkdown, structuredSpec, linkedBacklog.title);
+      }
+      linkedBacklog.evidence = {
+        ...linkedBacklog.evidence,
+        spec: linkedBacklog.evidence.spec || linkedBacklog.links.spec,
+        decision_brief: linkedBacklog.evidence.decision_brief
+          || structuredSpec?.major_change_gate.decision_brief_markdown
+          || null,
+        user_confirmed: linkedBacklog.evidence.user_confirmed
+          || structuredSpec?.major_change_gate.user_confirmed
+          || null,
+      };
+      linkedBacklog.readiness = linkedBacklog.evidence.user_confirmed ? 'confirmed' : 'analyzed';
+      if (linkedBacklog.status !== 'done') {
+        linkedBacklog.status = transitionBacklog(linkedBacklog.status, 'done');
+      }
+      await writeBacklogItem(cwd, linkedBacklog);
       console.log(`🔁  backlog 已自动回填完成: ${linkedBacklog.id}`);
     }
   } catch (e) {
     console.warn('⚠️  backlog 自动回填失败（非致命）:', (e as Error).message);
   }
+}
+
+function shouldBackfillBacklogBody(body: string): boolean {
+  if (!body.trim()) return true;
+  return body.split('\n').some((line) =>
+    /^\s*(?:[-*]\s*)?(?:待补充|暂无|无|none|n\/a|tbd|todo)\s*$/i.test(line.trim())
+  );
+}
+
+function renderBacklogBodyFromSpec(
+  specMarkdown: string,
+  structuredSpec: StructuredSpecDocument | null,
+  fallbackTitle: string,
+): string {
+  const background = extractMarkdownSection(specMarkdown, '## 1. 背景与动机') || fallbackTitle;
+  const scopeIncluded = structuredSpec?.scope.included ?? [];
+  const scopeExcluded = structuredSpec?.scope.excluded ?? [];
+  const acceptance = structuredSpec?.acceptance_criteria ?? [];
+  const decisionBrief = structuredSpec?.major_change_gate.decision_brief_markdown?.trim();
+  const lines = [
+    '## 背景',
+    '',
+    background.trim(),
+    '',
+    '## 范围',
+    '',
+    '### 包含',
+    '',
+    ...(scopeIncluded.length > 0 ? scopeIncluded.map((item) => `- ${item}`) : ['- 见 linked spec']),
+    '',
+    '### 不包含',
+    '',
+    ...(scopeExcluded.length > 0 ? scopeExcluded.map((item) => `- ${item}`) : ['- 见 linked spec']),
+    '',
+    '## 验收',
+    '',
+    ...(acceptance.length > 0
+      ? acceptance.map((item) => `- ${item.id}: ${item.text}`)
+      : ['- 见 linked spec']),
+  ];
+
+  if (decisionBrief) {
+    lines.push('', '## 决策证据', '', decisionBrief);
+  }
+
+  return lines.join('\n');
+}
+
+function extractMarkdownSection(markdown: string, heading: string): string | null {
+  const start = markdown.indexOf(heading);
+  if (start < 0) return null;
+  const contentStart = start + heading.length;
+  const next = markdown.slice(contentStart).search(/\n##\s+\d+\.\s+/);
+  const raw = next >= 0
+    ? markdown.slice(contentStart, contentStart + next)
+    : markdown.slice(contentStart);
+  return raw.trim() || null;
 }
 
 async function writeLessonCandidate(docpathDir: string, taskId: string, summary: TaskSummary): Promise<void> {

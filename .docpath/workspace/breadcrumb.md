@@ -5,258 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ S4 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:44:39.782Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: S4
-status: done
-timestamp: 2026-06-13T17:44:39.782Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-
-### 🔄 S5 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:44:49.087Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: S5
-status: in_progress
-timestamp: 2026-06-13T17:44:49.087Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 收敛核心命令读路径与迁移入口
-
-### ✅ S5 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:44:56.070Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: S5
-status: done
-timestamp: 2026-06-13T17:44:56.070Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S5
-
-### 🔄 S6 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:45:04.734Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: S6
-status: in_progress
-timestamp: 2026-06-13T17:45:04.734Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 补充兼容与回归测试
-
-### ✅ S6 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:48:07.845Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: S6
-status: done
-timestamp: 2026-06-13T17:48:07.845Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S6
-
-### 🔄 S7 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:48:16.925Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: S7
-status: in_progress
-timestamp: 2026-06-13T17:48:16.925Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证门禁并归档
-
-### ✅ S7 [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:49:30.943Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: S7
-status: done
-timestamp: 2026-06-13T17:49:30.943Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S7
-
-### 🚫 check [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:50:31.149Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: check
-status: blocked
-timestamp: 2026-06-13T17:50:31.149Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: TypeScript 编译
-
-### ✅ check [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:52:00.386Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: check
-status: done
-timestamp: 2026-06-13T17:52:00.386Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:52:08.411Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: review
-status: done
-timestamp: 2026-06-13T17:52:08.411Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 12 警告, 0 提示
-
-### ✅ journal [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:52:30.423Z
-
----
-taskId: T-20260613-schema-first-json-jsonl
-step: journal
-status: done
-timestamp: 2026-06-13T17:52:30.423Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (7/7 步)
-
-### 🔄 S1 [T-20260613-spec-json-schema] — 2026-06-13T18:07:49.899Z
-
----
-taskId: T-20260613-spec-json-schema
-step: S1
-status: in_progress
-timestamp: 2026-06-13T18:07:49.899Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 深化 spec.json schema 与门禁字段
-
-### ✅ S1 [T-20260613-spec-json-schema] — 2026-06-13T18:08:05.271Z
-
----
-taskId: T-20260613-spec-json-schema
-step: S1
-status: done
-timestamp: 2026-06-13T18:08:05.271Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-
-### 🔄 S2 [T-20260613-spec-json-schema] — 2026-06-13T18:08:22.134Z
-
----
-taskId: T-20260613-spec-json-schema
-step: S2
-status: in_progress
-timestamp: 2026-06-13T18:08:22.134Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 深化 spec.json schema 与门禁字段
-
-### ✅ S2 [T-20260613-spec-json-schema] — 2026-06-13T18:24:37.729Z
-
----
-taskId: T-20260613-spec-json-schema
-step: S2
-status: done
-timestamp: 2026-06-13T18:24:37.729Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260613-spec-json-schema] — 2026-06-13T18:24:56.369Z
-
----
-taskId: T-20260613-spec-json-schema
-step: S3
-status: in_progress
-timestamp: 2026-06-13T18:24:56.369Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证门禁并归档
-
-### ✅ S3 [T-20260613-spec-json-schema] — 2026-06-13T18:25:10.559Z
-
----
-taskId: T-20260613-spec-json-schema
-step: S3
-status: done
-timestamp: 2026-06-13T18:25:10.559Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### ✅ check [T-20260613-spec-json-schema] — 2026-06-13T18:26:10.712Z
-
----
-taskId: T-20260613-spec-json-schema
-step: check
-status: done
-timestamp: 2026-06-13T18:26:10.712Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260613-spec-json-schema] — 2026-06-13T18:26:19.980Z
-
----
-taskId: T-20260613-spec-json-schema
-step: review
-status: done
-timestamp: 2026-06-13T18:26:19.980Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 3 警告, 2 提示
-
-### ✅ journal [T-20260613-spec-json-schema] — 2026-06-13T18:26:27.131Z
-
----
-taskId: T-20260613-spec-json-schema
-step: journal
-status: done
-timestamp: 2026-06-13T18:26:27.131Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260614-dogfood] — 2026-06-14T01:47:38.141Z
-
----
-taskId: T-20260614-dogfood
-step: S1
-status: in_progress
-timestamp: 2026-06-14T01:47:38.141Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理流程路由与证据写入点
-
 ### ✅ S1 [T-20260614-dogfood] — 2026-06-14T01:48:27.244Z
 
 ---
@@ -604,3 +352,255 @@ timestamp: 2026-06-14T05:48:49.739Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (3/3 步)
+
+### 🔄 S1 [T-20260614-backlog-spec] — 2026-06-14T06:38:18.711Z
+
+---
+taskId: T-20260614-backlog-spec
+step: S1
+status: in_progress
+timestamp: 2026-06-14T06:38:18.711Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 扩展 backlog 数据模型与成熟度门禁
+
+### ✅ S1 [T-20260614-backlog-spec] — 2026-06-14T06:52:15.151Z
+
+---
+taskId: T-20260614-backlog-spec
+step: S1
+status: done
+timestamp: 2026-06-14T06:52:15.151Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S2 [T-20260614-backlog-spec] — 2026-06-14T06:52:24.594Z
+
+---
+taskId: T-20260614-backlog-spec
+step: S2
+status: in_progress
+timestamp: 2026-06-14T06:52:24.594Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 完成 CLI 工作流闭环
+
+### ✅ S2 [T-20260614-backlog-spec] — 2026-06-14T06:55:16.413Z
+
+---
+taskId: T-20260614-backlog-spec
+step: S2
+status: done
+timestamp: 2026-06-14T06:55:16.413Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+
+### 🔄 S3 [T-20260614-backlog-spec] — 2026-06-14T06:55:24.239Z
+
+---
+taskId: T-20260614-backlog-spec
+step: S3
+status: in_progress
+timestamp: 2026-06-14T06:55:24.239Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 补齐测试与文档并运行门禁
+
+### ✅ S3 [T-20260614-backlog-spec] — 2026-06-14T06:58:12.212Z
+
+---
+taskId: T-20260614-backlog-spec
+step: S3
+status: done
+timestamp: 2026-06-14T06:58:12.212Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+
+### ✅ check [T-20260614-backlog-spec] — 2026-06-14T06:59:21.007Z
+
+---
+taskId: T-20260614-backlog-spec
+step: check
+status: done
+timestamp: 2026-06-14T06:59:21.007Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260614-backlog-spec] — 2026-06-14T06:59:32.195Z
+
+---
+taskId: T-20260614-backlog-spec
+step: review
+status: done
+timestamp: 2026-06-14T06:59:32.195Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 6 警告, 0 提示
+
+### ✅ journal [T-20260614-backlog-spec] — 2026-06-14T06:59:52.584Z
+
+---
+taskId: T-20260614-backlog-spec
+step: journal
+status: done
+timestamp: 2026-06-14T06:59:52.584Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (3/3 步)
+
+### ✅ task.reset [T-20260614-backlog-spec] — 2026-06-14T07:07:18.515Z
+
+---
+taskId: T-20260614-backlog-spec
+step: task.reset
+status: done
+timestamp: 2026-06-14T07:07:18.515Z
+---
+
+- **状态**: done
+- **上下文**: 任务上下文已清空并回到 idle
+
+### 🔄 S1 [T-20260614-task] — 2026-06-14T07:12:03.643Z
+
+---
+taskId: T-20260614-task
+step: S1
+status: in_progress
+timestamp: 2026-06-14T07:12:03.643Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 定位文档索引和空任务路由边界
+
+### ✅ S1 [T-20260614-task] — 2026-06-14T07:12:55.585Z
+
+---
+taskId: T-20260614-task
+step: S1
+status: done
+timestamp: 2026-06-14T07:12:55.585Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S2 [T-20260614-task] — 2026-06-14T07:13:03.924Z
+
+---
+taskId: T-20260614-task
+step: S2
+status: in_progress
+timestamp: 2026-06-14T07:13:03.924Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 generated view 分类、降权和预算过滤
+
+### ✅ S2 [T-20260614-task] — 2026-06-14T07:16:26.186Z
+
+---
+taskId: T-20260614-task
+step: S2
+status: done
+timestamp: 2026-06-14T07:16:26.186Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+
+### 🔄 S3 [T-20260614-task] — 2026-06-14T07:16:37.045Z
+
+---
+taskId: T-20260614-task
+step: S3
+status: in_progress
+timestamp: 2026-06-14T07:16:37.045Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现空任务 analyze/write-analysis 与 next 路由保护
+
+### ✅ S3 [T-20260614-task] — 2026-06-14T07:20:07.702Z
+
+---
+taskId: T-20260614-task
+step: S3
+status: done
+timestamp: 2026-06-14T07:20:07.702Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+
+### 🔄 S4 [T-20260614-task] — 2026-06-14T07:20:15.553Z
+
+---
+taskId: T-20260614-task
+step: S4
+status: in_progress
+timestamp: 2026-06-14T07:20:15.553Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 补齐测试、文档和质量门禁
+
+### ✅ S4 [T-20260614-task] — 2026-06-14T07:22:29.086Z
+
+---
+taskId: T-20260614-task
+step: S4
+status: done
+timestamp: 2026-06-14T07:22:29.086Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+
+### ✅ check [T-20260614-task] — 2026-06-14T07:23:42.152Z
+
+---
+taskId: T-20260614-task
+step: check
+status: done
+timestamp: 2026-06-14T07:23:42.152Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260614-task] — 2026-06-14T07:23:58.542Z
+
+---
+taskId: T-20260614-task
+step: review
+status: done
+timestamp: 2026-06-14T07:23:58.542Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 9 警告, 0 提示
+
+### ✅ journal [T-20260614-task] — 2026-06-14T07:24:21.225Z
+
+---
+taskId: T-20260614-task
+step: journal
+status: done
+timestamp: 2026-06-14T07:24:21.225Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (4/4 步)

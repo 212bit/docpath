@@ -80,7 +80,16 @@ docpath install --target codex --doctor
 
 ## 4. 创建第一个 Backlog
 
-先把需求放进 backlog，保持需求池和当前执行任务分离：
+如果只是记录一个想法，先用 capture 捕获 raw backlog。raw 条目不能直接进入执行，需要后续 analyze/refine 后补齐成熟度证据：
+
+```bash
+docpath backlog capture \
+  --title "改进 CLI 初始化体验" \
+  --priority P1 \
+  --level 2
+```
+
+如果需求已经具备背景和验收，可以创建 shaped backlog：
 
 ```bash
 docpath backlog add \
@@ -91,7 +100,17 @@ docpath backlog add \
   --acceptance "用户可以初始化项目、查看下一步，并完成第一个任务闭环。"
 ```
 
-接受一条 backlog。把 `R-001` 替换成上一条命令输出的真实编号：
+level 2/3 条目进入执行池前，应先完成需求理解并把证据写回 backlog。没有当前任务时使用 dry-run/brainstorm 做分析预览，不要把 analysis 写入上一任务：
+
+```bash
+docpath brainstorm --dry-run --input "改进 CLI 初始化体验，补充 getting started，并保证默认 init 不回归。"
+docpath backlog edit R-001 \
+  --readiness analyzed \
+  --evidence-brainstorm "brainstorm dry-run: 已澄清用户、入口、范围和验收" \
+  --evidence-analysis "analysis summary: 初始化入口与回归测试范围已明确"
+```
+
+接受一条成熟 backlog。把 `R-001` 替换成上一条命令输出的真实编号：
 
 ```bash
 docpath backlog accept R-001
@@ -105,13 +124,14 @@ docpath backlog promote R-001
 
 ## 5. 写规格和计划
 
-复杂任务先做开发前分析：
+复杂任务 promote 成当前任务后，可以写入持久化 analysis。非 dry-run `analyze` 和 `write-analysis` 需要活跃任务，避免把新需求写回上一轮归档任务：
 
 ```bash
 docpath analyze --mode deep --content "改进 CLI 初始化体验，补充 getting started，并保证默认 init 不回归。"
+docpath write-analysis --section requirements --stdin
 ```
 
-把分析结论写入任务证据后，编写规格：
+把分析结论写入任务证据后，编写或完善规格：
 
 ```bash
 docpath write-spec --stdin

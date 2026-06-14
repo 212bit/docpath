@@ -69,8 +69,8 @@ describe('continue command', () => {
 
     const output = run(`continue --cwd ${cwd}`, cwd);
 
-    assert.match(output, /推荐命令: docpath backlog add/);
-    assert.match(output, /任务已完成，可启动新任务/);
+    assert.match(output, /推荐命令: docpath backlog capture --title <title>/);
+    assert.match(output, /任务已完成，可捕获新想法/);
     assert.doesNotMatch(output, /docpath:/);
     rmSync(cwd, { recursive: true, force: true });
   });

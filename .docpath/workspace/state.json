@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260614-phase-2-3",
-  "task_title": "Phase 2&3: 索引增强 + 按需深读",
+  "task_id": "T-20260614-task",
+  "task_title": "收紧文档索引生成视图与空任务路由边界",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-14T05:48:49.614Z",
-  "updated_at": "2026-06-14T05:48:49.613Z"
+  "started_at": "2026-06-14T07:24:21.087Z",
+  "updated_at": "2026-06-14T07:24:21.085Z"
 }

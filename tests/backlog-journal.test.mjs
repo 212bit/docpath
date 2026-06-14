@@ -113,6 +113,61 @@ describe('backlog journal integration', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('journal backfills placeholder backlog body and evidence from linked spec', () => {
+    const cwd = mkWorkspace();
+    const dp = join(cwd, '.docpath');
+    const spec = [
+      '# T-20260531-alpha-promote - Alpha Promote',
+      '',
+      '## 1. 背景与动机',
+      '',
+      '成熟后的背景说明。',
+      '',
+      '## 2. 需求清单',
+      '',
+      '### 功能需求',
+      '- [ ] FR-1: Alpha',
+      '',
+      '## 5. 验收标准',
+      '',
+      '- [ ] AC-1: 完成验收',
+      '',
+    ].join('\n');
+    writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), spec);
+    writeFileSync(join(dp, 'tasks', 'T-20260531-alpha-promote', 'spec.md'), spec);
+    writeFileSync(join(dp, 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha Promote
+status: active
+priority: P0
+level: 2
+source: test
+links:
+  task: T-20260531-alpha-promote
+  spec: tasks/T-20260531-alpha-promote/spec.md
+created_at: 2026-05-31
+---
+
+## 背景
+
+- 待补充
+
+## 验收
+
+- 待补充
+`);
+
+    run('journal --skip-ai --optional-archive skip', cwd);
+
+    const item = readFileSync(join(dp, 'backlog', 'R-001-alpha.md'), 'utf-8');
+    assert.match(item, /status: done/);
+    assert.match(item, /readiness: analyzed/);
+    assert.match(item, /spec: tasks\/T-20260531-alpha-promote\/spec\.md/);
+    assert.match(item, /成熟后的背景说明/);
+    assert.doesNotMatch(item, /- 待补充/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('journal also completes legacy dogfood backlog items linked to current', () => {
     const cwd = mkWorkspace();
     writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---

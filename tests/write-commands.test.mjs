@@ -431,6 +431,23 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('write-analysis fails loud when there is no active task', () => {
+    const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
+    const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+    const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    state.task_id = '';
+    state.task_title = '';
+    writeFileSync(statePath, JSON.stringify(state, null, 2));
+
+    const result = runResult(`write-analysis --cwd ${cwd} --section requirements --content "analysis"`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /当前没有可写入 analysis 的活跃任务/);
+    assert.match(result.out, /docpath backlog capture/);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'analysis', 'requirements.md')), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('write-design writes brief, handoff, approval, preview and acceptance artifacts', () => {
     const cwd = mkWorkspace({ phase: 'executing', gate: 'none' });
     const artifacts = [

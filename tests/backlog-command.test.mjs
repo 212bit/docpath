@@ -40,9 +40,9 @@ function run(args, cwd) {
 }
 
 describe('backlog commands', () => {
-  it('backlog add creates a new proposed item and refreshes backlog index', () => {
+  it('backlog add creates a shaped proposed item and refreshes backlog index', () => {
     const cwd = mkWorkspace();
-    const out = run('backlog add --title "实现 backlog list" --priority P1 --level 3', cwd);
+    const out = run('backlog add --title "实现 backlog list" --priority P1 --level 3 --background "问题背景" --acceptance "完成验收" --readiness confirmed --evidence-decision "spec decision" --user-confirmed "用户确认"', cwd);
 
     assert.match(out, /已创建 backlog 条目: R-001/);
     const backlogDir = join(cwd, '.docpath', 'backlog');
@@ -53,9 +53,24 @@ describe('backlog commands', () => {
     assert.match(item, /status: proposed/);
     assert.match(item, /priority: P1/);
     assert.match(item, /level: 3/);
+    assert.match(item, /readiness: confirmed/);
+    assert.match(item, /user_confirmed: 用户确认/);
 
     const index = readFileSync(join(cwd, '.docpath', 'backlog', 'backlog.md'), 'utf-8');
     assert.match(index, /\| R-001 \| 实现 backlog list \| proposed \| P1 \| 3 \|/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog capture creates a raw item for low-friction idea capture', () => {
+    const cwd = mkWorkspace();
+    const out = run('backlog capture --title "记录一个想法" --priority P2 --level 2', cwd);
+
+    assert.match(out, /已捕获 raw backlog 条目: R-001/);
+    assert.match(out, /readiness: raw/);
+    const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001.md'), 'utf-8');
+    assert.match(item, /source: docpath backlog capture/);
+    assert.match(item, /readiness: raw/);
+    assert.match(item, /- 待补充/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -155,6 +170,13 @@ status: proposed
 priority: P1
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -183,6 +205,13 @@ status: proposed
 priority: P1
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -243,6 +272,13 @@ status: proposed
 priority: P1
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -285,7 +321,7 @@ created_at: 2026-05-31
 `);
     run('backlog refresh', cwd);
 
-    assert.throws(() => run('backlog groom', cwd), /backlog groom failed: 3 issue/);
+    assert.throws(() => run('backlog groom', cwd), /backlog groom failed: 4 issue/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -297,7 +333,7 @@ id: R-001
 title: Alpha
 status: done
 priority: P1
-level: 2
+level: 1
 source: test
 links:
   task: null
@@ -323,6 +359,13 @@ status: proposed
 priority: P1
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -370,7 +413,7 @@ Old body
     }
 
     assert.equal(parsed.passed, false);
-    assert.equal(parsed.issue_count, 2);
+    assert.equal(parsed.issue_count, 3);
     assert.equal(parsed.issues[0].id, 'R-001');
     assert.match(parsed.issues[0].suggestion, /docpath backlog edit R-001/);
     rmSync(cwd, { recursive: true, force: true });
@@ -453,10 +496,11 @@ Alpha
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('backlog add rejects invalid priority or missing title', () => {
+  it('backlog add rejects invalid priority, missing title, and missing body', () => {
     const cwd = mkWorkspace();
-    assert.throws(() => run('backlog add --priority P9 --title "bad"', cwd), /priority 非法/);
+    assert.throws(() => run('backlog add --priority P9 --title "bad" --background "b" --acceptance "a"', cwd), /priority 非法/);
     assert.throws(() => run('backlog add --priority P1', cwd), /requires --title/);
+    assert.throws(() => run('backlog add --title "raw idea"', cwd), /requires --background\/--acceptance or --body-file/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -489,6 +533,10 @@ Existing
       'P1',
       '--level',
       '1',
+      '--background',
+      `背景 ${index + 1}`,
+      '--acceptance',
+      `验收 ${index + 1}`,
     ], { cwd, encoding: 'utf-8', timeout: 20000 }));
 
     const outputs = await Promise.all(calls);
@@ -514,6 +562,13 @@ status: accepted
 priority: P0
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -523,6 +578,10 @@ created_at: 2026-05-31
 ## 背景
 
 - 来自 backlog 的正文
+
+## 验收
+
+- 完成验收
 `);
     writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
       level: 2,
@@ -571,6 +630,13 @@ status: accepted
 priority: P0
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -606,6 +672,13 @@ status: accepted
 priority: P0
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -682,6 +755,13 @@ status: proposed
 priority: P0
 level: 2
 source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
 links:
   task: null
   spec: null
@@ -694,6 +774,17 @@ Alpha
     const out = run('backlog accept R-001', cwd);
     assert.match(out, /R-001 → accepted/);
     assert.match(readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8'), /status: accepted/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog accept fails for raw or placeholder items', () => {
+    const cwd = mkWorkspace();
+    run('backlog capture --title "Raw idea" --level 2', cwd);
+
+    assert.throws(
+      () => run('backlog accept R-001', cwd),
+      /尚未达到可执行成熟度/,
+    );
     rmSync(cwd, { recursive: true, force: true });
   });
 });

@@ -16,13 +16,23 @@ import { resolveDocpathDir } from '../utils/file.js';
 
 export type BacklogStatus = 'proposed' | 'accepted' | 'planned' | 'active' | 'done' | 'dropped';
 export type BacklogPriority = 'P0' | 'P1' | 'P2' | 'P3';
+export type BacklogReadiness = 'raw' | 'shaped' | 'analyzed' | 'confirmed';
 const VALID_PRIORITIES = new Set<BacklogPriority>(['P0', 'P1', 'P2', 'P3']);
+const VALID_READINESS = new Set<BacklogReadiness>(['raw', 'shaped', 'analyzed', 'confirmed']);
 
 export interface BacklogLinks {
   /** 关联任务：T-YYYYMMDD-slug 或 'current'；未 promote 时为 null */
   task: string | null;
   /** 关联 spec 路径；未 promote 时为 null */
   spec: string | null;
+}
+
+export interface BacklogEvidence {
+  brainstorm: string | null;
+  analysis: string | null;
+  spec: string | null;
+  decision_brief: string | null;
+  user_confirmed: string | null;
 }
 
 export interface BacklogItem {
@@ -35,6 +45,10 @@ export interface BacklogItem {
   level: number;
   /** 来源标注，便于追溯 */
   source: string;
+  /** 需求成熟度：raw 仅捕获想法，confirmed 才可代表已确认的可执行需求 */
+  readiness: BacklogReadiness;
+  /** 支撑需求成熟度的可追溯证据 */
+  evidence: BacklogEvidence;
   links: BacklogLinks;
   /** ISO 日期 YYYY-MM-DD */
   created_at: string;
@@ -64,6 +78,10 @@ export function isBacklogStatus(value: string): value is BacklogStatus {
 
 export function isBacklogPriority(value: string): value is BacklogPriority {
   return VALID_PRIORITIES.has(value as BacklogPriority);
+}
+
+export function isBacklogReadiness(value: string): value is BacklogReadiness {
+  return VALID_READINESS.has(value as BacklogReadiness);
 }
 
 export function canTransitionBacklog(from: BacklogStatus, to: BacklogStatus): boolean {
@@ -131,6 +149,11 @@ function parseItem(content: string): BacklogItem {
     throw new Error(`[docpath] backlog 条目 ${id} 的 created_at 非法: ${createdAt || '空值'}`);
   }
   const links = (fm.links ?? {}) as Record<string, unknown>;
+  const body = (match[2] || '').trim();
+  const parsedLinks = {
+    task: links.task != null ? String(links.task) : null,
+    spec: links.spec != null ? String(links.spec) : null,
+  };
   return {
     id,
     title: title.trim(),
@@ -138,13 +161,45 @@ function parseItem(content: string): BacklogItem {
     priority,
     level,
     source: String(fm.source ?? ''),
-    links: {
-      task: links.task != null ? String(links.task) : null,
-      spec: links.spec != null ? String(links.spec) : null,
-    },
+    readiness: normalizeReadiness(fm.readiness, status, body, parsedLinks),
+    evidence: normalizeEvidence(fm.evidence, parsedLinks),
+    links: parsedLinks,
     created_at: createdAt,
-    body: (match[2] || '').trim(),
+    body,
   };
+}
+
+function normalizeReadiness(
+  value: unknown,
+  status: string,
+  body: string,
+  links: BacklogLinks,
+): BacklogReadiness {
+  if (typeof value === 'string' && isBacklogReadiness(value)) return value;
+  if (containsPlaceholderLine(body)) return 'raw';
+  if ((status === 'active' || status === 'done') && links.spec) return 'analyzed';
+  return body.trim() ? 'shaped' : 'raw';
+}
+
+function normalizeEvidence(value: unknown, links: BacklogLinks): BacklogEvidence {
+  const evidence = (value ?? {}) as Record<string, unknown>;
+  return {
+    brainstorm: stringOrNull(evidence.brainstorm),
+    analysis: stringOrNull(evidence.analysis),
+    spec: stringOrNull(evidence.spec) ?? links.spec,
+    decision_brief: stringOrNull(evidence.decision_brief),
+    user_confirmed: stringOrNull(evidence.user_confirmed),
+  };
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function containsPlaceholderLine(body: string): boolean {
+  return body
+    .split('\n')
+    .some((line) => /^\s*(?:[-*]\s*)?(?:待补充|暂无|无|none|n\/a|tbd|todo)\s*$/i.test(line.trim()));
 }
 
 function serializeItem(item: BacklogItem): string {
@@ -155,6 +210,8 @@ function serializeItem(item: BacklogItem): string {
     priority: item.priority,
     level: item.level,
     source: item.source,
+    readiness: item.readiness,
+    evidence: item.evidence,
     links: { task: item.links.task, spec: item.links.spec },
     created_at: item.created_at,
   }).trim();

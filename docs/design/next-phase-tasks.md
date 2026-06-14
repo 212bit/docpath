@@ -220,6 +220,8 @@ Trellis 的价值在于长期知识沉淀。DocPath 需要把关键决策从 jou
 - `.docpath/docs.md` 或索引文件可被机器稳定解析。
 - 新增文档后，`docs scan` 能更新索引。
 - `context --max-tokens` 能优先保留当前任务相关文档。
+- `.docpath/docs-index.json` 是机器索引真源；`.docpath/docs.md`、`archive/docs-legacy-*.md`、workspace 运行态 Markdown 属于 generated/index-only 视图，默认只保留可发现摘要，不参与 topic selected token 预算竞争，也不因普通 `--topic` 被展开正文。
+- 无活跃任务时，开发前分析只能 dry-run 或作为 backlog evidence 记录；非 dry-run `analyze` / `write-analysis` 必须绑定当前任务，避免复用上一任务的 task_id。
 
 ## 6. P3：多 Agent 适配
 
@@ -620,17 +622,18 @@ D-P0.1/2/3 应**插到 §11.10 序列最前**——它们修的是「Agent 能�
 
 ### 手工迁移步骤
 
-1. 用 `docpath backlog add --title "条目标题" --priority P1 --level 2` 创建 `R-###`
-2. 将本文件对应段落中的背景、约束、验收条件整理进该条目的正文
+1. 用 `docpath backlog capture --title "条目标题" --priority P1 --level 2` 捕获 raw idea，或用带 `--background/--acceptance` 的 `docpath backlog add` 创建 shaped 条目
+2. 将本文件对应段落中的背景、约束、验收条件整理进该条目的正文；level 2/3 条目需要补齐 `readiness/evidence`
 3. 当条目已经确认可进入执行池时，运行 `docpath backlog accept R-###`
 4. 当 `next --agent` 推荐该条目时，再执行 `docpath backlog promote R-###`
 5. 在本文件原段落处只保留动机、上下文和 `R-###` 链接，不再继续维护活动状态
 
 ### 当前约定
 
-- `backlog add` 默认创建 `proposed`
-- `accepted` 表示已进入可执行候选池
+- `backlog capture` 创建 `readiness: raw` 的 proposed 条目，只表示想法已捕获
+- `backlog add` 需要背景/验收或 body file，默认创建 shaped proposed 条目
+- `accepted` 表示已进入可执行候选池，level 2/3 需要先有 analyzed/confirmed 证据
 - `next --agent` 在 idle 时优先推荐：
   - 有 `accepted` 条目：`docpath backlog promote R-###`
-  - 无 `accepted` 但有 `proposed`：`docpath backlog accept R-###`
-  - 两者都无：`docpath backlog add`
+  - 无 `accepted` 但有低成熟度 `proposed`：先 `docpath analyze --mode deep --content "..."`
+  - 两者都无：`docpath backlog capture --title <title>`

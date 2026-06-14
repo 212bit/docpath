@@ -8,9 +8,12 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 import {
   type BacklogItem,
+  type BacklogEvidence,
   type BacklogPriority,
+  type BacklogReadiness,
   type BacklogStatus,
   createBacklogItem,
+  isBacklogReadiness,
   isBacklogPriority,
   listBacklogItems,
   readBacklogItem,
@@ -34,6 +37,12 @@ interface BacklogCommandOptions {
   background?: string;
   acceptance?: string;
   bodyFile?: string;
+  readiness?: string;
+  evidenceBrainstorm?: string;
+  evidenceAnalysis?: string;
+  evidenceSpec?: string;
+  evidenceDecision?: string;
+  userConfirmed?: string;
   status?: string;
   agent?: boolean;
 }
@@ -63,6 +72,14 @@ function normalizeLevel(level?: string): number {
   return parsed;
 }
 
+function normalizeReadiness(readiness: string | undefined, fallback: BacklogReadiness): BacklogReadiness {
+  const value = (readiness || fallback).trim().toLowerCase();
+  if (!isBacklogReadiness(value)) {
+    throw new Error(`docpath backlog: readiness 非法: ${readiness}（允许: raw|shaped|analyzed|confirmed）`);
+  }
+  return value;
+}
+
 function normalizeStatusFilter(status?: string): BacklogStatus | undefined {
   if (!status) return undefined;
   const value = status.trim().toLowerCase();
@@ -75,6 +92,10 @@ function normalizeStatusFilter(status?: string): BacklogStatus | undefined {
 
 function hasInlineBodyOptions(options: BacklogCommandOptions): boolean {
   return options.background != null || options.acceptance != null;
+}
+
+function hasBodyInput(options: BacklogCommandOptions): boolean {
+  return Boolean(options.bodyFile || hasInlineBodyOptions(options));
 }
 
 function formatBacklogSection(title: string, value: string | undefined, fallback: string): string[] {
@@ -121,7 +142,29 @@ function hasEditFields(options: BacklogCommandOptions): boolean {
     || options.level
     || options.bodyFile
     || hasInlineBodyOptions(options)
+    || options.readiness
+    || hasEvidenceOptions(options)
   );
+}
+
+function hasEvidenceOptions(options: BacklogCommandOptions): boolean {
+  return Boolean(
+    options.evidenceBrainstorm?.trim()
+    || options.evidenceAnalysis?.trim()
+    || options.evidenceSpec?.trim()
+    || options.evidenceDecision?.trim()
+    || options.userConfirmed?.trim()
+  );
+}
+
+function buildEvidence(options: BacklogCommandOptions, existing?: BacklogEvidence): BacklogEvidence {
+  return {
+    brainstorm: options.evidenceBrainstorm?.trim() || existing?.brainstorm || null,
+    analysis: options.evidenceAnalysis?.trim() || existing?.analysis || null,
+    spec: options.evidenceSpec?.trim() || existing?.spec || null,
+    decision_brief: options.evidenceDecision?.trim() || existing?.decision_brief || null,
+    user_confirmed: options.userConfirmed?.trim() || existing?.user_confirmed || null,
+  };
 }
 
 function hasSection(body: string, title: string): boolean {
@@ -129,8 +172,50 @@ function hasSection(body: string, title: string): boolean {
 }
 
 function isPlaceholderBody(body: string): boolean {
-  const trimmed = body.trim();
-  return !trimmed || /待补充/.test(trimmed);
+  const lines = body.trim().split('\n');
+  return !body.trim() || lines.some((line) =>
+    /^\s*(?:[-*]\s*)?(?:待补充|暂无|无|none|n\/a|tbd|todo)\s*$/i.test(line.trim())
+  );
+}
+
+function readinessRank(readiness: BacklogReadiness): number {
+  return ['raw', 'shaped', 'analyzed', 'confirmed'].indexOf(readiness);
+}
+
+function missingReadinessEvidence(item: BacklogItem): string[] {
+  const issues: string[] = [];
+  if (isPlaceholderBody(item.body)) {
+    issues.push('正文仍为空或包含占位内容');
+  }
+  if (item.level >= 2 && readinessRank(item.readiness) < readinessRank('analyzed')) {
+    issues.push(`level ${item.level} 条目 readiness=${item.readiness}，至少需要 analyzed`);
+  }
+  if (item.level >= 2 && !item.evidence.analysis && !item.evidence.spec && item.readiness !== 'confirmed') {
+    issues.push('缺少 evidence.analysis 或 evidence.spec');
+  }
+  if (item.level >= 3 && readinessRank(item.readiness) < readinessRank('confirmed')) {
+    issues.push(`level ${item.level} 条目 readiness=${item.readiness}，至少需要 confirmed`);
+  }
+  if (item.level >= 3 && !item.evidence.decision_brief) {
+    issues.push('缺少 evidence.decision_brief');
+  }
+  if (item.level >= 3 && !item.evidence.user_confirmed) {
+    issues.push('缺少 evidence.user_confirmed');
+  }
+  return issues;
+}
+
+function assertBacklogReadyForExecution(item: BacklogItem, action: 'accept' | 'plan' | 'promote'): void {
+  const issues = missingReadinessEvidence(item);
+  if (issues.length === 0) return;
+  throw new Error([
+    `docpath backlog ${action}: backlog 条目 ${item.id} 尚未达到可执行成熟度`,
+    ...issues.map((issue) => `- ${issue}`),
+    `修复建议: docpath backlog edit ${item.id} --background <text> --acceptance <text> --readiness analyzed --evidence-analysis <path>`,
+    item.level >= 3
+      ? `level 3 还需: --readiness confirmed --evidence-decision <ref> --user-confirmed <text>`
+      : '',
+  ].filter(Boolean).join('\n'));
 }
 
 function inspectBacklogItem(item: BacklogItem): BacklogGroomIssue[] {
@@ -160,6 +245,47 @@ function inspectBacklogItem(item: BacklogItem): BacklogGroomIssue[] {
       field: 'body',
       message: '条目正文为空或仍包含占位内容',
       suggestion: `docpath backlog edit ${item.id} --body-file <path>`,
+    });
+  }
+  if (
+    item.status !== 'dropped'
+    && item.status !== 'proposed'
+    && item.status !== 'accepted'
+    && isPlaceholderBody(item.body)
+  ) {
+    issues.push({
+      id: item.id,
+      severity: 'error',
+      field: 'body',
+      message: '条目正文为空或仍包含占位内容',
+      suggestion: `docpath backlog edit ${item.id} --body-file <path>`,
+    });
+  }
+  if (item.status !== 'dropped' && item.level >= 2 && readinessRank(item.readiness) < readinessRank('analyzed')) {
+    issues.push({
+      id: item.id,
+      severity: 'error',
+      field: 'readiness',
+      message: `level ${item.level} 条目成熟度不足: ${item.readiness}`,
+      suggestion: `docpath backlog edit ${item.id} --readiness analyzed --evidence-analysis <path>`,
+    });
+  }
+  if (item.status !== 'dropped' && item.level >= 3 && !item.evidence.user_confirmed) {
+    issues.push({
+      id: item.id,
+      severity: 'error',
+      field: 'evidence.user_confirmed',
+      message: 'level 3 条目缺少用户确认依据',
+      suggestion: `docpath backlog edit ${item.id} --readiness confirmed --user-confirmed <text>`,
+    });
+  }
+  if (item.status === 'done' && item.links.spec && isPlaceholderBody(item.body)) {
+    issues.push({
+      id: item.id,
+      severity: 'error',
+      field: 'body.stale_from_spec',
+      message: 'done 条目已关联 spec，但 backlog 正文仍未从 spec 回填',
+      suggestion: '重新运行 journal 回填，或用 docpath backlog edit 补充正文',
     });
   }
   if ((item.status === 'active' || item.status === 'done') && !item.links.task) {
@@ -355,8 +481,15 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
   if (!options.title?.trim()) {
     throw new Error('docpath backlog add requires --title <title>');
   }
+  if (!hasBodyInput(options)) {
+    throw new Error('docpath backlog add requires --background/--acceptance or --body-file; use `docpath backlog capture --title <title>` for raw ideas');
+  }
 
   const body = await resolveBacklogBody(options);
+  const readiness = normalizeReadiness(options.readiness, 'shaped');
+  if (readiness === 'raw') {
+    throw new Error('docpath backlog add: readiness=raw 请使用 `docpath backlog capture`');
+  }
 
   const item = await createBacklogItem(options.cwd, {
     title: options.title.trim(),
@@ -364,6 +497,8 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
     priority: normalizePriority(options.priority),
     level: normalizeLevel(options.level),
     source: 'docpath backlog add',
+    readiness,
+    evidence: buildEvidence(options),
     links: {
       task: null,
       spec: null,
@@ -376,6 +511,40 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
   console.log(`   title: ${item.title}`);
   console.log(`   priority: ${item.priority}`);
   console.log(`   level: ${item.level}`);
+  console.log(`   readiness: ${item.readiness}`);
+}
+
+async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
+  if (!options.title?.trim()) {
+    throw new Error('docpath backlog capture requires --title <title>');
+  }
+
+  const body = hasBodyInput(options)
+    ? await resolveBacklogBody(options)
+    : buildInlineBacklogBody(options);
+
+  const item = await createBacklogItem(options.cwd, {
+    title: options.title.trim(),
+    status: 'proposed',
+    priority: normalizePriority(options.priority),
+    level: normalizeLevel(options.level),
+    source: 'docpath backlog capture',
+    readiness: 'raw',
+    evidence: buildEvidence(options),
+    links: {
+      task: null,
+      spec: null,
+    },
+    created_at: today(),
+    body,
+  });
+
+  console.log(`✅  已捕获 raw backlog 条目: ${item.id}`);
+  console.log(`   title: ${item.title}`);
+  console.log(`   priority: ${item.priority}`);
+  console.log(`   level: ${item.level}`);
+  console.log('   readiness: raw');
+  console.log(`   下一步: docpath analyze --mode deep --content "${item.title}"，再用 docpath backlog edit ${item.id} 补充 evidence`);
 }
 
 async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
@@ -397,6 +566,15 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
   if (options.level) updated.level = normalizeLevel(options.level);
   if (options.bodyFile || hasInlineBodyOptions(options)) {
     updated.body = await resolveBacklogBody(options);
+    if (readinessRank(updated.readiness) < readinessRank('shaped') && !isPlaceholderBody(updated.body)) {
+      updated.readiness = 'shaped';
+    }
+  }
+  if (options.readiness) {
+    updated.readiness = normalizeReadiness(options.readiness, updated.readiness);
+  }
+  if (hasEvidenceOptions(options)) {
+    updated.evidence = buildEvidence(options, updated.evidence);
   }
 
   await writeBacklogItem(options.cwd, updated);
@@ -424,6 +602,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   if (item.links.task) {
     throw new Error(`docpath backlog promote: backlog 条目 ${item.id} 已关联任务 ${item.links.task}`);
   }
+  assertBacklogReadyForExecution(item, 'promote');
 
   const docpathDir = await resolveDocpathDir(options.cwd);
   const nextStatus = transitionBacklog(item.status, 'active');
@@ -463,7 +642,12 @@ async function backlogAdvanceStatus(
     throw new Error(`docpath backlog ${target === 'accepted' ? 'accept' : 'plan'} requires <id>`);
   }
 
-  const item = await setBacklogStatus(options.cwd, options.id.trim(), target);
+  const existing = await readBacklogItem(options.cwd, options.id.trim());
+  if (!existing) {
+    throw new Error(`[docpath] backlog 条目不存在: ${options.id}`);
+  }
+  assertBacklogReadyForExecution(existing, target === 'accepted' ? 'accept' : 'plan');
+  const item = await setBacklogStatus(options.cwd, existing.id, target);
   await refreshBacklogIndex(options.cwd);
   console.log(`✅  backlog 条目已更新: ${item.id} → ${item.status}`);
 }
@@ -524,6 +708,7 @@ async function backlogList(options: BacklogCommandOptions): Promise<void> {
         status: item.status,
         priority: item.priority,
         level: item.level,
+        readiness: item.readiness,
         task: item.links.task,
       })),
     }));
@@ -561,12 +746,15 @@ async function backlogGroom(options: BacklogCommandOptions): Promise<void> {
 export async function backlogCommand(options: BacklogCommandOptions): Promise<void> {
   const action = options.action?.trim().toLowerCase();
   if (!action) {
-    throw new Error('docpath backlog requires <add|edit|list|groom|refresh|accept|plan|promote|done|drop>');
+    throw new Error('docpath backlog requires <capture|add|edit|list|groom|refresh|accept|plan|promote|done|drop>');
   }
 
   switch (action) {
     case 'add':
       await backlogAdd(options);
+      return;
+    case 'capture':
+      await backlogCapture(options);
       return;
     case 'edit':
       await backlogEdit(options);
@@ -596,6 +784,6 @@ export async function backlogCommand(options: BacklogCommandOptions): Promise<vo
       await backlogUpdateTerminalStatus(options, 'dropped');
       return;
     default:
-      throw new Error(`docpath backlog: unsupported action ${action}（允许: add|edit|list|groom|refresh|accept|plan|promote|done|drop）`);
+      throw new Error(`docpath backlog: unsupported action ${action}（允许: capture|add|edit|list|groom|refresh|accept|plan|promote|done|drop）`);
   }
 }

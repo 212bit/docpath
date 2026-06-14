@@ -58,6 +58,31 @@ describe('analyze command', () => {
     assert.doesNotMatch(out, /状态已更新/);
   });
 
+  it('analyze without dry-run fails when there is no active task', () => {
+    const idleCwd = mkdtempSync(join(tmpdir(), 'docpath-analyze-idle-'));
+    mkdirSync(join(idleCwd, '.docpath', 'workspace'), { recursive: true });
+    writeFileSync(join(idleCwd, '.docpath', 'config.yaml'), 'project:\n  name: analyze-idle-test\n');
+    writeFileSync(join(idleCwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 2,
+      task_id: '',
+      task_title: '',
+      phase: 'idle',
+      gate: 'none',
+      current_step: 'idle',
+      started_at: '2026-06-09T00:00:00.000Z',
+      updated_at: '2026-06-09T00:00:00.000Z',
+    }, null, 2));
+    writeFileSync(join(idleCwd, '.docpath', 'workspace', 'current.md'), '# Current\n');
+    writeFileSync(join(idleCwd, '.docpath', 'workspace', 'breadcrumb.md'), '# Breadcrumb\n');
+
+    const out = run('analyze --content "new idea"', idleCwd);
+
+    assert.match(out, /当前没有可写入 analysis 的活跃任务/);
+    assert.match(out, /docpath analyze --dry-run/);
+    assert.match(out, /docpath backlog capture/);
+    rmSync(idleCwd, { recursive: true, force: true });
+  });
+
   it('analyze defaults to deep mode with quality bar', () => {
     const out = run('analyze --file req.md', cwd);
     assert.match(out, /"mode": "deep"/);

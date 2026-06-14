@@ -4,7 +4,7 @@ import { existsSync } from 'fs';
 import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { nextCommand } from './runtime.js';
-import { readCurrentState } from '../utils/workspace.js';
+import { readCurrentState, type CurrentState } from '../utils/workspace.js';
 import { normalizeAnalysisSection, writeActiveAnalysisSection, writeActiveTaskFile } from '../utils/task-files.js';
 
 export interface WriteAnalysisOptions {
@@ -12,6 +12,21 @@ export interface WriteAnalysisOptions {
   content?: string;
   stdin?: boolean;
   section?: string;
+}
+
+function hasActiveAnalysisTask(current: CurrentState | null): boolean {
+  return Boolean(current?.task_id && current.phase !== 'idle' && current.phase !== 'completed');
+}
+
+function assertCanWriteAnalysis(current: CurrentState | null): asserts current is CurrentState & { task_id: string } {
+  if (hasActiveAnalysisTask(current)) return;
+  throw new Error([
+    'docpath write-analysis: 当前没有可写入 analysis 的活跃任务',
+    '修复建议:',
+    '- 若只是预览分析提示，运行 `docpath analyze --dry-run --mode deep --content "<requirement>"`',
+    '- 若是新想法，先运行 `docpath backlog capture --title <title>`',
+    '- 若需求已成熟，先运行 `docpath backlog promote <id>` 创建当前任务',
+  ].join('\n'));
 }
 
 export async function writeAnalysisCommand(options: WriteAnalysisOptions): Promise<void> {
@@ -31,7 +46,8 @@ export async function writeAnalysisCommand(options: WriteAnalysisOptions): Promi
   }
 
   const current = await readCurrentState(options.cwd);
-  const taskId = current?.task_id || 'current';
+  assertCanWriteAnalysis(current);
+  const taskId = current.task_id;
   let canonicalPath: string;
   let file: string;
   if (options.section) {

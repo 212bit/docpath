@@ -91,8 +91,8 @@ describe('resume command', () => {
 
     const output = run(`resume --cwd ${cwd} --verbose`, cwd);
 
-    assert.match(output, /推荐命令: docpath backlog add/);
-    assert.match(output, /任务已完成，可启动新任务/);
+    assert.match(output, /推荐命令: docpath backlog capture --title <title>/);
+    assert.match(output, /任务已完成，可捕获新想法/);
     assert.match(output, /建议先读文件:/);
     assert.doesNotMatch(output, /docpath:go|docpath:review|docpath:journal/);
     rmSync(cwd, { recursive: true, force: true });

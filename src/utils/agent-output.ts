@@ -160,7 +160,16 @@ function summarizeCurrentTaskBreadcrumbs(
   bc: BreadcrumbSummary,
   taskId: string,
 ): BreadcrumbSummary {
-  if (!taskId) return bc;
+  if (!taskId) {
+    return {
+      total: 0,
+      done: 0,
+      inProgress: 0,
+      blocked: 0,
+      latest: null,
+      entries: [],
+    };
+  }
 
   const latestByStep = new Map<string, BreadcrumbEntry>();
   for (const entry of bc.entries) {
@@ -189,6 +198,27 @@ function compareBacklogPriority(a: BacklogItem, b: BacklogItem): number {
   const priorityOrder = Number.parseInt(a.priority.slice(1), 10) - Number.parseInt(b.priority.slice(1), 10);
   if (priorityOrder !== 0) return priorityOrder;
   return a.id.localeCompare(b.id, undefined, { numeric: true });
+}
+
+function backlogReadinessRank(item: BacklogItem): number {
+  return ['raw', 'shaped', 'analyzed', 'confirmed'].indexOf(item.readiness);
+}
+
+function isExecutableBacklogItem(item: BacklogItem): boolean {
+  if (item.level >= 3) {
+    return backlogReadinessRank(item) >= backlogReadinessRank({ ...item, readiness: 'confirmed' })
+      && Boolean(item.evidence.user_confirmed)
+      && Boolean(item.evidence.decision_brief);
+  }
+  if (item.level >= 2) {
+    return backlogReadinessRank(item) >= backlogReadinessRank({ ...item, readiness: 'analyzed' })
+      && Boolean(item.evidence.analysis || item.evidence.spec || item.readiness === 'confirmed');
+  }
+  return item.readiness !== 'raw';
+}
+
+function quoteInline(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
 const GC_TASK_DIR_THRESHOLD = 20;
@@ -355,6 +385,11 @@ function inferNextAction(
   let exit_criteria = '任务目标完成';
   const acceptedBacklog = [...backlogItems]
     .filter((item) => item.status === 'accepted')
+    .filter(isExecutableBacklogItem)
+    .sort(compareBacklogPriority)[0];
+  const immatureAcceptedBacklog = [...backlogItems]
+    .filter((item) => item.status === 'accepted')
+    .filter((item) => !isExecutableBacklogItem(item))
     .sort(compareBacklogPriority)[0];
   const proposedBacklog = [...backlogItems]
     .filter((item) => item.status === 'proposed')
@@ -488,7 +523,27 @@ function inferNextAction(
         exit_criteria: `${acceptedBacklog.id} 已 promote 成活跃任务`,
       };
     }
+    if (immatureAcceptedBacklog) {
+      return {
+        next_action: `backlog 条目尚未达到可执行成熟度: ${immatureAcceptedBacklog.id} ${immatureAcceptedBacklog.title}`,
+        recommended_command: `docpath backlog edit ${immatureAcceptedBacklog.id} --readiness analyzed --evidence-analysis <path>`,
+        required_context: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
+        required_files: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
+        must_update: [],
+        exit_criteria: `${immatureAcceptedBacklog.id} 已补齐 readiness/evidence 后再 promote`,
+      };
+    }
     if (proposedBacklog) {
+      if (!isExecutableBacklogItem(proposedBacklog)) {
+        return {
+          next_action: `先分析 backlog 条目再接收: ${proposedBacklog.id} ${proposedBacklog.title}`,
+          recommended_command: `docpath brainstorm --dry-run --input ${quoteInline(proposedBacklog.title)}`,
+          required_context: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
+          required_files: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
+          must_update: ['.docpath/backlog/'],
+          exit_criteria: `${proposedBacklog.id} 已完成 dry-run 分析并通过 backlog edit 补齐 readiness/evidence 后再 accept`,
+        };
+      }
       return {
         next_action: `先接收 backlog 条目: ${proposedBacklog.id} ${proposedBacklog.title}`,
         recommended_command: `docpath backlog accept ${proposedBacklog.id}`,
@@ -520,12 +575,12 @@ function inferNextAction(
       };
     }
     return {
-      next_action: '任务已完成，可启动新任务',
-      recommended_command: 'docpath backlog add',
+      next_action: '任务已完成，可捕获新想法；若需求已经清晰，再运行 analyze/refine 后创建可执行 backlog',
+      recommended_command: 'docpath backlog capture --title <title>',
       required_context: required,
       required_files: required,
       must_update: [],
-      exit_criteria: '已新增 backlog 条目',
+      exit_criteria: '已捕获 raw backlog 条目，或已完成 analyze/refine 后创建成熟 backlog',
     };
   }
 
@@ -548,7 +603,20 @@ function inferNextAction(
         recommended_command = `docpath backlog promote ${acceptedBacklog.id}`;
         required_context = ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'];
         exit_criteria = `${acceptedBacklog.id} 已 promote 成活跃任务`;
+      } else if (immatureAcceptedBacklog) {
+        next_action = `backlog 条目尚未达到可执行成熟度: ${immatureAcceptedBacklog.id} ${immatureAcceptedBacklog.title}`;
+        recommended_command = `docpath backlog edit ${immatureAcceptedBacklog.id} --readiness analyzed --evidence-analysis <path>`;
+        required_context = ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'];
+        exit_criteria = `${immatureAcceptedBacklog.id} 已补齐 readiness/evidence 后再 promote`;
       } else if (proposedBacklog) {
+        if (!isExecutableBacklogItem(proposedBacklog)) {
+          next_action = `先分析 backlog 条目再接收: ${proposedBacklog.id} ${proposedBacklog.title}`;
+          recommended_command = `docpath brainstorm --dry-run --input ${quoteInline(proposedBacklog.title)}`;
+          required_context = ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'];
+          must_update = ['.docpath/backlog/'];
+          exit_criteria = `${proposedBacklog.id} 已完成 dry-run 分析并通过 backlog edit 补齐 readiness/evidence 后再 accept`;
+          break;
+        }
         next_action = `先接收 backlog 条目: ${proposedBacklog.id} ${proposedBacklog.title}`;
         recommended_command = `docpath backlog accept ${proposedBacklog.id}`;
         required_context = ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'];
@@ -560,10 +628,10 @@ function inferNextAction(
         must_update = globalRules;
         exit_criteria = '预览确认后运行 docpath learn，lesson 候选已合并或去重跳过';
       } else {
-        next_action = '当前无活跃任务，先创建 backlog 条目';
-        recommended_command = 'docpath backlog add';
+        next_action = '当前无活跃任务，可先捕获 raw backlog；若需求已清晰，先 analyze/refine 再创建成熟条目';
+        recommended_command = 'docpath backlog capture --title <title>';
         required_context = ['.docpath/workspace/current.md', ...globalRules];
-        exit_criteria = '至少存在一条 backlog 条目';
+        exit_criteria = '至少存在一条 raw backlog，或已完成 analyze/refine 后创建成熟 backlog';
       }
       break;
     case 'drafting':

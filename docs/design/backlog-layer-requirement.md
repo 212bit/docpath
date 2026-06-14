@@ -41,13 +41,14 @@ source: dogfooding-2026-05-30
 links: { task: null, spec: null }
 ```
 
-命令草案：`docpath backlog add|list [--status][--priority]|promote <id>|done <id>`。
+命令草案：`docpath backlog capture|add|edit|list [--status][--priority]|groom|promote <id>|done <id>`。
+`capture` 用于 raw idea 捕获；`add` 用于已有背景和验收的 shaped 条目；level 2/3 条目进入 accept/promote 前需要 readiness/evidence 证据。
 
 ## 集成点（与现有工作流的接缝）
 
 - `next --agent`（idle 时）：从 backlog 推荐「promote 最高优先级 accepted 条目」或「groom backlog」。
 - `promote <id>`：用条目内容 seed `tasks/current/`（spec 雏形），条目转 active；走既有 brainstorm/plan/go。
-- `journal`/`agent done` 完成任务时：把关联 backlog 条目回填为 done。
+- `journal`/`agent done` 完成任务时：把关联 backlog 条目回填为 done，并在正文仍为空或占位时从 linked spec 回填摘要和 evidence。
 - 迁移：`next-phase-tasks.md` §11/§12 的 P/G/D 条目逐步抽成 backlog 条目，散文只留动机+链接。
 
 ## 开放问题（需在 spec 中定夺）

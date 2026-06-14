@@ -24,6 +24,7 @@ import { compactRuleContent, readRuleFile } from '../utils/rules.js';
 import {
   documentIndexStats,
   estimateTokens,
+  isIndexOnlyDocument,
   matchesDocumentSelection,
   readProjectDocumentIndex,
   resolveDocpathDocumentPath,
@@ -127,6 +128,8 @@ function renderDocsIndex(entries: ProjectDocumentIndexEntry[], maxEntries: numbe
     `- archive_docs: ${stats.archive}`,
     `- selected_docs: ${stats.selected}`,
     `- estimated_tokens_selected: ~${stats.selectedTokens}`,
+    `- selected_index_only_docs: ${stats.selectedIndexOnly}`,
+    `- estimated_tokens_index_only: ~${stats.selectedIndexOnlyTokens}`,
     `- archive_policy: 默认只展示索引；归档正文需 --topic、--task-id 或 --include-archive`,
     '',
   ];
@@ -137,6 +140,9 @@ function renderDocsIndex(entries: ProjectDocumentIndexEntry[], maxEntries: numbe
     `  scope: ${entry.scope || 'project'}`,
     `  default_read: ${entry.default_read}`,
     `  archive: ${entry.archive}`,
+    `  generated_view: ${entry.generated_view === true}`,
+    `  index_only: ${isIndexOnlyDocument(entry)}`,
+    `  budget_excluded: ${isIndexOnlyDocument(entry)}`,
     `  tokens: ~${entry.token_estimate}`,
     `  task_id: ${entry.task_id || ''}`,
     `  title: ${entry.title || ''}`,

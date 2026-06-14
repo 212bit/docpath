@@ -6,7 +6,7 @@ import { taskCommand } from '../task.js';
 import { tasksCommand } from '../tasks.js';
 
 export function registerBacklogMaintenanceCommands(cli: CAC): void {
-  cli.command('backlog <action> [id]', '需求条目管理: add | edit | list | groom | refresh | accept | plan | promote | done | drop')
+  cli.command('backlog <action> [id]', '需求条目管理: capture | add | edit | list | groom | refresh | accept | plan | promote | done | drop')
     .option('--cwd <path>', '项目目录')
     .option('--title <title>', 'add/edit: 条目标题')
     .option('--priority <priority>', 'add/edit/list: 优先级过滤或创建优先级 (P0|P1|P2|P3)')
@@ -14,9 +14,15 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .option('--background <text>', 'add/edit: 条目背景正文')
     .option('--acceptance <text>', 'add/edit: 条目验收正文')
     .option('--body-file <path>', 'add/edit: 从 markdown 文件读取完整正文')
+    .option('--readiness <readiness>', 'add/edit: 需求成熟度 raw|shaped|analyzed|confirmed')
+    .option('--evidence-brainstorm <ref>', 'add/edit: brainstorm 证据引用')
+    .option('--evidence-analysis <ref>', 'add/edit: analysis 证据引用')
+    .option('--evidence-spec <ref>', 'add/edit: spec 证据引用')
+    .option('--evidence-decision <ref>', 'add/edit: Decision Brief 证据引用')
+    .option('--user-confirmed <text>', 'add/edit: 用户确认依据')
     .option('--status <status>', 'list: 状态过滤')
     .option('--agent', 'list/groom: 输出 agent YAML')
-    .action(async (action: string, id: string | undefined, options: { cwd?: string; title?: string; priority?: string; level?: string; background?: string; acceptance?: string; bodyFile?: string; status?: string; agent?: boolean }) => {
+    .action(async (action: string, id: string | undefined, options: { cwd?: string; title?: string; priority?: string; level?: string; background?: string; acceptance?: string; bodyFile?: string; readiness?: string; evidenceBrainstorm?: string; evidenceAnalysis?: string; evidenceSpec?: string; evidenceDecision?: string; userConfirmed?: string; status?: string; agent?: boolean }) => {
       await backlogCommand({
         cwd: options.cwd || process.cwd(),
         action,
@@ -27,6 +33,12 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         background: options.background,
         acceptance: options.acceptance,
         bodyFile: options.bodyFile,
+        readiness: options.readiness,
+        evidenceBrainstorm: options.evidenceBrainstorm,
+        evidenceAnalysis: options.evidenceAnalysis,
+        evidenceSpec: options.evidenceSpec,
+        evidenceDecision: options.evidenceDecision,
+        userConfirmed: options.userConfirmed,
         status: options.status,
         agent: !!options.agent,
       });
