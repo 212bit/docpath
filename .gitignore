@@ -1,5 +1,6 @@
-.docpath/journal/
-.docpath/tasks/
+# DocPath runtime/install artifacts stay ignored by default.
+# Add canonical evidence only via exact paths recommended by `docpath changes --agent`.
+.docpath
 
 # Dependencies
 node_modules/
@@ -8,4 +9,3 @@ node_modules/
 dist/
 
 .claude/
-.docpath
