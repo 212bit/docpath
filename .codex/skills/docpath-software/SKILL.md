@@ -1,45 +1,67 @@
 ---
 name: docpath-software
-description: Software engineering quality lens for DocPath work covering architecture implementation technical analysis QA tests check review and journal evidence
+description: Software engineering quality lens for architecture implementation technical analysis QA and code review
 ---
 
 # DocPath Software
 
-Use this skill when a DocPath task needs an engineering lens: architecture, implementation, refactoring, debugging, tests, QA, code review, or **technical analysis before implementation**.
+Use this skill when a DocPath task needs **engineering analysis or implementation**: architecture, technical analysis, refactoring, debugging, tests, QA, or code review.
 
-This skill complements the main `docpath` lifecycle route. It must not force implementation when the user asked for analysis only.
+This is a **quality lens** that integrates with the main `docpath` workflow. Use the main `docpath` skill for lifecycle routing (`status`, `next`, `go`, `check`, `done`).
+
+## When to Use
+
+- User asks for technical analysis, architecture review, or implementation approach
+- Task requires refactoring, debugging, performance optimization
+- Tests, QA, or code review are needed
+- **Pre-implementation technical analysis** is required before writing code
+
+**Important**: This skill complements the DocPath lifecycle. It must not force implementation when the user asked for analysis only.
 
 ## First Commands
+
+Always start with:
 
 ```bash
 docpath status --agent
 docpath next --agent
 ```
 
-Run `docpath agent enter` only when `docpath status --agent` / `docpath next --agent` shows an active executable task or an explicit `go` route. If no active task exists, follow the route from `docpath next --agent` instead of starting from memory.
+Only run `docpath agent enter` when status/next shows an **active executable task** or explicit `go` route. If no active task exists, follow the route from `docpath next --agent` instead of starting from memory.
 
-## Technical analysis quality bar
+## Technical Analysis Quality Bar
 
-For pre-development or architecture analysis, cover:
+For **pre-development or architecture analysis**, cover:
 
-- affected modules, routes, commands, services, components, and ownership boundaries
-- data models, API contracts, validation, migrations, backward compatibility, and versioning
-- permissions, security boundaries, audit/logging needs, and destructive/write operation risks
-- integration points, external dependencies, feature flags, rollout/rollback, and observability
-- performance, concurrency, failure modes, and recovery behavior
-- test strategy: unit, integration, e2e/manual, fixtures, regression surface, and acceptance evidence
-- implementation slicing and risks that should be reflected in spec/plan
+- **Affected modules**: routes, commands, services, components, ownership boundaries
+- **Data models**: API contracts, validation, migrations, backward compatibility, versioning
+- **Security**: permissions, audit/logging, destructive operation risks, input validation
+- **Integration**: external dependencies, feature flags, rollout/rollback, observability
+- **Performance**: concurrency, caching, failure modes, recovery behavior
+- **Test strategy**: unit, integration, e2e/manual, fixtures, regression surface, acceptance evidence
+- **Implementation slicing**: how to break down the work, risks that should be reflected in spec/plan
 
-Write durable conclusions with:
+## DocPath Integration
+
+### Analysis Input
+Use `docpath analyze` as the structured payload source:
+
+```bash
+docpath analyze --mode deep --content "<requirement>"
+```
+
+The returned `technical` and `risks` sections provide the mandatory structure.
+
+### Analysis Output
+Persist technical conclusions through DocPath:
 
 ```bash
 docpath write-analysis --section technical --stdin
 docpath write-analysis --section risks --stdin
 ```
 
-## Software Roles
-
-Use the smallest relevant role:
+### Role Context
+Load engineering role profiles when deeper expertise is needed:
 
 ```bash
 docpath roles context --role software-architect
@@ -47,9 +69,10 @@ docpath roles context --role software-engineer
 docpath roles context --role qa-engineer
 ```
 
-## Engineering Deliverables
+Use the **smallest relevant role**. Role output must land in analysis sections or deliverables, not stay in chat only.
 
-Render structured outputs when the task needs evidence beyond code:
+### Deliverables
+Render structured engineering artifacts:
 
 ```bash
 docpath deliverables render --template architecture-brief --output .docpath/tasks/current/deliverables/architecture-brief.md
@@ -57,21 +80,36 @@ docpath deliverables render --template qa-report --output .docpath/tasks/current
 docpath deliverables check
 ```
 
-## Completion
+## Implementation Lifecycle
+
+When implementing (not just analyzing), follow the DocPath execution lifecycle:
+
+```bash
+docpath agent enter              # Enter execution mode
+docpath go --step <id>           # Load and start a plan step
+# ... make changes, write tests ...
+docpath agent step --step "<id>" --status done
+docpath check                    # Run quality gates
+docpath review                   # Review changes
+docpath agent done               # Record completion
+```
+
+## Completion Gates
 
 Before claiming implementation completion:
 
 ```bash
-docpath check
-docpath review
+docpath check     # Runs build, tests, plan/breadcrumb validation
+docpath review    # Review code changes
 docpath agent done
 ```
 
-Use `docpath agent done` as the final route when it is recommended because it records check/review/journal evidence and clears pending completion state.
+Use `docpath agent done` as the final route when recommended—it records check/review/journal evidence and clears pending completion state.
 
 ## Boundaries
 
-- Do not bypass the active plan or DocPath lifecycle commands.
-- Do not enter implementation mode for an analysis-only request.
-- Do not leave role or technical analysis only in chat; write durable evidence.
-- Do not hand-edit generated workspace files such as `.docpath/workspace/current.md`.
+- Don't bypass the active plan or DocPath lifecycle commands
+- Don't enter implementation mode for an analysis-only request
+- Don't leave role or technical analysis only in chat—write durable evidence
+- Don't hand-edit generated workspace files like `.docpath/workspace/current.md`
+- Technical analysis ≠ permission to code—implementation requires spec/plan/go route

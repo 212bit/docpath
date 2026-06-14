@@ -25,8 +25,8 @@ updated_at: 2026-06-14T14:27:06.060Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-14T14:27:05.946Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:26:03.864Z · 状态: done · 代码审查: 0 错误, 0 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-14T14:34:00.377Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ journal [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:27:06.171Z · 状态: done · 知识归档完成 (5/5 步)
 
 ## 🔄 同步说明
 

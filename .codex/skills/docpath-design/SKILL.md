@@ -1,73 +1,78 @@
 ---
 name: docpath-design
-description: Design quality lens for DocPath work covering UX information architecture page states interaction decisions prototype review and handoff evidence
+description: Design quality lens for UX information architecture interaction decisions and design-to-implementation handoff
 ---
 
 # DocPath Design
 
-Use this skill when a DocPath task needs a UX/design lens: new pages, management screens, workflow views, prototype critique, interaction decisions, or design-to-implementation handoff.
+Use this skill when a DocPath task needs **UX/design analysis**: new pages, management screens, workflow views, information architecture, interaction decisions, or design-to-implementation handoff.
 
-This is a **quality lens**, not a parallel workflow. Use the main `docpath` skill for lifecycle routing and pre-development analysis commands.
+This is a **quality lens** that integrates with the main `docpath` workflow. Use the main `docpath` skill for lifecycle routing (`status`, `next`, `go`, `check`, `done`).
 
-## Approval-gated UI/UX route
+## When to Use
 
-When the request or active task mentions UI, UX, page, layout, navigation, visual design, responsive behavior, Figma, Stitch, v0, Framer, or equivalent interface work, treat it as an approval-gated UI/UX task.
+- Task mentions UI, UX, page, layout, navigation, visual design, responsive behavior
+- User asks to "add a page/management page/settings screen" before design is settled
+- Prototype critique, interaction decisions, or design handoff is needed
+- External design tools (Figma, Stitch, v0, Framer) are involved
 
-Required sequence before product UI implementation:
+## Approval-Gated UI/UX Route
+
+When the request or active task involves **product UI** (not CLI/config/internal tooling), follow this sequence:
 
 ```text
 UI Prompt Brief
-→ External Design Handoff
+→ External Design Handoff (if using Figma/Stitch/v0/Framer)
 → Design Preview
-→ Design Approval
+→ Design Approval ⚠️ GATE
 → Implementation
 → Visual Acceptance
 ```
 
-Hard rules:
+### Hard Rules
 
-- Do not write product UI code before `ui-brief.md`, `design-preview.md`, and `design-approval.md` exist in the current task.
-- Do not treat the user's approval of this workflow as approval of a concrete visual design.
-- If `design-approval.md` is missing, `pending`, or `rejected`, stop and ask the user to approve or reject the concrete design direction before implementation.
-- Approval must be recorded as a DocPath task artifact, not as a separate state machine outside DocPath.
-- External design tools such as Stitch, Figma, v0, or Framer may be used as handoff sources, but their prompts, outputs, selected direction, rejected direction, and constraints must be recorded in `external-design-handoff.md`.
+- **Do not write product UI code** before `ui-brief.md`, `design-preview.md`, and `design-approval.md` exist in the current task
+- **Do not treat workflow approval as design approval**—the user must approve the concrete visual design direction
+- If `design-approval.md` is missing, `pending`, or `rejected`, **stop and ask** for explicit design approval
+- Approval must be recorded as a DocPath task artifact (use `docpath write-design`)
+- External design tool outputs must be recorded in `external-design-handoff.md`
 
-## Design quality bar
+## Design Quality Bar
 
-UI/UX analysis must be specific enough for implementation planning. Cover:
+UI/UX analysis must be **specific enough for implementation planning**. Cover:
 
-- target user, intent, entry point, and success path
-- information architecture and page/region hierarchy
-- component inventory and responsibilities
-- critical flows and interaction model
-- state matrix: loading, empty, error, partial data, permission denied, disabled, success, destructive action
-- responsive behavior, accessibility, keyboard/focus, semantics, and copy tone
-- data density, filtering/search/sort, pagination, and bulk-action behavior where relevant
-- design risks, usability trade-offs, and open questions
+- **Target user**: intent, entry point, success path
+- **Information architecture**: page/region hierarchy, component inventory
+- **Critical flows**: happy path, error recovery, edge cases
+- **State matrix**: loading, empty, error, partial data, permission denied, disabled, success, destructive action
+- **Responsive behavior**: breakpoints, mobile/tablet/desktop differences
+- **Accessibility**: keyboard/focus, ARIA, semantics, screen reader experience
+- **Copy tone**: voice, labels, error messages
+- **Data density**: filtering, search, sort, pagination, bulk actions (where relevant)
+- **Design risks**: usability tradeoffs, open questions
 
-For management pages, explicitly analyze read/write boundaries, confirmation points, auditability, and permission visibility.
+For **management pages**, explicitly analyze read/write boundaries, confirmation points, auditability, and permission visibility.
 
-## Useful DocPath context
+## DocPath Integration
+
+### Analysis Input
+Use `docpath analyze` as the structured payload source:
 
 ```bash
-docpath status --agent
-docpath next --agent
-docpath roles context --role design-lead
-docpath roles context --role prototype-builder
+docpath analyze --mode deep --content "<requirement>"
 ```
 
-## Durable outputs
+The returned `ui` section provides the mandatory structure.
 
-Write design conclusions into DocPath evidence, for example:
+### Analysis Output
+Persist design conclusions through DocPath:
 
 ```bash
 docpath write-analysis --section ui --stdin
-docpath deliverables render --template prototype-review --output .docpath/tasks/current/deliverables/prototype-review.md
-docpath deliverables render --template prd --output .docpath/tasks/current/deliverables/prd.md
-docpath deliverables check
+docpath write-analysis --section risks --stdin
 ```
 
-For approval-gated UI/UX work, also create or update:
+For approval-gated UI/UX work, also create:
 
 ```bash
 docpath write-design --kind brief --stdin
@@ -77,8 +82,26 @@ docpath write-design --kind approval --stdin
 docpath write-design --kind acceptance --stdin
 ```
 
+### Role Context
+Load design role profiles when deeper expertise is needed:
+
+```bash
+docpath roles context --role design-lead
+docpath roles context --role prototype-builder
+```
+
+Role output must land in analysis sections or deliverables, not stay in chat only.
+
+### Deliverables
+Render structured design artifacts:
+
+```bash
+docpath deliverables render --template prototype-review --output .docpath/tasks/current/deliverables/prototype-review.md
+docpath deliverables check
+```
+
 ## Boundaries
 
-- Do not create a separate design approval state outside DocPath; keep approval as a current task artifact.
-- Do not duplicate the main `docpath analyze` procedure here; use this skill to improve the UI/UX section quality.
-- Design guidance must land in analysis, spec, plan, deliverables, review, or journal.
+- Don't create a separate design approval state outside DocPath—keep approval as a current task artifact
+- Don't treat design analysis as permission to write code—implementation requires design approval first
+- Design guidance must land in `analysis/`, `spec`, `plan`, `deliverables/`, or `journal`
