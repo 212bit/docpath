@@ -37,6 +37,11 @@ export async function tasksCommand(options: TasksOptions): Promise<void> {
       console.log(`- ${drift.file}: ${drift.reason}`);
       console.log(`  current: ${drift.currentPath}`);
       console.log(`  canonical: ${drift.canonicalPath}`);
+      if (drift.detail) {
+        for (const line of drift.detail.split('\n')) {
+          console.log(`  ${line}`);
+        }
+      }
     }
     console.log('\n修复建议: docpath tasks sync --from canonical 或 docpath tasks sync --from current');
     throw new Error(`tasks/current drift detected: ${drifts.map((drift) => drift.file).join(', ')}`);

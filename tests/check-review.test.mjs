@@ -50,6 +50,56 @@ function writeDoneBreadcrumb(workspace, taskId, steps) {
   ].join('\n'));
 }
 
+function writeCanonicalTaskCopy(cwd, taskId, tasks) {
+  const canonical = join(cwd, '.docpath', 'tasks', taskId);
+  mkdirSync(canonical, { recursive: true });
+  for (const file of ['spec.md', 'plan.md']) {
+    writeFileSync(join(canonical, file), readFileSync(join(tasks, file), 'utf-8'));
+  }
+  return canonical;
+}
+
+function structuredSpecJson(markdown, overrides = {}) {
+  return {
+    schema_version: 1,
+    kind: 'spec',
+    source: {
+      kind: 'markdown',
+      created_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z',
+    },
+    task_id: 'T-AGENT',
+    backlog_id: null,
+    title: 'T-AGENT - Agent Lifecycle',
+    markdown,
+    generated_at: '2026-06-01T00:00:00.000Z',
+    scope: {
+      included: ['agent done'],
+      excluded: ['真实外部检查'],
+    },
+    major_change_gate: {
+      required: false,
+      types: [],
+      user_confirmed: null,
+      decision_brief_markdown: '',
+    },
+    ui_gate: {
+      state: 'exempt',
+    },
+    functional_requirements: [
+      { id: 'FR-1', text: 'agent done 能完成任务', done: false },
+    ],
+    non_functional_requirements: [
+      { id: 'NFR-1', text: '保持测试隔离', done: false },
+    ],
+    acceptance_criteria: [
+      { id: 'AC-1', text: 'agent done 清理 pending-done', done: false },
+    ],
+    decision_brief: '',
+    ...overrides,
+  };
+}
+
 describe('check and review commands', () => {
   let tmpdir_path;
   before(() => {
@@ -165,6 +215,36 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('review result does not write ordinary review summaries into decisions', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-no-decisions-'));
+    mkExecWorkspace(cwd);
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'todo.ts'), '// TODO review evidence stays out of ADR\n');
+
+    const out = run(`review --cwd ${cwd}`, cwd);
+    const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');
+
+    assert.match(out, /审查通过/);
+    assert.equal(existsSync(decisionsPath), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('review --approve does not write manual approvals into decisions', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-approve-no-decisions-'));
+    mkExecWorkspace(cwd);
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'manual.ts'), 'export const manual = true;\n');
+
+    const out = run(`review --cwd ${cwd} --approve`, cwd);
+    const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');
+    const reviewPath = join(cwd, '.docpath', 'workspace', 'review.md');
+
+    assert.match(out, /手动批准/);
+    assert.equal(existsSync(reviewPath), true);
+    assert.equal(existsSync(decisionsPath), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('check writes git baseline metadata into last-check evidence', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-git-baseline-'));
     mkExecWorkspace(cwd);
@@ -253,6 +333,39 @@ describe('check and review commands', () => {
     assert.match(current, /- \[x\] S2: Second step/);
     assert.match(lastCheck, /子任务完成度 \(2\/2\)/);
     assert.doesNotMatch(lastCheck, /Checklist 同步/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check treats terminal verification step as covered by lifecycle gates', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-terminal-step-'));
+    const { tasks, workspace } = mkExecWorkspace(cwd);
+    writeFileSync(join(tasks, 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: Implement feature',
+      '- [x] S1: Implement feature',
+      '- **描述**: 完成功能实现',
+      '- **验收条件**: 功能已实现',
+      '- **依赖**: 无',
+      '',
+      '### S2: 验证门禁并归档',
+      '- **描述**: 运行相关测试、docpath check/review/journal，完成任务归档。',
+      '- **验收条件**: 质量门禁通过，任务状态进入 completed。',
+      '- **依赖**: S1',
+      '',
+      '## Checklist',
+      '- [x] S1',
+      '- [ ] S2',
+      '',
+    ].join('\n'));
+    writeDoneBreadcrumb(workspace, 'T-AGENT', ['S1']);
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+    const lastCheck = readFileSync(join(workspace, 'last-check.md'), 'utf-8');
+
+    assert.equal(result.code, 0);
+    assert.match(lastCheck, /子任务完成度 \(2\/2\)/);
+    assert.match(lastCheck, /terminal verification step/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -350,6 +463,97 @@ describe('check and review commands', () => {
     assert.equal(confirmed.code, 0);
     assert.match(confirmedLastCheck, /重大决策确认检查/);
     assert.match(confirmed.out, /全部通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check reads major change confirmation from spec.json before spec.md', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-major-json-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
+    const markdown = readFileSync(join(tasks, 'spec.md'), 'utf-8');
+    const specJson = structuredSpecJson(markdown, {
+      major_change_gate: {
+        required: true,
+        types: ['工作流 / Agent 行为'],
+        user_confirmed: '2026-06-13 用户确认协议模板重大变更',
+        decision_brief_markdown: [
+          '- 当前问题: 测试 JSON 重大变更门禁',
+          '- 目标: JSON 结构化字段优先生效',
+          '- 用户确认: 2026-06-13 用户确认协议模板重大变更',
+        ].join('\n'),
+      },
+    });
+    writeFileSync(join(tasks, 'spec.json'), `${JSON.stringify(specJson, null, 2)}\n`);
+    writeFileSync(join(canonical, 'spec.json'), `${JSON.stringify(specJson, null, 2)}\n`);
+
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'package.json'), JSON.stringify({
+      type: 'module',
+      dependencies: { cac: '^6.7.14' },
+      scripts: {},
+    }, null, 2) + '\n');
+    execSync('git add .', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'package.json'), JSON.stringify({
+      type: 'module',
+      dependencies: {
+        cac: '^6.7.14',
+        react: '^19.0.0',
+      },
+      scripts: {},
+    }, null, 2) + '\n');
+    execSync('git add package.json', { cwd, encoding: 'utf-8' });
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+    const lastCheck = readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
+
+    assert.equal(result.code, 0);
+    assert.match(lastCheck, /重大决策确认检查/);
+    assert.match(result.out, /全部通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check fails loud when spec.json is corrupt', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-corrupt-spec-json-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
+    writeFileSync(join(canonical, 'spec.json'), '{not-json');
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /spec\.json .*不是合法 JSON/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check fails loud when spec.md drifts from spec.json hash', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-spec-json-drift-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
+    const brokenSpec = '# Broken view\n';
+    writeFileSync(join(tasks, 'spec.md'), brokenSpec);
+    writeFileSync(join(canonical, 'spec.md'), brokenSpec);
+    const specJson = structuredSpecJson('', {
+      major_change_gate: {
+        required: false,
+        types: [],
+        user_confirmed: null,
+        decision_brief_markdown: '- 用户确认: 无',
+      },
+      ui_gate: {
+        state: 'exempt',
+      },
+    });
+    writeFileSync(join(canonical, 'spec.json'), `${JSON.stringify(specJson, null, 2)}\n`);
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /任务文件 current\/canonical 漂移检查/);
+    assert.match(result.out, /source\.content_sha256 不一致/);
+    assert.match(result.out, /docpath tasks sync --from current/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

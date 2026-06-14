@@ -14,7 +14,6 @@ import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { readCurrentMd, readCurrentState } from '../utils/workspace.js';
-import { appendDecision } from '../governance/decisions.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 
 interface ReviewOptions {
@@ -164,7 +163,6 @@ async function writeReviewReport(docpathDir: string, changedFiles: string[], fin
 
 async function handleApprove(cwd: string, docpathDir: string, taskId: string): Promise<void> {
   console.log('\n✅ 审查已手动批准 (跳过自动检查)');
-  await appendDecision(cwd, 'review', '手动批准: 跳过自动检查');
   await writeBreadcrumb(cwd, { taskId, step: 'review', status: 'done', context: '手动批准' });
   const reviewPath = join(docpathDir, 'workspace', 'review.md');
   await writeFile(reviewPath, [
@@ -180,7 +178,6 @@ async function handleApprove(cwd: string, docpathDir: string, taskId: string): P
 async function persistReviewResult(cwd: string, taskId: string, groups: FindingGroups): Promise<void> {
   const { errors, warns, infos } = groups;
   const approved = errors.length === 0;
-  await appendDecision(cwd, 'review', `${approved ? '通过' : '需修改'}: ${errors.length} 错误, ${warns.length} 警告`);
   await writeBreadcrumb(cwd, {
     taskId,
     step: 'review',

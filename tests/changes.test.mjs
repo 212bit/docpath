@@ -131,6 +131,42 @@ describe('changes command', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('reports ignored DocPath evidence with git add -f hints in all output modes', () => {
+    const cwd = mkGitWorkspace();
+    writeFileSync(join(cwd, '.gitignore'), [
+      '.docpath/backlog/',
+      '.docpath/tasks/T-CHANGES/',
+      '',
+    ].join('\n'));
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    mkdirSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), '# spec\n\n> backlog_id: R-999\n');
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-999.md'), '# ignored backlog\n');
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES', 'spec.md'), '# ignored spec\n');
+    writeFileSync(join(cwd, 'README.md'), '# changed\n');
+
+    const human = run('changes', cwd);
+    assert.match(human, /被 gitignore 忽略的 DocPath evidence \(2\)/);
+    assert.match(human, /.docpath\/backlog\/R-999\.md/);
+    assert.match(human, /.docpath\/tasks\/T-CHANGES\/spec\.md/);
+    assert.match(human, /git add -f .*\.docpath\/backlog\/R-999\.md .*\.docpath\/tasks\/T-CHANGES\/spec\.md/);
+    assert.match(human, /存在被 gitignore 忽略的 DocPath evidence/);
+
+    const agent = run('changes --agent', cwd);
+    assert.match(agent, /ignored_evidence:/);
+    assert.match(agent, /count: 2/);
+    assert.match(agent, /add_command: "git add -f .*\.docpath\/backlog\/R-999\.md .*\.docpath\/tasks\/T-CHANGES\/spec\.md"/);
+
+    const parsed = JSON.parse(run('changes --json', cwd));
+    assert.equal(parsed.ignored_evidence.files.length, 2);
+    assert.equal(parsed.ignored_evidence.files.includes('.docpath/backlog/R-999.md'), true);
+    assert.equal(parsed.ignored_evidence.files.includes('.docpath/tasks/T-CHANGES/spec.md'), true);
+    assert.match(parsed.ignored_evidence.add_command, /git add -f/);
+    assert.equal(parsed.ready_to_commit, false);
+    assert.equal(parsed.blocking_reasons.some((reason) => /gitignore 忽略的 DocPath evidence/.test(reason)), true);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('changes --since summarizes diff files from a git ref', () => {
     const cwd = mkGitWorkspace();
     mkdirSync(join(cwd, 'src'), { recursive: true });

@@ -44,6 +44,10 @@ export interface ChangesReport {
     untracked: number;
   };
   groups: Record<ChangeGroupName, string[]>;
+  ignored_evidence: {
+    files: string[];
+    add_command: string | null;
+  };
   ready_to_commit: boolean;
   blocking_reasons: string[];
   suggested_commit_message: string;
@@ -194,16 +198,66 @@ function groupChangedFiles(files: ChangedFile[]): Record<ChangeGroupName, string
   return groups;
 }
 
+function shellQuotePath(path: string): string {
+  if (/^[A-Za-z0-9_./:@%+=,-]+$/.test(path)) return path;
+  return `'${path.replace(/'/g, `'\\''`)}'`;
+}
+
+function buildForceAddCommand(files: string[]): string | null {
+  if (files.length === 0) return null;
+  return `git add -f ${files.map(shellQuotePath).join(' ')}`;
+}
+
+async function readLinkedBacklogId(docpathDir: string, taskId: string | undefined): Promise<string | null> {
+  const candidates = [
+    join(docpathDir, 'tasks', 'current', 'spec.md'),
+    ...(taskId ? [
+      join(docpathDir, 'tasks', taskId, 'spec.md'),
+      join(docpathDir, 'tasks', 'done', taskId, 'spec.md'),
+    ] : []),
+  ];
+  for (const path of candidates) {
+    const raw = await readFileSafe(path);
+    const match = raw?.match(/^>\s*backlog_id:\s*(R-\d+)/m);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+function readIgnoredEvidenceFiles(gitRoot: string, taskId: string | undefined, backlogId: string | null): string[] {
+  const paths = [
+    '.docpath/backlog/backlog.md',
+    ...(backlogId ? [`.docpath/backlog/${backlogId}.md`] : []),
+    '.docpath/tasks/current',
+    ...(taskId ? [`.docpath/tasks/${taskId}`, `.docpath/tasks/done/${taskId}`] : []),
+  ];
+  try {
+    return Array.from(new Set(
+      runGit(gitRoot, ['ls-files', '--others', '--ignored', '--exclude-standard', '--', ...paths])
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .filter((file) => !file.endsWith('/')),
+    )).sort();
+  } catch {
+    return [];
+  }
+}
+
 function buildBlockingReasons(args: {
   files: ChangedFile[];
   since: string | null;
   hasTask: boolean;
   lastCheckPass: boolean;
   reviewPass: boolean;
+  ignoredEvidenceFiles: string[];
 }): string[] {
   const blockingReasons: string[] = [];
   if (args.files.length === 0) blockingReasons.push(args.since ? `相对 ${args.since} 没有变更` : '当前工作树没有可提交变更');
   if (!args.since && args.files.some((file) => file.untracked)) blockingReasons.push('存在未跟踪文件，请确认是否需要纳入提交');
+  if (!args.since && args.ignoredEvidenceFiles.length > 0) {
+    blockingReasons.push('存在被 gitignore 忽略的 DocPath evidence，请使用 git add -f 纳入提交');
+  }
   if (!args.hasTask) blockingReasons.push('当前没有关联的 DocPath 任务');
   if (!args.lastCheckPass) blockingReasons.push('last-check.md 未显示 PASS，请先运行 docpath check');
   if (!args.reviewPass) blockingReasons.push('review.md 未显示通过，请先运行 docpath review');
@@ -219,12 +273,15 @@ export async function buildChangesReport(cwd: string, options: Pick<ChangesOptio
     ? parseNameStatus(runGit(cwd, ['diff', '--name-status', since, '--']))
     : parsePorcelainStatus(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
   const groups = groupChangedFiles(files);
+  const backlogId = await readLinkedBacklogId(docpathDir, current?.task_id);
+  const ignoredEvidenceFiles = since ? [] : readIgnoredEvidenceFiles(gitRoot, current?.task_id, backlogId);
   const blockingReasons = buildBlockingReasons({
     files,
     since,
     hasTask: !!current?.task_id,
     lastCheckPass: await readLastCheckPass(docpathDir),
     reviewPass: await readReviewPass(docpathDir),
+    ignoredEvidenceFiles,
   });
 
   const partial: Omit<ChangesReport, 'suggested_commit_message'> = {
@@ -245,6 +302,10 @@ export async function buildChangesReport(cwd: string, options: Pick<ChangesOptio
       untracked: files.filter((file) => file.untracked).length,
     },
     groups,
+    ignored_evidence: {
+      files: ignoredEvidenceFiles,
+      add_command: buildForceAddCommand(ignoredEvidenceFiles),
+    },
     ready_to_commit: blockingReasons.length === 0,
     blocking_reasons: blockingReasons,
   };
@@ -281,6 +342,11 @@ function renderAgentYaml(report: ChangesReport): string {
     lines.push(`  ${group}:`);
     for (const file of report.groups[group]) lines.push(`    - ${yamlString(file)}`);
   }
+  lines.push('ignored_evidence:');
+  lines.push(`  count: ${report.ignored_evidence.files.length}`);
+  lines.push('  files:');
+  for (const file of report.ignored_evidence.files) lines.push(`    - ${yamlString(file)}`);
+  lines.push(`  add_command: ${report.ignored_evidence.add_command === null ? 'null' : yamlString(report.ignored_evidence.add_command)}`);
   lines.push('blocking_reasons:');
   for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
   lines.push(`suggested_commit_message: ${yamlString(report.suggested_commit_message)}`);
@@ -302,6 +368,15 @@ function renderHuman(report: ChangesReport): string {
     if (files.length === 0) continue;
     lines.push(`  ${GROUP_LABELS[group]} (${files.length})`);
     for (const file of files) lines.push(`    - ${file}`);
+  }
+
+  if (report.ignored_evidence.files.length > 0) {
+    lines.push(`\n  被 gitignore 忽略的 DocPath evidence (${report.ignored_evidence.files.length})`);
+    for (const file of report.ignored_evidence.files) lines.push(`    - ${file}`);
+    if (report.ignored_evidence.add_command) {
+      lines.push('  提交提示');
+      lines.push(`    ${report.ignored_evidence.add_command}`);
+    }
   }
 
   if (report.blocking_reasons.length > 0) {

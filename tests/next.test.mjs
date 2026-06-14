@@ -548,6 +548,41 @@ warned: false
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('does not let pending-done override unfinished plan work', () => {
+    const cwd = mkWorkspace({
+      phase: 'executing',
+      gate: 'none',
+      plan: '# Plan\n\n- [x] S1: completed\n- [ ] S2: continue implementation\n',
+      breadcrumb: [
+        '# Breadcrumb',
+        '',
+        '### ✅ S1 [T-NEXT] — 2026-05-29T00:00:00.000Z',
+        '',
+        '---',
+        'taskId: T-NEXT',
+        'step: S1',
+        'status: done',
+        'timestamp: 2026-05-29T00:00:00.000Z',
+        '---',
+        '',
+      ].join('\n'),
+    });
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'pending-done.md'), `---
+task_id: T-NEXT
+entered_at: 2026-05-29T00:00:00.000Z
+phase: executing
+warned: false
+---
+`);
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath go --step S2');
+    assert.match(output.next_action, /pending-done 哨兵/);
+    assert.ok(output.required_files.includes('.docpath/workspace/pending-done.md'));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('recommends gc for completed projects with many historical task dirs and no backlog candidates', () => {
     const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
     const dp = join(cwd, '.docpath');

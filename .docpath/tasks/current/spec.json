@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-14T01:46:59.409Z",
+    "updated_at": "2026-06-14T01:46:59.409Z"
+  },
+  "task_id": "T-20260614-dogfood",
+  "backlog_id": "R-165",
+  "title": "T-20260614-dogfood - 修复 dogfood 暴露的生命周期与证据模型问题",
+  "markdown": "# T-20260614-dogfood - 修复 dogfood 暴露的生命周期与证据模型问题\n\n> backlog_id: R-165\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\nR-164 dogfood 暴露出 DocPath 在多人团队场景下的几类流程问题：状态机本身可以落账，但部分路由和证据模型会诱导 Agent 先标记完成再验证、过早收尾、读取 stale JSON、把低价值统计写入 decisions，以及在提交阶段漏掉被 git ignore 的审计证据。\n\n这些问题不适合拆成多个小 backlog，因为它们共同影响同一条工作流主路径：spec/plan/go/check/review/journal 和团队交接审计。当前任务把它们作为一个流程模型修复包处理，目标是让 DocPath 的机器真源、路由建议和审计证据更自洽。\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: 修复 terminal verification step 与 check 子任务完成度的自指死结\n  - `docpath check` 不应要求当前 terminal verification step 预先标记 done 才能通过，或 plan 生成不再把 check/review/journal 类收尾动作作为业务 checklist。\n- [ ] FR-2: 修复 pending-done 哨兵的路由优先级\n  - 当仍存在 in_progress step 或未完成 plan step 时，pending-done 只能作为 warning，不应把推荐命令切到 `docpath agent done`。\n- [ ] FR-3: 增加 structured JSON 与 Markdown 视图的 stale/hash drift 检查\n  - `spec.json`/`plan.json` 需要记录对应 Markdown 内容 hash；读路径或 check 发现 JSON 与 Markdown 失步时 fail loud，并提示 `docpath tasks sync --from current|canonical`。\n- [ ] FR-4: 禁止 review/check 统计污染 decisions.md\n  - `decisions.md` 只保存可复用 ADR；review/check 的普通统计只能写入 `review.md`、`last-check.md`、breadcrumb 或 JSONL 证据。\n- [ ] FR-5: 暴露 ignored backlog/task evidence 的提交提示\n  - `docpath changes` 或相关 agent 输出需要列出已变更但被 git ignore 的 `.docpath/backlog`、`.docpath/tasks/current`、`.docpath/tasks/done` 证据，并提示需要 `git add -f`。\n- [ ] FR-6: 保持 R-164 schema-first 行为兼容\n  - 新增 hash/drift 逻辑不得破坏旧任务缺少 JSON 时的 Markdown fallback，也不得让损坏 JSON 静默 fallback。\n\n### 非功能需求\n- [ ] NFR-1: 保持现有 DocPath CLI 主命令兼容\n- [ ] NFR-2: 所有状态和证据写入继续通过 DocPath CLI 或既有工具路径落账\n- [ ] NFR-3: 新增门禁必须 fail loud，错误信息包含修复命令\n- [ ] NFR-4: 变更需要覆盖路由、check、review、changes 和 structured-docs 的回归测试\n\n## 3. 范围界定\n\n### 包含\n- `next/status` 的 pending-done 路由优先级修复。\n- `check` 的 plan 完成度判定或 terminal verification step 豁免规则。\n- `structured-docs` 的 Markdown hash 字段生成、校验和 stale drift 检测。\n- `task-files`/`tasks sync` 的 JSON/Markdown 同步策略。\n- `review` 或 decisions 写入路径的低价值 ADR 禁写修复。\n- `changes` 或 agent 状态输出的 ignored evidence 提示。\n- 覆盖以上行为的回归测试。\n\n### 不包含\n- 不重写完整 FSM。\n- 不引入数据库或外部审计系统。\n- 不删除 `spec.md`/`plan.md` 视图。\n- 不改变 R-164 已建立的 JSON/JSONL 真源方向。\n- 不在本任务内处理 install manifest drift。\n- 不清理历史 `decisions.md` 中已有的低价值记录，只防止新增污染。\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | 合并修复 dogfood 问题 | 拆成多个 backlog / 一个流程修复包 | 一个流程修复包 | 这些问题共同影响 spec/plan/go/check/review/journal 主路径，拆开容易只修局部症状。 |\n| 2 | JSON/Markdown 失步策略 | 静默选择 JSON / 静默选择 Markdown / hash drift fail loud | hash drift fail loud | 多人团队需要清晰知道真源失步，不能继续读旧上下文。 |\n| 3 | decisions 写入边界 | review/check 也写 ADR / 只写可复用决策 | 只写可复用决策 | 普通统计进入 decisions 会降低审计信噪比。 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [x] 数据库 / 存储模型\n- [x] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [x] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [x] 长期维护成本增加\n- [ ] 其他\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）\n- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）\n\n### Decision Brief\n- 当前问题: Dogfood 证明 DocPath 的状态落账能力存在，但 lifecycle route、计划完成度、structured doc 真源和 decisions 写入边界仍会制造错误激励。\n- 目标: 修复最影响多人团队协作的 5 个流程问题，让 Agent 不需要先假完成再验证，不会因 pending-done 过早收尾，不会静默读取 stale JSON，不会污染 decisions，也不会漏提交被 ignore 的任务证据。\n- 背景: 用户要求把这些问题放入同一个 backlog 并进行修复。\n- 可选方案:\n  1. 逐个 backlog 修复：粒度清楚，但容易跨任务留下半套流程语义。\n  2. 一个流程修复包：影响面更大，但可以用同一批回归测试锁住主路径。\n- 推荐方案: 采用方案 2，保持每个修复点边界小，但统一在一个任务中完成主路径一致性修复。\n- 不做什么: 不重写 FSM，不做安装资产漂移修复，不清理历史 decisions 噪音。\n- 成本: 需要改动 next/check/review/changes/structured-docs，并补多组回归测试。\n- 风险: 新的 hash drift 门禁可能暴露既有任务中的失步文件，需要错误提示足够明确。\n- 回滚方案: hash drift 可先限定在 active task 的 spec/plan；pending-done 路由和 decisions 禁写均可独立回滚。\n- 用户确认: 用户明确要求把 dogfood 发现的问题放到一个 backlog 内进行修复。\n\n## 5. 验收标准\n\n- [ ] AC-1: 仍有未完成业务 step 或 in_progress step 时，`docpath next --agent` 不再因为 pending-done 推荐 `docpath agent done`。\n- [ ] AC-2: terminal verification step 不再造成 check 自指死结；Agent 可以在不提前假完成验证步骤的情况下运行 check。\n- [ ] AC-3: `spec.json`/`plan.json` 记录 Markdown hash；JSON 与 Markdown 失步时 check/read 路径 fail loud，并提示同步命令。\n- [ ] AC-4: 旧任务缺少 JSON 时仍可 Markdown fallback；损坏 JSON 仍 fail loud。\n- [ ] AC-5: `docpath review`/`docpath check` 不再新增普通统计类 `decisions.md` ADR，并有测试覆盖。\n- [ ] AC-6: `docpath changes` 或 agent 输出能提示 ignored backlog/task evidence 及 `git add -f` 修复方式。\n- [ ] AC-7: 补充上述流程回归测试，`pnpm test`、`docpath check`、`docpath review`、`docpath journal` 通过。\n- [ ] AC-8: backlog 条目 R-165 与任务 T-20260614-dogfood 建立双向关联并完成归档。\n\n---\n\n*此文件由 `docpath write-spec` 写入。*\n",
+  "generated_at": "2026-06-14T01:46:59.409Z",
+  "scope": {
+    "included": [
+      "`next/status` 的 pending-done 路由优先级修复。",
+      "`check` 的 plan 完成度判定或 terminal verification step 豁免规则。",
+      "`structured-docs` 的 Markdown hash 字段生成、校验和 stale drift 检测。",
+      "`task-files`/`tasks sync` 的 JSON/Markdown 同步策略。",
+      "`review` 或 decisions 写入路径的低价值 ADR 禁写修复。",
+      "`changes` 或 agent 状态输出的 ignored evidence 提示。",
+      "覆盖以上行为的回归测试。"
+    ],
+    "excluded": [
+      "不重写完整 FSM。",
+      "不引入数据库或外部审计系统。",
+      "不删除 `spec.md`/`plan.md` 视图。",
+      "不改变 R-164 已建立的 JSON/JSONL 真源方向。",
+      "不在本任务内处理 install manifest drift。",
+      "不清理历史 `decisions.md` 中已有的低价值记录，只防止新增污染。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "数据库 / 存储模型",
+      "API / 数据契约",
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "用户明确要求把 dogfood 发现的问题放到一个 backlog 内进行修复。",
+    "decision_brief_markdown": "- 当前问题: Dogfood 证明 DocPath 的状态落账能力存在，但 lifecycle route、计划完成度、structured doc 真源和 decisions 写入边界仍会制造错误激励。\n- 目标: 修复最影响多人团队协作的 5 个流程问题，让 Agent 不需要先假完成再验证，不会因 pending-done 过早收尾，不会静默读取 stale JSON，不会污染 decisions，也不会漏提交被 ignore 的任务证据。\n- 背景: 用户要求把这些问题放入同一个 backlog 并进行修复。\n- 可选方案:\n  1. 逐个 backlog 修复：粒度清楚，但容易跨任务留下半套流程语义。\n  2. 一个流程修复包：影响面更大，但可以用同一批回归测试锁住主路径。\n- 推荐方案: 采用方案 2，保持每个修复点边界小，但统一在一个任务中完成主路径一致性修复。\n- 不做什么: 不重写 FSM，不做安装资产漂移修复，不清理历史 decisions 噪音。\n- 成本: 需要改动 next/check/review/changes/structured-docs，并补多组回归测试。\n- 风险: 新的 hash drift 门禁可能暴露既有任务中的失步文件，需要错误提示足够明确。\n- 回滚方案: hash drift 可先限定在 active task 的 spec/plan；pending-done 路由和 decisions 禁写均可独立回滚。\n- 用户确认: 用户明确要求把 dogfood 发现的问题放到一个 backlog 内进行修复。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "修复 terminal verification step 与 check 子任务完成度的自指死结",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "修复 pending-done 哨兵的路由优先级",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "增加 structured JSON 与 Markdown 视图的 stale/hash drift 检查",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "禁止 review/check 统计污染 decisions.md",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "暴露 ignored backlog/task evidence 的提交提示",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "保持 R-164 schema-first 行为兼容",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持现有 DocPath CLI 主命令兼容",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "所有状态和证据写入继续通过 DocPath CLI 或既有工具路径落账",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "新增门禁必须 fail loud，错误信息包含修复命令",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "变更需要覆盖路由、check、review、changes 和 structured-docs 的回归测试",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "仍有未完成业务 step 或 in_progress step 时，`docpath next --agent` 不再因为 pending-done 推荐 `docpath agent done`。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "terminal verification step 不再造成 check 自指死结；Agent 可以在不提前假完成验证步骤的情况下运行 check。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`spec.json`/`plan.json` 记录 Markdown hash；JSON 与 Markdown 失步时 check/read 路径 fail loud，并提示同步命令。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "旧任务缺少 JSON 时仍可 Markdown fallback；损坏 JSON 仍 fail loud。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "`docpath review`/`docpath check` 不再新增普通统计类 `decisions.md` ADR，并有测试覆盖。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "`docpath changes` 或 agent 输出能提示 ignored backlog/task evidence 及 `git add -f` 修复方式。",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "补充上述流程回归测试，`pnpm test`、`docpath check`、`docpath review`、`docpath journal` 通过。",
+      "done": false
+    },
+    {
+      "id": "AC-8",
+      "text": "backlog 条目 R-165 与任务 T-20260614-dogfood 建立双向关联并完成归档。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: Dogfood 证明 DocPath 的状态落账能力存在，但 lifecycle route、计划完成度、structured doc 真源和 decisions 写入边界仍会制造错误激励。\n- 目标: 修复最影响多人团队协作的 5 个流程问题，让 Agent 不需要先假完成再验证，不会因 pending-done 过早收尾，不会静默读取 stale JSON，不会污染 decisions，也不会漏提交被 ignore 的任务证据。\n- 背景: 用户要求把这些问题放入同一个 backlog 并进行修复。\n- 可选方案:\n  1. 逐个 backlog 修复：粒度清楚，但容易跨任务留下半套流程语义。\n  2. 一个流程修复包：影响面更大，但可以用同一批回归测试锁住主路径。\n- 推荐方案: 采用方案 2，保持每个修复点边界小，但统一在一个任务中完成主路径一致性修复。\n- 不做什么: 不重写 FSM，不做安装资产漂移修复，不清理历史 decisions 噪音。\n- 成本: 需要改动 next/check/review/changes/structured-docs，并补多组回归测试。\n- 风险: 新的 hash drift 门禁可能暴露既有任务中的失步文件，需要错误提示足够明确。\n- 回滚方案: hash drift 可先限定在 active task 的 spec/plan；pending-done 路由和 decisions 禁写均可独立回滚。\n- 用户确认: 用户明确要求把 dogfood 发现的问题放到一个 backlog 内进行修复。"
+}

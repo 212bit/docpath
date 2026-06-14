@@ -5,270 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🔄 S2 [T-20260613-optimize-workflow] — 2026-06-13T14:31:11.672Z
-
----
-taskId: T-20260613-optimize-workflow
-step: S2
-status: in_progress
-timestamp: 2026-06-13T14:31:11.672Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: breadcrumb 自动去重
-
-### ✅ S2 [T-20260613-optimize-workflow] — 2026-06-13T14:32:34.535Z
-
----
-taskId: T-20260613-optimize-workflow
-step: S2
-status: done
-timestamp: 2026-06-13T14:32:34.535Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-
-### 🔄 S3 [T-20260613-optimize-workflow] — 2026-06-13T14:32:41.029Z
-
----
-taskId: T-20260613-optimize-workflow
-step: S3
-status: in_progress
-timestamp: 2026-06-13T14:32:41.029Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: check 输出分级
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:36:31.613Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:36:31.613Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 测试, 任务文件 current/canonical 漂移检查, 重大决策确认检查, 子任务完成度 (2/9)
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:37:41.173Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:37:41.173Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 测试, 任务文件 current/canonical 漂移检查, 重大决策确认检查, 子任务完成度 (2/9)
-
-### ✅ S3 [T-20260613-optimize-workflow] — 2026-06-13T14:37:52.825Z
-
----
-taskId: T-20260613-optimize-workflow
-step: S3
-status: done
-timestamp: 2026-06-13T14:37:52.825Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-
-### 🔄 S4 [T-20260613-optimize-workflow] — 2026-06-13T14:37:59.674Z
-
----
-taskId: T-20260613-optimize-workflow
-step: S4
-status: in_progress
-timestamp: 2026-06-13T14:37:59.674Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 快速修复建议
-
-### ✅ S4 [T-20260613-optimize-workflow] — 2026-06-13T14:43:03.644Z
-
----
-taskId: T-20260613-optimize-workflow
-step: S4
-status: done
-timestamp: 2026-06-13T14:43:03.644Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-
-### 🔄 S5 [T-20260613-optimize-workflow] — 2026-06-13T14:43:12.233Z
-
----
-taskId: T-20260613-optimize-workflow
-step: S5
-status: in_progress
-timestamp: 2026-06-13T14:43:12.233Z
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证所有优化
-
-### ✅ S5 [T-20260613-optimize-workflow] — 2026-06-13T14:44:07.876Z
-
----
-taskId: T-20260613-optimize-workflow
-step: S5
-status: done
-timestamp: 2026-06-13T14:44:07.876Z
----
-
-- **状态**: done
-- **上下文**: agent-step: S5
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:47:22.890Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:47:22.890Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: TypeScript 编译, 测试, 重大决策确认检查, 子任务完成度 (5/12)
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:48:58.998Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:48:58.998Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 测试, 重大决策确认检查, 子任务完成度 (5/12)
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:49:29.349Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:49:29.349Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 重大决策确认检查, 子任务完成度 (5/12)
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:50:33.508Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:50:33.508Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 重大决策确认检查, 子任务完成度 (5/12)
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:52:21.716Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:52:21.716Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 子任务完成度 (5/12)
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:53:56.545Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:53:56.545Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 子任务完成度 (10/12)
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:55:07.156Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:55:07.156Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 子任务完成度 (5/7)
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:57:40.962Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:57:40.962Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 子任务完成度 (5/7)
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T14:58:48.954Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T14:58:48.954Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (0/5)
-
-### 🚫 check [T-20260613-optimize-workflow] — 2026-06-13T15:00:25.291Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: blocked
-timestamp: 2026-06-13T15:00:25.291Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: ⚠️  Checklist 同步 (1/5)
-
-### ✅ check [T-20260613-optimize-workflow] — 2026-06-13T15:01:49.128Z
-
----
-taskId: T-20260613-optimize-workflow
-step: check
-status: done
-timestamp: 2026-06-13T15:01:49.128Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260613-optimize-workflow] — 2026-06-13T15:02:05.790Z
-
----
-taskId: T-20260613-optimize-workflow
-step: review
-status: done
-timestamp: 2026-06-13T15:02:05.790Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 6 警告, 0 提示
-
 ### ✅ journal [T-20260613-optimize-workflow] — 2026-06-13T15:02:19.794Z
 
 ---
@@ -604,3 +340,267 @@ timestamp: 2026-06-13T17:52:30.423Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (7/7 步)
+
+### 🔄 S1 [T-20260613-spec-json-schema] — 2026-06-13T18:07:49.899Z
+
+---
+taskId: T-20260613-spec-json-schema
+step: S1
+status: in_progress
+timestamp: 2026-06-13T18:07:49.899Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理 深化 spec.json schema 与门禁字段
+
+### ✅ S1 [T-20260613-spec-json-schema] — 2026-06-13T18:08:05.271Z
+
+---
+taskId: T-20260613-spec-json-schema
+step: S1
+status: done
+timestamp: 2026-06-13T18:08:05.271Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+
+### 🔄 S2 [T-20260613-spec-json-schema] — 2026-06-13T18:08:22.134Z
+
+---
+taskId: T-20260613-spec-json-schema
+step: S2
+status: in_progress
+timestamp: 2026-06-13T18:08:22.134Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 深化 spec.json schema 与门禁字段
+
+### ✅ S2 [T-20260613-spec-json-schema] — 2026-06-13T18:24:37.729Z
+
+---
+taskId: T-20260613-spec-json-schema
+step: S2
+status: done
+timestamp: 2026-06-13T18:24:37.729Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+
+### 🔄 S3 [T-20260613-spec-json-schema] — 2026-06-13T18:24:56.369Z
+
+---
+taskId: T-20260613-spec-json-schema
+step: S3
+status: in_progress
+timestamp: 2026-06-13T18:24:56.369Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 验证门禁并归档
+
+### ✅ S3 [T-20260613-spec-json-schema] — 2026-06-13T18:25:10.559Z
+
+---
+taskId: T-20260613-spec-json-schema
+step: S3
+status: done
+timestamp: 2026-06-13T18:25:10.559Z
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+
+### ✅ check [T-20260613-spec-json-schema] — 2026-06-13T18:26:10.712Z
+
+---
+taskId: T-20260613-spec-json-schema
+step: check
+status: done
+timestamp: 2026-06-13T18:26:10.712Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260613-spec-json-schema] — 2026-06-13T18:26:19.980Z
+
+---
+taskId: T-20260613-spec-json-schema
+step: review
+status: done
+timestamp: 2026-06-13T18:26:19.980Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 3 警告, 2 提示
+
+### ✅ journal [T-20260613-spec-json-schema] — 2026-06-13T18:26:27.131Z
+
+---
+taskId: T-20260613-spec-json-schema
+step: journal
+status: done
+timestamp: 2026-06-13T18:26:27.131Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (3/3 步)
+
+### 🔄 S1 [T-20260614-dogfood] — 2026-06-14T01:47:38.141Z
+
+---
+taskId: T-20260614-dogfood
+step: S1
+status: in_progress
+timestamp: 2026-06-14T01:47:38.141Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理流程路由与证据写入点
+
+### ✅ S1 [T-20260614-dogfood] — 2026-06-14T01:48:27.244Z
+
+---
+taskId: T-20260614-dogfood
+step: S1
+status: done
+timestamp: 2026-06-14T01:48:27.244Z
+---
+
+- **状态**: done
+- **上下文**: 定位完成：next/status agent route 在 agent-output/runtime；check 子任务完成度在 check.ts；plan 草案生成在 plan.ts；structured hash 在 structured-docs/task-files；review 统计污染来自 review.ts appendDecision；ignored evidence 提示在 changes.ts。
+
+### 🔄 S2 [T-20260614-dogfood] — 2026-06-14T01:48:35.141Z
+
+---
+taskId: T-20260614-dogfood
+step: S2
+status: in_progress
+timestamp: 2026-06-14T01:48:35.141Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 修复 pending-done 路由与 terminal verification 策略
+
+### ✅ S2 [T-20260614-dogfood] — 2026-06-14T01:56:34.260Z
+
+---
+taskId: T-20260614-dogfood
+step: S2
+status: done
+timestamp: 2026-06-14T01:56:34.260Z
+---
+
+- **状态**: done
+- **上下文**: 修复 pending-done 不再覆盖未完成计划步骤；末尾验证门禁步骤由 check/review/journal 生命周期覆盖；plan 草案移除收尾步骤；针对 next/write/check 的 59 项回归通过。
+
+### 🔄 S3 [T-20260614-dogfood] — 2026-06-14T01:56:40.298Z
+
+---
+taskId: T-20260614-dogfood
+step: S3
+status: in_progress
+timestamp: 2026-06-14T01:56:40.298Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 增加 spec/plan JSON 与 Markdown hash drift 检查
+
+### ✅ S3 [T-20260614-dogfood] — 2026-06-14T02:02:54.480Z
+
+---
+taskId: T-20260614-dogfood
+step: S3
+status: done
+timestamp: 2026-06-14T02:02:54.480Z
+---
+
+- **状态**: done
+- **上下文**: 为 spec.json/plan.json 写入 source.content_sha256；读取 structured JSON 时校验 sibling Markdown hash；check/tasks drift 报告 JSON/Markdown hash 不一致并提示 tasks sync；旧 source 字符串和缺 hash JSON 兼容 normalize；相关 47 项回归通过。
+
+### 🔄 S4 [T-20260614-dogfood] — 2026-06-14T02:03:01.092Z
+
+---
+taskId: T-20260614-dogfood
+step: S4
+status: in_progress
+timestamp: 2026-06-14T02:03:01.092Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 收紧 decisions.md 写入边界
+
+### ✅ S4 [T-20260614-dogfood] — 2026-06-14T02:05:44.782Z
+
+---
+taskId: T-20260614-dogfood
+step: S4
+status: done
+timestamp: 2026-06-14T02:05:44.782Z
+---
+
+- **状态**: done
+- **上下文**: 移除 review 普通结果和手动 approve 写入 decisions.md 的 appendDecision 调用；review 证据仍留在 review/breadcrumb/state；新增普通 review 与 --approve 不生成 decisions 的回归；decisions ADR 自身测试仍通过。
+
+### 🔄 S5 [T-20260614-dogfood] — 2026-06-14T02:05:53.123Z
+
+---
+taskId: T-20260614-dogfood
+step: S5
+status: in_progress
+timestamp: 2026-06-14T02:05:53.123Z
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 暴露 ignored evidence 提交提示并补齐回归测试
+
+### ✅ S5 [T-20260614-dogfood] — 2026-06-14T02:08:41.713Z
+
+---
+taskId: T-20260614-dogfood
+step: S5
+status: done
+timestamp: 2026-06-14T02:08:41.713Z
+---
+
+- **状态**: done
+- **上下文**: changes 报告新增 ignored_evidence，扫描被 gitignore 忽略的 backlog/task evidence；human/agent/json 均输出文件列表和 git add -f 提示；存在 ignored evidence 时阻塞 ready_to_commit；changes 8 项回归通过。
+
+### ✅ check [T-20260614-dogfood] — 2026-06-14T02:11:16.637Z
+
+---
+taskId: T-20260614-dogfood
+step: check
+status: done
+timestamp: 2026-06-14T02:11:16.637Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260614-dogfood] — 2026-06-14T02:11:16.758Z
+
+---
+taskId: T-20260614-dogfood
+step: review
+status: done
+timestamp: 2026-06-14T02:11:16.758Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 8 警告, 3 提示
+
+### ✅ journal [T-20260614-dogfood] — 2026-06-14T02:11:16.868Z
+
+---
+taskId: T-20260614-dogfood
+step: journal
+status: done
+timestamp: 2026-06-14T02:11:16.868Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (5/5 步)

@@ -3,26 +3,30 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260613-schema-first-json-jsonl
-task_title: Schema-first JSON/JSONL 真源迁移
+task_id: T-20260614-dogfood
+task_title: 修复 dogfood 暴露的生命周期与证据模型问题
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-13T17:52:30.324Z
-updated_at: 2026-06-13T17:52:30.323Z
+started_at: 2026-06-14T02:11:16.766Z
+updated_at: 2026-06-14T02:11:16.766Z
 ```
 
-> 📖 规约: [spec.md](../tasks/current/spec.md)
-> 📋 计划: [plan.md](../tasks/current/plan.md)
+> 📖 规约: [spec.md](../tasks/T-20260614-dogfood/spec.md)
+> 📋 计划: [plan.md](../tasks/T-20260614-dogfood/plan.md)
 
 ## ✅ 执行检查清单
 
-- [ ] 暂无 plan.md checklist，请补充 `.docpath/tasks/current/plan.md`
+- [x] S1: 梳理流程路由与证据写入点
+- [x] S2: 修复 pending-done 路由与 terminal verification 策略
+- [x] S3: 增加 spec/plan JSON 与 Markdown hash drift 检查
+- [x] S4: 收紧 decisions.md 写入边界
+- [x] S5: 暴露 ignored evidence 提交提示并补齐回归测试
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-13T17:52:00.384Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260613-schema-first-json-jsonl] — 2026-06-13T17:52:08.411Z · 状态: done · 代码审查: 0 错误, 12 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-14T02:14:20.517Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ journal [T-20260614-dogfood] — 2026-06-14T02:11:16.868Z · 状态: done · 知识归档完成 (5/5 步)
 
 ## 🔄 同步说明
 

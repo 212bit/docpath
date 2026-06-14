@@ -73,6 +73,46 @@ function specWithUiDeclaration(declaration) {
   ].join('\n');
 }
 
+function writeUiSpecJson(tasks, markdown, state) {
+  writeFileSync(join(tasks, 'spec.json'), `${JSON.stringify({
+    schema_version: 1,
+    kind: 'spec',
+    source: {
+      kind: 'markdown',
+      created_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z',
+    },
+    task_id: 'T-AGENT',
+    backlog_id: null,
+    title: 'T-AGENT - Agent Lifecycle',
+    markdown,
+    generated_at: '2026-06-01T00:00:00.000Z',
+    scope: {
+      included: ['go 门禁'],
+      excluded: ['真实外部检查'],
+    },
+    major_change_gate: {
+      required: false,
+      types: [],
+      user_confirmed: null,
+      decision_brief_markdown: '',
+    },
+    ui_gate: {
+      state,
+    },
+    functional_requirements: [
+      { id: 'FR-1', text: 'go 门禁按显式声明拦截或放行', done: false },
+    ],
+    non_functional_requirements: [
+      { id: 'NFR-1', text: '保持测试隔离', done: false },
+    ],
+    acceptance_criteria: [
+      { id: 'AC-1', text: 'go 门禁行为正确', done: false },
+    ],
+    decision_brief: '',
+  }, null, 2)}\n`);
+}
+
 describe('go UI 设计门禁', () => {
   const dirs = [];
   const mkWorkspace = (declaration) => {
@@ -114,5 +154,13 @@ describe('go UI 设计门禁', () => {
     const out = run('go --dry-run', cwd);
     assert.match(out, /dry-run/, 'dry-run 应预览');
     assert.doesNotMatch(out, /UI 设计门禁未通过/, 'dry-run 不应触发门禁');
+  });
+
+  it('spec.json ui_gate 优先于 spec.md 显式声明', () => {
+    const { cwd, tasks } = mkWorkspace('exempt');
+    writeUiSpecJson(tasks, specWithUiDeclaration('exempt'), 'required');
+    const out = run('go --step S1', cwd);
+    assert.match(out, /UI 设计门禁未通过/, 'JSON required 应覆盖 Markdown exempt');
+    assert.match(out, /design-preview\.md/, '应按 required 提示缺失设计产物');
   });
 });

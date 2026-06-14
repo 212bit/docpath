@@ -12,7 +12,7 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolveDocpathDir } from './file.js';
-import { resolveActiveTaskDocPath } from './task-files.js';
+import { readActiveStructuredSpecDocument, readActiveTaskFile, resolveActiveTaskDocPath } from './task-files.js';
 import { readCurrentState } from './workspace.js';
 
 /**
@@ -68,18 +68,11 @@ async function readActiveTaskText(cwd: string): Promise<{ specText: string; hays
   const docpathDir = await resolveDocpathDir(cwd);
   const state = await readCurrentState(cwd);
   const title = `${state?.task_title || ''} ${state?.task_id || ''}`;
-  const specPath = resolveActiveTaskDocPath(docpathDir, state?.task_id || '', 'spec.md');
   const planPath = resolveActiveTaskDocPath(docpathDir, state?.task_id || '', 'plan.md');
-
-  let specText = '';
-  const parts: string[] = [title];
-  for (const file of [specPath, planPath]) {
-    if (!existsSync(file)) continue;
-    try {
-      const content = await readFile(file, 'utf-8');
-      parts.push(content);
-      if (file === specPath) specText = content;
-    } catch { /* ignore unreadable */ }
+  const specText = await readActiveTaskFile(docpathDir, state?.task_id, 'spec.md');
+  const parts: string[] = [title, specText];
+  if (existsSync(planPath)) {
+    try { parts.push(await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md')); } catch { /* ignore unreadable */ }
   }
   return { specText, haystack: parts.join('\n') };
 }
@@ -89,6 +82,13 @@ async function readActiveTaskText(cwd: string): Promise<{ specText: string; hays
  * 优先级：spec 4.1 显式声明 > 关键词回退。
  */
 export async function resolveUiDesignRequirement(cwd: string): Promise<UiDesignRequirement> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const state = await readCurrentState(cwd);
+  const structuredSpec = await readActiveStructuredSpecDocument(docpathDir, state?.task_id);
+  if (structuredSpec?.ui_gate?.state && structuredSpec.ui_gate.state !== 'unknown') {
+    return structuredSpec.ui_gate.state;
+  }
+
   const { specText, haystack } = await readActiveTaskText(cwd);
 
   const explicit = parseExplicitUiDeclaration(specText);

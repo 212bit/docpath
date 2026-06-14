@@ -694,7 +694,31 @@ function generateQuickFix(context: AgentOutputContext): string | undefined {
 
 function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof inferNextAction> {
   const { pendingDone, state } = context;
+  const inferred = inferNextAction(
+    state,
+    context.bc,
+    context.planTasks,
+    context.lastCheckContent,
+    context.drift,
+    context.hasSpec,
+    context.backlogItems,
+    context.tddState,
+    context.historicalTaskDirCount,
+    context.lessonSummary,
+    context.hasIncompleteSpec,
+  );
+
   if (pendingDone && state?.phase === 'executing' && pendingDone.task_id === state.task_id) {
+    const hasActiveOrOpenPlanWork = context.bc.inProgress > 0 || context.planTasks.some((task) => !task.done);
+    if (hasActiveOrOpenPlanWork) {
+      return {
+        ...inferred,
+        next_action: `${inferred.next_action}（检测到 pending-done 哨兵，完成当前步骤后再收尾）`,
+        required_context: Array.from(new Set([...inferred.required_context, '.docpath/workspace/pending-done.md'])),
+        required_files: Array.from(new Set([...inferred.required_files, '.docpath/workspace/pending-done.md'])),
+      };
+    }
+
     return {
       next_action: `检测到未收尾任务哨兵，请先完成当前任务: ${pendingDone.task_id}`,
       recommended_command: 'docpath agent done',
@@ -713,19 +737,7 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
     };
   }
 
-  return inferNextAction(
-    state,
-    context.bc,
-    context.planTasks,
-    context.lastCheckContent,
-    context.drift,
-    context.hasSpec,
-    context.backlogItems,
-    context.tddState,
-    context.historicalTaskDirCount,
-    context.lessonSummary,
-    context.hasIncompleteSpec,
-  );
+  return inferred;
 }
 
 /**

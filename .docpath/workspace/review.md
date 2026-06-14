@@ -1,17 +1,17 @@
 # Code Review Report
 
-**时间**: 2026-06-13T17:52:08.419Z
-**文件**: 21
+**时间**: 2026-06-14T02:14:33.644Z
+**文件**: 17
 
+- [WARN] src/commands/changes.ts: 函数 buildChangesReport 过长 (51 行)，建议拆分
+- [WARN] src/commands/check.ts: 函数 validateTaskDocuments 过长 (54 行)，建议拆分
 - [WARN] src/commands/check.ts: 函数 checkUiUxDesignGate 过长 (122 行)，建议拆分
 - [WARN] src/commands/check.ts: 函数 checkContextIndexHealth 过长 (51 行)，建议拆分
-- [WARN] src/commands/context.ts: 函数 renderIndexedDocs 过长 (52 行)，建议拆分
-- [WARN] src/commands/context.ts: 函数 contextCommand 过长 (101 行)，建议拆分
-- [WARN] src/commands/export.ts: 函数 exportCommand 过长 (73 行)，建议拆分
-- [WARN] src/commands/go.ts: 函数 goCommand 过长 (65 行)，建议拆分
-- [WARN] src/governance/decisions.ts: 函数 gcDecisions 过长 (60 行)，建议拆分
+- [WARN] src/commands/tasks.ts: 函数 tasksCommand 过长 (52 行)，建议拆分
 - [WARN] src/utils/agent-output.ts: 函数 selectCurrentFocus 过长 (53 行)，建议拆分
 - [WARN] src/utils/agent-output.ts: 函数 generateAgentOutput 过长 (67 行)，建议拆分
-- [WARN] src/utils/context-index.ts: 函数 buildHybridContextIndex 过长 (77 行)，建议拆分
-- [WARN] src/utils/disclosure.ts: L193: 生产代码中的 console.log
-- [WARN] src/utils/disclosure.ts: 函数 collectDisclosureItems 过长 (77 行)，建议拆分
+- [WARN] src/utils/structured-docs.ts: 函数 renderSpecMarkdownFromDocument 过长 (59 行)，建议拆分
+- [WARN] src/utils/task-files.ts: 函数 detectActiveTaskFileDrift 过长 (52 行)，建议拆分
+- [INFO] tests/check-review.test.mjs: L189: 未处理的 TODO: writeFileSync(join(cwd, 'todo.ts'), '// TODO handle follow-up\n');
+- [INFO] tests/check-review.test.mjs: L209: 未处理的 TODO: writeFileSync(join(cwd, 'todo.ts'), '// TODO review current worktree\n');
+- [INFO] tests/check-review.test.mjs: L222: 未处理的 TODO: writeFileSync(join(cwd, 'todo.ts'), '// TODO review evidence stays out of ADR\n'

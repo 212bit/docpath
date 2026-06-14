@@ -95,6 +95,8 @@ describe('write commands', () => {
     const spec = [
       '# T-WRITE - 合法 Spec',
       '',
+      '> backlog_id: R-WRITE',
+      '',
       '## 1. 背景与动机',
       '',
       '补充背景',
@@ -121,6 +123,22 @@ describe('write commands', () => {
       '|---|------|------|------|------|',
       '| 1 | 校验 | 非空 / 结构 | 结构 | fail loud |',
       '',
+      '## 4.1 重大变更门禁',
+      '',
+      '### 是否涉及重大变更',
+      '- [x] 否',
+      '- [ ] 是，需要用户确认',
+      '',
+      '### 变更类型',
+      '- [ ] 工作流 / Agent 行为',
+      '',
+      '### UI 设计门禁',
+      '- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）',
+      '- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）',
+      '',
+      '### Decision Brief',
+      '- 用户确认: 无',
+      '',
       '## 5. 验收标准',
       '',
       '- [ ] AC-1: 非法输入会失败',
@@ -134,6 +152,18 @@ describe('write commands', () => {
     const specJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.json'), 'utf-8'));
     assert.equal(specJson.schema_version, 1);
     assert.equal(specJson.kind, 'spec');
+    assert.equal(specJson.task_id, 'T-WRITE');
+    assert.equal(specJson.backlog_id, 'R-WRITE');
+    assert.equal(specJson.source.kind, 'markdown');
+    assert.match(specJson.source.created_at, /^\d{4}-\d{2}-\d{2}T/);
+    assert.match(specJson.source.updated_at, /^\d{4}-\d{2}-\d{2}T/);
+    assert.match(specJson.source.content_sha256, /^[a-f0-9]{64}$/);
+    assert.deepEqual(specJson.scope.included, ['写命令校验']);
+    assert.deepEqual(specJson.scope.excluded, ['模板重写']);
+    assert.equal(specJson.major_change_gate.required, false);
+    assert.deepEqual(specJson.major_change_gate.types, []);
+    assert.equal(specJson.major_change_gate.user_confirmed, '无');
+    assert.equal(specJson.ui_gate.state, 'exempt');
     assert.equal(specJson.functional_requirements[0].id, 'FR-1');
     assert.ok(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.json')));
     rmSync(cwd, { recursive: true, force: true });
@@ -159,6 +189,8 @@ describe('write commands', () => {
     const planJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.json'), 'utf-8'));
     assert.equal(planJson.schema_version, 1);
     assert.equal(planJson.kind, 'plan');
+    assert.equal(planJson.source.kind, 'markdown');
+    assert.match(planJson.source.content_sha256, /^[a-f0-9]{64}$/);
     assert.equal(planJson.steps[0].id, 'S1');
     assert.ok(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.json')));
 
@@ -170,7 +202,7 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('go reads plan.json before stale plan.md and fails loud on corrupt plan.json', () => {
+  it('go fails loud on plan.json/plan.md hash drift and corrupt plan.json', () => {
     const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
     const content = [
       '## 执行计划',
@@ -195,9 +227,10 @@ describe('write commands', () => {
     writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), stale);
     writeFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.md'), stale);
 
-    const output = run(`go --cwd ${cwd} --step S1 --dry-run`, cwd);
-    assert.match(output, /JSON backed step/);
-    assert.doesNotMatch(output, /Stale markdown step/);
+    const drifted = runResult(`go --cwd ${cwd} --step S1 --dry-run`, cwd);
+    assert.equal(drifted.code, 1);
+    assert.match(drifted.out, /source\.content_sha256 不一致/);
+    assert.match(drifted.out, /docpath tasks sync --from current/);
 
     writeFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.json'), '{not-json');
     const corrupt = runResult(`go --cwd ${cwd} --step S1 --dry-run`, cwd);
@@ -344,7 +377,7 @@ describe('write commands', () => {
     const currentPlan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
     assert.match(currentPlan, /S1: 梳理 自动生成计划草案/);
     assert.match(currentPlan, /S2: 实现 自动生成计划草案/);
-    assert.match(readFileSync(join(canonicalDir, 'plan.md'), 'utf-8'), /S3: 验证门禁并归档/);
+    assert.doesNotMatch(readFileSync(join(canonicalDir, 'plan.md'), 'utf-8'), /验证门禁并归档/);
 
     const goOutput = run(`go --cwd ${cwd} --step S1 --dry-run`, cwd);
     assert.match(goOutput, /子任务: S1/);

@@ -18,7 +18,7 @@ import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
-import { ANALYSIS_SECTIONS, detectActiveTaskFileDrift, readActiveAnalysisSummary, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
+import { ANALYSIS_SECTIONS, detectActiveTaskFileDrift, readActiveAnalysisSummary, readActiveStructuredSpecDocument, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts, approvalState, hasUiImplementationIntent } from '../utils/ui-gate.js';
 import {
@@ -70,6 +70,13 @@ interface GitBaseline {
 interface MajorDecisionSignal {
   label: string;
   detail: string;
+}
+
+interface StructuredMajorChangeGate {
+  required: boolean;
+  types: string[];
+  user_confirmed: string | null;
+  decision_brief_markdown: string;
 }
 
 const MAJOR_DEPENDENCY_PATTERNS = [
@@ -144,14 +151,21 @@ function formatTaskFileDrift(drifts: TaskFileDrift[]): string {
     'missing-current': 'current 缺失',
     'missing-canonical': 'canonical 缺失',
     'content-mismatch': '内容不一致',
+    'structured-json-mismatch': 'JSON/Markdown hash 不一致',
   };
   return [
     'TASK FILE DRIFT DETECTED:',
-    ...drifts.flatMap((drift) => [
-      `  [${drift.file}] ${reasonLabel[drift.reason]}`,
-      `    current: ${drift.currentPath}`,
-      `    canonical: ${drift.canonicalPath}`,
-    ]),
+    ...drifts.flatMap((drift) => {
+      const lines = [
+        `  [${drift.file}] ${reasonLabel[drift.reason]}`,
+        `    current: ${drift.currentPath}`,
+        `    canonical: ${drift.canonicalPath}`,
+      ];
+      if (drift.detail) {
+        lines.push(...drift.detail.split('\n').map((line) => `    ${line}`));
+      }
+      return lines;
+    }),
     '修复建议:',
     '  - 以任务目录为准同步 current: docpath tasks sync --from canonical',
     '  - 以 current 为准回写任务目录: docpath tasks sync --from current',
@@ -272,6 +286,11 @@ function extractAddedMajorDependencies(diffOutput: string): string[] {
   return Array.from(added).sort();
 }
 
+function isMeaningfulUserConfirmation(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return value.trim().length > 0 && !/^(待确认|无|N\/A|-)?$/i.test(value.trim());
+}
+
 function specHasMajorDecisionConfirmation(specContent: string): boolean {
   const gateMatch = specContent.match(/##\s+4\.1\s+重大(?:决策|变更)门禁([\s\S]*?)(?=\n##\s+5\.|\n##\s+\d+\.|$)/);
   if (!gateMatch) return false;
@@ -279,6 +298,11 @@ function specHasMajorDecisionConfirmation(specContent: string): boolean {
   const requiresConfirmation = /^- \[[xX]\] 是，需要用户确认\s*$/m.test(gate);
   const hasUserConfirmation = /^- 用户确认:\s*\S.+$/m.test(gate) && !/^- 用户确认:\s*(待确认|无|N\/A|-)?\s*$/mi.test(gate);
   return requiresConfirmation && hasUserConfirmation;
+}
+
+function structuredMajorGateConfirmation(gate: StructuredMajorChangeGate | undefined): boolean | null {
+  if (!gate) return null;
+  return gate.required && isMeaningfulUserConfirmation(gate.user_confirmed) && gate.decision_brief_markdown.trim().length > 0;
 }
 
 function collectMajorDecisionSignals(cwd: string): MajorDecisionSignal[] {
@@ -317,8 +341,10 @@ async function checkMajorDecisionGate(cwd: string, docpathDir: string): Promise<
   if ((state?.level || 0) < 2) return [];
   const signals = collectMajorDecisionSignals(cwd);
   if (signals.length === 0) return [];
-  const specContent = await readActiveTaskFile(docpathDir, state?.task_id, 'spec.md');
-  const confirmed = specHasMajorDecisionConfirmation(specContent);
+  const structuredSpec = await readActiveStructuredSpecDocument(docpathDir, state?.task_id);
+  const structuredConfirmed = structuredMajorGateConfirmation(structuredSpec?.major_change_gate);
+  const specContent = structuredConfirmed === null ? await readActiveTaskFile(docpathDir, state?.task_id, 'spec.md') : '';
+  const confirmed = structuredConfirmed ?? specHasMajorDecisionConfirmation(specContent);
   return [{
     name: '重大决策确认检查',
     passed: confirmed,
@@ -548,6 +574,30 @@ interface TaskPlanProgress {
   planTotalCount: number;
 }
 
+function isTerminalVerificationTask(task: { id: string; title: string; done: boolean }): boolean {
+  return /验证门禁|质量门禁|check\/review\/journal|docpath check\/review\/journal/i.test(task.title);
+}
+
+function effectivePlanProgress(planTasks: Array<{ id: string; title: string; done: boolean }>): {
+  doneCount: number;
+  totalCount: number;
+  waivedTerminalVerification: string[];
+} {
+  const unfinished = planTasks.filter((task) => !task.done);
+  const firstUnfinishedIndex = planTasks.findIndex((task) => !task.done);
+  const canWaiveTerminalVerification =
+    unfinished.length > 0 &&
+    firstUnfinishedIndex >= 0 &&
+    firstUnfinishedIndex === planTasks.length - unfinished.length &&
+    unfinished.every(isTerminalVerificationTask);
+  const waivedTerminalVerification = canWaiveTerminalVerification ? unfinished.map((task) => task.id) : [];
+  return {
+    doneCount: planTasks.filter((task) => task.done).length + waivedTerminalVerification.length,
+    totalCount: planTasks.length,
+    waivedTerminalVerification,
+  };
+}
+
 function normalizeHarnessOptions(options: CheckOptions): void {
   if (options.onlyHarness) {
     options.harness = true;
@@ -698,14 +748,19 @@ async function validateTaskDocuments(cwd: string, docpathDir: string): Promise<{
   }
 
   const planTasks = parsePlanTasks(planContent);
-  progress.planDoneCount = planTasks.filter((task) => task.done).length;
-  progress.planTotalCount = planTasks.length;
+  const effectiveProgress = effectivePlanProgress(planTasks);
+  progress.planDoneCount = effectiveProgress.doneCount;
+  progress.planTotalCount = effectiveProgress.totalCount;
   if (progress.planTotalCount > 0) {
     const passed = progress.planDoneCount === progress.planTotalCount;
     results.push({
       name: `子任务完成度 (${progress.planDoneCount}/${progress.planTotalCount})`,
       passed,
-      output: passed ? '所有子任务已完成' : `还有 ${progress.planTotalCount - progress.planDoneCount} 个子任务未完成`,
+      output: passed
+        ? effectiveProgress.waivedTerminalVerification.length > 0
+          ? `terminal verification step 由 check/review/journal 生命周期门禁覆盖: ${effectiveProgress.waivedTerminalVerification.join(', ')}`
+          : '所有子任务已完成'
+        : `还有 ${progress.planTotalCount - progress.planDoneCount} 个子任务未完成`,
       category: 'plan',
     });
   }
@@ -1102,7 +1157,9 @@ async function checkContextHealth(cwd: string, docpathDir: string): Promise<Chec
 
 async function runTaskDocumentChecks(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
-  results.push(...await checkTaskFileDrift(cwd, docpathDir, options));
+  const driftResults = await checkTaskFileDrift(cwd, docpathDir, options);
+  results.push(...driftResults);
+  if (driftResults.some((result) => !result.passed)) return results;
   const { results: documentResults } = await validateTaskDocuments(cwd, docpathDir);
   results.push(...documentResults);
   results.push(...await checkUiUxDesignGate(cwd, docpathDir));
@@ -1118,6 +1175,10 @@ function formatFailedOutput(output: string): string[] {
   if (lines.length <= 1) return [`     └─ ${output.slice(0, 200)}`];
   const limit = output.includes('修复建议:') ? 14 : 8;
   return lines.slice(0, limit).map((line, index) => index === 0 ? `     └─ ${line}` : `        ${line}`);
+}
+
+function shouldPersistPassedOutput(result: CheckResult): boolean {
+  return result.passed && /terminal verification step/i.test(result.output);
 }
 
 function groupCheckResults(results: CheckResult[]): Record<string, CheckResult[]> {
@@ -1210,6 +1271,9 @@ async function writeLastCheckEvidence(cwd: string, results: CheckResult[], allPa
   for (const result of results) {
     const icon = result.severity === 'warning' ? '⚠️' : result.passed ? '✅' : '❌';
     checkLines.push(`- ${icon} ${result.name}`);
+    if (shouldPersistPassedOutput(result)) {
+      checkLines.push(...formatFailedOutput(result.output));
+    }
   }
   checkLines.push('');
   await writeFile(lastCheckPath, checkLines.join('\n'), 'utf-8');

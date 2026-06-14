@@ -2,8 +2,12 @@ import { existsSync } from 'fs';
 import { mkdir, readFile, readdir, rm, stat, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import {
+  detectStructuredMarkdownHashDrift,
+  formatStructuredMarkdownHashDrift,
+  readStructuredSpecDocument,
   readStructuredTaskMarkdown,
   writeStructuredTaskJson,
+  type StructuredSpecDocument,
   type StructuredTaskMarkdownFile,
 } from './structured-docs.js';
 
@@ -40,8 +44,8 @@ export async function writeActiveTaskFile(
   await writeFile(canonicalPath, content, 'utf-8');
   await writeFile(currentPath, content, 'utf-8');
   if (isStructuredTaskMarkdownFile(file)) {
-    await writeStructuredTaskJson(canonicalTaskDir(docpathDir, taskId), file, content);
-    await writeStructuredTaskJson(currentTaskDir(docpathDir), file, content);
+    await writeStructuredTaskJson(canonicalTaskDir(docpathDir, taskId), file, content, { taskId });
+    await writeStructuredTaskJson(currentTaskDir(docpathDir), file, content, { taskId });
   }
   return { canonicalPath, currentPath };
 }
@@ -140,6 +144,17 @@ export async function readActiveTaskFile(
   return '';
 }
 
+export async function readActiveStructuredSpecDocument(
+  docpathDir: string,
+  taskId: string | undefined,
+): Promise<StructuredSpecDocument | null> {
+  if (taskId) {
+    const canonical = await readStructuredSpecDocument(canonicalTaskDir(docpathDir, taskId));
+    if (canonical !== null) return canonical;
+  }
+  return readStructuredSpecDocument(currentTaskDir(docpathDir));
+}
+
 export function resolveActiveTaskDocPath(docpathDir: string, taskId: string | undefined, file: string): string {
   const canonicalPath = taskId ? join(canonicalTaskDir(docpathDir, taskId), file) : '';
   if (canonicalPath && existsSync(canonicalPath)) {
@@ -171,7 +186,8 @@ export interface TaskFileDrift {
   file: TaskFileAlias;
   currentPath: string;
   canonicalPath: string;
-  reason: 'missing-current' | 'missing-canonical' | 'content-mismatch';
+  reason: 'missing-current' | 'missing-canonical' | 'content-mismatch' | 'structured-json-mismatch';
+  detail?: string;
 }
 
 export async function detectActiveTaskFileDrift(
@@ -205,6 +221,23 @@ export async function detectActiveTaskFileDrift(
     if (currentContent !== canonicalContent) {
       drifts.push({ file, currentPath, canonicalPath, reason: 'content-mismatch' });
     }
+
+    if (isStructuredTaskMarkdownFile(file)) {
+      const structuredDrifts = await Promise.all([
+        detectStructuredMarkdownHashDrift(currentTaskDir(docpathDir), file),
+        detectStructuredMarkdownHashDrift(canonicalTaskDir(docpathDir, taskId), file),
+      ]);
+      for (const structuredDrift of structuredDrifts) {
+        if (!structuredDrift) continue;
+        drifts.push({
+          file,
+          currentPath,
+          canonicalPath,
+          reason: 'structured-json-mismatch',
+          detail: formatStructuredMarkdownHashDrift(structuredDrift),
+        });
+      }
+    }
   }
 
   return drifts;
@@ -230,7 +263,8 @@ export async function syncActiveTaskFiles(
     const content = await readFile(fromPath, 'utf-8');
     await writeFile(toPath, content, 'utf-8');
     if (isStructuredTaskMarkdownFile(file)) {
-      await writeStructuredTaskJson(dirname(toPath), file, content);
+      await writeStructuredTaskJson(dirname(fromPath), file, content, { taskId });
+      await writeStructuredTaskJson(dirname(toPath), file, content, { taskId });
     }
     synced.push({ file, fromPath, toPath });
   }

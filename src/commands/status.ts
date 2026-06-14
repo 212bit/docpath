@@ -13,6 +13,8 @@ import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
 import { getDocpathPackageVersion } from '../utils/package-info.js';
 import { handleStalePendingDoneWarning, readPendingDone } from '../utils/pending-done.js';
 import { readCurrentState, type CurrentState } from '../utils/workspace.js';
+import { parsePlanSteps } from '../utils/doc-parser.js';
+import { readActiveTaskFile } from '../utils/task-files.js';
 
 interface StatusOptions {
   cwd: string;
@@ -55,10 +57,15 @@ async function printPendingDoneWarning(cwd: string, current: CurrentState): Prom
     pendingDone &&
     pendingDone.task_id === current.task_id
   ) {
+    const docpathDir = await resolveDocpathDir(cwd);
+    const planContent = await readActiveTaskFile(docpathDir, current.task_id, 'plan.md');
+    const openStep = parsePlanSteps(planContent).find((step) => !step.done);
     console.log('\n  ⚠️  检测到当前任务存在未收尾哨兵');
     console.log(`     task_id: ${pendingDone.task_id}`);
     console.log(`     entered_at: ${pendingDone.entered_at}`);
-    console.log('     建议先运行: docpath agent done');
+    console.log(openStep
+      ? `     当前仍有未完成步骤: ${openStep.id}，建议先继续执行计划步骤`
+      : '     建议先运行: docpath agent done');
   }
 }
 
