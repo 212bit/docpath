@@ -13,7 +13,6 @@ import { existsSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
-import { compactMessages } from '../utils/context.js';
 import { clearPendingDone, writePendingDone } from '../utils/pending-done.js';
 
 export type LifecycleEvent =

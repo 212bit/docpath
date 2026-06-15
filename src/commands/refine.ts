@@ -11,7 +11,6 @@ import { readRequirementFile } from '../utils/input.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { nextCommand } from './runtime.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
-import { readActiveAnalysisSummary } from '../utils/task-files.js';
 
 interface RefineOptions {
   cwd: string;

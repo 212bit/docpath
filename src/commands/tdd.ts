@@ -9,7 +9,6 @@ import { existsSync } from 'fs';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
-import { readCurrentState, writeCurrentState } from '../utils/workspace.js';
 
 interface TddOptions {
   cwd: string;

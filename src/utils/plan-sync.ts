@@ -1,7 +1,7 @@
 /** plan.md 与 breadcrumb.md 的同步/漂移检测工具。 */
 
 import { existsSync } from 'fs';
-import { mkdir, readFile } from 'fs/promises';
+import { mkdir } from 'fs/promises';
 import { dirname, join } from 'path';
 import { readBreadcrumb, type BreadcrumbEntry } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from './file.js';

@@ -9,7 +9,7 @@ import { stringify } from 'yaml';
 import { existsSync } from 'fs';
 import { readdir } from 'fs/promises';
 import { join } from 'path';
-import { parsePlanTasks, readCurrentMd, readOptionalFile } from './workspace.js';
+import { readCurrentMd, readOptionalFile } from './workspace.js';
 import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
 import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from './plan-sync.js';

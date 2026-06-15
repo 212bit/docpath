@@ -6,9 +6,9 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile, rename, rm } from 'fs/promises';
+import { readFile, writeFile, rename } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd, readWorkspaceMeta, readOptionalFile, parsePlanTasks, type CurrentState } from '../utils/workspace.js';
+import { readCurrentMd, readWorkspaceMeta, parsePlanTasks, type CurrentState } from '../utils/workspace.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { emitPrompt } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -113,7 +113,7 @@ function isLowSignalJournalLine(line: string): boolean {
 }
 
 export async function journalCommand(options: JournalOptions): Promise<void> {
-  const { cwd, skipAi } = options;
+  const { cwd } = options;
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {

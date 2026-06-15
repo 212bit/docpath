@@ -13,14 +13,14 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 import { isCancel, select } from '@clack/prompts';
 import { resolveDocpathDir } from '../utils/file.js';
-import { readCurrentMd, readCurrentState, syncCurrentDocument, readOptionalFile, parsePlanTasks } from '../utils/workspace.js';
+import { readCurrentMd, readCurrentState, syncCurrentDocument, parsePlanTasks } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
-import { ANALYSIS_SECTIONS, detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatTaskIdentityDrift, readActiveAnalysisSummary, readActiveStructuredSpecDocument, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
+import { detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatTaskIdentityDrift, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
-import { resolveUiDesignRequirement, missingDesignArtifacts, approvalState, hasUiImplementationIntent } from '../utils/ui-gate.js';
+import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent } from '../utils/ui-gate.js';
 import { resolveMajorChangeGateStatus } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { CHECK_HISTORY_MAX_ENTRIES } from '../utils/workspace-cleanup.js';
@@ -230,12 +230,10 @@ interface HarnessRule {
 function parseHarnessRules(content: string): HarnessRule[] {
   const rules: HarnessRule[] = [];
   const lines = content.split('\n');
-  let currentSection = '';
 
   for (const line of lines) {
     // 检测 section 标题
     if (line.startsWith('## ')) {
-      currentSection = line.slice(3).trim();
       continue;
     }
 
@@ -637,39 +635,6 @@ async function syncCurrentChecklistView(cwd: string): Promise<CheckResult[]> {
   await syncCurrentDocument(cwd);
   // current.md 是渲染视图，不是任务完成真源；真源一致性由 plan.md 与 breadcrumb.md 检查负责。
   return [];
-}
-
-
-async function checkPredevAnalysisQuality(docpathDir: string, taskId: string | undefined): Promise<CheckResult[]> {
-  const summary = await readActiveAnalysisSummary(docpathDir, taskId);
-  if (!summary.trim()) return [];
-
-  const missing = ANALYSIS_SECTIONS.filter((section) => !summary.includes(`analysis/${section}.md`));
-  const tooShort = summary.trim().length < 1800;
-  const requiredSignals = [
-    /用户|角色|场景|journey/i,
-    /边界|不做|scope|out[- ]of[- ]scope/i,
-    /验收|指标|success|acceptance/i,
-    /UI|UX|页面|组件|状态|响应式|可访问/i,
-    /技术|架构|API|数据|测试|性能|安全/i,
-    /风险|假设|问题|question/i,
-  ];
-  const missedSignals = requiredSignals.filter((re) => !re.test(summary)).length;
-  const passed = missing.length === 0 && !tooShort && missedSignals === 0;
-
-  return [{
-    name: '开发前分析深度门禁',
-    passed,
-    output: passed
-      ? `分析分区完整 (${ANALYSIS_SECTIONS.length}/${ANALYSIS_SECTIONS.length})，深度信号齐全`
-      : [
-          missing.length ? `缺少分区: ${missing.join(', ')}` : '',
-          tooShort ? `分析内容过短: ${summary.trim().length} chars（建议 >= 1800）` : '',
-          missedSignals ? `缺少关键分析信号: ${missedSignals} 类（用户/边界/验收/UI/技术/风险）` : '',
-          '建议运行 docpath analyze --mode deep，然后用 docpath write-analysis --section <section> --stdin 写入各分区。',
-        ].filter(Boolean).join('\n'),
-    category: 'analysis',
-  }];
 }
 
 function productUiChangedFiles(cwd: string): string[] {

@@ -5,124 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ S6 [T-20260615-workspace] — 2026-06-15T02:50:01.637Z
-
----
-taskId: T-20260615-workspace
-step: S6
-status: done
-timestamp: 2026-06-15T02:50:01.637Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S6
-- **Session**: default
-
-### 🔄 S7 [T-20260615-workspace] — 2026-06-15T02:50:09.410Z
-
----
-taskId: T-20260615-workspace
-step: S7
-status: in_progress
-timestamp: 2026-06-15T02:50:09.410Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证、审查、归档与 closeout
-- **Session**: default
-
-### 🚫 check [T-20260615-workspace] — 2026-06-15T02:53:02.515Z
-
----
-taskId: T-20260615-workspace
-step: check
-status: blocked
-timestamp: 2026-06-15T02:53:02.515Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 子任务完成度 (6/7)
-
-### ✅ S7 [T-20260615-workspace] — 2026-06-15T02:53:24.401Z
-
----
-taskId: T-20260615-workspace
-step: S7
-status: done
-timestamp: 2026-06-15T02:53:24.401Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S7
-- **Session**: default
-
-### ✅ check [T-20260615-workspace] — 2026-06-15T02:53:34.835Z
-
----
-taskId: T-20260615-workspace
-step: check
-status: done
-timestamp: 2026-06-15T02:53:34.835Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (10 项)
-
-### ✅ review [T-20260615-workspace] — 2026-06-15T02:53:44.766Z
-
----
-taskId: T-20260615-workspace
-step: review
-status: done
-timestamp: 2026-06-15T02:53:44.766Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 11 警告, 0 提示
-
-### ✅ journal [T-20260615-workspace] — 2026-06-15T02:53:58.383Z
-
----
-taskId: T-20260615-workspace
-step: journal
-status: done
-timestamp: 2026-06-15T02:53:58.383Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (7/7 步)
-
-### 🔄 S1 [T-20260615-worktree] — 2026-06-15T03:21:56.535Z
-
----
-taskId: T-20260615-worktree
-step: S1
-status: in_progress
-timestamp: 2026-06-15T03:21:56.535Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Worktree 命令基础架构
-- **Session**: default
-
-### ✅ S1 [T-20260615-worktree] — 2026-06-15T03:23:34.403Z
-
----
-taskId: T-20260615-worktree
-step: S1
-status: done
-timestamp: 2026-06-15T03:23:34.403Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
 ### 🔄 S2 [T-20260615-worktree] — 2026-06-15T03:31:59.908Z
 
 ---
@@ -666,6 +548,126 @@ taskId: T-20260615-docs-index
 step: journal
 status: done
 timestamp: 2026-06-15T07:49:00.072Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (2/2 步)
+
+### 🔄 S1 [T-20260615-task] — 2026-06-15T08:09:46.218Z
+
+---
+taskId: T-20260615-task
+step: S1
+status: in_progress
+timestamp: 2026-06-15T08:09:46.218Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理 技术债务清理 — 删除废弃文件和未使用依赖
+- **Session**: default
+
+### ✅ S1 [T-20260615-task] — 2026-06-15T08:10:34.240Z
+
+---
+taskId: T-20260615-task
+step: S1
+status: done
+timestamp: 2026-06-15T08:10:34.240Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260615-task] — 2026-06-15T08:10:45.902Z
+
+---
+taskId: T-20260615-task
+step: S2
+status: in_progress
+timestamp: 2026-06-15T08:10:45.902Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 技术债务清理 — 删除废弃文件和未使用依赖
+- **Session**: default
+
+### ✅ S2 [T-20260615-task] — 2026-06-15T08:23:01.193Z
+
+---
+taskId: T-20260615-task
+step: S2
+status: done
+timestamp: 2026-06-15T08:23:01.193Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### ✅ check [T-20260615-task] — 2026-06-15T08:26:38.215Z
+
+---
+taskId: T-20260615-task
+step: check
+status: done
+timestamp: 2026-06-15T08:26:38.215Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260615-task] — 2026-06-15T08:27:25.709Z
+
+---
+taskId: T-20260615-task
+step: review
+status: done
+timestamp: 2026-06-15T08:27:25.709Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 28 警告, 0 提示
+
+### 🔄 S2 [T-20260615-task] — 2026-06-15T08:27:50.241Z
+
+---
+taskId: T-20260615-task
+step: S2
+status: in_progress
+timestamp: 2026-06-15T08:27:50.241Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 技术债务清理 — 删除废弃文件和未使用依赖
+- **Session**: default
+
+### ✅ S2 [T-20260615-task] — 2026-06-15T08:28:04.334Z
+
+---
+taskId: T-20260615-task
+step: S2
+status: done
+timestamp: 2026-06-15T08:28:04.334Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### ✅ journal [T-20260615-task] — 2026-06-15T08:29:33.617Z
+
+---
+taskId: T-20260615-task
+step: journal
+status: done
+timestamp: 2026-06-15T08:29:33.617Z
 ---
 
 - **状态**: done

@@ -12,7 +12,7 @@
  */
 
 import { existsSync } from 'fs';
-import { writeFile, mkdir, readFile } from 'fs/promises';
+import { mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { nextCommand } from './runtime.js';

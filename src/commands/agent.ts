@@ -306,7 +306,7 @@ async function handleAgentHandoff(options: AgentOptions): Promise<void> {
 }
 
 export async function agentCommand(options: AgentOptions): Promise<void> {
-  const { cwd, action } = options;
+  const { action } = options;
 
   if (!['enter', 'step', 'done', 'handoff'].includes(action)) {
     throw new Error(`Unsupported agent action: ${action}. Expected enter | step | done | handoff`);

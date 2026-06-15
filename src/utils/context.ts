@@ -8,7 +8,7 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
 

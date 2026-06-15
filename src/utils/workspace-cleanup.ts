@@ -389,7 +389,6 @@ function leaseExpiryMs(record: LeaseMetadata, fallbackMtimeMs: number): number {
 async function collectActiveSessionIds(
   docpathDir: string,
   nowMs: number,
-  plan: WorkspaceCleanupPlan,
 ): Promise<Set<string>> {
   const active = new Set<string>();
   const sessionsDir = join(docpathDir, 'workspace', 'sessions');
@@ -521,7 +520,7 @@ export async function planWorkspaceCleanup(cwd: string, options: WorkspaceCleanu
 
   await planCheckHistory(docpathDir, plan, nowMs);
   await planBreadcrumb(docpathDir, plan, state?.task_id);
-  const activeSessionIds = await collectActiveSessionIds(docpathDir, nowMs, plan);
+  const activeSessionIds = await collectActiveSessionIds(docpathDir, nowMs);
   await planSessions(docpathDir, plan, nowMs, activeSessionIds);
   await planLeases(docpathDir, plan, nowMs, activeSessionIds);
 
@@ -537,7 +536,7 @@ export async function cleanupWorkspace(cwd: string, options: WorkspaceCleanupOpt
 
   await planCheckHistory(docpathDir, plan, nowMs);
   await planBreadcrumb(docpathDir, plan, state?.task_id);
-  const activeSessionIds = await collectActiveSessionIds(docpathDir, nowMs, plan);
+  const activeSessionIds = await collectActiveSessionIds(docpathDir, nowMs);
   await planSessions(docpathDir, plan, nowMs, activeSessionIds);
   await planLeases(docpathDir, plan, nowMs, activeSessionIds);
 

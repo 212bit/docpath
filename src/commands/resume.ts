@@ -12,7 +12,6 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { readCurrentState } from '../utils/workspace.js';

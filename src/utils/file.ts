@@ -111,7 +111,6 @@ export async function resolveDocpathDir(cwd: string): Promise<string> {
  * @param targetPath 链接目标项目路径
  */
 export async function createLink(cwd: string, targetPath: string): Promise<void> {
-  const targetDocpath = join(targetPath, '.docpath');
   if (!await exists(join(targetPath, '.docpath', 'config.yaml'))) {
     throw new Error(`目标项目 ${targetPath} 未初始化 DocPath（缺少 .docpath/config.yaml）`);
   }

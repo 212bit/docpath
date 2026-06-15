@@ -131,7 +131,7 @@ async function loadPlanContext(cwd: string): Promise<PlanContext> {
   };
 }
 
-function printDryRun(spec: string, analysis = ''): void {
+function printDryRun(spec: string): void {
   console.log('📝  [dry-run] Spec 内容预览：');
   console.log(spec.slice(0, 500));
   console.log('---');
@@ -205,7 +205,7 @@ export async function planCommand(options: PlanOptions): Promise<void> {
   console.log('\n📋  生成执行计划...\n');
 
   if (options.dryRun) {
-    printDryRun(spec, analysis);
+    printDryRun(spec);
     return;
   }
 

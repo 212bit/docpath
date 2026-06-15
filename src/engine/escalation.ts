@@ -9,8 +9,8 @@
  * 写入 .docpath/workspace/current.md 的 escalation_log 区块。
  */
 
-import { evaluateComplexity, type ComplexityVerdict } from './complexity.js';
-import { LEVEL_NAMES, LEVEL_TRANSITIONS, type ComplexityLevel, type WorkflowState, canTransition } from './state-machine.js';
+import { evaluateComplexity } from './complexity.js';
+import type { ComplexityLevel } from './state-machine.js';
 
 export interface EscalationSignal {
   /** 信号类型 */

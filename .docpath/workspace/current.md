@@ -3,26 +3,27 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260615-docs-index
-task_title: docs-index 归档策略 — 物理移除旧条目
+task_id: T-20260615-task
+task_title: 技术债务清理 — 删除废弃文件和未使用依赖
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-15T07:48:59.955Z
-updated_at: 2026-06-15T07:48:59.954Z
+started_at: 2026-06-15T08:29:33.562Z
+updated_at: 2026-06-15T08:29:33.562Z
 ```
 
-> 📖 规约: [spec.md](../tasks/current/spec.md)
-> 📋 计划: [plan.md](../tasks/current/plan.md)
+> 📖 规约: [spec.md](../tasks/T-20260615-task/spec.md)
+> 📋 计划: [plan.md](../tasks/T-20260615-task/plan.md)
 
 ## ✅ 执行检查清单
 
-- [ ] 暂无 plan.md checklist，请补充 `.docpath/tasks/current/plan.md`
+- [x] S1: 梳理 技术债务清理 — 删除废弃文件和未使用依赖
+- [x] S2: 实现 技术债务清理 — 删除废弃文件和未使用依赖
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-15T07:48:43.797Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260615-docs-index] — 2026-06-15T07:48:52.782Z · 状态: done · 代码审查: 0 错误, 2 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-15T08:29:33.191Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ S2 [T-20260615-task] — 2026-06-15T08:28:04.334Z · 状态: done · agent-step: S2
 
 ## 🔄 同步说明
 

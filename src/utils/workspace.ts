@@ -278,34 +278,8 @@ type CurrentStateFields = {
   updated_at: string;
 };
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function parseFrontMatterLine(content: string, key: string): string {
-  const match = content.match(new RegExp(`^>\\s*${escapeRegExp(key)}:\\s*(.+?)\\s*$`, 'im'));
-  return match ? match[1].replace(/`/g, '').trim() : '';
-}
-
-function firstHeading(content: string): string {
-  const match = content.match(/^#\s+(.+)$/m);
-  return match ? match[1].trim() : '';
-}
-
-function normalizeTaskTitle(title: string): string {
-  return title
-    .replace(/^Spec:\s*/i, '')
-    .replace(/^Plan:\s*/i, '')
-    .replace(/^执行计划:\s*/i, '')
-    .trim();
-}
-
 function extractPlanChecklist(plan: string): string[] {
   return renderPlanChecklist(parsePlanSteps(plan));
-}
-
-function relativeTaskLink(taskId: string, file: string): string {
-  return `../tasks/${taskId}/${file}`;
 }
 
 function workspaceLink(file: string): string {
@@ -368,42 +342,6 @@ export async function readOptionalFile(path: string): Promise<string> {
   }
 }
 
-function firstNonEmptyLineAfterHeading(content: string, heading: string): string {
-  const lines = content.split('\n');
-  const headingIndex = lines.findIndex(line => line.trim() === heading);
-  if (headingIndex === -1) return '';
-
-  for (const line of lines.slice(headingIndex + 1)) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (trimmed.startsWith('#')) break;
-    return trimmed;
-  }
-
-  return '';
-}
-
-/**
- * 从 spec/plan 标题生成可读的 task ID
- * e.g. "实现 hello 函数" → "T-实现-hello-函数" (截取前 30 字符)
- */
-function generateTaskId(specContent: string, planContent: string): string {
-  const heading = firstHeading(specContent) || firstHeading(planContent) || 'task';
-  const slug = heading
-    .replace(/[^a-zA-Z0-9\u4e00-\u9fff]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 30);
-  return `T-${slug}`;
-}
-
-/** 判断状态转移是否应该重置 started_at */
-function shouldResetStartedAt(prev: string | undefined, next: string): boolean {
-  if (!prev) return true;
-  // executing/reviewing/completed/journal 归档时，重新计时
-  const resetTriggers = ['executing', 'reviewing', 'completed', 'journal'];
-  return resetTriggers.includes(next) && prev !== next;
-}
-
 function extractLastCheckSummary(content: string): string {
   const time = content.match(/^\*\*时间\*\*:\s*(.+)$/m)?.[1]?.trim();
   const result = content.match(/^\*\*结果\*\*:\s*(.+)$/m)?.[1]?.trim();
@@ -446,7 +384,6 @@ function convertStateToFields(state: CurrentState): CurrentStateFields {
 // collectCurrentStateFields() 已随 updateCurrentState() 一并移除 (D-P0.2 / G2)。
 // 旧的「读多源文件 + 合并 extraFields + 推断 state」逻辑不再需要：
 // transitionWorkflow() 直接给出 phase/gate，writeCurrentState() 负责落盘与重建 current.md。
-// 注：parseFrontMatterLine/firstHeading/normalizeTaskTitle/shouldResetStartedAt 现已无引用，留待后续清理。
 
 
 function renderCurrentDocument(

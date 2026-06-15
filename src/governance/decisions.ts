@@ -314,10 +314,6 @@ function cutoffTime(now: Date, retentionDays: number): number {
   return now.getTime() - retentionDays * 24 * 60 * 60 * 1000;
 }
 
-function isArchivable(block: DecisionBlock, cutoff: number): boolean {
-  return Boolean(block.createdAt && block.month && block.createdAt.getTime() < cutoff);
-}
-
 async function appendArchiveBlocks(archivePath: string, month: string, blocks: DecisionBlock[]): Promise<boolean> {
   const existing = existsSync(archivePath) ? await readFile(archivePath, 'utf-8') : archiveHeader(month);
   const existingIds = new Set(splitDecisionDocument(existing).blocks.map((block) => block.id));

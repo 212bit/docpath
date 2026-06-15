@@ -4,7 +4,7 @@
 
 import { stringify } from 'yaml';
 import { existsSync } from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 import {
   type BacklogItem,

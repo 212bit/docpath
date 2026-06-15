@@ -10,7 +10,7 @@
 
 import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { existsSync, readdirSync, statSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 export interface ProjectInfo {
   name: string;

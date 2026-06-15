@@ -42,31 +42,6 @@ interface GoContext {
   specPath: string;
 }
 
-// ── Verification Gate: 防止跳过 check 直接标记完成 ──
-
-async function verifyBeforeCompletion(cwd: string, docpathDir: string): Promise<{ allowed: boolean; reason: string }> {
-  const statePath = join(docpathDir, 'workspace', 'state.json');
-  if (!existsSync(statePath)) return { allowed: true, reason: '无 state.json' };
-
-  const state = JSON.parse(await readFile(statePath, 'utf-8'));
-
-  // 如果上次 check 是 fail，阻止完成
-  if (state.state === 'check_fail') {
-    return { allowed: false, reason: '上次 check 失败，请先修复并重新运行 docpath check' };
-  }
-
-  // 检查 last-check.md 是否存在且是 pass
-  const lastCheckPath = join(docpathDir, 'workspace', 'last-check.md');
-  if (existsSync(lastCheckPath)) {
-    const checkContent = await readFile(lastCheckPath, 'utf-8');
-    if (checkContent.includes('❌ FAIL')) {
-      return { allowed: false, reason: 'last-check.md 记录了失败项，请先修复' };
-    }
-  }
-
-  return { allowed: true, reason: 'check_pass' };
-}
-
 async function resolveGoContext(cwd: string): Promise<GoContext> {
   const docpathDir = await resolveDocpathDir(cwd);
   const tasksDir = join(docpathDir, 'tasks', 'current');

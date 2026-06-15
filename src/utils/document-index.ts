@@ -221,9 +221,8 @@ export function inferTopicTags(input: {
   return Array.from(tags).slice(0, 24);
 }
 
-export function shouldDefaultReadDocPath(filePath: string, currentTaskId?: string, hasPreferredRules = false): boolean {
+export function shouldDefaultReadDocPath(filePath: string, _currentTaskId?: string, hasPreferredRules = false): boolean {
   const normalized = normalizeDocPath(filePath);
-  const taskId = extractTaskIdFromDocPath(normalized, currentTaskId);
 
   if (isArchiveDocPath(normalized) || isTemplateDocPath(normalized) || normalized.startsWith('commands/')) return false;
   if (normalized === 'workspace/decisions.md' || normalized === 'workspace/lesson-candidates.md') return false;

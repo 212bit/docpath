@@ -56,7 +56,7 @@ interface ProjectStats {
 }
 
 /** 从 journal 文件中统计条目数 */
-async function countJournalEntries(cwd: string, docpathDir: string): Promise<{ entries: number; totalChars: number }> {
+async function countJournalEntries(docpathDir: string): Promise<{ entries: number; totalChars: number }> {
   const journalDir = join(docpathDir, 'workspace', 'journal');
   const journalFile = join(docpathDir, 'workspace', 'journal.md');
 
@@ -110,7 +110,7 @@ export async function statsCommand(options: StatsOptions): Promise<void> {
   // ── 收集数据 ──
   const state = await readCurrentMd(cwd);
   const bc = await readBreadcrumb(cwd);
-  const journal = await countJournalEntries(cwd, docpathDir);
+  const journal = await countJournalEntries(docpathDir);
 
   const hasSpec = existsSync(join(docpathDir, 'tasks', 'current', 'spec.md'));
   const hasPlan = existsSync(join(docpathDir, 'tasks', 'current', 'plan.md'));
