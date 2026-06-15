@@ -44,6 +44,21 @@ export async function writeJournalCommand(options: WriteJournalOptions): Promise
   const current = await readCurrentState(cwd);
   const taskId = current?.task_id || 'current';
   const previous = await readActiveTaskFile(docpathDir, taskId, 'spec.md');
+
+  // 防御性检查：如果 spec.md 看起来不像一个正常的 spec（缺少标题或章节结构），警告用户
+  if (previous && !previous.includes('##') && !previous.includes('# T-')) {
+    console.warn('⚠️  警告: spec.md 看起来不像一个正常的规范文档');
+    console.warn('   当前内容可能已被破坏或为空');
+  }
+
+  // 如果 spec.md 已经以 Journal Record 开头，说明可能已经被覆盖
+  if (previous.trim().startsWith(JOURNAL_MARKER)) {
+    console.error('❌  错误: spec.md 已经以 Journal Record 开头');
+    console.error('   这可能意味着原始 spec 已被覆盖');
+    console.error('   请先恢复原始 spec.md 内容，再运行 write-journal');
+    process.exit(1);
+  }
+
   const contentToAppend = journalContent.trim();
   const next = previous.trimEnd()
     ? `${previous.trimEnd()}\n\n${JOURNAL_MARKER}\n\n${contentToAppend}\n`
