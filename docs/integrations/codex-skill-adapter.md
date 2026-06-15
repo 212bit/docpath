@@ -63,6 +63,11 @@ docpath review
 docpath agent done
 ```
 
+`docpath agent done` performs completion gates and journal closeout, but it
+intentionally leaves canonical evidence at `.docpath/tasks/<task_id>/` for
+`docpath changes --agent` and git closeout. Physical movement into
+`.docpath/tasks/done/` is deferred to `docpath gc --force` after closeout.
+
 Use `docpath status --agent` only for explicit status/debug snapshots, suspected
 drift, or confirmation after state-changing commands.
 

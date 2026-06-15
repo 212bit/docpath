@@ -272,7 +272,11 @@ async function archiveCurrentTask(
   const doneDir = join(docpathDir, 'tasks', 'done');
   const archiveDir = archivedTaskDir(docpathDir, taskId || 'unknown');
   if (archiveMode === 'skip') {
-    console.log('⏭️  归档已跳过 (--optional-archive=skip)');
+    const canonicalPath = `.docpath/tasks/${taskId || 'unknown'}/`;
+    console.log('⏭️  物理任务目录归档已延后 (--optional-archive=skip)');
+    console.log(`   这不是完成失败；逻辑完成与 journal 收尾仍会继续执行。`);
+    console.log(`   canonical evidence 保留在 ${canonicalPath}，用于 docpath changes --agent / git closeout。`);
+    console.log('   closeout 后可运行 docpath gc --force，将非活跃 canonical 任务目录移动到 .docpath/tasks/done/。');
   } else {
     if (archiveMode === 'dry-run') console.log(`🔍  [dry-run] 将归档: ${currentTaskDir} → ${archiveDir}`);
     try {

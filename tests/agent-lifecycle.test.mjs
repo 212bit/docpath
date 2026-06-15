@@ -122,7 +122,10 @@ describe('docpath agent lifecycle', () => {
 
   it('agent done completes task', () => {
     const out = run('agent done', tmpDir);
-    assert.match(out, /done|完成|归档/i, `got: ${out.slice(0, 100)}`);
+    assert.match(out, /done|完成|物理任务目录归档已延后/i, `got: ${out.slice(0, 100)}`);
+    assert.match(out, /canonical evidence 保留在 \.docpath\/tasks\/T-AGENT\//);
+    assert.equal(fs.existsSync(path.join(tmpDir, '.docpath', 'tasks', 'T-AGENT', 'spec.md')), true);
+    assert.equal(fs.existsSync(path.join(tmpDir, '.docpath', 'tasks', 'done', 'T-AGENT')), false);
     assert.equal(fs.existsSync(path.join(tmpDir, '.docpath', 'workspace', 'pending-done.md')), false);
     assert.equal(fs.existsSync(path.join(tmpDir, '.docpath', 'workspace', 'pending-done.json')), false);
   });
@@ -187,7 +190,8 @@ describe('docpath agent lifecycle', () => {
     const nextPlan = fs.readFileSync(path.join(cwd, '.docpath', 'tasks', 'T-AGENT', 'plan.md'), 'utf-8');
     const breadcrumb = fs.readFileSync(path.join(cwd, '.docpath', 'workspace', 'breadcrumb.jsonl'), 'utf-8');
 
-    assert.match(out, /done|完成|归档/i);
+    assert.match(out, /done|完成|物理任务目录归档已延后/i);
+    assert.match(out, /canonical evidence 保留在 \.docpath\/tasks\/T-AGENT\//);
     assert.match(nextPlan, /- \[x\] S2/);
     assert.match(breadcrumb, /"step":"S2","status":"done"/);
     fs.rmSync(cwd, { recursive: true, force: true });
@@ -206,7 +210,8 @@ describe('docpath agent lifecycle', () => {
     const out = run('agent done --skip-tests --note "CI 环境无测试依赖，先放行 review"', cwd);
     const decisions = fs.readFileSync(path.join(cwd, '.docpath', 'workspace', 'decisions.md'), 'utf-8');
 
-    assert.match(out, /done|完成|归档/i);
+    assert.match(out, /done|完成|物理任务目录归档已延后/i);
+    assert.match(out, /canonical evidence 保留在 \.docpath\/tasks\/T-AGENT\//);
     assert.match(decisions, /跳过 check/);
     assert.match(decisions, /CI 环境无测试依赖，先放行 review/);
     fs.rmSync(cwd, { recursive: true, force: true });

@@ -107,6 +107,8 @@ describe('backlog journal integration', () => {
     const cwd = mkWorkspace();
     const out = run('journal --skip-ai --optional-archive skip', cwd);
 
+    assert.match(out, /物理任务目录归档已延后/);
+    assert.match(out, /canonical evidence 保留在 \.docpath\/tasks\/T-20260531-alpha-promote\//);
     assert.match(out, /backlog 已自动回填完成: R-001/);
     assert.match(out, /next_hint:/);
     assert.match(out, /recommended_command:/);

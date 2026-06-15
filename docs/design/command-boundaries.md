@@ -122,8 +122,16 @@ from a completed task into the newly promoted task.
 
 Completed canonical task directories are intentionally not moved by
 `docpath agent done`, `docpath review`, or `docpath changes --agent`. Commit
-readiness must be checked while canonical evidence paths are stable. Workspace
-aging cleanup and historical task directory candidates can be previewed with:
+readiness must be checked while canonical evidence paths are stable.
+
+In this boundary, "done" means logical workflow completion and journal closeout.
+It does not mean the physical task directory has already moved to
+`.docpath/tasks/done/<task_id>/`. CLI output for the skip path should say that
+physical task directory archive is deferred, not that completion failed or that
+evidence disappeared.
+
+Workspace aging cleanup and historical task directory candidates can be
+previewed with:
 
 ```bash
 docpath gc
