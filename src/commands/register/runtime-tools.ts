@@ -7,7 +7,7 @@ export function registerRuntimeToolCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--max-entries <n>', '保留最近 breadcrumb 条数 (默认 20)')
     .option('--dry-run', '只输出，不写文件')
-    .option('--cleanup', '同时执行 workspace 老化清理（check-history/breadcrumb.jsonl/sessions/leases）')
+    .option('--cleanup', '显式执行 workspace 老化清理（与 docpath gc --force 使用同一 engine）')
     .action(async (options: { cwd?: string; 'max-entries'?: string; maxEntries?: string; dryRun?: boolean; 'dry-run'?: boolean; cleanup?: boolean }) => {
       await compactCommand({
         cwd: options.cwd || process.cwd(),

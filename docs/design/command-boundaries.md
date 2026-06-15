@@ -122,16 +122,24 @@ from a completed task into the newly promoted task.
 
 Completed canonical task directories are intentionally not moved by
 `docpath agent done`, `docpath review`, or `docpath changes --agent`. Commit
-readiness must be checked while canonical evidence paths are stable. Historical
-directories can be previewed with:
+readiness must be checked while canonical evidence paths are stable. Workspace
+aging cleanup and historical task directory candidates can be previewed with:
 
 ```bash
 docpath gc
 ```
 
-After closeout and human confirmation, `docpath gc --force` archives inactive
-canonical task directories into `.docpath/tasks/done/`. GC does not make
+Plain `docpath gc` is a dry-run: it reports workspace cleanup candidates
+(`check-history.json`, `breadcrumb.jsonl`/`breadcrumb.md`, stale `sessions/`,
+and expired `leases/`) and inactive canonical task directories without mutating
+workspace evidence. After closeout and human confirmation, `docpath gc --force`
+executes the workspace cleanup plan and archives inactive canonical task
+directories into `.docpath/tasks/done/`. GC does not make
 `.docpath/tasks/current/*` a commit target.
+
+`docpath compact` is not a cleanup trigger. It persists a compact context
+package only. `docpath compact --cleanup` is the explicit compatibility entry
+for running the same workspace cleanup engine used by `docpath gc --force`.
 
 ## Agent Adapter Coverage
 

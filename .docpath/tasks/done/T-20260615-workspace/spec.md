@@ -1,0 +1,129 @@
+# T-20260615-workspace - workspace 老化策略 — 实现自动清理
+
+> backlog_id: R-178
+> backlog_source: docpath backlog add
+
+## 1. 背景与动机
+
+DocPath workspace 会持续积累运行态证据：`check-history.json`、`breadcrumb.jsonl`、`breadcrumb.md`、`sessions/` 和 `leases/` 都可能随长期使用增长。R-181 已经明确 `docpath compact` 默认不能做破坏性 cleanup，因此本任务要在新的边界下实现 workspace 老化策略：默认可预览，显式 force 才清理，read-only / diagnostic 命令不得产生删除副作用。
+
+触发入口：
+- `docpath gc` 默认 dry-run，只列出候选清理项、原因、数量、预计释放大小和 force 提示。
+- `docpath gc --force` 才执行 workspace cleanup。
+- `docpath compact --cleanup` 保留为显式兼容入口，复用同一 cleanup engine。
+- `docpath compact` 默认不得清理。
+- 初版不实现后台自动删除；若后续要自动触发，必须有配置或阈值保护，并证明 read-only 命令无副作用。
+
+清理对象：
+- `.docpath/workspace/check-history.json` 的旧检查记录。
+- `.docpath/workspace/breadcrumb.jsonl` 和渲染视图 `breadcrumb.md` 的超限历史。
+- `.docpath/workspace/sessions/` 中超过 TTL 且非活跃的 session 文件。
+- `.docpath/workspace/leases/` 中已过期或 owner pid 不存在的 lease 文件。
+- 明确不删除：last-check、review、current state、tasks/current alias、未过期 lease、活跃 session。
+
+## 2. 需求清单
+
+### 功能需求
+- [ ] FR-1: `docpath gc` 默认执行 workspace cleanup dry-run
+  - 输出 cleanup 候选项、原因、对象数量、预计释放大小和 `--force` 执行提示。
+  - dry-run 不修改任何 workspace 文件。
+- [ ] FR-2: `docpath gc --force` 执行 workspace cleanup
+  - 裁剪 check-history、breadcrumb JSONL/Markdown、过期 sessions、过期或孤儿 leases。
+  - 输出实际清理摘要。
+- [ ] FR-3: 保留 `docpath compact --cleanup` 显式 cleanup 入口
+  - `compact --cleanup` 复用同一 cleanup engine。
+  - `compact` 默认仍只生成上下文，不做 cleanup。
+- [ ] FR-4: 清理策略集中定义并可测试
+  - check-history 默认保留最近 30 条或最近 14 天中较新的集合。
+  - breadcrumb 默认保留最近 500 条，并尽量保留当前任务 terminal events。
+  - sessions 默认保留 7 天内更新过的文件，活跃 session 不清理。
+  - leases 只清理 `expires_at` 已过期或 owner pid 已不存在的记录。
+- [ ] FR-5: 只读/诊断命令无 cleanup 副作用
+  - `status --agent`、`next --agent`、`context`、`reveal`、`changes --agent` 不触发 cleanup。
+- [ ] FR-6: corrupted cleanup candidate fail loud 或跳过并报告
+  - 不能因解析失败静默删除 workspace 证据。
+
+### 非功能需求
+- [ ] NFR-1: 保持现有 DocPath FSM 与命令输出兼容。
+- [ ] NFR-2: 所有新增行为必须可通过本地自动化测试验证。
+- [ ] NFR-3: cleanup 必须幂等；重复 force 不应产生额外删除。
+- [ ] NFR-4: 删除行为必须保守，不能影响当前任务恢复、最近检查、最近审查和 active lease/session。
+
+## 3. 范围界定
+
+### 包含
+- `docpath gc` workspace cleanup dry-run / force 行为。
+- `docpath compact --cleanup` 复用 workspace cleanup engine。
+- check-history、breadcrumb、sessions、leases 的保留与清理策略。
+- cleanup summary 输出和测试夹具。
+- 无副作用测试：dry-run、read-only 命令、compact 默认行为。
+
+### 不包含
+- 后台守护进程或定时器。
+- 用户配置文件 schema 扩展；阈值先集中常量化。
+- 删除当前任务 alias、last-check、review、current state、未过期 lease、活跃 session。
+- 清理历史 task archive；历史 task 目录仍由现有 task gc 语义处理。
+- 实现完整 JSON 单真源迁移。
+
+## 4. 关键决策
+
+| # | 决策 | 选项 | 结论 | 理由 |
+|---|------|------|------|------|
+| 1 | 默认入口 | `compact` 自动清理 / `gc` dry-run | `gc` 默认 dry-run | 避免上下文压缩产生删除副作用 |
+| 2 | 执行入口 | 自动执行 / 显式 `--force` | 显式 `--force` | 删除 workspace 证据必须由用户或 agent 明确授权 |
+| 3 | cleanup engine | 分散实现 / 复用 workspace-cleanup | 复用并扩展 workspace-cleanup | 保持策略集中、测试集中 |
+| 4 | corrupted candidate | 静默删除 / 跳过报告或 fail loud | 跳过报告或 fail loud | 解析失败时不能删除证据 |
+| 5 | 自动触发 | 初版启用 / 后续配置化 | 初版不启用后台自动删除 | 当前需求先保证安全可控的维护入口 |
+
+## 4.1 重大变更门禁
+
+### 是否涉及重大变更
+- [ ] 否
+- [x] 是，需要用户确认
+
+### 变更类型
+- [ ] 技术栈 / 框架
+- [ ] UI 框架 / 设计系统
+- [ ] 构建工具 / 打包方式
+- [ ] 数据库 / 存储模型
+- [ ] API / 数据契约
+- [ ] 部署 / 运行方式
+- [ ] 安全 / 权限边界
+- [ ] 外部 SDK / 大依赖
+- [x] 架构 / 模块边界
+- [ ] UI 信息架构 / 用户主路径
+- [x] 工作流 / Agent 行为
+- [x] 权限 / 写操作边界
+- [ ] 范围扩大
+- [ ] 删除 / 替换已有能力
+- [x] 长期维护成本增加
+- [ ] 其他
+
+### Decision Brief
+- 当前问题: workspace 运行态证据会长期增长，但 R-181 已禁止普通 compact 默认做破坏性 cleanup，需要新的安全维护入口。
+- 目标: 实现可预览、显式 force、幂等且不会影响 read-only 命令的 workspace cleanup 策略。
+- 背景: 用户要求完成 R-178，并先明确触发入口、清理对象、保留策略、dry-run/force 和无副作用验收。
+- 可选方案: 继续不清理；让 compact 默认清理；新增/复用 gc dry-run + force 作为显式维护入口。
+- 推荐方案: `docpath gc` 默认 dry-run，`docpath gc --force` 执行 workspace cleanup，`compact --cleanup` 复用 engine，read-only 命令不触发 cleanup。
+- 不做什么: 不实现后台自动删除；不删除当前任务 alias 或最近证据；不引入配置 schema；不处理历史 task archive 清理。
+- 成本: 需要调整 gc/runtime cleanup 实现、命令输出、测试夹具和文档语义。
+- 风险: cleanup 误删会影响恢复能力；通过 dry-run 默认、force 显式、保守排除、hash/mtime 无副作用测试降低风险。
+- 回滚方案: 回退 `gc` workspace cleanup 扩展，保留 `compact --cleanup` 现有显式 cleanup 行为。
+- 用户确认: 用户明确要求“完成 R-178”，并确认先补清楚触发入口、清理对象、保留策略、dry-run/force 行为和无副作用验收。
+
+## 5. 验收标准
+
+- [ ] AC-1: `docpath gc` 默认 dry-run，不修改 workspace 文件，只输出候选项、原因、预计释放大小和执行提示。
+- [ ] AC-2: `docpath gc --force` 执行删除/裁剪，并输出实际清理摘要。
+- [ ] AC-3: `docpath compact` 默认无删除副作用；`docpath compact --cleanup` 可执行同一 cleanup 流程。
+- [ ] AC-4: `status --agent`、`next --agent`、`context`、`reveal`、`changes --agent` 不触发 cleanup。
+- [ ] AC-5: dry-run 前后 workspace 文件 hash/mtime 不变，测试覆盖 check-history、breadcrumb、sessions、leases。
+- [ ] AC-6: force 模式不会删除 current task alias、last-check、review、current state、未过期 lease、活跃 session。
+- [ ] AC-7: corrupted cleanup candidate fail loud 或跳过并报告，不能静默删除。
+- [ ] AC-8: 重复运行 force 幂等；第二次运行不产生额外删除。
+- [ ] AC-9: 清理后 docs/context/check/review 仍能读取当前任务和最近证据。
+- [ ] AC-10: `pnpm test`、`pnpm run typecheck`、`git diff --check`、`docpath check` 通过。
+
+---
+
+*此文件由 Codex 根据 R-178 和用户确认写入。*

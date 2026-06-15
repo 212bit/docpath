@@ -64,9 +64,9 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
       });
     });
 
-  cli.command('gc', '清理历史任务目录')
+  cli.command('gc', '预览/执行 workspace 老化清理，并归档历史任务目录')
     .option('--cwd <path>', '项目目录')
-    .option('--force', '执行归档而不是仅预览')
+    .option('--force', '执行 workspace cleanup 和历史任务归档，而不是仅预览')
     .option('--delete', '在 force 模式下直接删除而不是归档到 done')
     .action(async (options: { cwd?: string; force?: boolean; delete?: boolean }) => {
       await gcCommand({

@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260615-cli-workflow-review-cleanup-archive-inst",
-  "task_title": "修复 CLI 文档系统 workflow review 发现的 cleanup、archive、install、status 边界问题",
+  "task_id": "T-20260615-workspace",
+  "task_title": "workspace 老化策略 — 实现自动清理",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-15T01:57:46.235Z",
-  "updated_at": "2026-06-15T01:57:46.234Z"
+  "started_at": "2026-06-15T02:53:58.301Z",
+  "updated_at": "2026-06-15T02:53:58.301Z"
 }

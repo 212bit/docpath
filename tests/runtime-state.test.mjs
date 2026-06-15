@@ -31,7 +31,7 @@ function writeCleanupArtifacts(cwd) {
   fs.mkdirSync(path.join(workspace, 'leases'), { recursive: true });
   fs.writeFileSync(
     path.join(workspace, 'check-history.json'),
-    JSON.stringify(Array.from({ length: 25 }, (_, index) => ({ timestamp: `2026-06-01T00:${String(index).padStart(2, '0')}:00.000Z`, passed: true, index })), null, 2),
+    JSON.stringify(Array.from({ length: 35 }, (_, index) => ({ timestamp: `2026-01-01T00:${String(index % 60).padStart(2, '0')}:00.000Z`, passed: true, index })), null, 2),
   );
   fs.writeFileSync(
     path.join(workspace, 'breadcrumb.jsonl'),
@@ -122,24 +122,49 @@ describe('docpath runtime lifecycle', () => {
 
     const defaultOut = run('compact', cwd);
     assert.match(defaultOut, /compact|saved/i);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(workspace, 'check-history.json'), 'utf-8')).length, 25);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(workspace, 'check-history.json'), 'utf-8')).length, 35);
     assert.equal(jsonlCount(path.join(workspace, 'breadcrumb.jsonl')), 510);
+    assert.equal(fs.readFileSync(path.join(workspace, 'breadcrumb.md'), 'utf-8'), '# breadcrumb.md\n');
     assert.equal(fs.existsSync(path.join(workspace, 'sessions', 'old.json')), true);
     assert.equal(fs.existsSync(path.join(workspace, 'leases', 'expired.json')), true);
 
     const cleanupOut = run('compact --cleanup', cwd);
-    assert.match(cleanupOut, /check-history: pruned 5 entries/);
-    assert.match(cleanupOut, /breadcrumb\.jsonl: pruned 10 lines/);
-    assert.match(cleanupOut, /sessions: removed 1 stale sessions/);
-    assert.match(cleanupOut, /leases: removed 1 expired leases/);
+    assert.match(cleanupOut, /check-history: rewrite 5 entries/);
+    assert.match(cleanupOut, /breadcrumb: rewrite 10 entries/);
+    assert.match(cleanupOut, /sessions: delete 1 files/);
+    assert.match(cleanupOut, /leases: delete 1 files/);
     const history = JSON.parse(fs.readFileSync(path.join(workspace, 'check-history.json'), 'utf-8'));
-    assert.equal(history.length, 20);
+    assert.equal(history.length, 30);
     assert.equal(history[0].index, 5);
     assert.equal(jsonlCount(path.join(workspace, 'breadcrumb.jsonl')), 500);
     assert.equal(fs.existsSync(path.join(workspace, 'sessions', 'old.json')), false);
     assert.equal(fs.existsSync(path.join(workspace, 'sessions', 'live.json')), true);
     assert.equal(fs.existsSync(path.join(workspace, 'leases', 'expired.json')), false);
     assert.equal(fs.existsSync(path.join(workspace, 'leases', 'live.json')), true);
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('read-only agent views do not run workspace cleanup', () => {
+    const cwd = mkExecWorkspace();
+    const workspace = path.join(cwd, '.docpath', 'workspace');
+    writeCleanupArtifacts(cwd);
+    const beforeHistory = fs.readFileSync(path.join(workspace, 'check-history.json'), 'utf-8');
+    const beforeBreadcrumbJsonl = fs.readFileSync(path.join(workspace, 'breadcrumb.jsonl'), 'utf-8');
+    const beforeBreadcrumbMd = fs.readFileSync(path.join(workspace, 'breadcrumb.md'), 'utf-8');
+
+    const statusOut = run('status --agent', cwd);
+    const nextOut = run('next --agent', cwd);
+    run('context --max-tokens 5000 --topic cleanup', cwd);
+    run('reveal --level 1 --topic cleanup', cwd);
+    run('changes --agent', cwd);
+
+    assert.match(statusOut, /agent_view: status|state:/);
+    assert.match(nextOut, /agent_view: next/);
+    assert.equal(fs.readFileSync(path.join(workspace, 'check-history.json'), 'utf-8'), beforeHistory);
+    assert.equal(fs.readFileSync(path.join(workspace, 'breadcrumb.jsonl'), 'utf-8'), beforeBreadcrumbJsonl);
+    assert.equal(fs.readFileSync(path.join(workspace, 'breadcrumb.md'), 'utf-8'), beforeBreadcrumbMd);
+    assert.equal(fs.existsSync(path.join(workspace, 'sessions', 'old.json')), true);
+    assert.equal(fs.existsSync(path.join(workspace, 'leases', 'expired.json')), true);
     fs.rmSync(cwd, { recursive: true, force: true });
   });
 

@@ -22,4 +22,5 @@ fi
 ```
 
 Common arguments: `--max-entries 20`, `--dry-run`, or `--cleanup` when you
-explicitly want workspace aging cleanup.
+explicitly want workspace aging cleanup. Plain `compact` persists the compact
+context package and does not prune workspace cleanup targets.

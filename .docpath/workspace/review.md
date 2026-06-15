@@ -1,21 +1,16 @@
 # Code Review Report
 
-**时间**: 2026-06-15T01:57:28.520Z
-**文件**: 19
+**时间**: 2026-06-15T02:53:44.774Z
+**文件**: 10
 
-- [WARN] src/commands/check.ts: 函数 validateTaskDocuments 过长 (54 行)，建议拆分
-- [WARN] src/commands/check.ts: 函数 checkUiUxDesignGate 过长 (122 行)，建议拆分
-- [WARN] src/commands/check.ts: 函数 checkContextIndexHealth 过长 (51 行)，建议拆分
+- [WARN] src/commands/gc.ts: 函数 gcCommand 过长 (76 行)，建议拆分
+- [WARN] src/commands/register/backlog-maintenance.ts: 函数 registerBacklogMaintenanceCommands 过长 (81 行)，建议拆分
 - [WARN] src/commands/runtime.ts: 函数 runCommand 过长 (54 行)，建议拆分
-- [WARN] src/commands/runtime.ts: 函数 compactCommand 过长 (60 行)，建议拆分
-- [WARN] src/commands/tasks.ts: 函数 tasksCommand 过长 (58 行)，建议拆分
 - [WARN] src/utils/agent-output.ts: 函数 selectCurrentFocus 过长 (53 行)，建议拆分
 - [WARN] src/utils/agent-output.ts: 函数 loadAgentOutputContext 过长 (53 行)，建议拆分
 - [WARN] src/utils/agent-output.ts: 函数 inferRouteFromContext 过长 (76 行)，建议拆分
 - [WARN] src/utils/agent-output.ts: 函数 generateAgentOutput 过长 (117 行)，建议拆分
-- [WARN] src/utils/structured-docs.ts: 函数 renderSpecMarkdownFromDocument 过长 (59 行)，建议拆分
-- [WARN] src/utils/task-files.ts: 函数 detectActiveTaskFileDrift 过长 (52 行)，建议拆分
-- [INFO] tests/check-review.test.mjs: L200: 未处理的 TODO: writeFileSync(join(cwd, 'todo.ts'), '// TODO handle follow-up\n');
-- [INFO] tests/check-review.test.mjs: L220: 未处理的 TODO: writeFileSync(join(cwd, 'todo.ts'), '// TODO review current worktree\n');
-- [INFO] tests/check-review.test.mjs: L234: 未处理的 TODO: writeFileSync(join(cwd, 'todo.ts'), '// TODO review evidence stays out of ADR\n'
+- [WARN] src/utils/workspace-cleanup.ts: 函数 planCheckHistory 过长 (51 行)，建议拆分
+- [WARN] src/utils/workspace-cleanup.ts: 函数 planBreadcrumb 过长 (71 行)，建议拆分
+- [WARN] tests/gc.test.mjs: 函数 writeWorkspaceCleanupArtifacts 过长 (73 行)，建议拆分
 - [WARN] tests/runtime-state.test.mjs: 函数 writeCleanupArtifacts 过长 (65 行)，建议拆分

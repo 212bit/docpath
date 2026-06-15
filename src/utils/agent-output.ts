@@ -604,12 +604,12 @@ function inferNextAction(
     }
     if (!acceptedBacklog && !proposedBacklog && historicalTaskDirCount > GC_TASK_DIR_THRESHOLD) {
       return {
-        next_action: `检测到 ${historicalTaskDirCount} 个历史任务目录，建议先预览清理`,
+        next_action: `检测到 ${historicalTaskDirCount} 个历史任务目录，建议预览 workspace cleanup 与历史任务归档候选`,
         recommended_command: 'docpath gc',
         required_context: required,
         required_files: required,
         must_update: [],
-        exit_criteria: '已预览历史任务目录清理候选；确认后可运行 docpath gc --force',
+        exit_criteria: '已预览 workspace cleanup 与历史任务归档候选；确认后可运行 docpath gc --force',
       };
     }
     return {

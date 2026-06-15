@@ -1,5 +1,5 @@
 /**
- * docpath:gc — 清理历史任务目录。
+ * docpath:gc — workspace aging dry-run/force plus historical task directory GC.
  */
 
 import { existsSync } from 'node:fs';
@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { listBacklogItems } from '../engine/backlog.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
+import { cleanupWorkspace, planWorkspaceCleanup, renderWorkspaceCleanupSummary } from '../utils/workspace-cleanup.js';
 
 interface GcOptions {
   cwd: string;
@@ -69,12 +70,25 @@ export async function gcCommand(options: GcOptions): Promise<void> {
     });
   }
 
+  const workspaceCleanup = options.force
+    ? await cleanupWorkspace(cwd)
+    : await planWorkspaceCleanup(cwd);
+
   console.log('\n🧹  DocPath GC\n');
   console.log(`模式: ${options.force ? (options.delete ? 'delete' : 'archive') : 'dry-run'}`);
+  console.log('');
+  for (const line of renderWorkspaceCleanupSummary(cwd, workspaceCleanup)) {
+    console.log(line);
+  }
+  console.log('');
+  console.log('Historical task directories');
   console.log(`候选目录: ${candidates.length}`);
 
   if (candidates.length === 0) {
     console.log('✅  没有可清理的历史任务目录');
+    if (!options.force) {
+      console.log('\n[dry-run] 未修改文件。实际清理运行: docpath gc --force');
+    }
     return;
   }
 
@@ -86,7 +100,7 @@ export async function gcCommand(options: GcOptions): Promise<void> {
   }
 
   if (!options.force) {
-    console.log('\n[dry-run] 未修改文件。实际归档运行: docpath gc --force');
+    console.log('\n[dry-run] 未修改文件。实际清理运行: docpath gc --force');
     return;
   }
 

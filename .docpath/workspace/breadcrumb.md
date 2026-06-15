@@ -5,238 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ check [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:21:15.842Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: check
-status: done
-timestamp: 2026-06-14T15:21:15.842Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:21:25.246Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: review
-status: done
-timestamp: 2026-06-14T15:21:25.246Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 4 警告, 0 提示
-
-### ✅ journal [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:21:45.223Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: journal
-status: done
-timestamp: 2026-06-14T15:21:45.223Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (5/5 步)
-
-### 🔄 S1 [T-20260614-backlog-capture-analyze-dry-run] — 2026-06-14T15:23:43.327Z
-
----
-taskId: T-20260614-backlog-capture-analyze-dry-run
-step: S1
-status: in_progress
-timestamp: 2026-06-14T15:23:43.327Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证 backlog capture dry-run analyze 提示
-- **Session**: default
-
-### ✅ S1 [T-20260614-backlog-capture-analyze-dry-run] — 2026-06-14T15:24:40.933Z
-
----
-taskId: T-20260614-backlog-capture-analyze-dry-run
-step: S1
-status: done
-timestamp: 2026-06-14T15:24:40.933Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
-### ✅ check [T-20260614-backlog-capture-analyze-dry-run] — 2026-06-14T15:25:41.148Z
-
----
-taskId: T-20260614-backlog-capture-analyze-dry-run
-step: check
-status: done
-timestamp: 2026-06-14T15:25:41.148Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260614-backlog-capture-analyze-dry-run] — 2026-06-14T15:25:53.266Z
-
----
-taskId: T-20260614-backlog-capture-analyze-dry-run
-step: review
-status: done
-timestamp: 2026-06-14T15:25:53.266Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 4 警告, 0 提示
-
-### ✅ journal [T-20260614-backlog-capture-analyze-dry-run] — 2026-06-14T15:26:04.866Z
-
----
-taskId: T-20260614-backlog-capture-analyze-dry-run
-step: journal
-status: done
-timestamp: 2026-06-14T15:26:04.866Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (1/1 步)
-
-### 🔄 S1 [T-20260614-agent-next-agent] — 2026-06-14T15:39:13.656Z
-
----
-taskId: T-20260614-agent-next-agent
-step: S1
-status: in_progress
-timestamp: 2026-06-14T15:39:13.656Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 将 agent 启动协议改为单命令 next --agent
-- **Session**: default
-
-### ✅ S1 [T-20260614-agent-next-agent] — 2026-06-14T15:39:30.613Z
-
----
-taskId: T-20260614-agent-next-agent
-step: S1
-status: done
-timestamp: 2026-06-14T15:39:30.613Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
-### 🔄 S2 [T-20260614-agent-next-agent] — 2026-06-14T15:39:44.170Z
-
----
-taskId: T-20260614-agent-next-agent
-step: S2
-status: in_progress
-timestamp: 2026-06-14T15:39:44.170Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 将 agent 启动协议改为单命令 next --agent
-- **Session**: default
-
-### ✅ S2 [T-20260614-agent-next-agent] — 2026-06-14T15:50:19.274Z
-
----
-taskId: T-20260614-agent-next-agent
-step: S2
-status: done
-timestamp: 2026-06-14T15:50:19.274Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### 🚫 check [T-20260614-agent-next-agent] — 2026-06-14T15:51:15.405Z
-
----
-taskId: T-20260614-agent-next-agent
-step: check
-status: blocked
-timestamp: 2026-06-14T15:51:15.405Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 重大决策确认检查
-
-### ✅ check [T-20260614-agent-next-agent] — 2026-06-14T15:55:27.970Z
-
----
-taskId: T-20260614-agent-next-agent
-step: check
-status: done
-timestamp: 2026-06-14T15:55:27.970Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260614-agent-next-agent] — 2026-06-14T15:55:45.737Z
-
----
-taskId: T-20260614-agent-next-agent
-step: review
-status: done
-timestamp: 2026-06-14T15:55:45.737Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 3 警告, 0 提示
-
-### ✅ journal [T-20260614-agent-next-agent] — 2026-06-14T15:56:25.165Z
-
----
-taskId: T-20260614-agent-next-agent
-step: journal
-status: done
-timestamp: 2026-06-14T15:56:25.165Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (2/2 步)
-
-### 🔄 S1 [T-20260614-next-go-next-hint] — 2026-06-14T16:48:59.405Z
-
----
-taskId: T-20260614-next-go-next-hint
-step: S1
-status: in_progress
-timestamp: 2026-06-14T16:48:59.405Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: R-B 前置重大变更门禁
-- **Session**: default
-
-### ✅ S1 [T-20260614-next-go-next-hint] — 2026-06-14T17:04:12.491Z
-
----
-taskId: T-20260614-next-go-next-hint
-step: S1
-status: done
-timestamp: 2026-06-14T17:04:12.491Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
 ### 🔄 S2 [T-20260614-next-go-next-hint] — 2026-06-14T17:04:31.139Z
 
 ---
@@ -654,6 +422,250 @@ taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
 step: journal
 status: done
 timestamp: 2026-06-15T01:57:46.317Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (7/7 步)
+
+### 🔄 S1 [T-20260615-workspace] — 2026-06-15T02:35:12.227Z
+
+---
+taskId: T-20260615-workspace
+step: S1
+status: in_progress
+timestamp: 2026-06-15T02:35:12.227Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理现有 cleanup、gc、compact 行为
+- **Session**: default
+
+### ✅ S1 [T-20260615-workspace] — 2026-06-15T02:36:27.226Z
+
+---
+taskId: T-20260615-workspace
+step: S1
+status: done
+timestamp: 2026-06-15T02:36:27.226Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260615-workspace] — 2026-06-15T02:36:36.155Z
+
+---
+taskId: T-20260615-workspace
+step: S2
+status: in_progress
+timestamp: 2026-06-15T02:36:36.155Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 扩展 workspace cleanup engine 的计划与执行模型
+- **Session**: default
+
+### ✅ S2 [T-20260615-workspace] — 2026-06-15T02:43:22.860Z
+
+---
+taskId: T-20260615-workspace
+step: S2
+status: done
+timestamp: 2026-06-15T02:43:22.860Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260615-workspace] — 2026-06-15T02:43:30.086Z
+
+---
+taskId: T-20260615-workspace
+step: S3
+status: in_progress
+timestamp: 2026-06-15T02:43:30.086Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 将 `docpath gc` 接入 workspace cleanup dry-run/force
+- **Session**: default
+
+### ✅ S3 [T-20260615-workspace] — 2026-06-15T02:45:43.974Z
+
+---
+taskId: T-20260615-workspace
+step: S3
+status: done
+timestamp: 2026-06-15T02:45:43.974Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### 🔄 S4 [T-20260615-workspace] — 2026-06-15T02:45:52.801Z
+
+---
+taskId: T-20260615-workspace
+step: S4
+status: in_progress
+timestamp: 2026-06-15T02:45:52.801Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 将 `compact --cleanup` 复用同一 cleanup engine
+- **Session**: default
+
+### ✅ S4 [T-20260615-workspace] — 2026-06-15T02:45:59.315Z
+
+---
+taskId: T-20260615-workspace
+step: S4
+status: done
+timestamp: 2026-06-15T02:45:59.315Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### 🔄 S5 [T-20260615-workspace] — 2026-06-15T02:46:06.450Z
+
+---
+taskId: T-20260615-workspace
+step: S5
+status: in_progress
+timestamp: 2026-06-15T02:46:06.450Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 补齐自动化测试
+- **Session**: default
+
+### ✅ S5 [T-20260615-workspace] — 2026-06-15T02:47:17.994Z
+
+---
+taskId: T-20260615-workspace
+step: S5
+status: done
+timestamp: 2026-06-15T02:47:17.994Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S5
+- **Session**: default
+
+### 🔄 S6 [T-20260615-workspace] — 2026-06-15T02:47:31.416Z
+
+---
+taskId: T-20260615-workspace
+step: S6
+status: in_progress
+timestamp: 2026-06-15T02:47:31.416Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 更新文档与 agent-facing 语义
+- **Session**: default
+
+### ✅ S6 [T-20260615-workspace] — 2026-06-15T02:50:01.637Z
+
+---
+taskId: T-20260615-workspace
+step: S6
+status: done
+timestamp: 2026-06-15T02:50:01.637Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S6
+- **Session**: default
+
+### 🔄 S7 [T-20260615-workspace] — 2026-06-15T02:50:09.410Z
+
+---
+taskId: T-20260615-workspace
+step: S7
+status: in_progress
+timestamp: 2026-06-15T02:50:09.410Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 验证、审查、归档与 closeout
+- **Session**: default
+
+### 🚫 check [T-20260615-workspace] — 2026-06-15T02:53:02.515Z
+
+---
+taskId: T-20260615-workspace
+step: check
+status: blocked
+timestamp: 2026-06-15T02:53:02.515Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 子任务完成度 (6/7)
+
+### ✅ S7 [T-20260615-workspace] — 2026-06-15T02:53:24.401Z
+
+---
+taskId: T-20260615-workspace
+step: S7
+status: done
+timestamp: 2026-06-15T02:53:24.401Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S7
+- **Session**: default
+
+### ✅ check [T-20260615-workspace] — 2026-06-15T02:53:34.835Z
+
+---
+taskId: T-20260615-workspace
+step: check
+status: done
+timestamp: 2026-06-15T02:53:34.835Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (10 项)
+
+### ✅ review [T-20260615-workspace] — 2026-06-15T02:53:44.766Z
+
+---
+taskId: T-20260615-workspace
+step: review
+status: done
+timestamp: 2026-06-15T02:53:44.766Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 11 警告, 0 提示
+
+### ✅ journal [T-20260615-workspace] — 2026-06-15T02:53:58.383Z
+
+---
+taskId: T-20260615-workspace
+step: journal
+status: done
+timestamp: 2026-06-15T02:53:58.383Z
 ---
 
 - **状态**: done

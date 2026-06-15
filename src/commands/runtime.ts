@@ -574,31 +574,13 @@ export async function compactCommand(options: CompactOptions): Promise<void> {
 
   await mkdir(join(docpathDir, 'workspace'), { recursive: true });
   await writeFile(output, content, 'utf-8');
-  // 裁剪 breadcrumb：只保留最近 keepEntries 条
-  const trimmedEntries = breadcrumb.entries.slice(-keepEntries);
-  const { writeFile: writeFsFile } = await import('node:fs/promises');
-  const { formatEntry, BREADCRUMB_HEADER } = await import('../engine/breadcrumb.js');
-  const breadcrumbPath = join(docpathDir, 'workspace', 'breadcrumb.md');
-  const body = trimmedEntries.map((entry) => formatEntry(entry)).join('');
-  await writeFsFile(breadcrumbPath, BREADCRUMB_HEADER + body, 'utf-8');
 
-  console.log(`🧩 compact: saved ${relative(cwd, output)} (${trimmedEntries.length} events, pruned ${breadcrumb.entries.length - trimmedEntries.length})`);
+  console.log(`🧩 compact: saved ${relative(cwd, output)} (${Math.min(breadcrumb.entries.length, keepEntries)} events in handoff view)`);
 
   if (options.cleanup) {
-    const { cleanupWorkspace } = await import('../utils/workspace-cleanup.js');
+    const { cleanupWorkspace, renderWorkspaceCleanupSummary } = await import('../utils/workspace-cleanup.js');
     const cleanup = await cleanupWorkspace(cwd);
-    if (cleanup.checkHistoryPruned > 0) {
-      console.log(`   ✂️  check-history: pruned ${cleanup.checkHistoryPruned} entries`);
-    }
-    if (cleanup.breadcrumbPruned > 0) {
-      console.log(`   ✂️  breadcrumb.jsonl: pruned ${cleanup.breadcrumbPruned} lines`);
-    }
-    if (cleanup.sessionsRemoved > 0) {
-      console.log(`   🗑️  sessions: removed ${cleanup.sessionsRemoved} stale sessions`);
-    }
-    if (cleanup.leasesRemoved > 0) {
-      console.log(`   🗑️  leases: removed ${cleanup.leasesRemoved} expired leases`);
-    }
+    for (const line of renderWorkspaceCleanupSummary(cwd, cleanup)) console.log(`   ${line}`);
   }
 }
 
