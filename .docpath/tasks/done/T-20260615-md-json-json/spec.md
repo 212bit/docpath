@@ -1,0 +1,105 @@
+# T-20260615-md-json-json - 数据统一：消除 MD↔JSON 双向同步，建立 JSON 单真源
+
+> backlog_id: R-182
+> backlog_source: docpath backlog capture
+
+## 1. 背景与动机
+
+当前 DocPath 维护多组机器真源与 Markdown 视图的冗余写入关系，包括 current.md↔state.json、plan.md↔plan.json、spec.md↔spec.json、breadcrumb.md↔breadcrumb.jsonl、docs.md↔docs-index.json，以及 last-check.md、review.md、pending-done.md 等仍以 Markdown 或单格式为主的运行证据。双向同步带来漂移检测、hash 补偿、current/canonical alias 同步和非原子多文件写入成本，也削弱 AGENTS.md 中 JSON/JSONL 为机器真源、Markdown 为人类视图的承诺。
+
+本任务目标是把内部读取与写入收敛到 JSON/JSONL 真源，Markdown 只作为兼容视图或按需渲染结果。实现必须分阶段兼容现有工作区，不要求迁移脚本，不改变 rules、INDEX、harness、backlog 等人类直接维护 Markdown 的定位。
+
+## 2. 需求清单
+
+### 功能需求
+- [ ] FR-1: 为 last-check、review、pending-done 补齐 JSON 真源文件，并保持现有 Markdown 兼容视图。
+- [ ] FR-2: 内部读取优先 JSON/JSONL，JSON 缺失时回退既有 Markdown，确保旧 workspace 无需迁移脚本。
+- [ ] FR-3: status/next/go/context/reveal/check/review/agent 等核心 CLI 不依赖 current.md、last-check.md、review.md、pending-done.md 作为机器真源。
+- [ ] FR-4: task spec/plan 写入以 spec.json/plan.json 为机器真源，Markdown 作为兼容视图生成；漂移检测不再作为默认工作流前置负担。
+- [ ] FR-5: 新增或补齐 render 能力，可从 JSON/JSONL 真源输出 current、spec、plan、breadcrumb、check、review 等 Markdown 视图。
+- [ ] FR-6: 删除或收窄 MD↔JSON 双向同步补偿逻辑，包括 structured-docs/task-files 中只为双写漂移服务的检测、sync、--fix-drift 默认路径。
+- [ ] FR-7: 保留 JSONL append-only 语义，不把 breadcrumb 等事件流改成 JSON Array。
+
+### 非功能需求
+- [ ] NFR-1: 兼容已有 .docpath workspace；JSON 不存在时可从 Markdown 读取并在下一次写入补齐。
+- [ ] NFR-2: 新增 JSON 真源写入使用原子写入，避免半写入导致状态损坏。
+- [ ] NFR-3: 不改造工作流状态机 phase/gate、锁机制、规则文档、backlog 人类维护模型或 token 估算策略。
+- [ ] NFR-4: 所有变更必须由本地自动化测试覆盖，并保持 pnpm build、pnpm test、docpath check、docpath review 通过。
+
+## 3. 范围界定
+
+### 包含
+- `.docpath/workspace/last-check.json`、`review.json`、`pending-done.json` 的读写与回退。
+- current/status 读取路径从 state.json 出发，current.md 仅作为渲染视图。
+- spec/plan/task 文件 API 的 JSON-first 写入与 Markdown 兼容视图生成。
+- render 命令或等价渲染入口，用于从 JSON/JSONL 真源生成 Markdown。
+- 相关漂移检测、sync、fix-drift 行为的删除、收窄或兼容替代。
+- 覆盖 JSON-only 场景的单元/集成测试。
+
+### 不包含
+- rules/*.md、INDEX.md、harness.md、backlog/*.md 等人类维护文档迁移。
+- 工作流状态机 phase/gate 语义重构。
+- 锁机制、session/lease 模型、dashboard 产品形态、外部依赖升级。
+- 一次性迁移用户历史 workspace 的破坏性脚本。
+
+## 4. 关键决策
+
+| # | 决策 | 选项 | 结论 | 理由 |
+|---|------|------|------|------|
+| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |
+| 2 | 单真源方向 | 继续 MD/JSON 双写 / JSON-first + Markdown 视图 | 采用 JSON-first + Markdown 视图 | 与 AGENTS.md 访问模型一致，减少漂移补偿 |
+| 3 | 兼容策略 | 强制迁移 / JSON 优先、MD 回退 | 采用 JSON 优先、MD 回退 | 旧 workspace 无需迁移脚本，降低破坏性 |
+| 4 | breadcrumb 存储 | JSON Array / JSONL append-only | 保留 JSONL | 事件流追加写更稳定，已有代码和测试依赖该语义 |
+| 5 | Markdown 处理 | 停止所有 MD 输出 / 按需渲染兼容视图 | 按需渲染兼容视图 | 人类视图仍有价值，但不作为机器真源 |
+
+## 4.1 重大变更门禁
+
+### 是否涉及重大变更
+- [ ] 否
+- [x] 是，需要用户确认
+
+### 变更类型
+- [ ] 技术栈 / 框架
+- [ ] UI 框架 / 设计系统
+- [ ] 构建工具 / 打包方式
+- [x] 数据库 / 存储模型
+- [x] API / 数据契约
+- [ ] 部署 / 运行方式
+- [ ] 安全 / 权限边界
+- [ ] 外部 SDK / 大依赖
+- [x] 架构 / 模块边界
+- [ ] UI 信息架构 / 用户主路径
+- [x] 工作流 / Agent 行为
+- [x] 权限 / 写操作边界
+- [ ] 范围扩大
+- [x] 删除 / 替换已有能力
+- [x] 长期维护成本增加
+- [ ] 其他
+
+### Decision Brief
+- 当前问题: Markdown 与 JSON/JSONL 互为写入目标，导致任务文件、workspace 证据和运行状态存在漂移检测、hash 修复和多文件非原子写入成本。
+- 目标: 建立 JSON/JSONL 机器单真源，Markdown 降级为人类兼容视图或按需渲染输出。
+- 背景: R-182 已通过 backlog dry-run 分析并确认；用户要求 complete R-182。当前代码已有 schema-first 能力，但仍保留 current/spec/plan/check/review/pending-done 的多处 MD 读取和双写语义。
+- 可选方案: 1) 保持双写并继续修补漂移；2) 一次性删除所有 Markdown 写入；3) JSON-first、Markdown 回退和按需渲染分阶段收敛。
+- 推荐方案: 采用方案 3，先补齐 JSON 真源和 JSON-first 读取，再把 Markdown 变成兼容视图，逐步收窄漂移补偿。
+- 不做什么: 不迁移人类维护文档，不改状态机 phase/gate，不移除 JSONL append-only，不做破坏性历史 workspace 迁移。
+- 成本: 会触及 task-files、workspace、check/review/pending-done、agent-output、render/command 注册和大量测试。
+- 风险: JSON-only 场景覆盖不足会导致 agent 无法恢复；过早删除 Markdown 兼容会破坏现有用户 workspace；多入口写入不一致会产生新漂移。
+- 回滚方案: 回滚本任务提交，恢复现有 MD/JSON 双写和漂移检测路径。
+- 用户确认: 用户在 2026-06-15 明确要求 “complete R-182”，作为执行该重大存储模型和工作流变更的确认。
+
+## 5. 验收标准
+
+- [ ] AC-1: `docpath check` 写入 `last-check.json`，并保持 `last-check.md` 兼容视图一致。
+- [ ] AC-2: `docpath review` 写入 `review.json`，并保持 `review.md` 兼容视图一致。
+- [ ] AC-3: `docpath agent step` / `agent done` 使用 `pending-done.json` 创建、更新、删除 pending completion 状态。
+- [ ] AC-4: status、next、go、context、reveal、check、review、agent 在缺少生成 Markdown 视图但 JSON/JSONL 真源存在时正常运作。
+- [ ] AC-5: render 入口可从 JSON/JSONL 真源输出 plan/current/spec/breadcrumb/check/review Markdown 视图。
+- [ ] AC-6: 删除或收窄 structured-docs/task-files 中仅服务 MD↔JSON 双写漂移的检测与 sync/fix-drift 默认路径后，测试通过。
+- [ ] AC-7: status 展示内容与 state.json 一致，不依赖 current.md。
+- [ ] AC-8: JSON 真源写入路径使用原子写入，新增测试覆盖 JSON-only 和旧 Markdown 回退场景。
+- [ ] AC-9: `pnpm build`、`pnpm test`、`docpath check`、`docpath review` 全部通过。
+
+---
+
+*此文件由 `docpath backlog promote` 生成，并在 R-182 执行前补充 Decision Brief。*

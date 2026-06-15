@@ -15,6 +15,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
 import { readActiveTaskFile } from './task-files.js';
+import { readLastCheckMarkdown } from './workspace-evidence.js';
 
 // ── 展示层级 ──
 
@@ -88,10 +89,9 @@ export async function collectDisclosureItems(cwd: string): Promise<DisclosureIte
     });
   }
 
-  // 3. last-check.md — summary + detail
-  const checkPath = join(docpathDir, 'workspace', 'last-check.md');
-  if (existsSync(checkPath)) {
-    const check = await readFile(checkPath, 'utf-8');
+  // 3. last-check evidence — summary + detail
+  const check = await readLastCheckMarkdown(docpathDir);
+  if (check.trim()) {
     const hasErrors = check.includes('❌') || check.toLowerCase().includes('fail');
     items.push({
       id: 'last-check',

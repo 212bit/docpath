@@ -17,6 +17,7 @@ import { detectActiveTaskFileDrift, readActiveTaskFile, syncActiveTaskFiles } fr
 import { syncCurrentDocument } from '../utils/workspace.js';
 import { writeHybridContextIndex, readHybridContextIndexSummary } from '../utils/context-index.js';
 import { parsePlanSteps } from '../utils/doc-parser.js';
+import { readLastCheckMarkdown, readReviewMarkdown } from '../utils/workspace-evidence.js';
 import {
   acquireExecutionLease,
   releaseExecutionLease,
@@ -550,8 +551,8 @@ export async function compactCommand(options: CompactOptions): Promise<void> {
   await writeHybridContextIndex(cwd);
   const contextIndexSummary = await readHybridContextIndexSummary(cwd);
   const agentOutput = await generateAgentOutput(cwd);
-  const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
-  const reviewContent = await readOptionalFile(join(docpathDir, 'workspace', 'review.md'));
+  const lastCheckContent = await readLastCheckMarkdown(docpathDir);
+  const reviewContent = await readReviewMarkdown(docpathDir);
   const planContent = await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md');
   const changeScope = await summarizeChangeScope(cwd);
   const content = renderCompactedContext(

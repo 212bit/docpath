@@ -13,6 +13,7 @@ import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { compactRuleContent, readRuleFile } from '../utils/rules.js';
+import { readLastCheckMarkdown } from '../utils/workspace-evidence.js';
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
   assertDocumentIndexContainsTaskId,
@@ -216,12 +217,9 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
   }
 
   // ── 5. Check 证据 ──
-  const lastCheckPath = join(docpathDir, 'workspace', 'last-check.md');
-  if (existsSync(lastCheckPath)) {
-    const checkContent = await readFile(lastCheckPath, 'utf-8');
-    if (checkContent.trim()) {
-      sections.push(`## 质量检查证据 (last-check.md)\n${compressMarkdown(checkContent, Math.floor(maxChars * 0.1))}`);
-    }
+  const checkContent = await readLastCheckMarkdown(docpathDir);
+  if (checkContent.trim()) {
+    sections.push(`## 质量检查证据 (last-check.md)\n${compressMarkdown(checkContent, Math.floor(maxChars * 0.1))}`);
   }
 
   // ── 6. 全局规则 ──

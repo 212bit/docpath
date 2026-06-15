@@ -5,202 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🔄 S2 [T-20260615-worktree] — 2026-06-15T03:31:59.908Z
-
----
-taskId: T-20260615-worktree
-step: S2
-status: in_progress
-timestamp: 2026-06-15T03:31:59.908Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Worktree create 实现
-- **Session**: default
-
-### ✅ S2 [T-20260615-worktree] — 2026-06-15T03:32:07.383Z
-
----
-taskId: T-20260615-worktree
-step: S2
-status: done
-timestamp: 2026-06-15T03:32:07.383Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### 🔄 S3 [T-20260615-worktree] — 2026-06-15T03:32:14.741Z
-
----
-taskId: T-20260615-worktree
-step: S3
-status: in_progress
-timestamp: 2026-06-15T03:32:14.741Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Worktree list/remove 实现
-- **Session**: default
-
-### ✅ S3 [T-20260615-worktree] — 2026-06-15T03:32:15.004Z
-
----
-taskId: T-20260615-worktree
-step: S3
-status: done
-timestamp: 2026-06-15T03:32:15.004Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-- **Session**: default
-
-### 🔄 S4 [T-20260615-worktree] — 2026-06-15T03:32:15.497Z
-
----
-taskId: T-20260615-worktree
-step: S4
-status: in_progress
-timestamp: 2026-06-15T03:32:15.497Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Worktree 环境检测
-- **Session**: default
-
-### ✅ S4 [T-20260615-worktree] — 2026-06-15T03:32:15.741Z
-
----
-taskId: T-20260615-worktree
-step: S4
-status: done
-timestamp: 2026-06-15T03:32:15.741Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-- **Session**: default
-
-### 🔄 S5 [T-20260615-worktree] — 2026-06-15T03:32:16.129Z
-
----
-taskId: T-20260615-worktree
-step: S5
-status: in_progress
-timestamp: 2026-06-15T03:32:16.129Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Symlink 策略实现
-- **Session**: default
-
-### ✅ S5 [T-20260615-worktree] — 2026-06-15T03:32:16.366Z
-
----
-taskId: T-20260615-worktree
-step: S5
-status: done
-timestamp: 2026-06-15T03:32:16.366Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S5
-- **Session**: default
-
-### 🔄 S6 [T-20260615-worktree] — 2026-06-15T03:32:25.821Z
-
----
-taskId: T-20260615-worktree
-step: S6
-status: in_progress
-timestamp: 2026-06-15T03:32:25.821Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 测试覆盖 — 基础设施
-- **Session**: default
-
-### ✅ S6 [T-20260615-worktree] — 2026-06-15T03:34:52.080Z
-
----
-taskId: T-20260615-worktree
-step: S6
-status: done
-timestamp: 2026-06-15T03:34:52.080Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S6
-- **Session**: default
-
-### 🔄 S7 [T-20260615-worktree] — 2026-06-15T03:34:53.187Z
-
----
-taskId: T-20260615-worktree
-step: S7
-status: in_progress
-timestamp: 2026-06-15T03:34:53.187Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 并发安全验证
-- **Session**: default
-
-### ✅ S7 [T-20260615-worktree] — 2026-06-15T03:34:53.416Z
-
----
-taskId: T-20260615-worktree
-step: S7
-status: done
-timestamp: 2026-06-15T03:34:53.416Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S7
-- **Session**: default
-
-### 🔄 S8 [T-20260615-worktree] — 2026-06-15T03:35:01.469Z
-
----
-taskId: T-20260615-worktree
-step: S8
-status: in_progress
-timestamp: 2026-06-15T03:35:01.469Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 文档和使用示例
-- **Session**: default
-
-### ✅ S8 [T-20260615-worktree] — 2026-06-15T03:36:00.517Z
-
----
-taskId: T-20260615-worktree
-step: S8
-status: done
-timestamp: 2026-06-15T03:36:00.517Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S8
-- **Session**: default
-
 ### 🚫 check [T-20260615-worktree] — 2026-06-15T03:36:55.769Z
 
 ---
@@ -672,3 +476,191 @@ timestamp: 2026-06-15T08:29:33.617Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (2/2 步)
+
+### 🔄 S1 [T-20260615-md-json-json] — 2026-06-15T08:38:14.410Z
+
+---
+taskId: T-20260615-md-json-json
+step: S1
+status: in_progress
+timestamp: 2026-06-15T08:38:14.410Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理 JSON 单真源边界与兼容策略
+- **Session**: default
+
+### ✅ S1 [T-20260615-md-json-json] — 2026-06-15T08:38:51.660Z
+
+---
+taskId: T-20260615-md-json-json
+step: S1
+status: done
+timestamp: 2026-06-15T08:38:51.660Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260615-md-json-json] — 2026-06-15T08:38:59.897Z
+
+---
+taskId: T-20260615-md-json-json
+step: S2
+status: in_progress
+timestamp: 2026-06-15T08:38:59.897Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 补齐 workspace evidence JSON 真源
+- **Session**: default
+
+### ✅ S2 [T-20260615-md-json-json] — 2026-06-15T08:43:09.008Z
+
+---
+taskId: T-20260615-md-json-json
+step: S2
+status: done
+timestamp: 2026-06-15T08:43:09.008Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260615-md-json-json] — 2026-06-15T08:43:20.420Z
+
+---
+taskId: T-20260615-md-json-json
+step: S3
+status: in_progress
+timestamp: 2026-06-15T08:43:20.420Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 切换核心读取路径为 JSON-first
+- **Session**: default
+
+### ✅ S3 [T-20260615-md-json-json] — 2026-06-15T08:57:17.001Z
+
+---
+taskId: T-20260615-md-json-json
+step: S3
+status: done
+timestamp: 2026-06-15T08:57:17.001Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### 🔄 S4 [T-20260615-md-json-json] — 2026-06-15T08:57:25.979Z
+
+---
+taskId: T-20260615-md-json-json
+step: S4
+status: in_progress
+timestamp: 2026-06-15T08:57:25.979Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 增加 render 视图入口
+- **Session**: default
+
+### ✅ S4 [T-20260615-md-json-json] — 2026-06-15T09:02:07.520Z
+
+---
+taskId: T-20260615-md-json-json
+step: S4
+status: done
+timestamp: 2026-06-15T09:02:07.520Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### 🔄 S5 [T-20260615-md-json-json] — 2026-06-15T09:02:15.708Z
+
+---
+taskId: T-20260615-md-json-json
+step: S5
+status: in_progress
+timestamp: 2026-06-15T09:02:15.708Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 收窄漂移补偿并补齐回归测试
+- **Session**: default
+
+### 🚫 check [T-20260615-md-json-json] — 2026-06-15T09:16:12.637Z
+
+---
+taskId: T-20260615-md-json-json
+step: check
+status: blocked
+timestamp: 2026-06-15T09:16:12.637Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 子任务完成度 (4/5)
+
+### ✅ S5 [T-20260615-md-json-json] — 2026-06-15T09:16:22.754Z
+
+---
+taskId: T-20260615-md-json-json
+step: S5
+status: done
+timestamp: 2026-06-15T09:16:22.754Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S5
+- **Session**: default
+
+### ✅ check [T-20260615-md-json-json] — 2026-06-15T09:17:32.349Z
+
+---
+taskId: T-20260615-md-json-json
+step: check
+status: done
+timestamp: 2026-06-15T09:17:32.349Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260615-md-json-json] — 2026-06-15T09:17:43.004Z
+
+---
+taskId: T-20260615-md-json-json
+step: review
+status: done
+timestamp: 2026-06-15T09:17:43.004Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 24 警告, 3 提示
+
+### ✅ journal [T-20260615-md-json-json] — 2026-06-15T09:18:16.103Z
+
+---
+taskId: T-20260615-md-json-json
+step: journal
+status: done
+timestamp: 2026-06-15T09:18:16.103Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (5/5 步)

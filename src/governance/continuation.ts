@@ -11,6 +11,7 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
+import { readLastCheckMarkdown } from '../utils/workspace-evidence.js';
 
 // ── 结果接口 ──
 
@@ -27,7 +28,6 @@ export interface ContinuationDecision {
 export async function analyzeContinuation(cwd: string): Promise<ContinuationDecision> {
   const docpathDir = await resolveDocpathDir(cwd);
   const tasksDir = join(docpathDir, 'tasks', 'current');
-  const workspaceDir = join(docpathDir, 'workspace');
 
   // 1. 解析 plan.md 中的未完成子任务
   const planPath = join(tasksDir, 'plan.md');
@@ -42,12 +42,11 @@ export async function analyzeContinuation(cwd: string): Promise<ContinuationDeci
     }
   }
 
-  // 2. 解析 last-check.md 中的失败项
-  const lastCheckPath = join(workspaceDir, 'last-check.md');
+  // 2. 解析 JSON-first last-check 证据中的失败项
   const failedChecks: string[] = [];
 
-  if (existsSync(lastCheckPath)) {
-    const checkContent = await readFile(lastCheckPath, 'utf-8');
+  const checkContent = await readLastCheckMarkdown(docpathDir);
+  if (checkContent.trim()) {
     // 匹配 ❌ 或 FAILED 或 FAIL 的行
     const failRegex = /^(.*(?:❌|FAILED?|FAIL).*)$/gmi;
     let match;

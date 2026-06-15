@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { listBacklogItems } from '../engine/backlog.js';
 import { listRegisteredProjects } from '../engine/project-registry.js';
 import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
+import { readReviewMarkdown } from '../utils/workspace-evidence.js';
 
 type DashboardOptions = {
   cwd?: string;
@@ -168,9 +169,9 @@ async function readCheckHistory(projectRoot: string): Promise<unknown[]> {
 
 async function readReview(projectRoot: string): Promise<{ markdown: string; summary: ReturnType<typeof summarizeReview> }> {
   const docpathDir = await resolveDocpathDir(projectRoot);
-  const markdown = await readFileSafe(join(docpathDir, 'workspace', 'review.md'));
+  const markdown = await readReviewMarkdown(docpathDir);
   return {
-    markdown: markdown || '',
+    markdown,
     summary: summarizeReview(markdown),
   };
 }

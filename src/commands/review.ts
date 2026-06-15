@@ -8,7 +8,7 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -16,6 +16,7 @@ import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { readCurrentMd, readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { emitNextHint } from '../utils/next-hint.js';
+import { writeReviewEvidence } from '../utils/workspace-evidence.js';
 
 interface ReviewOptions {
   cwd: string;
@@ -154,23 +155,34 @@ async function alreadyReviewed(cwd: string): Promise<boolean> {
 }
 
 async function writeReviewReport(docpathDir: string, changedFiles: string[], findings: ReviewFinding[]): Promise<void> {
-  const reviewPath = join(docpathDir, 'workspace', 'review.md');
-  const lines = ['# Code Review Report', '', `**时间**: ${new Date().toISOString()}`, `**文件**: ${changedFiles.length}`, ''];
-  for (const f of findings) {
-    lines.push(`- [${f.severity.toUpperCase()}] ${f.file}: ${f.message}`);
-  }
-  await writeFile(reviewPath, lines.join('\n'), 'utf-8');
+  await writeReviewEvidence(docpathDir, {
+    schema_version: 1,
+    kind: 'review',
+    timestamp: new Date().toISOString(),
+    files: changedFiles,
+    findings,
+    errors: findings.filter((finding) => finding.severity === 'error').length,
+    warnings: findings.filter((finding) => finding.severity === 'warn').length,
+    infos: findings.filter((finding) => finding.severity === 'info').length,
+    approved: findings.every((finding) => finding.severity !== 'error'),
+  });
 }
 
 async function handleApprove(cwd: string, docpathDir: string, taskId: string): Promise<void> {
   console.log('\n✅ 审查已手动批准 (跳过自动检查)');
   await writeBreadcrumb(cwd, { taskId, step: 'review', status: 'done', context: '手动批准' });
-  const reviewPath = join(docpathDir, 'workspace', 'review.md');
-  await writeFile(reviewPath, [
-    '# Code Review Report', '',
-    `**时间**: ${new Date().toISOString()}`,
-    `**状态**: ✅ 手动批准 (跳过自动检查)`,
-  ].join('\n'), 'utf-8');
+  await writeReviewEvidence(docpathDir, {
+    schema_version: 1,
+    kind: 'review',
+    timestamp: new Date().toISOString(),
+    files: [],
+    findings: [],
+    errors: 0,
+    warnings: 0,
+    infos: 0,
+    approved: true,
+    manual: true,
+  });
   if (!await alreadyReviewed(cwd)) {
     await transitionWorkflow(cwd, 'review.passed', { currentStep: '审查通过，下一步: docpath journal' });
   }

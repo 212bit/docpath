@@ -231,5 +231,23 @@
     "gitRef": "7f7cf376f869fc33b7b57cb629ebc41d51be1d00",
     "branch": "main",
     "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-15T09:16:12.714Z",
+    "passed": false,
+    "failedChecks": [
+      "子任务完成度 (4/5)"
+    ],
+    "gitRef": "bc0a42a0902b54c183fc4bc3c28b03aaf7d509ac",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-15T09:17:32.420Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "bc0a42a0902b54c183fc4bc3c28b03aaf7d509ac",
+    "branch": "main",
+    "worktreeDirty": true
   }
 ]

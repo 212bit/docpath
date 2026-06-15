@@ -18,6 +18,8 @@ import {
   type WorkflowPhase,
 } from '../engine/state-machine.js';
 import { parsePlanSteps, renderPlanChecklist } from './doc-parser.js';
+import { readLastCheckMarkdown } from './workspace-evidence.js';
+import { readBreadcrumb, type BreadcrumbEntry } from '../engine/breadcrumb.js';
 
 // ── state.json schema ──
 
@@ -128,8 +130,8 @@ export async function writeCurrentState(cwd: string, state: CurrentState): Promi
   const activePlanPath = resolveActiveTaskDocPath(docpathDir, state.task_id || '', 'plan.md');
   const activeSpecPath = resolveActiveTaskDocPath(docpathDir, state.task_id || '', 'spec.md');
   const planContent = await readActiveTaskFile(docpathDir, state.task_id || '', 'plan.md');
-  const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
-  const breadcrumbContent = await readOptionalFile(join(docpathDir, 'workspace', 'breadcrumb.md'));
+  const lastCheckContent = await readLastCheckMarkdown(docpathDir);
+  const breadcrumbSummary = extractLatestBreadcrumbEntrySummary((await readBreadcrumb(cwd)).entries);
   const specLink = `../${activeSpecPath.slice(docpathDir.length + 1).replace(/\\/g, '/')}`;
   const planLink = `../${activePlanPath.slice(docpathDir.length + 1).replace(/\\/g, '/')}`;
 
@@ -139,7 +141,7 @@ export async function writeCurrentState(cwd: string, state: CurrentState): Promi
     specLink,
     planLink,
     extractLastCheckSummary(lastCheckContent),
-    extractLatestBreadcrumbSummary(breadcrumbContent),
+    breadcrumbSummary,
     state.escalation,
   );
   await writeFileAtomic(currentPath, rendered);
@@ -350,21 +352,14 @@ function extractLastCheckSummary(content: string): string {
   return [result, count ? `${count} 项` : '', time].filter(Boolean).join(' · ');
 }
 
-function extractLatestBreadcrumbSummary(content: string): string {
-  const lines = content.split('\n');
-  const headingIndexes = lines
-    .map((line, index) => /^###\s+/.test(line.trim()) ? index : -1)
-    .filter(index => index !== -1);
-  const headingIndex = headingIndexes.at(-1);
-  if (headingIndex === undefined) return '暂无 breadcrumb.md 记录';
-
-  const nextHeadingIndex = lines.findIndex((line, index) => index > headingIndex && /^###\s+/.test(line.trim()));
-  const blockEnd = nextHeadingIndex === -1 ? lines.length : nextHeadingIndex;
-  const heading = lines[headingIndex].replace(/^###\s+/, '').trim();
-  const block = lines.slice(headingIndex + 1, blockEnd).join('\n');
-  const status = block.match(/^-\s+\*\*状态\*\*:\s*(.+)$/m)?.[1]?.trim();
-  const context = block.match(/^-\s+\*\*上下文\*\*:\s*(.+)$/m)?.[1]?.trim();
-  return [heading, status ? `状态: ${status}` : '', context].filter(Boolean).join(' · ');
+function extractLatestBreadcrumbEntrySummary(entries: BreadcrumbEntry[]): string {
+  const latest = entries.at(-1);
+  if (!latest) return '暂无 breadcrumb.md 记录';
+  return [
+    latest.step,
+    latest.status ? `状态: ${latest.status}` : '',
+    latest.context,
+  ].filter(Boolean).join(' · ');
 }
 
 function convertStateToFields(state: CurrentState): CurrentStateFields {
@@ -436,8 +431,8 @@ export async function syncCurrentDocument(cwd: string): Promise<void> {
   const activePlanPath = resolveActiveTaskDocPath(docpathDir, current.task_id || '', 'plan.md');
   const activeSpecPath = resolveActiveTaskDocPath(docpathDir, current.task_id || '', 'spec.md');
   const planContent = await readActiveTaskFile(docpathDir, current.task_id || '', 'plan.md');
-  const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
-  const breadcrumbContent = await readOptionalFile(join(docpathDir, 'workspace', 'breadcrumb.md'));
+  const lastCheckContent = await readLastCheckMarkdown(docpathDir);
+  const breadcrumbSummary = extractLatestBreadcrumbEntrySummary((await readBreadcrumb(cwd)).entries);
   const specLink = `../${activeSpecPath.slice(docpathDir.length + 1).replace(/\\/g, '/')}`;
   const planLink = `../${activePlanPath.slice(docpathDir.length + 1).replace(/\\/g, '/')}`;
 
@@ -447,7 +442,7 @@ export async function syncCurrentDocument(cwd: string): Promise<void> {
     specLink,
     planLink,
     extractLastCheckSummary(lastCheckContent),
-    extractLatestBreadcrumbSummary(breadcrumbContent),
+    breadcrumbSummary,
     current.escalation,
   );
   

@@ -2,9 +2,9 @@
  * docpath changes — 提交前只读变更收口视图。
  */
 
-import { join } from 'node:path';
-import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
+import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
+import { readLastCheckEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
 import {
   readIgnoredEvidenceReport,
   readLinkedBacklogId,
@@ -153,22 +153,18 @@ function parseNameStatus(output: string): ChangedFile[] {
 async function resolveSinceRef(docpathDir: string, since?: string): Promise<string | null> {
   if (!since) return null;
   if (since !== 'last-check') return since;
-  const raw = await readFileSafe(join(docpathDir, 'workspace', 'last-check.md'));
-  const ref = raw?.match(/(?:git_ref|ref|commit):\s*`?([a-f0-9]{7,40}|HEAD(?:~\d+)?|[\w./-]+)`?/i)?.[1];
-  return ref || 'HEAD';
+  const evidence = await readLastCheckEvidence(docpathDir);
+  return evidence?.git?.ref || 'HEAD';
 }
 
 async function readLastCheckPass(docpathDir: string): Promise<boolean> {
-  const raw = await readFileSafe(join(docpathDir, 'workspace', 'last-check.md'));
-  if (!raw) return false;
-  return /✅\s*PASS|PASS/i.test(raw) && !/FAIL|失败/i.test(raw);
+  const evidence = await readLastCheckEvidence(docpathDir);
+  return evidence?.passed === true;
 }
 
 async function readReviewPass(docpathDir: string): Promise<boolean> {
-  const raw = await readFileSafe(join(docpathDir, 'workspace', 'review.md'));
-  if (!raw) return false;
-  if (/❌|FAIL|request-changes|\[ERROR\]|[1-9]\d*\s*错误/i.test(raw)) return false;
-  return true;
+  const evidence = await readReviewEvidence(docpathDir);
+  return evidence?.approved === true;
 }
 
 function buildSuggestedCommitMessage(report: Omit<ChangesReport, 'suggested_commit_message'>): string {

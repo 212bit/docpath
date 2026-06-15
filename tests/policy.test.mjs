@@ -67,6 +67,25 @@ describe('completion policy', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('allows completion from JSON-only last-check evidence', async () => {
+    const cwd = mkWorkspace({ gate: 'check_pass', lastCheck: 'pass' });
+    const workspace = join(cwd, '.docpath', 'workspace');
+    rmSync(join(workspace, 'last-check.md'), { force: true });
+    writeFileSync(join(workspace, 'last-check.json'), JSON.stringify({
+      schema_version: 1,
+      kind: 'last-check',
+      timestamp: '2026-05-29T00:00:00.000Z',
+      passed: true,
+      check_count: 1,
+      checks: [{ name: 'JSON evidence', passed: true, output: '' }],
+    }, null, 2));
+
+    const verdict = await evaluateCompletionPolicy(cwd);
+
+    assert.equal(verdict.allowed, true, verdict.reasons.join('; '));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('requires review_pass when review is required', async () => {
     const cwd = mkWorkspace({ gate: 'check_pass', lastCheck: 'pass' });
     const verdict = await evaluateCompletionPolicy(cwd, { requireReview: true });

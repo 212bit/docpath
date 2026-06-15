@@ -1,11 +1,11 @@
 import { existsSync } from 'fs';
-import { mkdir, readFile, readdir, rm, stat, writeFile } from 'fs/promises';
+import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import {
-  detectStructuredMarkdownHashDrift,
-  formatStructuredMarkdownHashDrift,
   readStructuredSpecDocument,
   readStructuredTaskMarkdown,
+  readStructuredTaskMarkdownView,
+  structuredJsonFileFor,
   taskIdFromMarkdown,
   writeStructuredTaskJson,
   type StructuredSpecDocument,
@@ -192,7 +192,7 @@ export interface TaskFileDrift {
   file: TaskFileAlias;
   currentPath: string;
   canonicalPath: string;
-  reason: 'missing-current' | 'missing-canonical' | 'content-mismatch' | 'structured-json-mismatch';
+  reason: 'missing-current' | 'missing-canonical' | 'content-mismatch';
   detail?: string;
 }
 
@@ -306,23 +306,6 @@ export async function detectActiveTaskFileDrift(
     if (currentContent !== canonicalContent) {
       drifts.push({ file, currentPath, canonicalPath, reason: 'content-mismatch' });
     }
-
-    if (isStructuredTaskMarkdownFile(file)) {
-      const structuredDrifts = await Promise.all([
-        detectStructuredMarkdownHashDrift(currentTaskDir(docpathDir), file),
-        detectStructuredMarkdownHashDrift(canonicalTaskDir(docpathDir, taskId), file),
-      ]);
-      for (const structuredDrift of structuredDrifts) {
-        if (!structuredDrift) continue;
-        drifts.push({
-          file,
-          currentPath,
-          canonicalPath,
-          reason: 'structured-json-mismatch',
-          detail: formatStructuredMarkdownHashDrift(structuredDrift),
-        });
-      }
-    }
   }
 
   return drifts;
@@ -345,12 +328,27 @@ export async function syncActiveTaskFiles(
     if (!existsSync(fromPath)) {
       throw new Error(`无法同步 ${file}: 源文件不存在 ${fromPath}`);
     }
-    const content = await readFile(fromPath, 'utf-8');
+
+    const structuredFile = isStructuredTaskMarkdownFile(file) ? file : null;
+    const structuredContent = structuredFile
+      ? await readStructuredTaskMarkdownView(dirname(fromPath), structuredFile)
+      : null;
+    const content = structuredContent ?? await readFile(fromPath, 'utf-8');
     assertActiveTaskFileWriteAllowed(docpathDir, taskId, file, content);
+    if (structuredContent !== null) {
+      await writeFile(fromPath, content, 'utf-8');
+    }
     await writeFile(toPath, content, 'utf-8');
-    if (isStructuredTaskMarkdownFile(file)) {
-      await writeStructuredTaskJson(dirname(fromPath), file, content, { taskId });
-      await writeStructuredTaskJson(dirname(toPath), file, content, { taskId });
+    if (structuredFile) {
+      const jsonFile = structuredJsonFileFor(structuredFile);
+      const sourceJsonPath = jsonFile ? join(dirname(fromPath), jsonFile) : '';
+      const targetJsonPath = jsonFile ? join(dirname(toPath), jsonFile) : '';
+      if (sourceJsonPath && targetJsonPath && existsSync(sourceJsonPath)) {
+        await copyFile(sourceJsonPath, targetJsonPath);
+      } else {
+        await writeStructuredTaskJson(dirname(fromPath), structuredFile, content, { taskId });
+        await writeStructuredTaskJson(dirname(toPath), structuredFile, content, { taskId });
+      }
     }
     synced.push({ file, fromPath, toPath });
   }

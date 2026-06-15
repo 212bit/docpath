@@ -1,11 +1,9 @@
 /** 工作流门禁策略。 */
 
-import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { appendDecision } from '../governance/decisions.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
+import { readLastCheckEvidence } from '../utils/workspace-evidence.js';
 
 export interface PolicyVerdict {
   allowed: boolean;
@@ -16,28 +14,18 @@ export interface CompletionPolicyOptions {
   requireReview?: boolean;
 }
 
-async function readLastCheck(cwd: string): Promise<string | null> {
-  const docpathDir = await resolveDocpathDir(cwd);
-  const path = join(docpathDir, 'workspace', 'last-check.md');
-  if (!existsSync(path)) return null;
-  return readFile(path, 'utf-8');
-}
-
-function lastCheckPassed(content: string): boolean {
-  return /^\*\*结果\*\*:\s*✅\s*PASS\s*$/m.test(content);
-}
-
 export async function evaluateCompletionPolicy(
   cwd: string,
   options: CompletionPolicyOptions = {},
 ): Promise<PolicyVerdict> {
   const reasons: string[] = [];
+  const docpathDir = await resolveDocpathDir(cwd);
   const state = await readCurrentState(cwd);
-  const lastCheck = await readLastCheck(cwd);
+  const lastCheck = await readLastCheckEvidence(docpathDir);
 
   if (!state) reasons.push('缺少 workflow state，请先运行 docpath init');
   if (!lastCheck) reasons.push('缺少 last-check.md，请先运行 docpath check');
-  if (lastCheck && !lastCheckPassed(lastCheck)) reasons.push('last-check.md 未显示 PASS，请先修复检查失败项');
+  if (lastCheck && !lastCheck.passed) reasons.push('last-check.md 未显示 PASS，请先修复检查失败项');
 
   if (state?.gate === 'check_fail') reasons.push('当前 gate 为 check_fail，不能完成任务');
   if (state && !['check_pass', 'review_pass'].includes(state.gate) && state.phase !== 'completed') {

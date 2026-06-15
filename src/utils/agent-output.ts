@@ -21,6 +21,7 @@ import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } f
 import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridContextIndexLeaves, type HybridContextIndexSummary, type HybridContextIndexEntry } from './context-index.js';
 import { readGitCloseoutSummary, type GitCloseoutSummary } from './git-closeout.js';
 import { resolveMajorChangeGateStatus, type MajorChangeGateStatus } from './major-change.js';
+import { readLastCheckMarkdown } from './workspace-evidence.js';
 
 export interface AgentOutput {
   /** 输出视图: status --agent 是状态快照, next --agent 是下一步路由。 */
@@ -729,7 +730,7 @@ function inferNextAction(
 
 async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<AgentOutputContext> {
   const state = await readCurrentMd(cwd);
-  const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
+  const lastCheckContent = await readLastCheckMarkdown(docpathDir);
   const hasSpec = existsSync(join(docpathDir, 'tasks', 'current', 'spec.md'));
   const specContent = hasSpec ? await readActiveTaskFile(docpathDir, state?.task_id, 'spec.md') : '';
   const planContent = await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md');

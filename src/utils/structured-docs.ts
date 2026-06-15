@@ -635,20 +635,17 @@ export async function detectStructuredMarkdownHashDrift(
 }
 
 export function formatStructuredMarkdownHashDrift(drift: StructuredMarkdownHashDrift): string {
+  const view = drift.file === 'plan.md' ? 'plan' : 'spec';
   return [
     `${drift.markdownPath} 与 ${drift.jsonPath} 的 source.content_sha256 不一致`,
     `markdown_sha256: ${drift.actualHash}`,
     `json_source_sha256: ${drift.expectedHash}`,
-    '修复建议: docpath tasks sync --from current 或 docpath tasks sync --from canonical',
+    `修复建议: docpath render --view ${view} 或 docpath render --all`,
   ].join('\n');
 }
 
 async function readStructuredTaskJson(dir: string, file: StructuredTaskMarkdownFile): Promise<StructuredTaskDocument | null> {
-  const doc = await readStructuredTaskJsonDocument(dir, file);
-  if (!doc) return null;
-  const drift = await detectStructuredMarkdownHashDrift(dir, file);
-  if (drift) throw new Error(formatStructuredMarkdownHashDrift(drift));
-  return doc;
+  return readStructuredTaskJsonDocument(dir, file);
 }
 
 export async function readStructuredSpecDocument(dir: string): Promise<StructuredSpecDocument | null> {
@@ -657,5 +654,10 @@ export async function readStructuredSpecDocument(dir: string): Promise<Structure
 
 export async function readStructuredTaskMarkdown(dir: string, file: StructuredTaskMarkdownFile): Promise<string | null> {
   const doc = await readStructuredTaskJson(dir, file);
+  return doc === null ? null : renderStructuredMarkdown(doc);
+}
+
+export async function readStructuredTaskMarkdownView(dir: string, file: StructuredTaskMarkdownFile): Promise<string | null> {
+  const doc = await readStructuredTaskJsonDocument(dir, file);
   return doc === null ? null : renderStructuredMarkdown(doc);
 }

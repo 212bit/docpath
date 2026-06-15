@@ -252,7 +252,7 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('go fails loud on plan.json/plan.md hash drift and corrupt plan.json', () => {
+  it('go reads plan.json before stale plan.md and still fails loud on corrupt plan.json', () => {
     const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
     const content = [
       '## 执行计划',
@@ -278,9 +278,9 @@ describe('write commands', () => {
     writeFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.md'), stale);
 
     const drifted = runResult(`go --cwd ${cwd} --step S1 --dry-run`, cwd);
-    assert.equal(drifted.code, 1);
-    assert.match(drifted.out, /source\.content_sha256 不一致/);
-    assert.match(drifted.out, /docpath tasks sync --from current/);
+    assert.equal(drifted.code, 0);
+    assert.match(drifted.out, /JSON backed step/);
+    assert.doesNotMatch(drifted.out, /Stale markdown step/);
 
     writeFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.json'), '{not-json');
     const corrupt = runResult(`go --cwd ${cwd} --step S1 --dry-run`, cwd);

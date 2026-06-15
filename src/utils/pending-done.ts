@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { readFileSafe, rmFile, writeFileSafe } from './file.js';
+import { readFileSafe, rmFile, writeFileAtomic } from './file.js';
 import { resolveDocpathDir } from './file.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import type { CurrentState } from './workspace.js';
@@ -20,6 +20,10 @@ function isPendingDoneStale(enteredAt: string, now: Date = new Date()): boolean 
 
 function pendingDonePath(docpathDir: string): string {
   return join(docpathDir, 'workspace', 'pending-done.md');
+}
+
+function pendingDoneJsonPath(docpathDir: string): string {
+  return join(docpathDir, 'workspace', 'pending-done.json');
 }
 
 function renderRecord(record: PendingDoneRecord): string {
@@ -51,8 +55,29 @@ function parseRecord(content: string): PendingDoneRecord | null {
   };
 }
 
+function parseJsonRecord(content: string | null): PendingDoneRecord | null {
+  if (!content) return null;
+  try {
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    const taskId = typeof parsed.task_id === 'string' ? parsed.task_id.trim() : '';
+    const enteredAt = typeof parsed.entered_at === 'string' ? parsed.entered_at.trim() : '';
+    const phase = typeof parsed.phase === 'string' ? parsed.phase.trim() : '';
+    if (!taskId || !enteredAt || !phase) return null;
+    return {
+      task_id: taskId,
+      entered_at: enteredAt,
+      phase,
+      warned: parsed.warned === true,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function readPendingDone(cwd: string): Promise<PendingDoneRecord | null> {
   const docpathDir = await resolveDocpathDir(cwd);
+  const jsonRecord = parseJsonRecord(await readFileSafe(pendingDoneJsonPath(docpathDir)));
+  if (jsonRecord) return jsonRecord;
   const content = await readFileSafe(pendingDonePath(docpathDir));
   if (!content) return null;
   return parseRecord(content);
@@ -60,11 +85,13 @@ export async function readPendingDone(cwd: string): Promise<PendingDoneRecord | 
 
 export async function writePendingDone(cwd: string, record: PendingDoneRecord): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
-  await writeFileSafe(pendingDonePath(docpathDir), renderRecord(record));
+  await writeFileAtomic(pendingDoneJsonPath(docpathDir), JSON.stringify(record, null, 2));
+  await writeFileAtomic(pendingDonePath(docpathDir), renderRecord(record));
 }
 
 export async function clearPendingDone(cwd: string): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
+  await rmFile(pendingDoneJsonPath(docpathDir));
   await rmFile(pendingDonePath(docpathDir));
 }
 

@@ -31,6 +31,7 @@ import {
   readProjectDocumentIndex,
 } from '../utils/document-index.js';
 import { resolveRulePaths, type RuleName } from '../utils/rules.js';
+import { writeLastCheckEvidence as writeLastCheckEvidenceFiles, type CheckEvidenceItem } from '../utils/workspace-evidence.js';
 
 interface CheckOptions {
   cwd: string;
@@ -91,7 +92,6 @@ function formatTaskFileDrift(drifts: TaskFileDrift[]): string {
     'missing-current': 'current 缺失',
     'missing-canonical': 'canonical 缺失',
     'content-mismatch': '内容不一致',
-    'structured-json-mismatch': 'JSON/Markdown hash 不一致',
   };
   return [
     'TASK FILE DRIFT DETECTED:',
@@ -1091,27 +1091,30 @@ async function updateCheckWorkflowState(cwd: string, allPassed: boolean, results
 }
 
 async function writeLastCheckEvidence(cwd: string, results: CheckResult[], allPassed: boolean): Promise<void> {
-  const lastCheckPath = join(cwd, '.docpath', 'workspace', 'last-check.md');
+  const docpathDir = await resolveDocpathDir(cwd);
   const gitBaseline = readGitBaseline(cwd);
-  const checkLines: string[] = ['# Last Check Evidence', ''];
-  checkLines.push(`**时间**: ${new Date().toISOString()}`);
-  checkLines.push(`**结果**: ${allPassed ? '✅ PASS' : '❌ FAIL'}`);
-  checkLines.push(`**检查项**: ${results.length}`);
-  if (gitBaseline) {
-    checkLines.push(`git_ref: ${gitBaseline.ref}`);
-    checkLines.push(`branch: ${gitBaseline.branch}`);
-    checkLines.push(`worktree_dirty: ${gitBaseline.worktreeDirty}`);
-  }
-  checkLines.push('');
-  for (const result of results) {
-    const icon = result.severity === 'warning' ? '⚠️' : result.passed ? '✅' : '❌';
-    checkLines.push(`- ${icon} ${result.name}`);
-    if (shouldPersistPassedOutput(result)) {
-      checkLines.push(...formatFailedOutput(result.output));
-    }
-  }
-  checkLines.push('');
-  await writeFile(lastCheckPath, checkLines.join('\n'), 'utf-8');
+  const checks: CheckEvidenceItem[] = results.map((result) => ({
+    name: result.name,
+    passed: result.passed,
+    output: shouldPersistPassedOutput(result) ? result.output : '',
+    ...(result.category ? { category: result.category } : {}),
+    ...(result.severity ? { severity: result.severity } : {}),
+  }));
+  await writeLastCheckEvidenceFiles(docpathDir, {
+    schema_version: 1,
+    kind: 'last-check',
+    timestamp: new Date().toISOString(),
+    passed: allPassed,
+    check_count: results.length,
+    ...(gitBaseline ? {
+      git: {
+        ref: gitBaseline.ref,
+        branch: gitBaseline.branch,
+        worktree_dirty: gitBaseline.worktreeDirty,
+      },
+    } : {}),
+    checks,
+  });
 }
 
 async function writeCheckBreadcrumb(cwd: string, taskId: string, results: CheckResult[], allPassed: boolean): Promise<void> {

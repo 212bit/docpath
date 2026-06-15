@@ -108,7 +108,9 @@ describe('docpath agent lifecycle', () => {
     const out = run('agent enter', tmpDir);
     assert.match(out, /agent_context|state|phase/i, `agent enter should return context, got: ${out.slice(0, 120)}`);
     const sentinel = fs.readFileSync(path.join(tmpDir, '.docpath', 'workspace', 'pending-done.md'), 'utf-8');
+    const sentinelJson = JSON.parse(fs.readFileSync(path.join(tmpDir, '.docpath', 'workspace', 'pending-done.json'), 'utf-8'));
     assert.match(sentinel, /task_id: T-AGENT/);
+    assert.equal(sentinelJson.task_id, 'T-AGENT');
   });
 
   it('agent step records progress', () => {
@@ -122,6 +124,7 @@ describe('docpath agent lifecycle', () => {
     const out = run('agent done', tmpDir);
     assert.match(out, /done|完成|归档/i, `got: ${out.slice(0, 100)}`);
     assert.equal(fs.existsSync(path.join(tmpDir, '.docpath', 'workspace', 'pending-done.md')), false);
+    assert.equal(fs.existsSync(path.join(tmpDir, '.docpath', 'workspace', 'pending-done.json')), false);
   });
 
   it('agent done marks the active terminal verification step as done', () => {

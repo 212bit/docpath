@@ -6,6 +6,7 @@ import { deliverablesCommand } from '../deliverables.js';
 import { exportCommand } from '../export.js';
 import { promptAction } from '../prompt.js';
 import { projectsCommand } from '../projects.js';
+import { renderCommand } from '../render.js';
 import { rolesCommand } from '../roles.js';
 import { statsCommand } from '../stats.js';
 
@@ -101,6 +102,22 @@ function registerExportCommand(cli: CAC): void {
     });
 }
 
+function registerRenderCommand(cli: CAC): void {
+  cli.command('render', '从 JSON/JSONL 真源重新生成 Markdown 视图')
+    .option('--cwd <path>', '项目目录')
+    .option('--view <view>', '视图: current | spec | plan | breadcrumb | check | review')
+    .option('--all', '生成所有支持视图')
+    .option('--json', '输出 JSON')
+    .action(async (options: { cwd?: string; view?: string; all?: boolean; json?: boolean }) => {
+      await renderCommand({
+        cwd: options.cwd || process.cwd(),
+        view: options.view,
+        all: !!options.all,
+        json: !!options.json,
+      });
+    });
+}
+
 function registerStatsCommand(cli: CAC): void {
   cli.command('stats', '项目统计面板')
     .option('--cwd <path>', '项目目录')
@@ -155,6 +172,7 @@ export function registerReportingCommands(cli: CAC): void {
   registerDeliverablesCommand(cli);
   registerRolesCommand(cli);
   registerExportCommand(cli);
+  registerRenderCommand(cli);
   registerStatsCommand(cli);
   registerProjectsCommand(cli);
   registerDashboardCommand(cli);

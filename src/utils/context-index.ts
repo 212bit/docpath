@@ -2,11 +2,12 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { resolveDocpathDir } from './file.js';
-import { readCurrentState, readOptionalFile } from './workspace.js';
+import { readCurrentState } from './workspace.js';
 import { readActiveTaskFile } from './task-files.js';
 import { parsePlanSteps } from './doc-parser.js';
 import { readDeliverableIndexSummary } from './deliverables.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
+import { readLastCheckMarkdown, readReviewMarkdown } from './workspace-evidence.js';
 
 export interface HybridContextIndexEntry {
   id: string;
@@ -201,8 +202,8 @@ export async function buildHybridContextIndex(cwd: string): Promise<HybridContex
   const taskId = state?.task_id || 'unknown';
   const specContent = await readActiveTaskFile(docpathDir, taskId, 'spec.md');
   const planContent = await readActiveTaskFile(docpathDir, taskId, 'plan.md');
-  const lastCheckContent = await readOptionalFile(join(docpathDir, 'workspace', 'last-check.md'));
-  const reviewContent = await readOptionalFile(join(docpathDir, 'workspace', 'review.md'));
+  const lastCheckContent = await readLastCheckMarkdown(docpathDir);
+  const reviewContent = await readReviewMarkdown(docpathDir);
   const deliverables = await readDeliverableIndexSummary(cwd);
   const breadcrumb = await readBreadcrumb(cwd);
   const latest = breadcrumb.latest;

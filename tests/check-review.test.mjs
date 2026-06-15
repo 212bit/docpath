@@ -109,6 +109,25 @@ function structuredSpecJson(markdown, overrides = {}) {
   };
 }
 
+function writeActiveSpecJson(cwd, tasks, specJson, taskId = 'T-AGENT') {
+  const canonical = join(cwd, '.docpath', 'tasks', taskId);
+  mkdirSync(canonical, { recursive: true });
+  const content = `${JSON.stringify(specJson, null, 2)}\n`;
+  writeFileSync(join(tasks, 'spec.json'), content);
+  writeFileSync(join(canonical, 'spec.json'), content);
+}
+
+function writePendingDoneFixture(workspace, record) {
+  writeFileSync(join(workspace, 'pending-done.json'), `${JSON.stringify(record, null, 2)}\n`);
+  writeFileSync(join(workspace, 'pending-done.md'), `---
+task_id: ${record.task_id}
+entered_at: ${record.entered_at}
+phase: ${record.phase}
+warned: ${record.warned === true ? 'true' : 'false'}
+---
+`);
+}
+
 describe('check and review commands', () => {
   let tmpdir_path;
   before(() => {
@@ -253,11 +272,14 @@ describe('check and review commands', () => {
     const out = run(`review --cwd ${cwd} --approve`, cwd);
     const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');
     const reviewPath = join(cwd, '.docpath', 'workspace', 'review.md');
+    const reviewJsonPath = join(cwd, '.docpath', 'workspace', 'review.json');
 
     assert.match(out, /手动批准/);
     assert.match(out, /next_hint:/);
     assert.match(out, /recommended_command:/);
     assert.equal(existsSync(reviewPath), true);
+    assert.equal(existsSync(reviewJsonPath), true);
+    assert.equal(JSON.parse(readFileSync(reviewJsonPath, 'utf-8')).manual, true);
     assert.equal(existsSync(decisionsPath), false);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -275,11 +297,14 @@ describe('check and review commands', () => {
 
     const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
     const lastCheck = readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
+    const lastCheckJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.json'), 'utf-8'));
 
     assert.equal(result.code, 0);
     assert.match(lastCheck, new RegExp(`git_ref: ${head}`));
     assert.match(lastCheck, /branch: (main|master)/);
     assert.match(lastCheck, /worktree_dirty: (true|false)/);
+    assert.equal(lastCheckJson.passed, true);
+    assert.equal(lastCheckJson.git.ref, head);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -473,6 +498,22 @@ describe('check and review commands', () => {
       '## 5. 验收标准',
     ].join('\n'))}`;
     writeFileSync(join(tasks, 'spec.md'), confirmedSpec);
+    writeActiveSpecJson(cwd, tasks, structuredSpecJson(confirmedSpec, {
+      major_change_gate: {
+        required: true,
+        types: ['技术栈 / 框架', 'UI 框架 / 设计系统', '外部 SDK / 大依赖'],
+        user_confirmed: '2026-06-08 用户确认新增 React 测试依赖',
+        decision_brief_markdown: [
+          '- 背景: 测试新增重大依赖门禁',
+          '- 可选方案: 保持原生 / React',
+          '- 推荐方案: React',
+          '- 成本: 新增依赖与维护成本',
+          '- 风险: 包体积与技术栈迁移风险',
+          '- 回滚方案: 移除新增依赖并恢复原实现',
+          '- 用户确认: 2026-06-08 用户确认新增 React 测试依赖',
+        ].join('\n'),
+      },
+    }));
 
     const confirmed = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
     const confirmedLastCheck = readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
@@ -545,7 +586,7 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('check fails loud when spec.md drifts from spec.json hash', () => {
+  it('check reads spec.json before stale spec.md views', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-spec-json-drift-'));
     const { tasks } = mkExecWorkspace(cwd);
     const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
@@ -567,10 +608,9 @@ describe('check and review commands', () => {
 
     const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
 
-    assert.equal(result.code, 1);
-    assert.match(result.out, /任务文件 current\/canonical 漂移检查/);
-    assert.match(result.out, /source\.content_sha256 不一致/);
-    assert.match(result.out, /docpath tasks sync --from current/);
+    assert.equal(result.code, 0, result.out);
+    assert.match(result.out, /全部通过/);
+    assert.doesNotMatch(result.out, /source\.content_sha256 不一致/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -624,6 +664,25 @@ describe('check and review commands', () => {
       '## 5. 验收标准',
     ].join('\n'))}`;
     writeFileSync(join(tasks, 'spec.md'), confirmedSpec);
+    writeActiveSpecJson(cwd, tasks, structuredSpecJson(confirmedSpec, {
+      major_change_gate: {
+        required: true,
+        types: ['UI 信息架构 / 用户主路径', '工作流 / Agent 行为'],
+        user_confirmed: '2026-06-08 用户确认协议模板重大变更',
+        decision_brief_markdown: [
+          '- 当前问题: 测试协议模板重大变更门禁',
+          '- 目标: 未确认时阻塞协议级改动',
+          '- 背景: 协议模板会改变 Agent 行为',
+          '- 可选方案: 直接修改 / 先确认',
+          '- 推荐方案: 先确认',
+          '- 不做什么: 不扩大到实现任务',
+          '- 成本: 增加前置讨论',
+          '- 风险: 门禁过严',
+          '- 回滚方案: 恢复旧协议模板',
+          '- 用户确认: 2026-06-08 用户确认协议模板重大变更',
+        ].join('\n'),
+      },
+    }));
 
     const confirmed = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
     const confirmedLastCheck = readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
@@ -910,13 +969,12 @@ describe('check and review commands', () => {
       started_at: '2026-06-01T00:00:00.000Z',
       updated_at: '2026-06-01T00:00:00.000Z',
     }, null, 2));
-    writeFileSync(join(tmpdir_path, '.docpath', 'workspace', 'pending-done.md'), `---
-task_id: T-AGENT
-entered_at: 2026-06-01T00:00:00.000Z
-phase: executing
-warned: false
----
-`);
+    writePendingDoneFixture(join(tmpdir_path, '.docpath', 'workspace'), {
+      task_id: 'T-AGENT',
+      entered_at: '2026-06-01T00:00:00.000Z',
+      phase: 'executing',
+      warned: false,
+    });
 
     const out = run('status', tmpdir_path);
 
@@ -937,13 +995,12 @@ warned: false
       started_at: '2026-06-01T00:00:00.000Z',
       updated_at: '2026-06-01T00:00:00.000Z',
     }, null, 2));
-    writeFileSync(join(tmpdir_path, '.docpath', 'workspace', 'pending-done.md'), `---
-task_id: T-OTHER
-entered_at: 2026-06-01T00:00:00.000Z
-phase: executing
-warned: false
----
-`);
+    writePendingDoneFixture(join(tmpdir_path, '.docpath', 'workspace'), {
+      task_id: 'T-OTHER',
+      entered_at: '2026-06-01T00:00:00.000Z',
+      phase: 'executing',
+      warned: false,
+    });
 
     const out = run('status', tmpdir_path);
 
@@ -963,13 +1020,12 @@ warned: false
       started_at: '2026-06-01T00:00:00.000Z',
       updated_at: '2026-06-01T00:00:00.000Z',
     }, null, 2));
-    writeFileSync(join(tmpdir_path, '.docpath', 'workspace', 'pending-done.md'), `---
-task_id: T-AGENT
-entered_at: 2026-05-29T00:00:00.000Z
-phase: executing
-warned: false
----
-`);
+    writePendingDoneFixture(join(tmpdir_path, '.docpath', 'workspace'), {
+      task_id: 'T-AGENT',
+      entered_at: '2026-05-29T00:00:00.000Z',
+      phase: 'executing',
+      warned: false,
+    });
 
     run('status', tmpdir_path);
     run('status', tmpdir_path);

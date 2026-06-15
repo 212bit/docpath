@@ -9,6 +9,7 @@ import { existsSync } from 'fs';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
+import { readLastCheckEvidence } from '../utils/workspace-evidence.js';
 
 interface TddOptions {
   cwd: string;
@@ -179,17 +180,14 @@ async function tddNext(cwd: string, docpathDir: string, state: TddState): Promis
 
   // 特殊处理: check → done 需要检查 last-check 是否通过
   if (nextPhase === 'done') {
-    const lastCheckPath = join(docpathDir, 'workspace', 'last-check.md');
-    if (existsSync(lastCheckPath)) {
-      const checkContent = await readFile(lastCheckPath, 'utf-8');
-      if (checkContent.includes('✅') || checkContent.toLowerCase().includes('pass')) {
-        state.phase = 'done';
-        state.cycles += 1;
-        await writeTddState(docpathDir, state);
-        console.log(`🎉  TDD 循环完成！（第 ${state.cycles} 轮）`);
-        console.log(`💡  运行 \`docpath tdd start\` 开始下一轮。`);
-        return;
-      }
+    const lastCheck = await readLastCheckEvidence(docpathDir);
+    if (lastCheck?.passed) {
+      state.phase = 'done';
+      state.cycles += 1;
+      await writeTddState(docpathDir, state);
+      console.log(`🎉  TDD 循环完成！（第 ${state.cycles} 轮）`);
+      console.log(`💡  运行 \`docpath tdd start\` 开始下一轮。`);
+      return;
     }
     console.log(`❌  质量检查未通过。请先运行 \`docpath check\` 并确保通过。`);
     return;

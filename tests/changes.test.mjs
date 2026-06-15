@@ -117,6 +117,40 @@ describe('changes command', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('uses JSON-only check and review evidence for readiness', () => {
+    const cwd = mkGitWorkspace();
+    const workspace = join(cwd, '.docpath', 'workspace');
+    rmSync(join(workspace, 'last-check.md'), { force: true });
+    rmSync(join(workspace, 'review.md'), { force: true });
+    writeFileSync(join(workspace, 'last-check.json'), JSON.stringify({
+      schema_version: 1,
+      kind: 'last-check',
+      timestamp: '2026-06-01T00:00:00.000Z',
+      passed: true,
+      check_count: 1,
+      checks: [{ name: 'JSON check', passed: true, output: '' }],
+    }, null, 2));
+    writeFileSync(join(workspace, 'review.json'), JSON.stringify({
+      schema_version: 1,
+      kind: 'review',
+      timestamp: '2026-06-01T00:00:00.000Z',
+      files: ['README.md'],
+      findings: [],
+      errors: 0,
+      warnings: 0,
+      infos: 0,
+      approved: true,
+    }, null, 2));
+    writeFileSync(join(cwd, 'README.md'), '# changed\n');
+
+    const out = run('changes --agent --since HEAD', cwd);
+
+    assert.match(out, /ready_to_commit: true/);
+    assert.doesNotMatch(out, /last-check\.md 未显示 PASS/);
+    assert.doesNotMatch(out, /review\.md 未显示通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('changes --json emits parseable JSON for automation', () => {
     const cwd = mkGitWorkspace();
     writeFileSync(join(cwd, 'README.md'), '# changed\n');

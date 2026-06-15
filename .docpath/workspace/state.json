@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260615-task",
-  "task_title": "技术债务清理 — 删除废弃文件和未使用依赖",
+  "task_id": "T-20260615-md-json-json",
+  "task_title": "数据统一：消除 MD↔JSON 双向同步，建立 JSON 单真源",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-15T08:29:33.562Z",
-  "updated_at": "2026-06-15T08:29:33.562Z"
+  "started_at": "2026-06-15T09:18:16.002Z",
+  "updated_at": "2026-06-15T09:18:16.001Z"
 }
