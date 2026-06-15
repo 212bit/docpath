@@ -16,6 +16,33 @@ export function registerWorktreeCommands(cli: CAC): void {
       });
     });
 
+  // 详细使用说明
+  worktree.usage(`
+  docpath worktree [action] [name] [options]
+
+  Actions:
+    list                List all worktrees (default)
+    create <name>       Create a new worktree with isolated .docpath/
+    remove <name>       Remove a worktree
+
+  Examples:
+    $ docpath worktree list
+    $ docpath worktree create feature-auth
+    $ docpath worktree remove feature-auth
+    $ docpath worktree remove feature-auth --force
+
+  Isolation Strategy:
+    - Shared (symlink): backlog/, rules/, spec/, templates/
+    - Isolated: workspace/, tasks/, journal/
+
+  Use Cases:
+    - Develop Feature A with Codex in one worktree
+    - Develop Feature B with Claude Code in another worktree
+    - Both agents work concurrently with zero conflicts
+
+  See: docs/features/worktree-workflow.md for full guide
+  `);
+
   worktree.example('docpath worktree list');
   worktree.example('docpath worktree create feature-a');
   worktree.example('docpath worktree remove feature-a');
