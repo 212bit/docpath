@@ -7,13 +7,13 @@
  * - 共享资源路径解析
  */
 
-import { exec } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { readFile, symlink, mkdir } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { execFile } from 'node:child_process';
+import { existsSync, statSync } from 'node:fs';
+import { symlink } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface WorktreeInfo {
   path: string;
@@ -32,7 +32,7 @@ export function isInWorktree(cwd: string): boolean {
   // 如果 .git 是文件（gitdir 指针），说明在 worktree
   if (existsSync(gitPath)) {
     try {
-      const stat = require('fs').statSync(gitPath);
+      const stat = statSync(gitPath);
       return stat.isFile();
     } catch {
       return false;
@@ -47,25 +47,23 @@ export function isInWorktree(cwd: string): boolean {
  * 获取主仓库路径
  */
 export async function getMainRepoPath(cwd: string): Promise<string> {
-  if (!isInWorktree(cwd)) {
-    return cwd;
-  }
-
   try {
-    // 读取 .git 文件获取 gitdir 路径
-    const gitPath = join(cwd, '.git');
-    const gitContent = await readFile(gitPath, 'utf-8');
-    const match = gitContent.match(/gitdir:\s*(.+)/);
-    if (!match) return cwd;
-
-    // gitdir 指向 .git/worktrees/<name>
-    // 主仓库在 ../../.. (相对于 gitdir)
-    const gitdir = match[1].trim();
-    const mainGitDir = resolve(cwd, gitdir, '..', '..', '..');
-    return mainGitDir;
+    const { stdout } = await execFileAsync('git', ['rev-parse', '--git-common-dir'], { cwd });
+    const commonDir = stdout.trim();
+    if (!commonDir) return getGitTopLevel(cwd);
+    const commonGitDir = resolve(cwd, commonDir);
+    return dirname(commonGitDir);
   } catch {
-    return cwd;
+    return getGitTopLevel(cwd);
   }
+}
+
+/**
+ * 获取当前 Git 仓库 top-level。
+ */
+export async function getGitTopLevel(cwd: string): Promise<string> {
+  const { stdout } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], { cwd });
+  return stdout.trim();
 }
 
 /**
@@ -92,7 +90,7 @@ export async function resolveSharedResource(
  */
 export async function listWorktrees(cwd: string): Promise<WorktreeInfo[]> {
   try {
-    const { stdout } = await execAsync('git worktree list --porcelain', { cwd });
+    const { stdout } = await execFileAsync('git', ['worktree', 'list', '--porcelain'], { cwd });
     return parseWorktreeList(stdout);
   } catch (error) {
     throw new Error(`列出 worktrees 失败: ${error instanceof Error ? error.message : String(error)}`);
@@ -138,8 +136,11 @@ function parseWorktreeList(output: string): WorktreeInfo[] {
 export async function createSymlink(target: string, linkPath: string, type: 'dir' | 'file' = 'dir'): Promise<void> {
   try {
     await symlink(target, linkPath, type);
-  } catch (error: any) {
-    if (error.code === 'EEXIST') {
+  } catch (error: unknown) {
+    const code = typeof error === 'object' && error && 'code' in error
+      ? String((error as { code?: unknown }).code)
+      : '';
+    if (code === 'EEXIST') {
       // 已存在，跳过
       return;
     }
@@ -152,7 +153,7 @@ export async function createSymlink(target: string, linkPath: string, type: 'dir
  */
 export async function isGitRepo(cwd: string): Promise<boolean> {
   try {
-    await execAsync('git rev-parse --git-dir', { cwd });
+    await execFileAsync('git', ['rev-parse', '--git-dir'], { cwd });
     return true;
   } catch {
     return false;

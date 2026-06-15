@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260615-workspace",
-  "task_title": "workspace 老化策略 — 实现自动清理",
+  "task_id": "T-20260615-worktree-2",
+  "task_title": "修复 worktree 安全、初始化与测试缺口",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-15T02:53:58.301Z",
-  "updated_at": "2026-06-15T02:53:58.301Z"
+  "started_at": "2026-06-15T05:07:31.668Z",
+  "updated_at": "2026-06-15T05:07:31.667Z"
 }

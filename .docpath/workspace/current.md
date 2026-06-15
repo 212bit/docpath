@@ -3,13 +3,13 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260615-workspace
-task_title: workspace 老化策略 — 实现自动清理
+task_id: T-20260615-worktree-2
+task_title: 修复 worktree 安全、初始化与测试缺口
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-15T02:53:58.301Z
-updated_at: 2026-06-15T02:53:58.301Z
+started_at: 2026-06-15T05:07:31.668Z
+updated_at: 2026-06-15T05:07:31.667Z
 ```
 
 > 📖 规约: [spec.md](../tasks/current/spec.md)
@@ -21,8 +21,8 @@ updated_at: 2026-06-15T02:53:58.301Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-15T02:53:34.834Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260615-workspace] — 2026-06-15T02:53:44.766Z · 状态: done · 代码审查: 0 错误, 11 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 9 项 · 2026-06-15T05:07:18.511Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260615-worktree-2] — 2026-06-15T05:05:57.780Z · 状态: done · 代码审查: 0 错误, 1 警告, 0 提示
 
 ## 🔄 同步说明
 

@@ -1,2 +1,0 @@
-# Demo Feature B (Claude Code)
-Hello from Worktree B - developed by Claude Code!

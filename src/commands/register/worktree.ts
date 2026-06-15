@@ -6,8 +6,9 @@ import { worktreeCommand } from '../worktree.js';
 export function registerWorktreeCommands(cli: CAC): void {
   const worktree = cli
     .command('worktree [action] [name]', 'Git Worktree 并发开发管理')
+    .option('--cwd <path>', '项目目录')
     .option('--force', '强制删除（忽略未提交变更）')
-    .action(async (action: string | undefined, name: string | undefined, options: any) => {
+    .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean }) => {
       await worktreeCommand({
         cwd: options.cwd || process.cwd(),
         action: action as 'create' | 'list' | 'remove' | undefined,

@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-15T02:53:58.382Z
+> 扫描时间: 2026-06-15T05:07:31.769Z
 
 ## 条目列表
 
@@ -33,6 +33,7 @@
 | R-170 | 收紧文档索引生成视图与空任务路由边界 | done | P0 | 3 | T-20260614-task |
 | R-178 | workspace 老化策略 — 实现自动清理 | done | P0 | 2 | T-20260615-workspace |
 | R-179 | docs-index 归档策略 — 物理移除旧条目 | proposed | P0 | 2 |  |
+| R-183 | Worktree 真并发开发支持 — 基础设施 | done | P0 | 3 | T-20260615-worktree |
 | R-010 | 需求管理 / Backlog 层 | done | P1 | 2 | current |
 | R-011 | 实现 write-plan / write-journal 命令并打通断头引用 | done | P1 | 2 | T-20260531-write-plan-write-journal |
 | R-012 | 接活 lifecycle.ts 事件系统并打通 agent enter/done 哨兵副作用 | done | P1 | 2 | T-20260531-lifecycle-ts-agent-enter-done |
@@ -76,6 +77,7 @@
 | R-158 | decisions.md 老化策略避免无限增长 | done | P1 | 1 | T-20260612-decisions-md |
 | R-159 | 收紧 journal 到 decisions.md 的 ADR 写入规则 | done | P1 | 2 | T-20260612-journal-decisions-md-adr |
 | R-164 | 深化 spec.json schema 与门禁字段 | done | P1 | 3 | T-20260613-spec-json-schema |
+| R-184 | 修复 worktree 安全、初始化与测试缺口 | done | P1 | 2 | T-20260615-worktree-2 |
 | R-013 | 为 write-spec / write-plan 增加必备字段校验 | done | P2 | 2 | T-20260531-write-spec-write-plan |
 | R-014 | 统一 progress 计数与 step-finder 的 plan 解析 | done | P2 | 2 | T-20260531-progress-step-finder-plan |
 | R-015 | 分配真实 task_id 并统一 tasks/current 与任务归档路径策略 | done | P2 | 2 | T-20260531-task-id-tasks-current |

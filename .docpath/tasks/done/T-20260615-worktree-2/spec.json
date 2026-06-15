@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-15T04:54:02.833Z",
+    "updated_at": "2026-06-15T04:54:02.833Z",
+    "content_sha256": "4ea8d61c99795056bd85c4ba528788ce4a80c6a30ce05c9b1d3468aae1c14040"
+  },
+  "task_id": "T-20260615-worktree-2",
+  "backlog_id": "R-184",
+  "title": "T-20260615-worktree-2 - 修复 worktree 安全、初始化与测试缺口",
+  "markdown": "# T-20260615-worktree-2 - 修复 worktree 安全、初始化与测试缺口\n\n> backlog_id: R-184\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\nworktree 功能 review 发现以下问题会影响可发布性：\n\n- `docpath worktree create/remove` 使用 shell 字符串拼接执行 Git 命令，`name` 来自 CLI 输入，存在命令注入和路径逃逸风险。\n- shared `.docpath` symlink 使用固定 `../../.docpath/<resource>`，从 `.worktrees/<name>/.docpath/<resource>` 解析时会指向 `.worktrees/.docpath/<resource>`，无法正确共享主仓库 backlog/rules/spec/templates。\n- `worktree create` 删除复制来的 `workspace/`、`tasks/` 等运行态后，只创建空目录，并提示用户运行 `docpath init`；但 `docpath init` 在已有 `.docpath/` 时只注册项目，不补齐 `state.json/current.md/breadcrumb.md`，导致新 worktree DocPath runtime 不完整。\n- ESM 项目中 `src/utils/worktree.ts` 使用 `require('fs')`，真实 worktree 检测会被 catch 掉并返回 false。\n- worktree 命令直接使用当前 `cwd`，从仓库子目录运行时会把 `.worktrees` 和 `.docpath` 解析到错误位置。\n- 缺少 worktree 自动化测试；`hello.txt`、`world.txt` 这类 demo 文件不应作为功能交付留在主分支。\n\n本任务目标是修复上述 review 发现项，让 worktree 基础设施在安全、路径、初始化和测试层面可用。\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: worktree 名称必须校验并限制路径范围\n  - 拒绝空名称、绝对路径、`.`/`..`、包含路径分隔符或 shell 元字符的名称。\n  - worktree 目录必须解析在主仓库 `.worktrees/` 下。\n- [ ] FR-2: Git 命令必须使用 argv 形式执行\n  - `create/remove/list` 不通过 shell 字符串拼接执行用户输入。\n  - 失败时仍输出清晰错误。\n- [ ] FR-3: 从仓库任意子目录运行 worktree 命令都必须锚定 Git top-level\n  - `.worktrees/<name>`、主 `.docpath/`、Git 命令 cwd 都使用仓库根目录。\n- [ ] FR-4: shared symlink 必须正确指向主仓库 `.docpath` 资源\n  - `backlog/`、`rules/`、`spec/`、`templates/` 使用 `relative(dirname(linkPath), targetPath)` 或等价可靠方式生成链接。\n- [ ] FR-5: 新 worktree 必须拥有可用的独立 DocPath runtime\n  - 创建后存在 `workspace/state.json`、`workspace/current.md`、`workspace/breadcrumb.md`、`tasks/`、`journal/` 等必要结构。\n  - 不要求用户再运行普通 `docpath init` 才能获得基本 runtime。\n- [ ] FR-6: ESM 下 worktree 检测正常\n  - 不使用 CommonJS `require`。\n  - `isInWorktree()` 能识别 `.git` 文件形式的 Git worktree。\n- [ ] FR-7: 移除 demo 文件\n  - `hello.txt`、`world.txt` 从主分支删除，避免把手工演示产物作为功能交付。\n\n### 非功能需求\n- [ ] NFR-1: 不改变既有 DocPath 主流程命令语义。\n- [ ] NFR-2: 修复必须有自动化测试覆盖，测试使用临时 Git 仓库，不依赖本机绝对路径。\n- [ ] NFR-3: 不引入新的外部依赖。\n- [ ] NFR-4: 错误处理保持 fail-loud，不静默忽略 Git 或文件系统失败。\n\n## 3. 范围界定\n\n### 包含\n- `src/commands/worktree.ts` 和 `src/utils/worktree.ts` 的安全、路径和初始化修复。\n- worktree CLI 注册必要的 option/cwd 支持。\n- 自动化测试覆盖 create/list/remove、非法名称、子目录调用、symlink 解析、runtime 初始化和 ESM 检测。\n- 删除 demo 文件。\n\n### 不包含\n- 跨 worktree 任务同步。\n- 自动 merge/cherry-pick 工作流。\n- Windows junction 深度兼容增强；本轮保持 Node `symlink(..., 'dir')` 现有策略，只修正目标路径和测试基础行为。\n- worktree 与 backlog 之间的并发锁升级。\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | Git 执行方式 | shell 字符串 / argv | argv | 用户输入不能进入 shell 拼接 |\n| 2 | 名称模型 | 允许 Git 任意 branch name / 限制安全短名 | 限制安全短名 | CLI 创建的是本地并发工作目录，优先安全和可预测 |\n| 3 | 路径锚点 | process cwd / Git top-level | Git top-level | 支持从子目录运行并避免错误创建目录 |\n| 4 | worktree runtime | 提示用户 init / create 时写入最小 runtime | create 时写入 | 普通 init 在已有 `.docpath` 下不会补齐 runtime |\n| 5 | symlink target | 固定相对路径 / 机械计算相对路径 | 机械计算 | 避免目录层级变化导致链接失效 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [x] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [x] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [x] 删除 / 替换已有能力\n- [x] 长期维护成本增加\n- [ ] 其他\n\n### Decision Brief\n- 当前问题: worktree 命令存在命令注入、路径逃逸、symlink 错误和 runtime 初始化不完整等 review 阻塞问题。\n- 目标: 让 worktree create/list/remove 在安全路径、初始化和基础测试上达到可发布标准。\n- 背景: 用户要求“fix it”，即修复上一轮 worktree review 中列出的阻塞问题。\n- 可选方案:\n  - 继续保留 shell 拼接并只做名称提示: 风险不可接受。\n  - 限制名称并使用 argv 执行 Git: 安全、简单、符合 CLI 维护边界。\n  - 支持完整 Git branch name 语法: 灵活但需要更复杂的路径映射和 escaping，本轮不做。\n- 推荐方案: 采用安全短名、Git top-level 锚定、argv 执行、机械相对 symlink、创建时写入最小 runtime，并补测试。\n- 不做什么: 不实现跨 worktree 任务同步、自动合并、复杂 branch name 映射。\n- 成本: 增加 worktree 测试夹具和少量 path/git helper。\n- 风险: Git worktree 在不同平台路径和 symlink 行为可能有差异；通过临时仓库测试降低回归。\n- 回滚方案: 回退 worktree 命令注册和实现，保留文档但标记为实验功能。\n- 用户确认: 用户在 review 后明确要求“fix it”。\n\n## 5. 验收标准\n\n- [ ] AC-1: 非法 worktree 名称被拒绝，且不会创建目录、分支或执行 shell。\n- [ ] AC-2: `worktree create <name>` 从仓库根目录和子目录运行都在 `<root>/.worktrees/<name>` 创建 worktree。\n- [ ] AC-3: 新 worktree 的 `.docpath/backlog` 等 shared resources 正确解析到主仓库 `.docpath`。\n- [ ] AC-4: 新 worktree 的 `workspace/state.json`、`current.md`、`breadcrumb.md` 存在，`docpath next --agent` 可在 worktree 中运行。\n- [ ] AC-5: `worktree remove <name>` 使用 argv Git 命令，能删除 clean worktree，dirty worktree 默认失败且 `--force` 可删除。\n- [ ] AC-6: `isInWorktree()` 在 ESM 下识别 `.git` 文件形式 worktree。\n- [ ] AC-7: `hello.txt`、`world.txt` 被移除。\n- [ ] AC-8: 新增/更新测试通过，`pnpm run typecheck`、定向测试、`docpath check` 通过。\n",
+  "generated_at": "2026-06-15T04:54:02.833Z",
+  "scope": {
+    "included": [
+      "`src/commands/worktree.ts` 和 `src/utils/worktree.ts` 的安全、路径和初始化修复。",
+      "worktree CLI 注册必要的 option/cwd 支持。",
+      "自动化测试覆盖 create/list/remove、非法名称、子目录调用、symlink 解析、runtime 初始化和 ESM 检测。",
+      "删除 demo 文件。"
+    ],
+    "excluded": [
+      "跨 worktree 任务同步。",
+      "自动 merge/cherry-pick 工作流。",
+      "Windows junction 深度兼容增强；本轮保持 Node `symlink(..., 'dir')` 现有策略，只修正目标路径和测试基础行为。",
+      "worktree 与 backlog 之间的并发锁升级。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "安全 / 权限边界",
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界",
+      "删除 / 替换已有能力",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "用户在 review 后明确要求“fix it”。",
+    "decision_brief_markdown": "- 当前问题: worktree 命令存在命令注入、路径逃逸、symlink 错误和 runtime 初始化不完整等 review 阻塞问题。\n- 目标: 让 worktree create/list/remove 在安全路径、初始化和基础测试上达到可发布标准。\n- 背景: 用户要求“fix it”，即修复上一轮 worktree review 中列出的阻塞问题。\n- 可选方案:\n  - 继续保留 shell 拼接并只做名称提示: 风险不可接受。\n  - 限制名称并使用 argv 执行 Git: 安全、简单、符合 CLI 维护边界。\n  - 支持完整 Git branch name 语法: 灵活但需要更复杂的路径映射和 escaping，本轮不做。\n- 推荐方案: 采用安全短名、Git top-level 锚定、argv 执行、机械相对 symlink、创建时写入最小 runtime，并补测试。\n- 不做什么: 不实现跨 worktree 任务同步、自动合并、复杂 branch name 映射。\n- 成本: 增加 worktree 测试夹具和少量 path/git helper。\n- 风险: Git worktree 在不同平台路径和 symlink 行为可能有差异；通过临时仓库测试降低回归。\n- 回滚方案: 回退 worktree 命令注册和实现，保留文档但标记为实验功能。\n- 用户确认: 用户在 review 后明确要求“fix it”。"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "worktree 名称必须校验并限制路径范围",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Git 命令必须使用 argv 形式执行",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "从仓库任意子目录运行 worktree 命令都必须锚定 Git top-level",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "shared symlink 必须正确指向主仓库 `.docpath` 资源",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "新 worktree 必须拥有可用的独立 DocPath runtime",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "ESM 下 worktree 检测正常",
+      "done": false
+    },
+    {
+      "id": "FR-7",
+      "text": "移除 demo 文件",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不改变既有 DocPath 主流程命令语义。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "修复必须有自动化测试覆盖，测试使用临时 Git 仓库，不依赖本机绝对路径。",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "不引入新的外部依赖。",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "错误处理保持 fail-loud，不静默忽略 Git 或文件系统失败。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "非法 worktree 名称被拒绝，且不会创建目录、分支或执行 shell。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`worktree create <name>` 从仓库根目录和子目录运行都在 `<root>/.worktrees/<name>` 创建 worktree。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "新 worktree 的 `.docpath/backlog` 等 shared resources 正确解析到主仓库 `.docpath`。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "新 worktree 的 `workspace/state.json`、`current.md`、`breadcrumb.md` 存在，`docpath next --agent` 可在 worktree 中运行。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "`worktree remove <name>` 使用 argv Git 命令，能删除 clean worktree，dirty worktree 默认失败且 `--force` 可删除。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "`isInWorktree()` 在 ESM 下识别 `.git` 文件形式 worktree。",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "`hello.txt`、`world.txt` 被移除。",
+      "done": false
+    },
+    {
+      "id": "AC-8",
+      "text": "新增/更新测试通过，`pnpm run typecheck`、定向测试、`docpath check` 通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: worktree 命令存在命令注入、路径逃逸、symlink 错误和 runtime 初始化不完整等 review 阻塞问题。\n- 目标: 让 worktree create/list/remove 在安全路径、初始化和基础测试上达到可发布标准。\n- 背景: 用户要求“fix it”，即修复上一轮 worktree review 中列出的阻塞问题。\n- 可选方案:\n  - 继续保留 shell 拼接并只做名称提示: 风险不可接受。\n  - 限制名称并使用 argv 执行 Git: 安全、简单、符合 CLI 维护边界。\n  - 支持完整 Git branch name 语法: 灵活但需要更复杂的路径映射和 escaping，本轮不做。\n- 推荐方案: 采用安全短名、Git top-level 锚定、argv 执行、机械相对 symlink、创建时写入最小 runtime，并补测试。\n- 不做什么: 不实现跨 worktree 任务同步、自动合并、复杂 branch name 映射。\n- 成本: 增加 worktree 测试夹具和少量 path/git helper。\n- 风险: Git worktree 在不同平台路径和 symlink 行为可能有差异；通过临时仓库测试降低回归。\n- 回滚方案: 回退 worktree 命令注册和实现，保留文档但标记为实验功能。\n- 用户确认: 用户在 review 后明确要求“fix it”。"
+}
