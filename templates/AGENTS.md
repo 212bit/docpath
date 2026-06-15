@@ -155,5 +155,5 @@ Rules:
 
 ## Linked Project
 
-Linked to: **{{PROJECT_NAME}}**
+Linked to: **docpath**
 Config: `.docpath/config.yaml`

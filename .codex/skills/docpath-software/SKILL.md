@@ -1,66 +1,44 @@
 ---
 name: docpath-software
-description: Software engineering quality lens for architecture implementation technical analysis QA and code review
+description: Software engineering quality lens for DocPath work covering architecture implementation technical analysis QA tests check review and journal evidence
 ---
 
 # DocPath Software
 
-Use this skill when a DocPath task needs **engineering analysis or implementation**: architecture, technical analysis, refactoring, debugging, tests, QA, or code review.
+Use this skill when a DocPath task needs an engineering lens: architecture, implementation, refactoring, debugging, tests, QA, code review, or **technical analysis before implementation**.
 
-This is a **quality lens** that integrates with the main `docpath` workflow. Use the main `docpath` skill for lifecycle routing (`next`, `go`, `check`, `done`; `status` for diagnostics).
-
-## When to Use
-
-- User asks for technical analysis, architecture review, or implementation approach
-- Task requires refactoring, debugging, performance optimization
-- Tests, QA, or code review are needed
-- **Pre-implementation technical analysis** is required before writing code
-
-**Important**: This skill complements the DocPath lifecycle. It must not force implementation when the user asked for analysis only.
+This skill complements the main `docpath` lifecycle route. It must not force implementation when the user asked for analysis only.
 
 ## First Commands
-
-Always start with:
 
 ```bash
 docpath next --agent
 ```
 
-Only run `docpath agent enter` when `docpath next --agent` shows an **active executable task** or explicit `go` route. If no active task exists, follow the route from `docpath next --agent` instead of starting from memory. Use `docpath status --agent` only for explicit status/debug snapshots, suspected drift, or confirmation after state-changing commands. Treat `next --agent` as advisory, not as a lock or permission grant; state-changing commands still enforce their own gates.
+Run `docpath agent enter` only when `docpath next --agent` shows an active executable task or an explicit `go` route. If no active task exists, follow the route from `docpath next --agent` instead of starting from memory. Use `docpath status --agent` only for explicit status/debug snapshots, suspected drift, or confirmation after state-changing commands. Treat `next --agent` as advisory, not as a lock or permission grant; state-changing commands still enforce their own gates.
 
-## Technical Analysis Quality Bar
+## Technical analysis quality bar
 
-For **pre-development or architecture analysis**, cover:
+For pre-development or architecture analysis, cover:
 
-- **Affected modules**: routes, commands, services, components, ownership boundaries
-- **Data models**: API contracts, validation, migrations, backward compatibility, versioning
-- **Security**: permissions, audit/logging, destructive operation risks, input validation
-- **Integration**: external dependencies, feature flags, rollout/rollback, observability
-- **Performance**: concurrency, caching, failure modes, recovery behavior
-- **Test strategy**: unit, integration, e2e/manual, fixtures, regression surface, acceptance evidence
-- **Implementation slicing**: how to break down the work, risks that should be reflected in spec/plan
+- affected modules, routes, commands, services, components, and ownership boundaries
+- data models, API contracts, validation, migrations, backward compatibility, and versioning
+- permissions, security boundaries, audit/logging needs, and destructive/write operation risks
+- integration points, external dependencies, feature flags, rollout/rollback, and observability
+- performance, concurrency, failure modes, and recovery behavior
+- test strategy: unit, integration, e2e/manual, fixtures, regression surface, and acceptance evidence
+- implementation slicing and risks that should be reflected in spec/plan
 
-## DocPath Integration
-
-### Analysis Input
-Use `docpath analyze` as the structured payload source:
-
-```bash
-docpath analyze --mode deep --content "<requirement>"
-```
-
-The returned `technical` and `risks` sections provide the mandatory structure.
-
-### Analysis Output
-Persist technical conclusions through DocPath:
+Write durable conclusions with:
 
 ```bash
 docpath write-analysis --section technical --stdin
 docpath write-analysis --section risks --stdin
 ```
 
-### Role Context
-Load engineering role profiles when deeper expertise is needed:
+## Software Roles
+
+Use the smallest relevant role:
 
 ```bash
 docpath roles context --role software-architect
@@ -68,10 +46,9 @@ docpath roles context --role software-engineer
 docpath roles context --role qa-engineer
 ```
 
-Use the **smallest relevant role**. Role output must land in analysis sections or deliverables, not stay in chat only.
+## Engineering Deliverables
 
-### Deliverables
-Render structured engineering artifacts:
+Render structured outputs when the task needs evidence beyond code:
 
 ```bash
 docpath deliverables render --template architecture-brief --output .docpath/tasks/current/deliverables/architecture-brief.md
@@ -79,36 +56,21 @@ docpath deliverables render --template qa-report --output .docpath/tasks/current
 docpath deliverables check
 ```
 
-## Implementation Lifecycle
-
-When implementing (not just analyzing), follow the DocPath execution lifecycle:
-
-```bash
-docpath agent enter              # Enter execution mode
-docpath go --step <id>           # Atomically claim/start a plan step
-# ... make changes, write tests ...
-docpath agent step --step "<id>" --status done
-docpath check                    # Run quality gates
-docpath review                   # Review changes
-docpath agent done               # Record completion
-```
-
-## Completion Gates
+## Completion
 
 Before claiming implementation completion:
 
 ```bash
-docpath check     # Runs build, tests, plan/breadcrumb validation
-docpath review    # Review code changes
+docpath check
+docpath review
 docpath agent done
 ```
 
-Use `docpath agent done` as the final route when recommended—it records check/review/journal evidence and clears pending completion state.
+Use `docpath agent done` as the final route when it is recommended because it records check/review/journal evidence and clears pending completion state.
 
 ## Boundaries
 
-- Don't bypass the active plan or DocPath lifecycle commands
-- Don't enter implementation mode for an analysis-only request
-- Don't leave role or technical analysis only in chat—write durable evidence
-- Don't hand-edit generated workspace files like `.docpath/workspace/current.md`
-- Technical analysis ≠ permission to code—implementation requires spec/plan/go route
+- Do not bypass the active plan or DocPath lifecycle commands.
+- Do not enter implementation mode for an analysis-only request.
+- Do not leave role or technical analysis only in chat; write durable evidence.
+- Do not hand-edit generated workspace files such as `.docpath/workspace/current.md`.
