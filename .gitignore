@@ -1,12 +1,17 @@
-# DocPath runtime/install artifacts stay ignored by default.
-# Add canonical evidence only via exact paths recommended by `docpath changes --agent`.
-.docpath
-
 # Dependencies
-node_modules/
+/node_modules/
 
 # Build output
-dist/
+/dist/
 
-.claude/
-.sisyphus/
+# DocPath workspace
+#
+# Keep .docpath ignored by default. Runtime state, generated indexes, installed
+# adapter mirrors, backlog, and task evidence can be very large/noisy.
+# When a task requires durable evidence, run `docpath changes --agent` and
+# force-add only the exact canonical paths it recommends.
+/.docpath/
+
+# Local agent/tool state
+/.claude/
+/.sisyphus/
