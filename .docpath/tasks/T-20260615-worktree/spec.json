@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-15T03:39:58.154Z",
+    "updated_at": "2026-06-15T03:39:58.154Z",
+    "content_sha256": "4abc9bb576405bd42bd267cec0862c1f7a6d13075a2558e75384f2044bc17f54"
+  },
+  "task_id": "T-20260615-worktree",
+  "backlog_id": null,
+  "title": "Worktree 真并发开发 - 知识归档",
+  "markdown": "## Journal Record\n\n# Worktree 真并发开发 - 知识归档\n\n## 任务概述\n\n实现 Git Worktree + 独立 .docpath/ 架构，支持真并发开发。\n\n**成果**：\n- ✅ `docpath worktree create/list/remove` 命令\n- ✅ Symlink 策略（共享 backlog/rules，隔离 workspace/tasks）\n- ✅ 并发安全验证通过\n- ✅ 完整使用文档\n\n**工作量**：8 小时（符合预期）\n\n---\n\n## 关键技术决策\n\n### 1. Git 复制问题与清理策略\n\n**问题**：`git worktree add` 会把 `.docpath/` 整个目录复制过来（因为在 git 中被跟踪）\n\n**解决**：在 `initWorktreeDocpath()` 中主动清理复制的内容：\n- 删除 `workspace/`, `tasks/`, `journal/`（需要隔离）\n- 删除 `backlog/`, `rules/`（需要 symlink）\n- 重建正确的目录结构\n\n**Why**：Git worktree 的标准行为，需要额外处理以实现我们的隔离策略。\n\n---\n\n### 2. Symlink 策略\n\n**共享资源**（Symlink）：\n- `backlog/` - 需求池全局共享\n- `rules/` - 规则全局一致\n- `spec/` - 架构规范全局\n- `templates/` - 模板全局一致\n\n**隔离资源**（独立目录）：\n- `workspace/` - 运行时状态独立\n- `tasks/` - 任务独立\n- `journal/` - 归档独立\n\n**Why**：平衡共享与隔离，backlog 需要全局视图，workspace 需要各自状态。\n\n---\n\n### 3. 环境检测机制\n\n**实现**：\n```typescript\nfunction isInWorktree(cwd) {\n  // .git 是文件（gitdir 指针）→ worktree\n  // .git 是目录 → 主仓库\n}\n```\n\n**用途**：未来命令可以感知 worktree 环境，调整行为（如 backlog 路径解析）。\n\n---\n\n## 经验教训\n\n### 做对的\n\n1. **先测试再提交**\n   - 发现 Git 复制问题\n   - 及时调整 `initWorktreeDocpath()` 逻辑\n\n2. **清晰的目录结构**\n   - 隔离/共享策略明确\n   - Symlink 相对路径正确\n\n3. **并发验证**\n   - 手动测试两个 worktree 同时运行\n   - 验证状态隔离和共享正确性\n\n### 可改进的\n\n1. **自动化测试**\n   - 测试用例编写但未运行成功\n   - 下次应先验证测试环境\n\n2. **Windows 兼容性**\n   - Symlink 在 Windows 需要特殊权限\n   - 文档已说明，但可考虑 fallback\n\n---\n\n## 可复用模式\n\n### Pattern: Git Worktree 清理\n\n```typescript\nasync function initWorktreeDocpath(mainRepo, worktreePath) {\n  // 1. 清理 git 复制的内容\n  for (const item of ['workspace', 'tasks', 'journal']) {\n    await rm(join(worktreePath, '.docpath', item), { recursive: true });\n  }\n  \n  // 2. 重建独立目录\n  await mkdir(join(worktreePath, '.docpath', 'workspace'), { recursive: true });\n  \n  // 3. 创建共享 symlink\n  await symlink('../../.docpath/backlog', join(worktreePath, '.docpath', 'backlog'));\n}\n```\n\n**适用场景**：任何需要在 Git worktree 中自定义目录结构的场景。\n\n---\n\n### Pattern: 命令注册\n\n```typescript\n// src/commands/register/worktree.ts\nexport function registerWorktreeCommands(cli: CAC): void {\n  cli.command('worktree [action] [name]', '...')\n     .option('--force', '...')\n     .action(async (action, name, options) => {\n       await worktreeCommand({ cwd, action, name, force });\n     });\n}\n\n// src/commands/register.ts\nimport { registerWorktreeCommands } from './register/worktree.js';\nregisterWorktreeCommands(cli);\n```\n\n**适用场景**：新增 DocPath 命令的标准流程。\n\n---\n\n## 遗留问题\n\n### 需要后续完善\n\n1. **命令 worktree 感知**（Week 2）\n   - `backlog`/`docs` 等命令需要使用 `resolveSharedResource()`\n   - 确保在 worktree 中访问共享资源正确\n\n2. **合并辅助工具**（Week 3，可选）\n   - `docpath worktree pre-merge` - 检查冲突\n   - `docpath worktree post-merge` - 清理状态\n\n3. **自动化测试**\n   - 修复 `tests/worktree.test.mjs` 的环境问题\n   - 补充并发测试用例\n\n---\n\n## 文档位置\n\n- 使用指南：`docs/features/worktree-workflow.md`\n- 技术分析：`.docpath/workspace/worktree-analysis.md`\n- 决策记录：`.docpath/workspace/worktree-decision.md`\n\n---\n\n## 下一步建议\n\n**Week 2（命令适配）**：\n- 实现 R-192: 让所有命令感知 worktree\n- 测试完整开发流程\n\n**验收标准**：\n- Worktree A 和 B 可以完整走完 brainstorm → check → commit\n- 共享资源正确同步\n- 隔离资源互不干扰\n\n---\n\n**总结**：Week 1 基础设施已完成，核心功能工作正常，为 Week 2 奠定基础。\n",
+  "generated_at": "2026-06-15T03:39:58.154Z",
+  "scope": {
+    "included": [],
+    "excluded": []
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": ""
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [],
+  "non_functional_requirements": [],
+  "acceptance_criteria": [],
+  "decision_brief": ""
+}

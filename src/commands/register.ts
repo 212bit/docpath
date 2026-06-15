@@ -11,6 +11,7 @@ import { registerReportingCommands } from './register/reporting.js';
 import { registerRuntimeToolCommands } from './register/runtime-tools.js';
 import { registerSpecCommands } from './register/spec.js';
 import { registerTddDebugCommands } from './register/tdd-debug.js';
+import { registerWorktreeCommands } from './register/worktree.js';
 
 export function registerCommands(cli: CAC): void {
   registerCoreCommands(cli);
@@ -23,4 +24,5 @@ export function registerCommands(cli: CAC): void {
   registerBacklogMaintenanceCommands(cli);
   registerDocsInstallCommands(cli);
   registerTddDebugCommands(cli);
+  registerWorktreeCommands(cli);
 }

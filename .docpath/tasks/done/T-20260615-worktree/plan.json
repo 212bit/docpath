@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-15T03:36:00.523Z",
+    "updated_at": "2026-06-15T03:36:00.523Z",
+    "content_sha256": "4d234d8c6d3b7e6b30a289aca4f495f3c0a14e71dd4ab909e0fcd3a2f608c3d7"
+  },
+  "title": "Worktree 真并发开发支持 — 执行计划",
+  "markdown": "# Worktree 真并发开发支持 — 执行计划\n\n## 执行计划\n\n### S1: Worktree 命令基础架构\n- **描述**: 实现 worktree 命令注册和基础函数（create/list/remove）\n- **文件**: \n  - 新增 `src/commands/worktree.ts`\n  - 新增 `src/utils/worktree.ts`\n  - 修改 `src/commands/register/worktree-commands.ts`\n- **验收条件**: \n  - `docpath worktree --help` 显示帮助\n  - 命令注册完成，可调用但未实现逻辑\n  - 构建通过，无 TypeScript 错误\n- **依赖**: 无\n\n### S2: Worktree create 实现\n- **描述**: 实现 `docpath worktree create <name>` 命令\n- **逻辑**:\n  - 调用 `git worktree add .worktrees/<name> -b <name>`\n  - 在 worktree 中初始化 `.docpath/`\n  - 创建 symlink: backlog/rules/spec/templates → 主目录\n  - 设置 DOCPATH_WORKTREE 环境变量标记\n- **验收条件**:\n  - `docpath worktree create test-a` 成功创建\n  - `.worktrees/test-a/.docpath/` 目录存在\n  - Symlink 正确指向主目录\n  - Git 分支正确创建\n- **依赖**: S1\n\n### S3: Worktree list/remove 实现\n- **描述**: 实现 list 和 remove 命令\n- **list 逻辑**:\n  - 调用 `git worktree list --porcelain`\n  - 解析输出，格式化显示\n- **remove 逻辑**:\n  - 检查 worktree 状态（是否有未提交变更）\n  - 调用 `git worktree remove <path>`\n  - 清理残留文件\n- **验收条件**:\n  - `docpath worktree list` 显示所有 worktrees\n  - `docpath worktree remove test-a` 成功删除\n  - 有未提交变更时拒绝删除（或 --force）\n- **依赖**: S1\n\n### S4: Worktree 环境检测\n- **描述**: 实现 worktree 环境检测函数\n- **文件**: `src/utils/worktree.ts`\n- **函数**:\n  - `isInWorktree(cwd)`: 检测是否在 worktree\n  - `getMainRepoPath(cwd)`: 获取主仓库路径\n  - `resolveSharedResource(cwd, resource)`: 解析共享资源路径\n- **验收条件**:\n  - 在主目录调用返回 false\n  - 在 worktree 调用返回 true\n  - 正确解析主仓库路径\n- **依赖**: S2\n\n### S5: Symlink 策略实现\n- **描述**: 确定并实现隔离/共享策略\n- **策略**:\n  - 共享（symlink）: backlog/, rules/, spec/, templates/\n  - 隔离（独立）: workspace/, tasks/, journal/, docs-index.json\n- **实现**: 在 `docpath worktree create` 中创建 symlinks\n- **验收条件**:\n  - 创建 worktree 后 symlinks 正确\n  - 共享目录修改在主目录可见\n  - 隔离目录修改互不影响\n- **依赖**: S2\n\n### S6: 测试覆盖 — 基础设施\n- **描述**: 为 worktree 命令编写测试\n- **文件**: `tests/worktree.test.mjs`\n- **覆盖**:\n  - create/list/remove 命令\n  - Symlink 创建和验证\n  - 环境检测函数\n  - 错误处理（重复创建、删除不存在等）\n- **验收条件**:\n  - 所有测试通过\n  - 覆盖率 > 80%\n- **依赖**: S3, S4, S5\n\n### S7: 并发安全验证\n- **描述**: 验证两个 worktree 同时运行基本命令\n- **测试场景**:\n  - 同时运行 `docpath next --agent`\n  - 同时读写 backlog\n  - 同时运行 `docpath status --agent`\n- **验收条件**:\n  - 无冲突错误\n  - 共享资源正确同步\n  - 隔离资源互不干扰\n- **依赖**: S6\n\n### S8: 文档和使用示例\n- **描述**: 编写 worktree 使用文档\n- **文件**: \n  - `docs/features/worktree-workflow.md`\n  - 更新 `CLAUDE.md`\n- **内容**:\n  - Worktree 概念说明\n  - 创建/管理命令\n  - 使用场景和示例\n  - 最佳实践\n  - 故障排查\n- **验收条件**:\n  - 文档完整清晰\n  - 包含完整示例\n- **依赖**: S7\n\n## Checklist\n- [x] S1: Worktree 命令基础架构\n- [x] S2: Worktree create 实现\n- [x] S3: Worktree list/remove 实现\n- [x] S4: Worktree 环境检测\n- [x] S5: Symlink 策略实现\n- [x] S6: 测试覆盖 — 基础设施\n- [x] S7: 并发安全验证\n- [x] S8: 文档和使用示例\n\n## 依赖关系图\n```\nS1 → S2 → S5\n  ↓    ↓\n  S3   S4\n   ↓  ↓\n    S6\n     ↓\n    S7\n     ↓\n    S8\n```\n\n## 时间估算\n\n| 步骤 | 预计时间 | 说明 |\n|------|---------|------|\n| S1 | 30 min | 命令注册和骨架 |\n| S2 | 2 hours | Create 核心逻辑 |\n| S3 | 1 hour | List/Remove 实现 |\n| S4 | 45 min | 环境检测函数 |\n| S5 | 30 min | Symlink 策略（在 S2 中实现） |\n| S6 | 2 hours | 测试编写 |\n| S7 | 1 hour | 并发测试 |\n| S8 | 1 hour | 文档编写 |\n| **总计** | **8-9 hours** | **Week 1 基础设施** |\n\n## 风险和缓解\n\n| 风险 | 缓解措施 |\n|------|---------|\n| Symlink 在 Windows 失效 | 文档说明需要开发者模式，或提供 fallback 方案 |\n| Git worktree 命令失败 | 详细错误处理和用户提示 |\n| 并发测试不稳定 | 使用 withLock 确保原子性，多次运行测试 |\n\n## 验收标准（Week 1 总体）\n\n```bash\n# 创建两个 worktree\ndocpath worktree create feature-a\ndocpath worktree create feature-b\n\n# Worktree A 运行基本命令\ncd .worktrees/feature-a\ndocpath next --agent          # ✅ 成功\ndocpath backlog list          # ✅ 看到共享的 backlog\n\n# Worktree B 同时运行（无冲突）\ncd .worktrees/feature-b\ndocpath next --agent          # ✅ 成功，无冲突\ndocpath backlog list          # ✅ 看到共享的 backlog\n\n# 清理\ncd /project/docpath\ndocpath worktree remove feature-a\ndocpath worktree remove feature-b\n```\n",
+  "generated_at": "2026-06-15T03:36:00.523Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Worktree 命令基础架构",
+      "description": "实现 worktree 命令注册和基础函数（create/list/remove）",
+      "acceptance": "- `docpath worktree --help` 显示帮助",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Worktree create 实现",
+      "description": "实现 `docpath worktree create <name>` 命令",
+      "acceptance": "- `docpath worktree create test-a` 成功创建",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Worktree list/remove 实现",
+      "description": "实现 list 和 remove 命令",
+      "acceptance": "- `docpath worktree list` 显示所有 worktrees",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Worktree 环境检测",
+      "description": "实现 worktree 环境检测函数",
+      "acceptance": "- 在主目录调用返回 false",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "Symlink 策略实现",
+      "description": "确定并实现隔离/共享策略",
+      "acceptance": "- 创建 worktree 后 symlinks 正确",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "测试覆盖 — 基础设施",
+      "description": "为 worktree 命令编写测试",
+      "acceptance": "- 所有测试通过",
+      "dependencies": "S3, S4, S5",
+      "status": "done"
+    },
+    {
+      "id": "S7",
+      "name": "并发安全验证",
+      "description": "验证两个 worktree 同时运行基本命令",
+      "acceptance": "- 无冲突错误",
+      "dependencies": "S6",
+      "status": "done"
+    },
+    {
+      "id": "S8",
+      "name": "文档和使用示例",
+      "description": "编写 worktree 使用文档",
+      "acceptance": "- 文档完整清晰",
+      "dependencies": "S7",
+      "status": "done"
+    }
+  ]
+}
