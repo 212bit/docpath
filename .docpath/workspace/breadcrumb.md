@@ -5,120 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🚫 check [T-20260615-worktree] — 2026-06-15T03:36:55.769Z
-
----
-taskId: T-20260615-worktree
-step: check
-status: blocked
-timestamp: 2026-06-15T03:36:55.769Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 测试
-
-### ✅ check [T-20260615-worktree] — 2026-06-15T03:38:58.621Z
-
----
-taskId: T-20260615-worktree
-step: check
-status: done
-timestamp: 2026-06-15T03:38:58.621Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (10 项)
-
-### ✅ review [T-20260615-worktree] — 2026-06-15T03:39:07.123Z
-
----
-taskId: T-20260615-worktree
-step: review
-status: done
-timestamp: 2026-06-15T03:39:07.123Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 3 警告, 0 提示
-
-### 🚫 check [T-20260615-worktree] — 2026-06-15T03:41:03.199Z
-
----
-taskId: T-20260615-worktree
-step: check
-status: blocked
-timestamp: 2026-06-15T03:41:03.199Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: spec.md 结构校验
-
-### 🚫 check [T-20260615-worktree] — 2026-06-15T03:42:26.463Z
-
----
-taskId: T-20260615-worktree
-step: check
-status: blocked
-timestamp: 2026-06-15T03:42:26.463Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: spec.md 结构校验, 当前任务上下文文件缺失
-
-### 🚫 check [T-20260615-worktree] — 2026-06-15T03:42:52.695Z
-
----
-taskId: T-20260615-worktree
-step: check
-status: blocked
-timestamp: 2026-06-15T03:42:52.695Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: spec.md 结构校验, 当前任务上下文文件缺失
-
-### 🔄 S1 [T-20260615-worktree-2] — 2026-06-15T04:54:36.917Z
-
----
-taskId: T-20260615-worktree-2
-step: S1
-status: in_progress
-timestamp: 2026-06-15T04:54:36.917Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 建立 worktree 修复边界与测试夹具
-- **Session**: default
-
-### ✅ S1 [T-20260615-worktree-2] — 2026-06-15T05:00:44.901Z
-
----
-taskId: T-20260615-worktree-2
-step: S1
-status: done
-timestamp: 2026-06-15T05:00:44.901Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
-### 🔄 S2 [T-20260615-worktree-2] — 2026-06-15T05:00:57.425Z
-
----
-taskId: T-20260615-worktree-2
-step: S2
-status: in_progress
-timestamp: 2026-06-15T05:00:57.425Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 修复命令执行与名称/路径安全
-- **Session**: default
-
 ### ✅ S2 [T-20260615-worktree-2] — 2026-06-15T05:01:16.202Z
 
 ---
@@ -664,3 +550,123 @@ timestamp: 2026-06-15T09:18:16.103Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (5/5 步)
+
+### 🔄 S1 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:12:07.120Z
+
+---
+taskId: T-20260615-fix-cli-command-contract-validation
+step: S1
+status: in_progress
+timestamp: 2026-06-15T16:12:07.120Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Add strict CLI contract validation
+- **Session**: default
+
+### ✅ S1 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:18:26.425Z
+
+---
+taskId: T-20260615-fix-cli-command-contract-validation
+step: S1
+status: done
+timestamp: 2026-06-15T16:18:26.425Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:20:03.996Z
+
+---
+taskId: T-20260615-fix-cli-command-contract-validation
+step: S2
+status: in_progress
+timestamp: 2026-06-15T16:20:03.996Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Remove stale public options
+- **Session**: default
+
+### ✅ S2 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:20:13.125Z
+
+---
+taskId: T-20260615-fix-cli-command-contract-validation
+step: S2
+status: done
+timestamp: 2026-06-15T16:20:13.125Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:20:25.370Z
+
+---
+taskId: T-20260615-fix-cli-command-contract-validation
+step: S3
+status: in_progress
+timestamp: 2026-06-15T16:20:25.370Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Add regression tests and run gates
+- **Session**: default
+
+### ✅ S3 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:21:46.961Z
+
+---
+taskId: T-20260615-fix-cli-command-contract-validation
+step: S3
+status: done
+timestamp: 2026-06-15T16:21:46.961Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### ✅ check [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:22:55.234Z
+
+---
+taskId: T-20260615-fix-cli-command-contract-validation
+step: check
+status: done
+timestamp: 2026-06-15T16:22:55.234Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:23:05.308Z
+
+---
+taskId: T-20260615-fix-cli-command-contract-validation
+step: review
+status: done
+timestamp: 2026-06-15T16:23:05.308Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 4 警告, 0 提示
+
+### ✅ journal [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:23:25.576Z
+
+---
+taskId: T-20260615-fix-cli-command-contract-validation
+step: journal
+status: done
+timestamp: 2026-06-15T16:23:25.576Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (3/3 步)

@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-15T09:18:16.102Z
+> 扫描时间: 2026-06-15T16:23:25.575Z
 
 ## 条目列表
 
@@ -78,6 +78,7 @@
 | R-159 | 收紧 journal 到 decisions.md 的 ADR 写入规则 | done | P1 | 2 | T-20260612-journal-decisions-md-adr |
 | R-164 | 深化 spec.json schema 与门禁字段 | done | P1 | 3 | T-20260613-spec-json-schema |
 | R-184 | 修复 worktree 安全、初始化与测试缺口 | done | P1 | 2 | T-20260615-worktree-2 |
+| R-185 | Fix CLI command contract validation | done | P1 | 2 | T-20260615-fix-cli-command-contract-validation |
 | R-013 | 为 write-spec / write-plan 增加必备字段校验 | done | P2 | 2 | T-20260531-write-spec-write-plan |
 | R-014 | 统一 progress 计数与 step-finder 的 plan 解析 | done | P2 | 2 | T-20260531-progress-step-finder-plan |
 | R-015 | 分配真实 task_id 并统一 tasks/current 与任务归档路径策略 | done | P2 | 2 | T-20260531-task-id-tasks-current |

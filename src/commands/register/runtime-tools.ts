@@ -1,6 +1,6 @@
 import type { CAC } from 'cac';
 import { compactCommand, discoverCommand, nextCommand } from '../runtime.js';
-import { getOptionValue, normalizeTaskFileSyncSource } from './shared.js';
+import { getOptionValue, normalizeEnumOption, normalizeTaskFileSyncSource, parseIntegerOption } from './shared.js';
 
 export function registerRuntimeToolCommands(cli: CAC): void {
   cli.command('compact', '持久化压缩运行上下文到 workspace/compact-context.md')
@@ -11,7 +11,7 @@ export function registerRuntimeToolCommands(cli: CAC): void {
     .action(async (options: { cwd?: string; 'max-entries'?: string; maxEntries?: string; dryRun?: boolean; 'dry-run'?: boolean; cleanup?: boolean }) => {
       await compactCommand({
         cwd: options.cwd || process.cwd(),
-        maxEntries: options.maxEntries || options['max-entries'] ? parseInt((options.maxEntries || options['max-entries'])!, 10) : undefined,
+        maxEntries: parseIntegerOption(options.maxEntries || options['max-entries'], 'compact --max-entries', { min: 1 }),
         dryRun: !!(options.dryRun || options['dry-run']),
         cleanup: !!options.cleanup,
       });
@@ -23,7 +23,7 @@ export function registerRuntimeToolCommands(cli: CAC): void {
     .action(async (options: { cwd?: string; format?: string }) => {
       await discoverCommand({
         cwd: options.cwd || process.cwd(),
-        format: options.format as 'text' | 'json' | undefined,
+        format: normalizeEnumOption(options.format, 'discover --format', ['text', 'json'] as const),
       });
     });
 

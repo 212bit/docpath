@@ -9,6 +9,7 @@ import { projectsCommand } from '../projects.js';
 import { renderCommand } from '../render.js';
 import { rolesCommand } from '../roles.js';
 import { statsCommand } from '../stats.js';
+import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 function registerChangesCommand(cli: CAC): void {
   cli.command('changes', '提交前只读变更收口视图')
@@ -38,11 +39,11 @@ function registerContextCommand(cli: CAC): void {
     .option('--include-archive', '允许归档正文参与预算竞争')
     .option('--output <file>', '保存到文件')
     .option('--agent', '输出 Agent 可读 YAML 状态')
-    .action(async (options: { cwd?: string; 'max-tokens'?: string; format?: string; spec?: boolean; plan?: boolean; topic?: string; taskId?: string; 'task-id'?: string; includeArchive?: boolean; 'include-archive'?: boolean; output?: string; agent?: boolean }) => {
+    .action(async (options: { cwd?: string; 'max-tokens'?: string; maxTokens?: string; format?: string; spec?: boolean; plan?: boolean; topic?: string; taskId?: string; 'task-id'?: string; includeArchive?: boolean; 'include-archive'?: boolean; output?: string; agent?: boolean }) => {
       await contextCommand({
         cwd: options.cwd || process.cwd(),
-        maxTokens: options['max-tokens'] ? parseInt(options['max-tokens'], 10) : undefined,
-        format: options.format as 'prompt' | 'raw' | undefined,
+        maxTokens: parseIntegerOption(options.maxTokens || options['max-tokens'], 'context --max-tokens', { min: 1 }),
+        format: normalizeEnumOption(options.format, 'context --format', ['prompt', 'raw'] as const),
         withSpec: options.spec !== false,
         withPlan: options.plan !== false,
         topic: options.topic,
@@ -149,7 +150,7 @@ function registerDashboardCommand(cli: CAC): void {
       await dashboardCommand({
         cwd: options.cwd || process.cwd(),
         host: options.host,
-        port: options.port ? parseInt(options.port, 10) : undefined,
+        port: parseIntegerOption(options.port, 'dashboard --port', { min: 1, max: 65535 }),
       });
     });
 }

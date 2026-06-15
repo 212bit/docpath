@@ -3,6 +3,7 @@ import { docsCommand } from '../docs.js';
 import { installCommand } from '../install.js';
 import { revealCommand } from '../reveal.js';
 import { unlinkCommand } from '../unlink.js';
+import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 export function registerDocsInstallCommands(cli: CAC): void {
   cli.command('docs [action]', '文档资产管理')
@@ -37,11 +38,11 @@ export function registerDocsInstallCommands(cli: CAC): void {
       const levelStr = options.level || getArg('--level') || '1';
       await revealCommand({
         cwd: options.cwd || process.cwd(),
-        level: parseInt(levelStr, 10),
+        level: parseIntegerOption(levelStr, 'reveal --level', { min: 0, max: 3 }),
         topic: options.topic || getArg('--topic'),
         taskId: options.taskId || options['task-id'] || getArg('--task-id'),
         includeArchive: !!(options.includeArchive || options['include-archive'] || argv.includes('--include-archive')),
-        format: (options.format || getArg('--format') || 'text') as 'text' | 'raw',
+        format: normalizeEnumOption(options.format || getArg('--format') || 'text', 'reveal --format', ['text', 'raw'] as const),
         output: options.output || getArg('--output'),
       });
     });

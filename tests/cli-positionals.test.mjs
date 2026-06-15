@@ -103,4 +103,45 @@ describe('CLI positional argument guards', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('fails loud on invalid command contract options', () => {
+    const cwd = mkWorkspace();
+    const cases = [
+      ['review --scope stage', /review --scope: 参数非法/],
+      ['diff --scope unknown', /diff --scope: 参数非法/],
+      ['diff --scope step --step nope', /diff --step: 参数非法/],
+      ['context --max-tokens nope', /context --max-tokens: 参数非法/],
+      ['reveal --level nope', /reveal --level: 参数非法/],
+      ['reveal --level 4', /reveal --level: 参数非法/],
+      ['compact --max-entries nope', /compact --max-entries: 参数非法/],
+      ['agent handoff --max-entries nope', /agent --max-entries: 参数非法/],
+      ['dashboard --port nope', /dashboard --port: 参数非法/],
+    ];
+
+    for (const [command, pattern] of cases) {
+      const result = run(command, cwd);
+      assert.equal(result.code, 1, command);
+      assert.match(result.out, pattern, command);
+    }
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('does not expose stale no-op command flags', () => {
+    const cwd = mkWorkspace();
+
+    const reviewHelp = run('review --help', cwd);
+    assert.equal(reviewHelp.code, 0);
+    assert.doesNotMatch(reviewHelp.out, /--no-ai/);
+
+    const staleReviewFlag = run('review --no-ai', cwd);
+    assert.equal(staleReviewFlag.code, 1);
+    assert.match(staleReviewFlag.out, /Unknown option|未知|--no-ai/);
+
+    const staleWriteSpecFlag = run('write-spec --section requirements --content "# Spec"', cwd);
+    assert.equal(staleWriteSpecFlag.code, 1);
+    assert.match(staleWriteSpecFlag.out, /Unknown option|未知|--section/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

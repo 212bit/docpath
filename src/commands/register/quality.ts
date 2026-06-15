@@ -3,7 +3,7 @@ import { checkCommand } from '../check.js';
 import { journalCommand } from '../journal.js';
 import { reviewCommand } from '../review.js';
 import { writeJournalCommand } from '../write-journal.js';
-import { getOptionValue, normalizeTaskFileSyncSource } from './shared.js';
+import { getOptionValue, normalizeEnumOption, normalizeTaskFileSyncSource } from './shared.js';
 
 export function registerQualityCommands(cli: CAC): void {
   cli.command('check', '质量门禁 — 编译/测试/lint/检查 + 工作流护栏')
@@ -41,16 +41,15 @@ export function registerQualityCommands(cli: CAC): void {
       });
     });
 
-  cli.command('review', '结构化代码审查 (可选 LLM 深度审查)')
+  cli.command('review', '结构化代码审查 (本地静态检查)')
     .option('--cwd <path>', '项目目录')
     .option('--scope <scope>', '审查范围: all|staged|last_commit (默认 all)')
     .option('--dry-run', '只预览审查结果，不写入状态')
-    .option('--no-ai', '跳过 LLM 审查')
     .option('--approve', '直接批准（跳过自动检查）')
     .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean }) => {
       await reviewCommand({
         cwd: options.cwd || process.cwd(),
-        scope: (options.scope as any) || 'all',
+        scope: normalizeEnumOption(options.scope, 'review --scope', ['all', 'staged', 'last_commit'] as const) || 'all',
         dryRun: options['dry-run'] ?? options.dryRun,
         approve: options.approve ?? false,
       });

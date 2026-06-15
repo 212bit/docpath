@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260615-md-json-json",
-  "task_title": "数据统一：消除 MD↔JSON 双向同步，建立 JSON 单真源",
+  "task_id": "T-20260615-fix-cli-command-contract-validation",
+  "task_title": "Fix CLI command contract validation",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-15T09:18:16.002Z",
-  "updated_at": "2026-06-15T09:18:16.001Z"
+  "started_at": "2026-06-15T16:23:25.477Z",
+  "updated_at": "2026-06-15T16:23:25.476Z"
 }

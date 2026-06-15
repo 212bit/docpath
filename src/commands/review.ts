@@ -40,6 +40,11 @@ interface FindingGroups {
   infos: ReviewFinding[];
 }
 
+function normalizeReviewScope(scope: string): 'all' | 'staged' | 'last_commit' {
+  if (scope === 'all' || scope === 'staged' || scope === 'last_commit') return scope;
+  throw new Error(`docpath review --scope: 参数非法: ${scope}（允许: all|staged|last_commit）`);
+}
+
 function parseNameList(output: string): string[] {
   return output.split('\n').map(line => line.trim()).filter(Boolean);
 }
@@ -209,7 +214,8 @@ async function persistReviewResult(cwd: string, taskId: string, groups: FindingG
 export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const docpathDir = await resolveDocpathDir(opts.cwd);
   console.log('🔍 代码审查开始...');
-  const changedFiles = collectChangedFiles(opts.cwd, opts.scope || 'all');
+  const scope = normalizeReviewScope(opts.scope || 'all');
+  const changedFiles = collectChangedFiles(opts.cwd, scope);
   if (changedFiles.length === 0) {
     console.log('⚠️  未发现变更文件');
     if (opts.dryRun) console.log('📝  [dry-run] 当前无可审查变更，未写入任何状态或证据文件');

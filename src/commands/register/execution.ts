@@ -3,6 +3,7 @@ import { agentCommand } from '../agent.js';
 import { continueCommand } from '../continue.js';
 import { goCommand } from '../go.js';
 import { runCommand } from '../runtime.js';
+import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 export function registerExecutionCommands(cli: CAC): void {
   cli.command('continue', '断线重连 — 读取 breadcrumb 恢复执行，检查升级信号')
@@ -25,7 +26,7 @@ export function registerExecutionCommands(cli: CAC): void {
       await goCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
-        status: options.status,
+        status: normalizeEnumOption(options.status, 'go --status', ['done', 'skipped', 'blocked'] as const),
         dryRun: options.dryRun ?? options['dry-run'],
         session: options.session,
       });
@@ -43,7 +44,7 @@ export function registerExecutionCommands(cli: CAC): void {
         action,
         step: options.step,
         note: options.note,
-        status: options.status,
+        status: normalizeEnumOption(options.status, 'run --status', ['done', 'blocked', 'skipped'] as const),
         session: options.session,
       });
     });
@@ -66,13 +67,13 @@ export function registerExecutionCommands(cli: CAC): void {
         action,
         step: options.step,
         note: options.note,
-        status: options.status,
+        status: normalizeEnumOption(options.status, 'agent --status', ['done', 'blocked', 'skipped'] as const),
         skipCheck: !!(options.skipCheck || options['skip-check']),
         skipReview: !!(options.skipReview || options['skip-review']),
         skipTests: !!(options.skipTests || options['skip-tests']),
         skipLint: !!(options.skipLint || options['skip-lint']),
         approveReview: !!(options.approveReview || options['approve-review']),
-        maxEntries: options.maxEntries || options['max-entries'] ? parseInt((options.maxEntries || options['max-entries'])!, 10) : undefined,
+        maxEntries: parseIntegerOption(options.maxEntries || options['max-entries'], 'agent --max-entries', { min: 1 }),
         session: options.session,
       });
     });

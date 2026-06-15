@@ -99,8 +99,7 @@ function registerWriteSpecCommand(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--content <content>', 'spec 内容（YAML/Markdown）')
     .option('--stdin', '从 stdin 读取内容')
-    .option('--section <section>', '分析分区: requirements/product/ui/technical/risks/open-questions')
-    .action(async (options: { cwd?: string; content?: string; stdin?: boolean; section?: string }) => {
+    .action(async (options: { cwd?: string; content?: string; stdin?: boolean }) => {
       await writeSpecCommand({
         cwd: options.cwd || process.cwd(),
         content: options.content,

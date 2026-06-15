@@ -15,8 +15,25 @@ interface DiffOptions {
   noColor?: boolean;
 }
 
+function normalizeDiffScope(scope: string): 'staged' | 'last' | 'step' | 'all' {
+  if (scope === 'staged' || scope === 'last' || scope === 'step' || scope === 'all') return scope;
+  throw new Error(`docpath diff --scope: 参数非法: ${scope}（允许: staged|last|step|all）`);
+}
+
+function parseDiffStep(step: string): number {
+  if (!/^\d+$/.test(step)) {
+    throw new Error(`docpath diff --step: 参数非法: ${step}（必须是正整数）`);
+  }
+  const parsed = Number(step);
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
+    throw new Error(`docpath diff --step: 参数非法: ${step}（必须是正整数）`);
+  }
+  return parsed;
+}
+
 export async function diffCommand(options: DiffOptions): Promise<void> {
-  const scope = options.scope || 'staged';
+  const scope = normalizeDiffScope(options.scope || 'staged');
+  const explicitStep = scope === 'step' && options.step ? parseDiffStep(options.step) : undefined;
 
   console.log(`\n🔍  变更差异 — scope: ${scope}\n`);
 
@@ -57,14 +74,12 @@ export async function diffCommand(options: DiffOptions): Promise<void> {
         const planPath = join(options.cwd, '.docpath', 'tasks', 'current', 'plan.md');
         const planContent = await readFileSafe(planPath);
         const doneCount = planContent?.match(/- \[x\]/g)?.length || 0;
-        const n = options.step ? parseInt(options.step) : doneCount;
+        const n = explicitStep ?? doneCount;
         diffCmd = `git diff HEAD~${n} --stat && echo "---DETAIL---" && git diff HEAD~${n}`;
         break;
       case 'all':
         diffCmd = 'git diff HEAD --stat && echo "---DETAIL---" && git diff HEAD';
         break;
-      default:
-        diffCmd = 'git diff --cached --stat';
     }
 
     const output = execSync(diffCmd, {
