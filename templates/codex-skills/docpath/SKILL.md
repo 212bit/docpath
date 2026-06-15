@@ -46,6 +46,8 @@ commands must re-read workflow state and enforce their own preconditions.
 - Prompt emitters such as `brainstorm`, `refine`, `analyze --dry-run`, and `plan --dry-run` output structured prompt contracts or payload previews for the current Codex session. They do not call a hidden LLM and do not replace current-session reasoning.
 - Artifact sinks such as `write-spec`, `write-plan`, `write-design`, and `write-analysis` persist content that Codex has already generated or selected in the current conversation.
 - Workflow gates such as `status`, `next`, `go`, `agent enter/step/done`, `check`, `review`, and `changes` are deterministic state, routing, validation, lifecycle, review, and closeout commands.
+- CLI owns mechanical consistency checks: task identity, current/canonical task file sync, state transition legality, plan/breadcrumb alignment, install health, and closeout evidence. Codex owns semantic recovery decisions: whether a drifted spec is a new task, an old task restore, or a user-confirmed reset.
+- If `next`, `status`, `check`, or `tasks drift` reports task identity drift, do not repair it with `agent step`; choose a restore/reset/capture/promote path with explicit user intent.
 - `next --agent` is the advisory router; `go --step <id>` is atomic step control
   that claims/starts a step only if the workflow allows it now.
 - State-changing commands such as `go`, `agent enter/step/done`, `plan`,

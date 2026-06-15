@@ -6,6 +6,7 @@ import {
   formatStructuredMarkdownHashDrift,
   readStructuredSpecDocument,
   readStructuredTaskMarkdown,
+  taskIdFromMarkdown,
   writeStructuredTaskJson,
   type StructuredSpecDocument,
   type StructuredTaskMarkdownFile,
@@ -38,6 +39,11 @@ export async function writeActiveTaskFile(
   file: string,
   content: string,
 ): Promise<{ canonicalPath: string; currentPath: string }> {
+  assertActiveTaskFileWriteAllowed(docpathDir, taskId, file, content);
+  if (file !== 'spec.md') {
+    const identityDrifts = await detectActiveTaskIdentityDrift(docpathDir, taskId);
+    if (identityDrifts.length > 0) throw new Error(formatTaskIdentityDrift(identityDrifts));
+  }
   await ensureActiveTaskDirs(docpathDir, taskId);
   const canonicalPath = join(canonicalTaskDir(docpathDir, taskId), file);
   const currentPath = join(currentTaskDir(docpathDir), file);
@@ -190,6 +196,85 @@ export interface TaskFileDrift {
   detail?: string;
 }
 
+export interface TaskIdentityDrift {
+  file: 'spec.md';
+  location: 'current' | 'canonical';
+  path: string;
+  expectedTaskId: string;
+  declaredTaskId: string;
+}
+
+function shouldValidateExpectedTaskId(taskId: string | undefined): taskId is string {
+  return !!taskId && taskId !== 'current' && /^T-[A-Za-z0-9._-]+$/.test(taskId);
+}
+
+function assertActiveTaskFileWriteAllowed(
+  docpathDir: string,
+  taskId: string,
+  file: string,
+  content: string,
+): void {
+  if (!shouldValidateExpectedTaskId(taskId) || file !== 'spec.md') return;
+  const declaredTaskId = taskIdFromMarkdown(content);
+  if (!declaredTaskId || declaredTaskId === taskId) return;
+  const canonicalPath = join(canonicalTaskDir(docpathDir, taskId), file);
+  throw new Error([
+    '[docpath] task identity mismatch: refused to write spec.md',
+    `state.task_id: ${taskId}`,
+    `spec heading task_id: ${declaredTaskId}`,
+    `target: ${canonicalPath}`,
+    '修复建议:',
+    '  - 如果这是新任务，先通过 backlog promote / write-spec 绑定新的 task_id，不要复用旧任务目录。',
+    '  - 如果 state.task_id 过期，先恢复或重置当前任务状态，再写入 spec。',
+    '  - 如果只是标题写错，把 H1 改为当前 task_id 后重试。',
+  ].join('\n'));
+}
+
+export function formatTaskIdentityDrift(drifts: TaskIdentityDrift[]): string {
+  return [
+    'TASK IDENTITY DRIFT DETECTED:',
+    ...drifts.flatMap((drift) => [
+      `  [${drift.location}/${drift.file}] declared task id does not match workflow state`,
+      `    state.task_id: ${drift.expectedTaskId}`,
+      `    declared_task_id: ${drift.declaredTaskId}`,
+      `    path: ${drift.path}`,
+    ]),
+    '修复建议:',
+    '  - 若这是新需求，不要在旧 task_id 下写入；先 capture/promote 新 backlog 或重置当前任务。',
+    '  - 若这是旧任务被误覆盖，从 git/归档恢复 canonical task 文件，再运行 docpath tasks sync --from canonical。',
+    '  - 修复前不要运行 docpath agent step；step 同名不能证明是同一个计划语义。',
+  ].join('\n');
+}
+
+export async function detectActiveTaskIdentityDrift(
+  docpathDir: string,
+  taskId: string | undefined,
+): Promise<TaskIdentityDrift[]> {
+  if (!shouldValidateExpectedTaskId(taskId)) return [];
+
+  const candidates: Array<{ location: 'current' | 'canonical'; path: string }> = [
+    { location: 'current', path: join(currentTaskDir(docpathDir), 'spec.md') },
+    { location: 'canonical', path: join(canonicalTaskDir(docpathDir, taskId), 'spec.md') },
+  ];
+  const drifts: TaskIdentityDrift[] = [];
+
+  for (const candidate of candidates) {
+    if (!existsSync(candidate.path)) continue;
+    const content = await readFile(candidate.path, 'utf-8');
+    const declaredTaskId = taskIdFromMarkdown(content);
+    if (!declaredTaskId || declaredTaskId === taskId) continue;
+    drifts.push({
+      file: 'spec.md',
+      location: candidate.location,
+      path: candidate.path,
+      expectedTaskId: taskId,
+      declaredTaskId,
+    });
+  }
+
+  return drifts;
+}
+
 export async function detectActiveTaskFileDrift(
   docpathDir: string,
   taskId: string | undefined,
@@ -261,6 +346,7 @@ export async function syncActiveTaskFiles(
       throw new Error(`无法同步 ${file}: 源文件不存在 ${fromPath}`);
     }
     const content = await readFile(fromPath, 'utf-8');
+    assertActiveTaskFileWriteAllowed(docpathDir, taskId, file, content);
     await writeFile(toPath, content, 'utf-8');
     if (isStructuredTaskMarkdownFile(file)) {
       await writeStructuredTaskJson(dirname(fromPath), file, content, { taskId });

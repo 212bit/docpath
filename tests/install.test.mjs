@@ -260,6 +260,7 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(cwd, 'AGENTS.md')), true);
     assert.equal(existsSync(join(cwd, 'CLAUDE.md')), true);
     assert.equal(existsSync(join(cwd, 'CODEX.md')), true);
+    assert.equal(existsSync(join(cwd, 'OPENCODE.md')), true);
     assert.equal(existsSync(join(cwd, '.claude', 'commands')), true);
     assert.equal(existsSync(join(cwd, '.opencode', 'commands')), true);
     assert.equal(existsSync(join(cwd, '.codex', 'config.toml')), true);
@@ -270,9 +271,14 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(cwd, '.opencode', 'docpath.json')), true);
 
     const codex = readFileSync(join(cwd, '.codex', 'config.toml'), 'utf-8');
+    const opencode = JSON.parse(readFileSync(join(cwd, '.opencode', 'docpath.json'), 'utf-8'));
     const protocolAgents = readFileSync(join(cwd, '.docpath', 'protocols', 'AGENTS.md'), 'utf-8');
+    const meta = JSON.parse(readFileSync(join(cwd, '.docpath', '.install-meta.json'), 'utf-8'));
+    const assetPaths = meta.assets.map((asset) => asset.path);
 
     assert.match(codex, /project_doc_fallback_filenames = \["CODEX\.md"\]/);
+    assert.equal(opencode.protocol, 'OPENCODE.md');
+    assert.ok(assetPaths.includes('OPENCODE.md'));
     assert.doesNotMatch(codex, /\[docpath\]/);
     assert.doesNotMatch(codex, /\[docpath\.commands\]/);
     assert.match(protocolAgents, /docpath status --agent/);

@@ -5,318 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🔄 S2 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:09:02.926Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S2
-status: in_progress
-timestamp: 2026-06-14T14:09:02.926Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 修复 dry-run 与 stale plan 边界问题
-- **Session**: default
-
-### ✅ S2 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:11:33.005Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S2
-status: done
-timestamp: 2026-06-14T14:11:33.005Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### 🔄 S3 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:11:57.382Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S3
-status: in_progress
-timestamp: 2026-06-14T14:11:57.382Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 更新命令语义与文档边界
-- **Session**: default
-
-### ✅ S3 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:14:05.919Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S3
-status: done
-timestamp: 2026-06-14T14:14:05.919Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-- **Session**: default
-
-### 🔄 S4 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:14:59.620Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S4
-status: in_progress
-timestamp: 2026-06-14T14:14:59.620Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 同步 Agent 协议、skill 与 slash command 模板
-- **Session**: default
-
-### ✅ S4 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:20:36.049Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S4
-status: done
-timestamp: 2026-06-14T14:20:36.049Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-- **Session**: default
-
-### 🔄 S5 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:20:59.423Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S5
-status: in_progress
-timestamp: 2026-06-14T14:20:59.423Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证、review 与 closeout
-- **Session**: default
-
-### 🚫 check [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:24:30.540Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: check
-status: blocked
-timestamp: 2026-06-14T14:24:30.540Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 子任务完成度 (4/5)
-
-### ✅ S5 [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:24:42.595Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: S5
-status: done
-timestamp: 2026-06-14T14:24:42.595Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S5
-- **Session**: default
-
-### ✅ check [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:25:46.166Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: check
-status: done
-timestamp: 2026-06-14T14:25:46.166Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:26:03.864Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: review
-status: done
-timestamp: 2026-06-14T14:26:03.864Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
-
-### ✅ journal [T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo] — 2026-06-14T14:27:06.171Z
-
----
-taskId: T-20260614-ai-prompt-emitter-vs-artifact-sink-vs-wo
-step: journal
-status: done
-timestamp: 2026-06-14T14:27:06.171Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (5/5 步)
-
-### 🔄 S1 [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:03:20.314Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: S1
-status: in_progress
-timestamp: 2026-06-14T15:03:20.314Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 修复 backlog capture 的 analyze 下一步提示
-- **Session**: default
-
-### ✅ S1 [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:05:11.963Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: S1
-status: done
-timestamp: 2026-06-14T15:05:11.963Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
-### 🔄 S2 [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:05:19.059Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: S2
-status: in_progress
-timestamp: 2026-06-14T15:05:19.059Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 修复 promote 后 current alias 残留 stale plan
-- **Session**: default
-
-### ✅ S2 [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:07:29.650Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: S2
-status: done
-timestamp: 2026-06-14T15:07:29.650Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### 🔄 S3 [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:07:37.629Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: S3
-status: in_progress
-timestamp: 2026-06-14T15:07:37.629Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 收紧 status/next agent 输出边界
-- **Session**: default
-
-### ✅ S3 [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:12:09.034Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: S3
-status: done
-timestamp: 2026-06-14T15:12:09.034Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-- **Session**: default
-
-### 🔄 S4 [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:12:18.111Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: S4
-status: in_progress
-timestamp: 2026-06-14T15:12:18.111Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 建模多 agent install target 与归档提示
-- **Session**: default
-
-### ✅ S4 [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:15:59.254Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: S4
-status: done
-timestamp: 2026-06-14T15:15:59.254Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-- **Session**: default
-
-### 🔄 S5 [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:16:07.801Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: S5
-status: in_progress
-timestamp: 2026-06-14T15:16:07.801Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 验证、门禁与 backlog closeout
-- **Session**: default
-
-### ✅ S5 [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:17:46.575Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: S5
-status: done
-timestamp: 2026-06-14T15:17:46.575Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S5
-- **Session**: default
-
-### 🚫 check [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:18:45.530Z
-
----
-taskId: T-20260614-current-alias-agent-install-target
-step: check
-status: blocked
-timestamp: 2026-06-14T15:18:45.530Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 重大决策确认检查
-
 ### ✅ check [T-20260614-current-alias-agent-install-target] — 2026-06-14T15:21:15.842Z
 
 ---
@@ -666,3 +354,307 @@ timestamp: 2026-06-14T17:29:33.263Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (3/3 步)
+
+### 🚫 check [T-20260614-next-go-next-hint] — 2026-06-15T01:24:17.267Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: check
+status: blocked
+timestamp: 2026-06-15T01:24:17.267Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 任务身份一致性检查
+
+### 🚫 check [T-20260614-next-go-next-hint] — 2026-06-15T01:37:38.631Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: check
+status: blocked
+timestamp: 2026-06-15T01:37:38.631Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 任务身份一致性检查
+
+### ✅ task.reset [T-20260614-next-go-next-hint] — 2026-06-15T01:48:36.292Z
+
+---
+taskId: T-20260614-next-go-next-hint
+step: task.reset
+status: done
+timestamp: 2026-06-15T01:48:36.292Z
+---
+
+- **状态**: done
+- **上下文**: 任务上下文已清空并回到 idle
+
+### 🚫 check [unknown] — 2026-06-15T01:49:07.029Z
+
+---
+taskId: unknown
+step: check
+status: blocked
+timestamp: 2026-06-15T01:49:07.029Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 重大决策确认检查, 当前任务上下文文件缺失
+
+### 🔄 S1 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:53:11.486Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S1
+status: in_progress
+timestamp: 2026-06-15T01:53:11.486Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 修复 runtime cleanup 与 compact 触发边界
+- **Session**: default
+
+### ✅ S1 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:53:20.020Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S1
+status: done
+timestamp: 2026-06-15T01:53:20.020Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:53:27.879Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S2
+status: in_progress
+timestamp: 2026-06-15T01:53:27.879Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 修复 docs archive 与 stale index 行为
+- **Session**: default
+
+### ✅ S2 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:53:35.092Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S2
+status: done
+timestamp: 2026-06-15T01:53:35.092Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:53:44.510Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S3
+status: in_progress
+timestamp: 2026-06-15T01:53:44.510Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 修复 universal install 的 OpenCode 资产
+- **Session**: default
+
+### ✅ S3 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:53:52.130Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S3
+status: done
+timestamp: 2026-06-15T01:53:52.130Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### 🔄 S4 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:54:02.030Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S4
+status: in_progress
+timestamp: 2026-06-15T01:54:02.030Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 明确 status/next 与 agent protocol 边界
+- **Session**: default
+
+### ✅ S4 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:54:10.736Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S4
+status: done
+timestamp: 2026-06-15T01:54:10.736Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### 🔄 S5 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:54:21.709Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S5
+status: in_progress
+timestamp: 2026-06-15T01:54:21.709Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 增加 task identity drift fail-loud 保护
+- **Session**: default
+
+### ✅ S5 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:54:33.319Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S5
+status: done
+timestamp: 2026-06-15T01:54:33.319Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S5
+- **Session**: default
+
+### 🔄 S6 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:54:41.988Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S6
+status: in_progress
+timestamp: 2026-06-15T01:54:41.988Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 执行恢复路径并保留 drifted draft
+- **Session**: default
+
+### ✅ S6 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:54:50.552Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S6
+status: done
+timestamp: 2026-06-15T01:54:50.552Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S6
+- **Session**: default
+
+### 🔄 S7 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:55:04.055Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S7
+status: in_progress
+timestamp: 2026-06-15T01:55:04.055Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 回归验证与 closeout
+- **Session**: default
+
+### 🚫 check [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:55:29.823Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: check
+status: blocked
+timestamp: 2026-06-15T01:55:29.823Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 子任务完成度 (6/7)
+
+### ✅ S7 [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:55:38.423Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: S7
+status: done
+timestamp: 2026-06-15T01:55:38.423Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S7
+- **Session**: default
+
+### ✅ check [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:56:09.495Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: check
+status: done
+timestamp: 2026-06-15T01:56:09.495Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (10 项)
+
+### 🚫 review [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:56:44.639Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: review
+status: blocked
+timestamp: 2026-06-15T01:56:44.639Z
+---
+
+- **状态**: blocked
+- **上下文**: 代码审查: 1 错误, 13 警告, 3 提示
+
+### ✅ review [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:57:28.513Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: review
+status: done
+timestamp: 2026-06-15T01:57:28.513Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 13 警告, 3 提示
+
+### ✅ journal [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:57:46.317Z
+
+---
+taskId: T-20260615-cli-workflow-review-cleanup-archive-inst
+step: journal
+status: done
+timestamp: 2026-06-15T01:57:46.317Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (7/7 步)

@@ -198,7 +198,7 @@ async function listCodexSkillNames(): Promise<string[]> {
 }
 
 function entryProtocolFiles(target: Target): string[] {
-  if (target === 'universal') return ['CLAUDE.md', 'AGENTS.md', 'CODEX.md'];
+  if (target === 'universal') return ['CLAUDE.md', 'AGENTS.md', 'CODEX.md', 'OPENCODE.md'];
   if (target === 'codex') return ['AGENTS.md', 'CODEX.md'];
   if (target === 'claude') return ['CLAUDE.md'];
   return ['OPENCODE.md'];
@@ -742,6 +742,7 @@ async function installEntryProtocols(context: InstallContext): Promise<void> {
     await installProtocolFile(targetDir, 'CLAUDE.md', projectName, force);
     await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
     await installProtocolFile(targetDir, 'CODEX.md', projectName, force);
+    await installProtocolFile(targetDir, 'OPENCODE.md', projectName, force);
   } else if (target === 'codex') {
     await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
     await installProtocolFile(targetDir, 'CODEX.md', projectName, force);
@@ -855,11 +856,11 @@ function printInstallSummary(target: Target): void {
   if (target === 'claude') {
     console.log('    CLAUDE.md 和 .claude/commands/ 已就绪，在 Claude Code 中输入 /docpath-status 开始使用。');
   } else if (target === 'opencode') {
-    console.log('    AGENTS.md 和 .opencode/commands/ 已就绪，可在 OpenCode 中调用 DocPath 命令。');
+    console.log('    OPENCODE.md 和 .opencode/commands/ 已就绪，可在 OpenCode 中调用 DocPath 命令。');
   } else if (target === 'codex') {
     console.log('    AGENTS.md / CODEX.md / .codex/config.toml / .codex/skills/ 已就绪，可在 Codex 中读取项目协议与 $docpath Skills。');
   } else {
-    console.log('    CODEX.md / CLAUDE.md / AGENTS.md、.codex/skills/ 及三端配置已就绪。');
+    console.log('    CODEX.md / CLAUDE.md / AGENTS.md / OPENCODE.md、.codex/skills/ 及三端配置已就绪。');
   }
 }
 

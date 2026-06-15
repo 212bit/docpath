@@ -46,6 +46,14 @@ tail range.
   generated or selected.
 - `status`, `next`, `go`, `agent`, `check`, `review`, and `changes` are
   deterministic workflow gates.
+- CLI owns mechanical consistency checks: task identity, current/canonical task
+  file sync, state transition legality, plan/breadcrumb alignment, install
+  health, and closeout evidence. OpenCode owns semantic recovery decisions:
+  whether a drifted spec is a new task, an old task restore, or a user-confirmed
+  reset.
+- If `next`, `status`, `check`, or `tasks drift` reports task identity drift, do
+  not repair it with `agent step`; choose a restore/reset/capture/promote path
+  with explicit user intent.
 - `docpath next --agent` is read-only and advisory. Use it at session
   start/resume or when state is uncertain; do not treat it as permission, a
   lock, or a required prelude to an explicit deterministic command.

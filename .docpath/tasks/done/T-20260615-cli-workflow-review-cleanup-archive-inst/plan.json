@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-15T01:55:38.428Z",
+    "updated_at": "2026-06-15T01:55:38.428Z",
+    "content_sha256": "319fb90d89a11a5fbdd8d1f5192742a134eb4a14ceface954b59452828adf6be"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: 修复 runtime cleanup 与 compact 触发边界\n- **描述**: 让 cleanup 读取 check-history、session、lease 的真实 schema，并把 destructive cleanup 从默认 compact 中拆到显式 `compact --cleanup`。\n- **验收条件**: runtime cleanup 测试覆盖真实字段与旧字段兼容；`docpath compact` 默认不裁剪运行态，`docpath compact --cleanup` 才执行清理。\n- **依赖**: 无\n\n### S2: 修复 docs archive 与 stale index 行为\n- **描述**: 调整 docs scan/context/reveal 对归档任务的索引策略，使旧归档任务保持可发现并用 stale 标记区分。\n- **验收条件**: 旧归档任务仍在 docs-index 中；显式 `context --task-id <id>` 可以展开 stale archived task。\n- **依赖**: S1\n\n### S3: 修复 universal install 的 OpenCode 资产\n- **描述**: 让 universal install 安装 `OPENCODE.md`、写入正确 `.opencode/docpath.json`，并修正 manifest/summary。\n- **验收条件**: install 测试覆盖 opencode、codex、claude、universal target；install doctor/check-only 行为保持兼容。\n- **依赖**: S1\n\n### S4: 明确 status/next 与 agent protocol 边界\n- **描述**: 将 `status --agent` 定位为 diagnostic snapshot，将 `next --agent` 定位为 active route，并同步 AGENTS/CODEX/CLAUDE/OPENCODE、protocol templates、Codex skill 和 rules。\n- **验收条件**: `status --agent` 的执行路线只在 `route_hint`；`next --agent` 提供 active route；协议不再要求双命令启动。\n- **依赖**: S2, S3\n\n### S5: 增加 task identity drift fail-loud 保护\n- **描述**: 在 task files、write-spec、tasks sync、check、next/status 和 tasks drift 中增加 task id 身份一致性检测，阻止错误 spec 继续污染 canonical/current。\n- **验收条件**: task identity drift 优先于普通 current/canonical drift 报告；`check` 在 drafting 等阶段不触发非法 workflow transition；写入错误 task id 的 spec 失败且不改文件。\n- **依赖**: S4\n\n### S6: 执行恢复路径并保留 drifted draft\n- **描述**: 将 `T-DRAFT-data-uniform` draft 保存为 backlog R-182，从归档恢复旧任务 canonical/current，再 reset stale current，并将当前修复包绑定到 R-181 active task。\n- **验收条件**: `docpath tasks drift` 不再报告身份漂移；R-182 保留 draft 内容；R-181 建立 active task spec/plan。\n- **依赖**: S5\n\n### S7: 回归验证与 closeout\n- **描述**: 运行全量测试、typecheck、diff check、DocPath check，并刷新 docs index / backlog index。\n- **验收条件**: `pnpm test`、`pnpm run typecheck`、`git diff --check` 通过；`docpath check --skip-tests --skip-lint` 通过或仅剩明确的非本任务阻塞项。\n- **依赖**: S6\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n- [x] S5\n- [x] S6\n- [x] S7\n\n## 依赖关系图\nS1 → S2 → S4 → S5 → S6 → S7\nS1 → S3 → S4\n",
+  "generated_at": "2026-06-15T01:55:38.428Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "修复 runtime cleanup 与 compact 触发边界",
+      "description": "让 cleanup 读取 check-history、session、lease 的真实 schema，并把 destructive cleanup 从默认 compact 中拆到显式 `compact --cleanup`。",
+      "acceptance": "runtime cleanup 测试覆盖真实字段与旧字段兼容；`docpath compact` 默认不裁剪运行态，`docpath compact --cleanup` 才执行清理。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "修复 docs archive 与 stale index 行为",
+      "description": "调整 docs scan/context/reveal 对归档任务的索引策略，使旧归档任务保持可发现并用 stale 标记区分。",
+      "acceptance": "旧归档任务仍在 docs-index 中；显式 `context --task-id <id>` 可以展开 stale archived task。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "修复 universal install 的 OpenCode 资产",
+      "description": "让 universal install 安装 `OPENCODE.md`、写入正确 `.opencode/docpath.json`，并修正 manifest/summary。",
+      "acceptance": "install 测试覆盖 opencode、codex、claude、universal target；install doctor/check-only 行为保持兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "明确 status/next 与 agent protocol 边界",
+      "description": "将 `status --agent` 定位为 diagnostic snapshot，将 `next --agent` 定位为 active route，并同步 AGENTS/CODEX/CLAUDE/OPENCODE、protocol templates、Codex skill 和 rules。",
+      "acceptance": "`status --agent` 的执行路线只在 `route_hint`；`next --agent` 提供 active route；协议不再要求双命令启动。",
+      "dependencies": "S2, S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "增加 task identity drift fail-loud 保护",
+      "description": "在 task files、write-spec、tasks sync、check、next/status 和 tasks drift 中增加 task id 身份一致性检测，阻止错误 spec 继续污染 canonical/current。",
+      "acceptance": "task identity drift 优先于普通 current/canonical drift 报告；`check` 在 drafting 等阶段不触发非法 workflow transition；写入错误 task id 的 spec 失败且不改文件。",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "执行恢复路径并保留 drifted draft",
+      "description": "将 `T-DRAFT-data-uniform` draft 保存为 backlog R-182，从归档恢复旧任务 canonical/current，再 reset stale current，并将当前修复包绑定到 R-181 active task。",
+      "acceptance": "`docpath tasks drift` 不再报告身份漂移；R-182 保留 draft 内容；R-181 建立 active task spec/plan。",
+      "dependencies": "S5",
+      "status": "done"
+    },
+    {
+      "id": "S7",
+      "name": "回归验证与 closeout",
+      "description": "运行全量测试、typecheck、diff check、DocPath check，并刷新 docs index / backlog index。",
+      "acceptance": "`pnpm test`、`pnpm run typecheck`、`git diff --check` 通过；`docpath check --skip-tests --skip-lint` 通过或仅剩明确的非本任务阻塞项。",
+      "dependencies": "S6",
+      "status": "done"
+    }
+  ]
+}

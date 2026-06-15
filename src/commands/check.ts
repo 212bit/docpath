@@ -18,11 +18,12 @@ import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
-import { ANALYSIS_SECTIONS, detectActiveTaskFileDrift, readActiveAnalysisSummary, readActiveStructuredSpecDocument, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
+import { ANALYSIS_SECTIONS, detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatTaskIdentityDrift, readActiveAnalysisSummary, readActiveStructuredSpecDocument, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts, approvalState, hasUiImplementationIntent } from '../utils/ui-gate.js';
 import { resolveMajorChangeGateStatus } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
+import { CHECK_HISTORY_MAX_ENTRIES } from '../utils/workspace-cleanup.js';
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
   documentIndexStats,
@@ -542,6 +543,16 @@ async function runProjectChecks(cwd: string, options: CheckOptions): Promise<Che
 async function checkTaskFileDrift(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
   const workflowState = await readCurrentState(cwd);
   if ((workflowState?.level || 0) < 2 || !workflowState?.task_id) return [];
+
+  const identityDrifts = await detectActiveTaskIdentityDrift(docpathDir, workflowState.task_id);
+  if (identityDrifts.length > 0) {
+    return [{
+      name: '任务身份一致性检查',
+      passed: false,
+      output: formatTaskIdentityDrift(identityDrifts),
+      category: 'plan',
+    }];
+  }
 
   let drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
   let driftOutput = drifts.length === 0 ? 'current 与 canonical 任务文件一致' : formatTaskFileDrift(drifts);
@@ -1101,6 +1112,11 @@ async function updateCheckWorkflowState(cwd: string, allPassed: boolean, results
     || workflowState?.phase === 'completed'
   );
   if (alreadyPastCheck) return;
+  const phase = workflowState?.phase || 'idle';
+  const eventAllowed = allPassed
+    ? ['executing', 'checking', 'completed'].includes(phase)
+    : ['executing', 'checking', 'reviewing', 'completed'].includes(phase);
+  if (!eventAllowed) return;
 
   await transitionWorkflow(cwd, allPassed ? 'check.passed' : 'check.failed', {
     currentStep: allPassed
@@ -1162,7 +1178,7 @@ async function updateCheckHistory(cwd: string, docpathDir: string, results: Chec
     branch: gitBaseline?.branch,
     worktreeDirty: gitBaseline?.worktreeDirty,
   });
-  if (history.length > 20) history = history.slice(-20);
+  if (history.length > CHECK_HISTORY_MAX_ENTRIES) history = history.slice(-CHECK_HISTORY_MAX_ENTRIES);
   await writeFile(regressionPath, JSON.stringify(history, null, 2), 'utf-8');
 
   if (history.length < 2) return;

@@ -103,7 +103,7 @@ function firstHeading(content: string): string {
   return content.match(/^#\s+(.+)$/m)?.[1]?.trim() || '';
 }
 
-function taskIdFromMarkdown(content: string): string | null {
+export function taskIdFromMarkdown(content: string): string | null {
   return content.match(/^#\s+((?:T|R)-[\w-]+)/m)?.[1]?.trim() || null;
 }
 

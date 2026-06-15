@@ -57,7 +57,7 @@ function initGitRepo(cwd) {
 }
 
 describe('next --agent routing', () => {
-  it('distinguishes status and next agent contracts while keeping route fields compatible', () => {
+  it('distinguishes status diagnostics from next route output', () => {
     const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
     const status = statusAgent(cwd);
     const next = nextAgent(cwd);
@@ -66,8 +66,10 @@ describe('next --agent routing', () => {
     assert.equal(next.agent_view, 'next');
     assert.match(status.agent_contract, /status_snapshot/);
     assert.match(next.agent_contract, /next_route/);
-    assert.equal(status.recommended_command, next.recommended_command);
-    assert.equal(status.next_action, next.next_action);
+    assert.equal(status.recommended_command, 'docpath next --agent');
+    assert.match(status.next_action, /诊断当前工作流状态/);
+    assert.equal(status.route_hint.recommended_command, next.recommended_command);
+    assert.equal(status.route_hint.next_action, next.next_action);
     assert.notDeepEqual(status, next);
     rmSync(cwd, { recursive: true, force: true });
   });

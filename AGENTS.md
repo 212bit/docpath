@@ -53,6 +53,13 @@ tail range that answers the question.
 - Workflow gates such as `status`, `next`, `go`, `agent enter/step/done`,
   `check`, `review`, and `changes` are deterministic state, routing, validation,
   lifecycle, review, and closeout commands.
+- CLI owns mechanical consistency checks: task identity, current/canonical task
+  file sync, state transition legality, plan/breadcrumb alignment, install
+  health, and closeout evidence. Agent owns semantic recovery decisions: whether
+  a drifted spec is a new task, an old task restore, or a user-confirmed reset.
+- If `next`, `status`, `check`, or `tasks drift` reports task identity drift, do
+  not repair it with `agent step`; choose a restore/reset/capture/promote path
+  with explicit user intent.
 - `docpath next --agent` is a read-only advisory router for session
   start/resume and uncertain state. It does not grant permission, hold locks, or
   replace command preflight gates. Do not require it before an explicit

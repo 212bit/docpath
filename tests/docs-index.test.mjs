@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, utimesSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -86,7 +86,7 @@ describe('structured docs index', () => {
     assert.equal(canonicalSpec?.default_read, false);
 
     const docsMd = readFileSync(join(cwd, '.docpath', 'docs.md'), 'utf-8');
-    assert.match(docsMd, /\| 路径 \| type \| scope \| level \| default_read \| archive \| tokens \| task_id \| 标题 \| 摘要 \| 更新时间 \| 大小 \|/);
+    assert.match(docsMd, /\| 路径 \| type \| scope \| level \| default_read \| archive \| stale \| tokens \| task_id \| 标题 \| 摘要 \| 更新时间 \| 大小 \|/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -125,6 +125,29 @@ describe('structured docs index', () => {
     const output = run(`context --cwd ${cwd} --format raw --max-tokens 900 --task-id T-OLD`, cwd);
 
     assert.match(output, /按需展开文档片段/);
+    assert.match(output, /path: tasks\/done\/T-OLD\/notes.md/);
+    assert.match(output, /Old archived notes should be lower priority/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('keeps stale archived tasks discoverable for explicit task-id lookups', () => {
+    const cwd = mkWorkspace();
+    const oldNotesPath = join(cwd, '.docpath', 'tasks', 'done', 'T-OLD', 'notes.md');
+    const oldDate = new Date('2025-01-01T00:00:00.000Z');
+    utimesSync(oldNotesPath, oldDate, oldDate);
+
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    const index = JSON.parse(readFileSync(join(cwd, '.docpath', 'docs-index.json'), 'utf-8'));
+    const staleEntry = index.entries.find((entry) => entry.path === 'tasks/done/T-OLD/notes.md');
+    assert.ok(staleEntry, 'stale archived task should stay discoverable in docs-index');
+    assert.equal(staleEntry.archive, true);
+    assert.equal(staleEntry.default_read, false);
+    assert.equal(staleEntry.stale, true);
+    const docsMd = readFileSync(join(cwd, '.docpath', 'docs.md'), 'utf-8');
+    assert.match(docsMd, /\| tasks\/done\/T-OLD\/notes\.md \| runbook \| task \| 3 \| false \| true \| true \|/);
+
+    const output = run(`context --cwd ${cwd} --format raw --max-tokens 900 --task-id T-OLD`, cwd);
     assert.match(output, /path: tasks\/done\/T-OLD\/notes.md/);
     assert.match(output, /Old archived notes should be lower priority/);
     rmSync(cwd, { recursive: true, force: true });

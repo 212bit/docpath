@@ -21,4 +21,5 @@ else
 fi
 ```
 
-Common arguments: `--max-entries 20` or `--dry-run`.
+Common arguments: `--max-entries 20`, `--dry-run`, or `--cleanup` when you
+explicitly want workspace aging cleanup.

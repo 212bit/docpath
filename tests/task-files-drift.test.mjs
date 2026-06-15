@@ -44,6 +44,10 @@ function validSpec(title = 'canonical') {
   ].join('\n');
 }
 
+function validSpecForTask(taskId, title = 'canonical') {
+  return validSpec(title).replace('# T-DRIFT', `# ${taskId}`);
+}
+
 function validPlan(title = 'canonical') {
   return [
     '## 执行计划',
@@ -57,7 +61,7 @@ function validPlan(title = 'canonical') {
   ].join('\n');
 }
 
-function mkWorkspace() {
+function mkWorkspace({ phase = 'executing' } = {}) {
   const cwd = mkdtempSync(join(tmpdir(), 'dp-task-drift-'));
   const dp = join(cwd, '.docpath');
   mkdirSync(join(dp, 'workspace'), { recursive: true });
@@ -71,7 +75,7 @@ function mkWorkspace() {
     level: 2,
     task_id: 'T-DRIFT',
     task_title: 'Task drift',
-    phase: 'executing',
+    phase,
     gate: 'none',
     current_step: 'S1',
     started_at: '2026-06-01T00:00:00.000Z',
@@ -130,6 +134,36 @@ function runShell(command, cwd) {
 }
 
 describe('active task file drift', () => {
+  it('check and next fail loud on task identity drift before plan/breadcrumb drift', () => {
+    const cwd = mkWorkspace({ phase: 'drafting' });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), validSpecForTask('T-DRAFT-data-uniform', 'wrong current'));
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-DRIFT', 'spec.md'), validSpecForTask('T-DRAFT-data-uniform', 'wrong canonical'));
+
+    const check = run(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+    assert.equal(check.code, 1);
+    assert.match(check.out, /任务身份一致性检查/);
+    assert.match(check.out, /TASK IDENTITY DRIFT DETECTED/);
+    assert.match(check.out, /state\.task_id: T-DRIFT/);
+    assert.match(check.out, /declared_task_id: T-DRAFT-data-uniform/);
+    assert.doesNotMatch(check.out, /Plan\/Breadcrumb 漂移检查/);
+    assert.doesNotMatch(check.out, /Illegal workflow transition/);
+
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.phase, 'drafting');
+    assert.equal(state.gate, 'none');
+
+    const next = run(`next --cwd ${cwd} --agent`, cwd);
+    assert.equal(next.code, 0);
+    assert.match(next.out, /recommended_command: docpath tasks drift/);
+    assert.match(next.out, /identity_drift_summary:/);
+    assert.match(next.out, /declared_task_id: T-DRAFT-data-uniform/);
+
+    const tasksDrift = run(`tasks drift --cwd ${cwd}`, cwd);
+    assert.equal(tasksDrift.code, 1);
+    assert.match(tasksDrift.out, /TASK IDENTITY DRIFT DETECTED/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('check reports current/canonical drift with paths and sync fixes it from canonical', () => {
     const cwd = mkWorkspace();
 

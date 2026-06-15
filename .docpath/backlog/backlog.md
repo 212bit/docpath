@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-14T17:37:12.789Z
+> 扫描时间: 2026-06-15T01:57:46.316Z
 
 ## 条目列表
 
@@ -137,6 +137,8 @@
 | R-176 | 将 agent 启动协议改为单命令 next --agent | done | P2 | 2 | T-20260614-agent-next-agent |
 | R-177 | 前置重大变更门禁、明确 next/go 边界并统一 next_hint 输出 | done | P2 | 3 | T-20260614-next-go-next-hint |
 | R-180 | 技术债务清理 — 删除废弃文件和未使用依赖 | proposed | P2 | 1 |  |
+| R-181 | 修复 CLI 文档系统 workflow review 发现的 cleanup、archive、install、status 边界问题 | done | P2 | 2 | T-20260615-cli-workflow-review-cleanup-archive-inst |
+| R-182 | 数据统一：消除 MD↔JSON 双向同步，建立 JSON 单真源 | proposed | P2 | 3 |  |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 
 ## 用途说明

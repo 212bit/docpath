@@ -3,13 +3,13 @@
 ```yaml
 level: 3
 state: completed          # 当前状态
-task_id: T-20260614-next-go-next-hint
-task_title: 前置重大变更门禁、明确 next/go 边界并统一 next_hint 输出
+task_id: T-20260615-cli-workflow-review-cleanup-archive-inst
+task_title: 修复 CLI 文档系统 workflow review 发现的 cleanup、archive、install、status 边界问题
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-14T17:29:33.168Z
-updated_at: 2026-06-14T17:29:33.167Z
+started_at: 2026-06-15T01:57:46.235Z
+updated_at: 2026-06-15T01:57:46.234Z
 ```
 
 > 📖 规约: [spec.md](../tasks/current/spec.md)
@@ -21,8 +21,8 @@ updated_at: 2026-06-14T17:29:33.167Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-14T17:26:46.083Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260614-next-go-next-hint] — 2026-06-14T17:28:35.809Z · 状态: done · 代码审查: 0 错误, 18 警告, 3 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-15T01:56:09.492Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — ✅ review [T-20260615-cli-workflow-review-cleanup-archive-inst] — 2026-06-15T01:57:28.513Z · 状态: done · 代码审查: 0 错误, 13 警告, 3 提示
 
 ## 🔄 同步说明
 

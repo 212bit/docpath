@@ -42,6 +42,7 @@ type CompactOptions = {
   cwd: string;
   maxEntries?: number;
   dryRun?: boolean;
+  cleanup?: boolean;
 };
 
 type DiscoverOptions = {
@@ -581,22 +582,23 @@ export async function compactCommand(options: CompactOptions): Promise<void> {
   const body = trimmedEntries.map((entry) => formatEntry(entry)).join('');
   await writeFsFile(breadcrumbPath, BREADCRUMB_HEADER + body, 'utf-8');
 
-  // R-178: workspace 老化策略 — 自动清理运行时状态
-  const { cleanupWorkspace } = await import('../utils/workspace-cleanup.js');
-  const cleanup = await cleanupWorkspace(cwd);
-
   console.log(`🧩 compact: saved ${relative(cwd, output)} (${trimmedEntries.length} events, pruned ${breadcrumb.entries.length - trimmedEntries.length})`);
-  if (cleanup.checkHistoryPruned > 0) {
-    console.log(`   ✂️  check-history: pruned ${cleanup.checkHistoryPruned} entries`);
-  }
-  if (cleanup.breadcrumbPruned > 0) {
-    console.log(`   ✂️  breadcrumb.jsonl: pruned ${cleanup.breadcrumbPruned} lines`);
-  }
-  if (cleanup.sessionsRemoved > 0) {
-    console.log(`   🗑️  sessions: removed ${cleanup.sessionsRemoved} stale sessions`);
-  }
-  if (cleanup.leasesRemoved > 0) {
-    console.log(`   🗑️  leases: removed ${cleanup.leasesRemoved} expired leases`);
+
+  if (options.cleanup) {
+    const { cleanupWorkspace } = await import('../utils/workspace-cleanup.js');
+    const cleanup = await cleanupWorkspace(cwd);
+    if (cleanup.checkHistoryPruned > 0) {
+      console.log(`   ✂️  check-history: pruned ${cleanup.checkHistoryPruned} entries`);
+    }
+    if (cleanup.breadcrumbPruned > 0) {
+      console.log(`   ✂️  breadcrumb.jsonl: pruned ${cleanup.breadcrumbPruned} lines`);
+    }
+    if (cleanup.sessionsRemoved > 0) {
+      console.log(`   🗑️  sessions: removed ${cleanup.sessionsRemoved} stale sessions`);
+    }
+    if (cleanup.leasesRemoved > 0) {
+      console.log(`   🗑️  leases: removed ${cleanup.leasesRemoved} expired leases`);
+    }
   }
 }
 

@@ -76,6 +76,15 @@ Commands like `write-spec`, `write-plan`, `write-design`, and `write-analysis` p
 ### Workflow Gates
 Commands like `status`, `next`, `go`, `agent enter/step/done`, `check`, `review`, and `changes` are deterministic state, routing, validation, lifecycle, review, and closeout commands.
 
+CLI owns mechanical consistency checks: task identity, current/canonical task
+file sync, state transition legality, plan/breadcrumb alignment, install
+health, and closeout evidence. Codex owns semantic recovery decisions: whether
+a drifted spec is a new task, an old task restore, or a user-confirmed reset.
+
+If `next`, `status`, `check`, or `tasks drift` reports task identity drift, do
+not repair it with `agent step`; choose a restore/reset/capture/promote path
+with explicit user intent.
+
 `next --agent` is the advisory router; `go --step <id>` is atomic step control.
 State-changing commands must own their preflight gates instead of relying on a
 previous `next` call.

@@ -1005,7 +1005,7 @@ warned: false
     assert.doesNotMatch(out, /current\.md 是否存在/);
   });
 
-  it('status --agent keeps machine output unchanged', () => {
+  it('status --agent emits parseable diagnostic output', () => {
     writeFileSync(join(tmpdir_path, '.docpath', 'workspace', 'state.json'), JSON.stringify({
       level: 3,
       task_id: 'T-S1',
@@ -1023,6 +1023,7 @@ warned: false
     assert.match(out, /^state:/m);
     assert.match(out, /^phase:/m);
     assert.match(out, /^gate:/m);
+    assert.match(out, /^route_hint:/m);
     assert.doesNotMatch(out, /状态真源/);
   });
 

@@ -169,6 +169,56 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('write-spec rejects spec content that declares a different task id', () => {
+    const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+    const specPath = join(cwd, '.docpath', 'tasks', 'current', 'spec.md');
+    writeFileSync(specPath, '# T-WRITE - Existing Spec\n');
+    const spec = [
+      '# T-OTHER - Wrong Task',
+      '',
+      '## 1. 背景与动机',
+      '',
+      '不应写入旧任务目录。',
+      '',
+      '## 2. 需求清单',
+      '',
+      '### 功能需求',
+      '- [ ] FR-1: 阻断身份漂移',
+      '',
+      '### 非功能需求',
+      '- [ ] NFR-1: fail loud',
+      '',
+      '## 3. 范围界定',
+      '',
+      '### 包含',
+      '- artifact sink 身份校验',
+      '',
+      '### 不包含',
+      '- 自动切换任务',
+      '',
+      '## 4. 关键决策',
+      '',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | 任务身份 | 自动覆盖 / fail loud | fail loud | 防止污染 canonical evidence |',
+      '',
+      '## 5. 验收标准',
+      '',
+      '- [ ] AC-1: 不写入错误 task id',
+      '',
+    ].join('\n');
+
+    const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, spec);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /task identity mismatch/);
+    assert.match(result.out, /state\.task_id: T-WRITE/);
+    assert.match(result.out, /spec heading task_id: T-OTHER/);
+    assert.equal(readFileSync(specPath, 'utf-8'), '# T-WRITE - Existing Spec\n');
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.md')), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('write-plan writes plan.md and advances to go route', () => {
     const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
     const content = [

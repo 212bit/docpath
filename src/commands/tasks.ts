@@ -5,7 +5,7 @@
 import { existsSync } from 'fs';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState, syncCurrentDocument } from '../utils/workspace.js';
-import { detectActiveTaskFileDrift, syncActiveTaskFiles } from '../utils/task-files.js';
+import { detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatTaskIdentityDrift, syncActiveTaskFiles } from '../utils/task-files.js';
 
 interface TasksOptions {
   cwd: string;
@@ -27,6 +27,12 @@ export async function tasksCommand(options: TasksOptions): Promise<void> {
   }
 
   if (action === 'drift') {
+    const identityDrifts = await detectActiveTaskIdentityDrift(docpathDir, current.task_id);
+    if (identityDrifts.length > 0) {
+      console.log(`❌  ${formatTaskIdentityDrift(identityDrifts)}`);
+      throw new Error(`task identity drift detected: ${identityDrifts.map((drift) => `${drift.location}/${drift.file}`).join(', ')}`);
+    }
+
     const drifts = await detectActiveTaskFileDrift(docpathDir, current.task_id);
     if (drifts.length === 0) {
       console.log('✅  tasks/current 与 canonical 任务目录一致');

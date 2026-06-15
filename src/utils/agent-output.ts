@@ -1,8 +1,8 @@
 /**
  * Agent YAML output — 机器可读状态摘要
  *
- * 给 stats --agent 和 context --agent 共用。
- * 输出 state/next_action/recommended_command/required_context/must_update/exit_criteria。
+ * 给 status --agent 和 next --agent 共用。
+ * next 视图输出 active route；status 视图输出诊断快照，并将真实 route 降级为 route_hint。
  */
 
 import { stringify } from 'yaml';
@@ -13,7 +13,7 @@ import { parsePlanTasks, readCurrentMd, readOptionalFile } from './workspace.js'
 import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
 import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from './plan-sync.js';
-import { readActiveTaskFile } from './task-files.js';
+import { detectActiveTaskIdentityDrift, readActiveTaskFile, type TaskIdentityDrift } from './task-files.js';
 import { listBacklogItems, type BacklogItem } from '../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.js';
 import { readRuleFile, ruleDisplayPaths } from './rules.js';
@@ -43,6 +43,12 @@ export interface AgentOutput {
   next_action: string;
   /** 推荐的 docpath 命令 */
   recommended_command: string;
+  /** status 视图中的降级路线提示；next 视图直接使用 next_action/recommended_command。 */
+  route_hint?: {
+    next_action: string;
+    recommended_command: string;
+    exit_criteria: string;
+  };
   /** 快速修复建议（检测到常见错误时提供） */
   quick_fix?: string;
   /** 需要读取的上下文文件列表 */
@@ -67,6 +73,16 @@ export interface AgentOutput {
     plan_done_without_breadcrumb: string[];
     breadcrumb_done_without_plan: string[];
   };
+  /** task_id 与 spec 内容声明不一致的身份漂移摘要 */
+  identity_drift_summary?: string | null;
+  /** task identity drift 明细 */
+  identity_drift_details?: Array<{
+    file: string;
+    location: string;
+    expected_task_id: string;
+    declared_task_id: string;
+    path: string;
+  }>;
   /** 待学习 lesson 候选摘要 */
   lesson_summary: {
     pending_count: number;
@@ -312,6 +328,7 @@ type AgentOutputContext = {
   planTasks: Array<{ id: string; title: string; done: boolean }>;
   bc: BreadcrumbSummary;
   drift: PlanBreadcrumbDrift;
+  identityDrifts: TaskIdentityDrift[];
   backlogItems: BacklogItem[];
   pendingDone: Awaited<ReturnType<typeof readPendingDone>>;
   tddState: TddStateSnapshot | null;
@@ -720,6 +737,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   const rawBreadcrumb = await readBreadcrumb(cwd);
   const bc = summarizeCurrentTaskBreadcrumbs(rawBreadcrumb, state?.task_id || '');
   const drift = await detectPlanBreadcrumbDrift(cwd);
+  const identityDrifts = await detectActiveTaskIdentityDrift(docpathDir, state?.task_id || undefined);
   const backlogItems = await listBacklogItems(cwd);
   const pendingDone = await handleStalePendingDoneWarning(cwd, state, await readPendingDone(cwd));
   const tddState = parseTddState(await readOptionalFile(join(docpathDir, 'workspace', 'tdd-state.json')));
@@ -747,6 +765,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     planTasks,
     bc,
     drift,
+    identityDrifts,
     backlogItems,
     pendingDone,
     tddState,
@@ -767,6 +786,10 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
  */
 function generateQuickFix(context: AgentOutputContext): string | undefined {
   const { drift, state, planContent } = context;
+
+  if (context.identityDrifts.length > 0) {
+    return 'docpath tasks drift';
+  }
 
   // 1. plan 缺少 checklist
   if (planContent && !planContent.includes('## Checklist')) {
@@ -789,6 +812,22 @@ function generateQuickFix(context: AgentOutputContext): string | undefined {
 
 function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof inferNextAction> {
   const { pendingDone, state } = context;
+  if (context.identityDrifts.length > 0) {
+    const required = [
+      '.docpath/workspace/state.json',
+      '.docpath/tasks/current/spec.md',
+      ...(state?.task_id ? [`.docpath/tasks/${state.task_id}/spec.md`] : []),
+    ];
+    return {
+      next_action: '检测到 task identity drift：state.task_id 与 spec H1 声明的 task id 不一致，先恢复任务身份再继续',
+      recommended_command: 'docpath tasks drift',
+      required_context: required,
+      required_files: required,
+      must_update: ['.docpath/tasks/current/spec.md', ...(state?.task_id ? [`.docpath/tasks/${state.task_id}/spec.md`] : [])],
+      exit_criteria: 'state.task_id、current spec 与 canonical spec 声明同一个 task id；旧 breadcrumb 不再与新 plan 混用',
+    };
+  }
+
   const inferred = inferNextAction(
     state,
     context.bc,
@@ -867,15 +906,23 @@ export async function generateAgentOutput(
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
+    const routeHint = {
+      next_action: '运行 docpath init 初始化项目',
+      recommended_command: 'docpath init',
+      exit_criteria: '项目已初始化并生成 .docpath 工作流目录',
+    };
     // 无 .docpath 时返回最小状态
     return stringify({
       agent_view: view,
       agent_contract: view === 'status'
-        ? 'status_snapshot: read workflow state and health; recommended_command is a route hint'
+        ? 'status_snapshot: read workflow state and health; use route_hint or docpath next --agent for execution routing'
         : 'next_route: follow recommended_command unless the user explicitly redirects',
       state: 'uninitialized',
-      next_action: '运行 docpath init 初始化项目',
-      recommended_command: 'docpath init',
+      next_action: view === 'status'
+        ? '项目未初始化；需要执行路线时运行 docpath next --agent'
+        : routeHint.next_action,
+      recommended_command: view === 'status' ? 'docpath next --agent' : routeHint.recommended_command,
+      ...(view === 'status' ? { route_hint: routeHint } : {}),
       generated_at: new Date().toISOString(),
     });
   }
@@ -884,10 +931,31 @@ export async function generateAgentOutput(
   const inferred = inferRouteFromContext(context);
   const quickFix = generateQuickFix(context);
 
+  const routeFields = view === 'status'
+    ? {
+        next_action: '诊断当前工作流状态；需要执行路线时运行 docpath next --agent',
+        recommended_command: 'docpath next --agent',
+        route_hint: {
+          next_action: inferred.next_action,
+          recommended_command: inferred.recommended_command,
+          exit_criteria: inferred.exit_criteria,
+        },
+        required_context: [...inferred.required_context],
+        required_files: [...inferred.required_files],
+        must_update: [],
+        exit_criteria: '状态快照已读取；执行下一步前运行 docpath next --agent',
+      }
+    : {
+        ...inferred,
+        required_context: [...inferred.required_context],
+        required_files: [...inferred.required_files],
+        must_update: [...inferred.must_update],
+      };
+
   const output: AgentOutput = {
     agent_view: view,
     agent_contract: view === 'status'
-      ? 'status_snapshot: read workflow state, progress, drift, and health; recommended_command is a route hint'
+      ? 'status_snapshot: read workflow state, progress, drift, and health; use route_hint or docpath next --agent for execution routing'
       : 'next_route: use next_action and recommended_command as the active workflow route',
     state: context.state?.state || 'unknown',
     level: context.state?.level ?? null,
@@ -895,11 +963,8 @@ export async function generateAgentOutput(
     task_title: context.state?.task_title || '',
     phase: context.state?.phase || '',
     gate: context.state?.gate || 'none',
-    ...inferred,
+    ...routeFields,
     ...(quickFix ? { quick_fix: quickFix } : {}),
-    required_context: [...inferred.required_context],
-    required_files: [...inferred.required_files],
-    must_update: [...inferred.must_update],
     progress: {
       done: context.planTasks.filter((task) => task.done).length,
       total: context.planTasks.length,
@@ -911,6 +976,16 @@ export async function generateAgentOutput(
       plan_done_without_breadcrumb: [...context.drift.planDoneWithoutBreadcrumb],
       breadcrumb_done_without_plan: [...context.drift.breadcrumbDoneWithoutPlan],
     },
+    identity_drift_summary: context.identityDrifts.length > 0
+      ? `state.task_id 与 spec task id 不一致: ${context.identityDrifts.map((drift) => `${drift.location}:${drift.declaredTaskId}`).join(', ')}`
+      : null,
+    identity_drift_details: context.identityDrifts.map((drift) => ({
+      file: drift.file,
+      location: drift.location,
+      expected_task_id: drift.expectedTaskId,
+      declared_task_id: drift.declaredTaskId,
+      path: drift.path,
+    })),
     lesson_summary: {
       pending_count: context.lessonSummary.pendingCount,
       pending_keys: [...context.lessonSummary.pendingKeys],

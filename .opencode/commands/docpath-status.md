@@ -25,5 +25,5 @@ fi
 - `task_id` and `task_title`
 - `state`, `phase`, and `gate`
 - Progress counters and the current focus
-- `--agent`: machine-readable YAML with `next_action`, `recommended_command`, indexes, and `exit_criteria`
+- `--agent`: machine-readable diagnostic YAML. Its `recommended_command` points back to `docpath next --agent`; use `route_hint` only as a downgraded route preview.
 - Treat `required_context` and `required_files` as indexes, not instructions to read every file.

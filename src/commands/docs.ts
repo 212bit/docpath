@@ -93,13 +93,13 @@ function generateDocsMd(entries: ProjectDocumentIndexEntry[]): string {
     '',
     '## 文档列表',
     '',
-    '| 路径 | type | scope | level | default_read | archive | tokens | task_id | 标题 | 摘要 | 更新时间 | 大小 |',
-    '|------|------|-------|-------|--------------|---------|--------|---------|------|------|----------|------|',
+    '| 路径 | type | scope | level | default_read | archive | stale | tokens | task_id | 标题 | 摘要 | 更新时间 | 大小 |',
+    '|------|------|-------|-------|--------------|---------|-------|--------|---------|------|------|----------|------|',
   ];
 
   for (const entry of entries) {
     lines.push(
-      `| ${entry.path} | ${entry.type} | ${entry.scope} | ${entry.level} | ${entry.default_read} | ${entry.archive} | ${entry.token_estimate} | ${entry.task_id || ''} | ${entry.title} | ${entry.summary} | ${entry.updated_at} | ${formatSize(entry.size)} |`
+      `| ${entry.path} | ${entry.type} | ${entry.scope} | ${entry.level} | ${entry.default_read} | ${entry.archive} | ${entry.stale === true} | ${entry.token_estimate} | ${entry.task_id || ''} | ${entry.title} | ${entry.summary} | ${entry.updated_at} | ${formatSize(entry.size)} |`
     );
   }
 
@@ -111,6 +111,7 @@ function generateDocsMd(entries: ProjectDocumentIndexEntry[]): string {
   lines.push('- **level**: 渐进式披露层级 (0|1|2|3)');
   lines.push('- **default_read**: 默认上下文允许读取的高信号文档；归档、模板、大日志默认 false');
   lines.push('- **archive**: 历史归档或大日志，只应通过 topic/task-id/include-archive 按需展开');
+  lines.push('- **stale**: 超过归档老化阈值的历史条目；保留索引但默认不展开正文');
   lines.push('- **tokens**: 粗略 token 估算，用于预算门禁和上下文裁剪');
   lines.push('- **title**: 文档标题或用途');
   lines.push('- **summary**: 文档首段摘要');
@@ -161,12 +162,11 @@ async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<P
       hasPreferredRules,
     });
 
-    // R-179: 物理移除 180 天前的归档条目（跳过不索引）
+    // R-179: 180 天前的归档条目标记为 stale，但继续索引，保证显式 task-id 可发现。
     if (entry.archive) {
       const age = now - fileStat.mtime.getTime();
       if (age > ARCHIVE_AGE_THRESHOLD) {
-        // 跳过此归档条目，不添加到索引中
-        continue;
+        entry.stale = true;
       }
     }
 
@@ -256,7 +256,7 @@ async function docsAdd(cwd: string, args: string[]): Promise<void> {
   const lines = content.split('\n');
   const tableEnd = lines.findIndex((line, i) => i > 5 && !line.startsWith('|'));
 
-  const newLine = `| ${docPath} | ${kind} | ${scope} | ${level} | false | false | 0 |  | ${basename(docPath, extname(docPath))} | - | ${formatDate(new Date())} | - |`;
+  const newLine = `| ${docPath} | ${kind} | ${scope} | ${level} | false | false | false | 0 |  | ${basename(docPath, extname(docPath))} | - | ${formatDate(new Date())} | - |`;
 
   if (tableEnd > 0) {
     lines.splice(tableEnd, 0, newLine);
