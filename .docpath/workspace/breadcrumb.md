@@ -5,104 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🔄 S3 [T-20260615-workspace] — 2026-06-15T02:43:30.086Z
-
----
-taskId: T-20260615-workspace
-step: S3
-status: in_progress
-timestamp: 2026-06-15T02:43:30.086Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 将 `docpath gc` 接入 workspace cleanup dry-run/force
-- **Session**: default
-
-### ✅ S3 [T-20260615-workspace] — 2026-06-15T02:45:43.974Z
-
----
-taskId: T-20260615-workspace
-step: S3
-status: done
-timestamp: 2026-06-15T02:45:43.974Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-- **Session**: default
-
-### 🔄 S4 [T-20260615-workspace] — 2026-06-15T02:45:52.801Z
-
----
-taskId: T-20260615-workspace
-step: S4
-status: in_progress
-timestamp: 2026-06-15T02:45:52.801Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 将 `compact --cleanup` 复用同一 cleanup engine
-- **Session**: default
-
-### ✅ S4 [T-20260615-workspace] — 2026-06-15T02:45:59.315Z
-
----
-taskId: T-20260615-workspace
-step: S4
-status: done
-timestamp: 2026-06-15T02:45:59.315Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-- **Session**: default
-
-### 🔄 S5 [T-20260615-workspace] — 2026-06-15T02:46:06.450Z
-
----
-taskId: T-20260615-workspace
-step: S5
-status: in_progress
-timestamp: 2026-06-15T02:46:06.450Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 补齐自动化测试
-- **Session**: default
-
-### ✅ S5 [T-20260615-workspace] — 2026-06-15T02:47:17.994Z
-
----
-taskId: T-20260615-workspace
-step: S5
-status: done
-timestamp: 2026-06-15T02:47:17.994Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S5
-- **Session**: default
-
-### 🔄 S6 [T-20260615-workspace] — 2026-06-15T02:47:31.416Z
-
----
-taskId: T-20260615-workspace
-step: S6
-status: in_progress
-timestamp: 2026-06-15T02:47:31.416Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 更新文档与 agent-facing 语义
-- **Session**: default
-
 ### ✅ S6 [T-20260615-workspace] — 2026-06-15T02:50:01.637Z
 
 ---
@@ -676,3 +578,95 @@ timestamp: 2026-06-15T05:07:31.773Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (5/5 步)
+
+### 🔄 S1 [T-20260615-docs-index] — 2026-06-15T07:07:09.249Z
+
+---
+taskId: T-20260615-docs-index
+step: S1
+status: in_progress
+timestamp: 2026-06-15T07:07:09.249Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 梳理 docs-index 归档策略 — 物理移除旧条目
+- **Session**: default
+
+### ✅ S1 [T-20260615-docs-index] — 2026-06-15T07:10:48.344Z
+
+---
+taskId: T-20260615-docs-index
+step: S1
+status: done
+timestamp: 2026-06-15T07:10:48.344Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260615-docs-index] — 2026-06-15T07:11:02.038Z
+
+---
+taskId: T-20260615-docs-index
+step: S2
+status: in_progress
+timestamp: 2026-06-15T07:11:02.038Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 实现 docs-index 归档策略 — 物理移除旧条目
+- **Session**: default
+
+### ✅ S2 [T-20260615-docs-index] — 2026-06-15T07:47:35.603Z
+
+---
+taskId: T-20260615-docs-index
+step: S2
+status: done
+timestamp: 2026-06-15T07:47:35.603Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### ✅ check [T-20260615-docs-index] — 2026-06-15T07:48:43.798Z
+
+---
+taskId: T-20260615-docs-index
+step: check
+status: done
+timestamp: 2026-06-15T07:48:43.798Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (10 项)
+
+### ✅ review [T-20260615-docs-index] — 2026-06-15T07:48:52.782Z
+
+---
+taskId: T-20260615-docs-index
+step: review
+status: done
+timestamp: 2026-06-15T07:48:52.782Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 2 警告, 0 提示
+
+### ✅ journal [T-20260615-docs-index] — 2026-06-15T07:49:00.072Z
+
+---
+taskId: T-20260615-docs-index
+step: journal
+status: done
+timestamp: 2026-06-15T07:49:00.072Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (2/2 步)

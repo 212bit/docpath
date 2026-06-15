@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-15T05:07:31.769Z
+> 扫描时间: 2026-06-15T07:49:00.070Z
 
 ## 条目列表
 
@@ -32,7 +32,7 @@
 | R-168 | 建立 backlog 需求成熟度门禁与 spec 回填闭环 | done | P0 | 3 | T-20260614-backlog-spec |
 | R-170 | 收紧文档索引生成视图与空任务路由边界 | done | P0 | 3 | T-20260614-task |
 | R-178 | workspace 老化策略 — 实现自动清理 | done | P0 | 2 | T-20260615-workspace |
-| R-179 | docs-index 归档策略 — 物理移除旧条目 | proposed | P0 | 2 |  |
+| R-179 | docs-index 归档策略 — 物理移除旧条目 | done | P0 | 2 | T-20260615-docs-index |
 | R-183 | Worktree 真并发开发支持 — 基础设施 | done | P0 | 3 | T-20260615-worktree |
 | R-010 | 需求管理 / Backlog 层 | done | P1 | 2 | current |
 | R-011 | 实现 write-plan / write-journal 命令并打通断头引用 | done | P1 | 2 | T-20260531-write-plan-write-journal |

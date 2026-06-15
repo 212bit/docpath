@@ -10,8 +10,12 @@ import { readFile, readdir, writeFile, stat } from 'fs/promises';
 import { join, relative, extname, basename } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import {
+  ARCHIVE_RETENTION_DAYS,
   PROJECT_DOCS_INDEX_VERSION,
   buildProjectDocumentEntry,
+  isArchiveDocumentExpired,
+  isProjectDocumentScanExcludedPath,
+  normalizeDocPath,
   type ProjectDocumentIndexEntry,
 } from '../utils/document-index.js';
 
@@ -52,16 +56,16 @@ async function scanDirectory(dir: string, baseDir: string): Promise<string[]> {
 
     for (const entry of entries) {
       const fullPath = join(dir, entry.name);
-      const relativePath = relative(baseDir, fullPath);
+      const relativePath = normalizeDocPath(relative(baseDir, fullPath));
 
       if (entry.isDirectory()) {
         // 跳过 node_modules 和隐藏目录
         if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-        // R-179: 跳过运行时目录（workspace/commands/bin/ 等）
-        if (relativePath === 'workspace/commands' || relativePath === 'workspace/bin' || relativePath === 'workspace/leases' || relativePath === 'workspace/sessions') continue;
+        if (isProjectDocumentScanExcludedPath(relativePath)) continue;
         const subResults = await scanDirectory(fullPath, baseDir);
         results.push(...subResults);
       } else if (entry.isFile() && extname(entry.name) === '.md') {
+        if (isProjectDocumentScanExcludedPath(relativePath)) continue;
         results.push(relativePath);
       }
     }
@@ -111,7 +115,7 @@ function generateDocsMd(entries: ProjectDocumentIndexEntry[]): string {
   lines.push('- **level**: 渐进式披露层级 (0|1|2|3)');
   lines.push('- **default_read**: 默认上下文允许读取的高信号文档；归档、模板、大日志默认 false');
   lines.push('- **archive**: 历史归档或大日志，只应通过 topic/task-id/include-archive 按需展开');
-  lines.push('- **stale**: 超过归档老化阈值的历史条目；保留索引但默认不展开正文');
+  lines.push(`- **stale**: 兼容字段；新 scan 会物理排除超过 ${ARCHIVE_RETENTION_DAYS} 天的 archive 条目`);
   lines.push('- **tokens**: 粗略 token 估算，用于预算门禁和上下文裁剪');
   lines.push('- **title**: 文档标题或用途');
   lines.push('- **summary**: 文档首段摘要');
@@ -145,7 +149,6 @@ async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<P
   const currentTaskId = await readCurrentTaskId(docpathDir);
   const hasPreferredRules = existsSync(join(docpathDir, 'rules'));
   const now = Date.now();
-  const ARCHIVE_AGE_THRESHOLD = 180 * 24 * 60 * 60 * 1000; // 180 天
 
   for (const file of mdFiles) {
     const fullPath = join(docpathDir, file);
@@ -162,12 +165,8 @@ async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<P
       hasPreferredRules,
     });
 
-    // R-179: 180 天前的归档条目标记为 stale，但继续索引，保证显式 task-id 可发现。
-    if (entry.archive) {
-      const age = now - fileStat.mtime.getTime();
-      if (age > ARCHIVE_AGE_THRESHOLD) {
-        entry.stale = true;
-      }
+    if (entry.archive && isArchiveDocumentExpired(fileStat.mtime, now)) {
+      continue;
     }
 
     entries.push(entry);
@@ -180,20 +179,45 @@ async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentInde
   const docsIndexPath = join(docpathDir, 'docs-index.json');
   const docsMdPath = join(docpathDir, 'docs.md');
 
-  await writeFile(docsIndexPath, JSON.stringify({
+  const compactEntries = entries.map(compactIndexEntry);
+  await writeFile(docsIndexPath, `${JSON.stringify({
     version: PROJECT_DOCS_INDEX_VERSION,
     generated_at: new Date().toISOString(),
     policy: {
       mode: 'index-first',
       default_context_token_budget: 15000,
       archive_body_requires: ['--topic', '--task-id', '--include-archive'],
+      archive_retention_days: ARCHIVE_RETENTION_DAYS,
     },
-    entries,
-  }, null, 2), 'utf-8');
+    entries: compactEntries,
+  })}\n`, 'utf-8');
   // 保留 docs.md 作为人类可读兼容索引；机器读取以 docs-index.json 为准。
   await writeFile(docsMdPath, generateDocsMd(entries), 'utf-8');
 
   return docsIndexPath;
+}
+
+function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unknown> {
+  const compact: Record<string, unknown> = {
+    path: entry.path,
+    type: entry.type,
+    scope: entry.scope,
+    level: entry.level,
+    title: entry.title,
+    summary: entry.summary.slice(0, 140),
+    updated_at: entry.updated_at,
+    size: entry.size,
+    token_estimate: entry.token_estimate,
+    default_read: entry.default_read,
+    archive: entry.archive,
+  };
+
+  if (entry.task_id) compact.task_id = entry.task_id;
+  if (entry.generated_view === true) compact.generated_view = true;
+  if (entry.index_only === true) compact.index_only = true;
+  if (entry.stale === true) compact.stale = true;
+
+  return compact;
 }
 
 /** docs scan — 扫描文档生成索引 */

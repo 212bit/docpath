@@ -15,6 +15,7 @@ import { readActiveTaskFile } from '../utils/task-files.js';
 import { compactRuleContent, readRuleFile } from '../utils/rules.js';
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
+  assertDocumentIndexContainsTaskId,
   documentIndexStats,
   estimateTokens,
   isIndexOnlyDocument,
@@ -123,15 +124,12 @@ async function renderIndexedDocs(
   selection: DocumentSelectionOptions,
 ): Promise<string[]> {
   const entries = await readDocsIndexSafe(docpathDir, selection.currentTaskId);
+  assertDocumentIndexContainsTaskId(docpathDir, entries, selection.taskId);
   if (entries.length === 0) return [];
 
   const sections: string[] = [];
   const summary = renderDocsIndexSummary(entries, selection);
   if (summary) sections.push(summary);
-
-  if (selection.taskId && !entries.some((entry) => entry.task_id === selection.taskId)) {
-    throw new Error(`未在 docs-index 中找到 task_id: ${selection.taskId}`);
-  }
 
   const sorted = sortDocumentEntries(entries)
     .filter((entry) => entry.path.endsWith('.md') && entry.path !== 'docs.md')

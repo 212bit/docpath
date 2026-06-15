@@ -80,7 +80,7 @@ describe('structured docs index', () => {
     assert.equal(specEntry.archive, false);
     assert.equal(specEntry.task_id, 'T-DOCS');
     assert.equal(typeof specEntry.token_estimate, 'number');
-    assert.ok(Array.isArray(specEntry.topic_tags));
+    assert.equal(specEntry.topic_tags, undefined, 'generated docs-index omits inferred topic tags for compactness');
     const canonicalSpec = index.entries.find((entry) => entry.path === 'tasks/T-DOCS/spec.md');
     assert.equal(canonicalSpec?.task_id, 'T-DOCS');
     assert.equal(canonicalSpec?.default_read, false);
@@ -118,6 +118,24 @@ describe('structured docs index', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('docs scan keeps fresh archived tasks available for explicit task-id lookups', () => {
+    const cwd = mkWorkspace();
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    const index = JSON.parse(readFileSync(join(cwd, '.docpath', 'docs-index.json'), 'utf-8'));
+    const archiveEntry = index.entries.find((entry) => entry.path === 'tasks/done/T-OLD/notes.md');
+    assert.ok(archiveEntry, 'fresh archived task should stay in docs-index');
+    assert.equal(archiveEntry.archive, true);
+    assert.equal(archiveEntry.default_read, false);
+
+    const output = run(`context --cwd ${cwd} --format raw --max-tokens 900 --task-id T-OLD`, cwd);
+
+    assert.match(output, /按需展开文档片段/);
+    assert.match(output, /path: tasks\/done\/T-OLD\/notes.md/);
+    assert.match(output, /Old archived notes should be lower priority/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('context expands archived task bodies only when task-id is explicit', () => {
     const cwd = mkWorkspace();
     run(`docs scan --cwd ${cwd}`, cwd);
@@ -130,7 +148,7 @@ describe('structured docs index', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('keeps stale archived tasks discoverable for explicit task-id lookups', () => {
+  it('physically removes expired archived tasks and fails loudly for explicit task-id lookups', () => {
     const cwd = mkWorkspace();
     const oldNotesPath = join(cwd, '.docpath', 'tasks', 'done', 'T-OLD', 'notes.md');
     const oldDate = new Date('2025-01-01T00:00:00.000Z');
@@ -139,17 +157,48 @@ describe('structured docs index', () => {
     run(`docs scan --cwd ${cwd}`, cwd);
 
     const index = JSON.parse(readFileSync(join(cwd, '.docpath', 'docs-index.json'), 'utf-8'));
-    const staleEntry = index.entries.find((entry) => entry.path === 'tasks/done/T-OLD/notes.md');
-    assert.ok(staleEntry, 'stale archived task should stay discoverable in docs-index');
-    assert.equal(staleEntry.archive, true);
-    assert.equal(staleEntry.default_read, false);
-    assert.equal(staleEntry.stale, true);
+    const expiredEntry = index.entries.find((entry) => entry.path === 'tasks/done/T-OLD/notes.md');
+    assert.equal(expiredEntry, undefined, 'expired archived task should be physically removed from docs-index');
     const docsMd = readFileSync(join(cwd, '.docpath', 'docs.md'), 'utf-8');
-    assert.match(docsMd, /\| tasks\/done\/T-OLD\/notes\.md \| runbook \| task \| 3 \| false \| true \| true \|/);
+    assert.doesNotMatch(docsMd, /tasks\/done\/T-OLD\/notes\.md/);
 
-    const output = run(`context --cwd ${cwd} --format raw --max-tokens 900 --task-id T-OLD`, cwd);
-    assert.match(output, /path: tasks\/done\/T-OLD\/notes.md/);
-    assert.match(output, /Old archived notes should be lower priority/);
+    const contextResult = runResult(`context --cwd ${cwd} --format raw --max-tokens 900 --task-id T-OLD`, cwd);
+    assert.equal(contextResult.ok, false);
+    assert.match(contextResult.output, /已超出 docs-index 180 天保留窗口/);
+    assert.match(contextResult.output, /物理移除索引/);
+    assert.doesNotMatch(contextResult.output, /索引损坏/);
+
+    const revealResult = runResult(`reveal --cwd ${cwd} --level 2 --format raw --task-id T-OLD`, cwd);
+    assert.equal(revealResult.ok, false);
+    assert.match(revealResult.output, /已超出 docs-index 180 天保留窗口/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('docs scan excludes runtime workspace directories', () => {
+    const cwd = mkWorkspace();
+    const dp = join(cwd, '.docpath');
+    for (const dir of ['commands', 'bin', 'leases', 'sessions']) {
+      const nested = join(dp, 'workspace', dir, 'nested');
+      mkdirSync(nested, { recursive: true });
+      writeFileSync(join(nested, 'runtime.md'), `# Runtime ${dir}\n\nRuntime file should not be indexed.\n`);
+    }
+
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    const index = JSON.parse(readFileSync(join(cwd, '.docpath', 'docs-index.json'), 'utf-8'));
+    const indexedPaths = index.entries.map((entry) => entry.path);
+    for (const dir of ['commands', 'bin', 'leases', 'sessions']) {
+      assert.equal(
+        indexedPaths.some((path) => path.startsWith(`workspace/${dir}/`)),
+        false,
+        `workspace/${dir} should be excluded from docs scan`,
+      );
+    }
+    const docsMd = readFileSync(join(cwd, '.docpath', 'docs.md'), 'utf-8');
+    assert.doesNotMatch(docsMd, /workspace\/commands\/nested\/runtime\.md/);
+    assert.doesNotMatch(docsMd, /workspace\/bin\/nested\/runtime\.md/);
+    assert.doesNotMatch(docsMd, /workspace\/leases\/nested\/runtime\.md/);
+    assert.doesNotMatch(docsMd, /workspace\/sessions\/nested\/runtime\.md/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

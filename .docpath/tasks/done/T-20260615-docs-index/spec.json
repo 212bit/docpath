@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-15T07:06:01.591Z",
+    "updated_at": "2026-06-15T07:06:01.591Z",
+    "content_sha256": "1b360a20278933830b9d303a62945961eb1e36d014ae0bffd4fcd5f30f8ac651"
+  },
+  "task_id": "T-20260615-docs-index",
+  "backlog_id": "R-179",
+  "title": "T-20260615-docs-index - docs-index 归档策略 — 物理移除旧条目",
+  "markdown": "# T-20260615-docs-index - docs-index 归档策略 — 物理移除旧条目\n\n> backlog_id: R-179\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\n## 背景\n\n当前 docs-index.json 约 462KB/16392 行，docs.md 约 144KB。现有 docs scan 只把 180 天前的 archive 条目标记 stale，context/reveal 并不消费 stale 字段，因此旧归档条目继续占用 docs-index 体积。scan 已部分排除 workspace/commands、workspace/bin、workspace/leases、workspace/sessions，但仍需要测试锁定。INDEX.md 已声明为唯一入口并废弃 docs.md，而 docs scan 仍生成 docs.md 兼容视图，导致双索引继续增长。\n\n## 验收\n\n1. docs scan 物理排除超过 180 天的 archive 条目，不再写入 docs-index.json 和 docs.md。2. 显式 --task-id 查询被物理移除的旧任务时必须 fail-loud 并提示归档已超出 docs-index 保留窗口，而不是误导为索引损坏。3. scan 排除 workspace/commands、workspace/bin、workspace/leases、workspace/sessions 等运行态目录，并有测试覆盖。4. INDEX.md 顶部继续声明唯一入口，docs.md 只作为兼容生成视图或停止生成的决策需在 Decision Brief 中确认。5. docs-index.json 重新 scan 后小于 200KB。6. 测试覆盖旧 archive 物理移除、未过期 archive 保留、运行态目录排除、context/reveal 对被移除 task-id 的错误信息。\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: docs-index 归档策略 — 物理移除旧条目\n  - 来源 backlog: R-179\n\n### 非功能需求\n- [ ] NFR-1: 保持与现有 DocPath 工作流兼容\n\n## 3. 范围界定\n\n### 包含\n- docs-index 归档策略 — 物理移除旧条目\n\n### 不包含\n- 待在后续规划中补充\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [ ] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [ ] 工作流 / Agent 行为\n- [ ] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### Decision Brief\n- 当前问题:\n- 目标:\n- 背景:\n- 可选方案:\n- 推荐方案:\n- 不做什么:\n- 成本:\n- 风险:\n- 回滚方案:\n- 用户确认:\n\n## 5. 验收标准\n\n- [ ] AC-1: 生成的 spec 可直接进入 `docpath plan`\n- [ ] AC-2: backlog 条目 R-179 与任务 T-20260615-docs-index 建立双向关联\n\n---\n\n*此文件由 `docpath backlog promote` 生成。*\n",
+  "generated_at": "2026-06-15T07:06:01.591Z",
+  "scope": {
+    "included": [
+      "docs-index 归档策略 — 物理移除旧条目"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": "- 当前问题:\n- 目标:\n- 背景:\n- 可选方案:\n- 推荐方案:\n- 不做什么:\n- 成本:\n- 风险:\n- 回滚方案:\n- 用户确认:"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "docs-index 归档策略 — 物理移除旧条目",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-179 与任务 T-20260615-docs-index 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题:\n- 目标:\n- 背景:\n- 可选方案:\n- 推荐方案:\n- 不做什么:\n- 成本:\n- 风险:\n- 回滚方案:\n- 用户确认:"
+}

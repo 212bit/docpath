@@ -4,6 +4,14 @@ import { basename, extname, join, resolve, sep } from 'node:path';
 
 export const PROJECT_DOCS_INDEX_VERSION = 1;
 export const DEFAULT_CONTEXT_TOKEN_BUDGET = 15000;
+export const ARCHIVE_RETENTION_DAYS = 180;
+export const ARCHIVE_RETENTION_MS = ARCHIVE_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+export const PROJECT_DOCS_SCAN_EXCLUDED_DIRS = [
+  'workspace/commands',
+  'workspace/bin',
+  'workspace/leases',
+  'workspace/sessions',
+];
 
 export interface ProjectDocumentIndexEntry {
   path: string;
@@ -71,6 +79,11 @@ export function normalizeDocPath(filePath: string): string {
     .replace(/^\/+/, '');
 }
 
+export function isProjectDocumentScanExcludedPath(filePath: string): boolean {
+  const normalized = normalizeDocPath(filePath);
+  return PROJECT_DOCS_SCAN_EXCLUDED_DIRS.some((excluded) => normalized === excluded || normalized.startsWith(`${excluded}/`));
+}
+
 export function estimateTokens(text: string): number {
   const cjk = (text.match(/[\u4e00-\u9fff]/g) || []).length;
   const ascii = text.length - cjk;
@@ -118,6 +131,32 @@ export function isArchiveDocPath(filePath: string): boolean {
     || normalized.startsWith('workspace/journal/')
     || normalized === 'workspace/decisions.md'
     || normalized === 'workspace/check-history.md';
+}
+
+export function isArchiveDocumentExpired(mtime: Date, now = Date.now()): boolean {
+  return now - mtime.getTime() > ARCHIVE_RETENTION_MS;
+}
+
+export function formatMissingTaskIdMessage(docpathDir: string, taskId: string): string {
+  const archivedTaskDir = join(docpathDir, 'tasks', 'done', taskId);
+  if (existsSync(archivedTaskDir)) {
+    return [
+      `task_id ${taskId} 的归档文档已超出 docs-index ${ARCHIVE_RETENTION_DAYS} 天保留窗口，已被 docs scan 物理移除索引。`,
+      '这不是 docs-index 损坏；默认索引只保留窗口内归档以控制上下文体积。',
+      `如需人工追溯，请直接读取 .docpath/tasks/done/${taskId}/，或调整保留策略后重新运行 docpath docs scan。`,
+    ].join('\n');
+  }
+  return `未在 docs-index 中找到 task_id: ${taskId}`;
+}
+
+export function assertDocumentIndexContainsTaskId(
+  docpathDir: string,
+  entries: ProjectDocumentIndexEntry[],
+  taskId: string | undefined,
+): void {
+  if (!taskId) return;
+  if (entries.some((entry) => entry.task_id === taskId)) return;
+  throw new Error(formatMissingTaskIdMessage(docpathDir, taskId));
 }
 
 export function isGeneratedViewDocPath(filePath: string): boolean {
@@ -304,7 +343,8 @@ export async function readProjectDocumentIndex(
     generated_at: parsed.generated_at || '',
     entries: rawEntries
       .filter((entry): entry is ProjectDocumentIndexEntry => !!entry && typeof entry.path === 'string')
-      .map((entry) => normalizeProjectDocumentEntry(entry, currentTaskId, hasPreferredRules)),
+      .map((entry) => normalizeProjectDocumentEntry(entry, currentTaskId, hasPreferredRules))
+      .filter((entry) => entry.stale !== true),
   };
 }
 
@@ -417,13 +457,16 @@ async function collectMarkdownFiles(dir: string, baseDir: string): Promise<strin
 
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
+    const relativePath = normalizeDocPath(fullPath.slice(baseDir.length + 1));
     if (entry.isDirectory()) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+      if (isProjectDocumentScanExcludedPath(relativePath)) continue;
       results.push(...await collectMarkdownFiles(fullPath, baseDir));
       continue;
     }
     if (entry.isFile() && extname(entry.name) === '.md') {
-      results.push(normalizeDocPath(fullPath.slice(baseDir.length + 1)));
+      if (isProjectDocumentScanExcludedPath(relativePath)) continue;
+      results.push(relativePath);
     }
   }
   return results;

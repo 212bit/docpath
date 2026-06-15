@@ -22,6 +22,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { getRecentDecisions } from '../governance/decisions.js';
 import { compactRuleContent, readRuleFile } from '../utils/rules.js';
 import {
+  assertDocumentIndexContainsTaskId,
   documentIndexStats,
   estimateTokens,
   isIndexOnlyDocument,
@@ -165,9 +166,7 @@ async function renderDocumentSnippets(
   const snippets: string[] = [];
   let remaining = 9000;
 
-  if (selection.taskId && !entries.some((entry) => entry.task_id === selection.taskId)) {
-    throw new Error(`未在 docs-index 中找到 task_id: ${selection.taskId}`);
-  }
+  assertDocumentIndexContainsTaskId(docpathDir, entries, selection.taskId);
 
   for (const entry of selected) {
     if (remaining <= 0) break;
@@ -325,6 +324,7 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
 
     // 结构化文档索引
     const docsIndex = await readDocsIndex(docpathDir, current?.task_id);
+    assertDocumentIndexContainsTaskId(docpathDir, docsIndex, selection.taskId);
     if (docsIndex.length > 0) {
       sections.push(
         header('📚', `文档索引 (docs-index: ${selectionLabel(selection)})`) + '\n' +
