@@ -75,6 +75,68 @@ docpath agent handoff
   recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by
   default.
 
+## Worktree Concurrent Development
+
+DocPath supports true concurrent development via Git Worktrees. Use when multiple
+agents need to develop different features simultaneously without conflicts.
+
+### When to Use Worktrees
+
+Use `docpath worktree create <name>` when:
+- User explicitly requests concurrent development
+- Developing Feature A while another agent/session develops Feature B
+- Need complete isolation (separate workspace/, tasks/, state)
+
+Do NOT use worktrees for:
+- Single-agent sequential development (use normal workflow)
+- Quick testing or verification (use session isolation with DOCPATH_SESSION)
+
+### Worktree Workflow
+
+```bash
+# Create worktree for Feature A
+docpath worktree create feature-a
+cd .worktrees/feature-a
+
+# Set session ID (optional but recommended)
+export DOCPATH_SESSION=codex
+
+# Standard DocPath workflow
+docpath backlog promote R-xxx
+docpath agent enter
+docpath agent step --step S1
+# ... develop ...
+docpath check
+git commit
+
+# Merge back to main
+cd ../../
+git merge feature-a
+docpath worktree remove feature-a
+```
+
+### Worktree Isolation
+
+**Shared resources** (via symlink):
+- `.docpath/backlog/` - needs global view
+- `.docpath/rules/` - consistent rules across worktrees
+
+**Isolated resources** (independent):
+- `.docpath/workspace/` - each worktree has its own state.json
+- `.docpath/tasks/` - each worktree has its own tasks
+- `.docpath/journal/` - independent archives
+
+**Result**: Each worktree runs as an independent DocPath workspace, sharing only
+the requirement pool and rules.
+
+### Commands
+
+- `docpath worktree list` - list all worktrees
+- `docpath worktree create <name>` - create new worktree
+- `docpath worktree remove <name>` - delete worktree
+
+See `docs/features/worktree-workflow.md` for detailed usage guide.
+
 ## Linked Project
 
 Linked to: **docpath**
