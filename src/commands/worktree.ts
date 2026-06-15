@@ -152,11 +152,46 @@ async function worktreeList(cwd: string): Promise<void> {
   for (const wt of worktrees) {
     const isBare = wt.bare ? ' (bare)' : '';
     const branch = wt.detached ? `detached at ${wt.head.substring(0, 7)}` : wt.branch;
-    console.log(`  • ${wt.path}`);
+    const isMain = wt.path === cwd;
+    const label = isMain ? '(main)' : '';
+
+    console.log(`  • ${wt.path} ${label}`);
     console.log(`    branch: ${branch}${isBare}`);
+
+    // 显示 DocPath 状态
+    const stateInfo = await getWorktreeState(wt.path);
+    if (stateInfo) {
+      console.log(`    docpath: ${stateInfo}`);
+    }
   }
   console.log('');
 }
+
+/**
+ * 获取 worktree 的 DocPath 状态
+ */
+async function getWorktreeState(worktreePath: string): Promise<string | null> {
+  try {
+    const { readFile } = await import('node:fs/promises');
+    const stateJsonPath = join(worktreePath, '.docpath', 'workspace', 'state.json');
+
+    if (!existsSync(stateJsonPath)) {
+      return 'idle (no active task)';
+    }
+
+    const content = await readFile(stateJsonPath, 'utf-8');
+    const state = JSON.parse(content) as { task_id?: string; phase?: string };
+
+    if (!state.task_id) {
+      return 'idle (no active task)';
+    }
+
+    return `${state.task_id} (${state.phase || 'unknown'})`;
+  } catch {
+    return null;
+  }
+}
+
 
 /**
  * worktree remove <name> — 删除 worktree
