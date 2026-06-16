@@ -1,21 +1,5 @@
 [
   {
-    "timestamp": "2026-06-14T15:21:15.931Z",
-    "passed": true,
-    "failedChecks": [],
-    "gitRef": "ad64d4cead961708ece8db35a7b6b7739f8362a5",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-14T15:25:41.227Z",
-    "passed": true,
-    "failedChecks": [],
-    "gitRef": "ad64d4cead961708ece8db35a7b6b7739f8362a5",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
     "timestamp": "2026-06-14T15:51:15.482Z",
     "passed": false,
     "failedChecks": [
@@ -255,6 +239,22 @@
     "passed": true,
     "failedChecks": [],
     "gitRef": "8602bf3a4db2c1b47d88a826ee336095993d1a1d",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-16T06:42:52.867Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "331469749f83a4e227b3ed57004d4d7511d5f54a",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-16T06:44:16.057Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "331469749f83a4e227b3ed57004d4d7511d5f54a",
     "branch": "main",
     "worktreeDirty": true
   }

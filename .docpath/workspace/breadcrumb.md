@@ -5,242 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🔄 S2 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:48:22.760Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S2
-status: in_progress
-timestamp: 2026-06-16T02:48:22.760Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 `docpath start <step>` 命令
-- **Session**: default
-
-### ✅ S2 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:50:06.960Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S2
-status: done
-timestamp: 2026-06-16T02:50:06.960Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### 🔄 S3 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:50:36.149Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S3
-status: in_progress
-timestamp: 2026-06-16T02:50:36.149Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 `docpath step` 子命令族（done/blocked/skipped）
-- **Session**: default
-
-### ✅ S3 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:52:02.273Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S3
-status: done
-timestamp: 2026-06-16T02:52:02.273Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-- **Session**: default
-
-### 🔄 S4 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:52:16.728Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S4
-status: in_progress
-timestamp: 2026-06-16T02:52:16.728Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 `docpath done` 任务完成命令
-- **Session**: default
-
-### ✅ S4 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:53:17.740Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S4
-status: done
-timestamp: 2026-06-16T02:53:17.740Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-- **Session**: default
-
-### 🔄 S5 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:53:24.216Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S5
-status: in_progress
-timestamp: 2026-06-16T02:53:24.216Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现恢复命令（resume/retry/unblock）
-- **Session**: default
-
-### ✅ S5 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:58:01.499Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S5
-status: done
-timestamp: 2026-06-16T02:58:01.499Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S5
-- **Session**: default
-
-### 🔄 S6 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:58:09.821Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S6
-status: in_progress
-timestamp: 2026-06-16T02:58:09.821Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 更新 `next --agent` 推荐逻辑
-- **Session**: default
-
-### ✅ S6 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:00:47.782Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S6
-status: done
-timestamp: 2026-06-16T03:00:47.782Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S6
-- **Session**: default
-
-### 🔄 S7 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:01:22.830Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S7
-status: in_progress
-timestamp: 2026-06-16T03:01:22.830Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 添加命令元数据和帮助文档
-- **Session**: default
-
-### ✅ S7 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:02:03.963Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S7
-status: done
-timestamp: 2026-06-16T03:02:03.963Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S7
-- **Session**: default
-
-### 🔄 S8 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:02:17.590Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S8
-status: in_progress
-timestamp: 2026-06-16T03:02:17.590Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 编写focused regression tests
-- **Session**: default
-
-### ✅ S8 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:24:36.805Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S8
-status: done
-timestamp: 2026-06-16T03:24:36.805Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S8
-- **Session**: default
-
-### 🔄 S9 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:25:44.907Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S9
-status: in_progress
-timestamp: 2026-06-16T03:25:44.907Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 完整验证与文档final review
-- **Session**: default
-
-### ✅ S9 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:29:15.485Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S9
-status: done
-timestamp: 2026-06-16T03:29:15.485Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S9
-- **Session**: default
-
-### ✅ check [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:30:33.259Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: check
-status: done
-timestamp: 2026-06-16T03:30:33.259Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
 ### ✅ review [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:31:44.240Z
 
 ---
@@ -676,3 +440,235 @@ timestamp: 2026-06-16T05:08:12.389Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (6/6 步)
+
+### 🔄 S1 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:21:28.260Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S1
+status: in_progress
+timestamp: 2026-06-16T06:21:28.260Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Map Current Workflow Touchpoints
+- **Session**: default
+
+### ✅ S1 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:23:20.331Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S1
+status: done
+timestamp: 2026-06-16T06:23:20.331Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:23:37.015Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S2
+status: in_progress
+timestamp: 2026-06-16T06:23:37.015Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Fix Step Routing And Pending-Done Priority
+- **Session**: default
+
+### ✅ S2 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:25:53.880Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S2
+status: done
+timestamp: 2026-06-16T06:25:53.880Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:26:02.862Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S3
+status: in_progress
+timestamp: 2026-06-16T06:26:02.862Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Improve Done Gate Reuse And Profile Visibility
+- **Session**: default
+
+### ✅ S3 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:29:02.118Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S3
+status: done
+timestamp: 2026-06-16T06:29:02.118Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### 🔄 S4 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:29:10.101Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S4
+status: in_progress
+timestamp: 2026-06-16T06:29:10.101Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Reduce Generated-Artifact And Drift Noise
+- **Session**: default
+
+### ✅ S4 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:32:13.538Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S4
+status: done
+timestamp: 2026-06-16T06:32:13.538Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### 🔄 S5 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:32:23.231Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S5
+status: in_progress
+timestamp: 2026-06-16T06:32:23.231Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Consume Canonical Evidence Staging Plans
+- **Session**: default
+
+### ✅ S5 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:36:08.215Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S5
+status: done
+timestamp: 2026-06-16T06:36:08.215Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S5
+- **Session**: default
+
+### 🔄 S6 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:36:18.578Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S6
+status: in_progress
+timestamp: 2026-06-16T06:36:18.578Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Clarify Quick Scope Guard Policy
+- **Session**: default
+
+### ✅ S6 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:39:24.282Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S6
+status: done
+timestamp: 2026-06-16T06:39:24.282Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S6
+- **Session**: default
+
+### 🔄 S7 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:39:33.105Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S7
+status: in_progress
+timestamp: 2026-06-16T06:39:33.105Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Run Full Verification And Close Task
+- **Session**: default
+
+### ✅ S7 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:41:36.555Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: S7
+status: done
+timestamp: 2026-06-16T06:41:36.555Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S7
+- **Session**: default
+
+### ✅ check [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:42:52.793Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: check
+status: done
+timestamp: 2026-06-16T06:42:52.793Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:44:24.886Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: review
+status: done
+timestamp: 2026-06-16T06:44:24.886Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 9 警告, 3 提示
+
+### ✅ journal [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:44:37.853Z
+
+---
+taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
+step: journal
+status: done
+timestamp: 2026-06-16T06:44:37.853Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (7/7 步)

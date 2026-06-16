@@ -559,6 +559,7 @@ describe('install agent adapters', () => {
     assert.equal(parsed.install_health.current_agent, null);
     assert.equal(parsed.install_health.passed, false);
     assert.ok(parsed.install_health.errors >= 1);
+    assert.equal(parsed.install_health.issue_scope, 'install-baseline');
     assert.ok(parsed.install_health.issue_ids.includes('codex-config-missing'));
     assert.equal(parsed.install_health.recommended_command, 'docpath install --target codex');
     rmSync(cwd, { recursive: true, force: true });

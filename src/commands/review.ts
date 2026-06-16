@@ -159,11 +159,13 @@ async function alreadyReviewed(cwd: string): Promise<boolean> {
   );
 }
 
-async function writeReviewReport(docpathDir: string, changedFiles: string[], findings: ReviewFinding[]): Promise<void> {
+async function writeReviewReport(docpathDir: string, changedFiles: string[], findings: ReviewFinding[], scope: string): Promise<void> {
   await writeReviewEvidence(docpathDir, {
     schema_version: 1,
     kind: 'review',
     timestamp: new Date().toISOString(),
+    scope,
+    finding_scope: 'current_changes',
     files: changedFiles,
     findings,
     errors: findings.filter((finding) => finding.severity === 'error').length,
@@ -222,6 +224,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     return;
   }
   console.log(`📋 审查 ${changedFiles.length} 个文件...`);
+  console.log(`    scope: ${scope}; finding_scope: current_changes`);
   const findings = await analyzeChangedFiles(opts.cwd, changedFiles);
   const current = await readCurrentMd(opts.cwd);
   if (!current?.task_id && !opts.force) {
@@ -244,6 +247,6 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const approved = groups.errors.length === 0;
   console.log(`\n${approved ? '✅ 审查通过' : '❌ 需要修改'} (${groups.errors.length} 错误, ${groups.warns.length} 警告)`);
   await persistReviewResult(opts.cwd, taskId, groups);
-  await writeReviewReport(docpathDir, changedFiles, findings);
+  await writeReviewReport(docpathDir, changedFiles, findings, scope);
   await emitNextHint(opts.cwd);
 }

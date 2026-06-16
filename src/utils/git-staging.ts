@@ -1,7 +1,8 @@
-import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { execFileSync, execSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { minimatch } from 'minimatch';
+import { buildChangesReport } from '../commands/changes.js';
 
 export interface StageOptions {
   dryRun: boolean;
@@ -12,87 +13,46 @@ export interface StageOptions {
 export interface StageResult {
   success: boolean;
   stagedFiles: string[];
+  forceAddedFiles: string[];
   skippedFiles: string[];
   errors: string[];
 }
 
-/**
- * Read recommended files from `docpath changes --agent` output
- */
-function getRecommendedFiles(cwd: string): string[] {
-  try {
-    // Run docpath changes --agent to get recommendations
-    const changesOutput = execSync('node .docpath/bin/docpath changes --agent', {
-      cwd,
-      encoding: 'utf-8',
-      stdio: 'pipe',
+interface StageCandidate {
+  path: string;
+  force: boolean;
+}
+
+function isTaskCurrentAlias(file: string): boolean {
+  return file.startsWith('.docpath/tasks/current/');
+}
+
+function uniqueCandidates(candidates: StageCandidate[]): StageCandidate[] {
+  const byPath = new Map<string, StageCandidate>();
+  for (const candidate of candidates) {
+    const existing = byPath.get(candidate.path);
+    byPath.set(candidate.path, {
+      path: candidate.path,
+      force: Boolean(existing?.force || candidate.force),
     });
+  }
+  return [...byPath.values()];
+}
 
-    // Parse the output to extract recommended files
-    // Look for canonical evidence and implementation files
-    const recommendedFiles: string[] = [];
-    const lines = changesOutput.split('\n');
-
-    let inRecommendedSection = false;
-    for (const line of lines) {
-      // Match lines that suggest files to add
-      if (line.includes('canonical evidence') || line.includes('gate evidence') || line.includes('实现文件')) {
-        inRecommendedSection = true;
-        continue;
-      }
-
-      if (inRecommendedSection && line.trim().startsWith('-')) {
-        // Extract file path from line like "- .docpath/tasks/..."
-        const match = line.match(/[-•]\s+(.+)/);
-        if (match) {
-          const filePath = match[1].trim();
-          // Remove any markdown or annotations
-          const cleanPath = filePath.replace(/\s+\(.+\)$/, '').trim();
-          if (cleanPath && !cleanPath.includes('*')) {
-            recommendedFiles.push(cleanPath);
-          }
-        }
-      }
-
-      if (line.trim() === '' && inRecommendedSection) {
-        inRecommendedSection = false;
-      }
-    }
-
-    // Also look for files mentioned in specific patterns
-    const canonicalTaskMatch = changesOutput.match(/\.docpath\/tasks\/([^/]+)\//);
-    if (canonicalTaskMatch) {
-      const taskId = canonicalTaskMatch[1];
-      // Add common canonical evidence files
-      const commonFiles = [
-        `.docpath/tasks/${taskId}/spec.md`,
-        `.docpath/tasks/${taskId}/plan.md`,
-        `.docpath/workspace/check.md`,
-        `.docpath/workspace/last-check.md`,
-        `.docpath/workspace/review.md`,
-      ];
-
-      // Check which files exist and are modified
-      for (const file of commonFiles) {
-        try {
-          const status = execSync(`git status --porcelain "${file}"`, {
-            cwd,
-            encoding: 'utf-8',
-            stdio: 'pipe',
-          }).trim();
-
-          if (status && !recommendedFiles.includes(file)) {
-            recommendedFiles.push(file);
-          }
-        } catch {
-          // File doesn't exist or not in git
-        }
-      }
-    }
-
-    return [...new Set(recommendedFiles)]; // Deduplicate
-  } catch (error) {
-    // If docpath changes fails, fall back to modified files in .docpath/
+async function getRecommendedFiles(cwd: string): Promise<StageCandidate[]> {
+  try {
+    const report = await buildChangesReport(cwd);
+    const normalFiles = report.worktree_isolation.active
+      ? report.worktree_isolation.commit_relevant_files
+      : Object.values(report.groups).flat();
+    const normalCandidates = normalFiles
+      .filter((file) => !isTaskCurrentAlias(file))
+      .map((file) => ({ path: file, force: false }));
+    const canonicalEvidenceCandidates = report.ignored_evidence.canonical_files
+      .filter((file) => !isTaskCurrentAlias(file))
+      .map((file) => ({ path: file, force: true }));
+    return uniqueCandidates([...normalCandidates, ...canonicalEvidenceCandidates]);
+  } catch {
     try {
       const modifiedFiles = execSync('git diff --name-only HEAD', {
         cwd,
@@ -100,7 +60,9 @@ function getRecommendedFiles(cwd: string): string[] {
         stdio: 'pipe',
       }).trim().split('\n').filter(Boolean);
 
-      return modifiedFiles.filter(f => f.startsWith('.docpath/'));
+      return modifiedFiles
+        .filter((file) => file.startsWith('.docpath/') && !isTaskCurrentAlias(file))
+        .map((file) => ({ path: file, force: false }));
     } catch {
       return [];
     }
@@ -151,13 +113,13 @@ export async function stageRecommendedFiles(options: StageOptions): Promise<Stag
   const result: StageResult = {
     success: true,
     stagedFiles: [],
+    forceAddedFiles: [],
     skippedFiles: [],
     errors: [],
   };
 
   try {
-    // Get recommended files
-    const recommendedFiles = getRecommendedFiles(options.cwd);
+    const recommendedFiles = await getRecommendedFiles(options.cwd);
 
     // Get additional included files
     let includedFiles: string[] = [];
@@ -166,7 +128,10 @@ export async function stageRecommendedFiles(options: StageOptions): Promise<Stag
     }
 
     // Combine and deduplicate
-    const filesToStage = [...new Set([...recommendedFiles, ...includedFiles])];
+    const filesToStage = uniqueCandidates([
+      ...recommendedFiles,
+      ...includedFiles.map((file) => ({ path: file, force: false })),
+    ]);
 
     if (filesToStage.length === 0) {
       result.errors.push('No files to stage');
@@ -175,17 +140,20 @@ export async function stageRecommendedFiles(options: StageOptions): Promise<Stag
     }
 
     // Check which files actually exist and are modified
-    const validFiles: string[] = [];
-    for (const file of filesToStage) {
+    const validFiles: StageCandidate[] = [];
+    for (const candidate of filesToStage) {
+      const file = candidate.path;
       try {
-        const status = execSync(`git status --porcelain "${file}"`, {
-          cwd: options.cwd,
-          encoding: 'utf-8',
-          stdio: 'pipe',
-        }).trim();
+        const status = candidate.force
+          ? (existsSync(join(options.cwd, file)) ? 'ignored' : '')
+          : execFileSync('git', ['status', '--porcelain', '--', file], {
+              cwd: options.cwd,
+              encoding: 'utf-8',
+              stdio: ['ignore', 'pipe', 'pipe'],
+            }).trim();
 
         if (status) {
-          validFiles.push(file);
+          validFiles.push(candidate);
         } else {
           result.skippedFiles.push(`${file} (not modified)`);
         }
@@ -201,18 +169,21 @@ export async function stageRecommendedFiles(options: StageOptions): Promise<Stag
     }
 
     if (options.dryRun) {
-      result.stagedFiles = validFiles;
+      result.stagedFiles = validFiles.map((candidate) => candidate.path);
+      result.forceAddedFiles = validFiles.filter((candidate) => candidate.force).map((candidate) => candidate.path);
       return result;
     }
 
     // Actually stage the files
-    for (const file of validFiles) {
+    for (const candidate of validFiles) {
+      const file = candidate.path;
       try {
-        execSync(`git add "${file}"`, {
+        execFileSync('git', ['add', ...(candidate.force ? ['-f'] : []), '--', file], {
           cwd: options.cwd,
-          stdio: 'pipe',
+          stdio: ['ignore', 'pipe', 'pipe'],
         });
         result.stagedFiles.push(file);
+        if (candidate.force) result.forceAddedFiles.push(file);
       } catch (error) {
         result.errors.push(`Failed to stage ${file}: ${error instanceof Error ? error.message : String(error)}`);
         result.success = false;
@@ -258,7 +229,8 @@ export function formatStageResult(result: StageResult, dryRun: boolean): string 
 
   if (result.stagedFiles.length > 0) {
     result.stagedFiles.forEach(file => {
-      lines.push(`  ${dryRun ? '→' : '✅'} ${file}`);
+      const force = result.forceAddedFiles.includes(file) ? ' (force-add canonical evidence)' : '';
+      lines.push(`  ${dryRun ? '→' : '✅'} ${file}${force}`);
     });
   }
 

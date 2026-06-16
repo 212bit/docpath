@@ -120,6 +120,18 @@ describe('docpath agent lifecycle', () => {
     assert.match(out, /recommended_command:/);
   });
 
+  it('agent step done does not leave current_step pinned to the completed step', () => {
+    const cwd = mkExecWorkspace();
+    const statePath = path.join(cwd, '.docpath', 'workspace', 'state.json');
+    const out = run('agent step --step S1', cwd);
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+
+    assert.match(out, /S1/);
+    assert.notEqual(state.current_step, 'S1');
+    assert.match(state.current_step, /步骤已完成|继续下一步/);
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('agent done completes task', () => {
     const out = run('agent done', tmpDir);
     assert.match(out, /done|完成|物理任务目录归档已延后/i, `got: ${out.slice(0, 100)}`);
@@ -194,6 +206,45 @@ describe('docpath agent lifecycle', () => {
     assert.match(out, /canonical evidence 保留在 \.docpath\/tasks\/T-AGENT\//);
     assert.match(nextPlan, /- \[x\] S2/);
     assert.match(breadcrumb, /"step":"S2","status":"done"/);
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('agent done reuses fresh successful check and review evidence when pass gates are present', () => {
+    const cwd = mkExecWorkspace();
+    const workspace = path.join(cwd, '.docpath', 'workspace');
+    const statePath = path.join(workspace, 'state.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    state.phase = 'reviewing';
+    state.gate = 'review_pass';
+    state.current_step = 'S1';
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+    const now = new Date().toISOString();
+    fs.writeFileSync(path.join(workspace, 'last-check.json'), `${JSON.stringify({
+      schema_version: 1,
+      kind: 'last-check',
+      timestamp: now,
+      passed: true,
+      check_count: 1,
+      checks: [{ name: 'fixture', passed: true, output: '' }],
+    }, null, 2)}\n`);
+    fs.writeFileSync(path.join(workspace, 'review.json'), `${JSON.stringify({
+      schema_version: 1,
+      kind: 'review',
+      timestamp: now,
+      files: [],
+      findings: [],
+      errors: 0,
+      warnings: 0,
+      infos: 0,
+      approved: true,
+    }, null, 2)}\n`);
+
+    const out = run('agent done', cwd);
+
+    assert.match(out, /check reused/);
+    assert.match(out, /review reused/);
+    assert.doesNotMatch(out, /质量检查开始/);
+    assert.doesNotMatch(out, /代码审查开始/);
     fs.rmSync(cwd, { recursive: true, force: true });
   });
 

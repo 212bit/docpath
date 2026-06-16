@@ -12,7 +12,7 @@
 import { agentCommand } from './agent.js';
 import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { resolveSessionContext } from '../utils/session.js';
-import { isQuickProfile } from '../engine/workflow-profile.js';
+import { gatePolicyForProfile, isQuickProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
 
 interface DoneOptions {
   cwd: string;
@@ -34,7 +34,9 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
   const { cwd } = options;
   const session = resolveSessionContext(options.session);
   const stateAtStart = await readCurrentState(cwd);
-  const quickProfile = isQuickProfile(stateAtStart?.workflow_profile);
+  const profile = normalizeWorkflowProfile(stateAtStart?.workflow_profile);
+  const quickProfile = isQuickProfile(profile);
+  const policy = gatePolicyForProfile(profile);
 
   // 前置检查：必须有已绑定的 task_id
   const taskId = await resolveBoundTaskId(cwd);
@@ -64,6 +66,8 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
   console.log('─── 操作层审计 ───');
   console.log(`✅  任务完成流程已执行: ${taskId}`);
   console.log(`    session: ${session.sessionId}`);
+  console.log(`    workflow_profile: ${profile}`);
+  console.log(`    gate_policy: spec=${policy.requiresSpec}, plan=${policy.requiresPlan}, check=${policy.requiresCheck}, review=${policy.requiresReview}, journal=${policy.journalMode}`);
   console.log(`    底层调用: docpath agent done`);
   const gates: string[] = [];
   if (!options.skipCheck) gates.push('check');

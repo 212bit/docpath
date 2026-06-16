@@ -34,6 +34,17 @@ async function validateStepExists(cwd: string, taskId: string | undefined, step:
   }
 }
 
+async function readPlanStepState(cwd: string, taskId: string | undefined): Promise<Array<{ id: string; done: boolean }>> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  try {
+    const planContent = await readActiveTaskFile(docpathDir, taskId, 'plan.md');
+    if (!planContent.trim()) return [];
+    return parsePlanSteps(planContent).map((task) => ({ id: task.id, done: task.done }));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * docpath start 命令实现
  *
@@ -66,13 +77,20 @@ export async function startCommand(options: StartOptions): Promise<void> {
     process.exit(1);
   }
 
-  // 前置检查 3: 确认没有其他 in_progress 步骤（session lease 会检查）
+  // 前置检查 3: 确认没有其他未完成计划步骤正在执行（session lease 会检查）。
+  // state.current_step 可能是“步骤已完成，继续下一步”一类路由提示，或刚完成步骤的
+  // 旧值；只有它明确指向另一个未完成 plan step 时才阻止 start。
   const currentState = await readCurrentState(cwd);
-  if (currentState?.current_step && currentState.current_step !== step) {
-    console.error(`❌  已有进行中的步骤: ${currentState.current_step}`);
+  const currentStep = currentState?.current_step?.trim();
+  const planStepState = await readPlanStepState(cwd, taskId);
+  const activePlanStep = planStepState.find((task) =>
+    task.id.toLowerCase() === currentStep?.toLowerCase(),
+  );
+  if (activePlanStep && !activePlanStep.done && activePlanStep.id.toLowerCase() !== step.toLowerCase()) {
+    console.error(`❌  已有进行中的步骤: ${currentStep}`);
     console.error(`    无法启动新步骤: ${step}`);
     console.error('    建议:');
-    console.error(`      - 先完成当前步骤: docpath agent step --step ${currentState.current_step} --status done`);
+    console.error(`      - 先完成当前步骤: docpath agent step --step ${currentStep} --status done`);
     console.error('      - 或标记为阻塞: docpath agent step --step ${currentState.current_step} --status blocked');
     process.exit(1);
   }

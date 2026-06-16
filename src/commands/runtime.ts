@@ -140,7 +140,9 @@ export async function runCommand(options: RunOptions): Promise<void> {
   if (options.action === 'end') {
     await claimRuntimeLease(cwd, state, step, session.sessionId, 'run end');
     const status = options.status || 'done';
-    const next = await transitionWorkflow(cwd, 'step.completed', { currentStep: step });
+    const next = await transitionWorkflow(cwd, 'step.completed', {
+      currentStep: status === 'blocked' ? step : undefined,
+    });
     await appendRuntimeEvent(cwd, next, step, status, note || `run-end: ${status}`, session.sessionId);
     if (options.releaseLease !== false && state.task_id && state.task_id !== 'runtime') {
       await releaseExecutionLease(cwd, {

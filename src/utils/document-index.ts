@@ -478,7 +478,7 @@ export async function isProjectDocumentIndexStale(docpathDir: string, generatedA
 
   const files = await collectMarkdownFiles(docpathDir, docpathDir);
   for (const file of files) {
-    if (file === 'docs.md') continue;
+    if (isGeneratedViewDocPath(file)) continue;
     const fileStat = await stat(join(docpathDir, file));
     if (fileStat.mtime.getTime() > generatedTime + 1000) return true;
   }

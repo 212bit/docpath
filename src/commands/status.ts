@@ -15,6 +15,7 @@ import { handleStalePendingDoneWarning, readPendingDone } from '../utils/pending
 import { readCurrentState, type CurrentState } from '../utils/workspace.js';
 import { parsePlanSteps } from '../utils/doc-parser.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
+import { gatePolicyForProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
 
 interface StatusOptions {
   cwd: string;
@@ -40,8 +41,12 @@ function printStateSummary(current: CurrentState, currentPath: string): void {
   const task = current.task_title || '(无活跃任务)';
   const phase = current.phase || '?';
   const gate = current.gate || 'none';
+  const profile = normalizeWorkflowProfile(current.workflow_profile);
+  const policy = gatePolicyForProfile(profile);
 
   console.log(`  级别:  Level ${level} — ${LEVEL_NAMES[level] || '未知'}`);
+  console.log(`  Profile:  ${profile}`);
+  console.log(`  Gate policy:  spec=${policy.requiresSpec}, plan=${policy.requiresPlan}, check=${policy.requiresCheck}, review=${policy.requiresReview}, journal=${policy.journalMode}`);
   console.log(`  状态:  ${state}`);
   console.log(`  阶段:  ${phase}`);
   console.log(`  门禁:  ${gate}`);

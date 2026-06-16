@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-16T05:08:12.388Z
+> 扫描时间: 2026-06-16T06:44:37.851Z
 
 ## 条目列表
 
@@ -83,6 +83,7 @@
 | R-187 | Optimize worktree development workflow | done | P1 | 3 | T-20260615-optimize-worktree-development-workflow |
 | R-188 | Optimize DocPath operational command layer Phase 1 | done | P1 | 3 | T-20260616-optimize-docpath-operational-command-lay |
 | R-191 | Add quick fast-track workflow profile | done | P1 | 3 | T-20260616-add-quick-fast-track-workflow-profile |
+| R-192 | Optimize DocPath workflow DX after quick-profile dogfood | done | P1 | 3 | T-20260616-optimize-docpath-workflow-dx-after-quick |
 | R-013 | 为 write-spec / write-plan 增加必备字段校验 | done | P2 | 2 | T-20260531-write-spec-write-plan |
 | R-014 | 统一 progress 计数与 step-finder 的 plan 解析 | done | P2 | 2 | T-20260531-progress-step-finder-plan |
 | R-015 | 分配真实 task_id 并统一 tasks/current 与任务归档路径策略 | done | P2 | 2 | T-20260531-task-id-tasks-current |

@@ -70,6 +70,10 @@ describe('next --agent routing', () => {
     assert.match(status.next_action, /诊断当前工作流状态/);
     assert.equal(status.route_hint.recommended_command, next.recommended_command);
     assert.equal(status.route_hint.next_action, next.next_action);
+    assert.equal(status.workflow_profile, 'standard');
+    assert.equal(status.gate_policy.requires_check, true);
+    assert.equal(status.gate_policy.requires_review, true);
+    assert.equal(status.gate_policy.journal_mode, 'full');
     assert.notDeepEqual(status, next);
     rmSync(cwd, { recursive: true, force: true });
   });

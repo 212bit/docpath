@@ -22,7 +22,7 @@ import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridC
 import { readGitCloseoutSummary, type GitCloseoutSummary } from './git-closeout.js';
 import { resolveMajorChangeGateStatus, type MajorChangeGateStatus } from './major-change.js';
 import { readLastCheckMarkdown } from './workspace-evidence.js';
-import { isQuickProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
+import { gatePolicyForProfile, isQuickProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
 
 export interface AgentOutput {
   /** 输出视图: status --agent 是状态快照, next --agent 是下一步路由。 */
@@ -35,6 +35,14 @@ export interface AgentOutput {
   level: number | null;
   /** Proportional lifecycle profile. */
   workflow_profile: string;
+  /** Gate policy resolved from workflow_profile. */
+  gate_policy: {
+    requires_spec: boolean;
+    requires_plan: boolean;
+    requires_check: boolean;
+    requires_review: boolean;
+    journal_mode: string;
+  };
   /** 任务标识 */
   task_id: string;
   /** 任务标题 */
@@ -100,6 +108,7 @@ export interface AgentOutput {
     passed: boolean;
     errors: number;
     warnings: number;
+    issue_scope: string;
     recommended_command: string | null;
     issue_ids: string[];
   } | null;
@@ -987,6 +996,16 @@ export async function generateAgentOutput(
     state: context.state?.state || 'unknown',
     level: context.state?.level ?? null,
     workflow_profile: normalizeWorkflowProfile(context.state?.workflow_profile),
+    gate_policy: (() => {
+      const policy = gatePolicyForProfile(context.state?.workflow_profile);
+      return {
+        requires_spec: policy.requiresSpec,
+        requires_plan: policy.requiresPlan,
+        requires_check: policy.requiresCheck,
+        requires_review: policy.requiresReview,
+        journal_mode: policy.journalMode,
+      };
+    })(),
     task_id: context.state?.task_id || '',
     task_title: context.state?.task_title || '',
     phase: context.state?.phase || '',
@@ -1025,6 +1044,7 @@ export async function generateAgentOutput(
       passed: context.installHealth.passed,
       errors: context.installHealth.errors,
       warnings: context.installHealth.warnings,
+      issue_scope: 'install-baseline',
       recommended_command: context.installHealth.recommended_command,
       issue_ids: context.installHealth.issues.map((issue) => issue.id),
     } : null,

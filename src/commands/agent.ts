@@ -30,6 +30,7 @@ import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { isQuickProfile } from '../engine/workflow-profile.js';
 import { assertQuickScope } from '../engine/quick-guard.js';
+import { readLastCheckEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
 
 type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
 
@@ -49,6 +50,8 @@ type AgentOptions = {
   enforce?: boolean;
   session?: string;
 };
+
+const GATE_EVIDENCE_FRESH_MS = 60 * 60 * 1000;
 
 function requireStep(action: AgentAction, step?: string): string {
   if (!step || !step.trim()) {
@@ -161,7 +164,37 @@ async function handleAgentStep(options: AgentOptions): Promise<void> {
   await emitNextHint(cwd);
 }
 
-async function runAgentCheckGate(options: AgentOptions): Promise<void> {
+function isFreshEvidence(timestamp: string | undefined): boolean {
+  if (!timestamp) return false;
+  const time = Date.parse(timestamp);
+  return Number.isFinite(time) && Date.now() - time <= GATE_EVIDENCE_FRESH_MS;
+}
+
+async function canReuseCheckGate(cwd: string, stateAtStart: Awaited<ReturnType<typeof readCurrentState>>): Promise<string | null> {
+  if (stateAtStart?.gate !== 'check_pass' && stateAtStart?.gate !== 'review_pass') {
+    return `state gate is ${stateAtStart?.gate || 'none'}`;
+  }
+  const docpathDir = await resolveDocpathDir(cwd);
+  const evidence = await readLastCheckEvidence(docpathDir);
+  if (!evidence) return 'last-check evidence missing';
+  if (!evidence.passed) return 'last-check evidence did not pass';
+  if (!isFreshEvidence(evidence.timestamp)) return 'last-check evidence is stale';
+  return null;
+}
+
+async function canReuseReviewGate(cwd: string, stateAtStart: Awaited<ReturnType<typeof readCurrentState>>): Promise<string | null> {
+  if (stateAtStart?.gate !== 'review_pass') {
+    return `state gate is ${stateAtStart?.gate || 'none'}`;
+  }
+  const docpathDir = await resolveDocpathDir(cwd);
+  const evidence = await readReviewEvidence(docpathDir);
+  if (!evidence) return 'review evidence missing';
+  if (!evidence.approved || evidence.errors > 0) return 'review evidence is not approved';
+  if (!isFreshEvidence(evidence.timestamp)) return 'review evidence is stale';
+  return null;
+}
+
+async function runAgentCheckGate(options: AgentOptions, stateAtStart: Awaited<ReturnType<typeof readCurrentState>>): Promise<void> {
   const { cwd } = options;
   if (options.skipCheck) {
     if (options.enforce) {
@@ -169,6 +202,15 @@ async function runAgentCheckGate(options: AgentOptions): Promise<void> {
     }
     await recordSkipReason(cwd, 'check', requireSkipReason('--skip-check', options.note));
     return;
+  }
+
+  if (!options.skipTests && !options.skipLint) {
+    const rejectReason = await canReuseCheckGate(cwd, stateAtStart);
+    if (!rejectReason) {
+      console.log('⏭️  check reused: fresh successful evidence and pass gate are present');
+      return;
+    }
+    console.log(`ℹ️  check reuse rejected: ${rejectReason}`);
   }
 
   if (options.skipTests) {
@@ -207,6 +249,13 @@ async function runAgentReviewGate(options: AgentOptions, stateAtStart: Awaited<R
     await recordSkipReason(cwd, 'review', requireSkipReason('--skip-review', options.note));
     return;
   }
+
+  const rejectReason = await canReuseReviewGate(cwd, stateAtStart);
+  if (!rejectReason) {
+    console.log('⏭️  review reused: fresh approved evidence and review_pass gate are present');
+    return;
+  }
+  console.log(`ℹ️  review reuse rejected: ${rejectReason}`);
 
   try {
     await reviewCommand({
@@ -291,7 +340,7 @@ async function handleAgentDone(options: AgentOptions): Promise<void> {
     assertQuickScope(cwd);
   }
 
-  await runAgentCheckGate(options);
+  await runAgentCheckGate(options, stateAtStart);
   await runAgentReviewGate(options, stateAtStart);
   if (finalStatus === 'done') {
     await completeFinalPlanStepIfNeeded(options, taskId, finalPlanStep);

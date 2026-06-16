@@ -72,6 +72,40 @@ describe('go --auto-next', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('start ignores a stale completed current_step and starts the requested open step', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-start-stale-'));
+    const { tasks, workspace } = mkExecWorkspace(cwd);
+    writeFileSync(join(tasks, 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: Completed step',
+      '- **描述**: already completed',
+      '- **验收条件**: done',
+      '- **依赖**: 无',
+      '',
+      '### S2: Continue work',
+      '- **描述**: next open step',
+      '- **验收条件**: started',
+      '- **依赖**: S1',
+      '',
+      '## Checklist',
+      '- [x] S1',
+      '- [ ] S2',
+      '',
+    ].join('\n'));
+    const statePath = join(workspace, 'state.json');
+    const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    state.current_step = 'S1';
+    writeFileSync(statePath, JSON.stringify(state, null, 2));
+
+    const out = run('start S2', cwd);
+    const nextState = JSON.parse(readFileSync(statePath, 'utf-8'));
+
+    assert.match(out, /已启动步骤: S2|执行子任务/);
+    assert.equal(nextState.current_step, 'S2');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('go --step S1 --status skipped marks plan with [~]', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-go-skip-'));
     const { tasks } = mkExecWorkspace(cwd);

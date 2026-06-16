@@ -35,6 +35,8 @@ export interface ReviewEvidence {
   schema_version: 1;
   kind: 'review';
   timestamp: string;
+  scope?: string;
+  finding_scope?: 'current_changes' | 'baseline' | 'mixed';
   files: string[];
   findings: ReviewFindingEvidence[];
   errors: number;
@@ -131,6 +133,8 @@ export function renderReviewMarkdown(evidence: ReviewEvidence): string {
     '# Code Review Report',
     '',
     `**时间**: ${evidence.timestamp}`,
+    ...(evidence.scope ? [`scope: ${evidence.scope}`] : []),
+    ...(evidence.finding_scope ? [`finding_scope: ${evidence.finding_scope}`] : []),
     `**状态**: ${evidence.approved ? '✅ PASS' : '❌ FAIL'}`,
     `**文件**: ${evidence.files.length}`,
     `${evidence.approved ? '✅' : '❌'} 代码审查: ${evidence.errors} 错误, ${evidence.warnings} 警告, ${evidence.infos} 提示`,
@@ -164,6 +168,8 @@ export async function readReviewEvidence(docpathDir: string): Promise<ReviewEvid
     schema_version: 1,
     kind: 'review',
     timestamp,
+    scope: markdown.match(/^scope:\s*(.+)$/m)?.[1]?.trim(),
+    finding_scope: markdown.match(/^finding_scope:\s*(current_changes|baseline|mixed)$/m)?.[1] as ReviewEvidence['finding_scope'] | undefined,
     files: Array.from({ length: Number.isFinite(files) ? files : 0 }, (_, index) => `file-${index + 1}`),
     findings: [],
     errors: errorLines,

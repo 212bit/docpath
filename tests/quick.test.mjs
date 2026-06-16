@@ -119,4 +119,56 @@ describe('docpath quick', () => {
     assert.match(result.out, /Upgrade path/);
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('allows document-only quick changes beyond the normal file-count limit', () => {
+    const cwd = mkWorkspace();
+    run(`quick "Docs polish" --cwd ${cwd}`, cwd);
+    initGitRepo(cwd);
+    mkdirSync(join(cwd, 'docs'), { recursive: true });
+    for (const file of ['README.md', 'CHANGELOG.md', 'docs/a.md', 'docs/b.md']) {
+      writeFileSync(join(cwd, file), '# docs\n');
+    }
+
+    const result = runResult(`done --cwd ${cwd}`, cwd);
+
+    assert.equal(result.code, 0);
+    assert.match(result.out, /quick profile policy/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('allows configured quick scope patterns', () => {
+    const cwd = mkWorkspace();
+    writeFileSync(join(cwd, '.docpath', 'config.yaml'), [
+      'project:',
+      '  name: quick-test',
+      'quick:',
+      '  allow_patterns:',
+      '    - src/engine/*.ts',
+      '',
+    ].join('\n'));
+    run(`quick "Allowed engine fixture" --cwd ${cwd}`, cwd);
+    initGitRepo(cwd);
+    mkdirSync(join(cwd, 'src', 'engine'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'engine', 'fixture.ts'), 'export const fixture = true;\n');
+
+    const result = runResult(`done --cwd ${cwd}`, cwd);
+
+    assert.equal(result.code, 0);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('still rejects risky quick source changes by default', () => {
+    const cwd = mkWorkspace();
+    run(`quick "Risky command patch" --cwd ${cwd}`, cwd);
+    initGitRepo(cwd);
+    mkdirSync(join(cwd, 'src', 'commands'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'commands', 'agent.ts'), 'export const risky = true;\n');
+
+    const result = runResult(`done --cwd ${cwd}`, cwd);
+
+    assert.notEqual(result.code, 0);
+    assert.match(result.out, /core lifecycle command changed/);
+    assert.match(result.out, /Policy: max_changed_files=/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

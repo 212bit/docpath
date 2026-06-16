@@ -254,10 +254,15 @@ describe('check and review commands', () => {
 
     const out = run(`review --cwd ${cwd}`, cwd);
     const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');
+    const reviewJsonPath = join(cwd, '.docpath', 'workspace', 'review.json');
+    const reviewJson = JSON.parse(readFileSync(reviewJsonPath, 'utf-8'));
 
     assert.match(out, /审查通过/);
+    assert.match(out, /finding_scope: current_changes/);
     assert.match(out, /next_hint:/);
     assert.match(out, /recommended_command:/);
+    assert.equal(reviewJson.scope, 'all');
+    assert.equal(reviewJson.finding_scope, 'current_changes');
     assert.equal(existsSync(decisionsPath), false);
     rmSync(cwd, { recursive: true, force: true });
   });

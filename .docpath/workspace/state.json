@@ -1,11 +1,11 @@
 {
   "level": 3,
   "workflow_profile": "standard",
-  "task_id": "T-20260616-add-quick-fast-track-workflow-profile",
-  "task_title": "Add quick fast-track workflow profile",
+  "task_id": "T-20260616-optimize-docpath-workflow-dx-after-quick",
+  "task_title": "Optimize DocPath workflow DX after quick-profile dogfood",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-16T05:08:12.336Z",
-  "updated_at": "2026-06-16T05:08:12.336Z"
+  "started_at": "2026-06-16T06:44:37.763Z",
+  "updated_at": "2026-06-16T06:44:37.763Z"
 }

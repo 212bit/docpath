@@ -202,6 +202,20 @@ describe('structured docs index', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check ignores volatile workspace generated markdown when deciding docs-index staleness', () => {
+    const cwd = mkWorkspace();
+    run(`docs scan --cwd ${cwd}`, cwd);
+    const future = new Date(Date.now() + 5000);
+    utimesSync(join(cwd, '.docpath', 'workspace', 'current.md'), future, future);
+    utimesSync(join(cwd, '.docpath', 'workspace', 'breadcrumb.md'), future, future);
+    utimesSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), future, future);
+
+    const { output } = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+
+    assert.doesNotMatch(output, /docs-index 可能陈旧/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('reveal filters structured docs index by level and topic', () => {
     const cwd = mkWorkspace();
     run(`docs scan --cwd ${cwd}`, cwd);

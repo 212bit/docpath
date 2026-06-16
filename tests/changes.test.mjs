@@ -218,7 +218,7 @@ describe('changes command', () => {
     mkdirSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES'), { recursive: true });
     writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), '# spec\n\n> backlog_id: R-999\n');
     writeFileSync(join(cwd, '.docpath', 'backlog', 'R-999.md'), '# ignored backlog\n');
-    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES', 'spec.md'), '# ignored spec\n');
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES', 'spec.md'), '# ignored spec\n\n> backlog_id: R-999\n');
     writeFileSync(join(cwd, 'README.md'), '# changed\n');
 
     const human = run('changes', cwd);
@@ -267,6 +267,32 @@ describe('changes command', () => {
     assert.equal(parsed.ignored_evidence.add_command, null);
     assert.equal(parsed.ready_to_commit, true);
     assert.equal(parsed.blocking_reasons.some((reason) => /canonical evidence/.test(reason)), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('commit --stage force-adds canonical ignored evidence and excludes tasks/current aliases', () => {
+    const cwd = mkGitWorkspace();
+    writeFileSync(join(cwd, '.gitignore'), [
+      '.docpath/backlog/',
+      '.docpath/tasks/T-CHANGES/',
+      '.docpath/tasks/current/',
+      '',
+    ].join('\n'));
+    git(cwd, 'add .gitignore');
+    git(cwd, 'commit -m ignore-evidence');
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    mkdirSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.json'), '{"alias":true}\n');
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-999.md'), '# ignored backlog\n');
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES', 'spec.md'), '# ignored spec\n\n> backlog_id: R-999\n');
+
+    const out = run('commit --stage', cwd);
+    const staged = git(cwd, 'diff --cached --name-only');
+
+    assert.match(out, /force-add canonical evidence/);
+    assert.match(staged, /\.docpath\/backlog\/R-999\.md/);
+    assert.match(staged, /\.docpath\/tasks\/T-CHANGES\/spec\.md/);
+    assert.doesNotMatch(staged, /\.docpath\/tasks\/current\/spec\.json/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
