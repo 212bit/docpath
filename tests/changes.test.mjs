@@ -171,10 +171,8 @@ describe('changes command', () => {
     const out = run('changes --agent', cwd);
 
     assert.match(out, /ready_to_commit: false/);
-    assert.match(out, /worktree: "clean"/);
-    assert.match(out, /canonical_evidence: "ok"/);
-    assert.match(out, /alias_evidence_ignored: 0/);
     assert.match(out, /当前工作树没有可提交变更/);
+    // Compact output no longer includes worktree/canonical_evidence/alias_evidence fields
     assert.doesNotMatch(out, /groups:/);
     assert.doesNotMatch(out, /ignored_evidence:/);
     rmSync(cwd, { recursive: true, force: true });
@@ -250,9 +248,9 @@ describe('changes command', () => {
     assert.match(agent, /check: "checked"/);
     assert.match(agent, /count: 2/);
     assert.match(agent, /canonical_count: 2/);
-    assert.match(agent, /alias_count: 0/);
     assert.match(agent, /add_command: "git add -f .*\.docpath\/backlog\/R-999\.md .*\.docpath\/tasks\/T-CHANGES\/spec\.md"/);
     assert.match(agent, /recommended_stage_command: "docpath commit --stage"/);
+    // Note: alias_count removed in agent output optimization
 
     const parsed = JSON.parse(run('changes --json', cwd));
     assert.equal(parsed.ignored_evidence.check, 'checked');
