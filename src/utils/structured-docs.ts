@@ -591,11 +591,11 @@ export async function writeStructuredTaskJson(
   await writeFile(jsonPath, `${JSON.stringify(doc, null, 2)}\n`, 'utf-8');
 
   // Conditionally write MD view based on config
-  // Note: For now, always write MD to maintain backward compatibility
-  // TODO: Read artifacts.generate_md_views config and conditionally write
-  // This will be enabled after config infrastructure is fully wired up
-  const mdPath = join(dir, file);
-  await writeFile(mdPath, `${renderStructuredMarkdown(doc)}\n`, 'utf-8');
+  const config = await readArtifactConfig(options?.cwd || dir);
+  if (config.generate_md_views) {
+    const mdPath = join(dir, file);
+    await writeFile(mdPath, `${renderStructuredMarkdown(doc)}\n`, 'utf-8');
+  }
 
   return jsonPath;
 }
