@@ -10,13 +10,15 @@ export function registerDocsInstallCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--scan', '扫描文档生成索引')
     .option('--list', '列出所有注册文档')
+    .option('--full', 'list: 输出完整 docs.md 表格')
     .option('--add <path>', '添加文档到索引')
-    .action(async (action: string | undefined, options: { cwd?: string; scan?: boolean; list?: boolean; add?: string }) => {
+    .action(async (action: string | undefined, options: { cwd?: string; scan?: boolean; list?: boolean; full?: boolean; add?: string }) => {
       const sub = action || (options.scan ? 'scan' : options.add ? 'add' : 'list');
       await docsCommand({
         cwd: options.cwd || process.cwd(),
         action: sub,
         args: options.add ? [options.add] : [],
+        full: !!options.full,
       });
     });
 

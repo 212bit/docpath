@@ -20,6 +20,7 @@ import { gatePolicyForProfile, normalizeWorkflowProfile } from '../engine/workfl
 interface StatusOptions {
   cwd: string;
   agent?: boolean;
+  verbose?: boolean;
 }
 
 const LEVEL_NAMES: Record<string, string> = {
@@ -166,7 +167,7 @@ async function printInstallMetadata(cwd: string): Promise<void> {
 export async function statusCommand(options: StatusOptions): Promise<void> {
   const cwd = options.cwd;
   if (options.agent) {
-    console.log(await generateAgentOutput(cwd, { view: 'status' }));
+    console.log(await generateAgentOutput(cwd, { view: 'status', verbose: options.verbose }));
     return;
   }
 

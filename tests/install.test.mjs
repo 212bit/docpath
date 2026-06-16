@@ -565,17 +565,22 @@ describe('install agent adapters', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('status --agent expands universal install health into adapter coverage', () => {
+  it('status --agent compacts healthy install health by default and expands with --verbose', () => {
     const cwd = mkWorkspace();
     run(`install --cwd ${cwd} --target universal`, cwd);
 
     const output = run(`status --cwd ${cwd} --agent`, cwd);
     const parsed = parse(output);
 
-    assert.equal(parsed.install_health.target, 'universal');
-    assert.deepEqual(parsed.install_health.adapters, ['codex', 'claude', 'opencode']);
-    assert.equal(parsed.install_health.current_agent, null);
     assert.equal(parsed.install_health.passed, true);
+    assert.equal(parsed.install_health.target, undefined);
+    assert.equal(parsed.install_health.adapters, undefined);
+
+    const verbose = parse(run(`status --cwd ${cwd} --agent --verbose`, cwd));
+    assert.equal(verbose.install_health.target, 'universal');
+    assert.deepEqual(verbose.install_health.adapters, ['codex', 'claude', 'opencode']);
+    assert.equal(verbose.install_health.current_agent, null);
+    assert.equal(verbose.install_health.passed, true);
     rmSync(cwd, { recursive: true, force: true });
   });
 

@@ -36,7 +36,8 @@ export function registerCoreCommands(cli: CAC): void {
   cli.command('status', '查看当前工作流状态')
     .option('--cwd <path>', '项目目录')
     .option('--agent', '输出 agent 友好的 YAML 状态')
-    .action(async (options: { cwd?: string; agent?: boolean }) => {
-      await statusCommand({ cwd: options.cwd || process.cwd(), agent: options.agent });
+    .option('--verbose', 'agent 输出包含完整诊断字段')
+    .action(async (options: { cwd?: string; agent?: boolean; verbose?: boolean }) => {
+      await statusCommand({ cwd: options.cwd || process.cwd(), agent: options.agent, verbose: options.verbose });
     });
 }

@@ -13,9 +13,13 @@ import {
   ARCHIVE_RETENTION_DAYS,
   PROJECT_DOCS_INDEX_VERSION,
   buildProjectDocumentEntry,
+  documentIndexStats,
   isArchiveDocumentExpired,
+  isIndexOnlyDocument,
   isProjectDocumentScanExcludedPath,
   normalizeDocPath,
+  readProjectDocumentIndex,
+  sortDocumentEntries,
   type ProjectDocumentIndexEntry,
 } from '../utils/document-index.js';
 
@@ -25,6 +29,8 @@ interface DocsOptions {
   action?: string;
   /** add 命令的参数 */
   args?: string[];
+  /** list: print the full generated docs.md table */
+  full?: boolean;
 }
 
 /** 从 markdown 中提取标题 */
@@ -241,14 +247,56 @@ async function docsScan(cwd: string): Promise<void> {
   console.log('');
 }
 
-/** docs list — 列出所有注册文档 */
-async function docsList(cwd: string): Promise<void> {
+function renderCompactDocsList(entries: ProjectDocumentIndexEntry[]): string {
+  const stats = documentIndexStats(entries);
+  const indexOnlyCount = entries.filter(isIndexOnlyDocument).length;
+  const highSignal = sortDocumentEntries(entries)
+    .filter((entry) => !isIndexOnlyDocument(entry))
+    .slice(0, 12);
+  const lines: string[] = [
+    '',
+    '📚  DocPath 文档索引摘要',
+    '',
+    `  total_docs: ${stats.total}`,
+    `  default_read_docs: ${stats.defaultRead} (~${stats.defaultReadTokens} tokens)`,
+    `  archive_docs: ${stats.archive}`,
+    `  generated_or_index_only_docs: ${indexOnlyCount}`,
+    '',
+    '  高信号条目:',
+  ];
+
+  for (const entry of highSignal) {
+    const flags = [
+      entry.default_read ? 'default' : '',
+      entry.archive ? 'archive' : '',
+      entry.task_id ? `task:${entry.task_id}` : '',
+    ].filter(Boolean).join(', ') || 'indexed';
+    lines.push(`    - ${entry.path} [${flags}] ~${entry.token_estimate} tokens — ${entry.summary || entry.title}`);
+  }
+
+  if (highSignal.length === 0) lines.push('    - 无');
+  lines.push('');
+  lines.push('  完整表格: docpath docs list --full');
+  lines.push('');
+  return lines.join('\n');
+}
+
+/** docs list — 列出注册文档摘要，--full 输出完整 human table */
+async function docsList(cwd: string, full = false): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
   const docsMdPath = join(docpathDir, 'docs.md');
 
   if (!existsSync(docsMdPath)) {
     console.error('❌  未找到 docs.md。请先运行 `docpath docs scan`');
     process.exit(1);
+  }
+
+  if (!full) {
+    const index = await readProjectDocumentIndex(docpathDir);
+    if (index?.entries.length) {
+      console.log(renderCompactDocsList(index.entries));
+      return;
+    }
   }
 
   const content = await readFile(docsMdPath, 'utf-8');
@@ -296,14 +344,14 @@ async function docsAdd(cwd: string, args: string[]): Promise<void> {
 
 /** 主命令入口 */
 export async function docsCommand(options: DocsOptions): Promise<void> {
-  const { cwd, action, args = [] } = options;
+  const { cwd, action, args = [], full = false } = options;
 
   switch (action) {
     case 'scan':
       await docsScan(cwd);
       break;
     case 'list':
-      await docsList(cwd);
+      await docsList(cwd, full);
       break;
     case 'add':
       await docsAdd(cwd, args);

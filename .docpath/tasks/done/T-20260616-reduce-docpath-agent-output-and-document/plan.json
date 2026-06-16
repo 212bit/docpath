@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-16T08:16:39.499Z",
+    "updated_at": "2026-06-16T08:16:39.499Z",
+    "content_sha256": "067388f2b3545f3fd3aea91f2f1a1b1e9270880ee0c7136ee7e68665afb2061d"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: 定义 compact 输出契约与兼容边界\n- **描述**: 明确 `next/status --agent`、`changes --agent`、`context/reveal`、`docs list` 的默认 compact 输出规则，以及 `--json`、`--verbose`、`--full`、异常态展开的兼容边界。确认 quick 模式机械可用但治理不适用，并把该结论保留在 spec/plan 证据中。\n- **验收条件**: 输出契约覆盖正常态、异常态、诊断态；不改变状态机、门禁和 JSON 真源；测试更新范围明确。\n- **依赖**: 无\n\n### S2: 压缩 agent 路由与 closeout 输出\n- **描述**: 调整 `src/utils/agent-output.ts` 和 `src/commands/changes.ts`，让 healthy/empty/clean 状态默认输出 compact 结构；drift、identity drift、install issue、canonical evidence、dirty worktree 等异常仍自动展开可操作明细。\n- **验收条件**: `next --agent` completed/healthy 状态不输出空 details、完整 healthy install details 或全量 lesson keys；`changes --agent` clean 状态 compact；异常 closeout 仍保留 staging/阻塞原因。\n- **依赖**: S1\n\n### S3: 压缩文档索引默认展示\n- **描述**: 调整 `src/commands/docs.ts`、`src/commands/context.ts`、`src/commands/reveal.ts` 和必要的 document-index helper，使 `docs list`、`context`、`reveal` 默认输出短摘要；topic/task/verbose/full 路径保留可展开能力。\n- **验收条件**: `docs list` 默认不打印完整 500+ 行表格；`context/reveal` 默认减少文档条目数量和重复字段；显式 topic/task/full 仍可定位并展开文档。\n- **依赖**: S1\n\n### S4: 测试、门禁与 closeout\n- **描述**: 更新并新增覆盖 compact 行为和兼容路径的测试，运行相关 node tests 与 DocPath closeout 门禁。\n- **验收条件**: 相关 `node --test` 通过；`docpath check` 通过；`docpath changes --agent` 无 canonical evidence blocker；任务证据与实现变更可提交。\n- **依赖**: S2, S3\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n\n## 依赖关系图\nS1 → S2 → S4\nS1 → S3 → S4\n",
+  "generated_at": "2026-06-16T08:16:39.499Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "定义 compact 输出契约与兼容边界",
+      "description": "明确 `next/status --agent`、`changes --agent`、`context/reveal`、`docs list` 的默认 compact 输出规则，以及 `--json`、`--verbose`、`--full`、异常态展开的兼容边界。确认 quick 模式机械可用但治理不适用，并把该结论保留在 spec/plan 证据中。",
+      "acceptance": "输出契约覆盖正常态、异常态、诊断态；不改变状态机、门禁和 JSON 真源；测试更新范围明确。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "压缩 agent 路由与 closeout 输出",
+      "description": "调整 `src/utils/agent-output.ts` 和 `src/commands/changes.ts`，让 healthy/empty/clean 状态默认输出 compact 结构；drift、identity drift、install issue、canonical evidence、dirty worktree 等异常仍自动展开可操作明细。",
+      "acceptance": "`next --agent` completed/healthy 状态不输出空 details、完整 healthy install details 或全量 lesson keys；`changes --agent` clean 状态 compact；异常 closeout 仍保留 staging/阻塞原因。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "压缩文档索引默认展示",
+      "description": "调整 `src/commands/docs.ts`、`src/commands/context.ts`、`src/commands/reveal.ts` 和必要的 document-index helper，使 `docs list`、`context`、`reveal` 默认输出短摘要；topic/task/verbose/full 路径保留可展开能力。",
+      "acceptance": "`docs list` 默认不打印完整 500+ 行表格；`context/reveal` 默认减少文档条目数量和重复字段；显式 topic/task/full 仍可定位并展开文档。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "测试、门禁与 closeout",
+      "description": "更新并新增覆盖 compact 行为和兼容路径的测试，运行相关 node tests 与 DocPath closeout 门禁。",
+      "acceptance": "相关 `node --test` 通过；`docpath check` 通过；`docpath changes --agent` 无 canonical evidence blocker；任务证据与实现变更可提交。",
+      "dependencies": "S2, S3",
+      "status": "done"
+    }
+  ]
+}

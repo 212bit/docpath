@@ -1,11 +1,11 @@
 {
   "level": 3,
   "workflow_profile": "standard",
-  "task_id": "T-20260616-optimize-review-noise-and-closeout-guida",
-  "task_title": "Optimize review noise and closeout guidance after workflow dogfood",
+  "task_id": "T-20260616-reduce-docpath-agent-output-and-document",
+  "task_title": "Reduce DocPath agent output and document index token noise",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-16T07:02:50.238Z",
-  "updated_at": "2026-06-16T07:02:50.237Z"
+  "started_at": "2026-06-16T08:20:16.986Z",
+  "updated_at": "2026-06-16T08:20:16.985Z"
 }

@@ -82,35 +82,35 @@ async function readDocsIndexSafe(
 function renderDocsIndexSummary(entries: ProjectDocumentIndexEntry[], selection: DocumentSelectionOptions): string | null {
   if (entries.length === 0) return null;
   const stats = documentIndexStats(entries, selection);
-  const selected = sortDocumentEntries(entries.filter((entry) => matchesDocumentSelection(entry, selection))).slice(0, 14);
+  const explicitSelection = !!selection.topic?.trim() || !!selection.taskId?.trim() || !!selection.includeArchive;
+  const selected = sortDocumentEntries(entries.filter((entry) => matchesDocumentSelection(entry, selection)))
+    .slice(0, explicitSelection ? 14 : 5);
   const lines: string[] = [
     '## 文档索引摘要 (index-first)',
     `- total_docs: ${stats.total}`,
     `- default_read_docs: ${stats.defaultRead}`,
     `- archive_docs: ${stats.archive}`,
     `- selected_docs: ${stats.selected}`,
-    `- estimated_tokens_all_docs: ~${stats.estimatedTokens}`,
     `- estimated_tokens_default_read: ~${stats.defaultReadTokens}`,
     `- estimated_tokens_selected: ~${stats.selectedTokens}`,
     `- selected_index_only_docs: ${stats.selectedIndexOnly}`,
-    `- estimated_tokens_index_only: ~${stats.selectedIndexOnlyTokens}`,
     `- archive_policy: 默认不读取归档正文；使用 --topic、--task-id 或 --include-archive 后才展开片段`,
     '',
     '### 优先索引条目',
   ];
 
   for (const entry of selected) {
+    const flags = [
+      entry.default_read ? 'default' : '',
+      entry.archive ? 'archive' : '',
+      entry.generated_view === true ? 'generated' : '',
+      isIndexOnlyDocument(entry) ? 'index_only' : '',
+      entry.task_id ? `task:${entry.task_id}` : '',
+    ].filter(Boolean).join(', ') || 'indexed';
     lines.push([
       `- path: ${entry.path}`,
-      `  type: ${entry.type || entry.kind}`,
-      `  scope: ${entry.scope}`,
-      `  default_read: ${entry.default_read}`,
-      `  archive: ${entry.archive}`,
-      `  generated_view: ${entry.generated_view === true}`,
-      `  index_only: ${isIndexOnlyDocument(entry)}`,
-      `  budget_excluded: ${isIndexOnlyDocument(entry)}`,
+      `  flags: ${flags}`,
       `  tokens: ~${entry.token_estimate}`,
-      `  task_id: ${entry.task_id || ''}`,
       `  summary: ${entry.summary || ''}`,
     ].join('\n'));
   }

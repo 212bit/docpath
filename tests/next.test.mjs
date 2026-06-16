@@ -115,6 +115,30 @@ describe('next --agent routing', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('does not route completed state into learn when only low-value workflow lessons are pending', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## T-LOW — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LOW',
+      '- key: T-LOW-workflow',
+      '',
+      '### Lesson',
+      '',
+      '✅ 推荐保留本次任务的执行经验：完成 4/4 步，阻塞 0 步。',
+      '',
+    ].join('\n'));
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
+    assert.equal(output.lesson_summary.pending_count, 0);
+    assert.equal(output.lesson_summary.pending_keys, undefined);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('keeps clean completed git worktrees on the normal completed route', () => {
     const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
     writeFileSync(join(cwd, 'README.md'), '# clean\n');
@@ -677,7 +701,7 @@ created_at: 2026-05-31
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('includes empty drift summary when plan and breadcrumb are aligned', () => {
+  it('compacts empty drift details when plan and breadcrumb are aligned', () => {
     const cwd = mkWorkspace({
       phase: 'executing',
       gate: 'none',
@@ -702,8 +726,7 @@ created_at: 2026-05-31
     const output = nextAgent(cwd);
 
     assert.equal(output.drift_summary, null);
-    assert.deepEqual(output.drift_details.plan_done_without_breadcrumb, []);
-    assert.deepEqual(output.drift_details.breadcrumb_done_without_plan, []);
+    assert.equal(output.drift_details, undefined);
     rmSync(cwd, { recursive: true, force: true });
   });
 

@@ -81,7 +81,7 @@ export interface AgentOutput {
   /** plan/breadcrumb 漂移摘要 */
   drift_summary: string | null;
   /** plan/breadcrumb 漂移明细 */
-  drift_details: {
+  drift_details?: {
     plan_done_without_breadcrumb: string[];
     breadcrumb_done_without_plan: string[];
   };
@@ -98,19 +98,19 @@ export interface AgentOutput {
   /** 待学习 lesson 候选摘要 */
   lesson_summary: {
     pending_count: number;
-    pending_keys: string[];
+    pending_keys?: string[];
   };
   /** 安装资产与 Agent 配置健康摘要 */
   install_health: {
-    target: string;
-    adapters: string[];
-    current_agent: string | null;
+    target?: string;
+    adapters?: string[];
+    current_agent?: string | null;
     passed: boolean;
-    errors: number;
-    warnings: number;
-    issue_scope: string;
-    recommended_command: string | null;
-    issue_ids: string[];
+    errors?: number;
+    warnings?: number;
+    issue_scope?: string;
+    recommended_command?: string | null;
+    issue_ids?: string[];
   } | null;
   /** 任务级 Hybrid Context Index 摘要；旧任务没有 index 时省略。 */
   context_index?: HybridContextIndexSummary;
@@ -310,12 +310,27 @@ function candidateLessonKeys(content: string): string[] {
   return keys;
 }
 
+function isLowValueWorkflowLessonBlock(block: string): boolean {
+  const description = block.match(/^### Lesson\s*\n([\s\S]*?)(?=\n###|\n---|$)/m)?.[1]
+    ?.replace(/\s+/g, ' ')
+    .trim() || '';
+  return /推荐保留本次任务的执行经验/u.test(description)
+    || /完成\s*\d+\s*\/\s*\d+\s*步/u.test(description)
+    || /阻塞\s*\d+\s*步/u.test(description);
+}
+
 function summarizeUnlearnedLessonCandidates(
   candidatesContent: string,
   styleContent: string,
   architectureContent: string,
 ): { pendingCount: number; pendingKeys: string[] } {
-  const keys = candidateLessonKeys(candidatesContent);
+  const actionableContent = candidatesContent
+    .split(/^##\s+/m)
+    .filter((block) => block.trim())
+    .filter((block) => !isLowValueWorkflowLessonBlock(block))
+    .map((block) => `## ${block}`)
+    .join('\n');
+  const keys = candidateLessonKeys(actionableContent);
   if (keys.length === 0) return { pendingCount: 0, pendingKeys: [] };
   const learned = new Set([
     ...extractExistingLessonMetaKeys(styleContent),
@@ -936,9 +951,10 @@ function shouldRouteToMajorChangeGate(context: AgentOutputContext, recommendedCo
  */
 export async function generateAgentOutput(
   cwd: string,
-  options: { view?: 'status' | 'next' } = {},
+  options: { view?: 'status' | 'next'; verbose?: boolean } = {},
 ): Promise<string> {
   const view = options.view || 'next';
+  const verbose = options.verbose === true;
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
@@ -966,6 +982,10 @@ export async function generateAgentOutput(
   const context = await loadAgentOutputContext(cwd, docpathDir);
   const inferred = inferRouteFromContext(context);
   const quickFix = generateQuickFix(context);
+  const driftSummary = summarizeDrift(context.drift);
+  const hasIdentityDrift = context.identityDrifts.length > 0;
+  const installHealthPassed = context.installHealth?.passed === true;
+  const currentFocus = selectCurrentFocus(context.state?.phase || '', context.state?.gate || '', context);
 
   const routeFields = view === 'status'
     ? {
@@ -1018,36 +1038,42 @@ export async function generateAgentOutput(
       in_progress: context.bc.inProgress,
       blocked: context.bc.blocked,
     },
-    drift_summary: summarizeDrift(context.drift),
-    drift_details: {
+    drift_summary: driftSummary,
+    ...(verbose || driftSummary ? { drift_details: {
       plan_done_without_breadcrumb: [...context.drift.planDoneWithoutBreadcrumb],
       breadcrumb_done_without_plan: [...context.drift.breadcrumbDoneWithoutPlan],
-    },
-    identity_drift_summary: context.identityDrifts.length > 0
+    } } : {}),
+    identity_drift_summary: hasIdentityDrift
       ? `state.task_id 与 spec task id 不一致: ${context.identityDrifts.map((drift) => `${drift.location}:${drift.declaredTaskId}`).join(', ')}`
       : null,
-    identity_drift_details: context.identityDrifts.map((drift) => ({
+    ...(verbose || hasIdentityDrift ? { identity_drift_details: context.identityDrifts.map((drift) => ({
       file: drift.file,
       location: drift.location,
       expected_task_id: drift.expectedTaskId,
       declared_task_id: drift.declaredTaskId,
       path: drift.path,
-    })),
+    })) } : {}),
     lesson_summary: {
       pending_count: context.lessonSummary.pendingCount,
-      pending_keys: [...context.lessonSummary.pendingKeys],
+      ...(verbose || context.lessonSummary.pendingCount === 1
+        ? { pending_keys: [...context.lessonSummary.pendingKeys] }
+        : {}),
     },
-    install_health: context.installHealth ? {
-      target: context.installHealth.target,
-      adapters: [...context.installHealth.adapters],
-      current_agent: context.installHealth.current_agent,
-      passed: context.installHealth.passed,
-      errors: context.installHealth.errors,
-      warnings: context.installHealth.warnings,
-      issue_scope: 'install-baseline',
-      recommended_command: context.installHealth.recommended_command,
-      issue_ids: context.installHealth.issues.map((issue) => issue.id),
-    } : null,
+    install_health: context.installHealth
+      ? installHealthPassed && !verbose
+        ? { passed: true }
+        : {
+            target: context.installHealth.target,
+            adapters: [...context.installHealth.adapters],
+            current_agent: context.installHealth.current_agent,
+            passed: context.installHealth.passed,
+            errors: context.installHealth.errors,
+            warnings: context.installHealth.warnings,
+            issue_scope: 'install-baseline',
+            recommended_command: context.installHealth.recommended_command,
+            issue_ids: context.installHealth.issues.map((issue) => issue.id),
+          }
+      : null,
     ...(context.contextIndex ? { context_index: context.contextIndex } : {}),
     ...(context.contextIndexTrunk && context.contextIndexTrunk.length > 0 ? { context_index_trunk: context.contextIndexTrunk } : {}),
     ...(context.contextIndexLeaves && context.contextIndexLeaves.length > 0 ? {
@@ -1057,7 +1083,7 @@ export async function generateAgentOutput(
         summary: leaf.summary.slice(0, 100), // 只保留前100字符作为索引
       })),
     } : {}),
-    current_focus: selectCurrentFocus(context.state?.phase || '', context.state?.gate || '', context) || undefined,
+    ...(verbose && currentFocus ? { current_focus: currentFocus } : {}),
     generated_at: new Date().toISOString(),
   };
 

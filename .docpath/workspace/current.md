@@ -4,29 +4,26 @@
 level: 3
 workflow_profile: standard
 state: completed          # 当前状态
-task_id: T-20260616-optimize-review-noise-and-closeout-guida
-task_title: Optimize review noise and closeout guidance after workflow dogfood
+task_id: T-20260616-reduce-docpath-agent-output-and-document
+task_title: Reduce DocPath agent output and document index token noise
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-16T07:02:50.238Z
-updated_at: 2026-06-16T07:02:50.237Z
+started_at: 2026-06-16T08:20:16.986Z
+updated_at: 2026-06-16T08:20:16.985Z
 ```
 
-> 📖 规约: [spec.md](../tasks/T-20260616-optimize-review-noise-and-closeout-guida/spec.md)
-> 📋 计划: [plan.md](../tasks/T-20260616-optimize-review-noise-and-closeout-guida/plan.md)
+> 📖 规约: [spec.md](../tasks/current/spec.md)
+> 📋 计划: [plan.md](../tasks/current/plan.md)
 
 ## ✅ 执行检查清单
 
-- [x] S1: Implement Review Diff Classification
-- [x] S2: Improve Closeout Guidance For Canonical Evidence
-- [x] S3: Reduce Done Journal Prompt Noise
-- [x] S4: Verify And Close
+- [ ] 暂无 plan.md checklist，请补充 `.docpath/tasks/current/plan.md`
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 9 项 · 2026-06-16T07:32:39.613Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — journal · 状态: done · 知识归档完成 (4/4 步)
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-16T08:19:28.698Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — review · 状态: done · 代码审查: 0 错误, 11 警告, 0 提示
 
 ## 🔄 同步说明
 

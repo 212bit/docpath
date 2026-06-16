@@ -339,6 +339,8 @@ function yamlString(value: string): string {
 }
 
 function renderAgentYaml(report: ChangesReport): string {
+  if (shouldRenderCompactAgentYaml(report)) return renderCompactAgentYaml(report);
+
   const lines: string[] = [];
   lines.push(`ready_to_commit: ${report.ready_to_commit}`);
   lines.push(`branch: ${yamlString(report.branch)}`);
@@ -383,6 +385,27 @@ function renderAgentYaml(report: ChangesReport): string {
   for (const file of report.ignored_evidence.alias_files) lines.push(`    - ${yamlString(file)}`);
   lines.push(`  add_command: ${report.ignored_evidence.add_command === null ? 'null' : yamlString(report.ignored_evidence.add_command)}`);
   lines.push(`recommended_stage_command: ${report.recommended_stage_command === null ? 'null' : yamlString(report.recommended_stage_command)}`);
+  lines.push('blocking_reasons:');
+  for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
+  lines.push(`suggested_commit_message: ${yamlString(report.suggested_commit_message)}`);
+  return `${lines.join('\n')}\n`;
+}
+
+function shouldRenderCompactAgentYaml(report: ChangesReport): boolean {
+  return report.mode === 'worktree'
+    && report.counts.total === 0
+    && report.worktree_isolation.active === false
+    && report.ignored_evidence.check === 'checked'
+    && report.ignored_evidence.canonical_files.length === 0
+    && report.blocking_reasons.every((reason) => reason === '当前工作树没有可提交变更');
+}
+
+function renderCompactAgentYaml(report: ChangesReport): string {
+  const lines: string[] = [];
+  lines.push(`ready_to_commit: ${report.ready_to_commit}`);
+  lines.push('worktree: "clean"');
+  lines.push('canonical_evidence: "ok"');
+  lines.push(`alias_evidence_ignored: ${report.ignored_evidence.alias_files.length}`);
   lines.push('blocking_reasons:');
   for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
   lines.push(`suggested_commit_message: ${yamlString(report.suggested_commit_message)}`);

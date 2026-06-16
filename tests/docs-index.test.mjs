@@ -104,6 +104,22 @@ describe('structured docs index', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('docs list defaults to a compact summary and --full prints the generated table', () => {
+    const cwd = mkWorkspace();
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    const compact = run(`docs list --cwd ${cwd}`, cwd);
+    assert.match(compact, /DocPath 文档索引摘要/);
+    assert.match(compact, /total_docs:/);
+    assert.match(compact, /完整表格: docpath docs list --full/);
+    assert.doesNotMatch(compact, /\| 路径 \| type \| scope \| level \|/);
+
+    const full = run(`docs list --cwd ${cwd} --full`, cwd);
+    assert.match(full, /\| 路径 \| type \| scope \| level \|/);
+    assert.match(full, /tasks\/current\/spec\.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('context defaults to index-first output without reading archived task bodies', () => {
     const cwd = mkWorkspace();
     run(`docs scan --cwd ${cwd}`, cwd);
@@ -114,6 +130,7 @@ describe('structured docs index', () => {
     assert.notEqual(currentIdx, -1, 'current task spec should be listed in docs-index summary');
     assert.match(output, /文档索引摘要 \(index-first\)/);
     assert.match(output, /archive_policy: 默认不读取归档正文/);
+    assert.doesNotMatch(output, /budget_excluded:/);
     assert.doesNotMatch(output, /Old archived notes should be lower priority/);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -275,8 +292,8 @@ describe('structured docs index', () => {
     assert.match(output, /path: docs\.md/);
     assert.match(output, /path: archive\/docs-legacy-20260613\.md/);
     assert.match(output, /selected_index_only_docs: 2/);
-    assert.match(output, /estimated_tokens_index_only: ~100000/);
-    assert.match(output, /budget_excluded: true/);
+    assert.match(output, /flags: .*index_only/);
+    assert.doesNotMatch(output, /budget_excluded:/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -290,7 +307,8 @@ describe('structured docs index', () => {
     const output = run(`context --cwd ${cwd} --format raw --max-tokens 1200 --topic docs`, cwd);
 
     assert.match(output, /path: archive\/docs-legacy-20260613\.md/);
-    assert.match(output, /budget_excluded: true/);
+    assert.match(output, /flags: .*index_only/);
+    assert.doesNotMatch(output, /budget_excluded:/);
     assert.doesNotMatch(output, /Hidden generated docs body marker should not expand/);
     rmSync(cwd, { recursive: true, force: true });
   });

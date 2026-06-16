@@ -165,6 +165,21 @@ describe('changes command', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('changes --agent emits compact YAML for clean worktrees', () => {
+    const cwd = mkGitWorkspace();
+
+    const out = run('changes --agent', cwd);
+
+    assert.match(out, /ready_to_commit: false/);
+    assert.match(out, /worktree: "clean"/);
+    assert.match(out, /canonical_evidence: "ok"/);
+    assert.match(out, /alias_evidence_ignored: 0/);
+    assert.match(out, /当前工作树没有可提交变更/);
+    assert.doesNotMatch(out, /groups:/);
+    assert.doesNotMatch(out, /ignored_evidence:/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('separates expected DocPath worktree isolation noise from commit-relevant files', () => {
     const cwd = mkGitWorkspace();
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });

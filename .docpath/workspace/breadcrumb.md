@@ -5,154 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ S1 [T-20260616-phase-2-git-closeout-wrapper-commands-co] — 2026-06-16T04:16:47.568Z
-
----
-taskId: T-20260616-phase-2-git-closeout-wrapper-commands-co
-step: S1
-status: done
-timestamp: 2026-06-16T04:16:47.568Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
-### 🔄 S2 [T-20260616-phase-2-git-closeout-wrapper-commands-co] — 2026-06-16T04:16:59.434Z
-
----
-taskId: T-20260616-phase-2-git-closeout-wrapper-commands-co
-step: S2
-status: in_progress
-timestamp: 2026-06-16T04:16:59.434Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 Phase 2: Git closeout wrapper commands (commit/stage)
-- **Session**: default
-
-### ✅ S2 [T-20260616-phase-2-git-closeout-wrapper-commands-co] — 2026-06-16T04:17:35.859Z
-
----
-taskId: T-20260616-phase-2-git-closeout-wrapper-commands-co
-step: S2
-status: done
-timestamp: 2026-06-16T04:17:35.859Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### ✅ check [T-20260616-phase-2-git-closeout-wrapper-commands-co] — 2026-06-16T04:21:24.921Z
-
----
-taskId: T-20260616-phase-2-git-closeout-wrapper-commands-co
-step: check
-status: done
-timestamp: 2026-06-16T04:21:24.921Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (10 项)
-
-### ✅ review [T-20260616-phase-2-git-closeout-wrapper-commands-co] — 2026-06-16T04:21:25.220Z
-
----
-taskId: T-20260616-phase-2-git-closeout-wrapper-commands-co
-step: review
-status: done
-timestamp: 2026-06-16T04:21:25.220Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 5 警告, 0 提示
-
-### ✅ journal [T-20260616-phase-2-git-closeout-wrapper-commands-co] — 2026-06-16T04:21:25.429Z
-
----
-taskId: T-20260616-phase-2-git-closeout-wrapper-commands-co
-step: journal
-status: done
-timestamp: 2026-06-16T04:21:25.429Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (2/2 步)
-
-### 🔄 S1 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:36:59.530Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S1
-status: in_progress
-timestamp: 2026-06-16T04:36:59.530Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Inspect current state, agent done, runtime routing, and test patterns
-- **Session**: default
-
-### ✅ S1 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:38:03.405Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S1
-status: done
-timestamp: 2026-06-16T04:38:03.405Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
-### 🔄 S2 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:38:42.884Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S2
-status: in_progress
-timestamp: 2026-06-16T04:38:42.884Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Add workflow profile and quick task creation command
-- **Session**: default
-
-### ✅ S2 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:45:30.106Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S2
-status: done
-timestamp: 2026-06-16T04:45:30.106Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### 🔄 S3 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:45:41.641Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S3
-status: in_progress
-timestamp: 2026-06-16T04:45:41.641Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Make runtime routing and completion gates profile-aware
-- **Session**: default
-
 ### ✅ S3 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:46:37.440Z
 
 ---
@@ -674,6 +526,154 @@ taskId: T-20260616-optimize-review-noise-and-closeout-guida
 step: journal
 status: done
 timestamp: 2026-06-16T07:02:50.344Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (4/4 步)
+
+### 🔄 S1 [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T07:55:44.150Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: S1
+status: in_progress
+timestamp: 2026-06-16T07:55:44.150Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 定义 compact 输出契约与兼容边界
+- **Session**: default
+
+### ✅ S1 [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T07:58:20.629Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: S1
+status: done
+timestamp: 2026-06-16T07:58:20.629Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T08:06:53.775Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: S2
+status: in_progress
+timestamp: 2026-06-16T08:06:53.775Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 压缩 agent 路由与 closeout 输出
+- **Session**: default
+
+### ✅ S2 [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T08:11:31.815Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: S2
+status: done
+timestamp: 2026-06-16T08:11:31.815Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T08:11:45.849Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: S3
+status: in_progress
+timestamp: 2026-06-16T08:11:45.849Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 压缩文档索引默认展示
+- **Session**: default
+
+### ✅ S3 [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T08:14:44.700Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: S3
+status: done
+timestamp: 2026-06-16T08:14:44.700Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### 🔄 S4 [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T08:14:54.112Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: S4
+status: in_progress
+timestamp: 2026-06-16T08:14:54.112Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 测试、门禁与 closeout
+- **Session**: default
+
+### ✅ S4 [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T08:16:39.495Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: S4
+status: done
+timestamp: 2026-06-16T08:16:39.495Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### ✅ check [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T08:17:54.572Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: check
+status: done
+timestamp: 2026-06-16T08:17:54.572Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T08:20:09.133Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: review
+status: done
+timestamp: 2026-06-16T08:20:09.133Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 11 警告, 0 提示
+
+### ✅ journal [T-20260616-reduce-docpath-agent-output-and-document] — 2026-06-16T08:20:17.116Z
+
+---
+taskId: T-20260616-reduce-docpath-agent-output-and-document
+step: journal
+status: done
+timestamp: 2026-06-16T08:20:17.116Z
 ---
 
 - **状态**: done

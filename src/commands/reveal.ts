@@ -122,7 +122,9 @@ async function readDocsIndex(docpathDir: string, currentTaskId?: string): Promis
 
 function renderDocsIndex(entries: ProjectDocumentIndexEntry[], maxEntries: number, selection: DocumentSelectionOptions): string {
   const stats = documentIndexStats(entries, selection);
+  const explicitSelection = !!selection.topic?.trim() || !!selection.taskId?.trim() || !!selection.includeArchive;
   const selected = sortDocumentEntries(entries.filter((entry) => matchesDocumentSelection(entry, selection)));
+  const entryLimit = explicitSelection ? maxEntries : Math.min(maxEntries, 5);
   const lines: string[] = [
     `- total_docs: ${stats.total}`,
     `- default_read_docs: ${stats.defaultRead}`,
@@ -130,26 +132,25 @@ function renderDocsIndex(entries: ProjectDocumentIndexEntry[], maxEntries: numbe
     `- selected_docs: ${stats.selected}`,
     `- estimated_tokens_selected: ~${stats.selectedTokens}`,
     `- selected_index_only_docs: ${stats.selectedIndexOnly}`,
-    `- estimated_tokens_index_only: ~${stats.selectedIndexOnlyTokens}`,
     `- archive_policy: 默认只展示索引；归档正文需 --topic、--task-id 或 --include-archive`,
     '',
   ];
 
-  lines.push(...selected.slice(0, maxEntries).map((entry) => [
-    `- path: ${entry.path}`,
-    `  type: ${entry.type || entry.kind || 'unknown'}`,
-    `  scope: ${entry.scope || 'project'}`,
-    `  default_read: ${entry.default_read}`,
-    `  archive: ${entry.archive}`,
-    `  generated_view: ${entry.generated_view === true}`,
-    `  index_only: ${isIndexOnlyDocument(entry)}`,
-    `  budget_excluded: ${isIndexOnlyDocument(entry)}`,
-    `  tokens: ~${entry.token_estimate}`,
-    `  task_id: ${entry.task_id || ''}`,
-    `  title: ${entry.title || ''}`,
-    `  summary: ${entry.summary || ''}`,
-    `  updated_at: ${entry.updated_at || ''}`,
-  ].join('\n')));
+  lines.push(...selected.slice(0, entryLimit).map((entry) => {
+    const flags = [
+      entry.default_read ? 'default' : '',
+      entry.archive ? 'archive' : '',
+      entry.generated_view === true ? 'generated' : '',
+      isIndexOnlyDocument(entry) ? 'index_only' : '',
+      entry.task_id ? `task:${entry.task_id}` : '',
+    ].filter(Boolean).join(', ') || 'indexed';
+    return [
+      `- path: ${entry.path}`,
+      `  flags: ${flags}`,
+      `  tokens: ~${entry.token_estimate}`,
+      `  summary: ${entry.summary || entry.title || ''}`,
+    ].join('\n');
+  }));
 
   if (selected.length === 0) lines.push('- 无匹配索引条目');
   return lines.join('\n');
