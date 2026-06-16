@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-16T08:20:17.114Z
+> 扫描时间: 2026-06-16T12:27:02.164Z
 
 ## 条目列表
 
@@ -151,6 +151,7 @@
 | R-182 | 数据统一：消除 MD↔JSON 双向同步，建立 JSON 单真源 | done | P2 | 3 | T-20260615-md-json-json |
 | R-189 | Update agent guidelines to recommend Phase 1 operational commands | done | P2 | 2 | T-20260616-update-agent-guidelines-to-recommend-pha |
 | R-190 | Phase 2: Git closeout wrapper commands (commit/stage) | done | P2 | 2 | T-20260616-phase-2-git-closeout-wrapper-commands-co |
+| R-195 | Reduce DocPath artifact redundancy and establish generation policy | done | P2 | 2 | T-20260616-reduce-docpath-artifact-redundancy-and-e |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 
 ## 用途说明

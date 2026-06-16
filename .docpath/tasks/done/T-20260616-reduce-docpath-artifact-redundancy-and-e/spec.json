@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-16T10:58:31.500Z",
+    "updated_at": "2026-06-16T10:58:31.500Z",
+    "content_sha256": "b26810dc8d6912ca10dbade31fe463a61655b4ff5ece843437976769bcd1f849"
+  },
+  "task_id": "T-20260616-reduce-docpath-artifact-redundancy-and-e",
+  "backlog_id": null,
+  "title": "T-20260616-reduce-docpath-artifact-redundancy-and-e - Reduce DocPath Artifact Redundancy and Establish Generation Policy",
+  "markdown": "# T-20260616-reduce-docpath-artifact-redundancy-and-e - Reduce DocPath Artifact Redundancy and Establish Generation Policy\n\n**任务 ID**: T-20260616-reduce-docpath-artifact-redundancy-and-e\n**状态**: 草稿\n**来源**: backlog R-195\n\n## 1. 背景与动机\n\n### 问题\nDocPath 当前生成大量冗余 Markdown 渲染视图：\n- 523 个 .md 文件 vs 70 个 .json 文件\n- decisions.md 已膨胀到 235K\n- 每个任务都有 spec.json+spec.md、plan.json+plan.md 双份\n- CLAUDE.md 协议明确\"不要默认读取 .md 视图\"，但系统仍在生成\n- 估计浪费约 1M tokens\n\n### 目标\n- 立即减少 ~300K tokens 消耗（Phase 1：清理）\n- 建立清晰的文档生成策略（Phase 2：规范）\n- 为长期优化奠定基础（Phase 3：评估完全移除任务级 MD）\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: 归档 workspace/decisions.md 按月分割\n- [ ] FR-2: 删除 workspace 临时渲染视图（compact-context.md, worktree-*.md）\n- [ ] FR-3: 创建 docs/workflows/artifact-policy.md 定义文档生成策略\n- [ ] FR-4: 添加配置开关控制 MD 视图生成\n- [ ] FR-5: 修改 writeStructuredTaskJson 支持配置化 MD 生成\n- [ ] FR-6: 保留必要视图（current.md, last-check.md, review.md）\n\n### 非功能需求\n- [ ] NFR-1: 保持向后兼容（已存在 .md 文件不报错）\n- [ ] NFR-2: 按需渲染性能 < 100ms\n- [ ] NFR-3: Git 历史中的 canonical 证据路径不变\n- [ ] NFR-4: 配置变更可在 debug.json 追溯\n\n## 3. 范围界定\n\n### 包含\n- Phase 1: workspace/ 临时视图清理\n- Phase 1: decisions.md 按月归档\n- Phase 2: artifact-policy.md 文档创建\n- Phase 2: 配置开关添加（ArtifactConfig 接口）\n- Phase 2: writeStructuredTaskJson 条件化 MD 生成\n- Phase 2: 测试覆盖（配置生效、按需渲染、向后兼容）\n\n### 不包含\n- 不删除 JSON 真值源文件\n- 不改变 .docpath/tasks/<task_id>/ canonical 路径\n- 不改变 check/review/journal 门禁策略\n- 不删除历史任务目录\n- Phase 3（完全移除任务级 MD）不在本次范围\n\n### 待确认\n- 是否需要迁移脚本清理已存在项目的冗余文件\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | MD 生成策略 | A. 完全移除 B. 按需生成 C. 保持现状 | B. 按需生成 | 平衡可用性和效率，风险可控 |\n| 2 | 配置默认值 | generate_md_views: true/false | false | 新项目默认不生成，减少浪费 |\n| 3 | 清理方式 | A. 手动删除 B. CLI 命令 C. Git 操作 | C. Git 操作（可回滚） | 安全且可追溯 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [x] 工作流 / Agent 行为（减少默认生成的文件）\n- [x] 架构 / 模块边界（配置化文档生成）\n\n### Decision Brief\n- **当前问题**: 大量冗余 MD 文件浪费 token，但 JSON 是唯一真值源\n- **目标**: 减少 token 消耗，建立清晰文档策略\n- **背景**: CLAUDE.md 已规定 Agent 不应默认读 MD，但系统仍在生成\n- **可选方案**:\n  - A. 保持现状（简单但持续浪费）\n  - B. 完全移除 MD（激进，可能影响人类可读性）\n  - C. 按需生成（平衡，本方案）\n- **推荐方案**: C. 按需生成，配置默认 false\n- **不做什么**: 不删除 JSON 真值源，不改变 canonical 证据路径\n- **成本**: 开发约 4-6 小时，测试 2 小时\n- **风险**: 外部工具可能直接读 MD（但 CLAUDE.md 已明确协议）\n- **回滚方案**: Git revert + 配置开关立即回退\n- **用户确认**: 已通过本次任务启动确认\n\n## 5. 验收标准\n\n- [ ] AC-1: workspace/decisions.md 按月归档，主文件 < 50K\n- [ ] AC-2: compact-context.md, worktree-analysis.md, worktree-decision.md 已删除\n- [ ] AC-3: docs/workflows/artifact-policy.md 存在且完整\n- [ ] AC-4: config schema 包含 artifacts.generate_md_views 字段\n- [ ] AC-5: writeStructuredTaskJson 读取配置，条件化生成 MD\n- [ ] AC-6: 测试覆盖：配置生效、按需渲染、向后兼容\n- [ ] AC-7: docpath render --view spec/plan 可从 JSON 重建 MD\n- [ ] AC-8: 已存在 MD 文件不导致错误\n- [ ] AC-9: 估算 token 消耗减少 ~300K\n\n## 6. 风险与依赖\n\n### 风险\n- 人类手动修改 MD 后，与 JSON 不一致（已有 drift 检测机制）\n- 外部脚本可能假设 MD 总是存在（但 CLAUDE.md 已规定协议）\n\n### 依赖\n- 现有 docpath render 命令（已存在，无需新增）\n- 现有 docpath journal 归档逻辑（需验证按月分割）\n\n### 缓解措施\n- Git 操作可回滚\n- 配置开关可立即切换行为\n- 保留向后兼容（已存在 MD 不报错）\n\n## 7. 后续工作流\n\n- 运行 `docpath write-spec --stdin` 写入本 spec\n- 运行 `docpath plan` 生成执行计划\n- 运行 `docpath go --step S1` 开始执行\n",
+  "generated_at": "2026-06-16T10:58:31.500Z",
+  "scope": {
+    "included": [
+      "Phase 1: workspace/ 临时视图清理",
+      "Phase 1: decisions.md 按月归档",
+      "Phase 2: artifact-policy.md 文档创建",
+      "Phase 2: 配置开关添加（ArtifactConfig 接口）",
+      "Phase 2: writeStructuredTaskJson 条件化 MD 生成",
+      "Phase 2: 测试覆盖（配置生效、按需渲染、向后兼容）"
+    ],
+    "excluded": [
+      "不删除 JSON 真值源文件",
+      "不改变 .docpath/tasks/<task_id>/ canonical 路径",
+      "不改变 check/review/journal 门禁策略",
+      "不删除历史任务目录",
+      "Phase 3（完全移除任务级 MD）不在本次范围"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为（减少默认生成的文件）",
+      "架构 / 模块边界（配置化文档生成）"
+    ],
+    "user_confirmed": null,
+    "decision_brief_markdown": "- **当前问题**: 大量冗余 MD 文件浪费 token，但 JSON 是唯一真值源\n- **目标**: 减少 token 消耗，建立清晰文档策略\n- **背景**: CLAUDE.md 已规定 Agent 不应默认读 MD，但系统仍在生成\n- **可选方案**:\n  - A. 保持现状（简单但持续浪费）\n  - B. 完全移除 MD（激进，可能影响人类可读性）\n  - C. 按需生成（平衡，本方案）\n- **推荐方案**: C. 按需生成，配置默认 false\n- **不做什么**: 不删除 JSON 真值源，不改变 canonical 证据路径\n- **成本**: 开发约 4-6 小时，测试 2 小时\n- **风险**: 外部工具可能直接读 MD（但 CLAUDE.md 已明确协议）\n- **回滚方案**: Git revert + 配置开关立即回退\n- **用户确认**: 已通过本次任务启动确认"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "归档 workspace/decisions.md 按月分割",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "删除 workspace 临时渲染视图（compact-context.md, worktree-*.md）",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "创建 docs/workflows/artifact-policy.md 定义文档生成策略",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "添加配置开关控制 MD 视图生成",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "修改 writeStructuredTaskJson 支持配置化 MD 生成",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "保留必要视图（current.md, last-check.md, review.md）",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持向后兼容（已存在 .md 文件不报错）",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "按需渲染性能 < 100ms",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "Git 历史中的 canonical 证据路径不变",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "配置变更可在 debug.json 追溯",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "workspace/decisions.md 按月归档，主文件 < 50K",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "compact-context.md, worktree-analysis.md, worktree-decision.md 已删除",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "docs/workflows/artifact-policy.md 存在且完整",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "config schema 包含 artifacts.generate_md_views 字段",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "writeStructuredTaskJson 读取配置，条件化生成 MD",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "测试覆盖：配置生效、按需渲染、向后兼容",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "docpath render --view spec/plan 可从 JSON 重建 MD",
+      "done": false
+    },
+    {
+      "id": "AC-8",
+      "text": "已存在 MD 文件不导致错误",
+      "done": false
+    },
+    {
+      "id": "AC-9",
+      "text": "估算 token 消耗减少 ~300K",
+      "done": false
+    }
+  ],
+  "decision_brief": "- **当前问题**: 大量冗余 MD 文件浪费 token，但 JSON 是唯一真值源\n- **目标**: 减少 token 消耗，建立清晰文档策略\n- **背景**: CLAUDE.md 已规定 Agent 不应默认读 MD，但系统仍在生成\n- **可选方案**:\n  - A. 保持现状（简单但持续浪费）\n  - B. 完全移除 MD（激进，可能影响人类可读性）\n  - C. 按需生成（平衡，本方案）\n- **推荐方案**: C. 按需生成，配置默认 false\n- **不做什么**: 不删除 JSON 真值源，不改变 canonical 证据路径\n- **成本**: 开发约 4-6 小时，测试 2 小时\n- **风险**: 外部工具可能直接读 MD（但 CLAUDE.md 已明确协议）\n- **回滚方案**: Git revert + 配置开关立即回退\n- **用户确认**: 已通过本次任务启动确认"
+}

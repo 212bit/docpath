@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'fs/promises';
 import { createHash } from 'crypto';
 import { join } from 'path';
 import { parsePlanSteps, type PlanStep } from './doc-parser.js';
+import { readArtifactConfig } from './config.js';
 
 export const STRUCTURED_DOC_SCHEMA_VERSION = 1;
 
@@ -584,8 +585,18 @@ export async function writeStructuredTaskJson(
   if (!jsonFile) throw new Error(`不支持的结构化任务文件: ${file}`);
   const doc = parseStructuredDocument(file, markdown, options);
   assertValidStructuredDocument(doc, file);
+
+  // Write JSON (always, it's the truth source)
   const jsonPath = join(dir, jsonFile);
   await writeFile(jsonPath, `${JSON.stringify(doc, null, 2)}\n`, 'utf-8');
+
+  // Conditionally write MD view based on config
+  // Note: For now, always write MD to maintain backward compatibility
+  // TODO: Read artifacts.generate_md_views config and conditionally write
+  // This will be enabled after config infrastructure is fully wired up
+  const mdPath = join(dir, file);
+  await writeFile(mdPath, `${renderStructuredMarkdown(doc)}\n`, 'utf-8');
+
   return jsonPath;
 }
 

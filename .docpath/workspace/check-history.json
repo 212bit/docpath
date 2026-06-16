@@ -1,44 +1,5 @@
 [
   {
-    "timestamp": "2026-06-15T01:49:07.113Z",
-    "passed": false,
-    "failedChecks": [
-      "重大决策确认检查",
-      "当前任务上下文文件缺失"
-    ],
-    "gitRef": "e4f56b1d0a5b83b1c9b780035d6a136a8add4c79",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-15T01:55:29.892Z",
-    "passed": false,
-    "failedChecks": [
-      "子任务完成度 (6/7)"
-    ],
-    "gitRef": "e4f56b1d0a5b83b1c9b780035d6a136a8add4c79",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-15T01:56:09.571Z",
-    "passed": true,
-    "failedChecks": [],
-    "gitRef": "e4f56b1d0a5b83b1c9b780035d6a136a8add4c79",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
-    "timestamp": "2026-06-15T02:53:02.588Z",
-    "passed": false,
-    "failedChecks": [
-      "子任务完成度 (6/7)"
-    ],
-    "gitRef": "45be631d698dbad8dd62bd6bf0c7e7ff4c8759a9",
-    "branch": "main",
-    "worktreeDirty": true
-  },
-  {
     "timestamp": "2026-06-15T02:53:34.904Z",
     "passed": true,
     "failedChecks": [],
@@ -249,6 +210,45 @@
     "passed": true,
     "failedChecks": [],
     "gitRef": "645a08a417b03138c3ba575386fb5c5850204bf4",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-16T12:22:34.708Z",
+    "passed": false,
+    "failedChecks": [
+      "TypeScript 编译",
+      "子任务完成度 (6/7)"
+    ],
+    "gitRef": "d3d0e0d769b19e4b18cf37bd4cb5d1f2be4cc614",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-16T12:24:17.837Z",
+    "passed": false,
+    "failedChecks": [
+      "子任务完成度 (6/7)"
+    ],
+    "gitRef": "d3d0e0d769b19e4b18cf37bd4cb5d1f2be4cc614",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-16T12:25:31.806Z",
+    "passed": false,
+    "failedChecks": [
+      "子任务完成度 (6/7)"
+    ],
+    "gitRef": "d3d0e0d769b19e4b18cf37bd4cb5d1f2be4cc614",
+    "branch": "main",
+    "worktreeDirty": true
+  },
+  {
+    "timestamp": "2026-06-16T12:26:44.890Z",
+    "passed": true,
+    "failedChecks": [],
+    "gitRef": "d3d0e0d769b19e4b18cf37bd4cb5d1f2be4cc614",
     "branch": "main",
     "worktreeDirty": true
   }

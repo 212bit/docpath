@@ -1,11 +1,11 @@
 {
   "level": 3,
   "workflow_profile": "standard",
-  "task_id": "T-20260616-reduce-docpath-agent-output-and-document",
-  "task_title": "Reduce DocPath agent output and document index token noise",
+  "task_id": "T-20260616-reduce-docpath-artifact-redundancy-and-e",
+  "task_title": "Reduce DocPath Artifact Redundancy and Establish Generation Policy",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-16T08:20:16.986Z",
-  "updated_at": "2026-06-16T08:20:16.985Z"
+  "started_at": "2026-06-16T12:27:02.060Z",
+  "updated_at": "2026-06-16T12:27:02.060Z"
 }

@@ -1,3794 +1,9 @@
-# 决策日志 — DocPath 自动归档
+# 决策日志 — DocPath ADR
 
-> 每次 journal 归档时自动追加任务的关键决策记录。
+> 每条 decision 使用轻量 ADR 模板记录，便于长期检索、审查和上下文披露。
 
 ---
 
-## T-20260528-harness-lite — 2026-05-29T10:08:18.629Z
-
-**任务统计**:
-- 完成: 10/12 步
-- 阻塞: 2 步
-
-**关键决策**:
-- 质量检查通过 (4 项)
-- 质量检查失败: 子任务完成度 (0/5)
-- 质量检查失败: ⚠️  Checklist 同步 (0/5)
-- 质量检查通过 (4 项)
-- 质量检查通过 (4 项)
-- 质量检查通过 (4 项)
-- 质量检查通过 (4 项)
-- 质量检查通过 (4 项)
-- 质量检查通过 (4 项)
-- 代码审查 prompt 已输出 (last_commit)
-- 知识归档完成 (8/10 步)
-- 质量检查通过 (3 项)
-
----
-## review — 2026-05-29T13:15:24.782Z
-**决策**: 通过: 0 错误, 15 警告
----## review — 2026-05-29T13:18:18.384Z
-**决策**: 通过: 0 错误, 40 警告
----## review — 2026-05-29T13:19:06.707Z
-**决策**: 通过: 0 错误, 40 警告
----
-## T-20260529-p3 — 2026-05-29T13:19:06.780Z
-
-**任务统计**:
-- 完成: 0/8 步
-- 阻塞: 1 步
-
-**关键决策**:
-- 质量检查通过 (3 项)
-- 质量检查失败: TypeScript 编译
-- 质量检查通过 (3 项)
-- 质量检查通过 (3 项)
-- 质量检查通过 (3 项)
-- 代码审查: 0 错误, 40 警告, 1 提示
-- 代码审查: 0 错误, 40 警告, 1 提示
-
----
-## review — 2026-05-29T13:21:11.365Z
-**决策**: 通过: 0 错误, 40 警告
----
-## T-20260529-p3 — 2026-05-29T13:21:11.434Z
-
-**任务统计**:
-- 完成: 3/3 步
-
-**关键决策**:
-- 质量检查通过 (3 项)
-- 质量检查失败: TypeScript 编译
-- 质量检查通过 (3 项)
-- 质量检查通过 (3 项)
-- 质量检查通过 (3 项)
-- 代码审查: 0 错误, 40 警告, 1 提示
-- 代码审查: 0 错误, 40 警告, 1 提示
-- 知识归档完成 (0/8 步)
-- 质量检查通过 (3 项)
-- 代码审查: 0 错误, 40 警告, 1 提示
-
----
-
-## T-20260529-p3 — 2026-05-29T13:21:41.427Z
-
-**任务统计**:
-- 完成: 3/3 步
-
-**关键决策**:
-- 质量检查通过 (3 项)
-- 质量检查失败: TypeScript 编译
-- 质量检查通过 (3 项)
-- 质量检查通过 (3 项)
-- 质量检查通过 (3 项)
-- 代码审查: 0 错误, 40 警告, 1 提示
-- 代码审查: 0 错误, 40 警告, 1 提示
-- 知识归档完成 (0/8 步)
-- 质量检查通过 (3 项)
-- 代码审查: 0 错误, 40 警告, 1 提示
-- 知识归档完成 (3/3 步)
-
----
-## review — 2026-05-29T13:55:22.777Z
-**决策**: 通过: 0 错误, 43 警告
----
-## T-20260529-p3 — 2026-05-29T14:02:01.585Z
-
-**任务统计**:
-- 完成: 3/3 步
-
-**关键决策**:
-- 质量检查通过 (3 项)
-- 质量检查失败: TypeScript 编译
-- 质量检查通过 (3 项)
-- 质量检查通过 (3 项)
-- 质量检查通过 (3 项)
-- 代码审查: 0 错误, 40 警告, 1 提示
-- 代码审查: 0 错误, 40 警告, 1 提示
-- 知识归档完成 (0/8 步)
-- 质量检查通过 (3 项)
-- 代码审查: 0 错误, 40 警告, 1 提示
-- 知识归档完成 (3/3 步)
-- 知识归档完成 (3/3 步)
-- 质量检查通过 (3 项)
-- 代码审查: 0 错误, 43 警告, 1 提示
-
----
-## ADR-20260531-001 — review
-
-- task_id: T-task
-- created_at: 2026-05-31T14:19:59.519Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 14 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-002 — review
-
-- task_id: T-task
-- created_at: 2026-05-31T14:27:20.986Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 14 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-003 — review
-
-- task_id: T-task
-- created_at: 2026-05-31T14:31:22.529Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 14 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-004 — review
-
-- task_id: T-task
-- created_at: 2026-05-31T14:39:54.186Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 17 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-005 — journal.archive
-
-- task_id: T-task
-- created_at: 2026-05-31T14:39:54.211Z
-- category: journal.archive
-
-### 背景
-
-开始执行: backlog 条目模型 + 状态机 (engine/backlog.ts)
-agent-step: S1
-开始执行: backlog.md 索引生成
-agent-step: S2
-开始执行: backlog add / list 命令
-agent-step: S3
-开始执行: backlog promote 命令
-agent-step: S4
-开始执行: done/drop + 任务完成自动回填
-agent-step: S5
-开始执行: next --agent 从 backlog 路由
-agent-step: S6
-开始执行: 集成冒烟 + 门禁 + 迁移文档
-agent-step: S7
-质量检查通过 (5 项)
-代码审查: 0 错误, 14 警告, 1 提示
-质量检查失败: Plan/Breadcrumb 漂移检查
-代码审查: 0 错误, 14 警告, 1 提示
-质量检查失败: Plan/Breadcrumb 漂移检查
-代码审查: 0 错误, 14 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 17 警告, 1 提示
-
-### 决策
-
-归档任务 T-task
-
-### 影响
-
-任务进入归档状态；完成 7/7 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-task/spec.md
-- .docpath/tasks/T-task/plan.md
-
----
-## ADR-20260531-006 — journal.archive
-
-- task_id: T-task
-- created_at: 2026-05-31T14:53:44.458Z
-- category: journal.archive
-
-### 背景
-
-开始执行: backlog 条目模型 + 状态机 (engine/backlog.ts)
-agent-step: S1
-开始执行: backlog.md 索引生成
-agent-step: S2
-开始执行: backlog add / list 命令
-agent-step: S3
-开始执行: backlog promote 命令
-agent-step: S4
-开始执行: done/drop + 任务完成自动回填
-agent-step: S5
-开始执行: next --agent 从 backlog 路由
-agent-step: S6
-开始执行: 集成冒烟 + 门禁 + 迁移文档
-agent-step: S7
-质量检查通过 (5 项)
-代码审查: 0 错误, 14 警告, 1 提示
-质量检查失败: Plan/Breadcrumb 漂移检查
-代码审查: 0 错误, 14 警告, 1 提示
-质量检查失败: Plan/Breadcrumb 漂移检查
-代码审查: 0 错误, 14 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 17 警告, 1 提示
-知识归档完成 (7/7 步)
-
-### 决策
-
-归档任务 T-task
-
-### 影响
-
-任务进入归档状态；完成 7/7 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-task/spec.md
-- .docpath/tasks/T-task/plan.md
-
----
-## ADR-20260531-007 — review
-
-- task_id: T-20260531-write-plan-write-journal
-- created_at: 2026-05-31T15:48:12.038Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 17 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-008 — journal.archive
-
-- task_id: T-20260531-write-plan-write-journal
-- created_at: 2026-05-31T15:48:12.070Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 实现并验证 write-plan / write-journal 闭环
-agent-step: S1
-质量检查通过 (5 项)
-代码审查: 0 错误, 17 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-write-plan-write-journal
-
-### 影响
-
-任务进入归档状态；完成 1/1 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-write-plan-write-journal/spec.md
-- .docpath/tasks/T-20260531-write-plan-write-journal/plan.md
-
----
-## ADR-20260531-009 — review
-
-- task_id: T-20260531-lifecycle-ts-agent-enter-done
-- created_at: 2026-05-31T16:17:58.371Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 24 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-010 — journal.archive
-
-- task_id: T-20260531-lifecycle-ts-agent-enter-done
-- created_at: 2026-05-31T16:17:58.407Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 实现 pending-done 哨兵读写模块
-agent-step: S1
-agent-step: S3
-agent-step: S2
-agent-step: S4
-质量检查通过 (5 项)
-代码审查: 0 错误, 24 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-lifecycle-ts-agent-enter-done
-
-### 影响
-
-任务进入归档状态；完成 4/4 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-lifecycle-ts-agent-enter-done/spec.md
-- .docpath/tasks/T-20260531-lifecycle-ts-agent-enter-done/plan.md
-
----
-## ADR-20260531-011 — review
-
-- task_id: T-20260531-write-spec-write-plan
-- created_at: 2026-05-31T16:33:20.710Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 24 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-012 — journal.archive
-
-- task_id: T-20260531-write-spec-write-plan
-- created_at: 2026-05-31T16:33:20.744Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 spec / plan 的最小结构契约
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-代码审查: 0 错误, 24 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-write-spec-write-plan
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-write-spec-write-plan/spec.md
-- .docpath/tasks/T-20260531-write-spec-write-plan/plan.md
-
----
-## ADR-20260531-013 — review
-
-- task_id: T-20260531-progress-step-finder-plan
-- created_at: 2026-05-31T16:45:17.779Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 24 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-014 — journal.archive
-
-- task_id: T-20260531-progress-step-finder-plan
-- created_at: 2026-05-31T16:45:17.815Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 梳理并统一 plan 解析边界
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-代码审查: 0 错误, 24 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-progress-step-finder-plan
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-progress-step-finder-plan/spec.md
-- .docpath/tasks/T-20260531-progress-step-finder-plan/plan.md
-
----
-## ADR-20260531-015 — review
-
-- task_id: T-20260531-task-id-tasks-current
-- created_at: 2026-05-31T16:59:29.061Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 37 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-016 — journal.archive
-
-- task_id: T-20260531-task-id-tasks-current
-- created_at: 2026-05-31T16:59:29.097Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 梳理 current / canonical / done 三段路径链路
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-代码审查: 0 错误, 37 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-task-id-tasks-current
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-task-id-tasks-current/spec.md
-- .docpath/tasks/T-20260531-task-id-tasks-current/plan.md
-
----
-## ADR-20260531-017 — review
-
-- task_id: T-20260531-agent-done
-- created_at: 2026-05-31T17:15:40.581Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 37 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-018 — journal.archive
-
-- task_id: T-20260531-agent-done
-- created_at: 2026-05-31T17:15:40.617Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确跳过测试理由门禁与参数语义
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查失败: ⚠️  Checklist 同步 (0/3)
-质量检查失败: ⚠️  Checklist 同步 (0/3)
-agent-step: S1
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 37 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-agent-done
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-agent-done/spec.md
-- .docpath/tasks/T-20260531-agent-done/plan.md
-
----
-## ADR-20260531-019 — review
-
-- task_id: T-20260531-learn-from-journal-dry-run
-- created_at: 2026-05-31T17:31:21.882Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-020 — journal.archive
-
-- task_id: T-20260531-learn-from-journal-dry-run
-- created_at: 2026-05-31T17:31:21.920Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 learn 数据源优先级与预览语义
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-代码审查: 0 错误, 39 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-learn-from-journal-dry-run
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-learn-from-journal-dry-run/spec.md
-- .docpath/tasks/T-20260531-learn-from-journal-dry-run/plan.md
-
----
-## ADR-20260531-021 — review
-
-- task_id: T-20260531-status-pending-done
-- created_at: 2026-05-31T17:41:48.739Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-022 — journal.archive
-
-- task_id: T-20260531-status-pending-done
-- created_at: 2026-05-31T17:41:48.776Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 status 告警触发条件与输出边界
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-status-pending-done
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-status-pending-done/spec.md
-- .docpath/tasks/T-20260531-status-pending-done/plan.md
-
----
-## ADR-20260531-023 — review
-
-- task_id: T-20260531-agent-step-skipped-blocked-plan
-- created_at: 2026-05-31T17:50:36.600Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-024 — journal.archive
-
-- task_id: T-20260531-agent-step-skipped-blocked-plan
-- created_at: 2026-05-31T17:50:36.637Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 skipped/blocked 与 plan 标记映射
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-agent-step-skipped-blocked-plan
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-agent-step-skipped-blocked-plan/spec.md
-- .docpath/tasks/T-20260531-agent-step-skipped-blocked-plan/plan.md
-
----
-## ADR-20260531-025 — review
-
-- task_id: T-20260531-go-plan
-- created_at: 2026-05-31T17:57:45.685Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-026 — journal.archive
-
-- task_id: T-20260531-go-plan
-- created_at: 2026-05-31T17:57:45.726Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 go 收尾模式的命令语义
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-go-plan
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-go-plan/spec.md
-- .docpath/tasks/T-20260531-go-plan/plan.md
-
----
-## ADR-20260531-027 — review
-
-- task_id: T-20260531-status-agent-plan-breadcrumb
-- created_at: 2026-05-31T18:12:01.661Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-028 — journal.archive
-
-- task_id: T-20260531-status-agent-plan-breadcrumb
-- created_at: 2026-05-31T18:12:01.705Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 status --agent 漂移摘要的数据契约
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-status-agent-plan-breadcrumb
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-status-agent-plan-breadcrumb/spec.md
-- .docpath/tasks/T-20260531-status-agent-plan-breadcrumb/plan.md
-
----
-## ADR-20260531-029 — review
-
-- task_id: T-20260531-check-plan-breadcrumb
-- created_at: 2026-05-31T18:20:27.542Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-030 — journal.archive
-
-- task_id: T-20260531-check-plan-breadcrumb
-- created_at: 2026-05-31T18:20:27.581Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确漂移报告的输出契约与修复建议
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-check-plan-breadcrumb
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-check-plan-breadcrumb/spec.md
-- .docpath/tasks/T-20260531-check-plan-breadcrumb/plan.md
-
----
-## ADR-20260531-031 — review
-
-- task_id: T-20260531-journal-decisions
-- created_at: 2026-05-31T18:23:59.975Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-032 — journal.archive
-
-- task_id: T-20260531-journal-decisions
-- created_at: 2026-05-31T18:24:00.019Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 journal 决策提取规则
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-journal-decisions
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-journal-decisions/spec.md
-- .docpath/tasks/T-20260531-journal-decisions/plan.md
-
----
-## ADR-20260531-033 — review
-
-- task_id: T-20260531-learn
-- created_at: 2026-05-31T18:31:05.455Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-034 — journal.archive
-
-- task_id: T-20260531-learn
-- created_at: 2026-05-31T18:31:05.498Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 learn 的稳定键与历史去重边界
-agent-step: S1
-agent-step: S2
-质量检查失败: 子任务完成度 (2/3)
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-learn
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-learn/spec.md
-- .docpath/tasks/T-20260531-learn/plan.md
-
----
-## ADR-20260531-035 — review
-
-- task_id: T-20260531-stale-pending-done-24h
-- created_at: 2026-05-31T18:37:36.125Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-036 — journal.archive
-
-- task_id: T-20260531-stale-pending-done-24h
-- created_at: 2026-05-31T18:37:36.168Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 stale pending-done 的统一触发语义
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-stale-pending-done-24h
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-stale-pending-done-24h/spec.md
-- .docpath/tasks/T-20260531-stale-pending-done-24h/plan.md
-
----
-## ADR-20260531-037 — review
-
-- task_id: T-20260531-check
-- created_at: 2026-05-31T18:43:12.029Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-038 — journal.archive
-
-- task_id: T-20260531-check
-- created_at: 2026-05-31T18:43:12.074Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 check_fail 与 TDD 恢复语义
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-check
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-check/spec.md
-- .docpath/tasks/T-20260531-check/plan.md
-
----
-## ADR-20260531-039 — review
-
-- task_id: T-20260531-codex
-- created_at: 2026-05-31T18:48:39.704Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-040 — journal.archive
-
-- task_id: T-20260531-codex
-- created_at: 2026-05-31T18:48:39.748Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 codex 独立安装的目标产物与边界
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-codex
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-codex/spec.md
-- .docpath/tasks/T-20260531-codex/plan.md
-
----
-## ADR-20260531-041 — review
-
-- task_id: T-20260531-claude
-- created_at: 2026-05-31T18:55:55.211Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-042 — journal.archive
-
-- task_id: T-20260531-claude
-- created_at: 2026-05-31T18:55:55.256Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 Claude 协议模板的当前真源与漂移点
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-claude
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-claude/spec.md
-- .docpath/tasks/T-20260531-claude/plan.md
-
----
-## ADR-20260531-043 — review
-
-- task_id: T-20260531-agents-codex-opencode
-- created_at: 2026-05-31T19:01:15.388Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-044 — journal.archive
-
-- task_id: T-20260531-agents-codex-opencode
-- created_at: 2026-05-31T19:01:15.435Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 AGENTS 协议模板的漂移点与安装路径
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-agents-codex-opencode
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-agents-codex-opencode/spec.md
-- .docpath/tasks/T-20260531-agents-codex-opencode/plan.md
-
----
-## ADR-20260531-045 — review
-
-- task_id: T-20260531-opencode
-- created_at: 2026-05-31T19:05:55.832Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-046 — journal.archive
-
-- task_id: T-20260531-opencode
-- created_at: 2026-05-31T19:05:55.884Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 OpenCode 协议模板的漂移点与测试边界
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-opencode
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-opencode/spec.md
-- .docpath/tasks/T-20260531-opencode/plan.md
-
----
-## ADR-20260531-047 — review
-
-- task_id: T-20260531-docpath-plan-go-plan
-- created_at: 2026-05-31T19:09:29.654Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-048 — journal.archive
-
-- task_id: T-20260531-docpath-plan-go-plan
-- created_at: 2026-05-31T19:09:29.699Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 plan→go 断点的文件契约与复现边界
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-docpath-plan-go-plan
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-docpath-plan-go-plan/spec.md
-- .docpath/tasks/T-20260531-docpath-plan-go-plan/plan.md
-
----
-## ADR-20260531-049 — review
-
-- task_id: T-20260531-agent-handoff-next
-- created_at: 2026-05-31T19:13:32.382Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-050 — journal.archive
-
-- task_id: T-20260531-agent-handoff-next
-- created_at: 2026-05-31T19:13:32.428Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 handoff 当前实现与设计目标的差距
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-agent-handoff-next
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-agent-handoff-next/spec.md
-- .docpath/tasks/T-20260531-agent-handoff-next/plan.md
-
----
-## ADR-20260531-051 — review
-
-- task_id: T-20260531-task
-- created_at: 2026-05-31T19:17:35.543Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-052 — journal.archive
-
-- task_id: T-20260531-task
-- created_at: 2026-05-31T19:17:35.595Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确非法转移提示的当前缺口与恢复语义
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-task
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-task/spec.md
-- .docpath/tasks/T-20260531-task/plan.md
-
----
-## ADR-20260531-053 — review
-
-- task_id: T-20260531-fail-loud
-- created_at: 2026-05-31T19:27:23.663Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-054 — journal.archive
-
-- task_id: T-20260531-fail-loud
-- created_at: 2026-05-31T19:27:23.719Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确未知位置参数的当前缺口与安全边界
-agent-step: S1
-agent-step: S2
-agent-step: S3
-质量检查通过 (5 项)
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-fail-loud
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-fail-loud/spec.md
-- .docpath/tasks/T-20260531-fail-loud/plan.md
-
----
-## ADR-20260531-055 — review
-
-- task_id: T-20260531-review
-- created_at: 2026-05-31T19:30:23.049Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-056 — review
-
-- task_id: T-20260531-review
-- created_at: 2026-05-31T19:30:41.507Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-057 — review
-
-- task_id: T-20260531-review
-- created_at: 2026-05-31T19:30:55.385Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-058 — review
-
-- task_id: T-20260531-review
-- created_at: 2026-05-31T19:31:15.132Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-059 — review
-
-- task_id: T-20260531-review
-- created_at: 2026-05-31T19:31:40.305Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-060 — review
-
-- task_id: T-20260531-review
-- created_at: 2026-05-31T19:31:41.867Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-061 — journal.archive
-
-- task_id: T-20260531-review
-- created_at: 2026-05-31T19:31:41.917Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 复核 review 输出缺口与测试入口
-代码审查: 0 错误, 40 警告, 1 提示
-agent-step: S1
-agent-step: S2
-代码审查: 0 错误, 40 警告, 1 提示
-代码审查: 0 错误, 40 警告, 1 提示
-质量检查失败: ⚠️  Checklist 同步 (2/3)
-agent-step: S3
-代码审查: 0 错误, 40 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-review
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-review/spec.md
-- .docpath/tasks/T-20260531-review/plan.md
-
----
-## ADR-20260531-062 — review
-
-- task_id: T-20260531-review-dry-run
-- created_at: 2026-05-31T19:34:52.605Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-063 — review
-
-- task_id: T-20260531-review-dry-run
-- created_at: 2026-05-31T19:35:13.485Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-064 — review
-
-- task_id: T-20260531-review-dry-run
-- created_at: 2026-05-31T19:35:34.329Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-065 — review
-
-- task_id: T-20260531-review-dry-run
-- created_at: 2026-05-31T19:35:48.805Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-066 — review
-
-- task_id: T-20260531-review-dry-run
-- created_at: 2026-05-31T19:36:22.439Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-067 — review
-
-- task_id: T-20260531-review-dry-run
-- created_at: 2026-05-31T19:36:39.083Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-068 — review
-
-- task_id: T-20260531-review-dry-run
-- created_at: 2026-05-31T19:36:40.567Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 40 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-069 — journal.archive
-
-- task_id: T-20260531-review-dry-run
-- created_at: 2026-05-31T19:36:40.616Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 复核 review dry-run 缺口与副作用边界
-代码审查: 0 错误, 40 警告, 1 提示
-代码审查: 0 错误, 40 警告, 1 提示
-agent-step: S1
-agent-step: S2
-代码审查: 0 错误, 40 警告, 1 提示
-代码审查: 0 错误, 40 警告, 1 提示
-质量检查失败: ⚠️  Checklist 同步 (2/3)
-agent-step: S3
-代码审查: 0 错误, 40 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 40 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-review-dry-run
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-review-dry-run/spec.md
-- .docpath/tasks/T-20260531-review-dry-run/plan.md
-
----
-## ADR-20260531-070 — review
-
-- task_id: T-20260531-continue-next
-- created_at: 2026-05-31T19:40:53.181Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-071 — review
-
-- task_id: T-20260531-continue-next
-- created_at: 2026-05-31T19:41:43.814Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-072 — review
-
-- task_id: T-20260531-continue-next
-- created_at: 2026-05-31T19:42:44.200Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-073 — review
-
-- task_id: T-20260531-continue-next
-- created_at: 2026-05-31T19:42:59.012Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-074 — review
-
-- task_id: T-20260531-continue-next
-- created_at: 2026-05-31T19:43:00.520Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-075 — journal.archive
-
-- task_id: T-20260531-continue-next
-- created_at: 2026-05-31T19:43:00.584Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 continue 的旧路由漂移点与测试入口
-agent-step: S1
-agent-step: S2
-代码审查: 0 错误, 39 警告, 1 提示
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查失败: ⚠️  Checklist 同步 (2/3)
-agent-step: S3
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 39 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-continue-next
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-continue-next/spec.md
-- .docpath/tasks/T-20260531-continue-next/plan.md
-
----
-## ADR-20260531-076 — review
-
-- task_id: T-20260531-resume
-- created_at: 2026-05-31T19:49:37.148Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-077 — review
-
-- task_id: T-20260531-resume
-- created_at: 2026-05-31T19:49:59.854Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-078 — review
-
-- task_id: T-20260531-resume
-- created_at: 2026-05-31T19:50:29.227Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-079 — review
-
-- task_id: T-20260531-resume
-- created_at: 2026-05-31T19:50:48.582Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-080 — review
-
-- task_id: T-20260531-resume
-- created_at: 2026-05-31T19:50:50.015Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-081 — journal.archive
-
-- task_id: T-20260531-resume
-- created_at: 2026-05-31T19:50:50.066Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 resume 的旧协议漂移点与测试场景
-agent-step: S1
-agent-step: S2
-代码审查: 0 错误, 39 警告, 1 提示
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查失败: ⚠️  Checklist 同步 (2/3)
-agent-step: S3
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 39 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-resume
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-resume/spec.md
-- .docpath/tasks/T-20260531-resume/plan.md
-
----
-## ADR-20260531-082 — review
-
-- task_id: T-20260531-status-phase-gate
-- created_at: 2026-05-31T19:56:32.878Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-083 — review
-
-- task_id: T-20260531-status-phase-gate
-- created_at: 2026-05-31T19:58:09.848Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-084 — review
-
-- task_id: T-20260531-status-phase-gate
-- created_at: 2026-05-31T19:58:12.543Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-085 — review
-
-- task_id: T-20260531-status-phase-gate
-- created_at: 2026-05-31T19:59:19.375Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-086 — review
-
-- task_id: T-20260531-status-phase-gate
-- created_at: 2026-05-31T20:01:12.487Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-087 — review
-
-- task_id: T-20260531-status-phase-gate
-- created_at: 2026-05-31T20:01:19.633Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260531-088 — journal.archive
-
-- task_id: T-20260531-status-phase-gate
-- created_at: 2026-05-31T20:01:19.684Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 status 输出的真源漂移点与测试场景
-agent-step: S1
-agent-step: S2
-代码审查: 0 错误, 39 警告, 1 提示
-agent-step: S3
-代码审查: 0 错误, 39 警告, 1 提示
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 39 警告, 1 提示
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 39 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260531-status-phase-gate
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260531-status-phase-gate/spec.md
-- .docpath/tasks/T-20260531-status-phase-gate/plan.md
-
----
-## ADR-20260601-001 — review
-
-- task_id: T-20260601-backlog-add-id
-- created_at: 2026-06-01T03:10:41.006Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-002 — review
-
-- task_id: T-20260601-backlog-add-id
-- created_at: 2026-06-01T03:11:58.687Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-003 — review
-
-- task_id: T-20260601-backlog-add-id
-- created_at: 2026-06-01T03:13:46.208Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-004 — review
-
-- task_id: T-20260601-backlog-add-id
-- created_at: 2026-06-01T03:14:25.498Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-005 — review
-
-- task_id: T-20260601-backlog-add-id
-- created_at: 2026-06-01T03:14:32.782Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-006 — journal.archive
-
-- task_id: T-20260601-backlog-add-id
-- created_at: 2026-06-01T03:14:32.839Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确 backlog ID 并发分配缺陷与最小修复边界
-agent-step: S1
-agent-step: S2
-代码审查: 0 错误, 39 警告, 1 提示
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查失败: 子任务完成度 (2/3)
-agent-step: S3
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (5 项)
-代码审查: 0 错误, 39 警告, 1 提示
-
-### 决策
-
-归档任务 T-20260601-backlog-add-id
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260601-backlog-add-id/spec.md
-- .docpath/tasks/T-20260601-backlog-add-id/plan.md
-
----
-## ADR-20260601-007 — review
-
-- task_id: T-20260601-check
-- created_at: 2026-06-01T03:52:03.768Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-008 — review
-
-- task_id: T-20260601-check
-- created_at: 2026-06-01T03:52:30.452Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-009 — review
-
-- task_id: T-20260601-check
-- created_at: 2026-06-01T03:52:52.600Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-010 — review
-
-- task_id: T-20260601-check
-- created_at: 2026-06-01T03:53:34.425Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-011 — review
-
-- task_id: T-20260601-check
-- created_at: 2026-06-01T03:54:18.023Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-012 — review
-
-- task_id: T-20260601-check
-- created_at: 2026-06-01T03:54:42.711Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-013 — review
-
-- task_id: T-20260601-check
-- created_at: 2026-06-01T03:55:29.599Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-014 — journal.archive
-
-- task_id: T-20260601-check
-- created_at: 2026-06-01T03:55:59.270Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 定位 check 结构校验错误来源
-agent-step: S1
-开始执行: 增强结构校验错误定位信息
-代码审查: 0 错误, 39 警告, 1 提示
-代码审查: 0 错误, 39 警告, 1 提示
-agent-step: S2
-开始执行: 补充回归测试并完成门禁
-代码审查: 0 错误, 39 警告, 1 提示
-代码审查: 0 错误, 39 警告, 1 提示
-代码审查: 0 错误, 39 警告, 1 提示
-agent-step: S3
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查失败: spec.md 结构校验
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (7 项)
-
-### 决策
-
-归档任务 T-20260601-check
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260601-check/spec.md
-- .docpath/tasks/T-20260601-check/plan.md
-
----
-## ADR-20260601-015 — review
-
-- task_id: T-20260601-tasks-current
-- created_at: 2026-06-01T04:03:08.890Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-016 — review
-
-- task_id: T-20260601-tasks-current
-- created_at: 2026-06-01T04:04:02.268Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-017 — review
-
-- task_id: T-20260601-tasks-current
-- created_at: 2026-06-01T04:04:24.780Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-018 — review
-
-- task_id: T-20260601-tasks-current
-- created_at: 2026-06-01T04:05:13.267Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-019 — review
-
-- task_id: T-20260601-tasks-current
-- created_at: 2026-06-01T04:05:26.748Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-手动批准: 跳过自动检查
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-020 — journal.archive
-
-- task_id: T-20260601-tasks-current
-- created_at: 2026-06-01T04:05:35.332Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 定位 current/canonical 任务文件链路
-agent-step: S1
-开始执行: 实现任务文件漂移检测与同步修复
-agent-step: S2
-开始执行: 补充回归测试并完成门禁
-代码审查: 0 错误, 39 警告, 1 提示
-代码审查: 0 错误, 39 警告, 1 提示
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查失败: ⚠️  Checklist 同步 (2/3)
-agent-step: S3
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (8 项)
-手动批准
-
-### 决策
-
-归档任务 T-20260601-tasks-current
-
-### 影响
-
-任务进入归档状态；完成 3/3 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260601-tasks-current/spec.md
-- .docpath/tasks/T-20260601-tasks-current/plan.md
-
----
-## ADR-20260601-021 — review
-
-- task_id: T-20260601-dist
-- created_at: 2026-06-01T04:58:30.607Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-022 — review
-
-- task_id: T-20260601-dist
-- created_at: 2026-06-01T04:59:00.367Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-023 — review
-
-- task_id: T-20260601-dist
-- created_at: 2026-06-01T04:59:15.217Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-手动批准: 跳过自动检查
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-024 — journal.archive
-
-- task_id: T-20260601-dist
-- created_at: 2026-06-01T04:59:22.196Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 明确测试构建竞争点与脚本边界
-agent-step: S1
-开始执行: 实现测试专用 no-clean 构建并补测试
-代码审查: 0 错误, 39 警告, 1 提示
-agent-step: S2
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (8 项)
-手动批准
-
-### 决策
-
-归档任务 T-20260601-dist
-
-### 影响
-
-任务进入归档状态；完成 2/2 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260601-dist/spec.md
-- .docpath/tasks/T-20260601-dist/plan.md
-
----
-## ADR-20260601-025 — review
-
-- task_id: T-20260601-docpath-gc
-- created_at: 2026-06-01T08:56:58.785Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-026 — review
-
-- task_id: T-20260601-docpath-gc
-- created_at: 2026-06-01T08:57:44.984Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-027 — review
-
-- task_id: T-20260601-docpath-gc
-- created_at: 2026-06-01T09:01:50.382Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-028 — journal.archive
-
-- task_id: T-20260601-docpath-gc
-- created_at: 2026-06-01T09:04:03.833Z
-- category: journal.archive
-
-### 背景
-
-开始执行: 梳理任务目录枚举与安全边界
-agent-step: S1
-开始执行: 实现 docpath gc 并补测试
-代码审查: 0 错误, 39 警告, 1 提示
-agent-step: S2
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (8 项)
-代码审查: 0 错误, 39 警告, 1 提示
-质量检查通过 (8 项)
-
-### 决策
-
-归档任务 T-20260601-docpath-gc
-
-### 影响
-
-任务进入归档状态；完成 2/2 步，阻塞 0 步。
-
-### 替代方案
-
-- 继续保留在 tasks/current 中
-- 只写 breadcrumb 不生成长期 decision
-
-### 相关文件
-
-- .docpath/workspace/breadcrumb.md
-- .docpath/workspace/last-check.md
-- .docpath/tasks/T-20260601-docpath-gc/spec.md
-- .docpath/tasks/T-20260601-docpath-gc/plan.md
-
----
-## ADR-20260601-029 — review
-
-- task_id: T-20260601-docpath-gc
-- created_at: 2026-06-01T09:28:05.141Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-030 — review
-
-- task_id: T-20260601-docpath-gc
-- created_at: 2026-06-01T09:28:39.180Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-031 — review
-
-- task_id: T-20260601-docpath-gc
-- created_at: 2026-06-01T09:47:26.464Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
-## ADR-20260601-032 — review
-
-- task_id: T-20260601-abort-reset
-- created_at: 2026-06-01T10:42:17.004Z
-- category: review
-
-### 背景
-
-由 DocPath 工作流自动记录。
-
-### 决策
-
-通过: 0 错误, 39 警告
-
-### 影响
-
-影响待后续 review/journal 验证。
-
-### 替代方案
-
-- 未记录替代方案。
-
-### 相关文件
-
-- 未记录相关文件。
-
----
 ## ADR-20260601-033 — review
 
 - task_id: T-20260601-abort-reset
@@ -3816,6 +31,7 @@ agent-step: S2
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-034 — review
 
 - task_id: T-20260601-abort-reset
@@ -3843,6 +59,7 @@ agent-step: S2
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-035 — review
 
 - task_id: T-20260601-abort-reset
@@ -3870,6 +87,7 @@ agent-step: S2
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-036 — review
 
 - task_id: T-20260601-abort-reset
@@ -3897,6 +115,7 @@ agent-step: S2
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-037 — journal.archive
 
 - task_id: T-20260601-abort-reset
@@ -3940,6 +159,7 @@ go-status: S3 -> done
 - .docpath/tasks/T-20260601-abort-reset/plan.md
 
 ---
+
 ## ADR-20260601-038 — review
 
 - task_id: T-20260601-drift-auto-fix
@@ -3967,6 +187,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-039 — review
 
 - task_id: T-20260601-drift-auto-fix
@@ -3994,6 +215,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-040 — review
 
 - task_id: T-20260601-drift-auto-fix
@@ -4021,6 +243,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-041 — review
 
 - task_id: T-20260601-drift-auto-fix
@@ -4048,6 +271,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-042 — review
 
 - task_id: T-20260601-drift-auto-fix
@@ -4075,6 +299,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-043 — journal.archive
 
 - task_id: T-20260601-drift-auto-fix
@@ -4117,6 +342,7 @@ go-status: S3 -> done
 - .docpath/tasks/T-20260601-drift-auto-fix/plan.md
 
 ---
+
 ## ADR-20260601-044 — review
 
 - task_id: T-20260601-next-lesson
@@ -4144,6 +370,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-045 — review
 
 - task_id: T-20260601-next-lesson
@@ -4171,6 +398,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-046 — review
 
 - task_id: T-20260601-next-lesson
@@ -4198,6 +426,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-047 — journal.archive
 
 - task_id: T-20260601-next-lesson
@@ -4238,6 +467,7 @@ go-status: S3 -> done
 - .docpath/tasks/T-20260601-next-lesson/plan.md
 
 ---
+
 ## ADR-20260601-048 — review
 
 - task_id: T-20260601-next-lesson-pending
@@ -4265,6 +495,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-049 — review
 
 - task_id: T-20260601-next-lesson-pending
@@ -4292,6 +523,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-050 — review
 
 - task_id: T-20260601-next-lesson-pending
@@ -4319,6 +551,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-051 — journal.archive
 
 - task_id: T-20260601-next-lesson-pending
@@ -4357,6 +590,7 @@ go-status: S2 -> done
 - .docpath/tasks/T-20260601-next-lesson-pending/plan.md
 
 ---
+
 ## ADR-20260601-052 — review
 
 - task_id: T-20260601-backlog-promote-task-id
@@ -4384,6 +618,7 @@ go-status: S2 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-053 — review
 
 - task_id: T-20260601-backlog-promote-task-id
@@ -4411,6 +646,7 @@ go-status: S2 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-054 — review
 
 - task_id: T-20260601-backlog-promote-task-id
@@ -4438,6 +674,7 @@ go-status: S2 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-055 — review
 
 - task_id: T-20260601-backlog-promote-task-id
@@ -4465,6 +702,7 @@ go-status: S2 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-056 — journal.archive
 
 - task_id: T-20260601-backlog-promote-task-id
@@ -4505,6 +743,7 @@ go-status: S2 -> done
 - .docpath/tasks/T-20260601-backlog-promote-task-id/plan.md
 
 ---
+
 ## ADR-20260601-057 — review
 
 - task_id: T-20260601-backlog-refresh
@@ -4532,6 +771,7 @@ go-status: S2 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-058 — review
 
 - task_id: T-20260601-backlog-refresh
@@ -4559,6 +799,7 @@ go-status: S2 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-059 — review
 
 - task_id: T-20260601-backlog-refresh
@@ -4586,6 +827,7 @@ go-status: S2 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-060 — review
 
 - task_id: T-20260601-backlog-refresh
@@ -4613,6 +855,7 @@ go-status: S2 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-061 — journal.archive
 
 - task_id: T-20260601-backlog-refresh
@@ -4654,6 +897,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-backlog-refresh/plan.md
 
 ---
+
 ## ADR-20260601-062 — review
 
 - task_id: T-20260601-docpath-plan-plan-md
@@ -4681,6 +925,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-063 — review
 
 - task_id: T-20260601-docpath-plan-plan-md
@@ -4708,6 +953,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-064 — review
 
 - task_id: T-20260601-docpath-plan-plan-md
@@ -4735,6 +981,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-065 — journal.archive
 
 - task_id: T-20260601-docpath-plan-plan-md
@@ -4775,6 +1022,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-docpath-plan-plan-md/plan.md
 
 ---
+
 ## ADR-20260601-066 — review
 
 - task_id: T-20260601-plancommand
@@ -4802,6 +1050,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-067 — review
 
 - task_id: T-20260601-plancommand
@@ -4829,6 +1078,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-068 — review
 
 - task_id: T-20260601-plancommand
@@ -4856,6 +1106,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-069 — journal.archive
 
 - task_id: T-20260601-plancommand
@@ -4896,6 +1147,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-plancommand/plan.md
 
 ---
+
 ## ADR-20260601-070 — review
 
 - task_id: T-20260601-refinecommand
@@ -4923,6 +1175,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-071 — review
 
 - task_id: T-20260601-refinecommand
@@ -4950,6 +1203,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-072 — review
 
 - task_id: T-20260601-refinecommand
@@ -4977,6 +1231,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-073 — journal.archive
 
 - task_id: T-20260601-refinecommand
@@ -5017,6 +1272,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-refinecommand/plan.md
 
 ---
+
 ## ADR-20260601-074 — review
 
 - task_id: T-20260601-docsscan
@@ -5044,6 +1300,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-075 — review
 
 - task_id: T-20260601-docsscan
@@ -5071,6 +1328,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-076 — review
 
 - task_id: T-20260601-docsscan
@@ -5098,6 +1356,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-077 — journal.archive
 
 - task_id: T-20260601-docsscan
@@ -5138,6 +1397,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-docsscan/plan.md
 
 ---
+
 ## ADR-20260601-078 — review
 
 - task_id: T-20260601-statuscommand
@@ -5165,6 +1425,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-079 — review
 
 - task_id: T-20260601-statuscommand
@@ -5192,6 +1453,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-080 — review
 
 - task_id: T-20260601-statuscommand
@@ -5219,6 +1481,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-081 — review
 
 - task_id: T-20260601-statuscommand
@@ -5246,6 +1509,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-082 — review
 
 - task_id: T-20260601-statuscommand
@@ -5273,6 +1537,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-083 — review
 
 - task_id: T-20260601-statuscommand
@@ -5300,6 +1565,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-084 — journal.archive
 
 - task_id: T-20260601-statuscommand
@@ -5344,6 +1610,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-statuscommand/plan.md
 
 ---
+
 ## ADR-20260601-085 — review
 
 - task_id: T-20260601-installcommand
@@ -5371,6 +1638,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-086 — review
 
 - task_id: T-20260601-installcommand
@@ -5398,6 +1666,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-087 — review
 
 - task_id: T-20260601-installcommand
@@ -5425,6 +1694,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-088 — review
 
 - task_id: T-20260601-installcommand
@@ -5452,6 +1722,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-089 — review
 
 - task_id: T-20260601-installcommand
@@ -5479,6 +1750,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-090 — journal.archive
 
 - task_id: T-20260601-installcommand
@@ -5522,6 +1794,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-installcommand/plan.md
 
 ---
+
 ## ADR-20260601-091 — review
 
 - task_id: T-20260601-check-fail-debug-reproduce
@@ -5549,6 +1822,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-092 — review
 
 - task_id: T-20260601-check-fail-debug-reproduce
@@ -5576,6 +1850,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-093 — review
 
 - task_id: T-20260601-check-fail-debug-reproduce
@@ -5603,6 +1878,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-094 — journal.archive
 
 - task_id: T-20260601-check-fail-debug-reproduce
@@ -5643,6 +1919,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-check-fail-debug-reproduce/plan.md
 
 ---
+
 ## ADR-20260601-095 — review
 
 - task_id: T-20260601-debugcommand
@@ -5670,6 +1947,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-096 — review
 
 - task_id: T-20260601-debugcommand
@@ -5697,6 +1975,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-097 — review
 
 - task_id: T-20260601-debugcommand
@@ -5724,6 +2003,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-098 — journal.archive
 
 - task_id: T-20260601-debugcommand
@@ -5764,6 +2044,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-debugcommand/plan.md
 
 ---
+
 ## ADR-20260601-099 — review
 
 - task_id: T-20260601-rendercurrentdocument
@@ -5791,6 +2072,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-100 — review
 
 - task_id: T-20260601-rendercurrentdocument
@@ -5818,6 +2100,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-101 — review
 
 - task_id: T-20260601-rendercurrentdocument
@@ -5845,6 +2128,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-102 — review
 
 - task_id: T-20260601-rendercurrentdocument
@@ -5872,6 +2156,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-103 — journal.archive
 
 - task_id: T-20260601-rendercurrentdocument
@@ -5913,6 +2198,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-rendercurrentdocument/plan.md
 
 ---
+
 ## ADR-20260601-104 — review
 
 - task_id: T-20260601-readlegacycurrentmd
@@ -5940,6 +2226,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-105 — review
 
 - task_id: T-20260601-readlegacycurrentmd
@@ -5967,6 +2254,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-106 — review
 
 - task_id: T-20260601-readlegacycurrentmd
@@ -5994,6 +2282,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-107 — review
 
 - task_id: T-20260601-readlegacycurrentmd
@@ -6021,6 +2310,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-108 — journal.archive
 
 - task_id: T-20260601-readlegacycurrentmd
@@ -6062,6 +2352,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-readlegacycurrentmd/plan.md
 
 ---
+
 ## ADR-20260601-109 — review
 
 - task_id: T-20260601-generateagentoutput
@@ -6089,6 +2380,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-110 — review
 
 - task_id: T-20260601-generateagentoutput
@@ -6116,6 +2408,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-111 — review
 
 - task_id: T-20260601-generateagentoutput
@@ -6143,6 +2436,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-112 — review
 
 - task_id: T-20260601-generateagentoutput
@@ -6170,6 +2464,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-113 — journal.archive
 
 - task_id: T-20260601-generateagentoutput
@@ -6211,6 +2506,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-generateagentoutput/plan.md
 
 ---
+
 ## ADR-20260601-114 — review
 
 - task_id: T-20260601-extractpatternsfromjournal
@@ -6238,6 +2534,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-115 — review
 
 - task_id: T-20260601-extractpatternsfromjournal
@@ -6265,6 +2562,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-116 — review
 
 - task_id: T-20260601-extractpatternsfromjournal
@@ -6292,6 +2590,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-117 — review
 
 - task_id: T-20260601-extractpatternsfromjournal
@@ -6319,6 +2618,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-118 — journal.archive
 
 - task_id: T-20260601-extractpatternsfromjournal
@@ -6360,6 +2660,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-extractpatternsfromjournal/plan.md
 
 ---
+
 ## ADR-20260601-119 — review
 
 - task_id: T-20260601-check-ts-any
@@ -6387,6 +2688,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-120 — review
 
 - task_id: T-20260601-check-ts-any
@@ -6414,6 +2716,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-121 — review
 
 - task_id: T-20260601-check-ts-any
@@ -6441,6 +2744,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-122 — review
 
 - task_id: T-20260601-check-ts-any
@@ -6468,6 +2772,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-123 — review
 
 - task_id: T-20260601-check-ts-any
@@ -6495,6 +2800,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-124 — journal.archive
 
 - task_id: T-20260601-check-ts-any
@@ -6537,6 +2843,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-check-ts-any/plan.md
 
 ---
+
 ## ADR-20260601-125 — review
 
 - task_id: T-20260601-brainstormcommand
@@ -6564,6 +2871,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-126 — review
 
 - task_id: T-20260601-brainstormcommand
@@ -6591,6 +2899,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-127 — review
 
 - task_id: T-20260601-brainstormcommand
@@ -6618,6 +2927,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-128 — review
 
 - task_id: T-20260601-brainstormcommand
@@ -6645,6 +2955,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-129 — journal.archive
 
 - task_id: T-20260601-brainstormcommand
@@ -6686,6 +2997,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-brainstormcommand/plan.md
 
 ---
+
 ## ADR-20260601-130 — review
 
 - task_id: T-20260601-agentcommand
@@ -6713,6 +3025,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-131 — review
 
 - task_id: T-20260601-agentcommand
@@ -6740,6 +3053,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-132 — review
 
 - task_id: T-20260601-agentcommand
@@ -6767,6 +3081,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-133 — review
 
 - task_id: T-20260601-agentcommand
@@ -6794,6 +3109,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-134 — journal.archive
 
 - task_id: T-20260601-agentcommand
@@ -6835,6 +3151,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-agentcommand/plan.md
 
 ---
+
 ## ADR-20260601-135 — review
 
 - task_id: T-20260601-rendercompactedcontext
@@ -6862,6 +3179,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-136 — review
 
 - task_id: T-20260601-rendercompactedcontext
@@ -6889,6 +3207,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-137 — review
 
 - task_id: T-20260601-rendercompactedcontext
@@ -6916,6 +3235,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-138 — review
 
 - task_id: T-20260601-rendercompactedcontext
@@ -6943,6 +3263,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-139 — review
 
 - task_id: T-20260601-rendercompactedcontext
@@ -6970,6 +3291,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-140 — journal.archive
 
 - task_id: T-20260601-rendercompactedcontext
@@ -7012,6 +3334,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-rendercompactedcontext/plan.md
 
 ---
+
 ## ADR-20260601-141 — review
 
 - task_id: T-20260601-learncommand
@@ -7039,6 +3362,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-142 — review
 
 - task_id: T-20260601-learncommand
@@ -7066,6 +3390,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-143 — review
 
 - task_id: T-20260601-learncommand
@@ -7093,6 +3418,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-144 — review
 
 - task_id: T-20260601-learncommand
@@ -7120,6 +3446,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-145 — journal.archive
 
 - task_id: T-20260601-learncommand
@@ -7161,6 +3488,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-learncommand/plan.md
 
 ---
+
 ## ADR-20260601-146 — review
 
 - task_id: T-20260601-agent-prompt-console-log
@@ -7188,6 +3516,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-147 — review
 
 - task_id: T-20260601-agent-prompt-console-log
@@ -7215,6 +3544,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-148 — review
 
 - task_id: T-20260601-agent-prompt-console-log
@@ -7242,6 +3572,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-149 — review
 
 - task_id: T-20260601-agent-prompt-console-log
@@ -7269,6 +3600,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-150 — journal.archive
 
 - task_id: T-20260601-agent-prompt-console-log
@@ -7311,6 +3643,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-agent-prompt-console-log/plan.md
 
 ---
+
 ## ADR-20260601-151 — review
 
 - task_id: T-20260601-breadcrumb-console-log
@@ -7338,6 +3671,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-152 — review
 
 - task_id: T-20260601-breadcrumb-console-log
@@ -7365,6 +3699,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-153 — review
 
 - task_id: T-20260601-breadcrumb-console-log
@@ -7392,6 +3727,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-154 — review
 
 - task_id: T-20260601-breadcrumb-console-log
@@ -7419,6 +3755,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-155 — journal.archive
 
 - task_id: T-20260601-breadcrumb-console-log
@@ -7461,6 +3798,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-breadcrumb-console-log/plan.md
 
 ---
+
 ## ADR-20260601-156 — review
 
 - task_id: T-20260601-lifecycle-console-log
@@ -7488,6 +3826,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-157 — review
 
 - task_id: T-20260601-lifecycle-console-log
@@ -7515,6 +3854,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-158 — review
 
 - task_id: T-20260601-lifecycle-console-log
@@ -7542,6 +3882,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-159 — review
 
 - task_id: T-20260601-lifecycle-console-log
@@ -7569,6 +3910,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-160 — journal.archive
 
 - task_id: T-20260601-lifecycle-console-log
@@ -7611,6 +3953,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-lifecycle-console-log/plan.md
 
 ---
+
 ## ADR-20260601-161 — review
 
 - task_id: T-20260601-gocommand
@@ -7638,6 +3981,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-162 — review
 
 - task_id: T-20260601-gocommand
@@ -7665,6 +4009,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-163 — review
 
 - task_id: T-20260601-gocommand
@@ -7692,6 +4037,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-164 — review
 
 - task_id: T-20260601-gocommand
@@ -7719,6 +4065,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-165 — journal.archive
 
 - task_id: T-20260601-gocommand
@@ -7761,6 +4108,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-gocommand/plan.md
 
 ---
+
 ## ADR-20260601-166 — review
 
 - task_id: T-20260601-reviewcommand
@@ -7788,6 +4136,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-167 — review
 
 - task_id: T-20260601-reviewcommand
@@ -7815,6 +4164,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-168 — review
 
 - task_id: T-20260601-reviewcommand
@@ -7842,6 +4192,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-169 — review
 
 - task_id: T-20260601-reviewcommand
@@ -7869,6 +4220,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-170 — journal.archive
 
 - task_id: T-20260601-reviewcommand
@@ -7911,6 +4263,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-reviewcommand/plan.md
 
 ---
+
 ## ADR-20260601-171 — review
 
 - task_id: T-20260601-journalcommand
@@ -7938,6 +4291,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-172 — review
 
 - task_id: T-20260601-journalcommand
@@ -7965,6 +4319,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-173 — review
 
 - task_id: T-20260601-journalcommand
@@ -7992,6 +4347,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-174 — review
 
 - task_id: T-20260601-journalcommand
@@ -8019,6 +4375,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-175 — journal.archive
 
 - task_id: T-20260601-journalcommand
@@ -8061,6 +4418,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-journalcommand/plan.md
 
 ---
+
 ## ADR-20260601-176 — review
 
 - task_id: T-20260601-runharnesschecks
@@ -8088,6 +4446,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-177 — review
 
 - task_id: T-20260601-runharnesschecks
@@ -8115,6 +4474,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-178 — review
 
 - task_id: T-20260601-runharnesschecks
@@ -8142,6 +4502,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-179 — review
 
 - task_id: T-20260601-runharnesschecks
@@ -8169,6 +4530,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-180 — journal.archive
 
 - task_id: T-20260601-runharnesschecks
@@ -8210,6 +4572,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-runharnesschecks/plan.md
 
 ---
+
 ## ADR-20260601-181 — review
 
 - task_id: T-20260601-checkcommand
@@ -8237,6 +4600,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-182 — review
 
 - task_id: T-20260601-checkcommand
@@ -8264,6 +4628,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-183 — review
 
 - task_id: T-20260601-checkcommand
@@ -8291,6 +4656,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-184 — journal.archive
 
 - task_id: T-20260601-checkcommand
@@ -8331,6 +4697,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-checkcommand/plan.md
 
 ---
+
 ## ADR-20260601-185 — review
 
 - task_id: T-20260601-registercommands
@@ -8358,6 +4725,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-186 — review
 
 - task_id: T-20260601-registercommands
@@ -8385,6 +4753,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-187 — review
 
 - task_id: T-20260601-registercommands
@@ -8412,6 +4781,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-188 — journal.archive
 
 - task_id: T-20260601-registercommands
@@ -8452,6 +4822,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-registercommands/plan.md
 
 ---
+
 ## ADR-20260601-189 — review
 
 - task_id: T-20260601-review-todo
@@ -8479,6 +4850,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260601-190 — journal.archive
 
 - task_id: T-20260601-review-todo
@@ -8517,6 +4889,7 @@ agent-step: S3
 - .docpath/tasks/T-20260601-review-todo/plan.md
 
 ---
+
 ## ADR-20260602-001 — review
 
 - task_id: T-20260602-task
@@ -8544,6 +4917,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260602-002 — journal.archive
 
 - task_id: T-20260602-task
@@ -8584,6 +4958,7 @@ agent-step: S4
 - .docpath/tasks/T-20260602-task/plan.md
 
 ---
+
 ## ADR-20260602-003 — review
 
 - task_id: T-20260602-task-2
@@ -8611,6 +4986,7 @@ agent-step: S4
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260602-004 — journal.archive
 
 - task_id: T-20260602-task-2
@@ -8649,6 +5025,7 @@ agent-step: S3
 - .docpath/tasks/T-20260602-task-2/plan.md
 
 ---
+
 ## ADR-20260602-005 — review
 
 - task_id: T-20260602-task-3
@@ -8676,6 +5053,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260602-006 — journal.archive
 
 - task_id: T-20260602-task-3
@@ -8715,6 +5093,7 @@ agent-step: S3
 - .docpath/tasks/T-20260602-task-3/plan.md
 
 ---
+
 ## ADR-20260603-001 — review
 
 - task_id: T-20260602-registercommands
@@ -8742,6 +5121,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260603-002 — review
 
 - task_id: T-20260602-registercommands
@@ -8769,6 +5149,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260603-003 — review
 
 - task_id: T-20260602-registercommands
@@ -8796,6 +5177,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260603-004 — journal.archive
 
 - task_id: T-20260602-registercommands
@@ -8837,6 +5219,7 @@ agent-step: S3
 - .docpath/tasks/T-20260602-registercommands/plan.md
 
 ---
+
 ## ADR-20260603-005 — review
 
 - task_id: T-20260603-check
@@ -8864,6 +5247,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260603-006 — review
 
 - task_id: T-20260603-check
@@ -8891,6 +5275,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260603-007 — journal.archive
 
 - task_id: T-20260603-check
@@ -8930,6 +5315,7 @@ agent-step: S3
 - .docpath/tasks/T-20260603-check/plan.md
 
 ---
+
 ## ADR-20260603-008 — review
 
 - task_id: T-20260603-learn-next-agent
@@ -8957,6 +5343,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260603-009 — review
 
 - task_id: T-20260603-learn-next-agent
@@ -8984,6 +5371,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260603-010 — journal.archive
 
 - task_id: T-20260603-learn-next-agent
@@ -9023,6 +5411,7 @@ agent-step: S3
 - .docpath/tasks/T-20260603-learn-next-agent/plan.md
 
 ---
+
 ## ADR-20260603-011 — review
 
 - task_id: T-20260603-git-hooks-pre-commit
@@ -9050,6 +5439,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260603-012 — review
 
 - task_id: T-20260603-git-hooks-pre-commit
@@ -9077,6 +5467,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260603-013 — journal.archive
 
 - task_id: T-20260603-git-hooks-pre-commit
@@ -9116,6 +5507,7 @@ agent-step: S3
 - .docpath/tasks/T-20260603-git-hooks-pre-commit/plan.md
 
 ---
+
 ## ADR-20260606-001 — review
 
 - task_id: T-20260603-git-hooks-pre-commit
@@ -9143,6 +5535,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-002 — review
 
 - task_id: T-20260606-task
@@ -9170,6 +5563,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-003 — journal.archive
 
 - task_id: T-20260606-task
@@ -9207,6 +5601,7 @@ go-status: S3 -> done
 - .docpath/tasks/T-20260606-task/plan.md
 
 ---
+
 ## ADR-20260606-004 — review
 
 - task_id: T-20260606-manifest
@@ -9234,6 +5629,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-005 — journal.archive
 
 - task_id: T-20260606-manifest
@@ -9270,6 +5666,7 @@ go-status: S3 -> done
 - .docpath/tasks/T-20260606-manifest/plan.md
 
 ---
+
 ## ADR-20260606-006 — review
 
 - task_id: T-20260606-install-manifest-check-only
@@ -9297,6 +5694,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-007 — review
 
 - task_id: T-20260606-install-manifest-check-only
@@ -9324,6 +5722,7 @@ go-status: S3 -> done
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-008 — journal.archive
 
 - task_id: T-20260606-install-manifest-check-only
@@ -9369,6 +5768,7 @@ agent-step: S3
 - .docpath/tasks/T-20260606-install-manifest-check-only/plan.md
 
 ---
+
 ## ADR-20260606-009 — review
 
 - task_id: T-20260606-install-manifest-check-only
@@ -9396,6 +5796,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-010 — journal.archive
 
 - task_id: T-20260606-install-manifest-check-only
@@ -9444,6 +5845,7 @@ agent-step: S3
 - .docpath/tasks/T-20260606-install-manifest-check-only/plan.md
 
 ---
+
 ## ADR-20260606-011 — review
 
 - task_id: T-20260606-install-manifest-check-only
@@ -9471,6 +5873,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-012 — review
 
 - task_id: T-20260606-docs-install
@@ -9498,6 +5901,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-013 — review
 
 - task_id: T-20260606-docs-install
@@ -9525,6 +5929,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-014 — journal.archive
 
 - task_id: T-20260606-docs-install
@@ -9565,6 +5970,7 @@ agent-step: S3
 - .docpath/tasks/T-20260606-docs-install/plan.md
 
 ---
+
 ## ADR-20260606-015 — review
 
 - task_id: T-20260606-brainstorm-spec
@@ -9592,6 +5998,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-016 — review
 
 - task_id: T-20260606-brainstorm-spec
@@ -9619,6 +6026,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-017 — review
 
 - task_id: T-20260606-brainstorm-spec
@@ -9646,6 +6054,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-018 — journal.archive
 
 - task_id: T-20260606-brainstorm-spec
@@ -9688,6 +6097,7 @@ agent-step: S3
 - .docpath/tasks/T-20260606-brainstorm-spec/plan.md
 
 ---
+
 ## ADR-20260606-019 — review
 
 - task_id: T-20260606-docpath-backlog-task-workspace-spec
@@ -9715,6 +6125,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-020 — review
 
 - task_id: T-20260606-docpath-backlog-task-workspace-spec
@@ -9742,6 +6153,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-021 — journal.archive
 
 - task_id: T-20260606-docpath-backlog-task-workspace-spec
@@ -9783,6 +6195,7 @@ agent-step: S3
 - .docpath/tasks/T-20260606-docpath-backlog-task-workspace-spec/plan.md
 
 ---
+
 ## ADR-20260606-022 — review
 
 - task_id: T-20260606-backlog-add
@@ -9810,6 +6223,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-023 — journal.archive
 
 - task_id: T-20260606-backlog-add
@@ -9849,6 +6263,7 @@ agent-step: S3
 - .docpath/tasks/T-20260606-backlog-add/plan.md
 
 ---
+
 ## ADR-20260606-024 — review
 
 - task_id: T-20260606-backlog-edit
@@ -9876,6 +6291,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-025 — journal.archive
 
 - task_id: T-20260606-backlog-edit
@@ -9914,6 +6330,7 @@ agent-step: S3
 - .docpath/tasks/T-20260606-backlog-edit/plan.md
 
 ---
+
 ## ADR-20260606-026 — review
 
 - task_id: T-20260606-backlog-groom
@@ -9941,6 +6358,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260606-027 — journal.archive
 
 - task_id: T-20260606-backlog-groom
@@ -9979,6 +6397,7 @@ agent-step: S3
 - .docpath/tasks/T-20260606-backlog-groom/plan.md
 
 ---
+
 ## ADR-20260607-001 — review
 
 - task_id: T-20260607-changes
@@ -10006,6 +6425,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260607-002 — review
 
 - task_id: T-20260607-changes
@@ -10033,6 +6453,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260607-003 — review
 
 - task_id: T-20260607-changes
@@ -10060,6 +6481,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260607-004 — review
 
 - task_id: T-20260607-changes
@@ -10087,6 +6509,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260607-005 — journal.archive
 
 - task_id: T-20260607-changes
@@ -10131,6 +6554,7 @@ agent-step: S3
 - .docpath/tasks/T-20260607-changes/plan.md
 
 ---
+
 ## ADR-20260607-006 — review
 
 - task_id: T-20260607-changes
@@ -10158,6 +6582,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260607-007 — review
 
 - task_id: T-20260607-changes
@@ -10185,6 +6610,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260607-008 — review
 
 - task_id: T-20260607-changes
@@ -10212,6 +6638,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260607-009 — review
 
 - task_id: T-20260607-changes
@@ -10239,6 +6666,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260607-010 — review
 
 - task_id: T-20260607-changes
@@ -10266,6 +6694,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260607-011 — review
 
 - task_id: T-20260607-changes
@@ -10293,6 +6722,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-001 — review
 
 - task_id: T-20260608-html
@@ -10320,6 +6750,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-002 — review
 
 - task_id: T-20260608-html
@@ -10347,6 +6778,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-003 — review
 
 - task_id: T-20260608-html
@@ -10374,6 +6806,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-004 — review
 
 - task_id: T-20260608-html
@@ -10401,6 +6834,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-005 — review
 
 - task_id: T-20260608-html
@@ -10428,6 +6862,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-006 — journal.archive
 
 - task_id: T-20260608-html
@@ -10474,6 +6909,7 @@ agent-step: S3
 - .docpath/tasks/T-20260608-html/plan.md
 
 ---
+
 ## ADR-20260608-007 — review
 
 - task_id: T-20260608-html
@@ -10501,6 +6937,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-008 — review
 
 - task_id: T-20260608-task
@@ -10528,6 +6965,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-009 — review
 
 - task_id: T-20260608-task
@@ -10555,6 +6993,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-010 — journal.archive
 
 - task_id: T-20260608-task
@@ -10594,20 +7033,8 @@ agent-step: S3
 - .docpath/tasks/T-20260608-task/spec.md
 - .docpath/tasks/T-20260608-task/plan.md
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 ---
+
 ## ADR-20260608-024 — review
 
 - task_id: T-20260608-sqlite
@@ -10635,6 +7062,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-025 — review
 
 - task_id: T-20260608-sqlite
@@ -10662,6 +7090,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-026 — review
 
 - task_id: T-20260608-sqlite
@@ -10689,6 +7118,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-027 — review
 
 - task_id: T-20260608-sqlite
@@ -10716,6 +7146,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-028 — journal.archive
 
 - task_id: T-20260608-sqlite
@@ -10759,14 +7190,8 @@ agent-step: S3
 - .docpath/tasks/T-20260608-sqlite/spec.md
 - .docpath/tasks/T-20260608-sqlite/plan.md
 
-
-
-
-
-
-
-
 ---
+
 ## ADR-20260608-036 — review
 
 - task_id: T-20260608-task-2
@@ -10794,6 +7219,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-037 — review
 
 - task_id: T-20260608-task-2
@@ -10821,6 +7247,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-038 — journal.archive
 
 - task_id: T-20260608-task-2
@@ -10861,6 +7288,7 @@ agent-step: S3
 - .docpath/tasks/T-20260608-task-2/plan.md
 
 ---
+
 ## ADR-20260608-039 — review
 
 - task_id: T-20260608-task-3
@@ -10888,6 +7316,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-040 — review
 
 - task_id: T-20260608-task-3
@@ -10915,6 +7344,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-041 — journal.archive
 
 - task_id: T-20260608-task-3
@@ -10955,6 +7385,7 @@ agent-step: S3
 - .docpath/tasks/T-20260608-task-3/plan.md
 
 ---
+
 ## ADR-20260608-042 — review
 
 - task_id: T-20260608-backlog
@@ -10982,6 +7413,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-043 — review
 
 - task_id: T-20260608-backlog
@@ -11009,6 +7441,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-044 — journal.archive
 
 - task_id: T-20260608-backlog
@@ -11049,6 +7482,7 @@ agent-step: S3
 - .docpath/tasks/T-20260608-backlog/plan.md
 
 ---
+
 ## ADR-20260608-045 — review
 
 - task_id: T-20260608-task-4
@@ -11076,6 +7510,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-046 — review
 
 - task_id: T-20260608-task-4
@@ -11103,6 +7538,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-047 — review
 
 - task_id: T-20260608-task-4
@@ -11130,6 +7566,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-048 — journal.archive
 
 - task_id: T-20260608-task-4
@@ -11171,6 +7608,7 @@ agent-step: S3
 - .docpath/tasks/T-20260608-task-4/plan.md
 
 ---
+
 ## ADR-20260608-049 — review
 
 - task_id: T-20260608-task-5
@@ -11198,6 +7636,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-050 — review
 
 - task_id: T-20260608-task-5
@@ -11225,6 +7664,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-051 — journal.archive
 
 - task_id: T-20260608-task-5
@@ -11264,75 +7704,8 @@ agent-step: S3
 - .docpath/tasks/T-20260608-task-5/spec.md
 - .docpath/tasks/T-20260608-task-5/plan.md
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ---
+
 ## ADR-20260608-120 — review
 
 - task_id: T-20260608-init-sqlite-registry
@@ -11360,6 +7733,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-121 — review
 
 - task_id: T-20260608-init-sqlite-registry
@@ -11387,6 +7761,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-122 — journal.archive
 
 - task_id: T-20260608-init-sqlite-registry
@@ -11427,6 +7802,7 @@ agent-step: S3
 - .docpath/tasks/T-20260608-init-sqlite-registry/plan.md
 
 ---
+
 ## ADR-20260608-123 — review
 
 - task_id: T-20260608-task-6
@@ -11454,6 +7830,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-124 — review
 
 - task_id: T-20260608-task-6
@@ -11481,6 +7858,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-125 — journal.archive
 
 - task_id: T-20260608-task-6
@@ -11521,13 +7899,8 @@ agent-step: S3
 - .docpath/tasks/T-20260608-task-6/spec.md
 - .docpath/tasks/T-20260608-task-6/plan.md
 
-
-
-
-
-
-
 ---
+
 ## ADR-20260608-132 — review
 
 - task_id: T-20260608-task-7
@@ -11555,6 +7928,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-133 — review
 
 - task_id: T-20260608-task-7
@@ -11582,6 +7956,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260608-134 — journal.archive
 
 - task_id: T-20260608-task-7
@@ -11625,35 +8000,8 @@ agent-step: S5
 - .docpath/tasks/T-20260608-task-7/spec.md
 - .docpath/tasks/T-20260608-task-7/plan.md
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ---
+
 ## ADR-20260609-001 — review
 
 - task_id: T-20260609-docpath-fit-assessment
@@ -11681,6 +8029,7 @@ agent-step: S5
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-002 — review
 
 - task_id: T-20260609-docpath-fit-assessment
@@ -11708,6 +8057,7 @@ agent-step: S5
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-003 — journal.archive
 
 - task_id: T-20260609-docpath-fit-assessment
@@ -11749,6 +8099,7 @@ agent-step: S3
 - .docpath/tasks/T-20260609-docpath-fit-assessment/plan.md
 
 ---
+
 ## ADR-20260609-004 — review
 
 - task_id: T-20260609-payload-hybrid-context-index
@@ -11776,6 +8127,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-005 — review
 
 - task_id: T-20260609-payload-hybrid-context-index
@@ -11803,6 +8155,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-006 — journal.archive
 
 - task_id: T-20260609-payload-hybrid-context-index
@@ -11844,6 +8197,7 @@ agent-step: S3
 - .docpath/tasks/T-20260609-payload-hybrid-context-index/plan.md
 
 ---
+
 ## ADR-20260609-007 — review
 
 - task_id: T-20260609-deliverables
@@ -11871,6 +8225,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-008 — review
 
 - task_id: T-20260609-deliverables
@@ -11898,6 +8253,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-009 — journal.archive
 
 - task_id: T-20260609-deliverables
@@ -11939,6 +8295,7 @@ agent-step: S3
 - .docpath/tasks/T-20260609-deliverables/plan.md
 
 ---
+
 ## ADR-20260609-010 — review
 
 - task_id: T-20260609-role-profile-role-based-context
@@ -11966,6 +8323,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-011 — review
 
 - task_id: T-20260609-role-profile-role-based-context
@@ -11993,6 +8351,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-012 — policy.skip
 
 - task_id: T-20260609-role-profile-role-based-context
@@ -12020,6 +8379,7 @@ Full pnpm test passed independently with 223/223 tests; docpath check test phase
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-013 — review
 
 - task_id: T-20260609-role-profile-role-based-context
@@ -12047,6 +8407,7 @@ Full pnpm test passed independently with 223/223 tests; docpath check test phase
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-014 — journal.archive
 
 - task_id: T-20260609-role-profile-role-based-context
@@ -12091,6 +8452,7 @@ agent-step: S3
 - .docpath/tasks/T-20260609-role-profile-role-based-context/plan.md
 
 ---
+
 ## ADR-20260609-015 — review
 
 - task_id: T-20260609-codex-skill-docpath
@@ -12118,6 +8480,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-016 — policy.skip
 
 - task_id: T-20260609-codex-skill-docpath
@@ -12145,6 +8508,7 @@ Full pnpm test passed independently with 227/227 tests; docpath check test phase
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-017 — journal.archive
 
 - task_id: T-20260609-codex-skill-docpath
@@ -12186,6 +8550,7 @@ agent-step: S3
 - .docpath/tasks/T-20260609-codex-skill-docpath/plan.md
 
 ---
+
 ## ADR-20260609-018 — review
 
 - task_id: T-20260609-codex-skill-docpath
@@ -12213,6 +8578,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-019 — policy.skip
 
 - task_id: T-20260609-codex-skill-docpath
@@ -12240,6 +8606,7 @@ Full pnpm test passed independently with 227/227 tests; docpath check was rerun 
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-020 — review
 
 - task_id: T-20260609-codex-skill-docpath
@@ -12267,6 +8634,7 @@ Full pnpm test passed independently with 227/227 tests; docpath check was rerun 
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-021 — journal.archive
 
 - task_id: T-20260609-codex-skill-docpath
@@ -12315,6 +8683,7 @@ agent-step: S3
 - .docpath/tasks/T-20260609-codex-skill-docpath/plan.md
 
 ---
+
 ## ADR-20260609-022 — policy.skip
 
 - task_id: T-20260609-ui
@@ -12342,6 +8711,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-023 — policy.skip
 
 - task_id: T-20260609-ui
@@ -12369,6 +8739,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-024 — review
 
 - task_id: T-20260609-ui
@@ -12396,6 +8767,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-025 — review
 
 - task_id: T-20260609-ui
@@ -12423,6 +8795,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-026 — review
 
 - task_id: T-20260609-ui
@@ -12450,6 +8823,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-027 — journal.archive
 
 - task_id: T-20260609-ui
@@ -12497,6 +8871,7 @@ agent-step: S3
 - .docpath/tasks/T-20260609-ui/plan.md
 
 ---
+
 ## ADR-20260609-028 — review
 
 - task_id: T-20260609-mvp
@@ -12524,6 +8899,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-029 — review
 
 - task_id: T-20260609-mvp
@@ -12551,6 +8927,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-030 — journal.archive
 
 - task_id: T-20260609-mvp
@@ -12599,6 +8976,7 @@ install codex passed; full build/typecheck/test passed; final check only awaited
 - .docpath/tasks/T-20260609-mvp/plan.md
 
 ---
+
 ## ADR-20260609-031 — review
 
 - task_id: T-20260609-task
@@ -12626,6 +9004,7 @@ install codex passed; full build/typecheck/test passed; final check only awaited
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-032 — review
 
 - task_id: T-20260609-task
@@ -12653,6 +9032,7 @@ install codex passed; full build/typecheck/test passed; final check only awaited
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-033 — journal.archive
 
 - task_id: T-20260609-task
@@ -12691,6 +9071,7 @@ implemented deep predev analysis prompt, analysis quality gate, skill guidance, 
 - .docpath/tasks/T-20260609-task/plan.md
 
 ---
+
 ## ADR-20260609-034 — review
 
 - task_id: T-20260609-analyze-dry-run-skill
@@ -12718,6 +9099,7 @@ implemented deep predev analysis prompt, analysis quality gate, skill guidance, 
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-035 — journal.archive
 
 - task_id: T-20260609-analyze-dry-run-skill
@@ -12771,6 +9153,7 @@ gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
 - .docpath/tasks/T-20260609-analyze-dry-run-skill/plan.md
 
 ---
+
 ## ADR-20260609-036 — review
 
 - task_id: T-20260609-agents-md-docpath-skill
@@ -12798,6 +9181,7 @@ gate-fix: ignore legacy long-title breadcrumb alias; canonical plan uses S1/S2
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-037 — journal.archive
 
 - task_id: T-20260609-agents-md-docpath-skill
@@ -12835,6 +9219,7 @@ agent-step: S3
 - .docpath/tasks/T-20260609-agents-md-docpath-skill/plan.md
 
 ---
+
 ## ADR-20260609-038 — review
 
 - task_id: T-20260609-agents-md-skill-manifest
@@ -12862,6 +9247,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-039 — journal.archive
 
 - task_id: T-20260609-agents-md-skill-manifest
@@ -12900,6 +9286,7 @@ agent-step: S3
 - .docpath/tasks/T-20260609-agents-md-skill-manifest/plan.md
 
 ---
+
 ## ADR-20260609-040 — review
 
 - task_id: T-20260609-docpath-codex-skills
@@ -12927,6 +9314,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-041 — journal.archive
 
 - task_id: T-20260609-docpath-codex-skills
@@ -12963,9 +9351,8 @@ agent-step: S3
 - .docpath/tasks/T-20260609-docpath-codex-skills/spec.md
 - .docpath/tasks/T-20260609-docpath-codex-skills/plan.md
 
-
-
 ---
+
 ## ADR-20260609-044 — review
 
 - task_id: T-20260609-ui-ux-design-preview-gate-visual-accepta
@@ -12993,6 +9380,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260609-045 — journal.archive
 
 - task_id: T-20260609-ui-ux-design-preview-gate-visual-accepta
@@ -13034,9 +9422,8 @@ pnpm build 与 docpath check --skip-tests --skip-lint 已通过
 - .docpath/tasks/T-20260609-ui-ux-design-preview-gate-visual-accepta/spec.md
 - .docpath/tasks/T-20260609-ui-ux-design-preview-gate-visual-accepta/plan.md
 
-
-
 ---
+
 ## ADR-20260610-001 — review
 
 - task_id: T-20260609-ui-ux-ui-prompt-brief-design-approval-ga
@@ -13064,6 +9451,7 @@ pnpm build 与 docpath check --skip-tests --skip-lint 已通过
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260610-002 — journal.archive
 
 - task_id: T-20260609-ui-ux-ui-prompt-brief-design-approval-ga
@@ -13110,6 +9498,8 @@ agent-step: S8
 - .docpath/tasks/T-20260609-ui-ux-ui-prompt-brief-design-approval-ga/spec.md
 - .docpath/tasks/T-20260609-ui-ux-ui-prompt-brief-design-approval-ga/plan.md
 
+---
+
 ## ADR-20260610-003 — review
 
 - task_id: unknown
@@ -13137,6 +9527,7 @@ agent-step: S8
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260610-004 — journal.archive
 
 - task_id: unknown
@@ -13175,6 +9566,7 @@ agent-step: S8
 - .docpath/tasks/current/plan.md
 
 ---
+
 ## ADR-20260610-005 — review
 
 - task_id: T-20260610-dashboard-readonly-viewer
@@ -13202,6 +9594,7 @@ agent-step: S8
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260610-006 — journal.archive
 
 - task_id: T-20260610-dashboard-readonly-viewer
@@ -13248,6 +9641,7 @@ agent-step: S6
 - .docpath/tasks/T-20260610-dashboard-readonly-viewer/plan.md
 
 ---
+
 ## ADR-20260612-001 — review
 
 - task_id: T-20260610-ui-gate-hard-constraint
@@ -13275,6 +9669,7 @@ agent-step: S6
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260612-002 — review
 
 - task_id: T-20260610-ui-gate-hard-constraint
@@ -13302,6 +9697,7 @@ agent-step: S6
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260612-003 — journal.archive
 
 - task_id: T-20260610-ui-gate-hard-constraint
@@ -13341,6 +9737,7 @@ agent-step: S5
 - .docpath/tasks/T-20260610-ui-gate-hard-constraint/plan.md
 
 ---
+
 ## ADR-20260612-004 — review
 
 - task_id: T-20260612-task
@@ -13368,6 +9765,7 @@ agent-step: S5
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260612-005 — journal.archive
 
 - task_id: T-20260612-task
@@ -13414,6 +9812,7 @@ agent-step: S7
 - .docpath/tasks/T-20260612-task/plan.md
 
 ---
+
 ## ADR-20260612-006 — review
 
 - task_id: T-20260612-cli
@@ -13441,6 +9840,7 @@ agent-step: S7
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260612-007 — review
 
 - task_id: T-20260612-cli
@@ -13468,6 +9868,7 @@ agent-step: S7
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260612-008 — journal.archive
 
 - task_id: T-20260612-cli
@@ -13515,6 +9916,7 @@ agent-step: S6
 - .docpath/tasks/T-20260612-cli/plan.md
 
 ---
+
 ## ADR-20260612-009 — review
 
 - task_id: T-20260612-learn
@@ -13542,6 +9944,7 @@ agent-step: S6
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260612-010 — journal.archive
 
 - task_id: T-20260612-learn
@@ -13581,6 +9984,7 @@ agent-step: S3
 - .docpath/tasks/T-20260612-learn/plan.md
 
 ---
+
 ## ADR-20260612-011 — review
 
 - task_id: T-20260612-decisions-md
@@ -13608,6 +10012,7 @@ agent-step: S3
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260612-012 — journal.archive
 
 - task_id: T-20260612-decisions-md
@@ -13648,6 +10053,7 @@ agent-step: S4
 - .docpath/tasks/T-20260612-decisions-md/plan.md
 
 ---
+
 ## ADR-20260612-013 — review
 
 - task_id: T-20260612-journal-decisions-md-adr
@@ -13675,6 +10081,7 @@ agent-step: S4
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260613-001 — review
 
 - task_id: T-20260613-docpath
@@ -13702,6 +10109,7 @@ agent-step: S4
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260613-002 — review
 
 - task_id: T-20260613-handoff-agent
@@ -13729,6 +10137,7 @@ agent-step: S4
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260613-003 — review
 
 - task_id: T-20260613-prompt-omx
@@ -13756,6 +10165,7 @@ agent-step: S4
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260613-004 — review
 
 - task_id: T-20260613-optimize-workflow
@@ -13783,6 +10193,7 @@ agent-step: S4
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260613-005 — review
 
 - task_id: T-20260613-check-checklist
@@ -13810,6 +10221,7 @@ agent-step: S4
 - 未记录相关文件。
 
 ---
+
 ## ADR-20260613-006 — review
 
 - task_id: T-20260613-schema-first-json-jsonl
@@ -13837,3 +10249,60 @@ agent-step: S4
 - 未记录相关文件。
 
 ---
+
+## ADR-20260613-007 — review
+
+- task_id: T-20260613-spec-json-schema
+- created_at: 2026-06-13T18:26:19.976Z
+- category: review
+
+### 背景
+
+由 DocPath 工作流自动记录。
+
+### 决策
+
+通过: 0 错误, 3 警告
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+
+## ADR-20260615-001 — policy.skip
+
+- task_id: T-20260615-worktree
+- created_at: 2026-06-15T03:42:50.256Z
+- category: policy.skip
+
+### 背景
+
+Worktree 基础设施已完成，journal 有 bug 导致 spec 被覆盖，Week 1 功能已验证通过
+
+### 决策
+
+跳过 check
+
+### 影响
+
+影响待后续 review/journal 验证。
+
+### 替代方案
+
+- 未记录替代方案。
+
+### 相关文件
+
+- 未记录相关文件。
+
+---
+

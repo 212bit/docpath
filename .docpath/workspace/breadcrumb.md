@@ -5,278 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ S3 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:46:37.440Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S3
-status: done
-timestamp: 2026-06-16T04:46:37.440Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-- **Session**: default
-
-### 🔄 S4 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:46:47.703Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S4
-status: in_progress
-timestamp: 2026-06-16T04:46:47.703Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Add quick escalation guard and durable audit evidence
-- **Session**: default
-
-### ✅ S4 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:47:36.638Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S4
-status: done
-timestamp: 2026-06-16T04:47:36.638Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-- **Session**: default
-
-### 🔄 S5 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:47:49.706Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S5
-status: in_progress
-timestamp: 2026-06-16T04:47:49.706Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Add tests and update docs/agent guidance
-- **Session**: default
-
-### ✅ S5 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:00:48.142Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S5
-status: done
-timestamp: 2026-06-16T05:00:48.142Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S5
-- **Session**: default
-
-### 🔄 S6 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:01:04.137Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S6
-status: in_progress
-timestamp: 2026-06-16T05:01:04.137Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Run verification gates and close task evidence
-- **Session**: default
-
-### 🚫 check [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:04:00.441Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: check
-status: blocked
-timestamp: 2026-06-16T05:04:00.441Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 子任务完成度 (5/6)
-
-### ✅ S6 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:04:16.859Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: S6
-status: done
-timestamp: 2026-06-16T05:04:16.859Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S6
-- **Session**: default
-
-### ✅ check [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:06:01.487Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: check
-status: done
-timestamp: 2026-06-16T05:06:01.487Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:06:14.871Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: review
-status: done
-timestamp: 2026-06-16T05:06:14.871Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 9 警告, 0 提示
-
-### ✅ journal [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:08:12.389Z
-
----
-taskId: T-20260616-add-quick-fast-track-workflow-profile
-step: journal
-status: done
-timestamp: 2026-06-16T05:08:12.389Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (6/6 步)
-
-### 🔄 S1 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:21:28.260Z
-
----
-taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
-step: S1
-status: in_progress
-timestamp: 2026-06-16T06:21:28.260Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Map Current Workflow Touchpoints
-- **Session**: default
-
-### ✅ S1 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:23:20.331Z
-
----
-taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
-step: S1
-status: done
-timestamp: 2026-06-16T06:23:20.331Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
-### 🔄 S2 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:23:37.015Z
-
----
-taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
-step: S2
-status: in_progress
-timestamp: 2026-06-16T06:23:37.015Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Fix Step Routing And Pending-Done Priority
-- **Session**: default
-
-### ✅ S2 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:25:53.880Z
-
----
-taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
-step: S2
-status: done
-timestamp: 2026-06-16T06:25:53.880Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### 🔄 S3 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:26:02.862Z
-
----
-taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
-step: S3
-status: in_progress
-timestamp: 2026-06-16T06:26:02.862Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Improve Done Gate Reuse And Profile Visibility
-- **Session**: default
-
-### ✅ S3 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:29:02.118Z
-
----
-taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
-step: S3
-status: done
-timestamp: 2026-06-16T06:29:02.118Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-- **Session**: default
-
-### 🔄 S4 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:29:10.101Z
-
----
-taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
-step: S4
-status: in_progress
-timestamp: 2026-06-16T06:29:10.101Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Reduce Generated-Artifact And Drift Noise
-- **Session**: default
-
-### ✅ S4 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:32:13.538Z
-
----
-taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
-step: S4
-status: done
-timestamp: 2026-06-16T06:32:13.538Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S4
-- **Session**: default
-
-### 🔄 S5 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:32:23.231Z
-
----
-taskId: T-20260616-optimize-docpath-workflow-dx-after-quick
-step: S5
-status: in_progress
-timestamp: 2026-06-16T06:32:23.231Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Consume Canonical Evidence Staging Plans
-- **Session**: default
-
 ### ✅ S5 [T-20260616-optimize-docpath-workflow-dx-after-quick] — 2026-06-16T06:36:08.215Z
 
 ---
@@ -678,3 +406,271 @@ timestamp: 2026-06-16T08:20:17.116Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (4/4 步)
+
+### 🔄 S1 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T10:59:15.733Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S1
+status: in_progress
+timestamp: 2026-06-16T10:59:15.733Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Phase 1 - 归档 decisions.md
+- **Session**: default
+
+### ✅ S1 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T11:00:35.289Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S1
+status: done
+timestamp: 2026-06-16T11:00:35.289Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T11:01:03.425Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S2
+status: in_progress
+timestamp: 2026-06-16T11:01:03.425Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Phase 1 - 清理 workspace 临时视图
+- **Session**: default
+
+### ✅ S2 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T11:02:11.851Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S2
+status: done
+timestamp: 2026-06-16T11:02:11.851Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T11:02:19.823Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S3
+status: in_progress
+timestamp: 2026-06-16T11:02:19.823Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Phase 2 - 创建 artifact-policy.md
+- **Session**: default
+
+### ✅ S3 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T11:03:16.904Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S3
+status: done
+timestamp: 2026-06-16T11:03:16.904Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### 🔄 S4 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:11:59.784Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S4
+status: in_progress
+timestamp: 2026-06-16T12:11:59.784Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Phase 2 - 添加配置类型定义
+- **Session**: default
+
+### ✅ S4 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:12:54.573Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S4
+status: done
+timestamp: 2026-06-16T12:12:54.573Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### 🔄 S5 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:13:00.635Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S5
+status: in_progress
+timestamp: 2026-06-16T12:13:00.635Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Phase 2 - 修改 writeStructuredTaskJson 支持配置
+- **Session**: default
+
+### ✅ S5 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:13:58.785Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S5
+status: done
+timestamp: 2026-06-16T12:13:58.785Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S5
+- **Session**: default
+
+### 🔄 S6 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:14:07.778Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S6
+status: in_progress
+timestamp: 2026-06-16T12:14:07.778Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Phase 2 - 添加测试覆盖
+- **Session**: default
+
+### ✅ S6 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:21:11.700Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S6
+status: done
+timestamp: 2026-06-16T12:21:11.700Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S6
+- **Session**: default
+
+### 🔄 S7 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:21:19.669Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S7
+status: in_progress
+timestamp: 2026-06-16T12:21:19.669Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Phase 2 - 运行 check 和 review
+- **Session**: default
+
+### 🚫 check [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:22:34.638Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: check
+status: blocked
+timestamp: 2026-06-16T12:22:34.638Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: TypeScript 编译, 子任务完成度 (6/7)
+
+### 🚫 check [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:24:17.769Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: check
+status: blocked
+timestamp: 2026-06-16T12:24:17.769Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 子任务完成度 (6/7)
+
+### 🚫 check [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:25:31.727Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: check
+status: blocked
+timestamp: 2026-06-16T12:25:31.727Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 子任务完成度 (6/7)
+
+### ✅ S7 [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:25:40.098Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: S7
+status: done
+timestamp: 2026-06-16T12:25:40.098Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S7
+- **Session**: default
+
+### ✅ check [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:26:44.822Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: check
+status: done
+timestamp: 2026-06-16T12:26:44.822Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (10 项)
+
+### ✅ review [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:26:53.696Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: review
+status: done
+timestamp: 2026-06-16T12:26:53.696Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 1 警告, 1 提示
+
+### ✅ journal [T-20260616-reduce-docpath-artifact-redundancy-and-e] — 2026-06-16T12:27:02.165Z
+
+---
+taskId: T-20260616-reduce-docpath-artifact-redundancy-and-e
+step: journal
+status: done
+timestamp: 2026-06-16T12:27:02.165Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (7/7 步)

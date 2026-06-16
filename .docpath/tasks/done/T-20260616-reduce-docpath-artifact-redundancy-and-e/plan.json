@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-16T12:25:40.103Z",
+    "updated_at": "2026-06-16T12:25:40.103Z",
+    "content_sha256": "b25ddc5a230ec46e0bec0ab2266f26784adaf30b5f990695de973442c29af057"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: Phase 1 - 归档 decisions.md\n- **描述**: 运行 docpath journal 触发按月归档，验证 workspace/decisions.md 按月分割生成 decisions-YYYY-MM.md\n- **验收条件**: \n  - decisions-2026-06.md（或当前月）生成\n  - workspace/decisions.md 保持轻量（< 50K）\n  - 归档逻辑正常工作\n- **依赖**: 无\n\n### S2: Phase 1 - 清理 workspace 临时视图\n- **描述**: 删除 compact-context.md, worktree-analysis.md, worktree-decision.md，保留 current.md, last-check.md, review.md\n- **验收条件**:\n  - 临时视图文件已删除\n  - 必要视图文件保留\n  - docpath render 可按需重建已删除的视图\n- **依赖**: 无\n\n### S3: Phase 2 - 创建 artifact-policy.md\n- **描述**: 在 docs/workflows/ 创建 artifact-policy.md，定义必需/可选文件、特殊文档触发条件、配置参数\n- **验收条件**:\n  - artifact-policy.md 存在\n  - 包含必需文件清单（JSON 真值源）\n  - 包含可选文件清单（MD 渲染视图）\n  - 包含特殊文档触发条件（output-contract.md 等）\n  - 包含配置参数说明\n- **依赖**: S1, S2\n\n### S4: Phase 2 - 添加配置类型定义\n- **描述**: 在 src/types/ 定义 ArtifactConfig 接口，添加到 workspace config schema\n- **验收条件**:\n  - ArtifactConfig 接口定义完整\n  - 包含 generate_md_views: boolean 字段\n  - 默认值为 false\n  - 类型系统验证通过\n- **依赖**: S3\n\n### S5: Phase 2 - 修改 writeStructuredTaskJson 支持配置\n- **描述**: 修改 src/utils/structured-docs.ts 的 writeStructuredTaskJson，读取配置，条件化生成 .md 文件\n- **验收条件**:\n  - 函数读取 artifacts.generate_md_views 配置\n  - 当配置为 false 时，只写 .json，不写 .md\n  - 当配置为 true 时，保持现有行为\n  - 已存在 .md 文件不报错（向后兼容）\n- **依赖**: S4\n\n### S6: Phase 2 - 添加测试覆盖\n- **描述**: 为配置开关、按需渲染、向后兼容添加单元测试\n- **验收条件**:\n  - 测试覆盖：generate_md_views=false 不生成 MD\n  - 测试覆盖：docpath render 从 JSON 正确生成 MD\n  - 测试覆盖：已存在 MD 时不报错\n  - 所有测试通过\n- **依赖**: S5\n\n### S7: Phase 2 - 运行 check 和 review\n- **描述**: 运行 docpath check 和 docpath review 验证质量门禁\n- **验收条件**:\n  - check 通过所有检查项\n  - review 通过或只有可接受的警告\n  - 无破坏性变更\n- **依赖**: S6\n\n## Checklist\n- [x] S1: Phase 1 - 归档 decisions.md\n- [x] S2: Phase 1 - 清理 workspace 临时视图\n- [x] S3: Phase 2 - 创建 artifact-policy.md\n- [x] S4: Phase 2 - 添加配置类型定义\n- [x] S5: Phase 2 - 修改 writeStructuredTaskJson 支持配置\n- [x] S6: Phase 2 - 添加测试覆盖\n- [x] S7: Phase 2 - 运行 check 和 review\n\n## 依赖关系图\nS1 → S3\nS2 → S3\nS3 → S4 → S5 → S6 → S7\n",
+  "generated_at": "2026-06-16T12:25:40.103Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Phase 1 - 归档 decisions.md",
+      "description": "运行 docpath journal 触发按月归档，验证 workspace/decisions.md 按月分割生成 decisions-YYYY-MM.md",
+      "acceptance": "- decisions-2026-06.md（或当前月）生成",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Phase 1 - 清理 workspace 临时视图",
+      "description": "删除 compact-context.md, worktree-analysis.md, worktree-decision.md，保留 current.md, last-check.md, review.md",
+      "acceptance": "- 临时视图文件已删除",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Phase 2 - 创建 artifact-policy.md",
+      "description": "在 docs/workflows/ 创建 artifact-policy.md，定义必需/可选文件、特殊文档触发条件、配置参数",
+      "acceptance": "- artifact-policy.md 存在",
+      "dependencies": "S1, S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Phase 2 - 添加配置类型定义",
+      "description": "在 src/types/ 定义 ArtifactConfig 接口，添加到 workspace config schema",
+      "acceptance": "- ArtifactConfig 接口定义完整",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "Phase 2 - 修改 writeStructuredTaskJson 支持配置",
+      "description": "修改 src/utils/structured-docs.ts 的 writeStructuredTaskJson，读取配置，条件化生成 .md 文件",
+      "acceptance": "- 函数读取 artifacts.generate_md_views 配置",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "Phase 2 - 添加测试覆盖",
+      "description": "为配置开关、按需渲染、向后兼容添加单元测试",
+      "acceptance": "- 测试覆盖：generate_md_views=false 不生成 MD",
+      "dependencies": "S5",
+      "status": "done"
+    },
+    {
+      "id": "S7",
+      "name": "Phase 2 - 运行 check 和 review",
+      "description": "运行 docpath check 和 docpath review 验证质量门禁",
+      "acceptance": "- check 通过所有检查项",
+      "dependencies": "S6",
+      "status": "done"
+    }
+  ]
+}
