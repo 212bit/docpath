@@ -13,7 +13,7 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
-import { readCurrentMd, readCurrentState } from '../utils/workspace.js';
+import { readCurrentState, readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { writeReviewEvidence } from '../utils/workspace-evidence.js';
@@ -334,7 +334,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   );
   console.log(`    scope: ${scope}; finding_scope: mixed`);
   printFindingScopeSummary(countFindingScopes(findings));
-  const current = await readCurrentMd(opts.cwd);
+  const current = await readCurrentState(opts.cwd);
   if (!current?.task_id && !opts.force) {
     console.warn('\n⚠️  当前无活跃 agent 会话 (current.md 无 task_id)');
     console.warn('   审查通常应在 agent 流程内执行 (docpath agent done)');

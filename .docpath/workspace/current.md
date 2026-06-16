@@ -3,17 +3,17 @@
 ```yaml
 level: 3
 workflow_profile: standard
-state: completed          # 当前状态
-task_id: T-20260616-reduce-docpath-artifact-redundancy-and-e
-task_title: Reduce DocPath Artifact Redundancy and Establish Generation Policy
-phase: completed
-gate: review_pass
-current_step: 知识归档完成
-started_at: 2026-06-16T12:27:02.060Z
-updated_at: 2026-06-16T12:27:02.060Z
+state: drafting           # 当前状态
+task_id: T-20260616-add-backlog-promote-draft-flag-for-fast-
+task_title: Add backlog promote --draft flag for fast-track workflow
+phase: drafting
+gate: none
+current_step: backlog promote R-197 完成，下一步: docpath plan
+started_at: 2026-06-16T12:57:27.148Z
+updated_at: 2026-06-16T12:57:27.148Z
 ```
 
-> 📖 规约: [spec.md](../tasks/current/spec.md)
+> 📖 规约: [spec.md](../tasks/T-20260616-add-backlog-promote-draft-flag-for-fast-/spec.md)
 > 📋 计划: [plan.md](../tasks/current/plan.md)
 
 ## ✅ 执行检查清单
@@ -23,7 +23,7 @@ updated_at: 2026-06-16T12:27:02.060Z
 ## 🧾 最近验证证据
 
 - Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-16T12:26:44.821Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — review · 状态: done · 代码审查: 0 错误, 1 警告, 1 提示
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — journal · 状态: done · 知识归档完成 (7/7 步)
 
 ## 🔄 同步说明
 

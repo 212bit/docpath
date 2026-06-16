@@ -8,7 +8,7 @@
 import { existsSync } from 'fs';
 import { readFile, readdir } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd } from '../utils/workspace.js';
+import { readCurrentState } from '../utils/workspace.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { LEVEL_NAMES, type ComplexityLevel } from '../engine/state-machine.js';
@@ -108,7 +108,7 @@ export async function statsCommand(options: StatsOptions): Promise<void> {
   }
 
   // ── 收集数据 ──
-  const state = await readCurrentMd(cwd);
+  const state = await readCurrentState(cwd);
   const bc = await readBreadcrumb(cwd);
   const journal = await countJournalEntries(docpathDir);
 

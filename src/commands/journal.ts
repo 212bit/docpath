@@ -8,7 +8,7 @@
 import { existsSync } from 'fs';
 import { readFile, writeFile, rename } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd, readWorkspaceMeta, parsePlanTasks, type CurrentState } from '../utils/workspace.js';
+import { readCurrentState, readWorkspaceMeta, parsePlanTasks, type CurrentState } from '../utils/workspace.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { emitPrompt } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -162,7 +162,7 @@ async function assertJournalGate(cwd: string): Promise<void> {
 }
 
 async function loadJournalContext(cwd: string, docpathDir: string): Promise<JournalContext> {
-  const current = await readCurrentMd(cwd);
+  const current = await readCurrentState(cwd);
   const taskId = current?.task_id || 'unknown';
   const taskDirName = taskId !== 'unknown' ? taskId : 'current';
   const planPath = resolveActiveTaskDocPath(docpathDir, current?.task_id, 'plan.md');

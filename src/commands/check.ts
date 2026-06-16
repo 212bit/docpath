@@ -13,7 +13,7 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 import { isCancel, select } from '@clack/prompts';
 import { resolveDocpathDir } from '../utils/file.js';
-import { readCurrentMd, readCurrentState, syncCurrentDocument, parsePlanTasks } from '../utils/workspace.js';
+import { readCurrentState, readCurrentState, syncCurrentDocument, parsePlanTasks } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
@@ -325,7 +325,7 @@ async function evaluatePreflightRule(ruleId: string, cwd: string, docpathDir: st
 
     case 'pre_task_ready': {
       try {
-        const current = await readCurrentMd(cwd);
+        const current = await readCurrentState(cwd);
         const passed = current?.state === 'ready' || current?.state === 'in_progress';
         return { passed, output: passed ? `任务状态: ${current?.state}` : `任务未就绪: ${current?.state || 'unknown'}` };
       } catch {
@@ -477,7 +477,7 @@ function normalizeHarnessOptions(options: CheckOptions): void {
   }
 }
 
-function warnWhenOutsideAgentSession(current: Awaited<ReturnType<typeof readCurrentMd>>, options: CheckOptions): void {
+function warnWhenOutsideAgentSession(current: Awaited<ReturnType<typeof readCurrentState>>, options: CheckOptions): void {
   if (current?.task_id || options.force) return;
   console.warn('⚠️  当前无活跃 agent 会话 (current.md 无 task_id)');
   console.warn('   这些检查通常应在 agent 流程内执行 (docpath agent done)');
@@ -1211,7 +1211,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     process.exit(1);
   }
 
-  const current = await readCurrentMd(cwd);
+  const current = await readCurrentState(cwd);
 
   warnWhenOutsideAgentSession(current, options);
 

@@ -16,7 +16,7 @@
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd } from '../utils/workspace.js';
+import { readCurrentState } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { getRecentDecisions } from '../governance/decisions.js';
@@ -228,7 +228,7 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
   // ══════════════════════════════════════════
   // Level 0 — Micro: 项目 + 任务 + 下一步
   // ══════════════════════════════════════════
-  const current = await readCurrentMd(cwd);
+  const current = await readCurrentState(cwd);
   const selection: DocumentSelectionOptions = {
     topic,
     taskId,

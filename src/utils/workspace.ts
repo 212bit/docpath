@@ -165,14 +165,6 @@ export async function updateLevel(cwd: string, level: number): Promise<void> {
 
 // ── 兼容别名（保持现有调用者不变） ──
 
-/**
- * 读取 .docpath/workspace/current.md 的状态块
- * @deprecated 请使用 readCurrentState()，此函数仅为兼容保留
- */
-export async function readCurrentMd(cwd: string): Promise<CurrentState | null> {
-  return readCurrentState(cwd);
-}
-
 // ── 内部辅助函数 ──
 
 function normalizeStoredState(raw: Partial<CurrentState> & { state?: string; phase?: string; gate?: string }): CurrentState | null {

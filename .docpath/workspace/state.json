@@ -1,11 +1,11 @@
 {
   "level": 3,
   "workflow_profile": "standard",
-  "task_id": "T-20260616-reduce-docpath-artifact-redundancy-and-e",
-  "task_title": "Reduce DocPath Artifact Redundancy and Establish Generation Policy",
-  "phase": "completed",
-  "gate": "review_pass",
-  "current_step": "知识归档完成",
-  "started_at": "2026-06-16T12:27:02.060Z",
-  "updated_at": "2026-06-16T12:27:02.060Z"
+  "task_id": "T-20260616-add-backlog-promote-draft-flag-for-fast-",
+  "task_title": "Add backlog promote --draft flag for fast-track workflow",
+  "phase": "drafting",
+  "gate": "none",
+  "current_step": "backlog promote R-197 完成，下一步: docpath plan",
+  "started_at": "2026-06-16T12:57:27.148Z",
+  "updated_at": "2026-06-16T12:57:27.148Z"
 }

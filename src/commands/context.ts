@@ -8,7 +8,7 @@
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd } from '../utils/workspace.js';
+import { readCurrentState } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
@@ -184,7 +184,7 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
   let currentTaskId: string | undefined;
 
   // ── 1. 当前状态 ──
-  const state = await readCurrentMd(cwd);
+  const state = await readCurrentState(cwd);
   currentTaskId = state?.task_id;
   if (state) {
     sections.push(`## 当前状态\n\`\`\`yaml\nlevel: ${state.level}\nstate: ${state.state}\ntask_id: ${state.task_id}\ntask_title: ${state.task_title}\nphase: ${state.phase}\nstarted_at: ${state.started_at}\nupdated_at: ${state.updated_at}\n\`\`\``);

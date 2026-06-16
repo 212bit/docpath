@@ -15,7 +15,7 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { parse as parseYaml } from 'yaml';
-import { readCurrentMd, updateLevel } from '../utils/workspace.js';
+import { readCurrentState, updateLevel } from '../utils/workspace.js';
 import { evaluateEscalation } from '../engine/escalation.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
@@ -57,7 +57,7 @@ async function printResumeContext(cwd: string, docpathDir: string): Promise<void
     }
   }
 
-  const current = await readCurrentMd(cwd);
+  const current = await readCurrentState(cwd);
   if (current) {
     console.log(`📌  当前状态: ${current.state}`);
     console.log(`   任务: ${current.task_title} (${current.task_id})`);
@@ -97,7 +97,7 @@ function parseBreadcrumbEntries(content: string): Array<{
 }
 
 async function maybeEscalateLevel(cwd: string, docpathDir: string): Promise<void> {
-  const current = await readCurrentMd(cwd);
+  const current = await readCurrentState(cwd);
   if (!current) return;
 
   const specContent = await readActiveTaskFile(docpathDir, current.task_id, 'spec.md');

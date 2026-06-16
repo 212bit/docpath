@@ -9,7 +9,7 @@ import { stringify } from 'yaml';
 import { existsSync } from 'fs';
 import { readdir } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd, readOptionalFile } from './workspace.js';
+import { readCurrentState, readOptionalFile } from './workspace.js';
 import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
 import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from './plan-sync.js';
@@ -349,7 +349,7 @@ type TddStateSnapshot = {
 
 type AgentOutputContext = {
   docpathDir: string;
-  state: Awaited<ReturnType<typeof readCurrentMd>>;
+  state: Awaited<ReturnType<typeof readCurrentState>>;
   lastCheckContent: string;
   hasSpec: boolean;
   planContent: string;
@@ -403,7 +403,7 @@ async function readInstallHealth(cwd: string, docpathDir: string): Promise<Insta
  * 推断下一步动作
  */
 function inferNextAction(
-  state: Awaited<ReturnType<typeof readCurrentMd>>,
+  state: Awaited<ReturnType<typeof readCurrentState>>,
   bc: BreadcrumbSummary,
   planTasks: Array<{ id: string; title: string; done: boolean }>,
   lastCheckContent: string,
@@ -779,7 +779,7 @@ function inferNextAction(
 }
 
 async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<AgentOutputContext> {
-  const state = await readCurrentMd(cwd);
+  const state = await readCurrentState(cwd);
   const lastCheckContent = await readLastCheckMarkdown(docpathDir);
   const hasSpec = existsSync(join(docpathDir, 'tasks', 'current', 'spec.md'));
   const specContent = hasSpec ? await readActiveTaskFile(docpathDir, state?.task_id, 'spec.md') : '';

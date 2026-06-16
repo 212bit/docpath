@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-16T12:27:02.164Z
+> 扫描时间: 2026-06-16T12:57:27.146Z
 
 ## 条目列表
 
@@ -34,6 +34,8 @@
 | R-178 | workspace 老化策略 — 实现自动清理 | done | P0 | 2 | T-20260615-workspace |
 | R-179 | docs-index 归档策略 — 物理移除旧条目 | done | P0 | 2 | T-20260615-docs-index |
 | R-183 | Worktree 真并发开发支持 — 基础设施 | done | P0 | 3 | T-20260615-worktree |
+| R-196 | Fix command inference when check/review fails | proposed | P0 | 2 |  |
+| R-197 | Add backlog promote --draft flag for fast-track workflow | active | P0 | 2 | T-20260616-add-backlog-promote-draft-flag-for-fast- |
 | R-010 | 需求管理 / Backlog 层 | done | P1 | 2 | current |
 | R-011 | 实现 write-plan / write-journal 命令并打通断头引用 | done | P1 | 2 | T-20260531-write-plan-write-journal |
 | R-012 | 接活 lifecycle.ts 事件系统并打通 agent enter/done 哨兵副作用 | done | P1 | 2 | T-20260531-lifecycle-ts-agent-enter-done |

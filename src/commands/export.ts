@@ -8,7 +8,7 @@
 import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd } from '../utils/workspace.js';
+import { readCurrentState } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { LEVEL_NAMES, type ComplexityLevel } from '../engine/state-machine.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -68,7 +68,7 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
   sections.push(`# 📄 DocPath 项目导出\n\n> 导出时间: ${now}\n> 工具: DocPath v0.1.0 — 文径渐进式工作流 CLI`);
 
   // ── 状态摘要 ──
-  const state = await readCurrentMd(cwd);
+  const state = await readCurrentState(cwd);
   if (state) {
     const levelName = LEVEL_NAMES[state.level as ComplexityLevel] || `L${state.level}`;
     sections.push(`## 📊 当前状态\n\n| 字段 | 值 |\n|------|----|\n| 级别 | L${state.level} — ${levelName} |\n| 状态 | ${state.state} |\n| 任务 | ${state.task_title || state.task_id || '-'} |\n| 阶段 | ${state.phase || '-'} |\n| 开始 | ${state.started_at || '-'} |\n| 更新 | ${state.updated_at || '-'}`);

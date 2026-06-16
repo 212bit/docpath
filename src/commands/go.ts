@@ -11,7 +11,7 @@
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentMd, resolveBoundTaskId } from '../utils/workspace.js';
+import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -208,7 +208,7 @@ export async function goCommand(options: GoOptions): Promise<void> {
   const session = resolveSessionContext(options.session);
   const { docpathDir, specPath } = await resolveGoContext(cwd);
   const extraFields = await readSpecFields(specPath);
-  const current = await readCurrentMd(cwd);
+  const current = await readCurrentState(cwd);
   const tasks = await readPlanSteps(docpathDir, current?.task_id);
   const target = selectTargetStep(tasks, step, status, current?.current_step);
   if (!target) {
