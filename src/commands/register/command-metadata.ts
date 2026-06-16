@@ -25,6 +25,7 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'recover', description: 'Recover from blocked step', visibility: 'core' },
   { name: 'retry', description: 'Retry skipped step', visibility: 'core' },
   { name: 'unblock', description: 'Explicitly unblock and restart step', visibility: 'core' },
+  { name: 'commit', description: 'Git closeout wrapper: preview/stage/commit', visibility: 'core' },
   { name: 'go', description: 'Atomically claim/start a plan step', visibility: 'core' },
   { name: 'agent', description: 'Agent lifecycle: enter, step, done, handoff', visibility: 'core' },
   { name: 'check', description: 'Run quality and workflow gates', visibility: 'core' },

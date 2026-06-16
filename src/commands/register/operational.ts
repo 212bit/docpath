@@ -14,6 +14,7 @@ import { startCommand } from '../start.js';
 import { stepCommand } from '../step.js';
 import { doneCommand } from '../done.js';
 import { recoverCommand, retryCommand, unblockCommand } from '../recovery.js';
+import { commitCommand } from '../commit.js';
 
 export function registerOperationalCommands(cli: CAC): void {
   cli
@@ -114,6 +115,33 @@ export function registerOperationalCommands(cli: CAC): void {
         cwd: options.cwd || process.cwd(),
         step,
         session: options.session,
+      });
+    });
+
+  cli
+    .command('commit', 'Git 收口包装：预览/暂存/提交（Phase 2）')
+    .option('--cwd <path>', '项目目录')
+    .option('--stage', '暂存推荐文件（不提交）')
+    .option('-m, --message <msg>', '提交信息（暂存并提交）')
+    .option('--include <pattern>', '额外暂存的文件模式（可多次使用）', { default: [] })
+    .action(async (options: {
+      cwd?: string;
+      stage?: boolean;
+      message?: string;
+      include?: string | string[];
+    }) => {
+      const includePatterns = Array.isArray(options.include)
+        ? options.include
+        : options.include
+        ? [options.include]
+        : undefined;
+
+      await commitCommand({
+        cwd: options.cwd || process.cwd(),
+        dryRun: !options.stage && !options.message,
+        stage: options.stage || false,
+        message: options.message,
+        includePatterns,
       });
     });
 }

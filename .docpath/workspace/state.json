@@ -1,10 +1,10 @@
 {
   "level": 3,
-  "task_id": "T-20260615-fix-cli-command-contract-validation",
-  "task_title": "Fix CLI command contract validation",
+  "task_id": "T-20260616-phase-2-git-closeout-wrapper-commands-co",
+  "task_title": "Phase 2: Git closeout wrapper commands (commit/stage)",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-15T16:23:25.477Z",
-  "updated_at": "2026-06-15T16:23:25.476Z"
+  "started_at": "2026-06-16T04:21:25.366Z",
+  "updated_at": "2026-06-16T04:21:25.366Z"
 }

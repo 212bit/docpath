@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-15T16:23:25.575Z
+> 扫描时间: 2026-06-16T04:21:25.427Z
 
 ## 条目列表
 
@@ -79,6 +79,9 @@
 | R-164 | 深化 spec.json schema 与门禁字段 | done | P1 | 3 | T-20260613-spec-json-schema |
 | R-184 | 修复 worktree 安全、初始化与测试缺口 | done | P1 | 2 | T-20260615-worktree-2 |
 | R-185 | Fix CLI command contract validation | done | P1 | 2 | T-20260615-fix-cli-command-contract-validation |
+| R-186 | Tier and simplify CLI command surface | done | P1 | 3 | T-20260615-tier-and-simplify-cli-command-surface |
+| R-187 | Optimize worktree development workflow | done | P1 | 3 | T-20260615-optimize-worktree-development-workflow |
+| R-188 | Optimize DocPath operational command layer Phase 1 | done | P1 | 3 | T-20260616-optimize-docpath-operational-command-lay |
 | R-013 | 为 write-spec / write-plan 增加必备字段校验 | done | P2 | 2 | T-20260531-write-spec-write-plan |
 | R-014 | 统一 progress 计数与 step-finder 的 plan 解析 | done | P2 | 2 | T-20260531-progress-step-finder-plan |
 | R-015 | 分配真实 task_id 并统一 tasks/current 与任务归档路径策略 | done | P2 | 2 | T-20260531-task-id-tasks-current |
@@ -142,6 +145,8 @@
 | R-180 | 技术债务清理 — 删除废弃文件和未使用依赖 | done | P2 | 1 | T-20260615-task |
 | R-181 | 修复 CLI 文档系统 workflow review 发现的 cleanup、archive、install、status 边界问题 | done | P2 | 2 | T-20260615-cli-workflow-review-cleanup-archive-inst |
 | R-182 | 数据统一：消除 MD↔JSON 双向同步，建立 JSON 单真源 | done | P2 | 3 | T-20260615-md-json-json |
+| R-189 | Update agent guidelines to recommend Phase 1 operational commands | done | P2 | 2 | T-20260616-update-agent-guidelines-to-recommend-pha |
+| R-190 | Phase 2: Git closeout wrapper commands (commit/stage) | done | P2 | 2 | T-20260616-phase-2-git-closeout-wrapper-commands-co |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 
 ## 用途说明

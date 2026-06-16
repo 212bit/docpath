@@ -1,11 +1,12 @@
 # Code Review Report
 
-**时间**: 2026-06-15T16:23:05.314Z
+**时间**: 2026-06-16T04:21:25.224Z
 **状态**: ✅ PASS
-**文件**: 12
-✅ 代码审查: 0 错误, 4 警告, 0 提示
+**文件**: 8
+✅ 代码审查: 0 错误, 5 警告, 0 提示
 
-- [WARN] src/commands/diff.ts: L119: 使用了 any 类型
-- [WARN] src/commands/diff.ts: 函数 diffCommand 过长 (89 行)，建议拆分
-- [WARN] src/commands/register/execution.ts: 函数 registerExecutionCommands 过长 (73 行)，建议拆分
-- [WARN] src/commands/register/quality.ts: 函数 registerQualityCommands 过长 (77 行)，建议拆分
+- [WARN] src/commands/commit.ts: 函数 commitCommand 过长 (129 行)，建议拆分
+- [WARN] src/commands/register/operational.ts: 函数 registerOperationalCommands 过长 (129 行)，建议拆分
+- [WARN] src/utils/git-safety.ts: 函数 checkGitSafety 过长 (107 行)，建议拆分
+- [WARN] src/utils/git-staging.ts: 函数 getRecommendedFiles 过长 (87 行)，建议拆分
+- [WARN] src/utils/git-staging.ts: 函数 stageRecommendedFiles 过长 (79 行)，建议拆分

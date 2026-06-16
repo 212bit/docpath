@@ -1,7 +1,7 @@
 {
   "name": "docpath",
   "version": "0.1.1",
-  "description": "\u6587\u5f84 DocPath \u2014 \u6e10\u8fdb\u5f0f\u6587\u6863\u9a71\u52a8\u5de5\u4f5c\u6d41 (Document as Finite State Machine)",
+  "description": "文径 DocPath — 渐进式文档驱动工作流 (Document as Finite State Machine)",
   "type": "module",
   "bin": {
     "docpath": "./bin/docpath.js"
@@ -25,6 +25,7 @@
     "@clack/prompts": "^0.10.0",
     "@vitejs/plugin-react": "4.5.2",
     "cac": "^6.7.14",
+    "minimatch": "^10.2.5",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-router-dom": "7.6.2",
