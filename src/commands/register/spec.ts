@@ -7,6 +7,7 @@ import { writeAnalysisCommand } from '../write-analysis.js';
 import { writePlanCommand } from '../write-plan.js';
 import { writeSpecCommand } from '../write-spec.js';
 import { writeDesignCommand } from '../write-design.js';
+import { warnDeprecatedCommand } from './command-metadata.js';
 
 export function registerSpecCommands(cli: CAC): void {
   registerBrainstormCommand(cli, 'brainstorm', '输出需求澄清 prompt contract，由当前 Agent 生成 spec');
@@ -28,6 +29,7 @@ function registerBrainstormCommand(cli: CAC, name: string, description: string):
     .option('--dry-run', '只预览本地 spec 草稿，不写文件或状态')
     .option('--one-shot', '单次 prompt 模式：从 input 生成本地草稿，不进入交互循环')
     .action(async (file: string | undefined, options: { cwd?: string; input?: string; file?: string; 'dry-run'?: boolean; dryRun?: boolean; oneShot?: boolean }) => {
+      if (name === 'brainstor') warnDeprecatedCommand('brainstor', 'brainstorm');
       await brainstormCommand({
         cwd: options.cwd || process.cwd(),
         input: options.input,

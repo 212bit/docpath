@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -48,17 +48,17 @@ Alpha
 }
 
 function run(args, cwd) {
-  try {
-    return {
-      code: 0,
-      out: execSync(`node ${BIN} ${args}`, { cwd, encoding: 'utf-8', timeout: 20000, stdio: ['pipe', 'pipe', 'pipe'] }),
-    };
-  } catch (error) {
-    return {
-      code: error.status || 1,
-      out: `${error.stdout || ''}${error.stderr || ''}`,
-    };
-  }
+  const command = `${JSON.stringify(process.execPath)} ${JSON.stringify(BIN)} ${args}`;
+  const result = spawnSync(command, {
+    cwd,
+    encoding: 'utf-8',
+    shell: true,
+    timeout: 20000,
+  });
+  return {
+    code: result.status ?? 1,
+    out: `${result.stdout || ''}${result.stderr || ''}`,
+  };
 }
 
 describe('CLI positional argument guards', () => {
@@ -141,6 +141,53 @@ describe('CLI positional argument guards', () => {
     const staleWriteSpecFlag = run('write-spec --section requirements --content "# Spec"', cwd);
     assert.equal(staleWriteSpecFlag.code, 1);
     assert.match(staleWriteSpecFlag.out, /Unknown option|未知|--section/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('shows a curated default help surface with advanced and deprecated routes', () => {
+    const cwd = mkWorkspace();
+
+    const rootHelp = run('--help', cwd);
+    assert.equal(rootHelp.code, 0);
+    assert.match(rootHelp.out, /Core workflow commands:/);
+    assert.match(rootHelp.out, /next\s+Read the recommended next route/);
+    assert.match(rootHelp.out, /agent\s+Agent lifecycle/);
+    assert.match(rootHelp.out, /changes\s+Read-only git closeout view/);
+    assert.match(rootHelp.out, /docpath help advanced/);
+    assert.doesNotMatch(rootHelp.out, /run\s+Low-level runtime/);
+    assert.doesNotMatch(rootHelp.out, /brainstor\s+Typo compatibility/);
+
+    const advancedHelp = run('help advanced', cwd);
+    assert.equal(advancedHelp.code, 0);
+    assert.match(advancedHelp.out, /Advanced and maintenance commands:/);
+    assert.match(advancedHelp.out, /dashboard\s+Start the read-only dashboard/);
+    assert.match(advancedHelp.out, /run\s+Low-level runtime lifecycle primitive/);
+
+    const deprecatedHelp = run('help deprecated', cwd);
+    assert.equal(deprecatedHelp.code, 0);
+    assert.match(deprecatedHelp.out, /Deprecated compatibility commands:/);
+    assert.match(deprecatedHelp.out, /brainstor\s+Typo compatibility alias/);
+    assert.match(deprecatedHelp.out, /tdd\s+Experimental parallel TDD workflow/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('keeps deprecated commands callable while warning with replacements', () => {
+    const cwd = mkWorkspace();
+
+    const brainstor = run('brainstor req.md --dry-run', cwd);
+    assert.equal(brainstor.code, 0);
+    assert.match(brainstor.out, /deprecated; use brainstorm/i);
+    assert.match(brainstor.out, /需求/);
+
+    const disclosure = run('disclosure --level summary', cwd);
+    assert.equal(disclosure.code, 0);
+    assert.match(disclosure.out, /deprecated; use reveal or context/i);
+
+    const tdd = run('tdd', cwd);
+    assert.equal(tdd.code, 0);
+    assert.match(tdd.out, /deprecated; use plan, go, check, review/i);
 
     rmSync(cwd, { recursive: true, force: true });
   });

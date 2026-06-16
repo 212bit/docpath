@@ -53,13 +53,17 @@ Dashboard backlog
 }
 
 describe('dashboard readonly API', () => {
-  it('registers dashboard in CLI help', () => {
+  it('keeps dashboard command help available through the advanced surface', () => {
     const commandHelp = execSync(`node ${BIN} dashboard --help`, { encoding: 'utf-8' });
     assert.match(commandHelp, /docpath dashboard/);
     assert.match(commandHelp, /--port <port>/);
 
     const rootHelp = execSync(`node ${BIN} --help`, { encoding: 'utf-8' });
-    assert.match(rootHelp, /dashboard\s+启动本地只读管理仪表盘/);
+    assert.doesNotMatch(rootHelp, /dashboard\s+Start the read-only dashboard/);
+    assert.match(rootHelp, /docpath help advanced/);
+
+    const advancedHelp = execSync(`node ${BIN} help advanced`, { encoding: 'utf-8' });
+    assert.match(advancedHelp, /dashboard\s+Start the read-only dashboard/);
   });
 
   it('returns readonly health and project registry shape', async () => {

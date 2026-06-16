@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { registerCommands } from './commands/register.js';
+import { renderAdvancedHelp, renderDefaultHelp, renderDeprecatedHelp } from './commands/register/command-metadata.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -19,6 +20,30 @@ const cli = cac('docpath');
 cli.version(pkg.version);
 cli.help();
 registerCommands(cli);
+
+function handleCuratedHelp(argv: string[]): boolean {
+  const args = argv.slice(2);
+  const first = args[0];
+  const second = args[1];
+  const isGlobalHelp = args.length === 0 || first === '--help' || first === '-h';
+  if (isGlobalHelp) {
+    process.stdout.write(renderDefaultHelp(pkg.version));
+    return true;
+  }
+  if (first === 'help') {
+    if (second === 'advanced') {
+      process.stdout.write(renderAdvancedHelp(pkg.version));
+      return true;
+    }
+    if (second === 'deprecated') {
+      process.stdout.write(renderDeprecatedHelp(pkg.version));
+      return true;
+    }
+    process.stdout.write(renderDefaultHelp(pkg.version));
+    return true;
+  }
+  return false;
+}
 
 type CliPositional = { required?: boolean; variadic?: boolean };
 
@@ -37,6 +62,10 @@ function getPositionalAllowance(
 // - 未知命令：给了位置参数却没有命令匹配 → 显式报错
 // 任何一种都以非零码退出，绝不静默忽略。
 try {
+  if (handleCuratedHelp(process.argv)) {
+    process.exit(0);
+  }
+
   const parsed = cli.parse(process.argv, { run: false });
 
   // --help / --version 已在 parse() 内输出，直接结束。
