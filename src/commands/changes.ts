@@ -362,28 +362,28 @@ function renderAgentYaml(report: ChangesReport): string {
     lines.push(`  ${group}:`);
     for (const file of report.groups[group]) lines.push(`    - ${yamlString(file)}`);
   }
+
+  // worktree_isolation: 精简输出，非 worktree 场景只输出 active 状态
   lines.push('worktree_isolation:');
   lines.push(`  active: ${report.worktree_isolation.active}`);
-  lines.push(`  expected_noise_count: ${report.worktree_isolation.expected_noise_count}`);
-  lines.push('  expected_noise_files:');
-  for (const file of report.worktree_isolation.expected_noise_files) lines.push(`    - ${yamlString(file)}`);
-  lines.push(`  commit_relevant_count: ${report.worktree_isolation.commit_relevant_count}`);
-  lines.push('  commit_relevant_files:');
-  for (const file of report.worktree_isolation.commit_relevant_files) lines.push(`    - ${yamlString(file)}`);
-  lines.push(`  note: ${report.worktree_isolation.note === null ? 'null' : yamlString(report.worktree_isolation.note)}`);
+  if (report.worktree_isolation.active) {
+    lines.push(`  expected_noise_count: ${report.worktree_isolation.expected_noise_count}`);
+    lines.push('  expected_noise_files:');
+    for (const file of report.worktree_isolation.expected_noise_files) lines.push(`    - ${yamlString(file)}`);
+    lines.push(`  commit_relevant_count: ${report.worktree_isolation.commit_relevant_count}`);
+    lines.push('  commit_relevant_files:');
+    for (const file of report.worktree_isolation.commit_relevant_files) lines.push(`    - ${yamlString(file)}`);
+    lines.push(`  note: ${report.worktree_isolation.note === null ? 'null' : yamlString(report.worktree_isolation.note)}`);
+  }
+
+  // ignored_evidence: agent 模式下只保留计数和 add_command，移除文件列表
   lines.push('ignored_evidence:');
   lines.push(`  check: ${yamlString(report.ignored_evidence.check)}`);
   lines.push(`  skip_reason: ${report.ignored_evidence.skip_reason === null ? 'null' : yamlString(report.ignored_evidence.skip_reason)}`);
   lines.push(`  count: ${report.ignored_evidence.files.length}`);
-  lines.push('  files:');
-  for (const file of report.ignored_evidence.files) lines.push(`    - ${yamlString(file)}`);
   lines.push(`  canonical_count: ${report.ignored_evidence.canonical_files.length}`);
-  lines.push('  canonical_files:');
-  for (const file of report.ignored_evidence.canonical_files) lines.push(`    - ${yamlString(file)}`);
-  lines.push(`  alias_count: ${report.ignored_evidence.alias_files.length}`);
-  lines.push('  alias_files:');
-  for (const file of report.ignored_evidence.alias_files) lines.push(`    - ${yamlString(file)}`);
   lines.push(`  add_command: ${report.ignored_evidence.add_command === null ? 'null' : yamlString(report.ignored_evidence.add_command)}`);
+
   lines.push(`recommended_stage_command: ${report.recommended_stage_command === null ? 'null' : yamlString(report.recommended_stage_command)}`);
   lines.push('blocking_reasons:');
   for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
