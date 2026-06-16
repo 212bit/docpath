@@ -535,11 +535,29 @@ async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeCommands
   }
   if (!options.skipTests && pkg.scripts.test) {
     results.push(runCheck('测试', `${nodeCommands.pkgRunner} test 2>&1`, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
+  } else if (!options.skipTests) {
+    // 自动检测测试框架
+    const testFramework = detectTestFramework(pkg);
+    if (testFramework) {
+      const testCmd = `${nodeCommands.pkgRunner} exec ${testFramework} 2>&1`;
+      results.push(runCheck('测试', testCmd, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
+    }
   }
   if (!options.skipLint && pkg.scripts.lint) {
     results.push(runCheck('Lint', `${nodeCommands.runCmd} lint 2>&1`, cwd, 'lint'));
   }
   return results;
+}
+
+function detectTestFramework(pkg: PackageManifest): string | null {
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+  // 优先级顺序：vitest > jest > mocha
+  if (deps.vitest) return 'vitest run';
+  if (deps.jest || deps['@jest/core']) return 'jest';
+  if (deps.mocha) return 'mocha';
+
+  return null;
 }
 
 async function runProjectChecks(cwd: string, options: CheckOptions): Promise<CheckResult[]> {
