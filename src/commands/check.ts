@@ -32,6 +32,7 @@ import {
 } from '../utils/document-index.js';
 import { resolveRulePaths, type RuleName } from '../utils/rules.js';
 import { writeLastCheckEvidence as writeLastCheckEvidenceFiles, type CheckEvidenceItem } from '../utils/workspace-evidence.js';
+import { reviewCommand } from './review.js';
 
 interface CheckOptions {
   cwd: string;
@@ -55,6 +56,8 @@ interface CheckOptions {
   fixDrift?: 'canonical' | 'current';
   /** 显示所有检查项（包括成功项） */
   verbose?: boolean;
+  /** 检查后自动运行 review */
+  withReview?: boolean;
 }
 
 interface CheckResult {
@@ -1237,7 +1240,12 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     console.log('请修复失败项后重新运行 `docpath check`\n');
     throw new Error(`docpath check failed: ${results.filter(r => !r.passed).map(r => r.name).join(', ')}`);
   } else {
-    console.log('下一步: `docpath review` 进行代码审查');
-    await emitNextHint(cwd);
+    if (options.withReview) {
+      console.log('\n🔄  自动执行 review...\n');
+      await reviewCommand({ cwd, force: options.force });
+    } else {
+      console.log('下一步: `docpath review` 进行代码审查');
+      await emitNextHint(cwd);
+    }
   }
 }
