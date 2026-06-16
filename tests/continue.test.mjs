@@ -102,7 +102,7 @@ describe('continue command', () => {
 
     const output = run(`continue --cwd ${cwd} --verbose`, cwd);
 
-    assert.match(output, /推荐命令: docpath go --step S2/);
+    assert.match(output, /推荐命令: docpath start S2/);
     assert.match(output, /执行下一个未完成步骤: S2/);
     assert.match(output, /建议先读文件:/);
     assert.doesNotMatch(output, /docpath:continue/);

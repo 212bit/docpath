@@ -183,6 +183,6 @@ describe('major change preflight gate', () => {
     const result = runResult(`next --cwd ${cwd} --agent`, cwd);
     assert.equal(result.code, 0);
     const route = parse(result.out);
-    assert.equal(route.recommended_command, 'docpath go --step S1');
+    assert.equal(route.recommended_command, 'docpath start S1');
   });
 });

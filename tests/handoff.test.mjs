@@ -143,7 +143,7 @@ describe('agent handoff package', () => {
     assert.match(handoff, /## Recent Failures/);
     assert.match(handoff, /S2: compiler failure/);
     assert.match(handoff, /## Next Action/);
-    assert.match(handoff, /recommended_command: docpath debug reproduce/);
+    assert.match(handoff, /recommended_command: docpath recover S2/);
     assert.match(handoff, /## Handoff Readiness/);
     assert.match(handoff, /status: blocked/);
     assert.match(handoff, /不要直接继续完成任务/);

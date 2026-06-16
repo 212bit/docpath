@@ -448,7 +448,7 @@ function inferNextAction(
     const blocked = bc.entries.find(e => e.status === 'blocked');
     return {
       next_action: `处理阻塞步骤: ${blocked?.step || 'unknown'}`,
-      recommended_command: 'docpath debug reproduce',
+      recommended_command: blocked?.step ? `docpath recover ${blocked.step}` : 'docpath debug reproduce',
       required_context: [
         '.docpath/workspace/current.md',
         '.docpath/workspace/breadcrumb.md',
@@ -496,7 +496,7 @@ function inferNextAction(
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'];
     return {
       next_action: `完成进行中的步骤: ${activeStep.step}`,
-      recommended_command: `docpath agent step --step ${activeStep.step} --status done`,
+      recommended_command: `docpath step done`,
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'],
@@ -508,7 +508,7 @@ function inferNextAction(
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md', '.docpath/tasks/current/plan.md'];
     return {
       next_action: `执行下一个未完成步骤: ${firstOpenTask.id} ${firstOpenTask.title}`,
-      recommended_command: `docpath go --step ${firstOpenTask.id}`,
+      recommended_command: `docpath start ${firstOpenTask.id}`,
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'],
@@ -869,7 +869,7 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
 
     return {
       next_action: `检测到未收尾任务哨兵，请先完成当前任务: ${pendingDone.task_id}`,
-      recommended_command: 'docpath agent done',
+      recommended_command: 'docpath done',
       required_context: [
         '.docpath/workspace/current.md',
         '.docpath/workspace/pending-done.md',
@@ -881,7 +881,7 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
         '.docpath/tasks/current/plan.md',
       ],
       must_update: ['.docpath/workspace/breadcrumb.md'],
-      exit_criteria: '运行 docpath agent done 并清理 pending-done 哨兵',
+      exit_criteria: '运行 docpath done 并清理 pending-done 哨兵',
     };
   }
 

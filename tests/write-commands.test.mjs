@@ -248,7 +248,7 @@ describe('write commands', () => {
     assert.equal(state.phase, 'planning');
 
     const next = run(`next --cwd ${cwd} --agent`, cwd);
-    assert.match(next, /recommended_command: docpath go/);
+    assert.match(next, /recommended_command: docpath start/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -368,7 +368,7 @@ describe('write commands', () => {
 
     const output = run(`plan --cwd ${cwd}`, cwd);
     assert.match(output, /next_hint:/);
-    assert.match(output, /recommended_command: docpath go --step S1/);
+    assert.match(output, /recommended_command: docpath start S1/);
 
     const currentPlan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
     assert.match(currentPlan, /continue after plan/);
@@ -489,7 +489,7 @@ describe('write commands', () => {
 
     assert.match(output, /plan\.md 已写入/);
     assert.match(output, /next_hint:/);
-    assert.match(output, /recommended_command: docpath go --step S1/);
+    assert.match(output, /recommended_command: docpath start S1/);
     const currentPlan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
     assert.match(currentPlan, /S1: 梳理 自动生成计划草案/);
     assert.match(currentPlan, /S2: 实现 自动生成计划草案/);

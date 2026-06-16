@@ -556,7 +556,7 @@ created_at: 2026-05-31
     });
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath go --step S2');
+    assert.equal(output.recommended_command, 'docpath start S2');
     assert.match(output.next_action, /S2/);
     assert.ok(output.required_files.includes('.docpath/tasks/current/plan.md'));
     rmSync(cwd, { recursive: true, force: true });
@@ -600,7 +600,7 @@ created_at: 2026-05-31
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath go --step S2');
+    assert.equal(output.recommended_command, 'docpath start S2');
     assert.equal(output.progress.total, 2);
     assert.equal(output.progress.done, 1);
     rmSync(cwd, { recursive: true, force: true });
@@ -739,7 +739,7 @@ created_at: 2026-05-31
     });
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath go --step S2');
+    assert.equal(output.recommended_command, 'docpath start S2');
     assert.doesNotMatch(output.next_action, /完成进行中的步骤: S1/);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -760,7 +760,7 @@ warned: false
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath agent done');
+    assert.equal(output.recommended_command, 'docpath done');
     assert.match(output.next_action, /未收尾任务哨兵/);
     assert.ok(output.required_files.includes('.docpath/workspace/pending-done.md'));
     rmSync(cwd, { recursive: true, force: true });
@@ -795,7 +795,7 @@ warned: false
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath go --step S2');
+    assert.equal(output.recommended_command, 'docpath start S2');
     assert.match(output.next_action, /pending-done 哨兵/);
     assert.ok(output.required_files.includes('.docpath/workspace/pending-done.md'));
     rmSync(cwd, { recursive: true, force: true });

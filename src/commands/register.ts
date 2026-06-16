@@ -12,9 +12,11 @@ import { registerRuntimeToolCommands } from './register/runtime-tools.js';
 import { registerSpecCommands } from './register/spec.js';
 import { registerTddDebugCommands } from './register/tdd-debug.js';
 import { registerWorktreeCommands } from './register/worktree.js';
+import { registerOperationalCommands } from './register/operational.js';
 
 export function registerCommands(cli: CAC): void {
   registerCoreCommands(cli);
+  registerOperationalCommands(cli);
   registerSpecCommands(cli);
   registerExecutionCommands(cli);
   registerQualityCommands(cli);
