@@ -21,10 +21,11 @@ function git(cwd, args) {
   return execFileSync('git', args, { cwd, encoding: 'utf-8' });
 }
 
-function run(args, cwd, { expectFailure = false } = {}) {
+function run(args, cwd, { expectFailure = false, env = {} } = {}) {
   const result = spawnSync(process.execPath, [CLI, ...args], {
     cwd,
     encoding: 'utf-8',
+    env: { ...process.env, ...env },
     timeout: 30000,
   });
   const output = `${result.stdout || ''}${result.stderr || ''}`;
@@ -84,6 +85,8 @@ describe('worktree command', () => {
     const worktreePath = join(cwd, '.worktrees', 'feature-a');
 
     assert.match(out, /worktree 已创建/);
+    assert.match(out, /docpath worktree doctor feature-a/);
+    assert.match(out, /export DOCPATH_SESSION=codex-feature-a/);
     assert.equal(existsSync(worktreePath), true);
     assert.equal(existsSync(join(subdir, '.worktrees')), false, 'must anchor .worktrees at git root');
 
@@ -102,6 +105,28 @@ describe('worktree command', () => {
     assert.match(list, /feature-a/);
     assert.match(list, /docpath: idle \(no active task\)/);
 
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('doctors worktree readiness without mutating files', () => {
+    const cwd = mkRepo();
+    const worktreePath = join(cwd, '.worktrees', 'feature-doctor');
+    run(['worktree', 'create', 'feature-doctor'], cwd);
+    const before = git(worktreePath, ['status', '--porcelain=v1', '--untracked-files=all']);
+
+    const named = run(['worktree', 'doctor', 'feature-doctor'], cwd, { env: { DOCPATH_SESSION: '' } }).output;
+    assert.match(named, /Worktree doctor: feature-doctor/);
+    assert.match(named, /shared backlog symlink/);
+    assert.match(named, /shared rules symlink/);
+    assert.match(named, /set DOCPATH_SESSION=codex-feature-doctor/);
+    assert.match(named, /worktree doctor passed/);
+
+    const current = run(['worktree', 'doctor'], worktreePath, { env: { DOCPATH_SESSION: '' } }).output;
+    assert.match(current, /Worktree doctor: feature-doctor/);
+    assert.match(current, /worktree doctor passed/);
+
+    const after = git(worktreePath, ['status', '--porcelain=v1', '--untracked-files=all']);
+    assert.equal(after, before);
     rmSync(cwd, { recursive: true, force: true });
   });
 

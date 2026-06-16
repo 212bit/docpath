@@ -5,6 +5,8 @@
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { readLastCheckEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
+import { existsSync, lstatSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   readIgnoredEvidenceReport,
   readLinkedBacklogId,
@@ -32,6 +34,15 @@ interface ChangedFile {
   group: ChangeGroupName;
 }
 
+export interface WorktreeIsolationReport {
+  active: boolean;
+  expected_noise_count: number;
+  expected_noise_files: string[];
+  commit_relevant_count: number;
+  commit_relevant_files: string[];
+  note: string | null;
+}
+
 export interface ChangesReport {
   git_root: string;
   branch: string;
@@ -50,6 +61,7 @@ export interface ChangesReport {
     untracked: number;
   };
   groups: Record<ChangeGroupName, string[]>;
+  worktree_isolation: WorktreeIsolationReport;
   ignored_evidence: IgnoredEvidenceReport;
   ready_to_commit: boolean;
   blocking_reasons: string[];
@@ -106,6 +118,30 @@ function classifyPath(path: string): ChangeGroupName {
     path.endsWith('.json')
   ) return 'source';
   return 'other';
+}
+
+function isSymlink(path: string): boolean {
+  try {
+    return lstatSync(path).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+function isDocpathWorktree(gitRoot: string): boolean {
+  return existsSync(join(gitRoot, '.git')) &&
+    isSymlink(join(gitRoot, '.docpath', 'backlog')) &&
+    isSymlink(join(gitRoot, '.docpath', 'rules'));
+}
+
+function isExpectedWorktreeIsolationNoise(path: string): boolean {
+  return path.startsWith('.docpath/backlog/') ||
+    path === '.docpath/backlog' ||
+    path.startsWith('.docpath/rules/') ||
+    path === '.docpath/rules' ||
+    path === '.docpath/docs.md' ||
+    path.startsWith('.docpath/workspace/') ||
+    /^\.docpath\/tasks\/done\/T-[^/]+\/(?:spec|plan)\.(?:md|json)$/.test(path);
 }
 
 function parsePorcelainStatus(output: string): ChangedFile[] {
@@ -188,6 +224,37 @@ function groupChangedFiles(files: ChangedFile[]): Record<ChangeGroupName, string
   return groups;
 }
 
+function buildWorktreeIsolationReport(gitRoot: string, files: ChangedFile[], since: string | null): WorktreeIsolationReport {
+  const active = !since && isDocpathWorktree(gitRoot);
+  if (!active) {
+    return {
+      active: false,
+      expected_noise_count: 0,
+      expected_noise_files: [],
+      commit_relevant_count: files.length,
+      commit_relevant_files: files.map((file) => file.path),
+      note: null,
+    };
+  }
+
+  const expectedNoise = files
+    .filter((file) => isExpectedWorktreeIsolationNoise(file.path))
+    .map((file) => file.path);
+  const commitRelevant = files
+    .filter((file) => !isExpectedWorktreeIsolationNoise(file.path))
+    .map((file) => file.path);
+  return {
+    active: true,
+    expected_noise_count: expectedNoise.length,
+    expected_noise_files: expectedNoise,
+    commit_relevant_count: commitRelevant.length,
+    commit_relevant_files: commitRelevant,
+    note: expectedNoise.length > 0
+      ? 'Expected worktree .docpath isolation noise is reported separately; review commit_relevant_files for normal staging scope.'
+      : 'DocPath worktree detected; no expected isolation noise found.',
+  };
+}
+
 function buildBlockingReasons(args: {
   files: ChangedFile[];
   since: string | null;
@@ -217,6 +284,7 @@ export async function buildChangesReport(cwd: string, options: Pick<ChangesOptio
     ? parseNameStatus(runGit(cwd, ['diff', '--name-status', since, '--']))
     : parsePorcelainStatus(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
   const groups = groupChangedFiles(files);
+  const worktreeIsolation = buildWorktreeIsolationReport(gitRoot, files, since);
   const backlogId = await readLinkedBacklogId(docpathDir, current?.task_id);
   const ignoredEvidence = since
     ? skippedIgnoredEvidenceReport('since mode summarizes committed diff and skips pre-commit ignored evidence readiness')
@@ -248,6 +316,7 @@ export async function buildChangesReport(cwd: string, options: Pick<ChangesOptio
       untracked: files.filter((file) => file.untracked).length,
     },
     groups,
+    worktree_isolation: worktreeIsolation,
     ignored_evidence: ignoredEvidence,
     ready_to_commit: blockingReasons.length === 0,
     blocking_reasons: blockingReasons,
@@ -285,6 +354,15 @@ function renderAgentYaml(report: ChangesReport): string {
     lines.push(`  ${group}:`);
     for (const file of report.groups[group]) lines.push(`    - ${yamlString(file)}`);
   }
+  lines.push('worktree_isolation:');
+  lines.push(`  active: ${report.worktree_isolation.active}`);
+  lines.push(`  expected_noise_count: ${report.worktree_isolation.expected_noise_count}`);
+  lines.push('  expected_noise_files:');
+  for (const file of report.worktree_isolation.expected_noise_files) lines.push(`    - ${yamlString(file)}`);
+  lines.push(`  commit_relevant_count: ${report.worktree_isolation.commit_relevant_count}`);
+  lines.push('  commit_relevant_files:');
+  for (const file of report.worktree_isolation.commit_relevant_files) lines.push(`    - ${yamlString(file)}`);
+  lines.push(`  note: ${report.worktree_isolation.note === null ? 'null' : yamlString(report.worktree_isolation.note)}`);
   lines.push('ignored_evidence:');
   lines.push(`  check: ${yamlString(report.ignored_evidence.check)}`);
   lines.push(`  skip_reason: ${report.ignored_evidence.skip_reason === null ? 'null' : yamlString(report.ignored_evidence.skip_reason)}`);
@@ -319,6 +397,20 @@ function renderHuman(report: ChangesReport): string {
     if (files.length === 0) continue;
     lines.push(`  ${GROUP_LABELS[group]} (${files.length})`);
     for (const file of files) lines.push(`    - ${file}`);
+  }
+
+  if (report.worktree_isolation.active) {
+    lines.push(`\n  Worktree isolation`);
+    lines.push(`    expected .docpath noise: ${report.worktree_isolation.expected_noise_count}`);
+    lines.push(`    commit-relevant files: ${report.worktree_isolation.commit_relevant_count}`);
+    if (report.worktree_isolation.expected_noise_files.length > 0) {
+      lines.push('    expected noise files');
+      for (const file of report.worktree_isolation.expected_noise_files) lines.push(`      - ${file}`);
+    }
+    if (report.worktree_isolation.commit_relevant_files.length > 0) {
+      lines.push('    commit-relevant files');
+      for (const file of report.worktree_isolation.commit_relevant_files) lines.push(`      - ${file}`);
+    }
   }
 
   if (report.ignored_evidence.check === 'skipped') {

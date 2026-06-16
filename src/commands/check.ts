@@ -160,6 +160,12 @@ function isTimeoutKill(err: unknown): boolean {
   return record.killed === true || record.signal === 'SIGTERM' || record.signal === 'SIGKILL';
 }
 
+function checkCommandEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  delete env.DOCPATH_SESSION;
+  return env;
+}
+
 function runCheck(
   name: string,
   cmd: string,
@@ -168,7 +174,14 @@ function runCheck(
   timeoutMs: number = DEFAULT_CHECK_TIMEOUT_MS,
 ): CheckResult {
   try {
-    const output = execSync(cmd, { cwd, encoding: 'utf-8', timeout: timeoutMs, stdio: ['pipe', 'pipe', 'pipe'] });
+    const output = execSync(cmd, {
+      cwd,
+      encoding: 'utf-8',
+      timeout: timeoutMs,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: 10 * 1024 * 1024,
+      env: checkCommandEnv(),
+    });
     return { name, passed: true, output: output.slice(0, 500), category };
   } catch (err: unknown) {
     // 超时被杀 ≠ 检查失败：给出明确归因，避免被截断的 `Command failed` 误导成代码错误。

@@ -67,22 +67,48 @@ tail -f .worktrees/feature-auth/.docpath/workspace/breadcrumb.md
 
 ## Merging and Cleanup
 
-```bash
-# After completion, review and merge
-cd /path/to/project
-git checkout main
+Standard procedure:
 
-# Review changes
-git diff feature-auth
-git diff feature-payment
+- Run `docpath worktree doctor` before development and again before closeout.
+- Commit worktree changes on the worktree branch before merging.
+- Run `docpath changes --agent` and stage only `worktree_isolation.commit_relevant_files` plus exact canonical evidence paths from `ignored_evidence.add_command` when evidence is required.
+- Do not stage `worktree_isolation.expected_noise_files`; those are expected `.docpath` isolation artifacts.
+- Do not merge into a dirty main checkout. Commit, stash, or intentionally account for main changes first.
+- After merging, run `npm link` from main if the global `docpath` binary was linked from the worktree for validation.
+
+```bash
+# In the feature worktree
+cd /path/to/project/.worktrees/feature-auth
+export DOCPATH_SESSION=codex-feature-auth
+docpath worktree doctor
+docpath check
+docpath review
+docpath journal
+docpath changes --agent
+
+# Stage implementation files from worktree_isolation.commit_relevant_files
+git add <commit_relevant_files...>
+
+# If evidence is required, run the exact add command from ignored_evidence.add_command
+# git add -f .docpath/tasks/done/<task>/spec.md ...
+
+git commit -m "feat: implement feature-auth"
+
+# Prepare main
+cd /path/to/project
+git status --short
+# If dirty for unrelated reasons:
+git stash push -m "pre-merge local main changes"
 
 # Merge
 git merge feature-auth
-git merge feature-payment
+npm link
 
-# Clean up worktrees
+# Restore unrelated local main changes only after the merge is known good
+git stash pop
+
+# Clean up worktree
 docpath worktree remove feature-auth
-docpath worktree remove feature-payment
 ```
 
 ## Worktree Structure
@@ -164,6 +190,7 @@ docpath next --agent
 ```bash
 cd .worktrees/feature-auth
 export DOCPATH_SESSION=codex-auth  # Before any docpath commands
+docpath worktree doctor
 docpath agent enter
 ```
 
@@ -313,6 +340,7 @@ jobs:
 | Command | Effect |
 |---------|--------|
 | `docpath worktree create <name>` | Create isolated worktree with DocPath state |
+| `docpath worktree doctor [name]` | Check worktree readiness and session/dependency guidance |
 | `docpath worktree list` | Show all worktrees + DocPath status |
 | `docpath worktree remove <name>` | Delete worktree (fails if dirty) |
 | `docpath worktree remove <name> --force` | Force delete (loses changes) |

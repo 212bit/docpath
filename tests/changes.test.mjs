@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -162,6 +162,48 @@ describe('changes command', () => {
     assert.equal(parsed.since, null);
     assert.equal(parsed.ready_to_commit, true);
     assert.equal(parsed.groups.templates_docs.includes('README.md'), true);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('separates expected DocPath worktree isolation noise from commit-relevant files', () => {
+    const cwd = mkGitWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    mkdirSync(join(cwd, '.docpath', 'rules'), { recursive: true });
+    mkdirSync(join(cwd, '.docpath', 'tasks', 'done', 'T-OLD'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'backlog.md'), '# tracked backlog\n');
+    writeFileSync(join(cwd, '.docpath', 'rules', 'style.md'), '# tracked style\n');
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'done', 'T-OLD', 'spec.md'), '# old spec\n');
+    git(cwd, 'add .docpath/backlog .docpath/rules .docpath/tasks/done');
+    git(cwd, 'commit -m tracked-docpath');
+
+    const shared = join(cwd, 'shared-docpath');
+    mkdirSync(join(shared, 'backlog'), { recursive: true });
+    mkdirSync(join(shared, 'rules'), { recursive: true });
+    writeFileSync(join(shared, 'backlog', 'backlog.md'), '# shared backlog\n');
+    writeFileSync(join(shared, 'rules', 'style.md'), '# shared style\n');
+    rmSync(join(cwd, '.docpath', 'backlog'), { recursive: true, force: true });
+    rmSync(join(cwd, '.docpath', 'rules'), { recursive: true, force: true });
+    rmSync(join(cwd, '.docpath', 'tasks', 'done', 'T-OLD'), { recursive: true, force: true });
+    symlinkSync(join(shared, 'backlog'), join(cwd, '.docpath', 'backlog'), 'dir');
+    symlinkSync(join(shared, 'rules'), join(cwd, '.docpath', 'rules'), 'dir');
+
+    mkdirSync(join(cwd, 'src'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'feature.ts'), 'export const feature = true;\n');
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'review.md'), '# changed review\n');
+
+    const parsed = JSON.parse(run('changes --json', cwd));
+    assert.equal(parsed.worktree_isolation.active, true);
+    assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/backlog/backlog.md'), true);
+    assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/rules/style.md'), true);
+    assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/tasks/done/T-OLD/spec.md'), true);
+    assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/workspace/review.md'), true);
+    assert.equal(parsed.worktree_isolation.commit_relevant_files.includes('src/feature.ts'), true);
+
+    const agent = run('changes --agent', cwd);
+    assert.match(agent, /worktree_isolation:/);
+    assert.match(agent, /expected_noise_count: [1-9]/);
+    assert.match(agent, /commit_relevant_files:/);
+    assert.match(agent, /src\/feature\.ts/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-15T17:02:51.778Z",
+    "updated_at": "2026-06-15T17:02:51.778Z",
+    "content_sha256": "ae9526c0cbab675dc52097073f3cb44fc6b0930d658941c8843cc4db567aae3d"
+  },
+  "task_id": "T-20260615-optimize-worktree-development-workflow",
+  "backlog_id": "R-187",
+  "title": "T-20260615-optimize-worktree-development-workflow - Optimize worktree development workflow",
+  "markdown": "# T-20260615-optimize-worktree-development-workflow - Optimize worktree development workflow\n\n> backlog_id: R-187\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\n## 背景\n\nThe previous worktree implementation completed successfully, but the process exposed repeated friction: fresh worktrees can miss dependency hydration, session ownership can drift when `DOCPATH_SESSION` is not set before lifecycle commands, worktree `.docpath` isolation can flood closeout with expected deleted/modified runtime files, and there is no first-class readiness command for a worktree before coding starts.\n\n## 验收\n\nWorktree development has a first-class doctor/readiness command; created worktrees print the recommended session export and doctor command; closeout output distinguishes worktree isolation noise from source/test changes; tests cover the optimized flow behavior.\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: Add `docpath worktree doctor [name]` to validate a worktree setup before development.\n- [ ] FR-2: Update `docpath worktree create <name>` next-step output with a session export, doctor command, and next route.\n- [ ] FR-3: Update `docpath changes --agent` / `--json` to report expected worktree `.docpath` isolation noise separately from normal DocPath changes.\n- [ ] FR-4: Add regression tests for worktree doctor, create guidance, and closeout classification.\n\n### 非功能需求\n- [ ] NFR-1: Preserve existing worktree create/list/remove behavior and existing `changes` readiness semantics unless a new field is purely additive.\n- [ ] NFR-2: Keep output append-only for agent-readable reports where possible.\n- [ ] NFR-3: Do not require network access or dependency installation inside doctor; report dependency status only.\n\n## 3. 范围界定\n\n### 包含\n- Worktree CLI readiness checks for symlinks, isolated runtime directories, state files, optional `node_modules`, and session guidance.\n- Worktree create guidance that explicitly recommends `export DOCPATH_SESSION=codex-<worktree-name>`.\n- Worktree-aware closeout classification for expected `.docpath` isolation noise.\n- Unit/integration tests for the optimized workflow.\n\n### 不包含\n- Automatically installing dependencies.\n- Automatically adopting or stealing active session leases.\n- Rewriting the storage model for tracked historical `.docpath` files.\n- Changing Git commit behavior or staging files automatically.\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | Worktree readiness surface | Reuse `status` / add `worktree doctor` | Add `worktree doctor` | The checks are specific to worktree structure and setup readiness, not normal workflow status. |\n| 2 | Dependency hydration | Auto-install / report-only | Report-only | Installing dependencies needs network and approval; doctor should be deterministic and read-only. |\n| 3 | Closeout noise | Hide `.docpath` changes / classify expected isolation | Classify expected isolation | Hiding would obscure real DocPath evidence; classification preserves visibility while reducing noise. |\n| 4 | Session guidance | Persist env automatically / print export command | Print export command | Shell environment cannot be reliably mutated by a child process; explicit guidance is portable. |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [ ] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### Decision Brief\n- 当前问题: Worktree development works but lacks a readiness command, clear session setup, and clean closeout classification for expected `.docpath` isolation noise.\n- 目标: Make the recommended optimized workflow executable through the CLI: create, set session, run doctor, develop, validate, close out with signal separated from noise.\n- 背景: The preceding worktree task succeeded but exposed dependency setup failure, session lease mismatch, noisy `.docpath` status, and unrelated closeout warnings.\n- 可选方案: Document the process only / add a broad workflow command / add focused worktree doctor and closeout classification.\n- 推荐方案: Add `docpath worktree doctor [name]`, improve create next steps, and add worktree isolation fields to changes reports.\n- 不做什么: Do not auto-install dependencies, auto-stage changes, remove tracked historical `.docpath` artifacts, or change normal command execution semantics.\n- 成本: New command path and report fields require tests and minor documentation in CLI help.\n- 风险: Extra output could confuse existing parsers; mitigate by keeping changes additive and preserving existing fields.\n- 回滚方案: Remove the doctor action, revert create guidance text, and remove additive closeout fields.\n- 用户确认: User requested: \"Implement the recommended optimized workflow\" after reviewing the analysis.\n\n## 5. 验收标准\n\n- [ ] AC-1: `docpath worktree create <name>` prints `export DOCPATH_SESSION=codex-<name>` and `docpath worktree doctor <name>` in its next steps.\n- [ ] AC-2: `docpath worktree doctor <name>` validates an existing worktree and reports pass/warn/fail status without mutating files.\n- [ ] AC-3: `docpath changes --agent` and `--json` include a worktree isolation report when run in a DocPath worktree.\n- [ ] AC-4: Existing worktree create/list/remove and changes tests continue to pass.\n- [ ] AC-5: Focused tests and full validation pass, or remaining issues are documented.\n",
+  "generated_at": "2026-06-15T17:02:51.778Z",
+  "scope": {
+    "included": [
+      "Worktree CLI readiness checks for symlinks, isolated runtime directories, state files, optional `node_modules`, and session guidance.",
+      "Worktree create guidance that explicitly recommends `export DOCPATH_SESSION=codex-<worktree-name>`.",
+      "Worktree-aware closeout classification for expected `.docpath` isolation noise.",
+      "Unit/integration tests for the optimized workflow."
+    ],
+    "excluded": [
+      "Automatically installing dependencies.",
+      "Automatically adopting or stealing active session leases.",
+      "Rewriting the storage model for tracked historical `.docpath` files.",
+      "Changing Git commit behavior or staging files automatically."
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "User requested: \"Implement the recommended optimized workflow\" after reviewing the analysis.",
+    "decision_brief_markdown": "- 当前问题: Worktree development works but lacks a readiness command, clear session setup, and clean closeout classification for expected `.docpath` isolation noise.\n- 目标: Make the recommended optimized workflow executable through the CLI: create, set session, run doctor, develop, validate, close out with signal separated from noise.\n- 背景: The preceding worktree task succeeded but exposed dependency setup failure, session lease mismatch, noisy `.docpath` status, and unrelated closeout warnings.\n- 可选方案: Document the process only / add a broad workflow command / add focused worktree doctor and closeout classification.\n- 推荐方案: Add `docpath worktree doctor [name]`, improve create next steps, and add worktree isolation fields to changes reports.\n- 不做什么: Do not auto-install dependencies, auto-stage changes, remove tracked historical `.docpath` artifacts, or change normal command execution semantics.\n- 成本: New command path and report fields require tests and minor documentation in CLI help.\n- 风险: Extra output could confuse existing parsers; mitigate by keeping changes additive and preserving existing fields.\n- 回滚方案: Remove the doctor action, revert create guidance text, and remove additive closeout fields.\n- 用户确认: User requested: \"Implement the recommended optimized workflow\" after reviewing the analysis."
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Add `docpath worktree doctor [name]` to validate a worktree setup before development.",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Update `docpath worktree create <name>` next-step output with a session export, doctor command, and next route.",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "Update `docpath changes --agent` / `--json` to report expected worktree `.docpath` isolation noise separately from normal DocPath changes.",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "Add regression tests for worktree doctor, create guidance, and closeout classification.",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "Preserve existing worktree create/list/remove behavior and existing `changes` readiness semantics unless a new field is purely additive.",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "Keep output append-only for agent-readable reports where possible.",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "Do not require network access or dependency installation inside doctor; report dependency status only.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`docpath worktree create <name>` prints `export DOCPATH_SESSION=codex-<name>` and `docpath worktree doctor <name>` in its next steps.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`docpath worktree doctor <name>` validates an existing worktree and reports pass/warn/fail status without mutating files.",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`docpath changes --agent` and `--json` include a worktree isolation report when run in a DocPath worktree.",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "Existing worktree create/list/remove and changes tests continue to pass.",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "Focused tests and full validation pass, or remaining issues are documented.",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: Worktree development works but lacks a readiness command, clear session setup, and clean closeout classification for expected `.docpath` isolation noise.\n- 目标: Make the recommended optimized workflow executable through the CLI: create, set session, run doctor, develop, validate, close out with signal separated from noise.\n- 背景: The preceding worktree task succeeded but exposed dependency setup failure, session lease mismatch, noisy `.docpath` status, and unrelated closeout warnings.\n- 可选方案: Document the process only / add a broad workflow command / add focused worktree doctor and closeout classification.\n- 推荐方案: Add `docpath worktree doctor [name]`, improve create next steps, and add worktree isolation fields to changes reports.\n- 不做什么: Do not auto-install dependencies, auto-stage changes, remove tracked historical `.docpath` artifacts, or change normal command execution semantics.\n- 成本: New command path and report fields require tests and minor documentation in CLI help.\n- 风险: Extra output could confuse existing parsers; mitigate by keeping changes additive and preserving existing fields.\n- 回滚方案: Remove the doctor action, revert create guidance text, and remove additive closeout fields.\n- 用户确认: User requested: \"Implement the recommended optimized workflow\" after reviewing the analysis."
+}

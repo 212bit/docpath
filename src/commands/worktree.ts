@@ -4,7 +4,7 @@
  * 支持真并发开发：多个 Agent 在独立 worktrees 中开发不同 feature。
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, lstatSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
@@ -22,7 +22,7 @@ const execFileAsync = promisify(execFile);
 
 interface WorktreeOptions {
   cwd: string;
-  action?: 'create' | 'list' | 'remove';
+  action?: 'create' | 'list' | 'remove' | 'doctor';
   name?: string;
   force?: boolean;
 }
@@ -64,6 +64,10 @@ function assertInside(parent: string, child: string): void {
 
 function samePath(left: string, right: string): boolean {
   return resolve(left) === resolve(right);
+}
+
+function recommendedSessionName(name: string): string {
+  return `codex-${name}`;
 }
 
 async function resolveWorktreePaths(cwd: string, name: string): Promise<WorktreePaths> {
@@ -131,8 +135,12 @@ async function worktreeCreate(cwd: string, name: string): Promise<void> {
   await initWorktreeDocpath(repoRoot, worktreePath, safeName);
 
   console.log(`\n✅  worktree 已创建: ${worktreePath}`);
-  console.log(`\n下一步:`);
+  console.log(`\n从主仓库检查:`);
+  console.log(`  docpath worktree doctor ${safeName}`);
+  console.log(`\n进入 worktree 后:`);
   console.log(`  cd ${relative(repoRoot, worktreePath)}`);
+  console.log(`  export DOCPATH_SESSION=${recommendedSessionName(safeName)}`);
+  console.log(`  docpath worktree doctor`);
   console.log(`  docpath next --agent`);
 }
 
@@ -273,6 +281,118 @@ async function getWorktreeState(worktreePath: string): Promise<string | null> {
   }
 }
 
+type DoctorStatus = 'pass' | 'warn' | 'fail';
+
+interface DoctorCheck {
+  status: DoctorStatus;
+  label: string;
+  detail: string;
+}
+
+function checkExists(path: string, label: string): DoctorCheck {
+  return existsSync(path)
+    ? { status: 'pass', label, detail: path }
+    : { status: 'fail', label, detail: `missing: ${path}` };
+}
+
+function checkDirectory(path: string, label: string): DoctorCheck {
+  if (!existsSync(path)) return { status: 'fail', label, detail: `missing: ${path}` };
+  try {
+    const stat = lstatSync(path);
+    if (stat.isDirectory()) return { status: 'pass', label, detail: path };
+    return { status: 'fail', label, detail: `not a directory: ${path}` };
+  } catch (error) {
+    return { status: 'fail', label, detail: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function checkSymlink(path: string, label: string): DoctorCheck {
+  if (!existsSync(path)) return { status: 'fail', label, detail: `missing: ${path}` };
+  try {
+    const stat = lstatSync(path);
+    if (stat.isSymbolicLink()) return { status: 'pass', label, detail: path };
+    return { status: 'fail', label, detail: `not a symlink: ${path}` };
+  } catch (error) {
+    return { status: 'fail', label, detail: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+async function resolveDoctorTarget(cwd: string, name?: string): Promise<{ safeName: string; worktreePath: string }> {
+  const repoRoot = await getGitTopLevel(cwd);
+  if (!name) {
+    return {
+      safeName: repoRoot.split(/[\\/]/).filter(Boolean).at(-1) || 'current',
+      worktreePath: repoRoot,
+    };
+  }
+
+  const paths = await resolveWorktreePaths(cwd, name);
+  const worktrees = await listWorktrees(paths.repoRoot);
+  if (!worktrees.some((wt) => samePath(wt.path, paths.worktreePath))) {
+    throw new Error(`worktree 不存在: ${paths.safeName}`);
+  }
+  return {
+    safeName: paths.safeName,
+    worktreePath: paths.worktreePath,
+  };
+}
+
+/**
+ * worktree doctor [name] — 只读检查 worktree 开发前置条件
+ */
+async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
+  if (!(await isGitRepo(cwd))) {
+    console.error('❌  当前目录不是 git 仓库');
+    process.exit(1);
+  }
+
+  const { safeName, worktreePath } = await resolveDoctorTarget(cwd, name);
+  const docpathDir = join(worktreePath, '.docpath');
+  const checks: DoctorCheck[] = [
+    checkExists(join(worktreePath, '.git'), 'git worktree metadata'),
+    checkDirectory(docpathDir, '.docpath directory'),
+    checkSymlink(join(docpathDir, 'backlog'), 'shared backlog symlink'),
+    checkSymlink(join(docpathDir, 'rules'), 'shared rules symlink'),
+    checkDirectory(join(docpathDir, 'workspace'), 'isolated workspace directory'),
+    checkDirectory(join(docpathDir, 'tasks'), 'isolated tasks directory'),
+    checkDirectory(join(docpathDir, 'journal'), 'isolated journal directory'),
+    checkExists(join(docpathDir, 'workspace', 'state.json'), 'workspace state'),
+    checkExists(join(docpathDir, 'workspace', 'current.md'), 'workspace current view'),
+    checkExists(join(docpathDir, 'workspace', 'breadcrumb.md'), 'workspace breadcrumb view'),
+  ];
+
+  if (existsSync(join(worktreePath, 'package.json'))) {
+    checks.push(
+      existsSync(join(worktreePath, 'node_modules'))
+        ? { status: 'pass', label: 'dependencies', detail: 'node_modules present' }
+        : { status: 'warn', label: 'dependencies', detail: 'node_modules missing; run pnpm install before build/test' },
+    );
+  }
+
+  checks.push(
+    process.env.DOCPATH_SESSION
+      ? { status: 'pass', label: 'session', detail: `DOCPATH_SESSION=${process.env.DOCPATH_SESSION}` }
+      : { status: 'warn', label: 'session', detail: `set DOCPATH_SESSION=${recommendedSessionName(safeName)} before lifecycle commands` },
+  );
+
+  const errors = checks.filter((check) => check.status === 'fail').length;
+  const warnings = checks.filter((check) => check.status === 'warn').length;
+
+  console.log(`\n🩺  Worktree doctor: ${safeName}`);
+  console.log(`  path: ${worktreePath}`);
+  for (const check of checks) {
+    const icon = check.status === 'pass' ? '✅' : check.status === 'warn' ? '⚠️' : '❌';
+    console.log(`  ${icon} ${check.label}: ${check.detail}`);
+  }
+
+  if (errors > 0) {
+    console.log(`\n❌  worktree doctor failed (${errors} errors, ${warnings} warnings)`);
+    process.exit(1);
+  }
+
+  console.log(`\n✅  worktree doctor passed (${warnings} warnings)`);
+}
+
 
 /**
  * worktree remove <name> — 删除 worktree
@@ -324,6 +444,10 @@ export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
 
     case 'list':
       await worktreeList(cwd);
+      break;
+
+    case 'doctor':
+      await worktreeDoctor(cwd, name);
       break;
 
     case 'remove':

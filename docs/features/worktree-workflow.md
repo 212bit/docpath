@@ -45,20 +45,32 @@ docpath worktree create feature-a
 # 输出：
 # 🌳  创建 worktree: feature-a
 # ✅  worktree 已创建: .worktrees/feature-a
+# 从主仓库检查:
+#   docpath worktree doctor feature-a
+# 进入 worktree 后:
+#   cd .worktrees/feature-a
+#   export DOCPATH_SESSION=codex-feature-a
+#   docpath worktree doctor
+#   docpath next --agent
 ```
 
 ### 2. 进入 Worktree 开发
 
 ```bash
 cd .worktrees/feature-a
+export DOCPATH_SESSION=codex-feature-a
+docpath worktree doctor
 
 # 开始开发
 docpath backlog promote R-xxx
 docpath agent enter
-docpath agent step --step S1
+docpath go --step S1
 # ... 写代码 ...
+docpath agent step --step S1 --status done
 docpath check
-git commit -am "feat: implement feature A"
+docpath review
+docpath journal
+docpath changes --agent
 ```
 
 ### 3. 列出所有 Worktrees
@@ -119,17 +131,20 @@ docpath agent enter
 
 ### 场景 2：协作开发同一个 Feature
 
-同一个 worktree 中，使用不同 session 处理不同步骤：
+同一个 feature 需要多 Agent 协作时，按子范围拆成多个 worktrees。不要在同一个 worktree 中混用多个 Agent/session；这会让 lease、breadcrumb 和 closeout 证据变得不清晰。
 
 ```bash
 # Codex 负责后端
-cd .worktrees/feature-auth
-export DOCPATH_SESSION=codex
-docpath agent step --step S1-backend
+docpath worktree create feature-auth-backend
+cd .worktrees/feature-auth-backend
+export DOCPATH_SESSION=codex-feature-auth-backend
+docpath worktree doctor
 
-# Claude Code 负责前端（同一个 worktree）
-export DOCPATH_SESSION=claude
-docpath agent step --step S2-frontend
+# Claude Code 负责前端（另一个 worktree）
+docpath worktree create feature-auth-frontend
+cd .worktrees/feature-auth-frontend
+export DOCPATH_SESSION=claude-feature-auth-frontend
+docpath worktree doctor
 ```
 
 ---
@@ -166,6 +181,29 @@ docpath worktree create bugfix-123
     branch: refs/heads/main
   • /Users/mac/project/docpath/.worktrees/feature-a
     branch: refs/heads/feature-a
+```
+
+### `docpath worktree doctor [name]`
+
+只读检查 worktree 是否适合开始或收尾开发。
+
+**检查内容**：
+- Git worktree metadata
+- `.docpath/` 目录结构
+- `backlog` / `rules` symlink
+- isolated `workspace` / `tasks` / `journal`
+- runtime state/current/breadcrumb 文件
+- `node_modules` 是否已安装（仅 warning，不自动安装）
+- `DOCPATH_SESSION` 是否已设置
+
+**示例**：
+```bash
+# 从主仓库检查指定 worktree
+docpath worktree doctor feature-auth
+
+# 在 worktree 内检查当前 worktree
+cd .worktrees/feature-auth
+docpath worktree doctor
 ```
 
 ### `docpath worktree remove <name> [--force]`
@@ -226,30 +264,93 @@ docpath worktree remove feature-a --force
 
 ---
 
-## 合并工作流
+## 标准落地流程
 
-### 完成开发后合并回 main
+Worktree 开发完成后，默认流程是：**先在 worktree 分支形成干净提交，再从受控 main 合并**。不要把 dirty main、worktree runtime 噪声、源码变更混在一个提交里。
+
+### 1. Worktree 内完成验证与收口
 
 ```bash
-# 1. 在 worktree 中完成开发
 cd .worktrees/feature-a
+export DOCPATH_SESSION=codex-feature-a
+
+docpath worktree doctor
 docpath check
 docpath review
-git commit -am "feat: implement feature A"
+docpath journal
+docpath changes --agent
+```
 
-# 2. 回到主目录合并
+`docpath changes --agent` 会在 worktree 中输出 `worktree_isolation`：
+
+- `expected_noise_files`: 由 `.docpath/` 隔离机制导致的预期噪声，不作为普通源码提交范围。
+- `commit_relevant_files`: 应优先审查和 staged 的源码、测试、文档文件。
+- `ignored_evidence.add_command`: 如需提交 canonical DocPath evidence，只执行该字段给出的精确 `git add -f`。
+
+### 2. 在 worktree 分支提交
+
+```bash
+# 只 stage commit_relevant_files 中的实现文件
+git add <commit_relevant_files...>
+
+# 如团队要求提交 DocPath evidence，再执行 changes --agent 给出的精确 add_command
+# git add -f .docpath/tasks/done/<task>/spec.md ...
+
+git commit -m "feat: implement feature A"
+```
+
+不要 stage `worktree_isolation.expected_noise_files`。这些通常是 worktree 将 tracked `.docpath/` 内容替换为 isolated runtime 或 shared symlink 后产生的状态噪声。
+
+### 3. 准备 main 再合并
+
+```bash
 cd /project
+git status --short
+```
+
+如果 main 有无关 dirty 变更，先单独处理：
+
+```bash
+git stash push -m "pre-merge local main changes"
+```
+
+然后合并：
+
+```bash
 git checkout main
 git merge feature-a
+```
 
-# 3. 解决 .docpath/ 冲突
-# - backlog/: 自动合并（symlink，无冲突）
-# - workspace/: 使用主目录的版本（worktree 的是临时状态）
-# - tasks/: 移动到 tasks/done/ 归档
+合并后如需继续使用全局 `docpath`，从 main 重新 link：
 
-# 4. 清理 worktree
+```bash
+npm link
+```
+
+如之前 stash 了 main 的本地变更，确认合并正常后再恢复：
+
+```bash
+git stash pop
+```
+
+### 4. 清理 worktree
+
+```bash
 docpath worktree remove feature-a
 git branch -d feature-a
+```
+
+### 禁止的合并方式
+
+```bash
+# 不要在 dirty main 上直接 merge worktree
+git merge feature-a
+
+# 不要用 git add . 吞入 worktree .docpath 隔离噪声
+git add .
+
+# 不要把 tasks/current alias evidence 当作默认提交证据
+git add -f .docpath/tasks/current/*
 ```
 
 ### 处理 .docpath/ 合并冲突
