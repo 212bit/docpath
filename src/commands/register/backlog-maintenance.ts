@@ -22,7 +22,8 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .option('--user-confirmed <text>', 'add/edit: 用户确认依据')
     .option('--status <status>', 'list: 状态过滤')
     .option('--agent', 'list/groom: 输出 agent YAML')
-    .action(async (action: string, id: string | undefined, options: { cwd?: string; title?: string; priority?: string; level?: string; background?: string; acceptance?: string; bodyFile?: string; readiness?: string; evidenceBrainstorm?: string; evidenceAnalysis?: string; evidenceSpec?: string; evidenceDecision?: string; userConfirmed?: string; status?: string; agent?: boolean }) => {
+    .option('--draft', 'promote: 跳过成熟度检查，快速通道推送')
+    .action(async (action: string, id: string | undefined, options: { cwd?: string; title?: string; priority?: string; level?: string; background?: string; acceptance?: string; bodyFile?: string; readiness?: string; evidenceBrainstorm?: string; evidenceAnalysis?: string; evidenceSpec?: string; evidenceDecision?: string; userConfirmed?: string; status?: string; agent?: boolean; draft?: boolean }) => {
       await backlogCommand({
         cwd: options.cwd || process.cwd(),
         action,
@@ -41,6 +42,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         userConfirmed: options.userConfirmed,
         status: options.status,
         agent: !!options.agent,
+        draft: !!options.draft,
       });
     });
 

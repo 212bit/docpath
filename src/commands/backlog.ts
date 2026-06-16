@@ -46,6 +46,7 @@ interface BacklogCommandOptions {
   userConfirmed?: string;
   status?: string;
   agent?: boolean;
+  draft?: boolean;
 }
 
 interface BacklogGroomIssue {
@@ -206,7 +207,8 @@ function missingReadinessEvidence(item: BacklogItem): string[] {
   return issues;
 }
 
-function assertBacklogReadyForExecution(item: BacklogItem, action: 'accept' | 'plan' | 'promote'): void {
+function assertBacklogReadyForExecution(item: BacklogItem, action: 'accept' | 'plan' | 'promote', skipCheck = false): void {
+  if (skipCheck) return;
   const issues = missingReadinessEvidence(item);
   if (issues.length === 0) return;
   throw new Error([
@@ -603,7 +605,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   if (item.links.task) {
     throw new Error(`docpath backlog promote: backlog 条目 ${item.id} 已关联任务 ${item.links.task}`);
   }
-  assertBacklogReadyForExecution(item, 'promote');
+  assertBacklogReadyForExecution(item, 'promote', options.draft);
 
   const docpathDir = await resolveDocpathDir(options.cwd);
   const nextStatus = transitionBacklog(item.status, 'active');
@@ -643,7 +645,7 @@ async function backlogAdvanceStatus(
   if (!existing) {
     throw new Error(`[docpath] backlog 条目不存在: ${options.id}`);
   }
-  assertBacklogReadyForExecution(existing, target === 'accepted' ? 'accept' : 'plan');
+  assertBacklogReadyForExecution(existing, target === 'accepted' ? 'accept' : 'plan', options.draft);
   const item = await setBacklogStatus(options.cwd, existing.id, target);
   await refreshBacklogIndex(options.cwd);
   console.log(`✅  backlog 条目已更新: ${item.id} → ${item.status}`);
