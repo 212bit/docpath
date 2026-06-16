@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-15T16:48:24.487Z",
+    "updated_at": "2026-06-15T16:48:24.487Z",
+    "content_sha256": "ff0029bc24cd48df1181b2d3a5039e74141a3bb43b772d7d9aa83adfd3ef5e10"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: Add CLI command metadata and custom help output\n- [x] S1: Add CLI command metadata and custom help output\n- **描述**: Introduce a centralized command visibility model and replace default top-level help with a curated core command view plus advanced/deprecated guidance.\n- **验收条件**: `docpath --help` no longer lists every top-level command; core workflow commands are visible; advanced/deprecated help guidance is visible.\n- **依赖**: 无\n\n### S2: Keep advanced commands callable and warn on deprecated commands\n- [x] S2: Keep advanced commands callable and warn on deprecated commands\n- **描述**: Preserve advanced/internal command registration while hiding it from default help; add warnings for `brainstor`, `disclosure`, and `tdd` without changing their successful behavior.\n- **验收条件**: Hidden commands still run when invoked directly; deprecated commands print actionable replacement guidance.\n- **依赖**: S1\n\n### S3: Add CLI surface regression tests\n- [x] S3: Add CLI surface regression tests\n- **描述**: Add tests for default help visibility, direct invocation of advanced commands, explicit command help, and deprecated command warnings.\n- **验收条件**: Focused CLI tests fail before the implementation and pass after it.\n- **依赖**: S2\n\n### S4: Run validation gates and closeout\n- [x] S4: Run validation gates and closeout\n- **描述**: Run typecheck, focused tests, full test suite, DocPath check/review/journal, and closeout report from the worktree.\n- **验收条件**: Validation passes or remaining issues are explicitly documented; task reaches completed/review_pass.\n- **依赖**: S3\n",
+  "generated_at": "2026-06-15T16:48:24.487Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Add CLI command metadata and custom help output",
+      "description": "Introduce a centralized command visibility model and replace default top-level help with a curated core command view plus advanced/deprecated guidance.",
+      "acceptance": "`docpath --help` no longer lists every top-level command; core workflow commands are visible; advanced/deprecated help guidance is visible.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Keep advanced commands callable and warn on deprecated commands",
+      "description": "Preserve advanced/internal command registration while hiding it from default help; add warnings for `brainstor`, `disclosure`, and `tdd` without changing their successful behavior.",
+      "acceptance": "Hidden commands still run when invoked directly; deprecated commands print actionable replacement guidance.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Add CLI surface regression tests",
+      "description": "Add tests for default help visibility, direct invocation of advanced commands, explicit command help, and deprecated command warnings.",
+      "acceptance": "Focused CLI tests fail before the implementation and pass after it.",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Run validation gates and closeout",
+      "description": "Run typecheck, focused tests, full test suite, DocPath check/review/journal, and closeout report from the worktree.",
+      "acceptance": "Validation passes or remaining issues are explicitly documented; task reaches completed/review_pass.",
+      "dependencies": "S3",
+      "status": "done"
+    }
+  ]
+}

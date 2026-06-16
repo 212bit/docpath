@@ -2,6 +2,7 @@ import type { CAC } from 'cac';
 import { debugCommand } from '../debug.js';
 import { tddCommand } from '../tdd.js';
 import { disclosureCommand } from '../../utils/disclosure.js';
+import { warnDeprecatedCommand } from './command-metadata.js';
 
 export function registerTddDebugCommands(cli: CAC): void {
   cli.command('tdd', 'TDD 工作流 — start/spec/plan/act/check/done')
@@ -9,6 +10,7 @@ export function registerTddDebugCommands(cli: CAC): void {
     .option('--action <action>', 'TDD 动作: start|next|done')
     .option('--dry-run', '仅预览')
     .action(async (options: { cwd?: string; action?: string; 'dry-run'?: boolean }) => {
+      warnDeprecatedCommand('tdd', 'plan, go, check, review');
       await tddCommand({
         cwd: options.cwd || process.cwd(),
         action: (options.action as any) || 'next',
@@ -20,6 +22,7 @@ export function registerTddDebugCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--level <level>', '展示层级: summary|detail|debug')
     .action(async (options: { cwd?: string; level?: string }) => {
+      warnDeprecatedCommand('disclosure', 'reveal or context');
       await disclosureCommand({
         cwd: options.cwd || process.cwd(),
         level: options.level,
