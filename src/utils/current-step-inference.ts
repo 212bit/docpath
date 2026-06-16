@@ -72,8 +72,18 @@ export async function resolveCurrentStep(
     planSteps,
   };
 
+  // 检查 state.current_step 是否是有效步骤 ID（不是错误信息）
+  const isValidStepId = (step: string | undefined): boolean => {
+    if (!step) return false;
+    // 有效的步骤 ID 格式：S1, S2, check, review 等
+    // 错误信息通常包含空格、中文、冒号等
+    return /^[A-Za-z][A-Za-z0-9_-]*$/.test(step) && step.length < 30;
+  };
+
+  const validStateStep = isValidStepId(stateCurrentStep) ? stateCurrentStep : undefined;
+
   // 两个来源都没有 → 无法推断
-  if (!stateCurrentStep && !lastInProgressFromBc) {
+  if (!validStateStep && !lastInProgressFromBc) {
     return {
       step: null,
       reason: '无进行中的步骤',
@@ -81,17 +91,29 @@ export async function resolveCurrentStep(
     };
   }
 
-  // 两个来源都有，但不一致 → ambiguous
-  if (stateCurrentStep && lastInProgressFromBc && stateCurrentStep !== lastInProgressFromBc) {
+  // 两个来源都有，但不一致 → 优先使用 breadcrumb
+  // 因为 state.current_step 可能被 check/review 失败污染
+  if (validStateStep && lastInProgressFromBc && validStateStep !== lastInProgressFromBc) {
+    // 如果 breadcrumb 的步骤在 plan 中，优先使用它
+    if (planSteps.length === 0 || planSteps.some(id => id.toLowerCase() === lastInProgressFromBc.toLowerCase())) {
+      return {
+        step: lastInProgressFromBc,
+        context: {
+          ...context,
+          stateCurrentStep: `${stateCurrentStep} (已忽略，使用 breadcrumb)`,
+        },
+      };
+    }
+
     return {
       step: null,
-      reason: `state.current_step (${stateCurrentStep}) 与 breadcrumb 最后 in_progress (${lastInProgressFromBc}) 不一致`,
+      reason: `state.current_step (${validStateStep}) 与 breadcrumb 最后 in_progress (${lastInProgressFromBc}) 不一致`,
       context,
     };
   }
 
-  // 推断出的步骤
-  const inferredStep = stateCurrentStep || lastInProgressFromBc;
+  // 推断出的步骤：优先使用 breadcrumb
+  const inferredStep = lastInProgressFromBc || validStateStep;
   if (!inferredStep) {
     return {
       step: null,
