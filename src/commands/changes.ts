@@ -403,12 +403,16 @@ function shouldRenderCompactAgentYaml(report: ChangesReport): boolean {
 function renderCompactAgentYaml(report: ChangesReport): string {
   const lines: string[] = [];
   lines.push(`ready_to_commit: ${report.ready_to_commit}`);
-  lines.push('worktree: "clean"');
-  lines.push('canonical_evidence: "ok"');
-  lines.push(`alias_evidence_ignored: ${report.ignored_evidence.alias_files.length}`);
-  lines.push('blocking_reasons:');
-  for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
-  lines.push(`suggested_commit_message: ${yamlString(report.suggested_commit_message)}`);
+
+  if (report.blocking_reasons.length > 0) {
+    lines.push('blocking_reasons:');
+    for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
+  }
+
+  if (report.ignored_evidence.add_command) {
+    lines.push(`add_command: ${yamlString(report.ignored_evidence.add_command)}`);
+  }
+
   return `${lines.join('\n')}\n`;
 }
 
