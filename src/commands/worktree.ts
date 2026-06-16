@@ -206,6 +206,7 @@ async function initWorktreeDocpath(mainRepoPath: string, worktreePath: string, n
   const now = new Date().toISOString();
   await writeCurrentState(worktreePath, {
     level: mainState?.level || 2,
+    workflow_profile: 'standard',
     state: 'idle',
     task_id: '',
     task_title: `Worktree ${name}`,

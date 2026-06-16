@@ -1,10 +1,11 @@
 {
   "level": 3,
-  "task_id": "T-20260616-phase-2-git-closeout-wrapper-commands-co",
-  "task_title": "Phase 2: Git closeout wrapper commands (commit/stage)",
+  "workflow_profile": "standard",
+  "task_id": "T-20260616-add-quick-fast-track-workflow-profile",
+  "task_title": "Add quick fast-track workflow profile",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-16T04:21:25.366Z",
-  "updated_at": "2026-06-16T04:21:25.366Z"
+  "started_at": "2026-06-16T05:08:12.336Z",
+  "updated_at": "2026-06-16T05:08:12.336Z"
 }

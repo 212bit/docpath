@@ -66,6 +66,7 @@ function fallbackState(cwd: string): RuntimeState {
   const ts = nowIso();
   return {
     level: 1,
+    workflow_profile: 'standard',
     state: 'idle',
     task_id: 'runtime',
     task_title: taskTitle,

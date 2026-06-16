@@ -5,216 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### 🚫 check [T-20260615-md-json-json] — 2026-06-15T09:16:12.637Z
-
----
-taskId: T-20260615-md-json-json
-step: check
-status: blocked
-timestamp: 2026-06-15T09:16:12.637Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 子任务完成度 (4/5)
-
-### ✅ S5 [T-20260615-md-json-json] — 2026-06-15T09:16:22.754Z
-
----
-taskId: T-20260615-md-json-json
-step: S5
-status: done
-timestamp: 2026-06-15T09:16:22.754Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S5
-- **Session**: default
-
-### ✅ check [T-20260615-md-json-json] — 2026-06-15T09:17:32.349Z
-
----
-taskId: T-20260615-md-json-json
-step: check
-status: done
-timestamp: 2026-06-15T09:17:32.349Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260615-md-json-json] — 2026-06-15T09:17:43.004Z
-
----
-taskId: T-20260615-md-json-json
-step: review
-status: done
-timestamp: 2026-06-15T09:17:43.004Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 24 警告, 3 提示
-
-### ✅ journal [T-20260615-md-json-json] — 2026-06-15T09:18:16.103Z
-
----
-taskId: T-20260615-md-json-json
-step: journal
-status: done
-timestamp: 2026-06-15T09:18:16.103Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (5/5 步)
-
-### 🔄 S1 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:12:07.120Z
-
----
-taskId: T-20260615-fix-cli-command-contract-validation
-step: S1
-status: in_progress
-timestamp: 2026-06-15T16:12:07.120Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Add strict CLI contract validation
-- **Session**: default
-
-### ✅ S1 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:18:26.425Z
-
----
-taskId: T-20260615-fix-cli-command-contract-validation
-step: S1
-status: done
-timestamp: 2026-06-15T16:18:26.425Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
-### 🔄 S2 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:20:03.996Z
-
----
-taskId: T-20260615-fix-cli-command-contract-validation
-step: S2
-status: in_progress
-timestamp: 2026-06-15T16:20:03.996Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Remove stale public options
-- **Session**: default
-
-### ✅ S2 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:20:13.125Z
-
----
-taskId: T-20260615-fix-cli-command-contract-validation
-step: S2
-status: done
-timestamp: 2026-06-15T16:20:13.125Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### 🔄 S3 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:20:25.370Z
-
----
-taskId: T-20260615-fix-cli-command-contract-validation
-step: S3
-status: in_progress
-timestamp: 2026-06-15T16:20:25.370Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: Add regression tests and run gates
-- **Session**: default
-
-### ✅ S3 [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:21:46.961Z
-
----
-taskId: T-20260615-fix-cli-command-contract-validation
-step: S3
-status: done
-timestamp: 2026-06-15T16:21:46.961Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S3
-- **Session**: default
-
-### ✅ check [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:22:55.234Z
-
----
-taskId: T-20260615-fix-cli-command-contract-validation
-step: check
-status: done
-timestamp: 2026-06-15T16:22:55.234Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (11 项)
-
-### ✅ review [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:23:05.308Z
-
----
-taskId: T-20260615-fix-cli-command-contract-validation
-step: review
-status: done
-timestamp: 2026-06-15T16:23:05.308Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 4 警告, 0 提示
-
-### ✅ journal [T-20260615-fix-cli-command-contract-validation] — 2026-06-15T16:23:25.576Z
-
----
-taskId: T-20260615-fix-cli-command-contract-validation
-step: journal
-status: done
-timestamp: 2026-06-15T16:23:25.576Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (3/3 步)
-
-### 🔄 S1 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:45:12.337Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S1
-status: in_progress
-timestamp: 2026-06-16T02:45:12.337Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 设计操作层命令架构与命令契约
-- **Session**: default
-
-### ✅ S1 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:48:16.505Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: S1
-status: done
-timestamp: 2026-06-16T02:48:16.505Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
 ### 🔄 S2 [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T02:48:22.760Z
 
 ---
@@ -670,3 +460,219 @@ timestamp: 2026-06-16T04:21:25.429Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (2/2 步)
+
+### 🔄 S1 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:36:59.530Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S1
+status: in_progress
+timestamp: 2026-06-16T04:36:59.530Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Inspect current state, agent done, runtime routing, and test patterns
+- **Session**: default
+
+### ✅ S1 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:38:03.405Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S1
+status: done
+timestamp: 2026-06-16T04:38:03.405Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:38:42.884Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S2
+status: in_progress
+timestamp: 2026-06-16T04:38:42.884Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Add workflow profile and quick task creation command
+- **Session**: default
+
+### ✅ S2 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:45:30.106Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S2
+status: done
+timestamp: 2026-06-16T04:45:30.106Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:45:41.641Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S3
+status: in_progress
+timestamp: 2026-06-16T04:45:41.641Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Make runtime routing and completion gates profile-aware
+- **Session**: default
+
+### ✅ S3 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:46:37.440Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S3
+status: done
+timestamp: 2026-06-16T04:46:37.440Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### 🔄 S4 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:46:47.703Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S4
+status: in_progress
+timestamp: 2026-06-16T04:46:47.703Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Add quick escalation guard and durable audit evidence
+- **Session**: default
+
+### ✅ S4 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:47:36.638Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S4
+status: done
+timestamp: 2026-06-16T04:47:36.638Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### 🔄 S5 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T04:47:49.706Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S5
+status: in_progress
+timestamp: 2026-06-16T04:47:49.706Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Add tests and update docs/agent guidance
+- **Session**: default
+
+### ✅ S5 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:00:48.142Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S5
+status: done
+timestamp: 2026-06-16T05:00:48.142Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S5
+- **Session**: default
+
+### 🔄 S6 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:01:04.137Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S6
+status: in_progress
+timestamp: 2026-06-16T05:01:04.137Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Run verification gates and close task evidence
+- **Session**: default
+
+### 🚫 check [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:04:00.441Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: check
+status: blocked
+timestamp: 2026-06-16T05:04:00.441Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 子任务完成度 (5/6)
+
+### ✅ S6 [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:04:16.859Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: S6
+status: done
+timestamp: 2026-06-16T05:04:16.859Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S6
+- **Session**: default
+
+### ✅ check [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:06:01.487Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: check
+status: done
+timestamp: 2026-06-16T05:06:01.487Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:06:14.871Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: review
+status: done
+timestamp: 2026-06-16T05:06:14.871Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 9 警告, 0 提示
+
+### ✅ journal [T-20260616-add-quick-fast-track-workflow-profile] — 2026-06-16T05:08:12.389Z
+
+---
+taskId: T-20260616-add-quick-fast-track-workflow-profile
+step: journal
+status: done
+timestamp: 2026-06-16T05:08:12.389Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (6/6 步)

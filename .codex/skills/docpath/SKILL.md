@@ -119,7 +119,10 @@ Deliverables do not replace `spec`, `plan`, `analysis`, `check`, `review`, or `j
 
 ## Boundaries
 
-- Do not bypass `spec -> plan -> go -> check -> review -> journal` for implementation tasks.
+- Do not bypass `spec -> plan -> go -> check -> review -> journal` for standard implementation tasks.
+- For tiny low-risk edits, `docpath quick "<title>"` is the explicit fast-track:
+  it creates lightweight task evidence, keeps check required, skips full review
+  by quick profile, and fails loud when scope should upgrade to standard.
 - Do not create a hidden expert-team state outside `.docpath/`.
 - Do not hand-edit `.docpath/workspace/current.md`.
 - Do not hand-edit `.docpath/workspace/breadcrumb.md` or parse it as a default input.

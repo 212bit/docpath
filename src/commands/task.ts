@@ -38,6 +38,7 @@ async function writeIdleState(cwd: string, previous: CurrentState, currentStep: 
     state: 'idle',
     phase: 'idle',
     gate: 'none',
+    workflow_profile: 'standard',
     task_id: '',
     task_title: '',
     current_step: currentStep,

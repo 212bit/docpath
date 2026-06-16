@@ -10,8 +10,9 @@
  */
 
 import { agentCommand } from './agent.js';
-import { resolveBoundTaskId } from '../utils/workspace.js';
+import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { resolveSessionContext } from '../utils/session.js';
+import { isQuickProfile } from '../engine/workflow-profile.js';
 
 interface DoneOptions {
   cwd: string;
@@ -32,6 +33,8 @@ interface DoneOptions {
 export async function doneCommand(options: DoneOptions): Promise<void> {
   const { cwd } = options;
   const session = resolveSessionContext(options.session);
+  const stateAtStart = await readCurrentState(cwd);
+  const quickProfile = isQuickProfile(stateAtStart?.workflow_profile);
 
   // 前置检查：必须有已绑定的 task_id
   const taskId = await resolveBoundTaskId(cwd);
@@ -64,7 +67,7 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
   console.log(`    底层调用: docpath agent done`);
   const gates: string[] = [];
   if (!options.skipCheck) gates.push('check');
-  if (!options.skipReview) gates.push('review');
+  if (!options.skipReview && !quickProfile) gates.push('review');
   gates.push('journal');
   console.log(`    门禁序列: ${gates.join(' → ')}`);
   if (options.skipCheck) {
@@ -72,6 +75,8 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
   }
   if (options.skipReview) {
     console.log(`    跳过 review: ${options.note || '(未提供原因)'}`);
+  } else if (quickProfile) {
+    console.log('    跳过 review: quick profile policy');
   }
   console.log('');
 }

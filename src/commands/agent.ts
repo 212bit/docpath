@@ -28,6 +28,8 @@ import { releaseExecutionLease, resolveSessionContext, touchSession } from '../u
 import { resolveDocpathDir } from '../utils/file.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
+import { isQuickProfile } from '../engine/workflow-profile.js';
+import { assertQuickScope } from '../engine/quick-guard.js';
 
 type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
 
@@ -187,8 +189,17 @@ async function runAgentCheckGate(options: AgentOptions): Promise<void> {
   }
 }
 
-async function runAgentReviewGate(options: AgentOptions): Promise<void> {
+async function runAgentReviewGate(options: AgentOptions, stateAtStart: Awaited<ReturnType<typeof readCurrentState>>): Promise<void> {
   const { cwd } = options;
+  if (isQuickProfile(stateAtStart?.workflow_profile) && !options.skipReview) {
+    if (options.enforce) {
+      throw new Error('docpath agent done --enforce: quick profile review skip not allowed');
+    }
+    await recordSkipReason(cwd, 'review', 'quick profile: full review skipped; check gate remains required');
+    console.log('⏭️  review skipped by quick profile');
+    return;
+  }
+
   if (options.skipReview) {
     if (options.enforce) {
       throw new Error('docpath agent done --enforce: --skip-review not allowed');
@@ -274,9 +285,14 @@ async function handleAgentDone(options: AgentOptions): Promise<void> {
   const stateAtStart = await readCurrentState(cwd);
   const finalPlanStep = normalizePlanStepCandidate(options.step || stateAtStart?.current_step);
   const finalStatus = options.status || 'done';
+  const quickProfile = isQuickProfile(stateAtStart?.workflow_profile);
+
+  if (quickProfile) {
+    assertQuickScope(cwd);
+  }
 
   await runAgentCheckGate(options);
-  await runAgentReviewGate(options);
+  await runAgentReviewGate(options, stateAtStart);
   if (finalStatus === 'done') {
     await completeFinalPlanStepIfNeeded(options, taskId, finalPlanStep);
   }

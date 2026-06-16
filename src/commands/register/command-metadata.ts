@@ -19,6 +19,7 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'write-spec', description: 'Persist generated task specs', visibility: 'core' },
   { name: 'plan', description: 'Generate execution plan payloads', visibility: 'core' },
   { name: 'write-plan', description: 'Persist generated execution plans', visibility: 'core' },
+  { name: 'quick', description: 'Create a fast-track task for tiny scoped changes', visibility: 'core' },
   { name: 'start', description: 'Start a plan step (semantic wrapper)', visibility: 'core' },
   { name: 'step', description: 'Mark current step status (done/blocked/skipped)', visibility: 'core' },
   { name: 'done', description: 'Complete task with full gate sequence', visibility: 'core' },

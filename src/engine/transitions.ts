@@ -82,6 +82,7 @@ function fallbackState(): CurrentState {
   const ts = nowIso();
   return {
     level: 1,
+    workflow_profile: 'standard',
     state: snapshot.state,
     phase: snapshot.phase,
     gate: snapshot.gate,

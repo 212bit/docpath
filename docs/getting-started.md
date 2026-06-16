@@ -156,6 +156,21 @@ docpath write-plan --stdin
 
 ## 6. 执行任务
 
+### 微型任务快车道
+
+拼写修正、一行 bugfix、注释补充或低风险小调整可以使用 quick profile：
+
+```bash
+docpath quick "Fix typo in docs"
+# 修改文件
+docpath done
+```
+
+`docpath quick` 会创建轻量任务证据，不要求完整 spec/plan。`docpath done`
+仍会运行 check；full review 会按 quick profile 自动跳过并写入审计记录。
+如果改动涉及架构、核心协议、权限、迁移、CI/CD 或过多文件，quick closeout
+会失败并要求升级到标准生命周期。
+
 原子地认领/启动计划中的第一步：
 
 ```bash

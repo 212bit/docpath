@@ -17,6 +17,7 @@ import {
   type RuntimeWorkflowState,
   type WorkflowPhase,
 } from '../engine/state-machine.js';
+import { normalizeWorkflowProfile, type WorkflowProfile } from '../engine/workflow-profile.js';
 import { parsePlanSteps, renderPlanChecklist } from './doc-parser.js';
 import { readLastCheckMarkdown } from './workspace-evidence.js';
 import { readBreadcrumb, type BreadcrumbEntry } from '../engine/breadcrumb.js';
@@ -36,6 +37,8 @@ interface EscalationInfo {
 
 export interface CurrentState {
   level: number;
+  /** Proportional lifecycle profile. Missing historical values normalize to standard. */
+  workflow_profile: WorkflowProfile;
   /** 兼容旧调用方的派生状态；新写入路径以 phase/gate 为准。 */
   state: RuntimeWorkflowState;
   task_id: string;
@@ -182,6 +185,7 @@ function normalizeStoredState(raw: Partial<CurrentState> & { state?: string; pha
 
   return {
     level: raw.level || 0,
+    workflow_profile: normalizeWorkflowProfile((raw as { workflow_profile?: unknown }).workflow_profile),
     state: snapshot.state,
     task_id: raw.task_id || '',
     task_title: raw.task_title || '',
@@ -242,6 +246,7 @@ function legacyStateFromYamlBlock(yamlBlock: string): CurrentState {
 
   return {
     level: parseInt(get('level'), 10) || 0,
+    workflow_profile: normalizeWorkflowProfile(readLegacyYamlValue(yamlBlock, 'workflow_profile')),
     state: snapshot.state,
     task_id: get('task_id'),
     task_title: get('task_title'),
@@ -270,6 +275,7 @@ async function readLegacyCurrentMd(cwd: string): Promise<CurrentState | null> {
 
 type CurrentStateFields = {
   level: string;
+  workflow_profile: WorkflowProfile;
   state: RuntimeWorkflowState;
   task_id: string;
   task_title: string;
@@ -291,6 +297,7 @@ function workspaceLink(file: string): string {
 function renderCurrentStateYaml(fields: CurrentStateFields): string {
   return `\`\`\`yaml
 level: ${fields.level}
+workflow_profile: ${fields.workflow_profile}
 state: ${fields.state.padEnd(19)}# 当前状态
 task_id: ${fields.task_id}
 task_title: ${fields.task_title}
@@ -365,6 +372,7 @@ function extractLatestBreadcrumbEntrySummary(entries: BreadcrumbEntry[]): string
 function convertStateToFields(state: CurrentState): CurrentStateFields {
   return {
     level: String(state.level),
+    workflow_profile: normalizeWorkflowProfile(state.workflow_profile),
     state: state.state,
     task_id: state.task_id,
     task_title: state.task_title,

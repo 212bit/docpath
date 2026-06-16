@@ -278,6 +278,7 @@ async function writeInitialStateFiles(cwd: string, level: ComplexityLevel | unde
   if (level !== undefined) defaultState.level = level;
   const state: CurrentState = {
     level: defaultState.level,
+    workflow_profile: 'standard',
     state: defaultState.state,
     task_id: defaultState.task_id || '',
     task_title: defaultState.task_title,

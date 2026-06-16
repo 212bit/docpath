@@ -30,6 +30,7 @@ Prefer the installed slash commands over long pasted prompts:
 ```text
 /docpath-status
 /docpath-next
+/docpath-quick Fix typo in docs
 /docpath-agent-enter
 /docpath-agent-step S1
 /docpath-agent-done task

@@ -13,10 +13,21 @@ import type { CAC } from 'cac';
 import { startCommand } from '../start.js';
 import { stepCommand } from '../step.js';
 import { doneCommand } from '../done.js';
+import { quickCommand } from '../quick.js';
 import { recoverCommand, retryCommand, unblockCommand } from '../recovery.js';
 import { commitCommand } from '../commit.js';
 
 export function registerOperationalCommands(cli: CAC): void {
+  cli
+    .command('quick <title>', '创建快车道任务（微型改动，压缩生命周期）')
+    .option('--cwd <path>', '项目目录')
+    .action(async (title: string, options: { cwd?: string }) => {
+      await quickCommand({
+        cwd: options.cwd || process.cwd(),
+        title,
+      });
+    });
+
   cli
     .command('start <step>', '启动计划步骤（语义化包装，调用 go）')
     .option('--cwd <path>', '项目目录')

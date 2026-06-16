@@ -90,6 +90,7 @@ tail range that answers the question.
 Use operational lifecycle commands for standard workflows:
 
 ```bash
+docpath quick "Fix typo in docs"   # only for tiny low-risk changes
 docpath agent enter
 docpath start S1
 docpath step done
@@ -101,6 +102,10 @@ docpath agent handoff
 Rules:
 
 - Run `docpath agent enter` before code or protocol edits in an executable task.
+- Use `docpath quick "<title>"` for tiny low-risk edits. It creates a lightweight
+  task, requires check on closeout, and skips full review by quick profile.
+  Escalate to the standard lifecycle when scope touches architecture, protocol,
+  permissions, migrations, CI/CD, or broad multi-file changes.
 - Use `docpath start <step>` to begin a plan step (wraps `go --step`).
 - Use `docpath step done` after each meaningful sub-task (auto-infers current step).
 - Use `docpath step blocked` or `docpath step skipped` when appropriate.
@@ -129,18 +134,21 @@ Rules:
    explicit status/debug snapshots, suspected drift, or confirmation after
    state-changing commands.
 2. Do not act from memory alone.
-3. When a product/UI request lacks target user, entry point, data scope, or
+3. For trivial low-risk edits, prefer `docpath quick "<title>"` over a full
+   backlog/spec/plan cycle. Do not use quick as a bypass for architecture,
+   workflow, permission, migration, CI/CD, or broad module changes.
+4. When a product/UI request lacks target user, entry point, data scope, or
    interaction model, clarify or run brainstorm/refine before implementation.
-4. When a request may change technology stack, architecture or module
+5. When a request may change technology stack, architecture or module
    boundaries, data/API contracts, UI information architecture, workflow or
    agent behavior, permission or write boundaries, task scope, existing
    capabilities, or long-term maintenance cost, run brainstorm/refine first.
    Record a Decision Brief in the task spec and wait for explicit user
    confirmation before implementation.
-5. Do not hand-edit `state.json`, `current.md`, `breadcrumb.md`, or other
+6. Do not hand-edit `state.json`, `current.md`, `breadcrumb.md`, or other
    workspace runtime views.
-6. Run `docpath check` before marking work complete.
-7. Let lifecycle commands (`step done`, `agent step`) update breadcrumb and plan
+7. Run `docpath check` before marking work complete.
+8. Let lifecycle commands (`step done`, `agent step`) update breadcrumb and plan
    checklist state.
 
 ## Useful Commands

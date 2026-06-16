@@ -22,6 +22,7 @@ import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridC
 import { readGitCloseoutSummary, type GitCloseoutSummary } from './git-closeout.js';
 import { resolveMajorChangeGateStatus, type MajorChangeGateStatus } from './major-change.js';
 import { readLastCheckMarkdown } from './workspace-evidence.js';
+import { isQuickProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
 
 export interface AgentOutput {
   /** 输出视图: status --agent 是状态快照, next --agent 是下一步路由。 */
@@ -32,6 +33,8 @@ export interface AgentOutput {
   state: string;
   /** 复杂度级别 */
   level: number | null;
+  /** Proportional lifecycle profile. */
+  workflow_profile: string;
   /** 任务标识 */
   task_id: string;
   /** 任务标题 */
@@ -399,6 +402,7 @@ function inferNextAction(
   const currentState = state?.state || 'unknown';
   const phase = state?.phase || '';
   const gate = state?.gate || 'none';
+  const quickProfile = isQuickProfile(state?.workflow_profile);
   const firstOpenTask = planTasks.find((task) => !task.done);
   const allPlanDone = planTasks.length > 0 && planTasks.every((task) => task.done);
   const lastCheckFailed = /^\*\*结果\*\*:\s*❌\s*FAIL\s*$/m.test(lastCheckContent);
@@ -488,6 +492,28 @@ function inferNextAction(
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/workspace/last-check.md'],
       exit_criteria: '重新运行 docpath check 并通过',
+    };
+  }
+
+  if (quickProfile && currentState !== 'completed' && phase !== 'completed') {
+    const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/quick.md'];
+    if (gate === 'check_pass' || lastCheckPassed) {
+      return {
+        next_action: 'quick 任务已通过检查，执行压缩收口',
+        recommended_command: 'docpath done',
+        required_context: [...required, '.docpath/workspace/last-check.md'],
+        required_files: [...required, '.docpath/workspace/last-check.md'],
+        must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/workspace/decisions.md'],
+        exit_criteria: 'quick 任务完成，review skip 由 quick profile 记录为审计证据',
+      };
+    }
+    return {
+      next_action: '执行 quick 任务改动并进行压缩收口',
+      recommended_command: 'docpath done',
+      required_context: required,
+      required_files: required,
+      must_update: ['.docpath/workspace/last-check.md', '.docpath/workspace/breadcrumb.md', '.docpath/workspace/decisions.md'],
+      exit_criteria: 'docpath done 已运行 check，并按 quick profile 跳过 full review 后完成',
     };
   }
 
@@ -960,6 +986,7 @@ export async function generateAgentOutput(
       : 'next_route: use next_action and recommended_command as the active workflow route',
     state: context.state?.state || 'unknown',
     level: context.state?.level ?? null,
+    workflow_profile: normalizeWorkflowProfile(context.state?.workflow_profile),
     task_id: context.state?.task_id || '',
     task_title: context.state?.task_title || '',
     phase: context.state?.phase || '',
