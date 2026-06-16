@@ -10,7 +10,7 @@ interface GcDecisionsCommandOptions {
 }
 
 function normalizeRetentionDays(value: string | number | undefined): number {
-  if (value === undefined || value === '') return 30;
+  if (value === undefined || value === '') return 14;
   const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) {
     throw new Error(`docpath gc-decisions: --retention-days 非法: ${value}`);

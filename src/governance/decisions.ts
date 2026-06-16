@@ -379,7 +379,7 @@ export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {})
   const docpathDir = await resolveDocpathDir(cwd);
   const workspaceDir = join(docpathDir, 'workspace');
   const decisionsPath = join(workspaceDir, 'decisions.md');
-  const retentionDays = options.retentionDays ?? 30;
+  const retentionDays = options.retentionDays ?? 14;
   const now = options.now ?? new Date();
 
   if (!existsSync(decisionsPath)) {
