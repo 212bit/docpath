@@ -15,7 +15,7 @@ import { writeFileAtomic } from '../utils/file.js';
 import { withLock } from '../utils/lock.js';
 
 /** 面包屑最大保留条数 */
-export const MAX_ENTRIES = 50;
+export const MAX_ENTRIES = 200;
 export const BREADCRUMB_JSONL_SCHEMA_VERSION = 1;
 
 export interface BreadcrumbEntry {
@@ -340,11 +340,9 @@ export async function writeBreadcrumb(
     await appendFile(path, line, 'utf-8');
     await appendBreadcrumbJsonl(projectRoot, nextEntry);
 
-    // 截断轮转：超过 MAX_ENTRIES 时裁剪最旧记录
+    // 截断轮转：超过 MAX_ENTRIES 时裁剪最旧记录（静默执行，不输出日志）
     const trimmed = await truncateBreadcrumbUnlocked(projectRoot);
-    if (trimmed > 0) {
-      reporter(`🔄 面包屑轮转: 裁剪了 ${trimmed} 条旧记录（保留最近 ${MAX_ENTRIES} 条）`);
-    }
+    // 轮转日志已移除：频繁轮转不再产生噪音
   });
 }
 
