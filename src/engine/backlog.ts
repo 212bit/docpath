@@ -223,6 +223,7 @@ function comparePriority(a: BacklogPriority, b: BacklogPriority): number {
 }
 
 function generateBacklogIndexMd(items: BacklogItem[]): string {
+  const activeItems = items.filter((item) => item.status !== 'done');
   const lines: string[] = [
     '# DocPath Backlog Index',
     '',
@@ -236,7 +237,7 @@ function generateBacklogIndexMd(items: BacklogItem[]): string {
     '|----|-------|--------|----------|-------|------|',
   ];
 
-  for (const item of items) {
+  for (const item of activeItems) {
     lines.push(
       `| ${item.id} | ${item.title.replace(/\|/g, '\\|')} | ${item.status} | ${item.priority} | ${item.level} | ${item.links.task ?? ''} |`
     );
@@ -249,6 +250,7 @@ function generateBacklogIndexMd(items: BacklogItem[]): string {
   lines.push('- `status`: proposed|accepted|planned|active|done|dropped');
   lines.push('- `priority`: P0 最高，P3 最低');
   lines.push('- `task`: 已 promote 后关联的 task id；未关联为空');
+  lines.push('- **done 条目**: 已归档至 `.docpath/backlog/archived/`，不显示在此索引中');
   lines.push('');
 
   return lines.join('\n');
