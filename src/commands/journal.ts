@@ -32,6 +32,8 @@ interface JournalOptions {
   cwd: string;
   skipAi?: boolean;
   skipDecisionGc?: boolean;
+  /** Suppress prompt contract output when journal runs as an automatic closeout sub-step. */
+  quietPrompt?: boolean;
   /** 归档模式: 'always' = 默认行为 | 'skip' = 跳过归档 | 'dry-run' = 预览归档 */
   archiveMode?: 'always' | 'skip' | 'dry-run';
 }
@@ -132,9 +134,13 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
   console.log(`📊  步骤: ${summary.completedSteps}/${summary.totalSteps} 完成, ${summary.blockedSteps} 阻塞`);
   console.log(`⏱️  耗时: ${summary.duration}\n`);
 
-  emitJournalPrompt(context, summary);
-
-  console.log('📌 完成后运行: docpath write-journal\n');
+  if (options.quietPrompt) {
+    console.log('📝  journal prompt 已收敛（自动 closeout）；任务 evidence、lesson candidates 与 backlog 状态仍会写入。');
+    console.log('    如需手动生成完整知识记录，可单独运行: docpath journal\n');
+  } else {
+    emitJournalPrompt(context, summary);
+    console.log('📌 完成后运行: docpath write-journal\n');
+  }
 
   const archiveMode = options.archiveMode || 'always';
   const archive = await archiveCurrentTask(docpathDir, context.taskId, context.taskDir, archiveMode);

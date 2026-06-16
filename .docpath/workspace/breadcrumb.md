@@ -5,148 +5,6 @@
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
 > 超过 50 条记录时自动裁剪最旧条目。
 
-### ✅ review [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:31:44.240Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: review
-status: done
-timestamp: 2026-06-16T03:31:44.240Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 13 警告, 0 提示
-
-### ✅ journal [T-20260616-optimize-docpath-operational-command-lay] — 2026-06-16T03:31:44.397Z
-
----
-taskId: T-20260616-optimize-docpath-operational-command-lay
-step: journal
-status: done
-timestamp: 2026-06-16T03:31:44.397Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (9/9 步)
-
-### 🔄 S1 [T-20260616-update-agent-guidelines-to-recommend-pha] — 2026-06-16T04:01:55.156Z
-
----
-taskId: T-20260616-update-agent-guidelines-to-recommend-pha
-step: S1
-status: in_progress
-timestamp: 2026-06-16T04:01:55.156Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 Update agent guidelines to recommend Phase 1 operational commands
-- **Session**: default
-
-### ✅ S1 [T-20260616-update-agent-guidelines-to-recommend-pha] — 2026-06-16T04:02:32.190Z
-
----
-taskId: T-20260616-update-agent-guidelines-to-recommend-pha
-step: S1
-status: done
-timestamp: 2026-06-16T04:02:32.190Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S1
-- **Session**: default
-
-### 🔄 S2 [T-20260616-update-agent-guidelines-to-recommend-pha] — 2026-06-16T04:02:38.741Z
-
----
-taskId: T-20260616-update-agent-guidelines-to-recommend-pha
-step: S2
-status: in_progress
-timestamp: 2026-06-16T04:02:38.741Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 实现 Update agent guidelines to recommend Phase 1 operational commands
-- **Session**: default
-
-### ✅ S2 [T-20260616-update-agent-guidelines-to-recommend-pha] — 2026-06-16T04:03:48.230Z
-
----
-taskId: T-20260616-update-agent-guidelines-to-recommend-pha
-step: S2
-status: done
-timestamp: 2026-06-16T04:03:48.230Z
-sessionId: default
----
-
-- **状态**: done
-- **上下文**: agent-step: S2
-- **Session**: default
-
-### 🚫 check [T-20260616-update-agent-guidelines-to-recommend-pha] — 2026-06-16T04:04:52.279Z
-
----
-taskId: T-20260616-update-agent-guidelines-to-recommend-pha
-step: check
-status: blocked
-timestamp: 2026-06-16T04:04:52.279Z
----
-
-- **状态**: blocked
-- **上下文**: 质量检查失败: 任务文件 current/canonical 漂移检查
-
-### ✅ check [T-20260616-update-agent-guidelines-to-recommend-pha] — 2026-06-16T04:06:02.114Z
-
----
-taskId: T-20260616-update-agent-guidelines-to-recommend-pha
-step: check
-status: done
-timestamp: 2026-06-16T04:06:02.114Z
----
-
-- **状态**: done
-- **上下文**: 质量检查通过 (10 项)
-
-### ✅ review [T-20260616-update-agent-guidelines-to-recommend-pha] — 2026-06-16T04:06:02.371Z
-
----
-taskId: T-20260616-update-agent-guidelines-to-recommend-pha
-step: review
-status: done
-timestamp: 2026-06-16T04:06:02.371Z
----
-
-- **状态**: done
-- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
-
-### ✅ journal [T-20260616-update-agent-guidelines-to-recommend-pha] — 2026-06-16T04:06:02.525Z
-
----
-taskId: T-20260616-update-agent-guidelines-to-recommend-pha
-step: journal
-status: done
-timestamp: 2026-06-16T04:06:02.525Z
----
-
-- **状态**: done
-- **上下文**: 知识归档完成 (2/2 步)
-
-### 🔄 S1 [T-20260616-phase-2-git-closeout-wrapper-commands-co] — 2026-06-16T04:16:18.304Z
-
----
-taskId: T-20260616-phase-2-git-closeout-wrapper-commands-co
-step: S1
-status: in_progress
-timestamp: 2026-06-16T04:16:18.304Z
-sessionId: default
----
-
-- **状态**: in_progress
-- **上下文**: 开始执行: 梳理 Phase 2: Git closeout wrapper commands (commit/stage)
-- **Session**: default
-
 ### ✅ S1 [T-20260616-phase-2-git-closeout-wrapper-commands-co] — 2026-06-16T04:16:47.568Z
 
 ---
@@ -672,3 +530,151 @@ timestamp: 2026-06-16T06:44:37.853Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (7/7 步)
+
+### 🔄 S1 [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T06:52:07.009Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: S1
+status: in_progress
+timestamp: 2026-06-16T06:52:07.009Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Implement Review Diff Classification
+- **Session**: default
+
+### ✅ S1 [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T06:55:01.745Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: S1
+status: done
+timestamp: 2026-06-16T06:55:01.745Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### 🔄 S2 [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T06:55:12.524Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: S2
+status: in_progress
+timestamp: 2026-06-16T06:55:12.524Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Improve Closeout Guidance For Canonical Evidence
+- **Session**: default
+
+### ✅ S2 [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T06:57:03.404Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: S2
+status: done
+timestamp: 2026-06-16T06:57:03.404Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### 🔄 S3 [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T06:57:11.861Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: S3
+status: in_progress
+timestamp: 2026-06-16T06:57:11.861Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Reduce Done Journal Prompt Noise
+- **Session**: default
+
+### ✅ S3 [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T06:58:50.801Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: S3
+status: done
+timestamp: 2026-06-16T06:58:50.801Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### 🔄 S4 [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T06:59:00.378Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: S4
+status: in_progress
+timestamp: 2026-06-16T06:59:00.378Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Verify And Close
+- **Session**: default
+
+### ✅ S4 [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T06:59:32.473Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: S4
+status: done
+timestamp: 2026-06-16T06:59:32.473Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### ✅ check [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T07:01:03.392Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: check
+status: done
+timestamp: 2026-06-16T07:01:03.392Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T07:02:39.642Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: review
+status: done
+timestamp: 2026-06-16T07:02:39.642Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 4 警告, 3 提示
+
+### ✅ journal [T-20260616-optimize-review-noise-and-closeout-guida] — 2026-06-16T07:02:50.344Z
+
+---
+taskId: T-20260616-optimize-review-noise-and-closeout-guida
+step: journal
+status: done
+timestamp: 2026-06-16T07:02:50.344Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (4/4 步)

@@ -135,6 +135,8 @@ describe('docpath agent lifecycle', () => {
   it('agent done completes task', () => {
     const out = run('agent done', tmpDir);
     assert.match(out, /done|完成|物理任务目录归档已延后/i, `got: ${out.slice(0, 100)}`);
+    assert.match(out, /journal prompt 已收敛/);
+    assert.doesNotMatch(out, /task: journal/);
     assert.match(out, /canonical evidence 保留在 \.docpath\/tasks\/T-AGENT\//);
     assert.equal(fs.existsSync(path.join(tmpDir, '.docpath', 'tasks', 'T-AGENT', 'spec.md')), true);
     assert.equal(fs.existsSync(path.join(tmpDir, '.docpath', 'tasks', 'done', 'T-AGENT')), false);

@@ -1,11 +1,11 @@
 {
   "level": 3,
   "workflow_profile": "standard",
-  "task_id": "T-20260616-optimize-docpath-workflow-dx-after-quick",
-  "task_title": "Optimize DocPath workflow DX after quick-profile dogfood",
+  "task_id": "T-20260616-optimize-review-noise-and-closeout-guida",
+  "task_title": "Optimize review noise and closeout guidance after workflow dogfood",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-16T06:44:37.763Z",
-  "updated_at": "2026-06-16T06:44:37.763Z"
+  "started_at": "2026-06-16T07:02:50.238Z",
+  "updated_at": "2026-06-16T07:02:50.237Z"
 }

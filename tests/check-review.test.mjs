@@ -258,12 +258,51 @@ describe('check and review commands', () => {
     const reviewJson = JSON.parse(readFileSync(reviewJsonPath, 'utf-8'));
 
     assert.match(out, /审查通过/);
-    assert.match(out, /finding_scope: current_changes/);
+    assert.match(out, /finding_scope: mixed/);
     assert.match(out, /next_hint:/);
     assert.match(out, /recommended_command:/);
     assert.equal(reviewJson.scope, 'all');
-    assert.equal(reviewJson.finding_scope, 'current_changes');
+    assert.equal(reviewJson.finding_scope, 'mixed');
+    assert.equal(reviewJson.finding_scope_counts.current_diff.infos, 1);
     assert.equal(existsSync(decisionsPath), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('review distinguishes current-diff findings from baseline whole-file findings', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-scope-counts-'));
+    mkExecWorkspace(cwd);
+    markReadyForReview(cwd);
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    mkdirSync(join(cwd, 'src'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'feature.ts'), [
+      'export function longFeature() {',
+      ...Array.from({ length: 55 }, (_, index) => `  const value${index} = ${index};`),
+      '  return 1;',
+      '}',
+      '',
+    ].join('\n'));
+    execSync('git add src/feature.ts', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'src', 'feature.ts'), [
+      'export function longFeature() {',
+      ...Array.from({ length: 55 }, (_, index) => `  const value${index} = ${index};`),
+      '  console.log("new warning");',
+      '  return 1;',
+      '}',
+      '',
+    ].join('\n'));
+
+    const out = run(`review --cwd ${cwd}`, cwd);
+    const reviewJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'review.json'), 'utf-8'));
+
+    assert.match(out, /current_diff: 0 错误, 1 警告, 0 提示/);
+    assert.match(out, /baseline_or_whole_file: 0 错误, 1 警告, 0 提示/);
+    assert.equal(reviewJson.finding_scope_counts.current_diff.warnings, 1);
+    assert.equal(reviewJson.finding_scope_counts.baseline_or_whole_file.warnings, 1);
+    assert.equal(reviewJson.findings.some((finding) => finding.finding_scope === 'current_diff'), true);
+    assert.equal(reviewJson.findings.some((finding) => finding.finding_scope === 'baseline_or_whole_file'), true);
     rmSync(cwd, { recursive: true, force: true });
   });
 

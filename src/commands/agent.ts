@@ -276,6 +276,7 @@ async function finishAgentDoneTask(options: AgentOptions, finalStatus: NonNullab
     await journalCommand({
       cwd,
       skipAi: true,
+      quietPrompt: true,
       archiveMode: 'skip',
     });
     return;

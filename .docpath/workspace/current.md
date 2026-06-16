@@ -4,32 +4,29 @@
 level: 3
 workflow_profile: standard
 state: completed          # 当前状态
-task_id: T-20260616-optimize-docpath-workflow-dx-after-quick
-task_title: Optimize DocPath workflow DX after quick-profile dogfood
+task_id: T-20260616-optimize-review-noise-and-closeout-guida
+task_title: Optimize review noise and closeout guidance after workflow dogfood
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-16T06:44:37.763Z
-updated_at: 2026-06-16T06:44:37.763Z
+started_at: 2026-06-16T07:02:50.238Z
+updated_at: 2026-06-16T07:02:50.237Z
 ```
 
-> 📖 规约: [spec.md](../tasks/T-20260616-optimize-docpath-workflow-dx-after-quick/spec.md)
-> 📋 计划: [plan.md](../tasks/T-20260616-optimize-docpath-workflow-dx-after-quick/plan.md)
+> 📖 规约: [spec.md](../tasks/T-20260616-optimize-review-noise-and-closeout-guida/spec.md)
+> 📋 计划: [plan.md](../tasks/T-20260616-optimize-review-noise-and-closeout-guida/plan.md)
 
 ## ✅ 执行检查清单
 
-- [x] S1: Map Current Workflow Touchpoints
-- [x] S2: Fix Step Routing And Pending-Done Priority
-- [x] S3: Improve Done Gate Reuse And Profile Visibility
-- [x] S4: Reduce Generated-Artifact And Drift Noise
-- [x] S5: Consume Canonical Evidence Staging Plans
-- [x] S6: Clarify Quick Scope Guard Policy
-- [x] S7: Run Full Verification And Close Task
+- [x] S1: Implement Review Diff Classification
+- [x] S2: Improve Closeout Guidance For Canonical Evidence
+- [x] S3: Reduce Done Journal Prompt Noise
+- [x] S4: Verify And Close
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-16T06:44:15.991Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — review · 状态: done · 代码审查: 0 错误, 9 警告, 3 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-16T07:02:29.854Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — review · 状态: done · 代码审查: 0 错误, 4 警告, 3 提示
 
 ## 🔄 同步说明
 

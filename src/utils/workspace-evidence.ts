@@ -29,6 +29,13 @@ export interface ReviewFindingEvidence {
   file: string;
   severity: 'info' | 'warn' | 'error';
   message: string;
+  line?: number;
+  finding_scope?: 'current_diff' | 'baseline_or_whole_file';
+}
+
+export interface ReviewFindingScopeCounts {
+  current_diff: { errors: number; warnings: number; infos: number };
+  baseline_or_whole_file: { errors: number; warnings: number; infos: number };
 }
 
 export interface ReviewEvidence {
@@ -37,6 +44,7 @@ export interface ReviewEvidence {
   timestamp: string;
   scope?: string;
   finding_scope?: 'current_changes' | 'baseline' | 'mixed';
+  finding_scope_counts?: ReviewFindingScopeCounts;
   files: string[];
   findings: ReviewFindingEvidence[];
   errors: number;
@@ -135,6 +143,10 @@ export function renderReviewMarkdown(evidence: ReviewEvidence): string {
     `**时间**: ${evidence.timestamp}`,
     ...(evidence.scope ? [`scope: ${evidence.scope}`] : []),
     ...(evidence.finding_scope ? [`finding_scope: ${evidence.finding_scope}`] : []),
+    ...(evidence.finding_scope_counts ? [
+      `current_diff: ${evidence.finding_scope_counts.current_diff.errors} errors, ${evidence.finding_scope_counts.current_diff.warnings} warnings, ${evidence.finding_scope_counts.current_diff.infos} infos`,
+      `baseline_or_whole_file: ${evidence.finding_scope_counts.baseline_or_whole_file.errors} errors, ${evidence.finding_scope_counts.baseline_or_whole_file.warnings} warnings, ${evidence.finding_scope_counts.baseline_or_whole_file.infos} infos`,
+    ] : []),
     `**状态**: ${evidence.approved ? '✅ PASS' : '❌ FAIL'}`,
     `**文件**: ${evidence.files.length}`,
     `${evidence.approved ? '✅' : '❌'} 代码审查: ${evidence.errors} 错误, ${evidence.warnings} 警告, ${evidence.infos} 提示`,
@@ -142,7 +154,7 @@ export function renderReviewMarkdown(evidence: ReviewEvidence): string {
     '',
   ];
   for (const finding of evidence.findings) {
-    lines.push(`- [${finding.severity.toUpperCase()}] ${finding.file}: ${finding.message}`);
+    lines.push(`- [${finding.severity.toUpperCase()}] ${finding.file}: ${finding.message}${finding.finding_scope ? ` (${finding.finding_scope})` : ''}`);
   }
   return lines.join('\n');
 }

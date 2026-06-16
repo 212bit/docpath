@@ -7,7 +7,7 @@
  * 3. approve/request-changes — 结论
  */
 
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
@@ -32,12 +32,19 @@ interface ReviewFinding {
   file: string;
   severity: 'info' | 'warn' | 'error';
   message: string;
+  line?: number;
+  finding_scope?: 'current_diff' | 'baseline_or_whole_file';
 }
 
 interface FindingGroups {
   errors: ReviewFinding[];
   warns: ReviewFinding[];
   infos: ReviewFinding[];
+}
+
+interface FindingScopeCounts {
+  current_diff: { errors: number; warnings: number; infos: number };
+  baseline_or_whole_file: { errors: number; warnings: number; infos: number };
 }
 
 function normalizeReviewScope(scope: string): 'all' | 'staged' | 'last_commit' {
@@ -93,19 +100,19 @@ async function analyzeChangedFile(cwd: string, file: string): Promise<ReviewFind
     const line = lines[i];
     // 待办标记扫描
     if (/\/\/\s*TODO/i.test(line)) {
-      findings.push({ file, severity: 'info', message: `L${i + 1}: 未处理的 TODO: ${line.trim().slice(0, 80)}` });
+      findings.push({ file, severity: 'info', line: i + 1, message: `L${i + 1}: 未处理的 TODO: ${line.trim().slice(0, 80)}` });
     }
     // console.log 遗留
     if (/console\.(log|debug)\(/.test(line) && !file.includes('test') && !file.includes('src/commands/')) {
-      findings.push({ file, severity: 'warn', message: `L${i + 1}: 生产代码中的 console.log` });
+      findings.push({ file, severity: 'warn', line: i + 1, message: `L${i + 1}: 生产代码中的 console.log` });
     }
     // any 类型
     if (/:\s*any\b/.test(line)) {
-      findings.push({ file, severity: 'warn', message: `L${i + 1}: 使用了 any 类型` });
+      findings.push({ file, severity: 'warn', line: i + 1, message: `L${i + 1}: 使用了 any 类型` });
     }
     // 硬编码路径
     if (/['"]\/(Users|home|tmp)\//.test(line)) {
-      findings.push({ file, severity: 'error', message: `L${i + 1}: 硬编码绝对路径` });
+      findings.push({ file, severity: 'error', line: i + 1, message: `L${i + 1}: 硬编码绝对路径` });
     }
   }
 
@@ -128,6 +135,92 @@ async function analyzeChangedFiles(cwd: string, changedFiles: string[]): Promise
   return findings;
 }
 
+function parseChangedLineRanges(diff: string): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = [];
+  for (const match of diff.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)) {
+    const start = Number.parseInt(match[1] || '0', 10);
+    const count = match[2] === undefined ? 1 : Number.parseInt(match[2], 10);
+    if (Number.isFinite(start) && Number.isFinite(count) && count > 0) {
+      ranges.push({ start, end: start + count - 1 });
+    }
+  }
+  return ranges;
+}
+
+function fileLineCount(cwd: string, file: string): number {
+  try {
+    return readFileSync(join(cwd, file), 'utf-8').split('\n').length;
+  } catch {
+    return 0;
+  }
+}
+
+function diffForFile(cwd: string, file: string, scope: 'all' | 'staged' | 'last_commit'): string {
+  try {
+    if (scope === 'staged') return runGit(cwd, ['diff', '--unified=0', '--cached', '--', JSON.stringify(file)]);
+    if (scope === 'last_commit') return runGit(cwd, ['diff', '--unified=0', 'HEAD~1..HEAD', '--', JSON.stringify(file)]);
+    return [
+      runGit(cwd, ['diff', '--unified=0', '--', JSON.stringify(file)]),
+      runGit(cwd, ['diff', '--unified=0', '--cached', '--', JSON.stringify(file)]),
+    ].join('\n');
+  } catch {
+    return '';
+  }
+}
+
+function collectDiffLineRanges(cwd: string, changedFiles: string[], scope: 'all' | 'staged' | 'last_commit'): Map<string, Array<{ start: number; end: number }>> {
+  const rangesByFile = new Map<string, Array<{ start: number; end: number }>>();
+  for (const file of changedFiles) {
+    const ranges = parseChangedLineRanges(diffForFile(cwd, file, scope));
+    if (ranges.length === 0) {
+      try {
+        const status = runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all', '--', JSON.stringify(file)]);
+        if (/^\?\?/.test(status.trim())) {
+          const lines = fileLineCount(cwd, file);
+          if (lines > 0) ranges.push({ start: 1, end: lines });
+        }
+      } catch {
+        // No git status available; leave the file as baseline/whole-file.
+      }
+    }
+    rangesByFile.set(file, ranges);
+  }
+  return rangesByFile;
+}
+
+function classifyFindings(
+  findings: ReviewFinding[],
+  rangesByFile: Map<string, Array<{ start: number; end: number }>>,
+): ReviewFinding[] {
+  return findings.map((finding) => {
+    const ranges = rangesByFile.get(finding.file) || [];
+    const onCurrentDiff = typeof finding.line === 'number' &&
+      ranges.some((range) => finding.line! >= range.start && finding.line! <= range.end);
+    return {
+      ...finding,
+      finding_scope: onCurrentDiff ? 'current_diff' : 'baseline_or_whole_file',
+    };
+  });
+}
+
+function emptyFindingCounts(): FindingScopeCounts {
+  return {
+    current_diff: { errors: 0, warnings: 0, infos: 0 },
+    baseline_or_whole_file: { errors: 0, warnings: 0, infos: 0 },
+  };
+}
+
+function countFindingScopes(findings: ReviewFinding[]): FindingScopeCounts {
+  const counts = emptyFindingCounts();
+  for (const finding of findings) {
+    const scope = finding.finding_scope || 'baseline_or_whole_file';
+    if (finding.severity === 'error') counts[scope].errors += 1;
+    if (finding.severity === 'warn') counts[scope].warnings += 1;
+    if (finding.severity === 'info') counts[scope].infos += 1;
+  }
+  return counts;
+}
+
 function groupFindings(findings: ReviewFinding[]): FindingGroups {
   return {
     errors: findings.filter(f => f.severity === 'error'),
@@ -136,18 +229,27 @@ function groupFindings(findings: ReviewFinding[]): FindingGroups {
   };
 }
 
+function printFindingScopeSummary(counts: FindingScopeCounts): void {
+  console.log(
+    `    current_diff: ${counts.current_diff.errors} 错误, ${counts.current_diff.warnings} 警告, ${counts.current_diff.infos} 提示`,
+  );
+  console.log(
+    `    baseline_or_whole_file: ${counts.baseline_or_whole_file.errors} 错误, ${counts.baseline_or_whole_file.warnings} 警告, ${counts.baseline_or_whole_file.infos} 提示`,
+  );
+}
+
 function printFindings({ errors, warns, infos }: FindingGroups): void {
   if (errors.length > 0) {
     console.log(`\n❌ ${errors.length} 个错误:`);
-    errors.forEach(f => console.log(`  [${f.file}] ${f.message}`));
+    errors.forEach(f => console.log(`  [${f.file}] ${f.message}${f.finding_scope ? ` (${f.finding_scope})` : ''}`));
   }
   if (warns.length > 0) {
     console.log(`\n⚠️  ${warns.length} 个警告:`);
-    warns.forEach(f => console.log(`  [${f.file}] ${f.message}`));
+    warns.forEach(f => console.log(`  [${f.file}] ${f.message}${f.finding_scope ? ` (${f.finding_scope})` : ''}`));
   }
   if (infos.length > 0) {
     console.log(`\n💡 ${infos.length} 个提示:`);
-    infos.forEach(f => console.log(`  [${f.file}] ${f.message}`));
+    infos.forEach(f => console.log(`  [${f.file}] ${f.message}${f.finding_scope ? ` (${f.finding_scope})` : ''}`));
   }
 }
 
@@ -160,12 +262,14 @@ async function alreadyReviewed(cwd: string): Promise<boolean> {
 }
 
 async function writeReviewReport(docpathDir: string, changedFiles: string[], findings: ReviewFinding[], scope: string): Promise<void> {
+  const finding_scope_counts = countFindingScopes(findings);
   await writeReviewEvidence(docpathDir, {
     schema_version: 1,
     kind: 'review',
     timestamp: new Date().toISOString(),
     scope,
-    finding_scope: 'current_changes',
+    finding_scope: 'mixed',
+    finding_scope_counts,
     files: changedFiles,
     findings,
     errors: findings.filter((finding) => finding.severity === 'error').length,
@@ -224,8 +328,12 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     return;
   }
   console.log(`📋 审查 ${changedFiles.length} 个文件...`);
-  console.log(`    scope: ${scope}; finding_scope: current_changes`);
-  const findings = await analyzeChangedFiles(opts.cwd, changedFiles);
+  const findings = classifyFindings(
+    await analyzeChangedFiles(opts.cwd, changedFiles),
+    collectDiffLineRanges(opts.cwd, changedFiles, scope),
+  );
+  console.log(`    scope: ${scope}; finding_scope: mixed`);
+  printFindingScopeSummary(countFindingScopes(findings));
   const current = await readCurrentMd(opts.cwd);
   if (!current?.task_id && !opts.force) {
     console.warn('\n⚠️  当前无活跃 agent 会话 (current.md 无 task_id)');

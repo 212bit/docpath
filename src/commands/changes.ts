@@ -63,6 +63,7 @@ export interface ChangesReport {
   groups: Record<ChangeGroupName, string[]>;
   worktree_isolation: WorktreeIsolationReport;
   ignored_evidence: IgnoredEvidenceReport;
+  recommended_stage_command: string | null;
   ready_to_commit: boolean;
   blocking_reasons: string[];
   suggested_commit_message: string;
@@ -275,6 +276,10 @@ function buildBlockingReasons(args: {
   return blockingReasons;
 }
 
+function buildRecommendedStageCommand(ignoredEvidence: IgnoredEvidenceReport): string | null {
+  return ignoredEvidence.canonical_files.length > 0 ? 'docpath commit --stage' : null;
+}
+
 export async function buildChangesReport(cwd: string, options: Pick<ChangesOptions, 'since'> = {}): Promise<ChangesReport> {
   const gitRoot = ensureGitRepo(cwd);
   const docpathDir = await resolveDocpathDir(cwd);
@@ -318,6 +323,7 @@ export async function buildChangesReport(cwd: string, options: Pick<ChangesOptio
     groups,
     worktree_isolation: worktreeIsolation,
     ignored_evidence: ignoredEvidence,
+    recommended_stage_command: buildRecommendedStageCommand(ignoredEvidence),
     ready_to_commit: blockingReasons.length === 0,
     blocking_reasons: blockingReasons,
   };
@@ -376,6 +382,7 @@ function renderAgentYaml(report: ChangesReport): string {
   lines.push('  alias_files:');
   for (const file of report.ignored_evidence.alias_files) lines.push(`    - ${yamlString(file)}`);
   lines.push(`  add_command: ${report.ignored_evidence.add_command === null ? 'null' : yamlString(report.ignored_evidence.add_command)}`);
+  lines.push(`recommended_stage_command: ${report.recommended_stage_command === null ? 'null' : yamlString(report.recommended_stage_command)}`);
   lines.push('blocking_reasons:');
   for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
   lines.push(`suggested_commit_message: ${yamlString(report.suggested_commit_message)}`);
@@ -428,6 +435,10 @@ function renderHuman(report: ChangesReport): string {
     }
     if (report.ignored_evidence.add_command) {
       lines.push('  提交提示');
+      if (report.recommended_stage_command) {
+        lines.push(`    推荐: ${report.recommended_stage_command}`);
+        lines.push('    fallback:');
+      }
       lines.push(`    ${report.ignored_evidence.add_command}`);
     }
   }

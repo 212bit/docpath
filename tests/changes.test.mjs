@@ -225,6 +225,8 @@ describe('changes command', () => {
     assert.match(human, /被 gitignore 忽略的 DocPath evidence \(2\)/);
     assert.match(human, /.docpath\/backlog\/R-999\.md/);
     assert.match(human, /.docpath\/tasks\/T-CHANGES\/spec\.md/);
+    assert.match(human, /推荐: docpath commit --stage/);
+    assert.match(human, /fallback:/);
     assert.match(human, /git add -f .*\.docpath\/backlog\/R-999\.md .*\.docpath\/tasks\/T-CHANGES\/spec\.md/);
     assert.match(human, /存在被 gitignore 忽略的 DocPath canonical evidence/);
 
@@ -235,6 +237,7 @@ describe('changes command', () => {
     assert.match(agent, /canonical_count: 2/);
     assert.match(agent, /alias_count: 0/);
     assert.match(agent, /add_command: "git add -f .*\.docpath\/backlog\/R-999\.md .*\.docpath\/tasks\/T-CHANGES\/spec\.md"/);
+    assert.match(agent, /recommended_stage_command: "docpath commit --stage"/);
 
     const parsed = JSON.parse(run('changes --json', cwd));
     assert.equal(parsed.ignored_evidence.check, 'checked');
@@ -244,6 +247,7 @@ describe('changes command', () => {
     assert.equal(parsed.ignored_evidence.files.includes('.docpath/backlog/R-999.md'), true);
     assert.equal(parsed.ignored_evidence.files.includes('.docpath/tasks/T-CHANGES/spec.md'), true);
     assert.match(parsed.ignored_evidence.add_command, /git add -f/);
+    assert.equal(parsed.recommended_stage_command, 'docpath commit --stage');
     assert.equal(parsed.ready_to_commit, false);
     assert.equal(parsed.blocking_reasons.some((reason) => /gitignore 忽略的 DocPath canonical evidence/.test(reason)), true);
     rmSync(cwd, { recursive: true, force: true });
@@ -265,6 +269,7 @@ describe('changes command', () => {
     assert.equal(parsed.ignored_evidence.alias_files.length, 1);
     assert.equal(parsed.ignored_evidence.alias_files[0], '.docpath/tasks/current/spec.json');
     assert.equal(parsed.ignored_evidence.add_command, null);
+    assert.equal(parsed.recommended_stage_command, null);
     assert.equal(parsed.ready_to_commit, true);
     assert.equal(parsed.blocking_reasons.some((reason) => /canonical evidence/.test(reason)), false);
     rmSync(cwd, { recursive: true, force: true });
