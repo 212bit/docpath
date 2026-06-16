@@ -47,6 +47,21 @@ Prefer the installed slash commands over long pasted prompts:
 /docpath-context
 ```
 
+**Recommended operational commands** (use these by default):
+- `docpath start <step>` - Start a plan step
+- `docpath step done` - Mark current step as done (auto-infers step)
+- `docpath step blocked` - Mark current step as blocked
+- `docpath step skipped` - Mark current step as skipped
+- `docpath done` - Complete task with full gate sequence (check/review/journal)
+- `docpath recover <step>` - Resume from blocked step
+- `docpath retry <step>` - Retry skipped step
+- `docpath unblock <step>` - Explicitly unblock and restart step
+
+**Low-level commands** (for advanced use or ambiguous state):
+- `docpath go --step <id>` - Atomic step control
+- `docpath agent step --step <id> --status <status>` - Explicit step status
+- `docpath agent done` - Explicit task completion
+
 All commands must point at the same `.docpath/` state. Do not create a parallel
 Claude-only state file.
 
@@ -99,21 +114,26 @@ tail range.
 
 ```bash
 docpath agent enter
-docpath go --step S1
-docpath agent step --step "S1" --status done
+docpath start S1
+docpath step done
 docpath check
-docpath agent done --step "<task>"
+docpath done
 docpath agent handoff
 ```
 
 Workflow:
 
 1. Enter with `docpath agent enter` before code or protocol edits.
-2. Atomically claim/start the active step with `docpath go --step <id>`.
+2. Start the active step with `docpath start <id>` (wraps `go --step`).
 3. Make the scoped change.
-4. Record completion with `docpath agent step --step "<id>" --status done`.
-5. Run `docpath check` and `docpath agent done` before claiming completion.
+4. Record completion with `docpath step done` (auto-infers current step).
+5. Run `docpath check` and `docpath done` before claiming completion.
 6. Use `docpath agent handoff` when another session may resume the work.
+
+**Advanced/Diagnostic Commands:**
+- `docpath go --step <id>` - direct atomic step control
+- `docpath agent step --step "<id>" --status done` - explicit step status update
+- `docpath agent done --step "<task>"` - explicit task completion with full gates
 
 ## Required Gates
 
