@@ -63,16 +63,13 @@ tail range that answers the question.
 - `docpath next --agent` is a read-only advisory router for session
   start/resume and uncertain state. It does not grant permission, hold locks, or
   replace command preflight gates. Do not require it before an explicit
-  deterministic user command such as `start`, `go --step`, `check`, `review`, or
+  deterministic user command such as `go --step`, `check`, `review`, or
   `changes`.
-- State-changing commands such as `start`, `step`, `go`, `agent enter/step/done`, `plan`,
+- State-changing commands such as `go`, `agent enter/step/done`, `plan`,
   `check`, `review`, `journal`, and `backlog promote` must re-read workflow
   state and enforce their own preconditions.
-- `docpath start <id>` is the recommended way to begin a step (wraps `go --step`
-  with clearer semantics).
 - `docpath go --step <id>` is atomic step control: it claims/starts the selected
-  step only if the workflow allows that step now. Use for advanced control or
-  when state is ambiguous.
+  step only if the workflow allows that step now.
 - Treat `--dry-run` output as preview material only, not as durable final
   analysis/spec/plan evidence.
 
@@ -87,15 +84,15 @@ tail range that answers the question.
 
 ## Agent Lifecycle Commands
 
-Use operational lifecycle commands for standard workflows:
+Use lifecycle commands instead of manual state edits:
 
 ```bash
 docpath quick "Fix typo in docs"   # only for tiny low-risk changes
 docpath agent enter
-docpath start S1
-docpath step done
+docpath go --step S1
+docpath agent step --step "S1" --status done
 docpath check
-docpath done
+docpath agent done --step "<task>"
 docpath agent handoff
 ```
 
@@ -106,25 +103,13 @@ Rules:
   task, requires check on closeout, and skips full review by quick profile.
   Escalate to the standard lifecycle when scope touches architecture, protocol,
   permissions, migrations, CI/CD, or broad multi-file changes.
-- Use `docpath start <step>` to begin a plan step (wraps `go --step`).
-- Use `docpath step done` after each meaningful sub-task (auto-infers current step).
-- Use `docpath step blocked` or `docpath step skipped` when appropriate.
-- Run `docpath done` before claiming a task is complete (runs full gate sequence).
+- Run `docpath agent step` after each meaningful sub-task or major decision.
+- Run `docpath agent done` before claiming a task is complete.
 - Run `docpath agent handoff` when another session may resume the task.
 - Before any local `git commit`, run `docpath changes --agent`. Treat it as a
   read-only closeout report; only force-add exact canonical evidence paths it
   recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by
   default.
-
-**Recovery commands:**
-- `docpath recover <step>` - Resume from blocked step
-- `docpath retry <step>` - Retry skipped step  
-- `docpath unblock <step>` - Explicitly unblock and restart
-
-**Advanced/diagnostic commands** (use when state is ambiguous or debugging):
-- `docpath go --step <id>` - Direct atomic step control
-- `docpath agent step --step "<id>" --status <status>` - Explicit step status update
-- `docpath agent done --step "<task>"` - Explicit task completion
 
 ## Required Gates
 
@@ -148,8 +133,7 @@ Rules:
 6. Do not hand-edit `state.json`, `current.md`, `breadcrumb.md`, or other
    workspace runtime views.
 7. Run `docpath check` before marking work complete.
-8. Let lifecycle commands (`step done`, `agent step`) update breadcrumb and plan
-   checklist state.
+8. Let `docpath agent step` update breadcrumb and plan checklist state.
 
 ## Useful Commands
 
@@ -159,16 +143,11 @@ Rules:
 | `docpath status --agent` | Diagnostic workflow state snapshot and health indexes |
 | `docpath reveal --level N --topic <keyword>` | Progressive context expansion |
 | `docpath context --max-tokens 5000 --topic <keyword>` | Budgeted context package |
-| `docpath start <step>` | Start a plan step (recommended) |
-| `docpath step done` | Mark current step done (auto-infers step) |
-| `docpath step blocked` | Mark current step blocked |
-| `docpath done` | Complete task with full gate sequence |
-| `docpath recover <step>` | Resume from blocked step |
+| `docpath go --step S1` | Atomically claim/start the selected plan step |
 | `docpath check` | Quality gates |
 | `docpath review` | Structured review |
 | `docpath changes --agent` | Read-only git closeout and commit readiness view |
 | `docpath journal` | Knowledge archive |
-| `docpath go --step <id>` | Advanced: direct atomic step control |
 | `docpath gc` | Preview workspace cleanup candidates and inactive task archive candidates; `--force` executes |
 | `docpath gc-decisions` | Rotate old decision logs |
 

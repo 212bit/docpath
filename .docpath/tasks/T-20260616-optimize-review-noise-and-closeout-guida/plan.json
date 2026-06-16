@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-16T06:59:32.478Z",
+    "updated_at": "2026-06-16T06:59:32.478Z",
+    "content_sha256": "30963a5ed1a2861736b6b6e0fff7d14a6bfded9e500e280a1605df33f8383e82"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: Implement Review Diff Classification\n- **描述**: Add git diff line-range collection and classify review findings as `current_diff` or `baseline_or_whole_file` where practical; persist counts in review evidence and print a concise summary.\n- **验收条件**: Tests cover a TODO/console finding on a changed line vs an existing whole-file/function-length warning, with output/evidence counts.\n- **依赖**: 无\n\n### S2: Improve Closeout Guidance For Canonical Evidence\n- **描述**: Extend changes reports with a `recommended_stage_command` that prefers `docpath commit --stage` when canonical ignored evidence exists while preserving the exact `git add -f` fallback.\n- **验收条件**: Agent and JSON output tests assert the new recommendation and existing fallback command.\n- **依赖**: 无\n\n### S3: Reduce Done Journal Prompt Noise\n- **描述**: Make automatic done/journal closeout print a concise archive summary instead of dumping the full journal prompt, while retaining evidence files and lifecycle behavior.\n- **验收条件**: Done/journal tests verify closeout still completes and output no longer includes the large prompt contract in the automatic path.\n- **依赖**: 无\n\n### S4: Verify And Close\n- **描述**: Run targeted tests, typecheck, DocPath check/review/done, and inspect closeout output.\n- **验收条件**: Verification commands pass or residual warnings are documented.\n- **依赖**: S1, S2, S3\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n\n## 依赖关系图\nS1 → S4\nS2 → S4\nS3 → S4\n",
+  "generated_at": "2026-06-16T06:59:32.478Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Implement Review Diff Classification",
+      "description": "Add git diff line-range collection and classify review findings as `current_diff` or `baseline_or_whole_file` where practical; persist counts in review evidence and print a concise summary.",
+      "acceptance": "Tests cover a TODO/console finding on a changed line vs an existing whole-file/function-length warning, with output/evidence counts.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Improve Closeout Guidance For Canonical Evidence",
+      "description": "Extend changes reports with a `recommended_stage_command` that prefers `docpath commit --stage` when canonical ignored evidence exists while preserving the exact `git add -f` fallback.",
+      "acceptance": "Agent and JSON output tests assert the new recommendation and existing fallback command.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Reduce Done Journal Prompt Noise",
+      "description": "Make automatic done/journal closeout print a concise archive summary instead of dumping the full journal prompt, while retaining evidence files and lifecycle behavior.",
+      "acceptance": "Done/journal tests verify closeout still completes and output no longer includes the large prompt contract in the automatic path.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Verify And Close",
+      "description": "Run targeted tests, typecheck, DocPath check/review/done, and inspect closeout output.",
+      "acceptance": "Verification commands pass or residual warnings are documented.",
+      "dependencies": "S1, S2, S3",
+      "status": "done"
+    }
+  ]
+}

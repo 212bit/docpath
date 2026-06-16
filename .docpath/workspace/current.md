@@ -25,8 +25,8 @@ updated_at: 2026-06-16T07:02:50.237Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-16T07:02:29.854Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — review · 状态: done · 代码审查: 0 错误, 4 警告, 3 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 9 项 · 2026-06-16T07:32:39.613Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — journal · 状态: done · 知识归档完成 (4/4 步)
 
 ## 🔄 同步说明
 
