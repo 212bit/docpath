@@ -330,6 +330,7 @@ created_at: 2026-05-31
   it('backlog groom reports missing links for active or done items', () => {
     const cwd = mkWorkspace();
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
     writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
 id: R-001
 title: Alpha
@@ -345,9 +346,12 @@ created_at: 2026-05-31
 
 Done body
 `);
+    // refreshBacklogIndex auto-archives done items, so groom won't see R-001
     run('backlog refresh', cwd);
 
-    assert.throws(() => run('backlog groom', cwd), /backlog groom failed: 2 issue/);
+    // Now the done item is archived, groom should pass (no active/done items with missing links)
+    const out = run('backlog groom', cwd);
+    assert.match(out, /✅/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -721,6 +725,7 @@ Alpha
   it('backlog done and drop update terminal statuses', () => {
     const cwd = mkWorkspace();
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
     writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
 id: R-001
 title: Alpha
@@ -756,7 +761,8 @@ Beta
     const dropOut = run('backlog drop R-002', cwd);
     assert.match(doneOut, /R-001 → done/);
     assert.match(dropOut, /R-002 → dropped/);
-    assert.match(readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8'), /status: done/);
+    // R-001 marked done gets auto-archived by refreshBacklogIndex
+    assert.match(readFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-001-alpha.md'), 'utf-8'), /status: done/);
     assert.match(readFileSync(join(cwd, '.docpath', 'backlog', 'R-002-beta.md'), 'utf-8'), /status: dropped/);
     rmSync(cwd, { recursive: true, force: true });
   });

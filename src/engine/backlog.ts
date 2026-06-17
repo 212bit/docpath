@@ -8,7 +8,7 @@
  * 写入唯一入口：writeBacklogItem()（类比 writeCurrentState）。fail-loud：非法转移抛错。
  */
 
-import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, readdir, mkdir, rename } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
@@ -106,6 +106,10 @@ export const transitionBacklogStatus = transitionBacklog;
 
 function backlogDir(docpathDir: string): string {
   return join(docpathDir, 'backlog');
+}
+
+function archivedBacklogDir(docpathDir: string): string {
+  return join(docpathDir, 'backlog', 'archived');
 }
 
 /** 标题转 ascii slug；无可用字符时回退 'item' */
@@ -354,10 +358,28 @@ export async function nextBacklogId(cwd: string): Promise<string> {
 export async function refreshBacklogIndex(cwd: string): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
   const dir = backlogDir(docpathDir);
+  const archivedDir = archivedBacklogDir(docpathDir);
   await mkdir(dir, { recursive: true });
+  await mkdir(archivedDir, { recursive: true });
 
   const items = await listBacklogItems(cwd);
-  const sorted = [...items].sort((a, b) => {
+
+  // Archive done items before building index
+  const doneItems = items.filter((item) => item.status === 'done');
+  for (const item of doneItems) {
+    const filename = await findItemFile(dir, item.id);
+    if (filename) {
+      const sourcePath = join(dir, filename);
+      const targetPath = join(archivedDir, filename);
+      if (existsSync(sourcePath) && !existsSync(targetPath)) {
+        await rename(sourcePath, targetPath);
+      }
+    }
+  }
+
+  // Rebuild active items list after archival
+  const activeItems = items.filter((item) => item.status !== 'done');
+  const sorted = [...activeItems].sort((a, b) => {
     const priorityOrder = comparePriority(a.priority, b.priority);
     if (priorityOrder !== 0) return priorityOrder;
     return a.id.localeCompare(b.id, undefined, { numeric: true });

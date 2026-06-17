@@ -112,7 +112,8 @@ describe('backlog journal integration', () => {
     assert.match(out, /backlog 已自动回填完成: R-001/);
     assert.match(out, /next_hint:/);
     assert.match(out, /recommended_command:/);
-    const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8');
+    // After journal marks item as done, refreshBacklogIndex auto-archives it
+    const item = readFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-001-alpha.md'), 'utf-8');
     assert.match(item, /status: done/);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -163,7 +164,8 @@ created_at: 2026-05-31
 
     run('journal --skip-ai --optional-archive skip', cwd);
 
-    const item = readFileSync(join(dp, 'backlog', 'R-001-alpha.md'), 'utf-8');
+    // After journal marks item as done, refreshBacklogIndex auto-archives it
+    const item = readFileSync(join(dp, 'backlog', 'archived', 'R-001-alpha.md'), 'utf-8');
     assert.match(item, /status: done/);
     assert.match(item, /readiness: analyzed/);
     assert.match(item, /spec: tasks\/T-20260531-alpha-promote\/spec\.md/);
@@ -193,7 +195,8 @@ Alpha
     const out = run('journal --skip-ai --optional-archive skip', cwd);
 
     assert.match(out, /所有步骤已归档/);
-    const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8');
+    // After journal marks item as done, refreshBacklogIndex auto-archives it
+    const item = readFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-001-alpha.md'), 'utf-8');
     assert.match(item, /status: done/);
     rmSync(cwd, { recursive: true, force: true });
   });
