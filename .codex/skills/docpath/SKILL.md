@@ -17,7 +17,7 @@ High-signal trigger phrases include:
 ## Required Route
 
 1. Run `docpath next --agent` to read the `agent_view: next` route, `recommended_command`, and compact workflow snapshot unless the user explicitly changes direction.
-2. Treat `context_index`, `data_index`, `required_files`, and `current_focus` as indexes, not as permission to read every file.
+2. Treat `context_policy`, `context_refs`, `context_index`, `data_index`, `required_files`, and `current_focus` as indexes and access guidance, not as permission to read every file.
 3. Use `docpath status --agent` only for explicit status/debug snapshots, suspected drift, or confirmation after state-changing commands.
 4. Prefer `docpath reveal --topic <keyword> --level 1-3` or `docpath context --max-tokens 5000 --topic <keyword>` for deeper context.
 5. Do not default-read `.docpath/workspace/current.md`, `.docpath/workspace/breadcrumb.md`, `.docpath/tasks/current/plan.md`, or `.docpath/docs-index.json`.

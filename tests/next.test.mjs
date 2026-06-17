@@ -584,9 +584,27 @@ created_at: 2026-05-31
     });
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath start S2');
+    assert.equal(output.recommended_command, 'docpath go --step S2');
     assert.match(output.next_action, /S2/);
     assert.ok(output.required_files.includes('.docpath/tasks/current/plan.md'));
+    assert.equal(output.context_policy.mode, 'cli_first');
+    assert.equal(output.context_policy.direct_file_reads, 'on_demand_only');
+    assert.match(output.context_policy.note, /route indexes/);
+    assert.ok(output.context_policy.expansion_commands.includes('docpath reveal --topic S2 --level 1'));
+    assert.ok(output.context_refs.some((ref) =>
+      ref.path === '.docpath/workspace/current.md'
+      && ref.access === 'index_only'
+      && ref.preferred_command === 'docpath next --agent',
+    ));
+    assert.ok(output.context_refs.some((ref) =>
+      ref.path === '.docpath/tasks/current/plan.md'
+      && ref.access === 'index_only'
+      && ref.preferred_command === 'docpath reveal --topic S2 --level 1',
+    ));
+    assert.deepEqual(output.command_effects.updates, ['.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md']);
+    assert.equal(output.command_effects.update_mode, 'via_docpath_command');
+    assert.ok(output.command_effects.do_not_edit_directly.includes('.docpath/workspace/breadcrumb.md'));
+    assert.ok(output.command_effects.do_not_edit_directly.includes('.docpath/tasks/current/plan.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -628,7 +646,7 @@ created_at: 2026-05-31
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath start S2');
+    assert.equal(output.recommended_command, 'docpath go --step S2');
     assert.equal(output.progress.total, 2);
     assert.equal(output.progress.done, 1);
     rmSync(cwd, { recursive: true, force: true });
@@ -766,7 +784,7 @@ created_at: 2026-05-31
     });
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath start S2');
+    assert.equal(output.recommended_command, 'docpath go --step S2');
     assert.doesNotMatch(output.next_action, /完成进行中的步骤: S1/);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -822,7 +840,7 @@ warned: false
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath start S2');
+    assert.equal(output.recommended_command, 'docpath go --step S2');
     assert.match(output.next_action, /pending-done 哨兵/);
     assert.ok(output.required_files.includes('.docpath/workspace/pending-done.md'));
     rmSync(cwd, { recursive: true, force: true });

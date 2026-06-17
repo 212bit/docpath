@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-17T00:22:11.226Z
+> 扫描时间: 2026-06-17T04:30:23.281Z
 
 ## 条目列表
 
@@ -10,6 +10,7 @@
 |----|-------|--------|----------|-------|------|
 | R-196 | Fix command inference when check/review fails | proposed | P0 | 2 |  |
 | R-197 | Add backlog promote --draft flag for fast-track workflow | active | P0 | 2 | T-20260616-add-backlog-promote-draft-flag-for-fast- |
+| R-198 | Optimize agent route context for step execution | proposed | P0 | 2 |  |
 | R-169 | probe | dropped | P2 | 2 |  |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 

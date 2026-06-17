@@ -674,3 +674,157 @@ timestamp: 2026-06-16T12:27:02.165Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (7/7 步)
+
+### 🚫 check [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T04:50:35.092Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: check
+status: blocked
+timestamp: 2026-06-17T04:50:35.092Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: TypeScript 编译, 重大决策确认检查, 当前任务上下文文件缺失
+
+### 🚫 check [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T04:54:58.373Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: check
+status: blocked
+timestamp: 2026-06-17T04:54:58.373Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: TypeScript 编译, 重大决策确认检查, 当前任务上下文文件缺失
+
+### 🚫 check [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T07:23:48.638Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: check
+status: blocked
+timestamp: 2026-06-17T07:23:48.638Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: TypeScript 编译, 当前任务上下文文件缺失
+
+### 🚫 check [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T07:39:39.610Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: check
+status: blocked
+timestamp: 2026-06-17T07:39:39.610Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 当前任务上下文文件缺失
+
+### 🚫 check [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T07:46:53.135Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: check
+status: blocked
+timestamp: 2026-06-17T07:46:53.135Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 子任务完成度 (0/4)
+
+### 🚫 check [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T07:56:41.961Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: check
+status: blocked
+timestamp: 2026-06-17T07:56:41.961Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 子任务完成度 (0/4)
+
+### 🔄 S1 [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T07:56:56.532Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: S1
+status: in_progress
+timestamp: 2026-06-17T07:56:56.532Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: 补齐 --draft 专项测试（promote 快速通道）
+- **Session**: default
+
+### ✅ S1 [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T07:57:27.043Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: S1
+status: done
+timestamp: 2026-06-17T07:57:27.043Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S1
+- **Session**: default
+
+### ✅ S2 [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T07:57:27.255Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: S2
+status: done
+timestamp: 2026-06-17T07:57:27.255Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S2
+- **Session**: default
+
+### ✅ S3 [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T07:57:27.452Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: S3
+status: done
+timestamp: 2026-06-17T07:57:27.452Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S3
+- **Session**: default
+
+### ✅ S4 [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T07:57:27.650Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: S4
+status: done
+timestamp: 2026-06-17T07:57:27.650Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### ✅ check [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T07:58:44.561Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: check
+status: done
+timestamp: 2026-06-17T07:58:44.561Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)

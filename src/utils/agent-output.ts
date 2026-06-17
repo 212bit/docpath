@@ -63,11 +63,31 @@ export interface AgentOutput {
   };
   /** 快速修复建议（检测到常见错误时提供） */
   quick_fix?: string;
-  /** 需要读取的上下文文件列表 */
+  /** Agent 上下文读取策略。 */
+  context_policy: {
+    mode: 'cli_first';
+    direct_file_reads: 'on_demand_only';
+    note: string;
+    expansion_commands: string[];
+  };
+  /** 上下文索引项；优先用 DocPath CLI 展开，避免默认读取生成的 Markdown 视图。 */
+  context_refs: Array<{
+    path: string;
+    role: string;
+    access: 'index_only' | 'read_if_needed';
+    preferred_command?: string;
+  }>;
+  /** 推荐命令预期更新的证据文件；这些不是手工编辑目标。 */
+  command_effects: {
+    updates: string[];
+    update_mode: 'via_docpath_command';
+    do_not_edit_directly: string[];
+  };
+  /** 兼容字段：上下文索引，不代表必须默认读取完整文件。 */
   required_context: string[];
-  /** required_context 的机器友好别名 */
+  /** 兼容字段：required_context 的机器友好别名；不要当成强制 direct read 列表。 */
   required_files: string[];
-  /** 需要更新的文件列表 */
+  /** 兼容字段：推荐命令预期更新的文件；不要手工编辑这些证据文件。 */
   must_update: string[];
   /** 退出标准 (任务完成条件) */
   exit_criteria: string;
@@ -546,7 +566,7 @@ function inferNextAction(
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'];
     return {
       next_action: `完成进行中的步骤: ${activeStep.step}`,
-      recommended_command: `docpath step done`,
+      recommended_command: `docpath agent step --step ${activeStep.step} --status done`,
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'],
@@ -558,7 +578,7 @@ function inferNextAction(
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md', '.docpath/tasks/current/plan.md'];
     return {
       next_action: `执行下一个未完成步骤: ${firstOpenTask.id} ${firstOpenTask.title}`,
-      recommended_command: `docpath start ${firstOpenTask.id}`,
+      recommended_command: `docpath go --step ${firstOpenTask.id}`,
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'],
@@ -744,7 +764,7 @@ function inferNextAction(
       break;
     case 'planning_done':
       next_action = '计划已就绪，执行第一个子任务';
-      recommended_command = 'docpath go';
+      recommended_command = 'docpath go --step S1';
       required_context = [
         '.docpath/workspace/current.md',
         '.docpath/tasks/current/plan.md',
@@ -776,6 +796,96 @@ function inferNextAction(
   }
 
   return { next_action, recommended_command, required_context, required_files: required_context, must_update, exit_criteria };
+}
+
+type RouteSummary = ReturnType<typeof inferNextAction>;
+
+const GENERATED_VIEW_PATHS = new Set([
+  '.docpath/workspace/current.md',
+  '.docpath/workspace/breadcrumb.md',
+  '.docpath/tasks/current/plan.md',
+  '.docpath/docs-index.json',
+]);
+
+function routeStepTopic(command: string): string | null {
+  const goMatch = command.match(/\bdocpath\s+go\s+--step\s+("?)([^"\s]+)\1/);
+  if (goMatch?.[2]) return goMatch[2];
+  const agentStepMatch = command.match(/\bdocpath\s+agent\s+step\s+--step\s+("?)([^"\s]+)\1/);
+  if (agentStepMatch?.[2]) return agentStepMatch[2];
+  return null;
+}
+
+function contextRole(path: string): string {
+  if (path.endsWith('/current.md')) return 'rendered_state_view';
+  if (path.endsWith('/breadcrumb.md')) return 'rendered_progress_view';
+  if (path.endsWith('/spec.md')) return 'task_spec';
+  if (path.endsWith('/plan.md')) return 'task_plan';
+  if (path.endsWith('/last-check.md')) return 'quality_gate_evidence';
+  if (path.endsWith('/review.md')) return 'review_evidence';
+  if (path.endsWith('/pending-done.md')) return 'pending_done_sentinel';
+  if (path.includes('/backlog/')) return 'backlog_index';
+  return 'context_reference';
+}
+
+function contextAccess(path: string): 'index_only' | 'read_if_needed' {
+  return GENERATED_VIEW_PATHS.has(path) ? 'index_only' : 'read_if_needed';
+}
+
+function contextPreferredCommand(path: string, topic: string | null): string | undefined {
+  if (topic && (path.endsWith('/plan.md') || path.endsWith('/spec.md'))) {
+    return `docpath reveal --topic ${topic} --level 1`;
+  }
+  if (path.endsWith('/breadcrumb.md')) return 'docpath reveal --topic breadcrumb --level 1';
+  if (path.endsWith('/current.md')) return 'docpath next --agent';
+  if (path.endsWith('/last-check.md')) return 'docpath reveal --topic check --level 1';
+  if (path.includes('/backlog/')) return 'docpath backlog list --agent';
+  return undefined;
+}
+
+function buildContextPolicy(route: RouteSummary): AgentOutput['context_policy'] {
+  const topic = routeStepTopic(route.recommended_command);
+  const expansion_commands = topic
+    ? [
+        `docpath reveal --topic ${topic} --level 1`,
+        `docpath context --max-tokens 5000 --topic ${topic}`,
+      ]
+    : ['docpath reveal --topic <keyword> --level 1', 'docpath context --max-tokens 5000 --topic <keyword>'];
+  return {
+    mode: 'cli_first',
+    direct_file_reads: 'on_demand_only',
+    note: 'Treat required_context and required_files as route indexes. Prefer DocPath CLI summaries/reveal/context before opening generated Markdown views.',
+    expansion_commands,
+  };
+}
+
+function buildContextRefs(route: RouteSummary): AgentOutput['context_refs'] {
+  const topic = routeStepTopic(route.recommended_command);
+  return Array.from(new Set(route.required_context)).map((path) => {
+    const ref: AgentOutput['context_refs'][number] = {
+      path,
+      role: contextRole(path),
+      access: contextAccess(path),
+    };
+    const preferred = contextPreferredCommand(path, topic);
+    if (preferred) ref.preferred_command = preferred;
+    return ref;
+  });
+}
+
+function shouldAvoidDirectEdit(path: string): boolean {
+  return path.startsWith('.docpath/workspace/')
+    || path.startsWith('.docpath/tasks/current/')
+    || path === '.docpath/backlog/'
+    || path.startsWith('.docpath/backlog/');
+}
+
+function buildCommandEffects(route: RouteSummary): AgentOutput['command_effects'] {
+  const updates = Array.from(new Set(route.must_update));
+  return {
+    updates,
+    update_mode: 'via_docpath_command',
+    do_not_edit_directly: updates.filter(shouldAvoidDirectEdit),
+  };
 }
 
 async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<AgentOutputContext> {
@@ -1030,7 +1140,16 @@ export async function generateAgentOutput(
     task_title: context.state?.task_title || '',
     phase: context.state?.phase || '',
     gate: context.state?.gate || 'none',
-    ...routeFields,
+    next_action: routeFields.next_action,
+    recommended_command: routeFields.recommended_command,
+    ...('route_hint' in routeFields ? { route_hint: routeFields.route_hint } : {}),
+    context_policy: buildContextPolicy(routeFields),
+    context_refs: buildContextRefs(routeFields),
+    command_effects: buildCommandEffects(routeFields),
+    required_context: routeFields.required_context,
+    required_files: routeFields.required_files,
+    must_update: routeFields.must_update,
+    exit_criteria: routeFields.exit_criteria,
     ...(quickFix ? { quick_fix: quickFix } : {}),
     progress: {
       done: context.planTasks.filter((task) => task.done).length,

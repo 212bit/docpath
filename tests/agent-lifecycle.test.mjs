@@ -113,6 +113,24 @@ describe('docpath agent lifecycle', () => {
     assert.equal(sentinelJson.task_id, 'T-AGENT');
   });
 
+  it('agent enter refuses before a concrete step is executing and does not write pending-done', () => {
+    const cwd = mkExecWorkspace();
+    const statePath = path.join(cwd, '.docpath', 'workspace', 'state.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    state.phase = 'planning';
+    state.state = 'planning_done';
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+
+    const out = run('agent enter', cwd);
+
+    assert.match(out, /agent_context/);
+    assert.match(out, /recommended_command:/);
+    assert.match(out, /docpath agent enter: 当前 phase=planning 尚未进入执行阶段/);
+    assert.equal(fs.existsSync(path.join(cwd, '.docpath', 'workspace', 'pending-done.md')), false);
+    assert.equal(fs.existsSync(path.join(cwd, '.docpath', 'workspace', 'pending-done.json')), false);
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('agent step records progress', () => {
     const out = run('agent step --step S1', tmpDir);
     assert.match(out, /step|progress|记录/i, `got: ${out.slice(0, 100)}`);

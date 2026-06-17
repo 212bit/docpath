@@ -3,27 +3,30 @@
 ```yaml
 level: 3
 workflow_profile: standard
-state: drafting           # 当前状态
+state: check_pass         # 当前状态
 task_id: T-20260616-add-backlog-promote-draft-flag-for-fast-
 task_title: Add backlog promote --draft flag for fast-track workflow
-phase: drafting
-gate: none
-current_step: backlog promote R-197 完成，下一步: docpath plan
-started_at: 2026-06-16T12:57:27.148Z
-updated_at: 2026-06-16T12:57:27.148Z
+phase: checking
+gate: check_pass
+current_step: 质量检查通过 (11 项)，下一步: docpath review
+started_at: 2026-06-17T07:58:44.487Z
+updated_at: 2026-06-17T07:58:44.486Z
 ```
 
 > 📖 规约: [spec.md](../tasks/T-20260616-add-backlog-promote-draft-flag-for-fast-/spec.md)
-> 📋 计划: [plan.md](../tasks/current/plan.md)
+> 📋 计划: [plan.md](../tasks/T-20260616-add-backlog-promote-draft-flag-for-fast-/plan.md)
 
 ## ✅ 执行检查清单
 
-- [ ] 暂无 plan.md checklist，请补充 `.docpath/tasks/current/plan.md`
+- [x] S1: 补齐 --draft 专项测试（promote 快速通道）
+- [x] S2: 覆盖 accept/plan 的 --draft 通路
+- [x] S3: 验证默认行为不变（回归守护）
+- [x] S4: 全量 check 收尾
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 10 项 · 2026-06-16T12:26:44.821Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — journal · 状态: done · 知识归档完成 (7/7 步)
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-17T07:58:44.560Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — check · 状态: done · 质量检查通过 (11 项)
 
 ## 🔄 同步说明
 

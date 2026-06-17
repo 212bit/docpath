@@ -105,6 +105,15 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
     const docpathDir = await resolveDocpathDir(cwd);
     await assertMajorChangeGateReady(cwd, docpathDir, current.task_id, 'agent enter');
   }
+  if (current?.task_id && phase !== 'executing') {
+    console.log('\n# agent_context');
+    console.log(await generateAgentOutput(cwd));
+    throw new Error(
+      `docpath agent enter: 当前 phase=${phase || 'unknown'} 尚未进入执行阶段。\n` +
+      `    请先运行上方 recommended_command 启动或恢复具体步骤；\n` +
+      `    agent enter 只在 docpath go --step <id> 已启动步骤后使用，避免提前写入 pending-done。`,
+    );
+  }
   await touchSession(cwd, {
     sessionId: session.sessionId,
     taskId: current?.task_id || 'runtime',

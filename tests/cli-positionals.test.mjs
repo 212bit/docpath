@@ -18,7 +18,7 @@ function mkWorkspace() {
     level: 2,
     task_id: 'T-POS',
     task_title: 'Positionals',
-    phase: 'drafting',
+    phase: 'executing',
     gate: 'none',
     current_step: 'S1',
     started_at: '2026-06-01T00:00:00.000Z',

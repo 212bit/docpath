@@ -3,9 +3,9 @@
   "workflow_profile": "standard",
   "task_id": "T-20260616-add-backlog-promote-draft-flag-for-fast-",
   "task_title": "Add backlog promote --draft flag for fast-track workflow",
-  "phase": "drafting",
-  "gate": "none",
-  "current_step": "backlog promote R-197 完成，下一步: docpath plan",
-  "started_at": "2026-06-16T12:57:27.148Z",
-  "updated_at": "2026-06-16T12:57:27.148Z"
+  "phase": "checking",
+  "gate": "check_pass",
+  "current_step": "质量检查通过 (11 项)，下一步: docpath review",
+  "started_at": "2026-06-17T07:58:44.487Z",
+  "updated_at": "2026-06-17T07:58:44.486Z"
 }
