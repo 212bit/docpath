@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-17T07:19:09.209Z",
+    "updated_at": "2026-06-17T07:19:09.209Z",
+    "content_sha256": "14b9cdddf08cce213ff17bb3f84957e65eb21bdb3d97adb4ad1876173ebb07e5"
+  },
+  "task_id": "T-20260616-add-backlog-promote-draft-flag-for-fast-",
+  "backlog_id": "R-197",
+  "title": "T-20260616-add-backlog-promote-draft-flag-for-fast- - Add backlog promote --draft flag for fast-track workflow",
+  "markdown": "# T-20260616-add-backlog-promote-draft-flag-for-fast- - Add backlog promote --draft flag for fast-track workflow\n\n> backlog_id: R-197\n> backlog_source: docpath backlog capture\n\n## 1. 背景与动机\n\n## 背景\n\n当前流程：capture → edit (多次) → accept → promote，需要 5+ 个命令才能开始工作。对于简单任务或快速原型，这个流程过于繁琐。\n\n## 验收\n\ndocpath backlog promote --draft R-xxx 可以跳过成熟度检查直接创建任务；或 docpath quick 支持直接从 backlog 条目启动\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: Add backlog promote --draft flag for fast-track workflow\n  - 来源 backlog: R-197\n\n### 非功能需求\n- [ ] NFR-1: 保持与现有 DocPath 工作流兼容\n\n## 3. 范围界定\n\n### 包含\n- Add backlog promote --draft flag for fast-track workflow\n\n### 不包含\n- 待在后续规划中补充\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### Decision Brief\n- 当前问题: 简单任务/快速原型走完整 capture→edit→accept→promote 需 5+ 命令；readiness≥analyzed / evidence / user_confirmed 成熟度门禁对低风险小任务过重，启动成本高。\n- 目标: 为低风险快速任务提供 opt-in fast-track：一条 `docpath backlog promote --draft R-xxx` 跳过成熟度检查直接建任务进 planning。\n- 背景: assertBacklogReadyForExecution(item, 'promote', skipCheck) 已有 skipCheck 第三参数通路；--draft flag 已在 register 暴露并在 backlog.ts:608/648 接入。实现先于本次门禁文档完成（流程倒置，本次补齐）。\n- 可选方案: A) promote --draft 跳过成熟度（已实现）；B) docpath quick 直接从 backlog 条目启动；C) 降低全局成熟度门槛（破坏门禁语义，否决）。\n- 推荐方案: A。opt-in、默认行为不变、复用既有 skipCheck 通路、改动面最小。B 会与 quick 现有职责重叠且需新增 backlog→quick 桥接。\n- 不做什么: 不改默认 promote 行为；不废除成熟度门禁本身（--draft 是显式 opt-out，仅 promote/accept/plan 三动作生效）；不给所有低 level 条目自动开 fast-track。\n- 成本: 代码已实现并提交，边际≈0；需补 --draft 专项测试（当前零覆盖）。\n- 风险: ① 滥用 --draft 绕过用户确认让未确认需求进入执行 → opt-in + spec 仍带 4.1 门禁。② 无测试守护，skipCheck 通路回归无感知 → 本次补测试。③ 实现先于门禁的流程倒置 → 本次补 Decision Brief + 用户确认。\n- 回滚方案: --draft 为纯增量 flag，移除 register 选项即恢复严格门禁；不影响已 promote 任务。\n- 用户确认: 用户 2026-06-17 会话确认采纳 --draft fast-track opt-in 方案，接受实现先于门禁的现状\n\n## 5. 验收标准\n\n- [ ] AC-1: 生成的 spec 可直接进入 `docpath plan`\n- [ ] AC-2: backlog 条目 R-197 与任务 T-20260616-add-backlog-promote-draft-flag-for-fast- 建立双向关联\n\n---\n\n*此文件由 `docpath backlog promote` 生成。*\n",
+  "generated_at": "2026-06-17T07:19:09.209Z",
+  "scope": {
+    "included": [
+      "Add backlog promote --draft flag for fast-track workflow"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界"
+    ],
+    "user_confirmed": "用户 2026-06-17 会话确认采纳 --draft fast-track opt-in 方案，接受实现先于门禁的现状",
+    "decision_brief_markdown": "- 当前问题: 简单任务/快速原型走完整 capture→edit→accept→promote 需 5+ 命令；readiness≥analyzed / evidence / user_confirmed 成熟度门禁对低风险小任务过重，启动成本高。\n- 目标: 为低风险快速任务提供 opt-in fast-track：一条 `docpath backlog promote --draft R-xxx` 跳过成熟度检查直接建任务进 planning。\n- 背景: assertBacklogReadyForExecution(item, 'promote', skipCheck) 已有 skipCheck 第三参数通路；--draft flag 已在 register 暴露并在 backlog.ts:608/648 接入。实现先于本次门禁文档完成（流程倒置，本次补齐）。\n- 可选方案: A) promote --draft 跳过成熟度（已实现）；B) docpath quick 直接从 backlog 条目启动；C) 降低全局成熟度门槛（破坏门禁语义，否决）。\n- 推荐方案: A。opt-in、默认行为不变、复用既有 skipCheck 通路、改动面最小。B 会与 quick 现有职责重叠且需新增 backlog→quick 桥接。\n- 不做什么: 不改默认 promote 行为；不废除成熟度门禁本身（--draft 是显式 opt-out，仅 promote/accept/plan 三动作生效）；不给所有低 level 条目自动开 fast-track。\n- 成本: 代码已实现并提交，边际≈0；需补 --draft 专项测试（当前零覆盖）。\n- 风险: ① 滥用 --draft 绕过用户确认让未确认需求进入执行 → opt-in + spec 仍带 4.1 门禁。② 无测试守护，skipCheck 通路回归无感知 → 本次补测试。③ 实现先于门禁的流程倒置 → 本次补 Decision Brief + 用户确认。\n- 回滚方案: --draft 为纯增量 flag，移除 register 选项即恢复严格门禁；不影响已 promote 任务。\n- 用户确认: 用户 2026-06-17 会话确认采纳 --draft fast-track opt-in 方案，接受实现先于门禁的现状"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Add backlog promote --draft flag for fast-track workflow",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-197 与任务 T-20260616-add-backlog-promote-draft-flag-for-fast- 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: 简单任务/快速原型走完整 capture→edit→accept→promote 需 5+ 命令；readiness≥analyzed / evidence / user_confirmed 成熟度门禁对低风险小任务过重，启动成本高。\n- 目标: 为低风险快速任务提供 opt-in fast-track：一条 `docpath backlog promote --draft R-xxx` 跳过成熟度检查直接建任务进 planning。\n- 背景: assertBacklogReadyForExecution(item, 'promote', skipCheck) 已有 skipCheck 第三参数通路；--draft flag 已在 register 暴露并在 backlog.ts:608/648 接入。实现先于本次门禁文档完成（流程倒置，本次补齐）。\n- 可选方案: A) promote --draft 跳过成熟度（已实现）；B) docpath quick 直接从 backlog 条目启动；C) 降低全局成熟度门槛（破坏门禁语义，否决）。\n- 推荐方案: A。opt-in、默认行为不变、复用既有 skipCheck 通路、改动面最小。B 会与 quick 现有职责重叠且需新增 backlog→quick 桥接。\n- 不做什么: 不改默认 promote 行为；不废除成熟度门禁本身（--draft 是显式 opt-out，仅 promote/accept/plan 三动作生效）；不给所有低 level 条目自动开 fast-track。\n- 成本: 代码已实现并提交，边际≈0；需补 --draft 专项测试（当前零覆盖）。\n- 风险: ① 滥用 --draft 绕过用户确认让未确认需求进入执行 → opt-in + spec 仍带 4.1 门禁。② 无测试守护，skipCheck 通路回归无感知 → 本次补测试。③ 实现先于门禁的流程倒置 → 本次补 Decision Brief + 用户确认。\n- 回滚方案: --draft 为纯增量 flag，移除 register 选项即恢复严格门禁；不影响已 promote 任务。\n- 用户确认: 用户 2026-06-17 会话确认采纳 --draft fast-track opt-in 方案，接受实现先于门禁的现状"
+}

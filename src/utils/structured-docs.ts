@@ -86,6 +86,7 @@ export interface ParseSpecOptions {
 export interface WriteStructuredTaskJsonOptions {
   taskId?: string;
   now?: Date;
+  cwd?: string;
 }
 
 export interface StructuredMarkdownHashDrift {

@@ -58,9 +58,10 @@ export interface BacklogItem {
 
 // ── 合法状态转移矩阵 ──
 // 主干：proposed → accepted → planned → active → done
+// fast-track：proposed → active（配合 `promote --draft` 跳过成熟度门禁直达执行）
 // 任意非终态 → dropped；dropped 可复活为 proposed；done 为终态。
 const BACKLOG_TRANSITIONS: Record<BacklogStatus, BacklogStatus[]> = {
-  proposed: ['accepted', 'dropped'],
+  proposed: ['accepted', 'active', 'dropped'],
   accepted: ['planned', 'active', 'dropped'],
   planned: ['active', 'dropped'],
   active: ['done', 'dropped'],
@@ -344,10 +345,23 @@ export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id
  * 分配下一个 R-### id（基于现有条目最大编号 +1，3 位补零）。
  */
 export async function nextBacklogId(cwd: string): Promise<string> {
-  const items = await listBacklogItems(cwd);
-  const max = items.reduce((acc, item) => {
-    return Math.max(acc, parseBacklogNumber(item.id));
-  }, 0);
+  const docpathDir = await resolveDocpathDir(cwd);
+  const dirs = [backlogDir(docpathDir), archivedBacklogDir(docpathDir)];
+  let max = 0;
+
+  for (const dir of dirs) {
+    if (!existsSync(dir)) continue;
+    const entries = await readdir(dir);
+    for (const file of entries) {
+      if (!file.endsWith('.md') || file === 'backlog.md') continue;
+      const match = file.match(/^R-(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > max) max = num;
+      }
+    }
+  }
+
   return formatBacklogId(max + 1);
 }
 

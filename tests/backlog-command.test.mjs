@@ -809,4 +809,153 @@ Alpha
     );
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('backlog promote --draft skips maturity gate and fast-tracks a proposed level-2 item to active', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    // readiness=raw + 无 evidence：不加 --draft 必然被门禁拦下
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-draft.md'), `---
+id: R-001
+title: Draft Fast Track
+status: proposed
+priority: P0
+level: 2
+source: test
+readiness: raw
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Raw idea only
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 2,
+      task_id: '',
+      task_title: '',
+      phase: 'idle',
+      gate: 'none',
+      current_step: '等待下一步',
+      started_at: '2026-05-31T00:00:00.000Z',
+      updated_at: '2026-05-31T00:00:00.000Z',
+    }, null, 2));
+
+    // 对照：不加 --draft 仍按原门禁报错
+    assert.throws(
+      () => run('backlog promote R-001', cwd),
+      /尚未达到可执行成熟度/,
+    );
+
+    // --draft 跳过成熟度门禁，proposed → active 合法，直接建任务
+    const out = run('backlog promote --draft R-001', cwd);
+    assert.match(out, /已 promote backlog 条目: R-001/);
+
+    const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-draft.md'), 'utf-8');
+    assert.match(item, /status: active/);
+    assert.match(item, /task: T-\d{8}-draft-fast-track/);
+
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.match(state.task_id, /^T-\d{8}-draft-fast-track$/);
+    assert.equal(state.phase, 'drafting');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog promote --draft fast-tracks a level-3 item missing user confirmation', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    // level 3 缺 user_confirmed：不加 --draft 会被门禁拦下
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-l3draft.md'), `---
+id: R-001
+title: L3 Draft Track
+status: proposed
+priority: P0
+level: 3
+source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Level 3 raw idea
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 3,
+      task_id: '',
+      task_title: '',
+      phase: 'idle',
+      gate: 'none',
+      current_step: '等待下一步',
+      started_at: '2026-05-31T00:00:00.000Z',
+      updated_at: '2026-05-31T00:00:00.000Z',
+    }, null, 2));
+
+    assert.throws(
+      () => run('backlog promote R-001', cwd),
+      /尚未达到可执行成熟度/,
+    );
+
+    const out = run('backlog promote --draft R-001', cwd);
+    assert.match(out, /已 promote backlog 条目: R-001/);
+    assert.match(
+      readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-l3draft.md'), 'utf-8'),
+      /status: active/,
+    );
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog accept/plan --draft skip maturity gate consistently with promote', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-apdraft.md'), `---
+id: R-001
+title: Accept Plan Draft
+status: proposed
+priority: P0
+level: 2
+source: test
+readiness: raw
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Raw idea only
+`);
+
+    // 默认路径：accept 对 raw 条目报错
+    assert.throws(
+      () => run('backlog accept R-001', cwd),
+      /尚未达到可执行成熟度/,
+    );
+    // --draft：accept 跳过门禁成功（proposed → accepted 合法）
+    const acceptOut = run('backlog accept --draft R-001', cwd);
+    assert.match(acceptOut, /R-001 → accepted/);
+
+    // --draft：plan 跳过门禁成功（accepted → planned 合法）
+    const planOut = run('backlog plan --draft R-001', cwd);
+    assert.match(planOut, /R-001 → planned/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

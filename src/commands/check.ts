@@ -13,7 +13,7 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 import { isCancel, select } from '@clack/prompts';
 import { resolveDocpathDir } from '../utils/file.js';
-import { readCurrentState, readCurrentState, syncCurrentDocument, parsePlanTasks } from '../utils/workspace.js';
+import { readCurrentState, syncCurrentDocument, parsePlanTasks } from '../utils/workspace.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
@@ -436,6 +436,8 @@ interface NodeCommandConfig {
 
 interface PackageManifest {
   scripts?: Record<string, string>;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
 }
 
 interface TaskPlanProgress {

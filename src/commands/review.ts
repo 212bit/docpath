@@ -13,7 +13,7 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
-import { readCurrentState, readCurrentState } from '../utils/workspace.js';
+import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { writeReviewEvidence } from '../utils/workspace-evidence.js';
