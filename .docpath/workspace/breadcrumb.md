@@ -828,3 +828,27 @@ timestamp: 2026-06-17T07:58:44.561Z
 
 - **状态**: done
 - **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T08:25:40.547Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: review
+status: done
+timestamp: 2026-06-17T08:25:40.547Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 6 警告, 0 提示
+
+### ✅ journal [T-20260616-add-backlog-promote-draft-flag-for-fast-] — 2026-06-17T08:54:33.950Z
+
+---
+taskId: T-20260616-add-backlog-promote-draft-flag-for-fast-
+step: journal
+status: done
+timestamp: 2026-06-17T08:54:33.950Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (4/4 步)

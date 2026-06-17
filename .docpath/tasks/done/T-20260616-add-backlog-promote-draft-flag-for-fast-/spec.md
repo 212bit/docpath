@@ -80,3 +80,23 @@ docpath backlog promote --draft R-xxx 可以跳过成熟度检查直接创建任
 ---
 
 *此文件由 `docpath backlog promote` 生成。*
+
+## Journal Record
+
+### 📝 任务摘要
+为 backlog promote `--draft` fast-track 补齐状态机支持与专项测试，并修复一批预先存在的 TS 编译错误。
+
+### 🏗️ 架构决策
+- 决策1: 状态机 `BACKLOG_TRANSITIONS` 放开 `proposed → active`（而非在 promote 命令内串联中间态）。原因：单点修改、fast-track 语义清晰、复用既有 transitionBacklog fail-loud 机制，避免命令内隐式多步转换。
+- 决策2: `--draft` 作为纯 opt-in flag，不改变默认 promote/accept/plan 的成熟度门禁。原因：保护既有严格门禁语义，fast-track 仅在显式 opt-in 时生效。
+
+### 💡 经验教训
+- 教训1: 零测试覆盖的功能性 bug 会以"半成品"形态潜伏——`--draft` 跳过了成熟度门禁却撞上状态机非法转换，目标场景（proposed 条目）完全失效，但无测试致漏网。功能实现必须配套覆盖目标场景的测试。
+- 教训2: 实现（--draft 代码通路）先于门禁文档（Decision Brief）完成是流程倒置；门禁文档补齐时才发现状态机缺陷，说明门禁本身有拦截价值，不能跳过。
+- 教训3: 会话前遗留改动与本任务改动混在工作区时，分两次提交（按主题）比一次性提交更利于追溯和回滚。
+
+### 🔮 后续改进
+- 改进1: 为 `nextBacklogId` 扫描 archived 目录的新行为补专项测试（archived 含 R-005 时新建应分配 R-006），当前仅随全量测试间接覆盖。
+- 改进2: agent-output.ts 多个函数过长（generateAgentOutput 149 行）属技术债，未来可拆分。
+- 改进3: 修复 `install-manifest-drift` warning（docpath install --target universal）与 docs-index 陈旧（docpath docs scan）两个非阻塞项。
+
