@@ -654,7 +654,8 @@ describe('check and review commands', () => {
 
     assert.equal(result.code, 0, result.out);
     assert.match(result.out, /全部通过/);
-    assert.doesNotMatch(result.out, /source\.content_sha256 不一致/);
+    assert.match(result.out, /source\.content_sha256 不一致/);
+    assert.match(result.out, /recommended_command: docpath write-spec --stdin/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

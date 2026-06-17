@@ -44,7 +44,9 @@ async function getRecommendedFiles(cwd: string): Promise<StageCandidate[]> {
     const report = await buildChangesReport(cwd);
     const normalFiles = report.worktree_isolation.active
       ? report.worktree_isolation.commit_relevant_files
-      : Object.values(report.groups).flat();
+      : Object.entries(report.groups)
+          .filter(([group]) => group !== 'docpath')
+          .flatMap(([_, files]) => files);
     const normalCandidates = normalFiles
       .filter((file) => !isTaskCurrentAlias(file))
       .map((file) => ({ path: file, force: false }));

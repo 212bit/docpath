@@ -38,6 +38,10 @@ export function hasUiImplementationIntent(text: string): boolean {
   return /Implementation|实现阶段|进入实现|写产品 UI 代码|产品 UI 代码|UI 代码|改 UI|页面实现|布局实现|组件实现|responsive implementation|视觉实现/i.test(text);
 }
 
+function stripUiGateDeclarationSection(text: string): string {
+  return text.replace(/###\s*UI\s*设计门禁[\s\S]*?(?=\n###\s+|\n##\s+|$)/g, '');
+}
+
 // ── 显式声明框解析（spec 4.1 「UI 设计门禁」）────────────────
 
 /**
@@ -95,8 +99,9 @@ export async function resolveUiDesignRequirement(cwd: string): Promise<UiDesignR
   if (explicit !== 'unknown') return explicit;
 
   // 回退：未显式声明时，沿用关键词检测（保护老 spec 不破）。
-  if (!isUiUxTaskText(haystack)) return 'exempt';
-  if (isUiUxWorkflowOnlyTask(haystack)) return 'exempt';
+  const fallbackHaystack = stripUiGateDeclarationSection(haystack);
+  if (!isUiUxTaskText(fallbackHaystack)) return 'exempt';
+  if (isUiUxWorkflowOnlyTask(fallbackHaystack)) return 'exempt';
   return 'required';
 }
 

@@ -125,6 +125,32 @@ Beta body
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('allocates next backlog id monotonically from archived files', async () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-005-archived.md'), `---
+id: R-005
+title: Archived
+status: done
+priority: P2
+level: 1
+source: test
+links:
+  task: T-20260617-archived
+  spec: .docpath/tasks/T-20260617-archived/spec.md
+created_at: 2026-05-31
+---
+
+Archived body
+`);
+
+    assert.equal(await nextBacklogId(cwd), 'R-006');
+
+    const item = await createBacklogItem(cwd, sampleItem({ title: 'After archive' }));
+    assert.equal(item.id, 'R-006');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('creates backlog items with atomic id reservation', async () => {
     const cwd = mkWorkspace();
     const first = await createBacklogItem(cwd, sampleItem({ title: 'First atomic' }));

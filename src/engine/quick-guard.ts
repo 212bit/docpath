@@ -7,6 +7,7 @@ import { parse as parseYaml } from 'yaml';
 export interface QuickScopeVerdict {
   allowed: boolean;
   changedFiles: string[];
+  ignoredDocpathFiles: string[];
   reasons: string[];
   policy: QuickScopePolicy;
 }
@@ -55,8 +56,11 @@ function readChangedFiles(cwd: string): string[] {
   }
 }
 
-function isDocpathTaskEvidence(file: string): boolean {
-  return /^\.docpath\/(tasks|workspace|backlog)\//.test(file);
+function isDocpathOwnedRuntimeOrEvidence(file: string): boolean {
+  return /^\.docpath\/(tasks|workspace|backlog)\//.test(file)
+    || file === '.docpath/.install-meta.json'
+    || file === '.docpath/docs-index.json'
+    || file === '.docpath/workspace.json';
 }
 
 function isDocumentOnlyFile(file: string): boolean {
@@ -99,7 +103,9 @@ function isAllowedByPolicy(file: string, policy: QuickScopePolicy): boolean {
 
 export function evaluateQuickScope(cwd: string): QuickScopeVerdict {
   const policy = readQuickScopePolicy(cwd);
-  const changedFiles = readChangedFiles(cwd).filter((file) => !isDocpathTaskEvidence(file));
+  const rawChangedFiles = readChangedFiles(cwd);
+  const ignoredDocpathFiles = rawChangedFiles.filter(isDocpathOwnedRuntimeOrEvidence);
+  const changedFiles = rawChangedFiles.filter((file) => !isDocpathOwnedRuntimeOrEvidence(file));
   const guardedFiles = changedFiles.filter((file) => !isAllowedByPolicy(file, policy));
   const reasons: string[] = [];
   const documentOnly = guardedFiles.length > 0 && guardedFiles.every(isDocumentOnlyFile);
@@ -116,6 +122,7 @@ export function evaluateQuickScope(cwd: string): QuickScopeVerdict {
   return {
     allowed: reasons.length === 0,
     changedFiles,
+    ignoredDocpathFiles,
     reasons,
     policy,
   };

@@ -15,3 +15,7 @@
 # Local agent/tool state
 /.claude/
 /.sisyphus/
+
+# DocPath worktrees
+/.worktrees/
+

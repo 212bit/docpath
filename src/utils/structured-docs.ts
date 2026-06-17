@@ -648,11 +648,12 @@ export async function detectStructuredMarkdownHashDrift(
 
 export function formatStructuredMarkdownHashDrift(drift: StructuredMarkdownHashDrift): string {
   const view = drift.file === 'plan.md' ? 'plan' : 'spec';
+  const writeCommand = drift.file === 'plan.md' ? 'docpath write-plan --stdin' : 'docpath write-spec --stdin';
   return [
     `${drift.markdownPath} 与 ${drift.jsonPath} 的 source.content_sha256 不一致`,
     `markdown_sha256: ${drift.actualHash}`,
     `json_source_sha256: ${drift.expectedHash}`,
-    `修复建议: docpath render --view ${view} 或 docpath render --all`,
+    `修复建议: 若 Markdown 是最新内容，运行 ${writeCommand}；若 JSON 是最新内容，运行 docpath render --view ${view}`,
   ].join('\n');
 }
 

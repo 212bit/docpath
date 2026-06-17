@@ -4,6 +4,7 @@ import { execSync } from 'child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { createHash } from 'crypto';
 import { parse } from 'yaml';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
@@ -54,6 +55,10 @@ function initGitRepo(cwd) {
   git(cwd, 'config user.name Test');
   git(cwd, 'add .');
   git(cwd, 'commit -m initial');
+}
+
+function sha256(content) {
+  return createHash('sha256').update(content, 'utf-8').digest('hex');
 }
 
 describe('next --agent routing', () => {
@@ -663,6 +668,82 @@ created_at: 2026-05-31
     assert.equal(output.recommended_command, 'docpath debug reproduce');
     assert.match(output.next_action, /修复质量检查失败/);
     assert.ok(output.required_files.includes('.docpath/workspace/last-check.md'));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('does not let stale last-check failures override planning routes', () => {
+    const plan = [
+      '## 执行计划',
+      '',
+      '### S1: Current task work',
+      '- **描述**: current work',
+      '- **验收条件**: current acceptance',
+      '- **依赖**: 无',
+      '',
+      '## Checklist',
+      '- [ ] S1',
+      '',
+    ].join('\n');
+    const cwd = mkWorkspace({
+      phase: 'planning_done',
+      gate: 'none',
+      plan,
+      lastCheck: '# Last Check Evidence\n\n**结果**: ❌ FAIL\n',
+    });
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath go --step S1');
+    assert.match(output.next_action, /执行下一个未完成步骤|计划已就绪/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('routes Markdown and JSON machine-truth divergence to write-plan', () => {
+    const oldPlan = [
+      '## 执行计划',
+      '',
+      '### S1: Old JSON step',
+      '- **描述**: old',
+      '- **验收条件**: old acceptance',
+      '- **依赖**: 无',
+      '',
+      '## Checklist',
+      '- [ ] S1',
+      '',
+    ].join('\n');
+    const editedPlan = oldPlan.replace('old acceptance', 'edited acceptance');
+    const cwd = mkWorkspace({
+      phase: 'planning_done',
+      gate: 'none',
+      plan: editedPlan,
+    });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.json'), JSON.stringify({
+      schema_version: 1,
+      kind: 'plan',
+      markdown: oldPlan,
+      generated_at: '2026-05-29T00:00:00.000Z',
+      source: {
+        kind: 'markdown',
+        created_at: '2026-05-29T00:00:00.000Z',
+        updated_at: '2026-05-29T00:00:00.000Z',
+        content_sha256: sha256(oldPlan),
+      },
+      title: 'Old JSON step',
+      steps: [{
+        id: 'S1',
+        name: 'Old JSON step',
+        description: 'old',
+        acceptance: 'old acceptance',
+        dependencies: '无',
+        status: 'pending',
+      }],
+    }, null, 2));
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath write-plan --stdin');
+    assert.match(output.next_action, /机器真理源不同步/);
+    assert.ok(output.required_files.some((file) => file.endsWith('plan.md')));
+    assert.ok(output.required_files.some((file) => file.endsWith('plan.json')));
     rmSync(cwd, { recursive: true, force: true });
   });
 

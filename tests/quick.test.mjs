@@ -136,6 +136,30 @@ describe('docpath quick', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('ignores DocPath-owned runtime files when enforcing quick scope limits', () => {
+    const cwd = mkWorkspace();
+    writeFileSync(join(cwd, '.docpath', 'config.yaml'), [
+      'project:',
+      '  name: quick-test',
+      'quick:',
+      '  max_changed_files: 1',
+      '  allow_document_only: false',
+      '',
+    ].join('\n'));
+    run(`quick "Runtime churn" --cwd ${cwd}`, cwd);
+    initGitRepo(cwd);
+    writeFileSync(join(cwd, '.docpath', '.install-meta.json'), '{"installed":true}\n');
+    writeFileSync(join(cwd, '.docpath', 'docs-index.json'), '{"docs":[]}\n');
+    writeFileSync(join(cwd, '.docpath', 'workspace.json'), '{"runtime":true}\n');
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), '{"runtime":true}\n');
+
+    const result = runResult(`done --cwd ${cwd}`, cwd);
+
+    assert.equal(result.code, 0, result.out);
+    assert.match(result.out, /quick profile policy/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('allows configured quick scope patterns', () => {
     const cwd = mkWorkspace();
     writeFileSync(join(cwd, '.docpath', 'config.yaml'), [

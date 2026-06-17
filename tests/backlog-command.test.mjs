@@ -619,6 +619,9 @@ created_at: 2026-05-31
     assert.match(spec, /FR-1: Alpha Promote/);
     assert.match(spec, /来源 backlog: R-001/);
     assert.match(spec, /来自 backlog 的正文/);
+    assert.match(spec, /### UI 设计门禁/);
+    assert.match(spec, /本任务不涉及产品 UI 实现/);
+    assert.match(spec, /本任务涉及产品 UI 实现/);
     const taskId = spec.match(/^# (T-\d{8}-alpha-promote) - Alpha Promote/m)?.[1];
     assert.ok(taskId, 'task id should be rendered into promoted spec');
     const canonicalSpec = readFileSync(join(cwd, '.docpath', 'tasks', taskId, 'spec.md'), 'utf-8');
@@ -666,7 +669,13 @@ created_at: 2026-05-31
 Alpha
 `);
 
-    assert.throws(() => run('backlog promote R-001', cwd), /已有活跃任务/);
+    assert.throws(() => run('backlog promote R-001', cwd), (error) => {
+      const out = `${error.stdout || ''}${error.stderr || ''}${error.message || ''}`;
+      assert.match(out, /已有活跃任务/);
+      assert.match(out, /docpath task abort\/reset/);
+      assert.doesNotMatch(out, /\bpark\b/);
+      return true;
+    });
     rmSync(cwd, { recursive: true, force: true });
   });
 

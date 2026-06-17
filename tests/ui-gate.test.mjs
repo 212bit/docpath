@@ -109,6 +109,18 @@ describe('resolveUiDesignRequirement（端到端：读 spec/plan 文本）', () 
     assert.equal(await resolveUiDesignRequirement(root), 'exempt');
   });
 
+  it('未勾选的 UI gate 模板本身不会触发 UI 关键词回退', async () => {
+    writeSpec([
+      '# T-UIGATE - Maven wrapper script',
+      '## 背景',
+      '仅改命令行打包脚本。',
+      '## 4.1 重大变更门禁',
+      '### UI 设计门禁',
+      UNCHECKED,
+    ].join('\n'));
+    assert.equal(await resolveUiDesignRequirement(root), 'exempt');
+  });
+
   it('未勾选 + workflow-only（讲门禁但声明不做产品 UI）→ exempt', async () => {
     writeSpec([
       '# T-UIGATE - UI 设计门禁逻辑',

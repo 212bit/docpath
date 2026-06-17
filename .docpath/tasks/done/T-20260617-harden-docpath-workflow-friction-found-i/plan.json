@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-17T14:15:38.729Z",
+    "updated_at": "2026-06-17T14:15:38.729Z",
+    "content_sha256": "a08fe2b9919c60b17581c931905fc5e67d05f4db710041ecda20788963c47a87"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: Map workflow paths and add focused reproductions\n- **描述**: Inspect quick closeout, backlog promote/spec template, next routing, task identity drift, and spec/plan JSON sync paths. Add or identify focused tests that reproduce the Sentinel failure modes before changing behavior.\n- **验收条件**: The relevant source/test files are identified, and failing or targeted test cases exist for the high-risk behaviors that can be automated.\n- **依赖**: 无\n\n### S2: Harden quick closeout and stale route ownership\n- **描述**: Exclude DocPath-owned runtime/status files from quick guarded non-DocPath file limits, and prevent stale `last-check`/debug state from previous tasks from overriding routing for a newly active task.\n- **验收条件**: Quick tasks are not blocked by `.docpath/workspace/**` runtime churn, and `next --agent` routes new promoted tasks by their current phase rather than old failed checks.\n- **依赖**: S1\n\n### S3: Improve drift and recovery command diagnostics\n- **描述**: Update identity drift and promote recovery diagnostics so they name conflicting task IDs and only recommend supported recovery commands, or implement the missing command if that is the smaller compatible fix.\n- **验收条件**: Drift output includes actionable repair commands, and CLI hints no longer suggest unsupported `task park`.\n- **依赖**: S1\n\n### S4: Add explicit UI gate defaults to promoted specs\n- **描述**: Update backlog promote/spec seeding so generated specs include the `### UI 设计门禁` block, and ensure non-UI CLI/script/docs/package tasks can satisfy the gate explicitly.\n- **验收条件**: A promoted non-UI task contains the UI gate block and can proceed to `go --step` without missing-template UI blockage.\n- **依赖**: S1\n\n### S5: Surface Markdown/JSON machine-truth divergence\n- **描述**: Add detection or clear diagnostics when `spec.md`/`plan.md` has diverged from `spec.json`/`plan.json`, pointing users to `write-spec --stdin` or `write-plan --stdin`.\n- **验收条件**: A direct Markdown edit produces an actionable diagnostic instead of stale missing-context output.\n- **依赖**: S1\n\n### S6: Verify gates and closeout evidence\n- **描述**: Run focused tests, broader project checks, DocPath check/review gates, and record reusable lessons if the implementation changes agent workflow expectations.\n- **验收条件**: Automated tests and `docpath check` pass, review findings are addressed or explicitly accepted, and task evidence is ready for closeout.\n- **依赖**: S2, S3, S4, S5\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n- [x] S5\n- [x] S6\n\n## 依赖关系图\nS1 → S2 → S6\nS1 → S3 → S6\nS1 → S4 → S6\nS1 → S5 → S6\n",
+  "generated_at": "2026-06-17T14:15:38.729Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Map workflow paths and add focused reproductions",
+      "description": "Inspect quick closeout, backlog promote/spec template, next routing, task identity drift, and spec/plan JSON sync paths. Add or identify focused tests that reproduce the Sentinel failure modes before changing behavior.",
+      "acceptance": "The relevant source/test files are identified, and failing or targeted test cases exist for the high-risk behaviors that can be automated.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Harden quick closeout and stale route ownership",
+      "description": "Exclude DocPath-owned runtime/status files from quick guarded non-DocPath file limits, and prevent stale `last-check`/debug state from previous tasks from overriding routing for a newly active task.",
+      "acceptance": "Quick tasks are not blocked by `.docpath/workspace/**` runtime churn, and `next --agent` routes new promoted tasks by their current phase rather than old failed checks.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Improve drift and recovery command diagnostics",
+      "description": "Update identity drift and promote recovery diagnostics so they name conflicting task IDs and only recommend supported recovery commands, or implement the missing command if that is the smaller compatible fix.",
+      "acceptance": "Drift output includes actionable repair commands, and CLI hints no longer suggest unsupported `task park`.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Add explicit UI gate defaults to promoted specs",
+      "description": "Update backlog promote/spec seeding so generated specs include the `### UI 设计门禁` block, and ensure non-UI CLI/script/docs/package tasks can satisfy the gate explicitly.",
+      "acceptance": "A promoted non-UI task contains the UI gate block and can proceed to `go --step` without missing-template UI blockage.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "Surface Markdown/JSON machine-truth divergence",
+      "description": "Add detection or clear diagnostics when `spec.md`/`plan.md` has diverged from `spec.json`/`plan.json`, pointing users to `write-spec --stdin` or `write-plan --stdin`.",
+      "acceptance": "A direct Markdown edit produces an actionable diagnostic instead of stale missing-context output.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "Verify gates and closeout evidence",
+      "description": "Run focused tests, broader project checks, DocPath check/review gates, and record reusable lessons if the implementation changes agent workflow expectations.",
+      "acceptance": "Automated tests and `docpath check` pass, review findings are addressed or explicitly accepted, and task evidence is ready for closeout.",
+      "dependencies": "S2, S3, S4, S5",
+      "status": "done"
+    }
+  ]
+}

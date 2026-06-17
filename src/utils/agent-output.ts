@@ -13,7 +13,8 @@ import { readCurrentState, readOptionalFile } from './workspace.js';
 import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
 import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from './plan-sync.js';
-import { detectActiveTaskIdentityDrift, readActiveTaskFile, type TaskIdentityDrift } from './task-files.js';
+import { canonicalTaskDir, currentTaskDir, detectActiveTaskIdentityDrift, readActiveTaskFile, type TaskIdentityDrift } from './task-files.js';
+import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift, type StructuredMarkdownHashDrift, type StructuredTaskMarkdownFile } from './structured-docs.js';
 import { listBacklogItems, type BacklogItem } from '../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.js';
 import { readRuleFile, ruleDisplayPaths } from './rules.js';
@@ -377,6 +378,7 @@ type AgentOutputContext = {
   bc: BreadcrumbSummary;
   drift: PlanBreadcrumbDrift;
   identityDrifts: TaskIdentityDrift[];
+  structuredMarkdownDrifts: StructuredMarkdownHashDrift[];
   backlogItems: BacklogItem[];
   pendingDone: Awaited<ReturnType<typeof readPendingDone>>;
   tddState: TddStateSnapshot | null;
@@ -399,6 +401,29 @@ function parseTddState(raw: string): TddStateSnapshot | null {
   } catch {
     return null;
   }
+}
+
+async function detectActiveStructuredMarkdownDrifts(
+  docpathDir: string,
+  taskId: string | undefined,
+): Promise<StructuredMarkdownHashDrift[]> {
+  const dirs = [
+    ...(taskId ? [canonicalTaskDir(docpathDir, taskId)] : []),
+    currentTaskDir(docpathDir),
+  ];
+  const seen = new Set<string>();
+  const drifts: StructuredMarkdownHashDrift[] = [];
+  for (const dir of dirs) {
+    for (const file of ['spec.md', 'plan.md'] as StructuredTaskMarkdownFile[]) {
+      const drift = await detectStructuredMarkdownHashDrift(dir, file);
+      if (!drift) continue;
+      const key = `${drift.markdownPath}:${drift.jsonPath}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      drifts.push(drift);
+    }
+  }
+  return drifts;
 }
 
 function isIncompleteSpec(content: string): boolean {
@@ -512,7 +537,10 @@ function inferNextAction(
     };
   }
 
-  if (gate === 'check_fail' || currentState === 'check_fail' || lastCheckFailed) {
+  const activeCheckFailure = gate === 'check_fail'
+    || currentState === 'check_fail'
+    || (phase === 'checking' && lastCheckFailed);
+  if (activeCheckFailure) {
     if (tddState?.phase === 'check') {
       const required = [
         '.docpath/workspace/current.md',
@@ -899,6 +927,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   const bc = summarizeCurrentTaskBreadcrumbs(rawBreadcrumb, state?.task_id || '');
   const drift = await detectPlanBreadcrumbDrift(cwd);
   const identityDrifts = await detectActiveTaskIdentityDrift(docpathDir, state?.task_id || undefined);
+  const structuredMarkdownDrifts = await detectActiveStructuredMarkdownDrifts(docpathDir, state?.task_id || undefined);
   const backlogItems = await listBacklogItems(cwd);
   const pendingDone = await handleStalePendingDoneWarning(cwd, state, await readPendingDone(cwd));
   const tddState = parseTddState(await readOptionalFile(join(docpathDir, 'workspace', 'tdd-state.json')));
@@ -927,6 +956,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     bc,
     drift,
     identityDrifts,
+    structuredMarkdownDrifts,
     backlogItems,
     pendingDone,
     tddState,
@@ -986,6 +1016,23 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
       required_files: required,
       must_update: ['.docpath/tasks/current/spec.md', ...(state?.task_id ? [`.docpath/tasks/${state.task_id}/spec.md`] : [])],
       exit_criteria: 'state.task_id、current spec 与 canonical spec 声明同一个 task id；旧 breadcrumb 不再与新 plan 混用',
+    };
+  }
+
+  if (context.structuredMarkdownDrifts.length > 0) {
+    const first = context.structuredMarkdownDrifts[0];
+    const command = first.file === 'plan.md' ? 'docpath write-plan --stdin' : 'docpath write-spec --stdin';
+    const required = Array.from(new Set(context.structuredMarkdownDrifts.flatMap((drift) => [
+      drift.markdownPath.replace(`${context.docpathDir}/`, '.docpath/'),
+      drift.jsonPath.replace(`${context.docpathDir}/`, '.docpath/'),
+    ])));
+    return {
+      next_action: `检测到 ${first.file} 与 ${first.file.replace('.md', '.json')} 机器真理源不同步：${formatStructuredMarkdownHashDrift(first).split('\n')[0]}`,
+      recommended_command: command,
+      required_context: required,
+      required_files: required,
+      must_update: required.filter((path) => path.endsWith('.md') || path.endsWith('.json')),
+      exit_criteria: 'Markdown 与 JSON source.content_sha256 一致；后续 next/status 不再使用过期机器真理源',
     };
   }
 

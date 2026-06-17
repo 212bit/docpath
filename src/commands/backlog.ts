@@ -466,6 +466,10 @@ function renderMajorDecisionGate(): string[] {
     '- [ ] 长期维护成本增加',
     '- [ ] 其他',
     '',
+    '### UI 设计门禁',
+    '- [ ] 本任务不涉及产品 UI 实现（豁免设计五件套）',
+    '- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）',
+    '',
     '### Decision Brief',
     '- 当前问题:',
     '- 目标:',
@@ -595,7 +599,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
 
   const current = await readCurrentState(options.cwd);
   if (current && current.phase !== 'idle' && current.phase !== 'completed') {
-    throw new Error(`docpath backlog promote: 当前已有活跃任务（phase=${current.phase}），请先 done 或 park`);
+    throw new Error(`docpath backlog promote: 当前已有活跃任务（phase=${current.phase}），请先 done，或用 docpath task abort/reset 显式清理当前任务`);
   }
 
   const item = await readBacklogItem(options.cwd, options.id.trim());
