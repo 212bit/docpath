@@ -39,17 +39,24 @@ function uniqueCandidates(candidates: StageCandidate[]): StageCandidate[] {
   return [...byPath.values()];
 }
 
+function isIgnored(cwd: string, file: string): boolean {
+  try {
+    execFileSync('git', ['check-ignore', '-q', '--no-index', '--', file], { cwd, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function getRecommendedFiles(cwd: string): Promise<StageCandidate[]> {
   try {
     const report = await buildChangesReport(cwd);
     const normalFiles = report.worktree_isolation.active
       ? report.worktree_isolation.commit_relevant_files
-      : Object.entries(report.groups)
-          .filter(([group]) => group !== 'docpath')
-          .flatMap(([_, files]) => files);
+      : Object.values(report.groups).flat();
     const normalCandidates = normalFiles
       .filter((file) => !isTaskCurrentAlias(file))
-      .map((file) => ({ path: file, force: false }));
+      .map((file) => ({ path: file, force: isIgnored(cwd, file) }));
     const canonicalEvidenceCandidates = report.ignored_evidence.canonical_files
       .filter((file) => !isTaskCurrentAlias(file))
       .map((file) => ({ path: file, force: true }));

@@ -852,3 +852,243 @@ timestamp: 2026-06-17T08:54:33.950Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (4/4 步)
+
+### 🚫 check [T-20260617-fix-command-inference-when-check-review-] — 2026-06-17T12:13:51.684Z
+
+---
+taskId: T-20260617-fix-command-inference-when-check-review-
+step: check
+status: blocked
+timestamp: 2026-06-17T12:13:51.684Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 当前任务上下文文件缺失
+
+### ✅ task.abort [T-20260617-fix-command-inference-when-check-review-] — 2026-06-17T13:44:07.034Z
+
+---
+taskId: T-20260617-fix-command-inference-when-check-review-
+step: task.abort
+status: done
+timestamp: 2026-06-17T13:44:07.034Z
+---
+
+- **状态**: done
+- **上下文**: 任务已废弃并回到 idle，backlog R-196 -> dropped
+
+### 🔄 S1 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T13:47:17.291Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S1
+status: in_progress
+timestamp: 2026-06-17T13:47:17.291Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Map workflow paths and add focused reproductions
+- **Session**: default
+
+### ✅ S1 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:02:40.232Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S1
+status: done
+timestamp: 2026-06-17T14:02:40.232Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: Mapped quick closeout, backlog promote, UI gate, next routing, identity drift, and Markdown/JSON sync paths; added focused reproductions in quick/backlog/ui-gate/next tests.
+- **Session**: default
+
+### 🔄 S2 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:03:29.917Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S2
+status: in_progress
+timestamp: 2026-06-17T14:03:29.917Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Harden quick closeout and stale route ownership
+- **Session**: default
+
+### ✅ S2 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:04:45.041Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S2
+status: done
+timestamp: 2026-06-17T14:04:45.041Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: Quick scope now excludes DocPath-owned runtime/status files; next routing only treats last-check FAIL as active when current state/gate/phase is actually checking/check_fail. Focused quick and next tests pass.
+- **Session**: default
+
+### 🔄 S3 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:06:35.314Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S3
+status: in_progress
+timestamp: 2026-06-17T14:06:35.314Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Improve drift and recovery command diagnostics
+- **Session**: default
+
+### ✅ S3 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:06:49.565Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S3
+status: done
+timestamp: 2026-06-17T14:06:49.565Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: Promote active-task error now recommends supported done or task abort/reset commands; task identity drift guidance now includes sync --from current/canonical, task abort/reset, and sessions/default.json context.
+- **Session**: default
+
+### 🔄 S4 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:06:57.696Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S4
+status: in_progress
+timestamp: 2026-06-17T14:06:57.696Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Add explicit UI gate defaults to promoted specs
+- **Session**: default
+
+### ✅ S4 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:08:01.579Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S4
+status: done
+timestamp: 2026-06-17T14:08:01.579Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: backlog promote specs now include the UI design gate block; UI gate fallback ignores the unchecked template section so CLI/script tasks are not classified as UI solely because the template exists.
+- **Session**: default
+
+### 🔄 S5 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:08:12.960Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S5
+status: in_progress
+timestamp: 2026-06-17T14:08:12.960Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Surface Markdown/JSON machine-truth divergence
+- **Session**: default
+
+### ✅ S5 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:08:22.727Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S5
+status: done
+timestamp: 2026-06-17T14:08:22.727Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: next/status now detect spec.md/plan.md versus spec.json/plan.json source hash drift and route to write-spec --stdin or write-plan --stdin with actionable context.
+- **Session**: default
+
+### 🔄 S6 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:08:30.865Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S6
+status: in_progress
+timestamp: 2026-06-17T14:08:30.865Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Verify gates and closeout evidence
+- **Session**: default
+
+### 🚫 check [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:15:20.700Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: check
+status: blocked
+timestamp: 2026-06-17T14:15:20.700Z
+---
+
+- **状态**: blocked
+- **上下文**: 质量检查失败: 子任务完成度 (5/6)
+
+### ✅ S6 [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:15:38.725Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: S6
+status: done
+timestamp: 2026-06-17T14:15:38.725Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: Verification completed: pnpm run typecheck passed; pnpm test passed 385/385; initial docpath check compiled and tested successfully, with only S6 completion pending.
+- **Session**: default
+
+### ✅ check [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:16:59.251Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: check
+status: done
+timestamp: 2026-06-17T14:16:59.251Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (11 项)
+
+### ✅ review [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:17:23.843Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: review
+status: done
+timestamp: 2026-06-17T14:17:23.843Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 7 警告, 3 提示
+
+### ✅ journal [T-20260617-harden-docpath-workflow-friction-found-i] — 2026-06-17T14:17:35.030Z
+
+---
+taskId: T-20260617-harden-docpath-workflow-friction-found-i
+step: journal
+status: done
+timestamp: 2026-06-17T14:17:35.030Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (6/6 步)

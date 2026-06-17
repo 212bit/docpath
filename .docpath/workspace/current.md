@@ -4,13 +4,13 @@
 level: 3
 workflow_profile: standard
 state: completed          # 当前状态
-task_id: T-20260616-add-backlog-promote-draft-flag-for-fast-
-task_title: Add backlog promote --draft flag for fast-track workflow
+task_id: T-20260617-harden-docpath-workflow-friction-found-i
+task_title: Harden DocPath workflow friction found in Sentinel flow-runner
 phase: completed
 gate: review_pass
 current_step: 知识归档完成
-started_at: 2026-06-17T08:54:33.899Z
-updated_at: 2026-06-17T08:54:33.898Z
+started_at: 2026-06-17T14:17:35.002Z
+updated_at: 2026-06-17T14:17:35.001Z
 ```
 
 > 📖 规约: [spec.md](../tasks/current/spec.md)
@@ -22,8 +22,8 @@ updated_at: 2026-06-17T08:54:33.898Z
 
 ## 🧾 最近验证证据
 
-- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-17T07:58:44.560Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — review · 状态: done · 代码审查: 0 错误, 6 警告, 0 提示
+- Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-17T14:16:59.249Z
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — review · 状态: done · 代码审查: 0 错误, 7 警告, 3 提示
 
 ## 🔄 同步说明
 

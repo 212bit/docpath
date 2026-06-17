@@ -1,11 +1,11 @@
 {
   "level": 3,
   "workflow_profile": "standard",
-  "task_id": "T-20260616-add-backlog-promote-draft-flag-for-fast-",
-  "task_title": "Add backlog promote --draft flag for fast-track workflow",
+  "task_id": "T-20260617-harden-docpath-workflow-friction-found-i",
+  "task_title": "Harden DocPath workflow friction found in Sentinel flow-runner",
   "phase": "completed",
   "gate": "review_pass",
   "current_step": "知识归档完成",
-  "started_at": "2026-06-17T08:54:33.899Z",
-  "updated_at": "2026-06-17T08:54:33.898Z"
+  "started_at": "2026-06-17T14:17:35.002Z",
+  "updated_at": "2026-06-17T14:17:35.001Z"
 }
