@@ -31,6 +31,7 @@ import { emitNextHint } from '../utils/next-hint.js';
 import { isQuickProfile } from '../engine/workflow-profile.js';
 import { assertQuickScope } from '../engine/quick-guard.js';
 import { readLastCheckEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
+import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 
 type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
 
@@ -101,6 +102,9 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
   const current = await readCurrentState(cwd);
   const session = resolveSessionContext(options.session);
   const phase = current?.phase || '';
+  if (!current?.task_id || phase === 'idle' || phase === 'completed') {
+    assertCleanWorktreeForNewTask(cwd, 'docpath agent enter');
+  }
   if (current?.task_id && !['completed', 'reviewing'].includes(phase)) {
     const docpathDir = await resolveDocpathDir(cwd);
     await assertMajorChangeGateReady(cwd, docpathDir, current.task_id, 'agent enter');
