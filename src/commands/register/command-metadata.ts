@@ -38,6 +38,7 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'docs', description: 'Scan and maintain the document index', visibility: 'core' },
   { name: 'tasks', description: 'Diagnose and sync current/canonical task files', visibility: 'advanced' },
   { name: 'task', description: 'Abort or reset the current task', visibility: 'advanced' },
+  { name: 'doctor', description: 'Diagnose DocPath and Git workspace hygiene', visibility: 'advanced' },
   { name: 'config', description: 'Read or update DocPath configuration', visibility: 'advanced' },
   { name: 'learn', description: 'Promote or prune journal lessons', visibility: 'advanced' },
   { name: 'gc', description: 'Preview or run workspace/task cleanup', visibility: 'advanced' },

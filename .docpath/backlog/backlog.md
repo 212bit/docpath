@@ -2,14 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-18T00:23:07.774Z
+> 扫描时间: 2026-06-18T00:42:49.086Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
 | R-196 | Fix command inference when check/review fails | dropped | P0 | 2 | T-20260617-fix-command-inference-when-check-review- |
-| R-201 | Diagnose tracked ignored DocPath runtime files | active | P0 | 2 | T-20260618-diagnose-tracked-ignored-docpath-runtime |
 | R-169 | probe | dropped | P2 | 2 |  |
 | R-154 | test-ui-gate-probe | dropped | P3 | 1 |  |
 

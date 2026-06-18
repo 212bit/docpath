@@ -1134,3 +1134,109 @@ sessionId: default
 - **状态**: in_progress
 - **上下文**: 开始执行: Tighten DocPath ignore rules
 - **Session**: default
+
+### ✅ S2 [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:27:00.082Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: S2
+status: done
+timestamp: 2026-06-18T00:27:00.082Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: Updated .gitignore from broad /.docpath/ ignore to runtime-only ignores for workspace, install metadata, tasks/current, and .worktrees; verified backlog and tasks/done are not ignored while runtime paths still are.
+- **Session**: default
+
+### 🔄 S3 [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:27:09.124Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: S3
+status: in_progress
+timestamp: 2026-06-18T00:27:09.124Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Add tracked ignored runtime diagnostic
+- **Session**: default
+
+### ✅ S3 [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:33:51.365Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: S3
+status: done
+timestamp: 2026-06-18T00:33:51.365Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: Added read-only doctor command and reusable git hygiene detector. Focused doctor tests pass; current repo doctor reports 9 tracked ignored runtime files with git rm --cached guidance and no canonical evidence in runtime set.
+- **Session**: default
+
+### 🔄 S4 [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:34:07.771Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: S4
+status: in_progress
+timestamp: 2026-06-18T00:34:07.771Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Verify behavior and closeout gates
+- **Session**: default
+
+### ✅ S4 [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:39:15.010Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: S4
+status: done
+timestamp: 2026-06-18T00:39:15.010Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: agent-step: S4
+- **Session**: default
+
+### ✅ check [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:42:48.389Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: check
+status: done
+timestamp: 2026-06-18T00:42:48.389Z
+---
+
+- **状态**: done
+- **上下文**: 质量检查通过 (10 项)
+
+### ✅ review [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:42:48.997Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: review
+status: done
+timestamp: 2026-06-18T00:42:48.997Z
+---
+
+- **状态**: done
+- **上下文**: 代码审查: 0 错误, 0 警告, 0 提示
+
+### ✅ journal [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:42:49.087Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: journal
+status: done
+timestamp: 2026-06-18T00:42:49.087Z
+---
+
+- **状态**: done
+- **上下文**: 知识归档完成 (4/4 步)

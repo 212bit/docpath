@@ -1,4 +1,5 @@
 import type { CAC } from 'cac';
+import { doctorCommand } from '../doctor.js';
 import { initCommand } from '../init.js';
 import { statusCommand } from '../status.js';
 import type { ComplexityLevel } from '../../engine/state-machine.js';
@@ -39,5 +40,12 @@ export function registerCoreCommands(cli: CAC): void {
     .option('--verbose', 'agent 输出包含完整诊断字段')
     .action(async (options: { cwd?: string; agent?: boolean; verbose?: boolean }) => {
       await statusCommand({ cwd: options.cwd || process.cwd(), agent: options.agent, verbose: options.verbose });
+    });
+
+  cli.command('doctor', '只读诊断 DocPath/Git 工作区健康')
+    .option('--cwd <path>', '项目目录')
+    .option('--json', '输出 JSON')
+    .action(async (options: { cwd?: string; json?: boolean }) => {
+      await doctorCommand({ cwd: options.cwd || process.cwd(), json: !!options.json });
     });
 }
