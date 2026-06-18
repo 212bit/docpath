@@ -5,7 +5,6 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
-  realpathSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -90,9 +89,14 @@ describe('worktree command', () => {
     assert.equal(existsSync(worktreePath), true);
     assert.equal(existsSync(join(subdir, '.worktrees')), false, 'must anchor .worktrees at git root');
 
-    const backlogLink = join(worktreePath, '.docpath', 'backlog');
-    assert.equal(lstatSync(backlogLink).isSymbolicLink(), true);
-    assert.equal(realpathSync(backlogLink), realpathSync(join(cwd, '.docpath', 'backlog')));
+    const backlogResource = join(worktreePath, '.docpath', 'backlog');
+    assert.equal(lstatSync(backlogResource).isDirectory(), true);
+    assert.equal(lstatSync(backlogResource).isSymbolicLink(), false);
+    assert.equal(
+      git(worktreePath, ['status', '--porcelain=v1', '--untracked-files=all', '--', '.docpath/backlog', '.docpath/rules']),
+      '',
+      'tracked shared resources must not appear as deleted or type-changed files',
+    );
 
     assert.equal(existsSync(join(worktreePath, '.docpath', 'workspace', 'state.json')), true);
     assert.equal(existsSync(join(worktreePath, '.docpath', 'workspace', 'current.md')), true);
@@ -116,8 +120,9 @@ describe('worktree command', () => {
 
     const named = run(['worktree', 'doctor', 'feature-doctor'], cwd, { env: { DOCPATH_SESSION: '' } }).output;
     assert.match(named, /Worktree doctor: feature-doctor/);
-    assert.match(named, /shared backlog symlink/);
-    assert.match(named, /shared rules symlink/);
+    assert.match(named, /shared backlog resource/);
+    assert.match(named, /shared rules resource/);
+    assert.match(named, /tracked copy|symlink/);
     assert.match(named, /set DOCPATH_SESSION=codex-feature-doctor/);
     assert.match(named, /worktree doctor passed/);
 
