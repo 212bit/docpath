@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": "markdown",
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: 梳理 schema 与迁移边界\n- **描述**: 明确 JSON/JSONL 真源的 schema version、类型、校验策略、fallback 规则和 CLI 写边界。\n- **验收条件**: spec/plan 中记录迁移边界；实现时有统一类型与校验入口。\n- **依赖**: 无\n\n### S2: 实现 plan.json 与 spec.json 真源\n- **描述**: 为任务计划和规约新增 JSON schema/type/helper，写入或迁移时双写 JSON 与 Markdown，读取时优先 JSON、fallback Markdown。\n- **验收条件**: `plan.json`、`spec.json` 可生成、校验、读取；Markdown render 可由 JSON 重建；旧任务继续可读。\n- **依赖**: S1\n\n### S3: 实现 breadcrumb.jsonl 事件流\n- **描述**: 为执行记录新增 JSONL schema/type/helper，`recordBreadcrumb` 双写 Markdown 与 JSONL，tail/完成度/漂移读取优先 JSONL、fallback Markdown。\n- **验收条件**: `breadcrumb.jsonl` 追加 O(1)，可读取最近 N 条，`check/next/agent step` 完成度和漂移逻辑优先读 JSONL。\n- **依赖**: S2\n\n### S4: 实现 decisions.jsonl 事件流\n- **描述**: 为决策日志新增 JSONL schema/type/helper，`journal/review/gc-decisions` 保留 Markdown render 与轮转，读取优先 JSONL、fallback Markdown。\n- **验收条件**: `decisions.jsonl` 可追加、校验、按月轮转兼容；`decisions.md` 可由 JSONL 渲染或继续作为旧任务 fallback。\n- **依赖**: S3\n\n### S5: 收敛核心命令读路径与迁移入口\n- **描述**: 将 `check/go/next/agent step/journal` 的结构化完成度、tail、漂移和决策读取接入统一 helper，并提供显式迁移/重建路径。\n- **验收条件**: 核心命令不再首选解析 Markdown 真源；结构化损坏 fail loud；缺失结构化文件时旧 Markdown fallback 可用。\n- **依赖**: S4\n\n### S6: 补充兼容与回归测试\n- **描述**: 增加覆盖 plan 重复 checklist、breadcrumb tail、归档后 check、JSON/JSONL 迁移、decisions 轮转和 Markdown render 可重建的测试。\n- **验收条件**: 新旧格式测试均通过，覆盖 R-163 验收中的关键兼容场景。\n- **依赖**: S5\n\n### S7: 验证门禁并归档\n- **描述**: 运行相关测试、`docpath check`、`docpath review`、`docpath journal`，完成任务归档。\n- **验收条件**: 质量门禁通过，任务状态进入 completed。\n- **依赖**: S2\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n- [x] S5\n- [x] S6\n- [x] S7\n\n## 依赖关系图\nS1 → S2 → S3 → S4 → S5 → S6 → S7\n",
+  "generated_at": "2026-06-13T17:49:30.949Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 schema 与迁移边界",
+      "description": "明确 JSON/JSONL 真源的 schema version、类型、校验策略、fallback 规则和 CLI 写边界。",
+      "acceptance": "spec/plan 中记录迁移边界；实现时有统一类型与校验入口。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 plan.json 与 spec.json 真源",
+      "description": "为任务计划和规约新增 JSON schema/type/helper，写入或迁移时双写 JSON 与 Markdown，读取时优先 JSON、fallback Markdown。",
+      "acceptance": "`plan.json`、`spec.json` 可生成、校验、读取；Markdown render 可由 JSON 重建；旧任务继续可读。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 breadcrumb.jsonl 事件流",
+      "description": "为执行记录新增 JSONL schema/type/helper，`recordBreadcrumb` 双写 Markdown 与 JSONL，tail/完成度/漂移读取优先 JSONL、fallback Markdown。",
+      "acceptance": "`breadcrumb.jsonl` 追加 O(1)，可读取最近 N 条，`check/next/agent step` 完成度和漂移逻辑优先读 JSONL。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 decisions.jsonl 事件流",
+      "description": "为决策日志新增 JSONL schema/type/helper，`journal/review/gc-decisions` 保留 Markdown render 与轮转，读取优先 JSONL、fallback Markdown。",
+      "acceptance": "`decisions.jsonl` 可追加、校验、按月轮转兼容；`decisions.md` 可由 JSONL 渲染或继续作为旧任务 fallback。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "收敛核心命令读路径与迁移入口",
+      "description": "将 `check/go/next/agent step/journal` 的结构化完成度、tail、漂移和决策读取接入统一 helper，并提供显式迁移/重建路径。",
+      "acceptance": "核心命令不再首选解析 Markdown 真源；结构化损坏 fail loud；缺失结构化文件时旧 Markdown fallback 可用。",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "补充兼容与回归测试",
+      "description": "增加覆盖 plan 重复 checklist、breadcrumb tail、归档后 check、JSON/JSONL 迁移、decisions 轮转和 Markdown render 可重建的测试。",
+      "acceptance": "新旧格式测试均通过，覆盖 R-163 验收中的关键兼容场景。",
+      "dependencies": "S5",
+      "status": "done"
+    },
+    {
+      "id": "S7",
+      "name": "验证门禁并归档",
+      "description": "运行相关测试、`docpath check`、`docpath review`、`docpath journal`，完成任务归档。",
+      "acceptance": "质量门禁通过，任务状态进入 completed。",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

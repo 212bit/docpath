@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-18T00:24:26.351Z",
+    "updated_at": "2026-06-18T00:24:26.351Z",
+    "content_sha256": "b21a3907f6b6e12742f7587954875b68b8a17fb826b1d582a53526f189d4fdf9"
+  },
+  "task_id": "T-20260618-diagnose-tracked-ignored-docpath-runtime",
+  "backlog_id": "R-201",
+  "title": "T-20260618-diagnose-tracked-ignored-docpath-runtime - Diagnose tracked ignored DocPath runtime files",
+  "markdown": "# T-20260618-diagnose-tracked-ignored-docpath-runtime - Diagnose tracked ignored DocPath runtime files\n\n> backlog_id: R-201\n> backlog_source: docpath backlog capture\n\n## 1. 背景与动机\n\nDogfood of `docpath commit` exposed a boundary between Git ignore rules and Git index state. The repo currently ignores the whole `/.docpath/` tree, which marks canonical backlog and completed task evidence as ignored while runtime workspace files remain historically tracked. This makes staging rely on force-add behavior and hides the distinction between durable DocPath evidence and local runtime noise.\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: Replace the broad `/.docpath/` ignore rule with precise runtime-only DocPath ignore rules.\n- [ ] FR-2: Add a deterministic diagnostic that reports tracked-but-ignored DocPath runtime files and suggests an explicit `git rm --cached` cleanup command.\n- [ ] FR-3: Keep canonical backlog and completed task evidence out of the runtime-noise diagnostic.\n\n### 非功能需求\n- [ ] NFR-1: The diagnostic must be read-only by default and must not mutate Git index state.\n- [ ] NFR-2: The implementation must remain compatible with existing DocPath closeout and evidence workflows.\n\n## 3. 范围界定\n\n### 包含\n- `.gitignore` DocPath/worktree ignore rule correction.\n- CLI diagnostic integration for tracked ignored runtime files.\n- Regression tests for runtime-noise detection and canonical evidence exclusion.\n\n### 不包含\n- Automatically running `git rm --cached` without an explicit future fix command.\n- Reworking `docpath plan` contract behavior in this task.\n- Worktree garbage collection UX.\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | Ignore strategy | Ignore all `/.docpath/` vs runtime-only paths | Runtime-only paths | Backlog, done-task evidence, rules, protocols, and templates are durable collaboration assets. |\n| 2 | Cleanup behavior | Auto-untrack vs diagnostic first | Diagnostic first | `git rm --cached` changes index state and should require an explicit user action. |\n| 3 | Diagnostic placement | New standalone command vs integrate with existing health check | Use the smallest existing diagnostic surface first | The behavior should be easy to test and can later be surfaced by `status` or `doctor`. |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [x] 长期维护成本增加\n- [ ] 其他\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）\n- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）\n\n### Decision Brief\n- 当前问题: Broad `.gitignore` rules and tracked runtime files make DocPath evidence staging ambiguous and can force `git add -f` for legitimate evidence.\n- 目标: Separate durable DocPath evidence from runtime noise and expose tracked ignored runtime files as an actionable diagnostic.\n- 背景: The issue was found while dogfooding `docpath commit` after Sentinel workflow friction analysis.\n- 可选方案: Keep force-add only; ignore all `.docpath`; ignore runtime-only paths plus diagnostic.\n- 推荐方案: Use runtime-only ignore rules and a read-only diagnostic with explicit cleanup instructions.\n- 不做什么: Do not auto-untrack files in this task and do not broaden scope into plan-command contract repair.\n- 成本: Small CLI/test change plus one ignore rule correction.\n- 风险: Existing repositories with broad ignore rules may still need a future installer/doctor migration.\n- 回滚方案: Revert the ignore rule and diagnostic changes.\n- 用户确认: User agreed to prioritize this optimization after `docpath commit` dogfood.\n\n## 5. 验收标准\n\n- [ ] AC-1: `.gitignore` no longer ignores the entire `/.docpath/` tree and still ignores DocPath runtime state plus `.worktrees/`.\n- [ ] AC-2: A read-only diagnostic reports tracked ignored runtime files and prints an explicit `git rm --cached` suggestion.\n- [ ] AC-3: Canonical backlog and completed task evidence are not reported as runtime noise.\n- [ ] AC-4: Focused automated tests pass.\n",
+  "generated_at": "2026-06-18T00:24:26.351Z",
+  "scope": {
+    "included": [
+      "`.gitignore` DocPath/worktree ignore rule correction.",
+      "CLI diagnostic integration for tracked ignored runtime files.",
+      "Regression tests for runtime-noise detection and canonical evidence exclusion."
+    ],
+    "excluded": [
+      "Automatically running `git rm --cached` without an explicit future fix command.",
+      "Reworking `docpath plan` contract behavior in this task.",
+      "Worktree garbage collection UX."
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "User agreed to prioritize this optimization after `docpath commit` dogfood.",
+    "decision_brief_markdown": "- 当前问题: Broad `.gitignore` rules and tracked runtime files make DocPath evidence staging ambiguous and can force `git add -f` for legitimate evidence.\n- 目标: Separate durable DocPath evidence from runtime noise and expose tracked ignored runtime files as an actionable diagnostic.\n- 背景: The issue was found while dogfooding `docpath commit` after Sentinel workflow friction analysis.\n- 可选方案: Keep force-add only; ignore all `.docpath`; ignore runtime-only paths plus diagnostic.\n- 推荐方案: Use runtime-only ignore rules and a read-only diagnostic with explicit cleanup instructions.\n- 不做什么: Do not auto-untrack files in this task and do not broaden scope into plan-command contract repair.\n- 成本: Small CLI/test change plus one ignore rule correction.\n- 风险: Existing repositories with broad ignore rules may still need a future installer/doctor migration.\n- 回滚方案: Revert the ignore rule and diagnostic changes.\n- 用户确认: User agreed to prioritize this optimization after `docpath commit` dogfood."
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Replace the broad `/.docpath/` ignore rule with precise runtime-only DocPath ignore rules.",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Add a deterministic diagnostic that reports tracked-but-ignored DocPath runtime files and suggests an explicit `git rm --cached` cleanup command.",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "Keep canonical backlog and completed task evidence out of the runtime-noise diagnostic.",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "The diagnostic must be read-only by default and must not mutate Git index state.",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "The implementation must remain compatible with existing DocPath closeout and evidence workflows.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`.gitignore` no longer ignores the entire `/.docpath/` tree and still ignores DocPath runtime state plus `.worktrees/`.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "A read-only diagnostic reports tracked ignored runtime files and prints an explicit `git rm --cached` suggestion.",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "Canonical backlog and completed task evidence are not reported as runtime noise.",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "Focused automated tests pass.",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: Broad `.gitignore` rules and tracked runtime files make DocPath evidence staging ambiguous and can force `git add -f` for legitimate evidence.\n- 目标: Separate durable DocPath evidence from runtime noise and expose tracked ignored runtime files as an actionable diagnostic.\n- 背景: The issue was found while dogfooding `docpath commit` after Sentinel workflow friction analysis.\n- 可选方案: Keep force-add only; ignore all `.docpath`; ignore runtime-only paths plus diagnostic.\n- 推荐方案: Use runtime-only ignore rules and a read-only diagnostic with explicit cleanup instructions.\n- 不做什么: Do not auto-untrack files in this task and do not broaden scope into plan-command contract repair.\n- 成本: Small CLI/test change plus one ignore rule correction.\n- 风险: Existing repositories with broad ignore rules may still need a future installer/doctor migration.\n- 回滚方案: Revert the ignore rule and diagnostic changes.\n- 用户确认: User agreed to prioritize this optimization after `docpath commit` dogfood."
+}

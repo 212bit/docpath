@@ -1,0 +1,22 @@
+## 执行计划
+
+### S1: 明确 AGENTS 协议模板的漂移点与安装路径
+- [x] S1: 明确 AGENTS 协议模板的漂移点与安装路径
+- **描述**: 梳理 `templates/AGENTS.md`、`templates/protocols/AGENTS.md`、`.docpath/protocols/AGENTS.md` 与 install 复制路径之间的关系，确认旧协议残留的边界。
+- **验收条件**: 漂移点、目标文案与测试覆盖面明确，可直接指导修复。
+- **依赖**: 无
+
+### S2: 统一 AGENTS 协议文案并补安装回归测试
+- [x] S2: 统一 AGENTS 协议文案并补安装回归测试
+- **描述**: 更新过时的 AGENTS 协议模板/参考协议，清除旧流程描述，并在 install 测试中为 codex / universal 安装产物补自动化断言。
+- **验收条件**: 协议内容与当前 CLI 一致，测试能阻止旧 AGENTS 协议回归。
+- **依赖**: S1
+
+### S3: 串行回归验证并完成 DocPath 闭环
+- [x] S3: 串行回归验证并完成 DocPath 闭环
+- **描述**: 串行执行构建、目标 install 测试与全量测试，并通过 `docpath check` / `docpath agent done` 完成流程闭环。
+- **验收条件**: `pnpm build`、目标测试、`pnpm test` 全绿，DocPath 状态回到 completed。
+- **依赖**: S2
+
+## 依赖关系图
+S1 → S2 → S3

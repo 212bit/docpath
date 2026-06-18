@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-15T16:21:46.966Z",
+    "updated_at": "2026-06-15T16:21:46.966Z",
+    "content_sha256": "c1272df7fc21393590bc69f9d199f59941ffdad46f50cd88e6d0746e6d87d4ff"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: Add strict CLI contract validation\n- [x] S1: Add strict CLI contract validation\n- **描述**: Add shared parsers for enum and numeric CLI inputs, then apply them to review, diff, context, reveal, compact, agent handoff, and dashboard options.\n- **验收条件**: Invalid scope, step, level, token, entry, and port inputs fail loudly with actionable messages before command internals receive invalid values.\n- **依赖**: 无\n\n### S2: Remove stale public options\n- [x] S2: Remove stale public options\n- **描述**: Remove advertised no-op flags from command registration and help text where behavior is not implemented.\n- **验收条件**: review no longer advertises --no-ai and write-spec no longer advertises --section; existing valid command paths remain unchanged.\n- **依赖**: S1\n\n### S3: Add regression tests and run gates\n- [x] S3: Add regression tests and run gates\n- **描述**: Add focused CLI tests for invalid inputs and removed no-op flags, then run the relevant test suite and DocPath check.\n- **验收条件**: Regression tests pass; docpath check passes for this task.\n- **依赖**: S2\n",
+  "generated_at": "2026-06-15T16:21:46.966Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Add strict CLI contract validation",
+      "description": "Add shared parsers for enum and numeric CLI inputs, then apply them to review, diff, context, reveal, compact, agent handoff, and dashboard options.",
+      "acceptance": "Invalid scope, step, level, token, entry, and port inputs fail loudly with actionable messages before command internals receive invalid values.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Remove stale public options",
+      "description": "Remove advertised no-op flags from command registration and help text where behavior is not implemented.",
+      "acceptance": "review no longer advertises --no-ai and write-spec no longer advertises --section; existing valid command paths remain unchanged.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Add regression tests and run gates",
+      "description": "Add focused CLI tests for invalid inputs and removed no-op flags, then run the relevant test suite and DocPath check.",
+      "acceptance": "Regression tests pass; docpath check passes for this task.",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

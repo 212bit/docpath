@@ -1092,3 +1092,45 @@ timestamp: 2026-06-17T14:17:35.030Z
 
 - **状态**: done
 - **上下文**: 知识归档完成 (6/6 步)
+
+### 🔄 S1 [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:24:50.620Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: S1
+status: in_progress
+timestamp: 2026-06-18T00:24:50.620Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Inspect existing Git health and command surfaces
+- **Session**: default
+
+### ✅ S1 [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:25:45.786Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: S1
+status: done
+timestamp: 2026-06-18T00:25:45.786Z
+sessionId: default
+---
+
+- **状态**: done
+- **上下文**: Mapped status/gc/register surfaces. Chose a new read-only advanced doctor command plus reusable Git hygiene util as the smallest diagnostic surface; status/install integration remains future scope.
+- **Session**: default
+
+### 🔄 S2 [T-20260618-diagnose-tracked-ignored-docpath-runtime] — 2026-06-18T00:25:54.183Z
+
+---
+taskId: T-20260618-diagnose-tracked-ignored-docpath-runtime
+step: S2
+status: in_progress
+timestamp: 2026-06-18T00:25:54.183Z
+sessionId: default
+---
+
+- **状态**: in_progress
+- **上下文**: 开始执行: Tighten DocPath ignore rules
+- **Session**: default

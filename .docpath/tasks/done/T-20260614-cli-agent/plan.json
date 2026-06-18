@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-14T04:13:20.417Z",
+    "updated_at": "2026-06-14T04:13:20.417Z",
+    "content_sha256": "edce45b57a2e3b7ccd3784dff35a179e2c954da60e64c75667fc16cef82cb01f"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: 梳理 Phase 1 - 建立 CLI-only 基线\n- **描述**: 根据 spec 明确 Phase 1 - 建立 CLI-only 基线 的实现边界和验收口径。\n- **验收条件**: CLAUDE.md 和 skills 不再引用 `current.md` / `breadcrumb.md`，Agent 通过 CLI 读取状态\n- **依赖**: 无\n\n### S2: 实现 Phase 1 - 建立 CLI-only 基线\n- **描述**: 在现有架构内完成 Phase 1 - 建立 CLI-only 基线 的代码与文档更新。\n- **验收条件**: Phase 1 - 建立 CLI-only 基线 已实现，并保持现有工作流兼容。\n- **依赖**: S1\n\n## Checklist\n- [x] S1\n- [x] S2\n\n## 依赖关系图\nS1 → S2\n",
+  "generated_at": "2026-06-14T04:13:20.417Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Phase 1 - 建立 CLI-only 基线",
+      "description": "根据 spec 明确 Phase 1 - 建立 CLI-only 基线 的实现边界和验收口径。",
+      "acceptance": "CLAUDE.md 和 skills 不再引用 `current.md` / `breadcrumb.md`，Agent 通过 CLI 读取状态",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Phase 1 - 建立 CLI-only 基线",
+      "description": "在现有架构内完成 Phase 1 - 建立 CLI-only 基线 的代码与文档更新。",
+      "acceptance": "Phase 1 - 建立 CLI-only 基线 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

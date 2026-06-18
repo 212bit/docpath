@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-13T18:24:08.065Z",
+    "updated_at": "2026-06-13T18:24:08.065Z"
+  },
+  "task_id": "T-20260613-spec-json-schema",
+  "backlog_id": "R-164",
+  "title": "T-20260613-spec-json-schema - 深化 spec.json schema 与门禁字段",
+  "markdown": "# T-20260613-spec-json-schema - 深化 spec.json schema 与门禁字段\n\n> backlog_id: R-164\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\n## 背景\n\nR-163 已建立 schema-first JSON/JSONL 真源，但 spec.json 仍是第一版结构化外壳，主要包含 title、FR/NFR、AC、Decision Brief 和 markdown 原文。为了让 spec 真正成为 check/next/context-index/UI/重大变更门禁的机器契约，需要继续把 task/backlog linkage、scope、major_change_gate、ui_gate 和 source metadata 字段结构化，同时保持 spec.md 作为 CLI 渲染视图和旧任务兼容输入。\n\n## 验收\n\n1. spec.json 增加 task_id、backlog_id、title、source.created_at/source.updated_at 等基础元数据，并保留 schema_version。2. spec.json 增加 scope.included/scope.excluded 结构化字段，长文本允许 Markdown 字符串。3. spec.json 增加 major_change_gate.required/types/user_confirmed/decision_brief_markdown 字段，并让重大变更门禁优先读取这些字段。4. spec.json 增加 ui_gate.required|exempt|unknown 或等价结构字段，并让 UI 门禁优先读取结构化字段。5. spec.md 仍可由 spec.json 渲染，旧 spec.md 缺少 spec.json 时可迁移生成，损坏 spec.json 必须 fail loud。6. 增加覆盖 spec JSON 字段解析、门禁优先读 JSON、Markdown fallback、render 可重建和损坏 JSON fail loud 的测试。\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: 扩展 spec.json 基础元数据\n  - `spec.json` 必须包含 `task_id`、`backlog_id`、`title`、`source.created_at`、`source.updated_at`，并保留 `schema_version` 与 `markdown`。\n- [ ] FR-2: 结构化 scope 字段\n  - `spec.json` 必须包含 `scope.included` 与 `scope.excluded`，允许每项保留 Markdown 字符串，供 check/context-index/reveal 稳定读取。\n- [ ] FR-3: 结构化重大变更门禁字段\n  - `spec.json` 必须包含 `major_change_gate.required`、`types`、`user_confirmed`、`decision_brief_markdown`，重大变更门禁优先读取 JSON。\n- [ ] FR-4: 结构化 UI gate 字段\n  - `spec.json` 必须包含 `ui_gate.state` 或等价字段，取值覆盖 `required`、`exempt`、`unknown`，UI 门禁优先读取 JSON。\n- [ ] FR-5: 保持 spec.md 视图与旧任务兼容\n  - `spec.md` 继续作为 CLI 渲染视图；旧 `spec.md` 缺少 `spec.json` 时可迁移生成；损坏 `spec.json` 必须 fail loud。\n\n### 非功能需求\n- [ ] NFR-1: 保持与现有 DocPath 工作流兼容\n- [ ] NFR-2: 不允许 AI 直接绕过 CLI 写 `spec.json`\n- [ ] NFR-3: 不改变现有 spec.md 编辑体验和旧任务 fallback 行为\n- [ ] NFR-4: 新增测试覆盖 JSON 字段解析、门禁 JSON 优先、Markdown fallback、render 可重建和损坏 JSON fail loud\n\n## 3. 范围界定\n\n### 包含\n- `src/utils/structured-docs.ts` 中 `StructuredSpecDocument` schema、parser、validator、renderer 的深化。\n- `check` 重大变更门禁优先读取 `spec.json` 的结构化字段。\n- `ui-gate` 判断优先读取 `spec.json` 的 `ui_gate` 字段。\n- `context-index`、上下文/导出路径继续通过 `readActiveTaskFile` 读取由 JSON 渲染出的 spec 视图。\n- 针对 JSON 优先、Markdown fallback、render 可重建和损坏 JSON fail loud 的回归测试。\n\n### 不包含\n- 不删除 `spec.md`。\n- 不引入数据库或外部 schema validator 依赖。\n- 不重写完整 spec 文档模板。\n- 不改变 `plan.json`、`breadcrumb.jsonl`、`decisions.jsonl` 的既有 schema。\n- 不实现权限系统本身；写边界仍由 CLI 负责。\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [x] 数据库 / 存储模型\n- [x] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [x] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [x] 长期维护成本增加\n- [ ] 其他\n\n### Decision Brief\n- 当前问题: R-163 已引入 `spec.json`，但它仍主要保存第一版结构化外壳和 Markdown 原文；重大变更门禁、UI gate、scope 和任务链路仍需要从 Markdown 正则推断，机器契约不够稳定。\n- 目标: 让 `spec.json` 成为 spec 的可验证机器契约，覆盖任务链路、scope、重大变更门禁、UI gate 和 source metadata，同时保留 `spec.md` 人类视图。\n- 背景: 用户已确认 spec 也需要 JSON 真源，但不希望变成“人直接维护纯 JSON”的编辑体验；正确模式是 CLI 写 JSON 真源并渲染 Markdown 视图。\n- 可选方案:\n  1. 继续从 `spec.md` 正则读取门禁字段：改动小，但解析脆弱问题继续存在。\n  2. 让用户/AI 直接维护完整 `spec.json`：契约清晰，但绕过 CLI 落账边界，编辑体验差。\n  3. CLI 解析/生成 `spec.json`，门禁优先读 JSON，`spec.md` 保留为视图和 fallback：兼容性和可靠性平衡最好。\n- 推荐方案: 采用方案 3。结构化字段覆盖机器门禁；背景、论证、风险等长文本允许 Markdown 字符串；损坏 JSON fail loud，缺失 JSON fallback 旧 Markdown。\n- 不做什么: 不删除 `spec.md`，不要求人手写 JSON，不引入外部 schema 依赖，不改变 FSM 状态语义。\n- 成本: 需要扩展 schema、parser、renderer、门禁读路径和测试；短期 schema 字段维护成本上升。\n- 风险: 旧 spec.md 格式不统一可能导致迁移字段为空；JSON 与 Markdown 双写可能短期不一致；门禁切换 JSON 优先后损坏 JSON 会更早阻断流程。\n- 回滚方案: 保留 `spec.md` fallback；结构化字段生成失败时可由 CLI 重新从 Markdown 迁移；如需降级，可恢复门禁的 Markdown fallback 读路径。\n- 用户确认: 用户已明确同意“spec 必须有 JSON 真源，但不应该变成纯 JSON 文档编辑体验”的方向，并要求完成 R-164。\n\n## 5. 验收标准\n\n- [ ] AC-1: `spec.json` 包含 `task_id`、`backlog_id`、`title`、`source.created_at`、`source.updated_at`、`scope`、`major_change_gate`、`ui_gate`、`markdown` 和 `schema_version`。\n- [ ] AC-2: `spec.md` 写入或迁移时可生成深化后的 `spec.json`，旧 `spec.md` 缺少 `spec.json` 时继续 fallback。\n- [ ] AC-3: 重大变更门禁优先读取 `spec.json.major_change_gate`，JSON 缺失时 fallback Markdown。\n- [ ] AC-4: UI gate 优先读取 `spec.json.ui_gate`，JSON 缺失时 fallback Markdown。\n- [ ] AC-5: `spec.md` 可由 `spec.json` 渲染重建；损坏 `spec.json` 必须 fail loud。\n- [ ] AC-6: 增加覆盖 spec JSON 字段解析、门禁 JSON 优先、Markdown fallback、render 可重建和损坏 JSON fail loud 的测试。\n- [ ] AC-7: backlog 条目 R-164 与任务 T-20260613-spec-json-schema 建立双向关联，并完成 check/review/journal。\n\n---\n\n*此文件由 `docpath backlog promote` 生成。*\n",
+  "generated_at": "2026-06-13T18:24:08.065Z",
+  "scope": {
+    "included": [
+      "`src/utils/structured-docs.ts` 中 `StructuredSpecDocument` schema、parser、validator、renderer 的深化。",
+      "`check` 重大变更门禁优先读取 `spec.json` 的结构化字段。",
+      "`ui-gate` 判断优先读取 `spec.json` 的 `ui_gate` 字段。",
+      "`context-index`、上下文/导出路径继续通过 `readActiveTaskFile` 读取由 JSON 渲染出的 spec 视图。",
+      "针对 JSON 优先、Markdown fallback、render 可重建和损坏 JSON fail loud 的回归测试。"
+    ],
+    "excluded": [
+      "不删除 `spec.md`。",
+      "不引入数据库或外部 schema validator 依赖。",
+      "不重写完整 spec 文档模板。",
+      "不改变 `plan.json`、`breadcrumb.jsonl`、`decisions.jsonl` 的既有 schema。",
+      "不实现权限系统本身；写边界仍由 CLI 负责。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "数据库 / 存储模型",
+      "API / 数据契约",
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "用户已明确同意“spec 必须有 JSON 真源，但不应该变成纯 JSON 文档编辑体验”的方向，并要求完成 R-164。",
+    "decision_brief_markdown": "- 当前问题: R-163 已引入 `spec.json`，但它仍主要保存第一版结构化外壳和 Markdown 原文；重大变更门禁、UI gate、scope 和任务链路仍需要从 Markdown 正则推断，机器契约不够稳定。\n- 目标: 让 `spec.json` 成为 spec 的可验证机器契约，覆盖任务链路、scope、重大变更门禁、UI gate 和 source metadata，同时保留 `spec.md` 人类视图。\n- 背景: 用户已确认 spec 也需要 JSON 真源，但不希望变成“人直接维护纯 JSON”的编辑体验；正确模式是 CLI 写 JSON 真源并渲染 Markdown 视图。\n- 可选方案:\n  1. 继续从 `spec.md` 正则读取门禁字段：改动小，但解析脆弱问题继续存在。\n  2. 让用户/AI 直接维护完整 `spec.json`：契约清晰，但绕过 CLI 落账边界，编辑体验差。\n  3. CLI 解析/生成 `spec.json`，门禁优先读 JSON，`spec.md` 保留为视图和 fallback：兼容性和可靠性平衡最好。\n- 推荐方案: 采用方案 3。结构化字段覆盖机器门禁；背景、论证、风险等长文本允许 Markdown 字符串；损坏 JSON fail loud，缺失 JSON fallback 旧 Markdown。\n- 不做什么: 不删除 `spec.md`，不要求人手写 JSON，不引入外部 schema 依赖，不改变 FSM 状态语义。\n- 成本: 需要扩展 schema、parser、renderer、门禁读路径和测试；短期 schema 字段维护成本上升。\n- 风险: 旧 spec.md 格式不统一可能导致迁移字段为空；JSON 与 Markdown 双写可能短期不一致；门禁切换 JSON 优先后损坏 JSON 会更早阻断流程。\n- 回滚方案: 保留 `spec.md` fallback；结构化字段生成失败时可由 CLI 重新从 Markdown 迁移；如需降级，可恢复门禁的 Markdown fallback 读路径。\n- 用户确认: 用户已明确同意“spec 必须有 JSON 真源，但不应该变成纯 JSON 文档编辑体验”的方向，并要求完成 R-164。"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "扩展 spec.json 基础元数据",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "结构化 scope 字段",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "结构化重大变更门禁字段",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "结构化 UI gate 字段",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "保持 spec.md 视图与旧任务兼容",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "不允许 AI 直接绕过 CLI 写 `spec.json`",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "不改变现有 spec.md 编辑体验和旧任务 fallback 行为",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "新增测试覆盖 JSON 字段解析、门禁 JSON 优先、Markdown fallback、render 可重建和损坏 JSON fail loud",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`spec.json` 包含 `task_id`、`backlog_id`、`title`、`source.created_at`、`source.updated_at`、`scope`、`major_change_gate`、`ui_gate`、`markdown` 和 `schema_version`。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`spec.md` 写入或迁移时可生成深化后的 `spec.json`，旧 `spec.md` 缺少 `spec.json` 时继续 fallback。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "重大变更门禁优先读取 `spec.json.major_change_gate`，JSON 缺失时 fallback Markdown。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "UI gate 优先读取 `spec.json.ui_gate`，JSON 缺失时 fallback Markdown。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "`spec.md` 可由 `spec.json` 渲染重建；损坏 `spec.json` 必须 fail loud。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "增加覆盖 spec JSON 字段解析、门禁 JSON 优先、Markdown fallback、render 可重建和损坏 JSON fail loud 的测试。",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "backlog 条目 R-164 与任务 T-20260613-spec-json-schema 建立双向关联，并完成 check/review/journal。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: R-163 已引入 `spec.json`，但它仍主要保存第一版结构化外壳和 Markdown 原文；重大变更门禁、UI gate、scope 和任务链路仍需要从 Markdown 正则推断，机器契约不够稳定。\n- 目标: 让 `spec.json` 成为 spec 的可验证机器契约，覆盖任务链路、scope、重大变更门禁、UI gate 和 source metadata，同时保留 `spec.md` 人类视图。\n- 背景: 用户已确认 spec 也需要 JSON 真源，但不希望变成“人直接维护纯 JSON”的编辑体验；正确模式是 CLI 写 JSON 真源并渲染 Markdown 视图。\n- 可选方案:\n  1. 继续从 `spec.md` 正则读取门禁字段：改动小，但解析脆弱问题继续存在。\n  2. 让用户/AI 直接维护完整 `spec.json`：契约清晰，但绕过 CLI 落账边界，编辑体验差。\n  3. CLI 解析/生成 `spec.json`，门禁优先读 JSON，`spec.md` 保留为视图和 fallback：兼容性和可靠性平衡最好。\n- 推荐方案: 采用方案 3。结构化字段覆盖机器门禁；背景、论证、风险等长文本允许 Markdown 字符串；损坏 JSON fail loud，缺失 JSON fallback 旧 Markdown。\n- 不做什么: 不删除 `spec.md`，不要求人手写 JSON，不引入外部 schema 依赖，不改变 FSM 状态语义。\n- 成本: 需要扩展 schema、parser、renderer、门禁读路径和测试；短期 schema 字段维护成本上升。\n- 风险: 旧 spec.md 格式不统一可能导致迁移字段为空；JSON 与 Markdown 双写可能短期不一致；门禁切换 JSON 优先后损坏 JSON 会更早阻断流程。\n- 回滚方案: 保留 `spec.md` fallback；结构化字段生成失败时可由 CLI 重新从 Markdown 迁移；如需降级，可恢复门禁的 Markdown fallback 读路径。\n- 用户确认: 用户已明确同意“spec 必须有 JSON 真源，但不应该变成纯 JSON 文档编辑体验”的方向，并要求完成 R-164。"
+}

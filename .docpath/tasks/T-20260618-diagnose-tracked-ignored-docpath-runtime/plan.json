@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-18T00:25:45.790Z",
+    "updated_at": "2026-06-18T00:25:45.790Z",
+    "content_sha256": "e4b0d0f614ec1e854f41f218c554fd87ac86c3221d3682d7efc61d342c27fcea"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: Inspect existing Git health and command surfaces\n- **描述**: Map current `.gitignore`, staging, status/install health, and any existing doctor/debug command surfaces before choosing the smallest integration point for tracked ignored runtime diagnostics.\n- **验收条件**: The affected source files and test files are identified, and the diagnostic placement is chosen without expanding scope into unrelated workflow fixes.\n- **依赖**: 无\n\n### S2: Tighten DocPath ignore rules\n- **描述**: Replace broad `/.docpath/` ignoring with runtime-only DocPath ignores while preserving `.worktrees/` ignores and durable DocPath evidence visibility.\n- **验收条件**: `.gitignore` ignores `.docpath/workspace/`, `.docpath/.install-meta.json`, `.docpath/tasks/current/`, and `.worktrees/` without ignoring `.docpath/backlog/` or `.docpath/tasks/done/`.\n- **依赖**: S1\n\n### S3: Add tracked ignored runtime diagnostic\n- **描述**: Implement a read-only diagnostic that detects tracked ignored runtime files through Git index/ignore state and emits a concrete `git rm --cached` suggestion for runtime paths only.\n- **验收条件**: Runtime paths are reported with cleanup guidance, while canonical DocPath evidence paths are not reported as runtime noise.\n- **依赖**: S1, S2\n\n### S4: Verify behavior and closeout gates\n- **描述**: Add focused automated tests, run the relevant test suite, run DocPath check/review gates, and record reusable workflow lessons if needed.\n- **验收条件**: Focused tests and `docpath check` pass, review is clean or findings are addressed, and task evidence is ready for closeout.\n- **依赖**: S3\n\n## Checklist\n- [x] S1\n- [ ] S2\n- [ ] S3\n- [ ] S4\n\n## 依赖关系图\nS1 → S2 → S3 → S4\n",
+  "generated_at": "2026-06-18T00:25:45.790Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Inspect existing Git health and command surfaces",
+      "description": "Map current `.gitignore`, staging, status/install health, and any existing doctor/debug command surfaces before choosing the smallest integration point for tracked ignored runtime diagnostics.",
+      "acceptance": "The affected source files and test files are identified, and the diagnostic placement is chosen without expanding scope into unrelated workflow fixes.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Tighten DocPath ignore rules",
+      "description": "Replace broad `/.docpath/` ignoring with runtime-only DocPath ignores while preserving `.worktrees/` ignores and durable DocPath evidence visibility.",
+      "acceptance": "`.gitignore` ignores `.docpath/workspace/`, `.docpath/.install-meta.json`, `.docpath/tasks/current/`, and `.worktrees/` without ignoring `.docpath/backlog/` or `.docpath/tasks/done/`.",
+      "dependencies": "S1",
+      "status": "pending"
+    },
+    {
+      "id": "S3",
+      "name": "Add tracked ignored runtime diagnostic",
+      "description": "Implement a read-only diagnostic that detects tracked ignored runtime files through Git index/ignore state and emits a concrete `git rm --cached` suggestion for runtime paths only.",
+      "acceptance": "Runtime paths are reported with cleanup guidance, while canonical DocPath evidence paths are not reported as runtime noise.",
+      "dependencies": "S1, S2",
+      "status": "pending"
+    },
+    {
+      "id": "S4",
+      "name": "Verify behavior and closeout gates",
+      "description": "Add focused automated tests, run the relevant test suite, run DocPath check/review gates, and record reusable workflow lessons if needed.",
+      "acceptance": "Focused tests and `docpath check` pass, review is clean or findings are addressed, and task evidence is ready for closeout.",
+      "dependencies": "S3",
+      "status": "pending"
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-15T08:24:44.449Z",
+    "updated_at": "2026-06-15T08:24:44.449Z",
+    "content_sha256": "dfd197a60abcefe8d9bbdc4335ae78e9eb71940c17db1593d9611a70694f663c"
+  },
+  "task_id": "T-20260615-task",
+  "backlog_id": "R-180",
+  "title": "T-20260615-task - 技术债务清理 — 删除废弃文件和未使用依赖",
+  "markdown": "# T-20260615-task - 技术债务清理 — 删除废弃文件和未使用依赖\n\n> backlog_id: R-180\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\n## 背景\n\nsrc/llm/client.ts 100 行废弃 stub 曾保留，src/utils/complexity.ts 和 src/utils/escalation.ts 曾被标记为疑似未使用，代码库还存在未使用导入和无引用本地 helper。当前实现中 src/llm 已不存在；complexity/escalation 的实际位置为 src/engine，并且被 continue 路由和 engine index 使用。\n\n## 验收\n\n删除或确认不存在 src/llm/client.ts；评估 complexity/escalation 的实际使用关系并保留仍在使用的 src/engine 实现；清理未使用的导入和无引用本地 helper；确认依赖仍被使用；pnpm build 通过；无废弃文件路径残留。\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: 清理废弃 LLM stub、旧路径残留、未使用导入和无引用本地 helper\n  - 来源 backlog: R-180\n- [ ] FR-2: 对 complexity/escalation 做实际引用评估，避免删除仍在使用的 engine 能力\n\n### 非功能需求\n- [ ] NFR-1: 保持与现有 DocPath 工作流兼容\n- [ ] NFR-2: 不删除仍被命令或公共 engine export 使用的能力\n\n## 3. 范围界定\n\n### 包含\n- 删除或验证 src/llm/client.ts、src/utils/complexity.ts、src/utils/escalation.ts 等旧路径不存在\n- 清理 TypeScript 未使用导入和无引用本地 helper\n- 验证 package dependencies 仍有代码引用\n- 运行 pnpm build、pnpm test 和严格 unused-symbol 检查作为验收证据\n\n### 不包含\n- 不删除仍被 src/commands/continue.ts 或 src/engine/index.ts 使用的 src/engine/complexity.ts、src/engine/escalation.ts\n- 不调整产品 UI、CLI 命令语义、外部依赖版本或构建工具\n- 不引入新的 lint 工具或 package 依赖\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |\n| 2 | complexity/escalation 处理 | 删除疑似文件 / 保留实际使用的 engine 模块并清理死代码 | 保留 src/engine 模块 | 搜索确认 src/engine/complexity.ts 和 src/engine/escalation.ts 被 continue 和 engine index 使用，删除会破坏恢复升级逻辑 |\n| 3 | unused cleanup 范围 | 只删 import / 同步删除无引用本地 helper | 同步删除无引用本地 helper | 严格 TypeScript unused 检查能机械验证，且 helper 无调用点 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [x] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [ ] 工作流 / Agent 行为\n- [ ] 权限 / 写操作边界\n- [ ] 范围扩大\n- [x] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### Decision Brief\n- 当前问题: R-180 要求删除废弃文件和未使用依赖，但候选文件路径与当前代码树存在偏差；盲删会误删仍在使用的 engine 能力。\n- 目标: 移除确认无引用的导入和本地 helper，确认旧 LLM/utils 路径无残留，同时保留 continue/escalation 仍依赖的 engine 模块。\n- 背景: src/llm/client.ts、src/utils/complexity.ts、src/utils/escalation.ts 当前不存在；src/engine/complexity.ts 和 src/engine/escalation.ts 被 src/commands/continue.ts 与 src/engine/index.ts 使用。\n- 可选方案: 1) 按 backlog 字面删除所有 complexity/escalation 文件；2) 仅删除确认无引用的代码并保留 live engine 模块；3) 推迟清理。\n- 推荐方案: 采用方案 2，删除严格 unused 检查确认的导入和无引用 helper，不删除 live engine 模块。\n- 不做什么: 不移除已被引用的 package dependencies，不改变 CLI 命令语义，不引入 lint/depcheck 新依赖。\n- 成本: 小范围机械 TypeScript 清理，需重新运行 build/test/check/review。\n- 风险: 删除过多会破坏 continue 的 escalation 评估；删除过少会留下技术债。通过引用搜索、严格 unused 检查和测试降低风险。\n- 回滚方案: 回滚本任务提交即可恢复删除的导入/helper 和 DocPath evidence。\n- 用户确认: 用户在 2026-06-15 明确要求 “complete R-180”，作为执行删除/清理类变更的确认。\n\n## 5. 验收标准\n\n- [ ] AC-1: src/llm/client.ts、src/utils/complexity.ts、src/utils/escalation.ts 不存在，且无旧路径引用\n- [ ] AC-2: src/engine/complexity.ts 和 src/engine/escalation.ts 已评估为 live code 并保留\n- [ ] AC-3: TypeScript strict unused-symbol 检查通过\n- [ ] AC-4: pnpm build 通过\n- [ ] AC-5: pnpm test 通过\n- [ ] AC-6: backlog 条目 R-180 与任务 T-20260615-task 建立双向关联\n\n---\n\n*此文件由 `docpath backlog promote` 生成，并在 R-180 执行中补充 Decision Brief。*",
+  "generated_at": "2026-06-15T08:24:44.449Z",
+  "scope": {
+    "included": [
+      "删除或验证 src/llm/client.ts、src/utils/complexity.ts、src/utils/escalation.ts 等旧路径不存在",
+      "清理 TypeScript 未使用导入和无引用本地 helper",
+      "验证 package dependencies 仍有代码引用",
+      "运行 pnpm build、pnpm test 和严格 unused-symbol 检查作为验收证据"
+    ],
+    "excluded": [
+      "不删除仍被 src/commands/continue.ts 或 src/engine/index.ts 使用的 src/engine/complexity.ts、src/engine/escalation.ts",
+      "不调整产品 UI、CLI 命令语义、外部依赖版本或构建工具",
+      "不引入新的 lint 工具或 package 依赖"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "架构 / 模块边界",
+      "删除 / 替换已有能力"
+    ],
+    "user_confirmed": "用户在 2026-06-15 明确要求 “complete R-180”，作为执行删除/清理类变更的确认。",
+    "decision_brief_markdown": "- 当前问题: R-180 要求删除废弃文件和未使用依赖，但候选文件路径与当前代码树存在偏差；盲删会误删仍在使用的 engine 能力。\n- 目标: 移除确认无引用的导入和本地 helper，确认旧 LLM/utils 路径无残留，同时保留 continue/escalation 仍依赖的 engine 模块。\n- 背景: src/llm/client.ts、src/utils/complexity.ts、src/utils/escalation.ts 当前不存在；src/engine/complexity.ts 和 src/engine/escalation.ts 被 src/commands/continue.ts 与 src/engine/index.ts 使用。\n- 可选方案: 1) 按 backlog 字面删除所有 complexity/escalation 文件；2) 仅删除确认无引用的代码并保留 live engine 模块；3) 推迟清理。\n- 推荐方案: 采用方案 2，删除严格 unused 检查确认的导入和无引用 helper，不删除 live engine 模块。\n- 不做什么: 不移除已被引用的 package dependencies，不改变 CLI 命令语义，不引入 lint/depcheck 新依赖。\n- 成本: 小范围机械 TypeScript 清理，需重新运行 build/test/check/review。\n- 风险: 删除过多会破坏 continue 的 escalation 评估；删除过少会留下技术债。通过引用搜索、严格 unused 检查和测试降低风险。\n- 回滚方案: 回滚本任务提交即可恢复删除的导入/helper 和 DocPath evidence。\n- 用户确认: 用户在 2026-06-15 明确要求 “complete R-180”，作为执行删除/清理类变更的确认。"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "清理废弃 LLM stub、旧路径残留、未使用导入和无引用本地 helper",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "对 complexity/escalation 做实际引用评估，避免删除仍在使用的 engine 能力",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "不删除仍被命令或公共 engine export 使用的能力",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "src/llm/client.ts、src/utils/complexity.ts、src/utils/escalation.ts 不存在，且无旧路径引用",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "src/engine/complexity.ts 和 src/engine/escalation.ts 已评估为 live code 并保留",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "TypeScript strict unused-symbol 检查通过",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "pnpm build 通过",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "pnpm test 通过",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "backlog 条目 R-180 与任务 T-20260615-task 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: R-180 要求删除废弃文件和未使用依赖，但候选文件路径与当前代码树存在偏差；盲删会误删仍在使用的 engine 能力。\n- 目标: 移除确认无引用的导入和本地 helper，确认旧 LLM/utils 路径无残留，同时保留 continue/escalation 仍依赖的 engine 模块。\n- 背景: src/llm/client.ts、src/utils/complexity.ts、src/utils/escalation.ts 当前不存在；src/engine/complexity.ts 和 src/engine/escalation.ts 被 src/commands/continue.ts 与 src/engine/index.ts 使用。\n- 可选方案: 1) 按 backlog 字面删除所有 complexity/escalation 文件；2) 仅删除确认无引用的代码并保留 live engine 模块；3) 推迟清理。\n- 推荐方案: 采用方案 2，删除严格 unused 检查确认的导入和无引用 helper，不删除 live engine 模块。\n- 不做什么: 不移除已被引用的 package dependencies，不改变 CLI 命令语义，不引入 lint/depcheck 新依赖。\n- 成本: 小范围机械 TypeScript 清理，需重新运行 build/test/check/review。\n- 风险: 删除过多会破坏 continue 的 escalation 评估；删除过少会留下技术债。通过引用搜索、严格 unused 检查和测试降低风险。\n- 回滚方案: 回滚本任务提交即可恢复删除的导入/helper 和 DocPath evidence。\n- 用户确认: 用户在 2026-06-15 明确要求 “complete R-180”，作为执行删除/清理类变更的确认。"
+}

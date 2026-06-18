@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-16T04:36:17.959Z",
+    "updated_at": "2026-06-16T04:36:17.959Z",
+    "content_sha256": "d68f763a631a4193e4ed2f8a32df2acda7941da0ee3e7f862702f8e19086dc8a"
+  },
+  "task_id": "T-20260616-add-quick-fast-track-workflow-profile",
+  "backlog_id": "R-191",
+  "title": "T-20260616-add-quick-fast-track-workflow-profile - Add quick fast-track workflow profile",
+  "markdown": "# T-20260616-add-quick-fast-track-workflow-profile - Add quick fast-track workflow profile\n\n> backlog_id: R-191\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\nDocPath currently behaves like a heavy, one-size-fits-all workflow for both large feature work and tiny maintenance edits. That is valuable for protocol, architecture, and multi-session work, but it creates poor DX for typo fixes, one-line bugs, and small safe adjustments.\n\nThe confirmed product direction is to add an explicit fast-track entry point: `docpath quick`. Quick tasks should stay inside DocPath for auditability while using proportional gates: minimal task metadata, no full spec/plan ceremony, check evidence by default, skipped full review by profile, and minimal closeout evidence.\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: Add a `docpath quick <title>` command that creates a lightweight active task for tiny work without requiring backlog promote, full spec, or full plan.\n- [ ] FR-2: Persist an explicit workflow profile for quick tasks so downstream commands can apply profile-aware routing and gates.\n- [ ] FR-3: Update `next --agent` output for quick tasks so it routes agents directly to making the change and completing with `docpath done`, not to spec/plan generation.\n- [ ] FR-4: Update completion policy and `done` behavior so quick tasks require successful check evidence by default, skip full review by profile, and record the skip reason/audit output.\n- [ ] FR-5: Write minimal quick task evidence in task files or workspace evidence so `changes --agent` and future sessions can understand why review was not required.\n- [ ] FR-6: Add escalation safeguards so quick tasks fail loud or instruct upgrade when scope/risk exceeds the quick profile boundary.\n- [ ] FR-7: Update command registration/help/docs/agent guidance so humans and agents know when to use quick versus the standard lifecycle.\n\n### 非功能需求\n- [ ] NFR-1: Preserve current standard/strict workflow semantics for existing tasks.\n- [ ] NFR-2: Do not weaken check/review behavior for Level 2/3 tasks.\n- [ ] NFR-3: Keep the implementation JSON-first/CLI-first and avoid hand-editing runtime views.\n- [ ] NFR-4: Keep command behavior fail-loud when active state is ambiguous or a quick task exceeds boundaries.\n- [ ] NFR-5: Cover new command and policy behavior with focused tests.\n\n## 3. 范围界定\n\n### 包含\n- New operational CLI command for quick tasks.\n- Workflow profile/policy model sufficient for quick vs standard completion behavior.\n- Runtime route changes for quick active tasks.\n- Profile-aware done/agent done behavior.\n- Minimal quick task evidence and audit output.\n- Tests and documentation for the new lifecycle.\n\n### 不包含\n- Fully automatic task size classification for all tasks.\n- Replacing backlog/spec/plan for standard tasks.\n- New UI/dashboard work beyond displaying existing state if already automatic.\n- Broad refactors of state storage unrelated to quick profile support.\n- Network or external service integrations.\n\n### 待确认\n- None blocking. User confirmed the quick + profile/dynamic gate approach in conversation on 2026-06-16.\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | Fast-track shape | Pure bypass / quick command / invisible dynamic gating | `docpath quick` backed by explicit profile | Keeps auditability while reducing ceremony and avoids hidden automatic gate changes. |\n| 2 | Quick gates | Skip all gates / require check / require review | Require check by default, skip full review by profile | Check has high value and low ceremony; full review is disproportionate for tiny work. |\n| 3 | Escalation | Allow any quick task / warn only / fail loud on risky scope | Add fail-loud upgrade guidance for high-risk or oversized quick tasks | Prevents quick from becoming a loophole for protocol or architectural work. |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [x] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [x] 长期维护成本增加\n- [ ] 其他\n\n### Decision Brief\n- 当前问题: DocPath 对微型任务和大型任务使用同样重的生命周期，治理成本和任务规模不匹配。\n- 目标: 为微型任务提供低摩擦但仍可审计的快车道。\n- 背景: 用户明确指出治理成本与任务规模匹配问题，并确认采用 quick + profile/dynamic gating 方案。\n- 可选方案: 纯 bypass；`docpath quick` 压缩生命周期；完全动态降级门禁。\n- 推荐方案: 对外新增 `docpath quick`，对内用 workflow profile/gate policy 驱动路由和完成门禁。\n- 不做什么: 不让标准任务绕过 spec/plan/check/review/journal；不做不可见的全自动降级。\n- 成本: 增加一个命令、profile 字段/策略、路由分支、测试和文档维护。\n- 风险: quick 被滥用绕过治理；现有 done/agent done 路径出现 profile 回归；历史任务缺少 profile 字段时兼容问题。\n- 回滚方案: 移除 quick 命令和 profile-aware routing；保留现有 standard done/check/review 行为。\n- 用户确认: 2026-06-16 用户回复“同意，帮我按照这个方案进行开发”。\n\n## 5. 验收标准\n\n- [ ] AC-1: `docpath quick \"Fix typo\"` creates an active quick task with a real task id and minimal durable evidence.\n- [ ] AC-2: `docpath next --agent` for an active quick task recommends editing/check/done flow instead of `docpath plan`.\n- [ ] AC-3: `docpath done` for quick tasks requires passing check evidence by default and does not require `review_pass`.\n- [ ] AC-4: Completion output/evidence records that review was skipped by quick profile.\n- [ ] AC-5: Standard Level 2/3 tasks still require the existing lifecycle and review behavior.\n- [ ] AC-6: Quick escalation guard detects oversized/risky changes and reports a clear upgrade path.\n- [ ] AC-7: Focused tests pass for quick command creation, profile policy, routing, and standard-task regression.\n\n## 6. 风险与依赖\n\n- Existing state readers may ignore unknown profile fields; implementation must keep backward compatibility.\n- `done` delegates to `agent done`; profile policy may need changes in the lower-level command, not only the wrapper.\n- `check` has existing level-based behavior; quick tasks should avoid triggering standard task document gates.\n- Workspace has an existing install manifest drift unrelated to this task; do not mix that into the implementation scope.\n\n## 7. 后续工作流\n\n- Run `docpath write-plan --stdin` with an implementation plan.\n- Run `docpath start S1` and use `docpath step done` after meaningful steps.\n- Run `docpath check`, `docpath review`, and `docpath done` before completion.\n",
+  "generated_at": "2026-06-16T04:36:17.959Z",
+  "scope": {
+    "included": [
+      "New operational CLI command for quick tasks.",
+      "Workflow profile/policy model sufficient for quick vs standard completion behavior.",
+      "Runtime route changes for quick active tasks.",
+      "Profile-aware done/agent done behavior.",
+      "Minimal quick task evidence and audit output.",
+      "Tests and documentation for the new lifecycle."
+    ],
+    "excluded": [
+      "Fully automatic task size classification for all tasks.",
+      "Replacing backlog/spec/plan for standard tasks.",
+      "New UI/dashboard work beyond displaying existing state if already automatic.",
+      "Broad refactors of state storage unrelated to quick profile support.",
+      "Network or external service integrations."
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "2026-06-16 用户回复“同意，帮我按照这个方案进行开发”。",
+    "decision_brief_markdown": "- 当前问题: DocPath 对微型任务和大型任务使用同样重的生命周期，治理成本和任务规模不匹配。\n- 目标: 为微型任务提供低摩擦但仍可审计的快车道。\n- 背景: 用户明确指出治理成本与任务规模匹配问题，并确认采用 quick + profile/dynamic gating 方案。\n- 可选方案: 纯 bypass；`docpath quick` 压缩生命周期；完全动态降级门禁。\n- 推荐方案: 对外新增 `docpath quick`，对内用 workflow profile/gate policy 驱动路由和完成门禁。\n- 不做什么: 不让标准任务绕过 spec/plan/check/review/journal；不做不可见的全自动降级。\n- 成本: 增加一个命令、profile 字段/策略、路由分支、测试和文档维护。\n- 风险: quick 被滥用绕过治理；现有 done/agent done 路径出现 profile 回归；历史任务缺少 profile 字段时兼容问题。\n- 回滚方案: 移除 quick 命令和 profile-aware routing；保留现有 standard done/check/review 行为。\n- 用户确认: 2026-06-16 用户回复“同意，帮我按照这个方案进行开发”。"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Add a `docpath quick <title>` command that creates a lightweight active task for tiny work without requiring backlog promote, full spec, or full plan.",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Persist an explicit workflow profile for quick tasks so downstream commands can apply profile-aware routing and gates.",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "Update `next --agent` output for quick tasks so it routes agents directly to making the change and completing with `docpath done`, not to spec/plan generation.",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "Update completion policy and `done` behavior so quick tasks require successful check evidence by default, skip full review by profile, and record the skip reason/audit output.",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "Write minimal quick task evidence in task files or workspace evidence so `changes --agent` and future sessions can understand why review was not required.",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "Add escalation safeguards so quick tasks fail loud or instruct upgrade when scope/risk exceeds the quick profile boundary.",
+      "done": false
+    },
+    {
+      "id": "FR-7",
+      "text": "Update command registration/help/docs/agent guidance so humans and agents know when to use quick versus the standard lifecycle.",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "Preserve current standard/strict workflow semantics for existing tasks.",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "Do not weaken check/review behavior for Level 2/3 tasks.",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "Keep the implementation JSON-first/CLI-first and avoid hand-editing runtime views.",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "Keep command behavior fail-loud when active state is ambiguous or a quick task exceeds boundaries.",
+      "done": false
+    },
+    {
+      "id": "NFR-5",
+      "text": "Cover new command and policy behavior with focused tests.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`docpath quick \"Fix typo\"` creates an active quick task with a real task id and minimal durable evidence.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`docpath next --agent` for an active quick task recommends editing/check/done flow instead of `docpath plan`.",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`docpath done` for quick tasks requires passing check evidence by default and does not require `review_pass`.",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "Completion output/evidence records that review was skipped by quick profile.",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "Standard Level 2/3 tasks still require the existing lifecycle and review behavior.",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "Quick escalation guard detects oversized/risky changes and reports a clear upgrade path.",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "Focused tests pass for quick command creation, profile policy, routing, and standard-task regression.",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: DocPath 对微型任务和大型任务使用同样重的生命周期，治理成本和任务规模不匹配。\n- 目标: 为微型任务提供低摩擦但仍可审计的快车道。\n- 背景: 用户明确指出治理成本与任务规模匹配问题，并确认采用 quick + profile/dynamic gating 方案。\n- 可选方案: 纯 bypass；`docpath quick` 压缩生命周期；完全动态降级门禁。\n- 推荐方案: 对外新增 `docpath quick`，对内用 workflow profile/gate policy 驱动路由和完成门禁。\n- 不做什么: 不让标准任务绕过 spec/plan/check/review/journal；不做不可见的全自动降级。\n- 成本: 增加一个命令、profile 字段/策略、路由分支、测试和文档维护。\n- 风险: quick 被滥用绕过治理；现有 done/agent done 路径出现 profile 回归；历史任务缺少 profile 字段时兼容问题。\n- 回滚方案: 移除 quick 命令和 profile-aware routing；保留现有 standard done/check/review 行为。\n- 用户确认: 2026-06-16 用户回复“同意，帮我按照这个方案进行开发”。"
+}

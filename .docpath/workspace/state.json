@@ -1,11 +1,11 @@
 {
   "level": 3,
   "workflow_profile": "standard",
-  "task_id": "T-20260617-harden-docpath-workflow-friction-found-i",
-  "task_title": "Harden DocPath workflow friction found in Sentinel flow-runner",
-  "phase": "completed",
-  "gate": "review_pass",
-  "current_step": "知识归档完成",
-  "started_at": "2026-06-17T14:17:35.002Z",
-  "updated_at": "2026-06-17T14:17:35.001Z"
+  "task_id": "T-20260618-diagnose-tracked-ignored-docpath-runtime",
+  "task_title": "Diagnose tracked ignored DocPath runtime files",
+  "phase": "executing",
+  "gate": "none",
+  "current_step": "S2",
+  "started_at": "2026-06-18T00:24:50.622Z",
+  "updated_at": "2026-06-18T00:25:54.185Z"
 }

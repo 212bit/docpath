@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "task_id": "T-20260612-journal-decisions-md-adr",
+  "task_title": "收紧 journal 到 decisions.md 的 ADR 写入规则",
+  "generated_at": "2026-06-12T19:00:05.819Z",
+  "trunk": [
+    {
+      "id": "goal",
+      "label": "目标",
+      "path": ".docpath/tasks/current/spec.md",
+      "summary": "`docpath learn` 当前会把 `完成 N/N 步，阻塞 N 步` 这类 journal 流水统计误识别为可沉淀经验，并已将低信号内容写入 `.docpath/rules/style.md` 的 auto-learn 区域。现有 `style.md` 已明确长期规则沉淀标准：只保留可复用、可执行、能降低未来错误概率的经验；流水统计只能留在 journal/archive；规则描述必须包含触发条件、期望行为和边界。 本任务修复 learn 的候选过滤与分类逻辑，清理当前误归档规则，并保证执行后不会因为已处理候选继续阻塞 `docpath next --agent`。"
+    },
+    {
+      "id": "scope",
+      "label": "范围",
+      "path": ".docpath/tasks/current/spec.md",
+      "summary": "包含: - 修改 `src/commands/learn.ts` 的候选解析、低信号过滤、规则质量判断、分类统计和执行后清理。 - 补充或调整 `tests/learn.test.mjs` 覆盖低信号过滤、候选清理、dry-run 分类预览和高信号规则保留。 - 清理 `.docpath/rules/style.md` 的错误 auto-learn 内容。 - 清空当前 `.docpath/workspace/lesson-candidates.md`。"
+    },
+    {
+      "id": "acceptance",
+      "label": "验收",
+      "path": ".docpath/tasks/current/spec.md",
+      "summary": "- [ ] AC-1: `docpath learn --dry-run` 对当前低信号候选显示为跳过或归档，不再提示可新增长期 rules。 - [ ] AC-2: `docpath learn` 非 dry-run 后清空 `.docpath/workspace/lesson-candidates.md` 的已处理候选。 - [ ] AC-3: `.docpath/rules/style.md` 不再包含 `完成 6/6 步，阻塞 0 步` 或 `推荐保留本次任务的执行经验` 这类低信号 auto-learn 内容。 - [ ] AC-4: 高信号 lesson 只有在具备触发条件、期望行为、边界时才写入长期 rules；缺失三要素时进入归档或跳过。 - [ ] AC-5: 测试覆盖低信号过滤、执行后清理、dry-run 分类统计和高信号保留路径。"
+    },
+    {
+      "id": "decision-brief",
+      "label": "Decision Brief",
+      "path": ".docpath/tasks/current/spec.md",
+      "summary": "- 当前问题: `learn` 会把低信号流水统计写入长期 rules，并保留候选导致后续路线反复提示 learn。 - 目标: 让 `learn` 只沉淀高信号、可复用、可执行的规则，并清理已处理候选。 - 背景: `style.md` 已定义长期规则标准，但实现未按该标准过滤。 - 可选方案: 继续关键词提取；CLI 直接调用外部 LLM；实现本地确定性分类并保留宿主 Agent/未来 LLM 扩展点。 - 推荐方案: 实现本地确定性分类，按触发条件、期望行为、边界判断高信号 lesson；低信号项归档或跳过，非 dry-run 后清理候选。 - 不做什么: 不新增外部 LLM SDK、网络调用或密钥配置；不改变 rules marker 协议。 - 成本: 需要调整 learn 解析/输出与测试，后续维护分类规则。"
+    }
+  ],
+  "leaves": [
+    {
+      "id": "plan",
+      "label": "执行计划",
+      "path": ".docpath/tasks/current/plan.md",
+      "summary": "3/3 完成；计划步骤已全部完成"
+    },
+    {
+      "id": "last-check",
+      "label": "最近检查",
+      "path": ".docpath/workspace/last-check.md",
+      "summary": "✅ PASS · 2026-06-12T17:30:32.646Z"
+    },
+    {
+      "id": "review",
+      "label": "最近审查",
+      "path": ".docpath/workspace/review.md",
+      "summary": "2026-06-12T17:30:39.870Z"
+    },
+    {
+      "id": "breadcrumb",
+      "label": "最近事件",
+      "path": ".docpath/workspace/breadcrumb.md",
+      "summary": "journal: 知识归档完成 (3/3 步)"
+    },
+    {
+      "id": "deliverables",
+      "label": "交付物索引",
+      "path": ".docpath/tasks/current/deliverables.json",
+      "summary": "未登记 deliverables"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-16T06:41:36.560Z",
+    "updated_at": "2026-06-16T06:41:36.560Z",
+    "content_sha256": "8b3341059e0c26bb33058e5105e4dfd75b6ffa5c585ab6f68e8c6a8bc6a451be"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: Map Current Workflow Touchpoints\n- **描述**: Inspect the command and utility paths for start/go/step/current_step, done gate execution, next routing, docs-index stale checks, changes/commit staging, review/install reporting, and quick guard policy.\n- **验收条件**: Identify concrete files/functions to change and confirm no runtime state file needs hand editing.\n- **依赖**: 无\n\n### S2: Fix Step Routing And Pending-Done Priority\n- **描述**: Align current-step handling between `start`, `go --step`, and `step done`; adjust next-route selection so pending-done is secondary until all plan steps are complete.\n- **验收条件**: Focused tests cover multi-step start/done/next transitions and fail before the fix.\n- **依赖**: S1\n\n### S3: Improve Done Gate Reuse And Profile Visibility\n- **描述**: Add bounded reuse of fresh successful check/review evidence in `done`; expose active workflow profile and gate policy in status/done machine output.\n- **验收条件**: Tests verify safe evidence reuse, rejection reason output, and profile/gate policy fields.\n- **依赖**: S1\n\n### S4: Reduce Generated-Artifact And Drift Noise\n- **描述**: Exclude volatile workspace rendered Markdown from docs-index stale warnings; make install/review drift output distinguish baseline/pre-existing noise from current-task regressions where practical.\n- **验收条件**: Tests show generated runtime views do not trigger stale docs-index warnings and reporting carries baseline/current classification fields or clear labels.\n- **依赖**: S1\n\n### S5: Consume Canonical Evidence Staging Plans\n- **描述**: Let closeout/staging tooling apply the canonical evidence plan produced by `changes --agent`, force-add canonical ignored evidence, and exclude `.docpath/tasks/current/*` aliases by default.\n- **验收条件**: Tests cover staging ignored canonical evidence and excluding alias evidence; CLI output explains what was staged.\n- **依赖**: S1\n\n### S6: Clarify Quick Scope Guard Policy\n- **描述**: Improve quick guard configurability and document-only allowances while retaining conservative defaults for broad source changes.\n- **验收条件**: Tests cover allowed document-only edits, configured allowlists, and broad source edit rejection.\n- **依赖**: S1\n\n### S7: Run Full Verification And Close Task\n- **描述**: Run project tests/typecheck plus DocPath check/review/done; document any residual warning and close the workflow task.\n- **验收条件**: `pnpm test`, `pnpm run typecheck`, `docpath check`, `docpath review`, and `docpath done` pass or residuals are explicitly documented.\n- **依赖**: S2, S3, S4, S5, S6\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n- [x] S5\n- [x] S6\n- [x] S7\n\n## 依赖关系图\nS1 → S2 → S7\nS1 → S3 → S7\nS1 → S4 → S7\nS1 → S5 → S7\nS1 → S6 → S7\n",
+  "generated_at": "2026-06-16T06:41:36.560Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Map Current Workflow Touchpoints",
+      "description": "Inspect the command and utility paths for start/go/step/current_step, done gate execution, next routing, docs-index stale checks, changes/commit staging, review/install reporting, and quick guard policy.",
+      "acceptance": "Identify concrete files/functions to change and confirm no runtime state file needs hand editing.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Fix Step Routing And Pending-Done Priority",
+      "description": "Align current-step handling between `start`, `go --step`, and `step done`; adjust next-route selection so pending-done is secondary until all plan steps are complete.",
+      "acceptance": "Focused tests cover multi-step start/done/next transitions and fail before the fix.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Improve Done Gate Reuse And Profile Visibility",
+      "description": "Add bounded reuse of fresh successful check/review evidence in `done`; expose active workflow profile and gate policy in status/done machine output.",
+      "acceptance": "Tests verify safe evidence reuse, rejection reason output, and profile/gate policy fields.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Reduce Generated-Artifact And Drift Noise",
+      "description": "Exclude volatile workspace rendered Markdown from docs-index stale warnings; make install/review drift output distinguish baseline/pre-existing noise from current-task regressions where practical.",
+      "acceptance": "Tests show generated runtime views do not trigger stale docs-index warnings and reporting carries baseline/current classification fields or clear labels.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "Consume Canonical Evidence Staging Plans",
+      "description": "Let closeout/staging tooling apply the canonical evidence plan produced by `changes --agent`, force-add canonical ignored evidence, and exclude `.docpath/tasks/current/*` aliases by default.",
+      "acceptance": "Tests cover staging ignored canonical evidence and excluding alias evidence; CLI output explains what was staged.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "Clarify Quick Scope Guard Policy",
+      "description": "Improve quick guard configurability and document-only allowances while retaining conservative defaults for broad source changes.",
+      "acceptance": "Tests cover allowed document-only edits, configured allowlists, and broad source edit rejection.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S7",
+      "name": "Run Full Verification And Close Task",
+      "description": "Run project tests/typecheck plus DocPath check/review/done; document any residual warning and close the workflow task.",
+      "acceptance": "`pnpm test`, `pnpm run typecheck`, `docpath check`, `docpath review`, and `docpath done` pass or residuals are explicitly documented.",
+      "dependencies": "S2, S3, S4, S5, S6",
+      "status": "done"
+    }
+  ]
+}

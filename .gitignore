@@ -4,13 +4,13 @@
 # Build output
 /dist/
 
-# DocPath workspace
+# DocPath runtime state
 #
-# Keep .docpath ignored by default. Runtime state, generated indexes, installed
-# adapter mirrors, backlog, and task evidence can be very large/noisy.
-# When a task requires durable evidence, run `docpath changes --agent` and
-# force-add only the exact canonical paths it recommends.
-/.docpath/
+# Keep local runtime files out of Git while leaving durable DocPath evidence
+# such as backlog items, completed tasks, rules, protocols, and templates visible.
+/.docpath/workspace/
+/.docpath/.install-meta.json
+/.docpath/tasks/current/
 
 # Local agent/tool state
 /.claude/
@@ -18,4 +18,3 @@
 
 # DocPath worktrees
 /.worktrees/
-

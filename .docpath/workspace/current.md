@@ -3,27 +3,30 @@
 ```yaml
 level: 3
 workflow_profile: standard
-state: completed          # 当前状态
-task_id: T-20260617-harden-docpath-workflow-friction-found-i
-task_title: Harden DocPath workflow friction found in Sentinel flow-runner
-phase: completed
-gate: review_pass
-current_step: 知识归档完成
-started_at: 2026-06-17T14:17:35.002Z
-updated_at: 2026-06-17T14:17:35.001Z
+state: executing          # 当前状态
+task_id: T-20260618-diagnose-tracked-ignored-docpath-runtime
+task_title: Diagnose tracked ignored DocPath runtime files
+phase: executing
+gate: none
+current_step: S2
+started_at: 2026-06-18T00:24:50.622Z
+updated_at: 2026-06-18T00:25:54.185Z
 ```
 
-> 📖 规约: [spec.md](../tasks/current/spec.md)
-> 📋 计划: [plan.md](../tasks/current/plan.md)
+> 📖 规约: [spec.md](../tasks/T-20260618-diagnose-tracked-ignored-docpath-runtime/spec.md)
+> 📋 计划: [plan.md](../tasks/T-20260618-diagnose-tracked-ignored-docpath-runtime/plan.md)
 
 ## ✅ 执行检查清单
 
-- [ ] 暂无 plan.md checklist，请补充 `.docpath/tasks/current/plan.md`
+- [x] S1: Inspect existing Git health and command surfaces
+- [ ] S2: Tighten DocPath ignore rules
+- [ ] S3: Add tracked ignored runtime diagnostic
+- [ ] S4: Verify behavior and closeout gates
 
 ## 🧾 最近验证证据
 
 - Last Check: [last-check.md](./last-check.md) — ✅ PASS · 11 项 · 2026-06-17T14:16:59.249Z
-- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — review · 状态: done · 代码审查: 0 错误, 7 警告, 3 提示
+- Breadcrumb: [breadcrumb.md](./breadcrumb.md) — S2 · 状态: in_progress · 开始执行: Tighten DocPath ignore rules
 
 ## 🔄 同步说明
 

@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-14T08:20:18.092Z",
+    "updated_at": "2026-06-14T08:20:18.092Z",
+    "content_sha256": "99a54ce38f6b6cae28ff49ef400014c06b6a39f8e835513a28eeeb0eef6c5e5d"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: 固化规格与并发边界\n- **描述**: 核对 spec、现有 session/lock/breadcrumb/plan-sync 代码路径，明确 MVP 不做 multi-active task 和 status --team。\n- **验收条件**: spec 包含 Decision Brief 与用户确认；计划拆成可执行工程步骤；不会直接进入未确认范围。\n- **依赖**: 无\n\n### S2: 实现 session 与 lease 基础设施\n- **描述**: 新增 session id 解析、session 元数据、task/step lease 获取与 stale 接管能力，并保持默认兼容 session。\n- **验收条件**: 新模块可在无 session 参数时兼容运行；不同 session 争用同一 task/step 会 fail loud；stale lease 可被接管。\n- **依赖**: S1\n\n### S3: 接入 agent/go/breadcrumb/plan 写入路径\n- **描述**: 将 session/lease 接入 go、agent enter/step/handoff、runtime breadcrumb 写入；为 breadcrumb 与 plan checklist RMW 加锁；扩展 breadcrumb schema 与 Markdown 视图。\n- **验收条件**: breadcrumb JSONL/Markdown 带 session 信息且兼容旧记录；go/agent step 触发 lease 检查；plan sync 并发写入不丢失。\n- **依赖**: S2\n\n### S4: 增加测试与协议文档\n- **描述**: 增加 session/lease/breadcrumb/plan-sync 相关测试，补充 agent 协议或设计文档说明 MVP 边界。\n- **验收条件**: 测试覆盖 session 归属、lease 冲突、stale lease、旧 breadcrumb 兼容、plan sync 锁；文档说明 status --team 和 multi-active task 延后。\n- **依赖**: S3\n\n### S5: 运行质量门禁并归档\n- **描述**: 运行针对性测试、全量可用测试、docpath check/review/agent done，修复发现的问题。\n- **验收条件**: 质量门禁通过；任务进入 completed/review_pass/journal 归档状态。\n- **依赖**: S4\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n- [x] S5\n\n## 依赖关系图\nS1 -> S2 -> S3 -> S4 -> S5\n",
+  "generated_at": "2026-06-14T08:20:18.092Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "固化规格与并发边界",
+      "description": "核对 spec、现有 session/lock/breadcrumb/plan-sync 代码路径，明确 MVP 不做 multi-active task 和 status --team。",
+      "acceptance": "spec 包含 Decision Brief 与用户确认；计划拆成可执行工程步骤；不会直接进入未确认范围。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 session 与 lease 基础设施",
+      "description": "新增 session id 解析、session 元数据、task/step lease 获取与 stale 接管能力，并保持默认兼容 session。",
+      "acceptance": "新模块可在无 session 参数时兼容运行；不同 session 争用同一 task/step 会 fail loud；stale lease 可被接管。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "接入 agent/go/breadcrumb/plan 写入路径",
+      "description": "将 session/lease 接入 go、agent enter/step/handoff、runtime breadcrumb 写入；为 breadcrumb 与 plan checklist RMW 加锁；扩展 breadcrumb schema 与 Markdown 视图。",
+      "acceptance": "breadcrumb JSONL/Markdown 带 session 信息且兼容旧记录；go/agent step 触发 lease 检查；plan sync 并发写入不丢失。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "增加测试与协议文档",
+      "description": "增加 session/lease/breadcrumb/plan-sync 相关测试，补充 agent 协议或设计文档说明 MVP 边界。",
+      "acceptance": "测试覆盖 session 归属、lease 冲突、stale lease、旧 breadcrumb 兼容、plan sync 锁；文档说明 status --team 和 multi-active task 延后。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "运行质量门禁并归档",
+      "description": "运行针对性测试、全量可用测试、docpath check/review/agent done，修复发现的问题。",
+      "acceptance": "质量门禁通过；任务进入 completed/review_pass/journal 归档状态。",
+      "dependencies": "S4",
+      "status": "done"
+    }
+  ]
+}

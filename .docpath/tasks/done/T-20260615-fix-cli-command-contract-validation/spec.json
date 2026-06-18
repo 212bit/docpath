@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-15T16:19:52.532Z",
+    "updated_at": "2026-06-15T16:19:52.532Z",
+    "content_sha256": "15cbfea7b93b98d18de64ba1af728b8473bf3c5db0f416787f5b328cde8f0052"
+  },
+  "task_id": "T-20260615-fix-cli-command-contract-validation",
+  "backlog_id": "R-185",
+  "title": "T-20260615-fix-cli-command-contract-validation - Fix CLI command contract validation",
+  "markdown": "# T-20260615-fix-cli-command-contract-validation - Fix CLI command contract validation\n\n> backlog_id: R-185\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\n## 背景\n\nReview found CLI command-contract drift: invalid review/diff scopes silently fall back, several numeric options accept NaN or partial values, review --no-ai is advertised without behavior, and write-spec exposes an ignored --section flag.\n\n## 验收\n\nInvalid enum and numeric CLI inputs fail loudly with clear messages; stale no-op options are removed or made honest; regression tests cover the reviewed command-surface failures.\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: Fix CLI command contract validation\n  - 来源 backlog: R-185\n\n### 非功能需求\n- [ ] NFR-1: 保持与现有 DocPath 工作流兼容\n\n## 3. 范围界定\n\n### 包含\n- 严格校验 `review --scope`、`diff --scope`、`diff --step`。\n- 严格校验数值型 CLI 参数：`context --max-tokens`、`reveal --level`、`compact --max-entries`、`agent handoff --max-entries`、`dashboard --port`。\n- 移除或修正已注册但无实际行为的 CLI 选项：`review --no-ai`、`write-spec --section`。\n- 增加回归测试覆盖上述命令契约。\n\n### 不包含\n- 不引入 LLM review 实现。\n- 不改变 DocPath 状态机语义或现有成功路径。\n- 不重构 CLI 注册架构。\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [ ] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### Decision Brief\n- 当前问题: 部分 CLI 命令契约与实际行为漂移，导致无效参数静默回退或无效选项被接受。\n- 目标: 让 CLI 对无效 enum/number 参数 fail-loud，并移除无实际行为的公开选项。\n- 背景: 用户要求 review existing cli commands 后确认 “fix it”。\n- 可选方案: 保留兼容的静默回退 / 增加警告 / 改为严格报错。\n- 推荐方案: 对明确文档化的 enum/number 输入采用严格报错；删除未实现的公开选项。\n- 不做什么: 不实现 AI review；不扩大为 CLI 框架重构；不改变正常合法命令路径。\n- 成本: 依赖无效参数静默回退的调用方需要修正参数。\n- 风险: 少数脚本如果传入拼写错误但依赖旧回退行为，会从隐式成功变为失败。\n- 回滚方案: 恢复对应注册层和命令层校验变更，保留测试更新作为行为说明。\n- 用户确认: 用户在 review 结果后明确要求 “fix it”。\n\n## 5. 验收标准\n\n- [ ] AC-1: 无效 `review --scope` / `diff --scope` / `diff --step` 会清晰失败。\n- [ ] AC-2: 无效数值参数会清晰失败，不会把 `NaN` 传入命令实现。\n- [ ] AC-3: `review --no-ai` 和 `write-spec --section` 不再作为无效公开契约出现。\n- [ ] AC-4: 回归测试覆盖上述命令契约并通过。\n\n---\n\n*此文件由 `docpath backlog promote` 生成。*\n",
+  "generated_at": "2026-06-15T16:19:52.532Z",
+  "scope": {
+    "included": [
+      "严格校验 `review --scope`、`diff --scope`、`diff --step`。",
+      "严格校验数值型 CLI 参数：`context --max-tokens`、`reveal --level`、`compact --max-entries`、`agent handoff --max-entries`、`dashboard --port`。",
+      "移除或修正已注册但无实际行为的 CLI 选项：`review --no-ai`、`write-spec --section`。",
+      "增加回归测试覆盖上述命令契约。"
+    ],
+    "excluded": [
+      "不引入 LLM review 实现。",
+      "不改变 DocPath 状态机语义或现有成功路径。",
+      "不重构 CLI 注册架构。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "用户在 review 结果后明确要求 “fix it”。",
+    "decision_brief_markdown": "- 当前问题: 部分 CLI 命令契约与实际行为漂移，导致无效参数静默回退或无效选项被接受。\n- 目标: 让 CLI 对无效 enum/number 参数 fail-loud，并移除无实际行为的公开选项。\n- 背景: 用户要求 review existing cli commands 后确认 “fix it”。\n- 可选方案: 保留兼容的静默回退 / 增加警告 / 改为严格报错。\n- 推荐方案: 对明确文档化的 enum/number 输入采用严格报错；删除未实现的公开选项。\n- 不做什么: 不实现 AI review；不扩大为 CLI 框架重构；不改变正常合法命令路径。\n- 成本: 依赖无效参数静默回退的调用方需要修正参数。\n- 风险: 少数脚本如果传入拼写错误但依赖旧回退行为，会从隐式成功变为失败。\n- 回滚方案: 恢复对应注册层和命令层校验变更，保留测试更新作为行为说明。\n- 用户确认: 用户在 review 结果后明确要求 “fix it”。"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Fix CLI command contract validation",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "无效 `review --scope` / `diff --scope` / `diff --step` 会清晰失败。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "无效数值参数会清晰失败，不会把 `NaN` 传入命令实现。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`review --no-ai` 和 `write-spec --section` 不再作为无效公开契约出现。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "回归测试覆盖上述命令契约并通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: 部分 CLI 命令契约与实际行为漂移，导致无效参数静默回退或无效选项被接受。\n- 目标: 让 CLI 对无效 enum/number 参数 fail-loud，并移除无实际行为的公开选项。\n- 背景: 用户要求 review existing cli commands 后确认 “fix it”。\n- 可选方案: 保留兼容的静默回退 / 增加警告 / 改为严格报错。\n- 推荐方案: 对明确文档化的 enum/number 输入采用严格报错；删除未实现的公开选项。\n- 不做什么: 不实现 AI review；不扩大为 CLI 框架重构；不改变正常合法命令路径。\n- 成本: 依赖无效参数静默回退的调用方需要修正参数。\n- 风险: 少数脚本如果传入拼写错误但依赖旧回退行为，会从隐式成功变为失败。\n- 回滚方案: 恢复对应注册层和命令层校验变更，保留测试更新作为行为说明。\n- 用户确认: 用户在 review 结果后明确要求 “fix it”。"
+}

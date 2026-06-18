@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-16T05:04:16.864Z",
+    "updated_at": "2026-06-16T05:04:16.864Z",
+    "content_sha256": "6aa83055573f0358980fccbb36a4d82775584fa698e65158d8d9e707ce75c7c1"
+  },
+  "title": "Plan: Add quick fast-track workflow profile",
+  "markdown": "# Plan: Add quick fast-track workflow profile\n\n## 执行计划\n\n- [x] S1: Inspect current state, agent done, runtime routing, and test patterns\n- [x] S2: Add workflow profile and quick task creation command\n- [x] S3: Make runtime routing and completion gates profile-aware\n- [x] S4: Add quick escalation guard and durable audit evidence\n- [x] S5: Add tests and update docs/agent guidance\n- [x] S6: Run verification gates and close task evidence\n\n### S1: Inspect current state, agent done, runtime routing, and test patterns\n- **描述**: Read the specific implementation paths for state persistence, agent/done closeout, next routing, check/review evidence, and existing tests before editing.\n- **验收条件**: Affected files and expected integration points are identified; no code edits happen before this inspection.\n- **依赖**: 无\n\n### S2: Add workflow profile and quick task creation command\n- **描述**: Introduce a backward-compatible profile model and register `docpath quick <title>` to create a minimal active quick task with durable task evidence.\n- **验收条件**: The command creates a task id, binds current/canonical task files, sets profile/level appropriately, and appears in command metadata/help.\n- **依赖**: S1\n\n### S3: Make runtime routing and completion gates profile-aware\n- **描述**: Update `next --agent`, `done`, and lower-level completion policy so quick tasks route directly to edit/check/done and skip review by policy while standard tasks keep existing behavior.\n- **验收条件**: Quick route no longer asks for plan; standard route remains unchanged; quick completion requires check evidence but not review_pass.\n- **依赖**: S2\n\n### S4: Add quick escalation guard and durable audit evidence\n- **描述**: Add a scoped guard for quick task closeout and record review skip/minimal journal evidence in a way future commands can inspect.\n- **验收条件**: Oversized or risky quick changes fail loud with upgrade guidance; quick closeout records why review was skipped.\n- **依赖**: S3\n\n### S5: Add tests and update docs/agent guidance\n- **描述**: Add focused tests for quick command creation, next routing, completion policy, and standard-task regression; update docs/protocol text for when quick is appropriate.\n- **验收条件**: Tests cover the new lifecycle and docs describe quick vs standard boundaries.\n- **依赖**: S4\n\n### S6: Run verification gates and close task evidence\n- **描述**: Run the project test/check commands, fix failures, then run DocPath check/review/done.\n- **验收条件**: Verification passes or residual failures are clearly documented; DocPath task is closed with evidence.\n- **依赖**: S5\n",
+  "generated_at": "2026-06-16T05:04:16.864Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Inspect current state, agent done, runtime routing, and test patterns",
+      "description": "Read the specific implementation paths for state persistence, agent/done closeout, next routing, check/review evidence, and existing tests before editing.",
+      "acceptance": "Affected files and expected integration points are identified; no code edits happen before this inspection.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Add workflow profile and quick task creation command",
+      "description": "Introduce a backward-compatible profile model and register `docpath quick <title>` to create a minimal active quick task with durable task evidence.",
+      "acceptance": "The command creates a task id, binds current/canonical task files, sets profile/level appropriately, and appears in command metadata/help.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Make runtime routing and completion gates profile-aware",
+      "description": "Update `next --agent`, `done`, and lower-level completion policy so quick tasks route directly to edit/check/done and skip review by policy while standard tasks keep existing behavior.",
+      "acceptance": "Quick route no longer asks for plan; standard route remains unchanged; quick completion requires check evidence but not review_pass.",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Add quick escalation guard and durable audit evidence",
+      "description": "Add a scoped guard for quick task closeout and record review skip/minimal journal evidence in a way future commands can inspect.",
+      "acceptance": "Oversized or risky quick changes fail loud with upgrade guidance; quick closeout records why review was skipped.",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "Add tests and update docs/agent guidance",
+      "description": "Add focused tests for quick command creation, next routing, completion policy, and standard-task regression; update docs/protocol text for when quick is appropriate.",
+      "acceptance": "Tests cover the new lifecycle and docs describe quick vs standard boundaries.",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "Run verification gates and close task evidence",
+      "description": "Run the project test/check commands, fix failures, then run DocPath check/review/done.",
+      "acceptance": "Verification passes or residual failures are clearly documented; DocPath task is closed with evidence.",
+      "dependencies": "S5",
+      "status": "done"
+    }
+  ]
+}

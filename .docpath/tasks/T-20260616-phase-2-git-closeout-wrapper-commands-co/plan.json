@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-16T04:17:35.863Z",
+    "updated_at": "2026-06-16T04:17:35.863Z",
+    "content_sha256": "04feafce1e00af4e1922ea5bc33158e009644d75bff94e1c8e0505033c1c8c2b"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: 梳理 Phase 2: Git closeout wrapper commands (commit/stage)\n- **描述**: 根据 spec 明确 Phase 2: Git closeout wrapper commands (commit/stage) 的实现边界和验收口径。\n- **验收条件**: 生成的 spec 可直接进入 `docpath plan`\n- **依赖**: 无\n\n### S2: 实现 Phase 2: Git closeout wrapper commands (commit/stage)\n- **描述**: 在现有架构内完成 Phase 2: Git closeout wrapper commands (commit/stage) 的代码与文档更新。\n- **验收条件**: Phase 2: Git closeout wrapper commands (commit/stage) 已实现，并保持现有工作流兼容。\n- **依赖**: S1\n\n## Checklist\n- [x] S1\n- [x] S2\n\n## 依赖关系图\nS1 → S2\n",
+  "generated_at": "2026-06-16T04:17:35.863Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Phase 2: Git closeout wrapper commands (commit/stage)",
+      "description": "根据 spec 明确 Phase 2: Git closeout wrapper commands (commit/stage) 的实现边界和验收口径。",
+      "acceptance": "生成的 spec 可直接进入 `docpath plan`",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Phase 2: Git closeout wrapper commands (commit/stage)",
+      "description": "在现有架构内完成 Phase 2: Git closeout wrapper commands (commit/stage) 的代码与文档更新。",
+      "acceptance": "Phase 2: Git closeout wrapper commands (commit/stage) 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}
