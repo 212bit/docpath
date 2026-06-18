@@ -24,9 +24,10 @@ fi
 ## Follow-up
 
 1. Read the generated `agent_context` YAML.
-2. Treat listed files and context entries as indexes; do not open every generated Markdown view by default.
-3. Continue with `/docpath-next` unless `recommended_command` already gives a more specific action.
-4. Use `/docpath-reveal` or `/docpath-context --max-tokens <n> --topic <keyword>` when deeper context is required.
+2. Follow `context_policy`: listed files and context entries are indexes; do not open every generated Markdown view by default.
+3. Treat `command_effects.updates` and legacy `must_update` as files updated by DocPath commands, not as hand-edit targets.
+4. Continue with `/docpath-next` unless `recommended_command` already gives a more specific action.
+5. Use `/docpath-reveal` or `/docpath-context --max-tokens <n> --topic <keyword>` when deeper context is required.
 
 ## Expected Result
 
