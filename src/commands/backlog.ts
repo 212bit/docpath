@@ -27,6 +27,7 @@ import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { archivedTaskDir, canonicalTaskRelativePath, canonicalTaskDir, clearCurrentTaskAlias, writeActiveTaskFile } from '../utils/task-files.js';
 import { emitNextHint } from '../utils/next-hint.js';
+import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 
 interface BacklogCommandOptions {
   cwd: string;
@@ -601,6 +602,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   if (current && current.phase !== 'idle' && current.phase !== 'completed') {
     throw new Error(`docpath backlog promote: 当前已有活跃任务（phase=${current.phase}），请先 done，或用 docpath task abort/reset 显式清理当前任务`);
   }
+  assertCleanWorktreeForNewTask(options.cwd, 'docpath backlog promote');
 
   const item = await readBacklogItem(options.cwd, options.id.trim());
   if (!item) {

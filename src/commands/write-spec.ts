@@ -14,6 +14,7 @@ import { validateSpecContent } from '../utils/doc-parser.js';
 import { writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { canonicalTaskDir, currentTaskDir } from '../utils/task-files.js';
+import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 
 interface WriteSpecOptions {
   cwd: string;
@@ -63,6 +64,9 @@ export async function writeSpecCommand(options: WriteSpecOptions): Promise<void>
   }
 
   const current = await readCurrentState(cwd);
+  if (!current?.task_id || current.phase === 'idle' || current.phase === 'completed') {
+    assertCleanWorktreeForNewTask(cwd, 'docpath write-spec');
+  }
   const taskId = current?.task_id || 'current';
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'spec.md', specContent);
 

@@ -23,6 +23,7 @@ import { readActiveTaskFile } from '../utils/task-files.js';
 import { acquireExecutionLease, releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
+import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
 
 interface GoOptions {
   cwd: string;
@@ -241,6 +242,9 @@ export async function goCommand(options: GoOptions): Promise<void> {
     process.exit(1);
   }
   await assertMajorChangeGateReady(cwd, docpathDir, resolvedTaskId, 'go');
+  if (!status) {
+    assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go');
+  }
   await renderExecutionContext(cwd, tasks, target, current?.level || 0);
   await touchSession(cwd, {
     sessionId: session.sessionId,

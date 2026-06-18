@@ -6,6 +6,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { clearCurrentTaskAlias, currentTaskDir, canonicalTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState, writeCurrentState } from '../utils/workspace.js';
 import { emitNextHint } from '../utils/next-hint.js';
+import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 
 interface QuickOptions {
   cwd: string;
@@ -130,6 +131,7 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
   if (current && current.phase !== 'idle' && current.phase !== 'completed') {
     throw new Error(`docpath quick: 当前已有活跃任务（phase=${current.phase}），请先 done 或 task reset`);
   }
+  assertCleanWorktreeForNewTask(cwd, 'docpath quick');
 
   const taskId = await generateQuickTaskId(docpathDir, title);
   await clearCurrentTaskAlias(docpathDir);

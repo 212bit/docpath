@@ -24,6 +24,7 @@ import { readGitCloseoutSummary, type GitCloseoutSummary } from './git-closeout.
 import { resolveMajorChangeGateStatus, type MajorChangeGateStatus } from './major-change.js';
 import { readLastCheckMarkdown } from './workspace-evidence.js';
 import { gatePolicyForProfile, isQuickProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
+import { detectDirtyWorktree, type DirtyWorktreeReport } from './git-dirty-guard.js';
 
 export interface AgentOutput {
   /** 输出视图: status --agent 是状态快照, next --agent 是下一步路由。 */
@@ -387,6 +388,7 @@ type AgentOutputContext = {
   hasIncompleteSpec: boolean;
   installHealth: InstallDoctorReport | null;
   gitCloseout: GitCloseoutSummary | null;
+  dirtyWorktree: DirtyWorktreeReport;
   majorChangeGate: MajorChangeGateStatus;
   contextIndex: HybridContextIndexSummary | null;
   contextIndexTrunk: HybridContextIndexEntry[] | null;
@@ -460,6 +462,7 @@ function inferNextAction(
   lessonSummary: { pendingCount: number; pendingKeys: string[] },
   hasIncompleteSpec: boolean,
   gitCloseout: GitCloseoutSummary | null,
+  dirtyWorktree: DirtyWorktreeReport,
 ): {
   next_action: string;
   recommended_command: string;
@@ -478,6 +481,22 @@ function inferNextAction(
   const lastCheckPassed = /^\*\*结果\*\*:\s*✅\s*PASS\s*$/m.test(lastCheckContent);
   const hasPendingLessonCandidates = lessonSummary.pendingCount > 0;
   const globalRules = ruleDisplayPaths();
+  const isIdleOrCompleted = currentState === 'idle'
+    || currentState === 'completed'
+    || phase === 'idle'
+    || phase === 'completed';
+
+  if (dirtyWorktree.isGitRepo && dirtyWorktree.dirty && isIdleOrCompleted) {
+    const required = ['.docpath/workspace/current.md'];
+    return {
+      next_action: `当前 Git worktree 有 ${dirtyWorktree.files.length} 个未提交变更，先完成 git closeout 或创建隔离 worktree 后再启动新任务`,
+      recommended_command: 'docpath changes --agent',
+      required_context: required,
+      required_files: required,
+      must_update: [],
+      exit_criteria: 'docpath changes --agent 已确认提交范围；新开发使用 docpath worktree create <slug> 隔离',
+    };
+  }
 
   // 默认值
   let next_action = '评估当前任务状态';
@@ -941,6 +960,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
   const gitCloseout = (state?.state === 'completed' || state?.phase === 'completed')
     ? await readGitCloseoutSummary(cwd, docpathDir, state?.task_id || undefined)
     : null;
+  const dirtyWorktree = detectDirtyWorktree(cwd);
   const majorChangeGate = await resolveMajorChangeGateStatus(cwd, docpathDir, state?.task_id || undefined);
   const contextIndex = await readHybridContextIndexSummary(cwd);
   const contextIndexTrunk = await readHybridContextIndexTrunk(cwd);
@@ -965,6 +985,7 @@ async function loadAgentOutputContext(cwd: string, docpathDir: string): Promise<
     hasIncompleteSpec: hasSpec ? isIncompleteSpec(specContent) : false,
     installHealth,
     gitCloseout,
+    dirtyWorktree,
     majorChangeGate,
     contextIndex,
     contextIndexTrunk,
@@ -1049,6 +1070,7 @@ function inferRouteFromContext(context: AgentOutputContext): ReturnType<typeof i
     context.lessonSummary,
     context.hasIncompleteSpec,
     context.gitCloseout,
+    context.dirtyWorktree,
   );
 
   if (shouldRouteToMajorChangeGate(context, inferred.recommended_command)) {

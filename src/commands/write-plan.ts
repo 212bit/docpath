@@ -13,6 +13,7 @@ import { nextCommand } from './runtime.js';
 import { validatePlanContent } from '../utils/doc-parser.js';
 import { canonicalTaskDir, currentTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState } from '../utils/workspace.js';
+import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 
 interface WritePlanOptions {
   cwd: string;
@@ -59,6 +60,9 @@ export async function writePlanCommand(options: WritePlanOptions): Promise<void>
   }
 
   const current = await readCurrentState(cwd);
+  if (!current?.task_id || current.phase === 'idle' || current.phase === 'completed') {
+    assertCleanWorktreeForNewTask(cwd, 'docpath write-plan');
+  }
   const taskId = current?.task_id || 'current';
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'plan.md', planContent);
 
