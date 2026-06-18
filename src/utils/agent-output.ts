@@ -18,6 +18,9 @@ import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift, t
 import { listBacklogItems, type BacklogItem } from '../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from './pending-done.js';
 import { readRuleFile, ruleDisplayPaths } from './rules.js';
+// TODO(arch): utils→commands 反向依赖。buildInstallDoctorReport 牵动 install doctor
+// 子系统（context/metadata/drift/skill 检查），完整下沉非速赢。已核实无循环（install.ts
+// 不 import 本文件），分层技术债，待专项清理。
 import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } from '../commands/install.js';
 import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridContextIndexLeaves, type HybridContextIndexSummary, type HybridContextIndexEntry } from './context-index.js';
 import { readGitCloseoutSummary, type GitCloseoutSummary } from './git-closeout.js';

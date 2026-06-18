@@ -13,10 +13,10 @@
   ],
   "scripts": {
     "build": "pnpm run build:clean",
-    "build:clean": "tsup src/index.ts src/commands/dashboard.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/engine/backlog.ts src/governance/decisions.ts src/utils/pending-done.ts src/utils/doc-parser.ts src/utils/ui-gate.ts src/utils/lock.ts src/utils/session.ts src/utils/git-closeout.ts src/utils/payload.ts src/utils/context-index.ts src/utils/deliverables.ts src/utils/roles.ts src/utils/worktree.ts --format esm --clean --out-dir dist",
+    "build:clean": "tsup --clean",
     "build:dashboard": "vite build --config vite.dashboard.config.ts",
-    "build:test": "tsup src/index.ts src/commands/dashboard.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/engine/backlog.ts src/governance/decisions.ts src/utils/pending-done.ts src/utils/doc-parser.ts src/utils/ui-gate.ts src/utils/lock.ts src/utils/session.ts src/utils/git-closeout.ts src/utils/payload.ts src/utils/context-index.ts src/utils/deliverables.ts src/utils/roles.ts src/utils/worktree.ts --format esm --out-dir dist",
-    "dev": "tsup src/index.ts src/commands/dashboard.ts src/engine/breadcrumb.ts src/engine/transitions.ts src/engine/policy.ts src/engine/backlog.ts src/governance/decisions.ts src/utils/pending-done.ts src/utils/doc-parser.ts src/utils/ui-gate.ts src/utils/lock.ts src/utils/session.ts src/utils/git-closeout.ts src/utils/payload.ts src/utils/context-index.ts src/utils/deliverables.ts src/utils/roles.ts src/utils/worktree.ts --format esm --watch --out-dir dist",
+    "build:test": "tsup",
+    "dev": "tsup --watch",
     "prepublishOnly": "pnpm build",
     "test": "pnpm run build:test && node --test --test-concurrency=1 tests/*.test.mjs",
     "typecheck": "tsc --noEmit"

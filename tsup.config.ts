@@ -1,0 +1,39 @@
+import { defineConfig } from 'tsup';
+
+/**
+ * DocPath CLI 构建配置。
+ *
+ * entry 列表集中在此，供 build:clean / build:test / dev 三个脚本共用，
+ * 避免在 package.json 中三重复制。clean / watch 仍由命令行 flag 控制：
+ *   - build:clean → tsup --clean
+ *   - build:test  → tsup
+ *   - dev         → tsup --watch
+ *
+ * Dashboard（React + Vite）单独由 build:dashboard 构建，不在此处打包。
+ */
+const CLI_ENTRY = [
+  'src/index.ts',
+  'src/commands/dashboard.ts',
+  'src/engine/breadcrumb.ts',
+  'src/engine/transitions.ts',
+  'src/engine/policy.ts',
+  'src/engine/backlog.ts',
+  'src/governance/decisions.ts',
+  'src/utils/pending-done.ts',
+  'src/utils/doc-parser.ts',
+  'src/utils/ui-gate.ts',
+  'src/utils/lock.ts',
+  'src/utils/session.ts',
+  'src/utils/git-closeout.ts',
+  'src/utils/payload.ts',
+  'src/utils/context-index.ts',
+  'src/utils/deliverables.ts',
+  'src/utils/roles.ts',
+  'src/utils/worktree.ts',
+];
+
+export default defineConfig({
+  entry: CLI_ENTRY,
+  format: ['esm'],
+  outDir: 'dist',
+});
