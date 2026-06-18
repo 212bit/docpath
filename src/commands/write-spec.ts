@@ -15,6 +15,7 @@ import { writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { canonicalTaskDir, currentTaskDir } from '../utils/task-files.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
+import { readStdin } from '../utils/stdin.js';
 
 interface WriteSpecOptions {
   cwd: string;
@@ -90,15 +91,3 @@ function formatValidationIssue(issue: { message: string; line?: number; section?
 /**
  * 从 stdin 读取全部内容
  */
-function readStdin(): Promise<string> {
-  return new Promise((resolve) => {
-    const chunks: Buffer[] = [];
-    process.stdin.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    process.stdin.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-    process.stdin.on('error', () => resolve(''));
-    // 如果 stdin 是 TTY（无管道），立即返回
-    if (process.stdin.isTTY) {
-      resolve('');
-    }
-  });
-}

@@ -9,6 +9,7 @@ import { existsSync } from 'fs';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { readActiveTaskFile, writeActiveTaskFile } from '../utils/task-files.js';
+import { readStdin } from '../utils/stdin.js';
 
 interface WriteJournalOptions {
   cwd: string;
@@ -69,14 +70,3 @@ export async function writeJournalCommand(options: WriteJournalOptions): Promise
   console.log('📌  知识记录已追加到当前任务 spec.md');
 }
 
-function readStdin(): Promise<string> {
-  return new Promise((resolve) => {
-    const chunks: Buffer[] = [];
-    process.stdin.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    process.stdin.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-    process.stdin.on('error', () => resolve(''));
-    if (process.stdin.isTTY) {
-      resolve('');
-    }
-  });
-}

@@ -81,7 +81,7 @@ function fallbackState(): CurrentState {
   if (!snapshot) throw new Error('[docpath] failed to create fallback workflow snapshot');
   const ts = nowIso();
   return {
-    level: 1,
+    level: 0,
     workflow_profile: 'standard',
     state: snapshot.state,
     phase: snapshot.phase,

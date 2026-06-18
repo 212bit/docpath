@@ -38,13 +38,6 @@ export async function evaluateCompletionPolicy(
   return { allowed: reasons.length === 0, reasons };
 }
 
-export async function assertCanComplete(cwd: string, options: CompletionPolicyOptions = {}): Promise<void> {
-  const verdict = await evaluateCompletionPolicy(cwd, options);
-  if (!verdict.allowed) {
-    throw new Error(`完成门禁未通过: ${verdict.reasons.join('; ')}`);
-  }
-}
-
 export async function recordSkipReason(
   cwd: string,
   gate: 'check' | 'review',

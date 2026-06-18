@@ -123,18 +123,10 @@ export const VALID_WORKFLOW_STATES = new Set<RuntimeWorkflowState>([
   'subagent_coordinating',
 ]);
 
-const STATE_ALIASES: Record<string, RuntimeWorkflowState> = {
-  spec_generated: 'spec_written',
-  plan_approved: 'planning_done',
-  peer_reviewed: 'review_pass',
-  defined: 'drafting',
-};
-
 /** 将旧版或外部协议状态归一化为持久化状态全集中的值。 */
 export function normalizeWorkflowState(state: string): RuntimeWorkflowState | null {
-  const normalized = STATE_ALIASES[state] || state;
-  return VALID_WORKFLOW_STATES.has(normalized as RuntimeWorkflowState)
-    ? normalized as RuntimeWorkflowState
+  return VALID_WORKFLOW_STATES.has(state as RuntimeWorkflowState)
+    ? state as RuntimeWorkflowState
     : null;
 }
 

@@ -9,6 +9,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { nextCommand } from './runtime.js';
 import { readCurrentState, type CurrentState } from '../utils/workspace.js';
+import { readStdin } from '../utils/stdin.js';
 
 export interface AnalyzeOptions {
   cwd: string;
@@ -177,12 +178,3 @@ async function readAnalysisInput(options: AnalyzeOptions): Promise<string> {
   return '';
 }
 
-function readStdin(): Promise<string> {
-  return new Promise((resolveInput) => {
-    const chunks: Buffer[] = [];
-    process.stdin.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    process.stdin.on('end', () => resolveInput(Buffer.concat(chunks).toString('utf-8')));
-    process.stdin.on('error', () => resolveInput(''));
-    if (process.stdin.isTTY) resolveInput('');
-  });
-}

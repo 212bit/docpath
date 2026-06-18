@@ -6,6 +6,7 @@ import { transitionWorkflow } from '../engine/transitions.js';
 import { nextCommand } from './runtime.js';
 import { readCurrentState, type CurrentState } from '../utils/workspace.js';
 import { normalizeAnalysisSection, writeActiveAnalysisSection, writeActiveTaskFile } from '../utils/task-files.js';
+import { readStdin } from '../utils/stdin.js';
 
 export interface WriteAnalysisOptions {
   cwd: string;
@@ -66,12 +67,3 @@ export async function writeAnalysisCommand(options: WriteAnalysisOptions): Promi
   await nextCommand({ cwd: options.cwd });
 }
 
-function readStdin(): Promise<string> {
-  return new Promise((resolve) => {
-    const chunks: Buffer[] = [];
-    process.stdin.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    process.stdin.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-    process.stdin.on('error', () => resolve(''));
-    if (process.stdin.isTTY) resolve('');
-  });
-}

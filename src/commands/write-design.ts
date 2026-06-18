@@ -4,6 +4,7 @@ import { existsSync } from 'fs';
 import { resolveDocpathDir } from '../utils/file.js';
 import { writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState } from '../utils/workspace.js';
+import { readStdin } from '../utils/stdin.js';
 
 interface WriteDesignOptions {
   cwd: string;
@@ -63,12 +64,3 @@ function normalizeDesignKind(kind: string | undefined): keyof typeof DESIGN_FILE
   throw new Error(`未知 design kind: ${kind}（允许: brief, handoff, preview, approval, acceptance）`);
 }
 
-function readStdin(): Promise<string> {
-  return new Promise((resolve) => {
-    const chunks: Buffer[] = [];
-    process.stdin.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    process.stdin.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-    process.stdin.on('error', () => resolve(''));
-    if (process.stdin.isTTY) resolve('');
-  });
-}
