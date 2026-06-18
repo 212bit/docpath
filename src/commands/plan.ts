@@ -28,6 +28,17 @@ interface PlanContext {
   analysis: string;
 }
 
+interface SpecCoverageIds {
+  functionalRequirements: string[];
+  acceptanceCriteria: string[];
+}
+
+interface PlanCoverageResult {
+  ok: boolean;
+  missingFunctionalRequirements: string[];
+  missingAcceptanceCriteria: string[];
+}
+
 const PLAN_SYSTEM_PROMPT = `你是一个项目计划专家。根据用户提供的 spec.md，将需求分解为可执行的子任务。
 
 规则：
@@ -74,43 +85,105 @@ function extractFirstMatch(content: string, pattern: RegExp): string | null {
   return match?.[1]?.trim() || null;
 }
 
-function extractChecklistItems(content: string, prefix: string): string[] {
+function extractChecklistEntries(content: string, prefix: string): Array<{ id: string; text: string }> {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = new RegExp(`^- \\[[ xX]\\] (${escaped}-\\d+):\\s*(.+)$`, 'gm');
-  const items: string[] = [];
+  const entries: Array<{ id: string; text: string }> = [];
   for (const match of content.matchAll(pattern)) {
+    const id = match[1]?.trim();
     const text = match[2]?.trim();
-    if (text) items.push(text);
+    if (id && text) entries.push({ id, text });
   }
-  return items;
+  return entries;
+}
+
+export function extractSpecCoverageIds(spec: string): SpecCoverageIds {
+  return {
+    functionalRequirements: extractChecklistEntries(spec, 'FR').map((entry) => entry.id),
+    acceptanceCriteria: extractChecklistEntries(spec, 'AC').map((entry) => entry.id),
+  };
+}
+
+export function validateGeneratedPlanCoverage(spec: string, plan: string): PlanCoverageResult {
+  const ids = extractSpecCoverageIds(spec);
+  const containsId = (id: string) => new RegExp(`(^|[^A-Za-z0-9-])${id}([^A-Za-z0-9-]|$)`).test(plan);
+  const missingFunctionalRequirements = ids.functionalRequirements.filter((id) => !containsId(id));
+  const missingAcceptanceCriteria = ids.acceptanceCriteria.filter((id) => !containsId(id));
+  return {
+    ok: missingFunctionalRequirements.length === 0 && missingAcceptanceCriteria.length === 0,
+    missingFunctionalRequirements,
+    missingAcceptanceCriteria,
+  };
+}
+
+function assertGeneratedPlanCoverage(spec: string, plan: string): void {
+  const coverage = validateGeneratedPlanCoverage(spec, plan);
+  if (coverage.ok) return;
+
+  const lines = [
+    'docpath plan: generated plan coverage check failed',
+    'The generated plan is incomplete and was not written.',
+  ];
+  if (coverage.missingFunctionalRequirements.length > 0) {
+    lines.push(`missing functional requirements: ${coverage.missingFunctionalRequirements.join(', ')}`);
+  }
+  if (coverage.missingAcceptanceCriteria.length > 0) {
+    lines.push(`missing acceptance criteria: ${coverage.missingAcceptanceCriteria.join(', ')}`);
+  }
+  lines.push('Fix: write a complete plan that references every FR-* and AC-* id, then run `docpath write-plan --stdin`.');
+  throw new Error(lines.join('\n'));
 }
 
 function renderDraftPlan(spec: string): string {
   const title = extractFirstMatch(spec, /^#\s+(.+)$/m) || '当前任务';
-  const features = extractChecklistItems(spec, 'FR');
-  const acceptances = extractChecklistItems(spec, 'AC');
-  const primaryFeature = features[0] || title.replace(/^T-\d{8}-[a-z0-9-]+\s+-\s+/, '');
-  const primaryAcceptance = acceptances[0] || 'plan.md 已生成并可进入执行';
+  const features = extractChecklistEntries(spec, 'FR');
+  const acceptances = extractChecklistEntries(spec, 'AC');
+  const primaryFeature = features[0]?.text || title.replace(/^T-\d{8}-[a-z0-9-]+\s+-\s+/, '');
+  const primaryFeatureId = features[0]?.id;
+  const primaryAcceptance = acceptances[0]
+    ? `${acceptances[0].id}: ${acceptances[0].text}`
+    : 'plan.md 已生成并可进入执行';
+  const additionalFeatureSteps = features.slice(1).flatMap((feature, index) => {
+    const stepNumber = index + 3;
+    return [
+      '',
+      `### S${stepNumber}: 实现 ${feature.id} ${feature.text}`,
+      `- **描述**: 在现有架构内完成 ${feature.id}: ${feature.text}。`,
+      `- **验收条件**: ${feature.id} 已实现，并保持现有工作流兼容。`,
+      `- **依赖**: S${stepNumber - 1}`,
+    ];
+  });
+  const verificationStepNumber = Math.max(3, features.length + 2);
+  const verificationDependency = `S${verificationStepNumber - 1}`;
+  const acceptanceSummary = acceptances.length > 0
+    ? acceptances.map((item) => `${item.id}: ${item.text}`).join('；')
+    : primaryAcceptance;
+  const checklistSteps = Array.from({ length: verificationStepNumber }, (_, index) => `- [ ] S${index + 1}`);
 
   return [
     '## 执行计划',
     '',
     `### S1: 梳理 ${primaryFeature}`,
-    `- **描述**: 根据 spec 明确 ${primaryFeature} 的实现边界和验收口径。`,
+    `- **描述**: 根据 spec 明确 ${primaryFeatureId ? `${primaryFeatureId}: ` : ''}${primaryFeature} 的实现边界和验收口径。`,
     `- **验收条件**: ${primaryAcceptance}`,
     '- **依赖**: 无',
     '',
     `### S2: 实现 ${primaryFeature}`,
-    `- **描述**: 在现有架构内完成 ${primaryFeature} 的代码与文档更新。`,
-    `- **验收条件**: ${primaryFeature} 已实现，并保持现有工作流兼容。`,
+    `- **描述**: 在现有架构内完成 ${primaryFeatureId ? `${primaryFeatureId}: ` : ''}${primaryFeature} 的代码与文档更新。`,
+    `- **验收条件**: ${primaryFeatureId ? `${primaryFeatureId} ` : ''}${primaryFeature} 已实现，并保持现有工作流兼容。`,
     '- **依赖**: S1',
+    ...additionalFeatureSteps,
+    '',
+    `### S${verificationStepNumber}: 验证验收标准`,
+    `- **描述**: 验证 spec 中声明的验收标准：${acceptanceSummary}`,
+    `- **验收条件**: ${acceptanceSummary}`,
+    `- **依赖**: ${verificationDependency}`,
     '',
     '## Checklist',
-    '- [ ] S1',
-    '- [ ] S2',
+    ...checklistSteps,
     '',
     '## 依赖关系图',
-    'S1 → S2',
+    checklistSteps.map((_, index) => `S${index + 1}`).join(' → '),
     '',
   ].join('\n');
 }
@@ -194,6 +267,7 @@ async function writeGeneratedPlan(cwd: string, docpathDir: string, spec: string)
     ? ''
     : await readCanonicalPlan(docpathDir, taskId);
   const planContent = existingPlan.trim() ? existingPlan : renderDraftPlan(spec || '');
+  assertGeneratedPlanCoverage(spec, planContent);
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'plan.md', planContent);
   return canonicalPath;
 }

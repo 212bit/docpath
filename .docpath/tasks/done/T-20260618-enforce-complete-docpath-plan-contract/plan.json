@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-18T16:59:03.180Z",
+    "updated_at": "2026-06-18T16:59:03.180Z",
+    "content_sha256": "0ef3c9b844c834b0f78133b714d52eb2c33247d5998c619687b977b7de738fb0"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: Locate generated plan persistence path\n- **描述**: Inspect `docpath plan` implementation, existing plan parser/validator utilities, and tests that cover generated plan output.\n- **验收条件**: Identify the exact mutation point where generated plan content is written and state advances.\n- **依赖**: 无\n\n### S2: Add deterministic FR/AC coverage validation\n- **描述**: Implement spec id extraction and generated plan coverage validation for explicit `FR-*` and `AC-*` ids.\n- **验收条件**: Validator returns missing FR/AC ids without depending on prose semantics.\n- **依赖**: S1\n\n### S3: Gate `docpath plan` before write/advance\n- **描述**: Wire coverage validation into generated `docpath plan` so incomplete plans fail before writing `plan.md` / `plan.json` or advancing state.\n- **验收条件**: Incomplete generated plans leave existing plan artifacts/state unchanged and print actionable diagnostics.\n- **依赖**: S2\n\n### S4: Add regression tests\n- **描述**: Cover incomplete generated plan failure, no mutation on failure, successful full coverage persistence, and unchanged `write-plan` behavior.\n- **验收条件**: New tests fail against previous behavior and pass with the fix.\n- **依赖**: S3\n\n### S5: Validate and close out\n- **描述**: Run typecheck, targeted tests, full suite, DocPath check/review/journal, and inspect `changes --agent`.\n- **验收条件**: Validation passes or any unrelated worktree/tool limitation is explicitly recorded.\n- **依赖**: S4\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n- [x] S5\n\n## 依赖关系图\nS1 → S2 → S3 → S4 → S5\n",
+  "generated_at": "2026-06-18T16:59:03.180Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Locate generated plan persistence path",
+      "description": "Inspect `docpath plan` implementation, existing plan parser/validator utilities, and tests that cover generated plan output.",
+      "acceptance": "Identify the exact mutation point where generated plan content is written and state advances.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Add deterministic FR/AC coverage validation",
+      "description": "Implement spec id extraction and generated plan coverage validation for explicit `FR-*` and `AC-*` ids.",
+      "acceptance": "Validator returns missing FR/AC ids without depending on prose semantics.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Gate `docpath plan` before write/advance",
+      "description": "Wire coverage validation into generated `docpath plan` so incomplete plans fail before writing `plan.md` / `plan.json` or advancing state.",
+      "acceptance": "Incomplete generated plans leave existing plan artifacts/state unchanged and print actionable diagnostics.",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Add regression tests",
+      "description": "Cover incomplete generated plan failure, no mutation on failure, successful full coverage persistence, and unchanged `write-plan` behavior.",
+      "acceptance": "New tests fail against previous behavior and pass with the fix.",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "Validate and close out",
+      "description": "Run typecheck, targeted tests, full suite, DocPath check/review/journal, and inspect `changes --agent`.",
+      "acceptance": "Validation passes or any unrelated worktree/tool limitation is explicitly recorded.",
+      "dependencies": "S4",
+      "status": "done"
+    }
+  ]
+}

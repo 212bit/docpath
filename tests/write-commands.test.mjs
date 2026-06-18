@@ -359,8 +359,8 @@ describe('write commands', () => {
       '## 执行计划',
       '',
       '### S1: continue after plan',
-      '- **描述**: plan 后直接 go',
-      '- **验收条件**: go 能读取 current plan',
+      '- **描述**: plan 后直接 go，覆盖 FR-1',
+      '- **验收条件**: AC-1: go 能读取 current plan',
       '- **依赖**: 无',
       '',
     ].join('\n');
@@ -493,11 +493,135 @@ describe('write commands', () => {
     const currentPlan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
     assert.match(currentPlan, /S1: 梳理 自动生成计划草案/);
     assert.match(currentPlan, /S2: 实现 自动生成计划草案/);
+    assert.match(currentPlan, /FR-1/);
+    assert.match(currentPlan, /AC-1/);
     assert.doesNotMatch(readFileSync(join(canonicalDir, 'plan.md'), 'utf-8'), /验证门禁并归档/);
 
     const goOutput = run(`go --cwd ${cwd} --step S1 --dry-run`, cwd);
     assert.match(goOutput, /子任务: S1/);
     assert.doesNotMatch(goOutput, /未找到 plan\.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('plan refuses to persist an incomplete generated plan and keeps state unchanged', () => {
+    const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+    const canonicalDir = join(cwd, '.docpath', 'tasks', 'T-WRITE');
+    mkdirSync(canonicalDir, { recursive: true });
+    const spec = [
+      '# T-WRITE - 完整覆盖契约',
+      '',
+      '## 1. 背景与动机',
+      '',
+      'plan 必须覆盖所有 id。',
+      '',
+      '## 2. 需求清单',
+      '',
+      '### 功能需求',
+      '- [ ] FR-1: 第一项能力',
+      '- [ ] FR-2: 第二项能力',
+      '',
+      '### 非功能需求',
+      '- [ ] NFR-1: 保持兼容',
+      '',
+      '## 3. 范围界定',
+      '',
+      '### 包含',
+      '- plan 覆盖校验',
+      '',
+      '### 不包含',
+      '- LLM 调用',
+      '',
+      '## 4. 关键决策',
+      '',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | plan 契约 | 宽松 / fail-loud | fail-loud | 防止写坏 machine truth |',
+      '',
+      '## 5. 验收标准',
+      '',
+      '- [ ] AC-1: 覆盖第一项验收',
+      '- [ ] AC-2: 覆盖第二项验收',
+      '',
+    ].join('\n');
+    const incompletePlan = [
+      '## 执行计划',
+      '',
+      '### S1: 只覆盖第一项',
+      '- **描述**: 只处理 FR-1',
+      '- **验收条件**: AC-1',
+      '- **依赖**: 无',
+      '',
+    ].join('\n');
+    writeFileSync(join(canonicalDir, 'spec.md'), spec);
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), spec);
+    writeFileSync(join(canonicalDir, 'plan.md'), incompletePlan);
+
+    const result = runResult(`plan --cwd ${cwd}`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /generated plan coverage check failed/);
+    assert.match(result.out, /missing functional requirements: FR-2/);
+    assert.match(result.out, /missing acceptance criteria: AC-2/);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md')), false);
+    assert.equal(readFileSync(join(canonicalDir, 'plan.md'), 'utf-8'), incompletePlan);
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.phase, 'drafting');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('plan generated draft covers all explicit FR and AC ids', () => {
+    const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+    const canonicalDir = join(cwd, '.docpath', 'tasks', 'T-WRITE');
+    mkdirSync(canonicalDir, { recursive: true });
+    const spec = [
+      '# T-WRITE - 多项覆盖',
+      '',
+      '## 1. 背景与动机',
+      '',
+      '生成计划必须覆盖多项需求。',
+      '',
+      '## 2. 需求清单',
+      '',
+      '### 功能需求',
+      '- [ ] FR-1: 第一项能力',
+      '- [ ] FR-2: 第二项能力',
+      '- [ ] FR-3: 第三项能力',
+      '',
+      '### 非功能需求',
+      '- [ ] NFR-1: 保持兼容',
+      '',
+      '## 3. 范围界定',
+      '',
+      '### 包含',
+      '- plan 覆盖校验',
+      '',
+      '### 不包含',
+      '- LLM 调用',
+      '',
+      '## 4. 关键决策',
+      '',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | plan 契约 | 宽松 / fail-loud | fail-loud | 防止写坏 machine truth |',
+      '',
+      '## 5. 验收标准',
+      '',
+      '- [ ] AC-1: 覆盖第一项验收',
+      '- [ ] AC-2: 覆盖第二项验收',
+      '',
+    ].join('\n');
+    writeFileSync(join(canonicalDir, 'spec.md'), spec);
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), spec);
+
+    const output = run(`plan --cwd ${cwd}`, cwd);
+    const plan = readFileSync(join(canonicalDir, 'plan.md'), 'utf-8');
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+
+    assert.match(output, /plan\.md 已写入/);
+    for (const id of ['FR-1', 'FR-2', 'FR-3', 'AC-1', 'AC-2']) {
+      assert.match(plan, new RegExp(id));
+    }
+    assert.equal(state.phase, 'planning');
     rmSync(cwd, { recursive: true, force: true });
   });
 
