@@ -5,7 +5,7 @@
  */
 
 import { existsSync, lstatSync } from 'node:fs';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -95,6 +95,11 @@ async function runGit(cwd: string, args: string[]): Promise<void> {
   }
 }
 
+async function hasTrackedFiles(repoRoot: string, path: string): Promise<boolean> {
+  const { stdout } = await execFileAsync('git', ['ls-files', '--', path], { cwd: repoRoot });
+  return stdout.trim().length > 0;
+}
+
 /**
  * worktree create <name> — 创建新 worktree
  */
@@ -182,19 +187,32 @@ async function initWorktreeDocpath(mainRepoPath: string, worktreePath: string, n
     await mkdir(dirPath, { recursive: true });
   }
 
-  // 创建共享资源的 symlinks
-  console.log(`  🔗 创建共享资源 symlinks...`);
+  // 创建共享资源引用。Git 已跟踪的目录不能替换为 symlink，否则 worktree
+  // 会把目录内 tracked 文件全部显示为删除；仅对未跟踪资源使用 symlink。
+  console.log(`  🔗 配置共享资源...`);
   const sharedResources = ['backlog', 'rules', 'spec', 'templates'];
   for (const resource of sharedResources) {
     const targetPath = join(mainRepoPath, '.docpath', resource);
     const linkPath = join(docpathDir, resource);
+    const tracked = await hasTrackedFiles(mainRepoPath, `.docpath/${resource}`);
 
-    // 删除 git 复制的目录
-    if (existsSync(linkPath)) {
-      await rm(linkPath, { recursive: true, force: true });
+    if (tracked) {
+      if (!existsSync(linkPath) || lstatSync(linkPath).isSymbolicLink()) {
+        await rm(linkPath, { recursive: true, force: true });
+        if (existsSync(targetPath)) {
+          await cp(targetPath, linkPath, { recursive: true });
+        } else {
+          await mkdir(linkPath, { recursive: true });
+        }
+      }
+      console.log(`    ✓ ${resource} -> tracked copy`);
+      continue;
     }
 
     if (existsSync(targetPath)) {
+      if (existsSync(linkPath)) {
+        await rm(linkPath, { recursive: true, force: true });
+      }
       const relativePath = relative(dirname(linkPath), targetPath);
       await createSymlink(relativePath, linkPath, 'dir');
       console.log(`    ✓ ${resource} -> 主仓库`);
@@ -307,12 +325,13 @@ function checkDirectory(path: string, label: string): DoctorCheck {
   }
 }
 
-function checkSymlink(path: string, label: string): DoctorCheck {
+function checkSharedResource(path: string, label: string): DoctorCheck {
   if (!existsSync(path)) return { status: 'fail', label, detail: `missing: ${path}` };
   try {
     const stat = lstatSync(path);
-    if (stat.isSymbolicLink()) return { status: 'pass', label, detail: path };
-    return { status: 'fail', label, detail: `not a symlink: ${path}` };
+    if (stat.isSymbolicLink()) return { status: 'pass', label, detail: `symlink: ${path}` };
+    if (stat.isDirectory()) return { status: 'pass', label, detail: `tracked copy: ${path}` };
+    return { status: 'fail', label, detail: `not a directory or symlink: ${path}` };
   } catch (error) {
     return { status: 'fail', label, detail: error instanceof Error ? error.message : String(error) };
   }
@@ -352,8 +371,8 @@ async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
   const checks: DoctorCheck[] = [
     checkExists(join(worktreePath, '.git'), 'git worktree metadata'),
     checkDirectory(docpathDir, '.docpath directory'),
-    checkSymlink(join(docpathDir, 'backlog'), 'shared backlog symlink'),
-    checkSymlink(join(docpathDir, 'rules'), 'shared rules symlink'),
+    checkSharedResource(join(docpathDir, 'backlog'), 'shared backlog resource'),
+    checkSharedResource(join(docpathDir, 'rules'), 'shared rules resource'),
     checkDirectory(join(docpathDir, 'workspace'), 'isolated workspace directory'),
     checkDirectory(join(docpathDir, 'tasks'), 'isolated tasks directory'),
     checkDirectory(join(docpathDir, 'journal'), 'isolated journal directory'),
