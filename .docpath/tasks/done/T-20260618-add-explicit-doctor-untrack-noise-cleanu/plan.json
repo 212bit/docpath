@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-18T01:25:28.155Z",
+    "updated_at": "2026-06-18T01:25:28.155Z",
+    "content_sha256": "49f43c82e907f3076baa6e5751aebbf8ed508546ef62b206e5e806f28e7d99a9"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: Map current doctor cleanup boundaries\n- **描述**: Inspect current doctor, git hygiene util, command registration, and tests to confirm where cleanup should live and what must remain read-only by default.\n- **验收条件**: Implementation boundary is clear: default doctor stays read-only; cleanup uses the runtime-noise whitelist only.\n- **依赖**: 无\n\n### S2: Implement explicit untrack-noise cleanup\n- **描述**: Add the `--untrack-noise` option, execute `git rm --cached --` only for tracked ignored runtime-noise paths, and render clear human/JSON output for no-op and cleanup cases.\n- **验收条件**: Cleanup is opt-in, idempotent, and never targets non-runtime DocPath evidence.\n- **依赖**: S1\n\n### S3: Add focused regression tests\n- **描述**: Extend doctor tests to cover cleanup in temporary Git repositories and preservation of canonical evidence under broad `/.docpath/` ignore rules.\n- **验收条件**: Tests fail before the cleanup implementation and pass after it; default read-only behavior remains covered.\n- **依赖**: S2\n\n### S4: Verify gates and closeout readiness\n- **描述**: Run focused tests, typecheck/full tests as appropriate, DocPath check/review, and inspect changes output for commit readiness.\n- **验收条件**: Automated verification and DocPath gates pass, and closeout scope is understood.\n- **依赖**: S3\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n\n## 依赖关系图\nS1 → S2 → S3 → S4\n",
+  "generated_at": "2026-06-18T01:25:28.155Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Map current doctor cleanup boundaries",
+      "description": "Inspect current doctor, git hygiene util, command registration, and tests to confirm where cleanup should live and what must remain read-only by default.",
+      "acceptance": "Implementation boundary is clear: default doctor stays read-only; cleanup uses the runtime-noise whitelist only.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Implement explicit untrack-noise cleanup",
+      "description": "Add the `--untrack-noise` option, execute `git rm --cached --` only for tracked ignored runtime-noise paths, and render clear human/JSON output for no-op and cleanup cases.",
+      "acceptance": "Cleanup is opt-in, idempotent, and never targets non-runtime DocPath evidence.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Add focused regression tests",
+      "description": "Extend doctor tests to cover cleanup in temporary Git repositories and preservation of canonical evidence under broad `/.docpath/` ignore rules.",
+      "acceptance": "Tests fail before the cleanup implementation and pass after it; default read-only behavior remains covered.",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Verify gates and closeout readiness",
+      "description": "Run focused tests, typecheck/full tests as appropriate, DocPath check/review, and inspect changes output for commit readiness.",
+      "acceptance": "Automated verification and DocPath gates pass, and closeout scope is understood.",
+      "dependencies": "S3",
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-18T01:18:27.885Z",
+    "updated_at": "2026-06-18T01:18:27.885Z",
+    "content_sha256": "6449c2a0b0831c8d313acf8bcc3d6316d47d963dd9bbaf673701407cce68f431"
+  },
+  "task_id": "T-20260618-add-explicit-doctor-untrack-noise-cleanu",
+  "backlog_id": "R-202",
+  "title": "T-20260618-add-explicit-doctor-untrack-noise-cleanu - Add explicit doctor untrack-noise cleanup",
+  "markdown": "# T-20260618-add-explicit-doctor-untrack-noise-cleanu - Add explicit doctor untrack-noise cleanup\n\n> backlog_id: R-202\n> backlog_source: docpath backlog capture\n\n## 1. 背景与动机\n\n`docpath doctor` now detects tracked-but-ignored DocPath runtime files and prints a `git rm --cached` suggestion. The next step is to make that cleanup available as an explicit opt-in command flag while preserving the default read-only diagnostic behavior.\n\nThe cleanup changes Git index state, so it must be narrow, predictable, and limited to the runtime-noise whitelist already used by the diagnostic. It must never untrack canonical DocPath evidence such as backlog items or completed task artifacts.\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: Add an explicit `docpath doctor --untrack-noise` cleanup mode.\n- [ ] FR-2: Cleanup must run `git rm --cached -- <files>` only for tracked ignored runtime-noise paths.\n- [ ] FR-3: Default `docpath doctor` and `docpath doctor --json` remain read-only diagnostics.\n- [ ] FR-4: Canonical backlog and done-task evidence must remain excluded from cleanup candidates even under broad `/.docpath/` ignore rules.\n\n### 非功能需求\n- [ ] NFR-1: Cleanup must be idempotent when no runtime-noise files are present.\n- [ ] NFR-2: Cleanup output must state exactly what was untracked and how many files were affected.\n- [ ] NFR-3: Tests must exercise the mutating path only in temporary Git repositories.\n\n## 3. 范围界定\n\n### 包含\n- CLI option registration for `doctor --untrack-noise`.\n- Git hygiene cleanup implementation using the existing runtime-noise whitelist.\n- Focused tests for cleanup and canonical evidence preservation.\n\n### 不包含\n- Automatically running cleanup in the current repository.\n- Adding broad `doctor --fix` behavior for non-runtime files.\n- Changing `docpath commit` staging behavior.\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | Cleanup activation | Default auto-fix vs explicit flag | Explicit `--untrack-noise` | Git index mutation must be opt-in. |\n| 2 | Cleanup scope | All ignored tracked files vs runtime whitelist | Runtime whitelist only | Canonical evidence may be ignored by bad rules but should not be untracked as noise. |\n| 3 | No-candidate behavior | Error vs pass | Pass | Idempotent cleanup is friendlier for repeated doctor runs and scripts. |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [x] 长期维护成本增加\n- [ ] 其他\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）\n- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）\n\n### Decision Brief\n- 当前问题: `doctor` can diagnose tracked ignored runtime noise but cannot safely perform the suggested cleanup.\n- 目标: Provide explicit opt-in cleanup for runtime-noise Git index entries.\n- 背景: Dogfood showed `.docpath/workspace/*` remains historically tracked and ignored, leaving repeated runtime-only dirty states.\n- 可选方案: Keep suggestion-only; add broad `--fix`; add narrow `--untrack-noise`.\n- 推荐方案: Add narrow `--untrack-noise` limited to runtime-noise whitelist.\n- 不做什么: Do not auto-clean by default and do not untrack canonical evidence.\n- 成本: Small CLI/util/test change.\n- 风险: A bug in path classification could untrack durable evidence; tests must cover broad-ignore evidence preservation.\n- 回滚方案: Revert the option and cleanup helper; read-only doctor remains intact.\n- 用户确认: User said continue after the diagnostic task and prior discussion identified explicit cleanup as the next optimization.\n\n## 5. 验收标准\n\n- [ ] AC-1: `docpath doctor --untrack-noise` untracks only tracked ignored runtime-noise files in a temporary Git repository.\n- [ ] AC-2: Canonical backlog and completed task evidence remain tracked after cleanup under broad `/.docpath/` ignore rules.\n- [ ] AC-3: Default `doctor` and `doctor --json` stay read-only and still fail when runtime noise exists.\n- [ ] AC-4: Focused tests and DocPath gates pass.\n",
+  "generated_at": "2026-06-18T01:18:27.885Z",
+  "scope": {
+    "included": [
+      "CLI option registration for `doctor --untrack-noise`.",
+      "Git hygiene cleanup implementation using the existing runtime-noise whitelist.",
+      "Focused tests for cleanup and canonical evidence preservation."
+    ],
+    "excluded": [
+      "Automatically running cleanup in the current repository.",
+      "Adding broad `doctor --fix` behavior for non-runtime files.",
+      "Changing `docpath commit` staging behavior."
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "User said continue after the diagnostic task and prior discussion identified explicit cleanup as the next optimization.",
+    "decision_brief_markdown": "- 当前问题: `doctor` can diagnose tracked ignored runtime noise but cannot safely perform the suggested cleanup.\n- 目标: Provide explicit opt-in cleanup for runtime-noise Git index entries.\n- 背景: Dogfood showed `.docpath/workspace/*` remains historically tracked and ignored, leaving repeated runtime-only dirty states.\n- 可选方案: Keep suggestion-only; add broad `--fix`; add narrow `--untrack-noise`.\n- 推荐方案: Add narrow `--untrack-noise` limited to runtime-noise whitelist.\n- 不做什么: Do not auto-clean by default and do not untrack canonical evidence.\n- 成本: Small CLI/util/test change.\n- 风险: A bug in path classification could untrack durable evidence; tests must cover broad-ignore evidence preservation.\n- 回滚方案: Revert the option and cleanup helper; read-only doctor remains intact.\n- 用户确认: User said continue after the diagnostic task and prior discussion identified explicit cleanup as the next optimization."
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Add an explicit `docpath doctor --untrack-noise` cleanup mode.",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Cleanup must run `git rm --cached -- <files>` only for tracked ignored runtime-noise paths.",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "Default `docpath doctor` and `docpath doctor --json` remain read-only diagnostics.",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "Canonical backlog and done-task evidence must remain excluded from cleanup candidates even under broad `/.docpath/` ignore rules.",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "Cleanup must be idempotent when no runtime-noise files are present.",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "Cleanup output must state exactly what was untracked and how many files were affected.",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "Tests must exercise the mutating path only in temporary Git repositories.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`docpath doctor --untrack-noise` untracks only tracked ignored runtime-noise files in a temporary Git repository.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "Canonical backlog and completed task evidence remain tracked after cleanup under broad `/.docpath/` ignore rules.",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "Default `doctor` and `doctor --json` stay read-only and still fail when runtime noise exists.",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "Focused tests and DocPath gates pass.",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: `doctor` can diagnose tracked ignored runtime noise but cannot safely perform the suggested cleanup.\n- 目标: Provide explicit opt-in cleanup for runtime-noise Git index entries.\n- 背景: Dogfood showed `.docpath/workspace/*` remains historically tracked and ignored, leaving repeated runtime-only dirty states.\n- 可选方案: Keep suggestion-only; add broad `--fix`; add narrow `--untrack-noise`.\n- 推荐方案: Add narrow `--untrack-noise` limited to runtime-noise whitelist.\n- 不做什么: Do not auto-clean by default and do not untrack canonical evidence.\n- 成本: Small CLI/util/test change.\n- 风险: A bug in path classification could untrack durable evidence; tests must cover broad-ignore evidence preservation.\n- 回滚方案: Revert the option and cleanup helper; read-only doctor remains intact.\n- 用户确认: User said continue after the diagnostic task and prior discussion identified explicit cleanup as the next optimization."
+}

@@ -25,6 +25,10 @@ function git(cwd, args) {
   return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 20000 });
 }
 
+function trackedFiles(cwd) {
+  return git(cwd, ['ls-files']).trim().split('\n').filter(Boolean).sort();
+}
+
 function mkRepo(ignoreLines) {
   const cwd = mkdtempSync(join(tmpdir(), 'dp-doctor-'));
   git(cwd, ['init']);
@@ -92,6 +96,43 @@ describe('doctor command', () => {
     assert.equal(parsed.tracked_ignored.non_runtime_docpath_files.includes('.docpath/backlog/R-001.md'), true);
     assert.equal(parsed.tracked_ignored.runtime_noise_files.includes('.docpath/tasks/done/T-DONE/spec.md'), false);
     assert.match(parsed.tracked_ignored.cleanup_command, /git rm --cached --/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('untrack-noise removes only runtime entries and preserves canonical evidence', () => {
+    const cwd = mkRepo(['/.docpath/']);
+    git(cwd, [
+      'add',
+      '-f',
+      '.gitignore',
+      '.docpath/workspace/state.json',
+      '.docpath/tasks/current/spec.md',
+      '.docpath/tasks/done/T-DONE/spec.md',
+      '.docpath/backlog/R-001.md',
+    ]);
+    git(cwd, ['commit', '-m', 'initial']);
+
+    const result = runResult(['doctor', '--cwd', cwd, '--untrack-noise'], cwd);
+    const trackedAfterCleanup = trackedFiles(cwd);
+
+    assert.equal(result.code, 0);
+    assert.match(result.out, /untracked runtime noise files from Git index: 2/);
+    assert.equal(trackedAfterCleanup.includes('.docpath/workspace/state.json'), false);
+    assert.equal(trackedAfterCleanup.includes('.docpath/tasks/current/spec.md'), false);
+    assert.equal(trackedAfterCleanup.includes('.docpath/tasks/done/T-DONE/spec.md'), true);
+    assert.equal(trackedAfterCleanup.includes('.docpath/backlog/R-001.md'), true);
+
+    const rerun = runResult(['doctor', '--cwd', cwd, '--untrack-noise', '--json'], cwd);
+    const parsed = JSON.parse(rerun.out);
+
+    assert.equal(rerun.code, 0);
+    assert.equal(parsed.passed, true);
+    assert.equal(parsed.cleanup.attempted, true);
+    assert.equal(parsed.cleanup.untracked_count, 0);
+    assert.deepEqual(parsed.cleanup.untracked_files, []);
+    assert.deepEqual(parsed.tracked_ignored.runtime_noise_files, []);
+    assert.equal(parsed.tracked_ignored.non_runtime_docpath_files.includes('.docpath/tasks/done/T-DONE/spec.md'), true);
+    assert.equal(parsed.tracked_ignored.non_runtime_docpath_files.includes('.docpath/backlog/R-001.md'), true);
     rmSync(cwd, { recursive: true, force: true });
   });
 });

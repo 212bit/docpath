@@ -9,6 +9,12 @@ export interface GitHygieneReport {
   cleanupCommand: string | null;
 }
 
+export interface GitHygieneCleanupResult {
+  initialReport: GitHygieneReport;
+  finalReport: GitHygieneReport;
+  untrackedFiles: string[];
+}
+
 function normalizeGitPath(path: string): string {
   return path.replace(/\\/g, '/').replace(/^\.\/+/, '');
 }
@@ -77,5 +83,31 @@ export function detectGitHygiene(cwd: string): GitHygieneReport {
     trackedIgnoredRuntimeFiles,
     trackedIgnoredNonRuntimeFiles,
     cleanupCommand: buildCleanupCommand(trackedIgnoredRuntimeFiles),
+  };
+}
+
+export function untrackGitRuntimeNoise(cwd: string): GitHygieneCleanupResult {
+  const initialReport = detectGitHygiene(cwd);
+  const repoRoot = initialReport.repoRoot;
+  const untrackedFiles = initialReport.trackedIgnoredRuntimeFiles;
+
+  if (!initialReport.isGitRepo || !repoRoot || untrackedFiles.length === 0) {
+    return {
+      initialReport,
+      finalReport: initialReport,
+      untrackedFiles: [],
+    };
+  }
+
+  execFileSync('git', ['rm', '--cached', '--', ...untrackedFiles], {
+    cwd: repoRoot,
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  return {
+    initialReport,
+    finalReport: detectGitHygiene(repoRoot),
+    untrackedFiles,
   };
 }

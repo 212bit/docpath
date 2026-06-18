@@ -45,7 +45,12 @@ export function registerCoreCommands(cli: CAC): void {
   cli.command('doctor', '只读诊断 DocPath/Git 工作区健康')
     .option('--cwd <path>', '项目目录')
     .option('--json', '输出 JSON')
-    .action(async (options: { cwd?: string; json?: boolean }) => {
-      await doctorCommand({ cwd: options.cwd || process.cwd(), json: !!options.json });
+    .option('--untrack-noise', '从 Git index 移除 tracked ignored DocPath runtime 文件')
+    .action(async (options: { cwd?: string; json?: boolean; untrackNoise?: boolean; 'untrack-noise'?: boolean }) => {
+      await doctorCommand({
+        cwd: options.cwd || process.cwd(),
+        json: !!options.json,
+        untrackNoise: !!(options.untrackNoise || options['untrack-noise']),
+      });
     });
 }
