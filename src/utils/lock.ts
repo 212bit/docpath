@@ -14,7 +14,8 @@
  * 符合 DocPath「宁可报错也不漂移」的纪律。
  */
 
-import { writeFile, readFile, unlink } from 'node:fs/promises';
+import { writeFile, readFile, unlink, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 
 export interface LockOptions {
   /** 自旋总超时（毫秒），超过即放弃并抛错 */
@@ -76,6 +77,7 @@ async function isLockStale(lockPath: string, staleMs: number): Promise<boolean> 
 async function tryAcquire(lockPath: string): Promise<boolean> {
   const record: LockRecord = { pid: process.pid, ts: Date.now() };
   try {
+    await mkdir(dirname(lockPath), { recursive: true });
     await writeFile(lockPath, JSON.stringify(record), { encoding: 'utf-8', flag: 'wx' });
     return true;
   } catch (error) {

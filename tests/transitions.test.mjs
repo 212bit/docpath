@@ -1,6 +1,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -33,6 +33,25 @@ function readState(cwd) {
 }
 
 describe('transitionWorkflow', () => {
+  it('creates missing workspace directory before acquiring the state lock', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-transition-missing-workspace-'));
+    const dp = join(cwd, '.docpath');
+    mkdirSync(dp, { recursive: true });
+    writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: transition-test\n');
+
+    const next = await transitionWorkflow(cwd, 'task.created', {
+      taskId: 'T-MISSING-WORKSPACE',
+      taskTitle: 'Missing workspace',
+    });
+    const persisted = readState(cwd);
+
+    assert.equal(next.phase, 'drafting');
+    assert.equal(persisted.phase, 'drafting');
+    assert.equal(persisted.task_id, 'T-MISSING-WORKSPACE');
+    assert.equal(existsSync(join(dp, 'workspace', 'current.md')), true);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('writes check.passed as checking/check_pass without legacy state', async () => {
     const cwd = mkWorkspace();
     const next = await transitionWorkflow(cwd, 'check.passed', { currentStep: 'checks passed' });

@@ -19,6 +19,10 @@ interface ParsedStatusLine {
   untracked: boolean;
 }
 
+interface CleanWorktreeOptions {
+  allowDirtyPath?: (path: string) => boolean;
+}
+
 function runGit(cwd: string, args: string[]): string {
   return execFileSync('git', args, {
     cwd,
@@ -102,7 +106,7 @@ export function detectDirtyWorktree(cwd: string): DirtyWorktreeReport {
     };
   }
 
-  const parsed = runGit(repoRoot, ['status', '--porcelain=v1', '--untracked-files=normal'])
+  const parsed = runGit(repoRoot, ['status', '--porcelain=v1', '--untracked-files=all'])
     .split('\n')
     .map((line) => line.trimEnd())
     .filter(Boolean)
@@ -125,10 +129,14 @@ export function detectDirtyWorktree(cwd: string): DirtyWorktreeReport {
   };
 }
 
-export function assertCleanWorktreeForNewTask(cwd: string, command: string): void {
+export function assertCleanWorktreeForNewTask(cwd: string, command: string, options: CleanWorktreeOptions = {}): void {
   const report = detectDirtyWorktree(cwd);
   if (!report.isGitRepo || !report.dirty) return;
-  throw buildDirtyWorktreeError(command, report, report.files, 'new-task');
+  const blockedFiles = options.allowDirtyPath
+    ? report.files.filter((file) => !options.allowDirtyPath?.(file))
+    : report.files;
+  if (blockedFiles.length === 0) return;
+  throw buildDirtyWorktreeError(command, report, blockedFiles, 'new-task');
 }
 
 export function assertNoNonDocPathChangesForExecutionStart(cwd: string, command: string): void {

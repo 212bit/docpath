@@ -222,6 +222,13 @@ function assertBacklogReadyForExecution(item: BacklogItem, action: 'accept' | 'p
   ].filter(Boolean).join('\n'));
 }
 
+function isPromoteBacklogEvidencePath(path: string, itemId: string): boolean {
+  const normalized = path.replace(/\\/g, '/').replace(/^\.\/+/, '');
+  return normalized === '.docpath/backlog/backlog.md'
+    || normalized === `.docpath/backlog/${itemId}.md`
+    || (normalized.startsWith(`.docpath/backlog/${itemId}-`) && normalized.endsWith('.md'));
+}
+
 function inspectBacklogItem(item: BacklogItem): BacklogGroomIssue[] {
   const issues: BacklogGroomIssue[] = [];
   if ((item.status === 'proposed' || item.status === 'accepted') && !hasSection(item.body, '背景')) {
@@ -602,12 +609,14 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   if (current && current.phase !== 'idle' && current.phase !== 'completed') {
     throw new Error(`docpath backlog promote: 当前已有活跃任务（phase=${current.phase}），请先 done，或用 docpath task abort/reset 显式清理当前任务`);
   }
-  assertCleanWorktreeForNewTask(options.cwd, 'docpath backlog promote');
 
   const item = await readBacklogItem(options.cwd, options.id.trim());
   if (!item) {
     throw new Error(`docpath backlog promote: backlog 条目不存在: ${options.id}`);
   }
+  assertCleanWorktreeForNewTask(options.cwd, 'docpath backlog promote', {
+    allowDirtyPath: (path) => isPromoteBacklogEvidencePath(path, item.id),
+  });
   if (item.links.task) {
     throw new Error(`docpath backlog promote: backlog 条目 ${item.id} 已关联任务 ${item.links.task}`);
   }

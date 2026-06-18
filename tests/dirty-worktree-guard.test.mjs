@@ -192,6 +192,35 @@ describe('dirty worktree guard', () => {
     }
   });
 
+  it('backlog promote allows dirty target backlog evidence from capture', () => {
+    const cwd = mkBaseWorkspace({ phase: 'idle', state: 'idle' });
+    try {
+      initGitRepo(cwd);
+
+      run([
+        'backlog',
+        'capture',
+        '--title',
+        'Captured promote',
+        '--background',
+        'Captured backlog evidence.',
+        '--acceptance',
+        'Promote can consume its own dirty backlog files.',
+      ], cwd);
+      const out = run(['backlog', 'promote', 'R-001', '--draft'], cwd);
+      const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001.md'), 'utf-8');
+      const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+
+      assert.match(out, /已 promote backlog 条目: R-001/);
+      assert.match(item, /status: active/);
+      assert.match(item, /task: T-/);
+      assert.equal(state.phase, 'drafting');
+      assert.match(state.task_id, /^T-/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
   it('go refuses to enter execution when non-DocPath files are dirty', () => {
     const cwd = mkBaseWorkspace({ phase: 'planning', state: 'planning_done', taskId: 'T-DIRTY', taskTitle: 'Dirty Guard' });
     try {
