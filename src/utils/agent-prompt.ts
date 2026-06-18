@@ -81,20 +81,3 @@ export async function readTaskFile(cwd: string, relativePath: string): Promise<s
   if (!existsSync(filePath)) return '';
   return readFile(filePath, 'utf-8');
 }
-
-/**
- * 读取 git diff（支持 staged / last_commit / all）
- */
-export function getGitDiff(scope: string, cwd: string): string {
-  const { execSync } = require('child_process');
-  try {
-    const cmd = scope === 'staged'
-      ? 'git diff --cached 2>/dev/null || git diff'
-      : scope === 'last_commit'
-        ? 'git diff HEAD~1..HEAD 2>/dev/null || echo "no commits"'
-        : 'git diff origin/main..HEAD 2>/dev/null || git log --oneline -20';
-    return execSync(cmd, { cwd, encoding: 'utf-8', timeout: 10000 });
-  } catch {
-    return '(git diff not available)';
-  }
-}

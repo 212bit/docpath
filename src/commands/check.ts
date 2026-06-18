@@ -10,7 +10,7 @@
 import { existsSync } from 'fs';
 import { readFile, stat, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { isCancel, select } from '@clack/prompts';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState, syncCurrentDocument, parsePlanTasks } from '../utils/workspace.js';
@@ -204,7 +204,7 @@ function runCheck(
 
 function runGitOptional(cwd: string, args: string[]): string | null {
   try {
-    return execSync(`git ${args.join(' ')}`, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
   } catch {
     return null;
   }
