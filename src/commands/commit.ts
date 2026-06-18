@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { checkGitSafety, formatSafetyResult } from '../utils/git-safety.js';
 import { stageRecommendedFiles, formatStageResult, getStagedFiles } from '../utils/git-staging.js';
 
@@ -111,13 +111,13 @@ export async function commitCommand(options: CommitOptions): Promise<void> {
     const commitMessage = message.trim() + '\n\n' + CO_AUTHOR;
 
     try {
-      execSync('git commit -m ' + JSON.stringify(commitMessage), {
+      execFileSync('git', ['commit', '-m', commitMessage], {
         cwd,
         stdio: 'pipe',
       });
 
       // Get commit hash
-      const commitHash = execSync('git rev-parse --short HEAD', {
+      const commitHash = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
         cwd,
         encoding: 'utf-8',
         stdio: 'pipe',
