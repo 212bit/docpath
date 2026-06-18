@@ -31,6 +31,13 @@ interface TransitionTarget {
   phase: WorkflowPhase;
   gate: GateStatus;
   from: WorkflowPhase[];
+  /**
+   * 对 previous.gate 的前置约束。phase 级 from 只能保证「阶段顺序」，
+   * 无法表达「检查必须先通过才能评审」这类门禁前置——后者粒度是 gate。
+   * 声明此字段后，transitionWorkflow 会在持锁段额外校验 previous.gate ∈ requiredGate，
+   * 否则 fail-loud 拒绝。未声明的事件行为完全不变（向后兼容）。
+   */
+  requiredGate?: GateStatus[];
 }
 
 const EVENT_RECOVERY_COMMAND: Record<WorkflowEvent, string> = {
@@ -52,12 +59,17 @@ const EVENT_TARGETS: Record<WorkflowEvent, TransitionTarget> = {
   'plan.ready': { phase: 'planning', gate: 'none', from: ['idle', 'drafting', 'planning', 'executing'] },
   'step.started': { phase: 'executing', gate: 'none', from: ['idle', 'drafting', 'planning', 'executing', 'checking'] },
   // 门禁类事件：保持严格 from，禁止跳过验证/审查直达完成。
+  // requiredGate 进一步约束 previous.gate：phase 级 from 拦不住「check_fail 仍进 review」，
+  // 故评审/归档事件显式声明可接受的前置门禁，未通过检查者在 FSM 层即被拒。
   'step.completed': { phase: 'executing', gate: 'none', from: ['executing', 'checking'] },
   'check.passed': { phase: 'checking', gate: 'check_pass', from: ['executing', 'checking', 'completed'] },
   'check.failed': { phase: 'checking', gate: 'check_fail', from: ['executing', 'checking', 'reviewing', 'completed'] },
-  'review.passed': { phase: 'reviewing', gate: 'review_pass', from: ['checking', 'reviewing'] },
-  'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing'] },
-  'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'] },
+  // 评审前置：检查必须已通过（check_pass），或在评审内重入（review_pass/review_fail）。
+  'review.passed': { phase: 'reviewing', gate: 'review_pass', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
+  'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
+  // 归档前置：评审已通过（review_pass），或 quick profile 跳过评审后检查已通过（check_pass）。
+  // 仍拒绝 check_fail / review_fail——失败态不得归档。
+  'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'], requiredGate: ['review_pass', 'check_pass'] },
 };
 
 const DEFAULT_STEP: Record<WorkflowEvent, string> = {
@@ -115,6 +127,18 @@ export async function transitionWorkflow(
       throw new Error(
         `[docpath] Illegal workflow transition: ${event} cannot run from phase=${previous.phase}` +
         `（允许来源: ${allowedFrom}；建议下一步: ${suggested}）`,
+      );
+    }
+
+    // gate 前置：phase 顺序合法不代表门禁前置满足。
+    // 例如 phase=checking 但 gate=check_fail 时，review.passed 的 from 校验会通过，
+    // 但「检查未过不得评审」必须由 FSM 层兜住，而非仅靠命令层自觉。
+    if (target.requiredGate && !target.requiredGate.includes(previous.gate)) {
+      const allowedGate = target.requiredGate.join(', ');
+      const suggested = EVENT_RECOVERY_COMMAND[event] || 'docpath next --agent';
+      throw new Error(
+        `[docpath] Illegal workflow transition: ${event} cannot run with gate=${previous.gate}` +
+        `（允许门禁: ${allowedGate}；建议下一步: ${suggested}）`,
       );
     }
 

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-18T12:38:51.925Z",
+    "updated_at": "2026-06-18T12:38:51.925Z",
+    "content_sha256": "7c9c2b175fcd87452c14f2e805532bcbd502b94713b7698cabcc0899df7af2df"
+  },
+  "task_id": "T-20260618-gate-level-transitions",
+  "backlog_id": "R-203",
+  "title": "T-20260618-gate-level-transitions - 状态机正确性:gate 级前置 + 清理死的 LEVEL_TRANSITIONS",
+  "markdown": "# T-20260618-gate-level-transitions - 状态机正确性:gate 级前置 + 清理死的 LEVEL_TRANSITIONS\n\n> backlog_id: R-203\n> backlog_source: docpath backlog capture\n\n## 1. 背景与动机\n\n## 背景\n\n两套状态机:规约 FSM (state-machine.ts LEVEL_TRANSITIONS) 零消费=死代码;运行时 FSM (transitions.ts EVENT_TARGETS) 是唯一强制层。缺口:gate 级前置未在 FSM 层强制(check_fail 仍可进 review),且 level 被运行时忽略。\n\n## 验收\n\nEVENT_TARGETS 支持 requiredGate 可选字段并在 transitionWorkflow 持锁段强制;新增负向测试(check_fail 下 review.passed 被拒)与正向测试通过;死代码 LEVEL_TRANSITIONS 按确认方案处置;pnpm test 全绿 + docpath check 通过\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: 状态机正确性:gate 级前置 + 清理死的 LEVEL_TRANSITIONS\n  - 来源 backlog: R-203\n\n### 非功能需求\n- [ ] NFR-1: 保持与现有 DocPath 工作流兼容\n\n## 3. 范围界定\n\n### 包含\n- 状态机正确性:gate 级前置 + 清理死的 LEVEL_TRANSITIONS\n\n### 不包含\n- 待在后续规划中补充\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [x] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [ ] 权限 / 写操作边界\n- [ ] 范围扩大\n- [x] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）\n- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）\n\n### Decision Brief\n- 当前问题: 运行时只强制 transitions.ts 一套 FSM。(1) 门禁前置只到 phase 粒度,gate 级前置(check 必须 pass 才能 review)未在 FSM 层强制,仅靠 review.ts 命令层自觉;(2) state-machine.ts 的 LEVEL_TRANSITIONS/canTransition/getValidTransitions 零消费=死代码,误导读代码的人和 Agent。\n- 目标: 把 gate 级前置补进 FSM 层做纵深防御;删除死转移代码,让运行时成为唯一真相源。\n- 背景: 全仓 grep 确认规约 FSM 在定义文件外零消费;CLAUDE.md 声称 state transition legality 是 CLI 拥有的机械检查,但对门禁前置实际不成立。\n- 可选方案: 死代码处置三选一(删除 / 标 @deprecated / 反向接线);level 分流(本任务做 / 拆独立 backlog)。\n- 推荐方案: requiredGate 可选字段 + 持锁段强制(向后兼容,不动命令层契约);删除死转移代码;level 分流拆 R-204。\n- 不做什么: 不在本任务处理 level 被运行时忽略(L0/quick 门禁分流),已拆为 R-204;保留 ComplexityLevel/LEVEL_NAMES/LEVEL_DESCRIPTIONS。\n- 成本: 改动集中在 transitions.ts + state-machine.ts 两文件 + 测试,性能无影响,无 state.json 迁移成本。\n- 风险: 收紧前置可能误拒历史漂移状态;缓解:requiredGate 覆盖合法重入来源(review_pass/review_fail),并跑全量测试 + 真实 dogfood 验证。\n- 回滚方案: requiredGate 为可选字段,git revert 单次提交即可恢复;删除的死代码可从 git 历史还原。\n- 用户确认: 已确认(2026-06-18)。死代码处置=删除死转移代码;level 分流=拆成独立 backlog(R-204)。经 AskUserQuestion 两项决策明确选定。\n\n## 5. 验收标准\n\n- [ ] AC-1: 生成的 spec 可直接进入 `docpath plan`\n- [ ] AC-2: backlog 条目 R-203 与任务 T-20260618-gate-level-transitions 建立双向关联\n\n---\n\n*此文件由 `docpath backlog promote` 生成。*\n",
+  "generated_at": "2026-06-18T12:38:51.925Z",
+  "scope": {
+    "included": [
+      "状态机正确性:gate 级前置 + 清理死的 LEVEL_TRANSITIONS"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "删除 / 替换已有能力"
+    ],
+    "user_confirmed": "已确认(2026-06-18)。死代码处置=删除死转移代码;level 分流=拆成独立 backlog(R-204)。经 AskUserQuestion 两项决策明确选定。",
+    "decision_brief_markdown": "- 当前问题: 运行时只强制 transitions.ts 一套 FSM。(1) 门禁前置只到 phase 粒度,gate 级前置(check 必须 pass 才能 review)未在 FSM 层强制,仅靠 review.ts 命令层自觉;(2) state-machine.ts 的 LEVEL_TRANSITIONS/canTransition/getValidTransitions 零消费=死代码,误导读代码的人和 Agent。\n- 目标: 把 gate 级前置补进 FSM 层做纵深防御;删除死转移代码,让运行时成为唯一真相源。\n- 背景: 全仓 grep 确认规约 FSM 在定义文件外零消费;CLAUDE.md 声称 state transition legality 是 CLI 拥有的机械检查,但对门禁前置实际不成立。\n- 可选方案: 死代码处置三选一(删除 / 标 @deprecated / 反向接线);level 分流(本任务做 / 拆独立 backlog)。\n- 推荐方案: requiredGate 可选字段 + 持锁段强制(向后兼容,不动命令层契约);删除死转移代码;level 分流拆 R-204。\n- 不做什么: 不在本任务处理 level 被运行时忽略(L0/quick 门禁分流),已拆为 R-204;保留 ComplexityLevel/LEVEL_NAMES/LEVEL_DESCRIPTIONS。\n- 成本: 改动集中在 transitions.ts + state-machine.ts 两文件 + 测试,性能无影响,无 state.json 迁移成本。\n- 风险: 收紧前置可能误拒历史漂移状态;缓解:requiredGate 覆盖合法重入来源(review_pass/review_fail),并跑全量测试 + 真实 dogfood 验证。\n- 回滚方案: requiredGate 为可选字段,git revert 单次提交即可恢复;删除的死代码可从 git 历史还原。\n- 用户确认: 已确认(2026-06-18)。死代码处置=删除死转移代码;level 分流=拆成独立 backlog(R-204)。经 AskUserQuestion 两项决策明确选定。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "状态机正确性:gate 级前置 + 清理死的 LEVEL_TRANSITIONS",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-203 与任务 T-20260618-gate-level-transitions 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: 运行时只强制 transitions.ts 一套 FSM。(1) 门禁前置只到 phase 粒度,gate 级前置(check 必须 pass 才能 review)未在 FSM 层强制,仅靠 review.ts 命令层自觉;(2) state-machine.ts 的 LEVEL_TRANSITIONS/canTransition/getValidTransitions 零消费=死代码,误导读代码的人和 Agent。\n- 目标: 把 gate 级前置补进 FSM 层做纵深防御;删除死转移代码,让运行时成为唯一真相源。\n- 背景: 全仓 grep 确认规约 FSM 在定义文件外零消费;CLAUDE.md 声称 state transition legality 是 CLI 拥有的机械检查,但对门禁前置实际不成立。\n- 可选方案: 死代码处置三选一(删除 / 标 @deprecated / 反向接线);level 分流(本任务做 / 拆独立 backlog)。\n- 推荐方案: requiredGate 可选字段 + 持锁段强制(向后兼容,不动命令层契约);删除死转移代码;level 分流拆 R-204。\n- 不做什么: 不在本任务处理 level 被运行时忽略(L0/quick 门禁分流),已拆为 R-204;保留 ComplexityLevel/LEVEL_NAMES/LEVEL_DESCRIPTIONS。\n- 成本: 改动集中在 transitions.ts + state-machine.ts 两文件 + 测试,性能无影响,无 state.json 迁移成本。\n- 风险: 收紧前置可能误拒历史漂移状态;缓解:requiredGate 覆盖合法重入来源(review_pass/review_fail),并跑全量测试 + 真实 dogfood 验证。\n- 回滚方案: requiredGate 为可选字段,git revert 单次提交即可恢复;删除的死代码可从 git 历史还原。\n- 用户确认: 已确认(2026-06-18)。死代码处置=删除死转移代码;level 分流=拆成独立 backlog(R-204)。经 AskUserQuestion 两项决策明确选定。"
+}
