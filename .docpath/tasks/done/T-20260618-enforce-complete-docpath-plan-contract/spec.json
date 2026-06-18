@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-18T16:48:32.906Z",
+    "updated_at": "2026-06-18T16:48:32.906Z",
+    "content_sha256": "d4faef427721fe040dd5922b6a16fb134a1a39ba95e1315697ef8ad3052bec76"
+  },
+  "task_id": "T-20260618-enforce-complete-docpath-plan-contract",
+  "backlog_id": "R-204",
+  "title": "T-20260618-enforce-complete-docpath-plan-contract - Enforce complete docpath plan contract",
+  "markdown": "# T-20260618-enforce-complete-docpath-plan-contract - Enforce complete docpath plan contract\n\n> backlog_id: R-204\n> backlog_source: docpath backlog capture\n\n## 1. 背景与动机\n\nDogfooding showed that `docpath plan` can write an incomplete plan that covers only the first functional requirement, while still advancing workflow state to `planning`. That is a contract violation: downstream `go`, `check`, `review`, and closeout operate on the persisted plan as machine truth.\n\nFor implementation tasks, `plan` must either persist a plan that covers the spec requirements and acceptance criteria, or fail before writing/advancing with actionable diagnostics. A partial plan is worse than no plan because it creates false workflow confidence.\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: `docpath plan` must validate generated plan coverage before persisting `plan.md` / `plan.json`.\n- [ ] FR-2: Plan coverage validation must require references to each functional requirement id (`FR-*`) declared in the spec.\n- [ ] FR-3: Plan coverage validation must require references to each acceptance criterion id (`AC-*`) declared in the spec.\n- [ ] FR-4: When generated plan coverage is incomplete, `docpath plan` must fail without writing plan artifacts or advancing workflow state.\n- [ ] FR-5: Failure diagnostics must list the missing requirement and acceptance ids and tell the user to refine/write a complete plan.\n\n### 非功能需求\n- [ ] NFR-1: `write-plan` should keep accepting explicit user-authored plans that pass the existing structural contract; the new completeness gate is specific to generated `docpath plan` output.\n- [ ] NFR-2: Existing tests for normal plan generation and write-plan behavior must remain compatible unless they intentionally exercise incomplete generated output.\n- [ ] NFR-3: The validator should be deterministic and not depend on LLM behavior or markdown prose heuristics beyond explicit ids.\n\n## 3. 范围界定\n\n### 包含\n- Spec id extraction for FR/AC coverage.\n- Generated plan coverage validation before persistence.\n- Fail-loud diagnostics for missing ids.\n- Regression tests proving incomplete generated plans do not write or advance state.\n\n### 不包含\n- Replacing the prompt contract with an actual LLM call.\n- Full semantic task planning quality scoring.\n- Enforcing completeness on `write-plan` for manually authored recovery plans.\n- UI design workflow changes.\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | Coverage signal | Infer semantics from prose / require explicit FR/AC ids | Require explicit ids | Deterministic and testable; avoids vague prose matching. |\n| 2 | Enforcement point | Validate in `write-plan` / validate generated `plan` output before write | Validate generated `plan` output before write | Fixes the unsafe automatic writer without breaking explicit manual recovery plans. |\n| 3 | Failure behavior | Write partial plan with warnings / fail before mutation | Fail before mutation | Prevents machine truth from becoming incomplete. |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [ ] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）\n- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）\n\n### Decision Brief\n- 当前问题: `docpath plan` 可写入不完整 plan 并推进状态，后续流程会建立在不合格 machine truth 上。\n- 目标: 让生成式 plan 在写入前具备最低覆盖契约，缺失覆盖时 fail-loud 且不改变状态。\n- 背景: 用户明确指出该问题应优先处理，因为后续所有流程都会基于 plan。\n- 可选方案: 只优化 prompt；在 check 阶段发现；在 plan 写入前验证；强制所有 write-plan 都验证。\n- 推荐方案: 对 `docpath plan` 的生成输出做 FR/AC id 覆盖验证，缺失则拒绝写入并列出缺口。\n- 不做什么: 不引入语义评分；不改变手工 `write-plan` 的恢复能力；不触碰 UI gate。\n- 成本: 增加解析/验证逻辑和回归测试；旧测试中无 id 的生成 plan 需要补齐。\n- 风险: 既有 specs 如果没有显式 FR/AC id，coverage gate 没有可验证对象；这种情况下保持现有结构校验。\n- 回滚方案: 移除生成 plan coverage preflight，恢复原 plan 写入路径。\n- 用户确认: 用户明确要求先做 docpath plan 契约问题，并继续要求 dogfood 修复暴露问题。\n\n## 5. 验收标准\n\n- [ ] AC-1: Multi-FR/multi-AC spec 下，`docpath plan` 生成的 plan 若缺少任何 FR/AC id，命令失败且不写 `plan.md` / `plan.json`。\n- [ ] AC-2: 失败输出列出缺失的 FR/AC id，并提示使用 `docpath write-plan` 写入完整计划。\n- [ ] AC-3: 成功的 generated plan 必须包含全部 FR/AC id，且状态正常推进到 planning。\n- [ ] AC-4: `write-plan` 现有结构校验行为保持不变。\n- [ ] AC-5: 回归测试覆盖失败不落盘、不推进状态、成功落盘三条路径。\n",
+  "generated_at": "2026-06-18T16:48:32.906Z",
+  "scope": {
+    "included": [
+      "Spec id extraction for FR/AC coverage.",
+      "Generated plan coverage validation before persistence.",
+      "Fail-loud diagnostics for missing ids.",
+      "Regression tests proving incomplete generated plans do not write or advance state."
+    ],
+    "excluded": [
+      "Replacing the prompt contract with an actual LLM call.",
+      "Full semantic task planning quality scoring.",
+      "Enforcing completeness on `write-plan` for manually authored recovery plans.",
+      "UI design workflow changes."
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "用户明确要求先做 docpath plan 契约问题，并继续要求 dogfood 修复暴露问题。",
+    "decision_brief_markdown": "- 当前问题: `docpath plan` 可写入不完整 plan 并推进状态，后续流程会建立在不合格 machine truth 上。\n- 目标: 让生成式 plan 在写入前具备最低覆盖契约，缺失覆盖时 fail-loud 且不改变状态。\n- 背景: 用户明确指出该问题应优先处理，因为后续所有流程都会基于 plan。\n- 可选方案: 只优化 prompt；在 check 阶段发现；在 plan 写入前验证；强制所有 write-plan 都验证。\n- 推荐方案: 对 `docpath plan` 的生成输出做 FR/AC id 覆盖验证，缺失则拒绝写入并列出缺口。\n- 不做什么: 不引入语义评分；不改变手工 `write-plan` 的恢复能力；不触碰 UI gate。\n- 成本: 增加解析/验证逻辑和回归测试；旧测试中无 id 的生成 plan 需要补齐。\n- 风险: 既有 specs 如果没有显式 FR/AC id，coverage gate 没有可验证对象；这种情况下保持现有结构校验。\n- 回滚方案: 移除生成 plan coverage preflight，恢复原 plan 写入路径。\n- 用户确认: 用户明确要求先做 docpath plan 契约问题，并继续要求 dogfood 修复暴露问题。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "`docpath plan` must validate generated plan coverage before persisting `plan.md` / `plan.json`.",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Plan coverage validation must require references to each functional requirement id (`FR-*`) declared in the spec.",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "Plan coverage validation must require references to each acceptance criterion id (`AC-*`) declared in the spec.",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "When generated plan coverage is incomplete, `docpath plan` must fail without writing plan artifacts or advancing workflow state.",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "Failure diagnostics must list the missing requirement and acceptance ids and tell the user to refine/write a complete plan.",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "`write-plan` should keep accepting explicit user-authored plans that pass the existing structural contract; the new completeness gate is specific to generated `docpath plan` output.",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "Existing tests for normal plan generation and write-plan behavior must remain compatible unless they intentionally exercise incomplete generated output.",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "The validator should be deterministic and not depend on LLM behavior or markdown prose heuristics beyond explicit ids.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "Multi-FR/multi-AC spec 下，`docpath plan` 生成的 plan 若缺少任何 FR/AC id，命令失败且不写 `plan.md` / `plan.json`。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "失败输出列出缺失的 FR/AC id，并提示使用 `docpath write-plan` 写入完整计划。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "成功的 generated plan 必须包含全部 FR/AC id，且状态正常推进到 planning。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "`write-plan` 现有结构校验行为保持不变。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "回归测试覆盖失败不落盘、不推进状态、成功落盘三条路径。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: `docpath plan` 可写入不完整 plan 并推进状态，后续流程会建立在不合格 machine truth 上。\n- 目标: 让生成式 plan 在写入前具备最低覆盖契约，缺失覆盖时 fail-loud 且不改变状态。\n- 背景: 用户明确指出该问题应优先处理，因为后续所有流程都会基于 plan。\n- 可选方案: 只优化 prompt；在 check 阶段发现；在 plan 写入前验证；强制所有 write-plan 都验证。\n- 推荐方案: 对 `docpath plan` 的生成输出做 FR/AC id 覆盖验证，缺失则拒绝写入并列出缺口。\n- 不做什么: 不引入语义评分；不改变手工 `write-plan` 的恢复能力；不触碰 UI gate。\n- 成本: 增加解析/验证逻辑和回归测试；旧测试中无 id 的生成 plan 需要补齐。\n- 风险: 既有 specs 如果没有显式 FR/AC id，coverage gate 没有可验证对象；这种情况下保持现有结构校验。\n- 回滚方案: 移除生成 plan coverage preflight，恢复原 plan 写入路径。\n- 用户确认: 用户明确要求先做 docpath plan 契约问题，并继续要求 dogfood 修复暴露问题。"
+}

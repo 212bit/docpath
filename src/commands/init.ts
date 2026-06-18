@@ -29,7 +29,7 @@ import type { ComplexityLevel } from '../engine/state-machine.js';
 import { createDefaultState } from '../engine/state-machine.js';
 import { loadTemplate } from '../utils/file.js';
 import { detectProject, formatProjectInfo, detectMonorepo, type ProjectInfo } from '../utils/detect.js';
-import { writeCurrentState, type CurrentState } from '../utils/workspace.js';
+import { readCurrentState, writeCurrentState, type CurrentState } from '../utils/workspace.js';
 import { ensureRulesDir } from '../utils/rules.js';
 import { registerProject } from '../engine/project-registry.js';
 
@@ -135,8 +135,35 @@ function assertInteractiveTty(): void {
 async function registerExistingProject(cwd: string): Promise<void> {
   console.log('⚠️  当前目录已存在 .docpath/，默认不会覆盖已有工作区。');
   console.log('    已改为注册现有项目；如需重建，请明确运行: docpath init --force');
+  await repairRuntimeWorkspace(cwd);
   const registered = await registerProject(cwd);
   console.log(`  🗄️  已注册到本地项目中心: ${registered.name}`);
+}
+
+async function repairRuntimeWorkspace(cwd: string): Promise<void> {
+  const docpathDir = join(cwd, '.docpath');
+  await createRuntimeDirs(cwd);
+
+  const statePath = join(docpathDir, 'workspace', 'state.json');
+  const currentPath = join(docpathDir, 'workspace', 'current.md');
+  const breadcrumbPath = join(docpathDir, 'workspace', 'breadcrumb.md');
+
+  if (!(await exists(statePath))) {
+    await writeInitialStateFiles(cwd, undefined);
+    console.log('  🩹 已补齐缺失 runtime: workspace/state.json + current.md');
+  } else if (!(await exists(currentPath))) {
+    const current = await readCurrentState(cwd);
+    if (current) {
+      await writeCurrentState(cwd, current);
+      console.log('  🩹 已补齐缺失 runtime: workspace/current.md');
+    }
+  }
+
+  if (!(await exists(breadcrumbPath))) {
+    const breadcrumbContent = await loadTemplate(join(TEMPLATES_DIR, 'breadcrumb.template.md'));
+    await writeFileSafe(breadcrumbPath, breadcrumbContent);
+    console.log('  🩹 已补齐缺失 runtime: workspace/breadcrumb.md');
+  }
 }
 
 async function handleExistingDocpathInteractive(cwd: string): Promise<boolean> {
@@ -264,8 +291,23 @@ function resolveLevelSource(options: InitOptions): LevelSource {
 async function createDocpathDirs(cwd: string, docpathDir: string): Promise<void> {
   const dirs = ['.docpath', '.docpath/rules', '.docpath/spec', '.docpath/spec/template', '.docpath/tasks', '.docpath/workspace', '.docpath/journal'];
   for (const dir of dirs) await ensureDir(join(cwd, dir));
+  await createRuntimeDirs(cwd);
   await ensureRulesDir(docpathDir);
   console.log('  ✓  目录结构已创建');
+}
+
+async function createRuntimeDirs(cwd: string): Promise<void> {
+  const dirs = [
+    '.docpath',
+    '.docpath/tasks',
+    '.docpath/workspace',
+    '.docpath/workspace/sessions',
+    '.docpath/workspace/leases',
+    '.docpath/workspace/commands',
+    '.docpath/workspace/bin',
+    '.docpath/journal',
+  ];
+  for (const dir of dirs) await ensureDir(join(cwd, dir));
 }
 
 async function writeInitialConfig(cwd: string, level: ComplexityLevel, projectInfo: ProjectInfo): Promise<void> {

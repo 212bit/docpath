@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'child_process';
-import { existsSync, readFileSync, rmSync, mkdtempSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, mkdtempSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -115,6 +115,38 @@ describe('init command', () => {
     }));
     assert.equal(projects.projects.length, 1);
     assert.equal(projects.projects[0].root, cwd);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('repairs missing runtime files for an existing DocPath project without force', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-repair-runtime-'));
+    const registryDb = registryDbPath();
+    mkdirSync(join(cwd, '.docpath', 'rules'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'config.yaml'), 'project:\n  name: existing-project\n');
+    writeFileSync(join(cwd, '.docpath', 'rules', 'style.md'), '# Existing Style\n');
+
+    const output = execSync(`node ${BIN} init --cwd ${cwd}`, {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 20000,
+      env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
+    });
+
+    assert.match(output, /已补齐缺失 runtime/);
+    assert.match(output, /已注册到本地项目中心/);
+    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'state.json')), true);
+    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'current.md')), true);
+    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'breadcrumb.md')), true);
+    assert.equal(readFileSync(join(cwd, '.docpath', 'config.yaml'), 'utf-8'), 'project:\n  name: existing-project\n');
+    assert.equal(readFileSync(join(cwd, '.docpath', 'rules', 'style.md'), 'utf-8'), '# Existing Style\n');
+    const next = execSync(`node ${BIN} next --cwd ${cwd} --agent`, {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 20000,
+      env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
+    });
+    assert.match(next, /agent_view: next/);
+    assert.doesNotMatch(next, /state: unknown/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

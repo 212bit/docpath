@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-18T16:39:29.947Z",
+    "updated_at": "2026-06-18T16:39:29.947Z",
+    "content_sha256": "63a1ce964bf2e0a4fa3b56d1eab0f92b66bcbb325f5da24c88e995a051764cb7"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: Repair runtime lock and init bootstrap\n- **描述**: Update lock acquisition to create the lock parent directory, and update `docpath init` existing-project registration to repair missing runtime workspace files without overwriting existing config/rules.\n- **验收条件**: Missing `.docpath/workspace/` no longer causes state lock `ENOENT`; existing `.docpath/` projects regain `workspace/state.json`, `workspace/current.md`, and `workspace/breadcrumb.md` through `docpath init`.\n- **依赖**: 无\n\n### S2: Preserve dirty guard while allowing target backlog promotion evidence\n- **描述**: Add path-level dirty allowlist support and use it in `backlog promote` so capture-created target backlog files can be promoted while unrelated dirty files still block new task start.\n- **验收条件**: `backlog capture -> backlog promote <id> --draft` succeeds with only target backlog evidence dirty; `backlog promote` still rejects dirty source files such as `README.md`.\n- **依赖**: 无\n\n### S3: Add regression tests for runtime bootstrap and promote guard\n- **描述**: Cover lock parent creation, backlog promote with missing runtime workspace, init runtime repair, capture-to-promote dirty evidence, and existing dirty rejection behavior.\n- **验收条件**: New tests fail on the previous behavior and pass with the fixes.\n- **依赖**: S1, S2\n\n### S4: Validate and close out\n- **描述**: Run typecheck, targeted tests, full test suite, DocPath check/review, and inspect `changes --agent` for commit readiness.\n- **验收条件**: Typecheck and tests pass; DocPath gates pass or any remaining tool limitation is explicitly recorded.\n- **依赖**: S3\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n\n## 依赖关系图\nS1 → S3 → S4\nS2 → S3 → S4\n",
+  "generated_at": "2026-06-18T16:39:29.947Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Repair runtime lock and init bootstrap",
+      "description": "Update lock acquisition to create the lock parent directory, and update `docpath init` existing-project registration to repair missing runtime workspace files without overwriting existing config/rules.",
+      "acceptance": "Missing `.docpath/workspace/` no longer causes state lock `ENOENT`; existing `.docpath/` projects regain `workspace/state.json`, `workspace/current.md`, and `workspace/breadcrumb.md` through `docpath init`.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Preserve dirty guard while allowing target backlog promotion evidence",
+      "description": "Add path-level dirty allowlist support and use it in `backlog promote` so capture-created target backlog files can be promoted while unrelated dirty files still block new task start.",
+      "acceptance": "`backlog capture -> backlog promote <id> --draft` succeeds with only target backlog evidence dirty; `backlog promote` still rejects dirty source files such as `README.md`.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Add regression tests for runtime bootstrap and promote guard",
+      "description": "Cover lock parent creation, backlog promote with missing runtime workspace, init runtime repair, capture-to-promote dirty evidence, and existing dirty rejection behavior.",
+      "acceptance": "New tests fail on the previous behavior and pass with the fixes.",
+      "dependencies": "S1, S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Validate and close out",
+      "description": "Run typecheck, targeted tests, full test suite, DocPath check/review, and inspect `changes --agent` for commit readiness.",
+      "acceptance": "Typecheck and tests pass; DocPath gates pass or any remaining tool limitation is explicitly recorded.",
+      "dependencies": "S3",
+      "status": "done"
+    }
+  ]
+}

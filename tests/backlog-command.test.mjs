@@ -643,6 +643,54 @@ created_at: 2026-05-31
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('backlog promote creates missing workspace runtime before state locking', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-backlog-missing-workspace-'));
+    const dp = join(cwd, '.docpath');
+    mkdirSync(join(dp, 'backlog'), { recursive: true });
+    mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
+    writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: backlog-command-test\n');
+    writeFileSync(join(dp, 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha Promote
+status: accepted
+priority: P0
+level: 2
+source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+- 来自 backlog 的正文
+
+## 验收
+
+- 完成验收
+`);
+
+    const out = run('backlog promote R-001', cwd);
+    const state = JSON.parse(readFileSync(join(dp, 'workspace', 'state.json'), 'utf-8'));
+    const item = readFileSync(join(dp, 'backlog', 'R-001-alpha.md'), 'utf-8');
+
+    assert.match(out, /已 promote backlog 条目: R-001/);
+    assert.equal(existsSync(join(dp, 'workspace', 'current.md')), true);
+    assert.equal(state.phase, 'drafting');
+    assert.match(state.task_id, /^T-\d{8}-alpha-promote$/);
+    assert.match(item, /status: active/);
+    assert.match(item, /task: T-\d{8}-alpha-promote/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('backlog promote fails loudly when there is already an active task', () => {
     const cwd = mkWorkspace();
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
