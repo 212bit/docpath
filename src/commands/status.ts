@@ -7,7 +7,7 @@ import {
   detectInstallAssetDrift,
   isInstallTarget,
   type InstallMetadata,
-} from './install.js';
+} from '../utils/install-core.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
 import { getDocpathPackageVersion } from '../utils/package-info.js';

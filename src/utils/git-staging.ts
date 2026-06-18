@@ -2,9 +2,7 @@ import { execFileSync, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { minimatch } from 'minimatch';
-// TODO(arch): utils→commands 反向依赖。buildChangesReport 牵动 changes.ts 多个私有
-// helper，完整下沉非速赢。已核实无循环（changes.ts 不 import 本文件），分层技术债，待专项清理。
-import { buildChangesReport } from '../commands/changes.js';
+import { buildChangesReport } from './changes-report.js';
 
 export interface StageOptions {
   dryRun: boolean;
