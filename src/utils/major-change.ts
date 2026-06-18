@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { readActiveStructuredSpecDocument, readActiveTaskFile } from './task-files.js';
 
 export interface MajorDecisionSignal {
@@ -73,7 +73,7 @@ const STRATEGIC_CHANGE_FILE_PATTERNS: Array<{ pattern: RegExp; label: string }> 
 
 function runGitOptional(cwd: string, args: string[]): string | null {
   try {
-    return execSync(`git ${args.join(' ')}`, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trimEnd();
+    return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trimEnd();
   } catch {
     return null;
   }

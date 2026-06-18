@@ -14,6 +14,7 @@ import { validatePlanContent } from '../utils/doc-parser.js';
 import { canonicalTaskDir, currentTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
+import { readStdin } from '../utils/stdin.js';
 
 interface WritePlanOptions {
   cwd: string;
@@ -82,14 +83,3 @@ function formatValidationIssue(issue: { message: string; line?: number; section?
   return details.length > 0 ? `${issue.message} (${details.join(', ')})` : issue.message;
 }
 
-function readStdin(): Promise<string> {
-  return new Promise((resolve) => {
-    const chunks: Buffer[] = [];
-    process.stdin.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    process.stdin.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-    process.stdin.on('error', () => resolve(''));
-    if (process.stdin.isTTY) {
-      resolve('');
-    }
-  });
-}

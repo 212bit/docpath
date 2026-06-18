@@ -11,6 +11,7 @@ import { readRequirementFile } from '../utils/input.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { nextCommand } from './runtime.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
+import { readStdin } from '../utils/stdin.js';
 
 interface RefineOptions {
   cwd: string;
@@ -209,14 +210,3 @@ async function readRequirementInput(options: RefineOptions): Promise<string> {
   return '';
 }
 
-function readStdin(): Promise<string> {
-  return new Promise((resolveInput) => {
-    const chunks: Buffer[] = [];
-    process.stdin.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    process.stdin.on('end', () => resolveInput(Buffer.concat(chunks).toString('utf-8')));
-    process.stdin.on('error', () => resolveInput(''));
-    if (process.stdin.isTTY) {
-      resolveInput('');
-    }
-  });
-}

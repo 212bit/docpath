@@ -10,7 +10,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { readCurrentState } from '../utils/workspace.js';
@@ -71,7 +71,7 @@ function isReviewableFile(file: string): boolean {
 }
 
 function runGit(cwd: string, args: string[]): string {
-  return execSync(`git ${args.join(' ')}`, { cwd, encoding: 'utf-8', timeout: 10000 });
+  return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000 });
 }
 
 function collectChangedFiles(cwd: string, scope = 'all'): string[] {
@@ -157,11 +157,11 @@ function fileLineCount(cwd: string, file: string): number {
 
 function diffForFile(cwd: string, file: string, scope: 'all' | 'staged' | 'last_commit'): string {
   try {
-    if (scope === 'staged') return runGit(cwd, ['diff', '--unified=0', '--cached', '--', JSON.stringify(file)]);
-    if (scope === 'last_commit') return runGit(cwd, ['diff', '--unified=0', 'HEAD~1..HEAD', '--', JSON.stringify(file)]);
+    if (scope === 'staged') return runGit(cwd, ['diff', '--unified=0', '--cached', '--', file]);
+    if (scope === 'last_commit') return runGit(cwd, ['diff', '--unified=0', 'HEAD~1..HEAD', '--', file]);
     return [
-      runGit(cwd, ['diff', '--unified=0', '--', JSON.stringify(file)]),
-      runGit(cwd, ['diff', '--unified=0', '--cached', '--', JSON.stringify(file)]),
+      runGit(cwd, ['diff', '--unified=0', '--', file]),
+      runGit(cwd, ['diff', '--unified=0', '--cached', '--', file]),
     ].join('\n');
   } catch {
     return '';
@@ -174,7 +174,7 @@ function collectDiffLineRanges(cwd: string, changedFiles: string[], scope: 'all'
     const ranges = parseChangedLineRanges(diffForFile(cwd, file, scope));
     if (ranges.length === 0) {
       try {
-        const status = runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all', '--', JSON.stringify(file)]);
+        const status = runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all', '--', file]);
         if (/^\?\?/.test(status.trim())) {
           const lines = fileLineCount(cwd, file);
           if (lines > 0) ranges.push({ start: 1, end: lines });

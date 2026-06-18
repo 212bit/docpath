@@ -24,10 +24,12 @@ fi
 ## Follow-up
 
 1. Read the YAML output.
-2. Treat `context_index`, `data_index`, `required_context`, and `required_files` as indexes, not mandatory full-file reads.
-3. Expand details with `/docpath-reveal` or `/docpath-context --max-tokens <n> --topic <keyword>` before opening generated Markdown views.
-4. Execute `recommended_command` unless the workspace state has changed.
-5. Do not invent a different next step without recording the reason through a DocPath lifecycle command.
+2. Follow `context_policy`: DocPath CLI output is the primary context source, and direct file reads are on-demand only.
+3. Treat `context_refs`, `required_context`, and `required_files` as indexes, not mandatory full-file reads.
+4. Expand details with `/docpath-reveal` or `/docpath-context --max-tokens <n> --topic <keyword>` before opening generated Markdown views.
+5. Execute `recommended_command` unless the workspace state has changed.
+6. Treat `command_effects.updates` and legacy `must_update` as files updated by DocPath commands, not as hand-edit targets.
+7. Do not invent a different next step without recording the reason through a DocPath lifecycle command.
 
 ## Expected Result
 
