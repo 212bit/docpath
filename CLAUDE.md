@@ -132,6 +132,12 @@ Workflow:
   or long-term maintenance cost require brainstorm/refine plus a Decision Brief
   and explicit user confirmation before implementation.
 - Run `docpath check` before marking work complete.
+- `docpath journal` (standalone and via `agent done`) does NOT physically move
+  the task directory; it advances state, backfills backlog, and writes lesson
+  candidates + decisions. Physical archiving (`tasks/<id>/` → `tasks/done/<id>/`)
+  is owned by `docpath gc --force` after closeout. `docpath write-journal`
+  (knowledge record into spec.md) must run BEFORE archiving — it fails loud on
+  an already-archived task.
 - Before any local `git commit`, run `docpath changes --agent`. Treat it as a
   read-only closeout report; only force-add exact canonical evidence paths it
   recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by

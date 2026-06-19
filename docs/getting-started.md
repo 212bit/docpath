@@ -209,6 +209,12 @@ docpath review
 docpath journal
 ```
 
+`docpath journal` 默认**不**物理移动任务目录（对齐 `agent done`）：它推进状态、回填
+backlog、写 lesson 候选与决策日志，但保留 `tasks/<id>/` 供 `docpath changes --agent`
+closeout。物理归档（`tasks/<id>/` → `tasks/done/<id>/`）由收口后的 `docpath gc --force`
+完成。知识记录写入 spec.md 用 `docpath write-journal`，**必须在归档前**运行（归档后
+write-journal 会 fail-loud）。
+
 Agent 场景下推荐用收口命令串起 check、review 和 journal：
 
 ```bash
