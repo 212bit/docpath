@@ -13,7 +13,7 @@
 /.docpath/workspace/
 /.docpath/.install-meta.json
 /.docpath/tasks/current/
-/.docpath/backlog/
+/.docpath/backlog
 
 # Local agent/tool state
 /.claude/
