@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-19T12:28:26.399Z",
+    "updated_at": "2026-06-19T12:28:26.399Z",
+    "content_sha256": "c4b66c041cfee793084bca2bf74ae3003aac02c19eda9de6a52893c013111a45"
+  },
+  "task_id": "T-20260619-resolve-utils-commands-reverse-dependenc",
+  "backlog_id": "R-212",
+  "title": "T-20260619-resolve-utils-commands-reverse-dependenc - Resolve Utils -> Commands reverse dependency tech debt",
+  "markdown": "# T-20260619-resolve-utils-commands-reverse-dependenc - Resolve Utils -> Commands reverse dependency tech debt\n\n> backlog_id: R-212\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\n## 背景\n\nClean up the architecture by removing reverse dependencies from utils layer to commands layer (such as buildInstallDoctorReport and buildChangesReport)\n\n## 验收\n\nCompilation and tests pass, no cyclic imports or reverse dependencies exist in git-staging.ts or agent-output.ts\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: Resolve Utils -> Commands reverse dependency tech debt\n  - 来源 backlog: R-212\n\n### 非功能需求\n- [ ] NFR-1: 保持与现有 DocPath 工作流兼容\n\n## 3. 范围界定\n\n### 包含\n- Resolve Utils -> Commands reverse dependency tech debt\n\n### 不包含\n- 待在后续规划中补充\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [x] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）\n- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）\n\n### Decision Brief\n- 当前问题: ## 背景\n- 目标: Resolve Utils -> Commands reverse dependency tech debt\n- 背景: 来自 backlog R-212\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认\n\n## 5. 验收标准\n\n- [ ] AC-1: 生成的 spec 可直接进入 `docpath plan`\n- [ ] AC-2: backlog 条目 R-212 与任务 T-20260619-resolve-utils-commands-reverse-dependenc 建立双向关联\n\n---\n\n*此文件由 `docpath backlog promote` 生成。*\n",
+  "generated_at": "2026-06-19T12:28:26.399Z",
+  "scope": {
+    "included": [
+      "Resolve Utils -> Commands reverse dependency tech debt"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界"
+    ],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: ## 背景\n- 目标: Resolve Utils -> Commands reverse dependency tech debt\n- 背景: 来自 backlog R-212\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Resolve Utils -> Commands reverse dependency tech debt",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-212 与任务 T-20260619-resolve-utils-commands-reverse-dependenc 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: ## 背景\n- 目标: Resolve Utils -> Commands reverse dependency tech debt\n- 背景: 来自 backlog R-212\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+}
