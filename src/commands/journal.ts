@@ -326,7 +326,7 @@ async function finalizeJournal(
     status: 'done',
     context: `知识归档完成 (${summary.completedSteps}/${summary.totalSteps} 步)`,
   });
-  await writeLessonCandidate(context.docpathDir, context.taskId, summary);
+  await writeLessonCandidate(context, summary);
   await updateWorkspaceMeta(context.docpathDir, context.meta);
   await writeJournalDecisions(cwd, archive.taskDirName, summary, context);
   await gcJournalDecisions(cwd, skipDecisionGc);
@@ -470,11 +470,15 @@ function extractMarkdownSection(markdown: string, heading: string): string | nul
   return raw.trim() || null;
 }
 
-async function writeLessonCandidate(docpathDir: string, taskId: string, summary: TaskSummary): Promise<void> {
+async function writeLessonCandidate(
+  context: JournalContext,
+  summary: TaskSummary,
+): Promise<void> {
   // fail-loud guard：没有合法 task_id 的归档不该产生可固化的全局经验。
   // taskId 为 'unknown'/空通常是状态漂移或未绑定任务的征兆（见 docpath-go-taskid-gate）；
   // 容错写入只会在 lesson-candidates.md 留下 `## unknown` 孤儿块，污染后续 learn 固化。
   // 归档本身仍可继续（journal.ts:143 的容错保留），但 lesson 候选在此处显式跳过。
+  const { docpathDir, taskId } = context;
   const normalizedTaskId = (taskId || '').trim();
   if (!normalizedTaskId || normalizedTaskId === 'unknown') {
     console.warn(`⚠️  跳过 lesson 候选写入：task_id 缺失或无效（taskId=${taskId || '<empty>'}）。请确认任务已正确绑定后再归档。`);
@@ -483,6 +487,34 @@ async function writeLessonCandidate(docpathDir: string, taskId: string, summary:
   try {
     const lessonsPath = join(docpathDir, 'workspace', 'lesson-candidates.md');
     const now = new Date().toISOString();
+
+    // 真实可固化内容：ADR 摘要 + decision_brief 推荐方案 + blocked 步骤。
+    // 没有这些则退化为现状的执行统计模板。
+    const adrCandidates = collectAdrCandidates(context, summary);
+    const briefRecommended = context.structuredSpec?.major_change_gate?.decision_brief_markdown?.trim()
+      ? (extractBriefField(context.structuredSpec.major_change_gate.decision_brief_markdown, '推荐方案')
+          || extractBriefField(context.structuredSpec.major_change_gate.decision_brief_markdown, '推荐'))
+      : null;
+    const blockedSteps = context.breadcrumb.entries
+      .filter((e) => e.taskId === taskId && e.status === 'blocked')
+      .map((e) => `- ${e.step}: ${e.context}`);
+
+    const lessonBody: string[] = [
+      `✅ 推荐保留本次任务的执行经验：完成 ${summary.completedSteps}/${summary.totalSteps} 步，阻塞 ${summary.blockedSteps} 步。`,
+    ];
+    if (briefRecommended) {
+      lessonBody.push('', `### 推荐方案`, '', briefRecommended);
+    }
+    if (adrCandidates.length > 0) {
+      lessonBody.push('', '### 架构决策摘要', '');
+      for (const c of adrCandidates.slice(0, 5)) {
+        lessonBody.push(`- ${c.title}: ${c.decision}`);
+      }
+    }
+    if (blockedSteps.length > 0) {
+      lessonBody.push('', '### 阻塞步骤（踩坑点）', '', ...blockedSteps);
+    }
+
     const lessonLines = [
       `## ${taskId} — ${now}`,
       '',
@@ -494,7 +526,7 @@ async function writeLessonCandidate(docpathDir: string, taskId: string, summary:
       '',
       '### Lesson',
       '',
-      `✅ 推荐保留本次任务的执行经验：完成 ${summary.completedSteps}/${summary.totalSteps} 步，阻塞 ${summary.blockedSteps} 步。`,
+      ...lessonBody,
       '',
       '### Evidence',
       '',
@@ -523,6 +555,22 @@ async function updateWorkspaceMeta(docpathDir: string, meta: Record<string, unkn
   }
 }
 
+function collectAdrCandidates(context: JournalContext, summary: TaskSummary): AdrCandidate[] {
+  const candidates: AdrCandidate[] = [];
+  const seen = new Set<string>();
+  const push = (c: AdrCandidate): void => {
+    const key = c.title.toLowerCase();
+    if (!c.title || seen.has(key)) return;
+    seen.add(key);
+    candidates.push(c);
+  };
+  // 优先级: structured decision_brief > spec 关键决策表 > breadcrumb 关键词
+  for (const c of extractAdrFromDecisionBrief(context.structuredSpec, context.current?.task_title || summary.taskId)) push(c);
+  for (const c of extractAdrFromKeyDecisionsTable(context.spec)) push(c);
+  for (const c of extractArchitectureDecisionCandidates(summary.keyDecisions)) push(c);
+  return candidates;
+}
+
 async function writeJournalDecisions(
   cwd: string,
   taskDirName: string,
@@ -530,19 +578,7 @@ async function writeJournalDecisions(
   context: JournalContext,
 ): Promise<void> {
   try {
-    const candidates: AdrCandidate[] = [];
-    const seen = new Set<string>();
-    const push = (c: AdrCandidate): void => {
-      const key = c.title.toLowerCase();
-      if (!c.title || seen.has(key)) return;
-      seen.add(key);
-      candidates.push(c);
-    };
-
-    // 优先级: structured decision_brief > spec 关键决策表 > breadcrumb 关键词
-    for (const c of extractAdrFromDecisionBrief(context.structuredSpec, context.current?.task_title || summary.taskId)) push(c);
-    for (const c of extractAdrFromKeyDecisionsTable(context.spec)) push(c);
-    for (const c of extractArchitectureDecisionCandidates(summary.keyDecisions)) push(c);
+    const candidates = collectAdrCandidates(context, summary);
 
     if (candidates.length === 0) {
       console.log('📝  未发现可复用 ADR，跳过 decisions.md 写入');
