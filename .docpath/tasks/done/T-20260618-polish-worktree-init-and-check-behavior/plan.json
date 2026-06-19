@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-19T01:10:13.164Z",
+    "updated_at": "2026-06-19T01:10:13.164Z",
+    "content_sha256": "eed78410a1c118cea7a140803037e215d941ce91525f1dc6fdb8a1338e83280a"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: 梳理 Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails.\n- **描述**: 根据 spec 明确 FR-1: Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails. 的实现边界和验收口径。\n- **验收条件**: AC-1: Existing `.docpath/` 项目 runtime repair 成功但 registry DB 只读时，`docpath init` exit 0 并输出 warning。\n- **依赖**: 无\n\n### S2: 实现 Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails.\n- **描述**: 在现有架构内完成 FR-1: Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails. 的代码与文档更新。\n- **验收条件**: FR-1 Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails. 已实现，并保持现有工作流兼容。\n- **依赖**: S1\n\n### S3: 实现 FR-2 Existing-project `docpath init` must report registry registration failure as a warning with actionable context instead of exiting nonzero after repair.\n- **描述**: 在现有架构内完成 FR-2: Existing-project `docpath init` must report registry registration failure as a warning with actionable context instead of exiting nonzero after repair.。\n- **验收条件**: FR-2 已实现，并保持现有工作流兼容。\n- **依赖**: S2\n\n### S4: 实现 FR-3 `docpath check` must discover a main-checkout `node_modules/.bin` when running from a linked Git worktree without local dependencies.\n- **描述**: 在现有架构内完成 FR-3: `docpath check` must discover a main-checkout `node_modules/.bin` when running from a linked Git worktree without local dependencies.。\n- **验收条件**: FR-3 已实现，并保持现有工作流兼容。\n- **依赖**: S3\n\n### S5: 实现 FR-4 Check subprocesses must receive the enhanced `PATH` consistently for typecheck, build, lint, and test commands.\n- **描述**: 在现有架构内完成 FR-4: Check subprocesses must receive the enhanced `PATH` consistently for typecheck, build, lint, and test commands.。\n- **验收条件**: FR-4 已实现，并保持现有工作流兼容。\n- **依赖**: S4\n\n### S6: 验证验收标准\n- **描述**: 验证 spec 中声明的验收标准：AC-1: Existing `.docpath/` 项目 runtime repair 成功但 registry DB 只读时，`docpath init` exit 0 并输出 warning。；AC-2: Existing `.docpath/` 项目 registry 可写时仍正常注册。；AC-3: `docpath check` 从 Git worktree 运行时，可使用 main checkout 的 `node_modules/.bin` 找到 `tsc` / `tsup`。；AC-4: Typecheck/build/test subprocesses 都使用增强后的 PATH。；AC-5: 回归测试覆盖 registry warning 和 worktree check PATH augmentation。\n- **验收条件**: AC-1: Existing `.docpath/` 项目 runtime repair 成功但 registry DB 只读时，`docpath init` exit 0 并输出 warning。；AC-2: Existing `.docpath/` 项目 registry 可写时仍正常注册。；AC-3: `docpath check` 从 Git worktree 运行时，可使用 main checkout 的 `node_modules/.bin` 找到 `tsc` / `tsup`。；AC-4: Typecheck/build/test subprocesses 都使用增强后的 PATH。；AC-5: 回归测试覆盖 registry warning 和 worktree check PATH augmentation。\n- **依赖**: S5\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n- [x] S5\n- [x] S6\n\n## 依赖关系图\nS1 → S2 → S3 → S4 → S5 → S6\n",
+  "generated_at": "2026-06-19T01:10:13.164Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails.",
+      "description": "根据 spec 明确 FR-1: Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails. 的实现边界和验收口径。",
+      "acceptance": "AC-1: Existing `.docpath/` 项目 runtime repair 成功但 registry DB 只读时，`docpath init` exit 0 并输出 warning。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails.",
+      "description": "在现有架构内完成 FR-1: Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails. 的代码与文档更新。",
+      "acceptance": "FR-1 Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails. 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 Existing-project `docpath init` must report registry registration failure as a warning with actionable context instead of exiting nonzero after repair.",
+      "description": "在现有架构内完成 FR-2: Existing-project `docpath init` must report registry registration failure as a warning with actionable context instead of exiting nonzero after repair.。",
+      "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 FR-3 `docpath check` must discover a main-checkout `node_modules/.bin` when running from a linked Git worktree without local dependencies.",
+      "description": "在现有架构内完成 FR-3: `docpath check` must discover a main-checkout `node_modules/.bin` when running from a linked Git worktree without local dependencies.。",
+      "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "实现 FR-4 Check subprocesses must receive the enhanced `PATH` consistently for typecheck, build, lint, and test commands.",
+      "description": "在现有架构内完成 FR-4: Check subprocesses must receive the enhanced `PATH` consistently for typecheck, build, lint, and test commands.。",
+      "acceptance": "FR-4 已实现，并保持现有工作流兼容。",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: Existing `.docpath/` 项目 runtime repair 成功但 registry DB 只读时，`docpath init` exit 0 并输出 warning。；AC-2: Existing `.docpath/` 项目 registry 可写时仍正常注册。；AC-3: `docpath check` 从 Git worktree 运行时，可使用 main checkout 的 `node_modules/.bin` 找到 `tsc` / `tsup`。；AC-4: Typecheck/build/test subprocesses 都使用增强后的 PATH。；AC-5: 回归测试覆盖 registry warning 和 worktree check PATH augmentation。",
+      "acceptance": "AC-1: Existing `.docpath/` 项目 runtime repair 成功但 registry DB 只读时，`docpath init` exit 0 并输出 warning。；AC-2: Existing `.docpath/` 项目 registry 可写时仍正常注册。；AC-3: `docpath check` 从 Git worktree 运行时，可使用 main checkout 的 `node_modules/.bin` 找到 `tsc` / `tsup`。；AC-4: Typecheck/build/test subprocesses 都使用增强后的 PATH。；AC-5: 回归测试覆盖 registry warning 和 worktree check PATH augmentation。",
+      "dependencies": "S5",
+      "status": "done"
+    }
+  ]
+}

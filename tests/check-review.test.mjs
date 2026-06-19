@@ -1,6 +1,6 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { chmodSync, mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -146,6 +146,67 @@ describe('check and review commands', () => {
     assert.ok(out.length > 0, 'should produce output');
     assert.match(out, /next_hint:/);
     assert.match(out, /recommended_command:/);
+  });
+
+  it('check resolves main checkout node_modules bin when running inside a git worktree', () => {
+    const main = mkdtempSync(join(tmpdir(), 'dp-check-main-'));
+    const sibling = mkdtempSync(join(tmpdir(), 'dp-check-wt-parent-'));
+    const worktree = join(sibling, 'feature');
+    try {
+      const { tasks } = mkExecWorkspace(main);
+      writeCanonicalTaskCopy(main, 'T-AGENT', tasks);
+      writeFileSync(join(main, 'package.json'), JSON.stringify({
+        scripts: {
+          typecheck: 'tsc --noEmit',
+          build: 'tsup --clean',
+          test: 'tsup',
+          lint: 'tsc --noEmit',
+        },
+      }, null, 2));
+      writeFileSync(join(main, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n');
+      writeFileSync(join(main, 'tsconfig.json'), JSON.stringify({ compilerOptions: {} }, null, 2));
+      mkdirSync(join(main, 'node_modules', '.bin'), { recursive: true });
+      const pnpmShim = join(main, 'node_modules', '.bin', 'pnpm');
+      const tscShim = join(main, 'node_modules', '.bin', 'tsc');
+      const tsupShim = join(main, 'node_modules', '.bin', 'tsup');
+      writeFileSync(pnpmShim, [
+        '#!/bin/sh',
+        'case "$*" in',
+        '  *typecheck*) command -v tsc >/dev/null || exit 11 ;;',
+        '  *build*) command -v tsup >/dev/null || exit 12 ;;',
+        '  *test*) command -v tsup >/dev/null || exit 13 ;;',
+        '  *lint*) command -v tsc >/dev/null || exit 14 ;;',
+        'esac',
+        'exit 0',
+        '',
+      ].join('\n'));
+      writeFileSync(tscShim, '#!/bin/sh\nexit 0\n');
+      writeFileSync(tsupShim, '#!/bin/sh\nexit 0\n');
+      chmodSync(pnpmShim, 0o755);
+      chmodSync(tscShim, 0o755);
+      chmodSync(tsupShim, 0o755);
+
+      execSync('git init', { cwd: main, encoding: 'utf-8' });
+      execSync('git config user.email test@example.com', { cwd: main, encoding: 'utf-8' });
+      execSync('git config user.name Test', { cwd: main, encoding: 'utf-8' });
+      execSync('git add .docpath package.json pnpm-lock.yaml tsconfig.json', { cwd: main, encoding: 'utf-8' });
+      execSync('git commit -m baseline', { cwd: main, encoding: 'utf-8' });
+      execSync(`git worktree add ${JSON.stringify(worktree)} HEAD`, { cwd: main, encoding: 'utf-8' });
+      rmSync(join(worktree, 'node_modules'), { recursive: true, force: true });
+
+      const result = runResult(`check --cwd ${worktree} --verbose`, worktree);
+
+      assert.equal(result.code, 0, result.out);
+      assert.match(result.out, /TypeScript 编译/);
+      assert.match(result.out, /构建/);
+      assert.match(result.out, /测试/);
+      assert.match(result.out, /Lint/);
+      assert.match(result.out, /全部通过/);
+    } finally {
+      try { execSync(`git worktree remove --force ${JSON.stringify(worktree)}`, { cwd: main, encoding: 'utf-8' }); } catch { /* ignore cleanup */ }
+      rmSync(main, { recursive: true, force: true });
+      rmSync(sibling, { recursive: true, force: true });
+    }
   });
 
   it('check reports active task document paths and field locations for structure errors', () => {

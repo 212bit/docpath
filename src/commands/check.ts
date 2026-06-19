@@ -9,7 +9,7 @@
 
 import { existsSync } from 'fs';
 import { readFile, stat, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { delimiter, dirname, isAbsolute, join, resolve, sep } from 'path';
 import { execSync } from 'child_process';
 import { isCancel, select } from '@clack/prompts';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -163,9 +163,40 @@ function isTimeoutKill(err: unknown): boolean {
   return record.killed === true || record.signal === 'SIGTERM' || record.signal === 'SIGKILL';
 }
 
-function checkCommandEnv(): NodeJS.ProcessEnv {
+function pathEntries(value: string | undefined): string[] {
+  return (value || '').split(delimiter).filter(Boolean);
+}
+
+function resolveMainCheckoutBin(cwd: string): string | null {
+  const commonDir = runGitOptional(cwd, ['rev-parse', '--git-common-dir']);
+  if (!commonDir) return null;
+  const absoluteCommonDir = isAbsolute(commonDir) ? commonDir : resolve(cwd, commonDir);
+  const candidates = new Set<string>();
+  const worktreeMarker = `${sep}.git${sep}worktrees${sep}`;
+  const markerIndex = absoluteCommonDir.indexOf(worktreeMarker);
+  if (markerIndex >= 0) {
+    candidates.add(absoluteCommonDir.slice(0, markerIndex));
+  }
+  candidates.add(dirname(absoluteCommonDir));
+  for (const candidate of candidates) {
+    const bin = join(candidate, 'node_modules', '.bin');
+    if (existsSync(bin)) return bin;
+  }
+  return null;
+}
+
+function checkCommandEnv(cwd: string): NodeJS.ProcessEnv {
   const env = { ...process.env };
   delete env.DOCPATH_SESSION;
+  const candidates = [
+    join(cwd, 'node_modules', '.bin'),
+    resolveMainCheckoutBin(cwd),
+  ].filter((value): value is string => Boolean(value && existsSync(value)));
+  const existingPath = pathEntries(env.PATH);
+  const prepend = candidates.filter((entry) => !existingPath.includes(entry));
+  if (prepend.length > 0) {
+    env.PATH = [...prepend, ...existingPath].join(delimiter);
+  }
   return env;
 }
 
@@ -183,7 +214,7 @@ function runCheck(
       timeout: timeoutMs,
       stdio: ['pipe', 'pipe', 'pipe'],
       maxBuffer: 10 * 1024 * 1024,
-      env: checkCommandEnv(),
+      env: checkCommandEnv(cwd),
     });
     return { name, passed: true, output: output.slice(0, 500), category };
   } catch (err: unknown) {

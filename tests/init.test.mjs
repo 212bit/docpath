@@ -150,6 +150,29 @@ describe('init command', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('keeps existing project runtime repair successful when registry registration fails', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-registry-warning-'));
+    const registryDb = join(cwd, 'registry-as-directory');
+    mkdirSync(registryDb, { recursive: true });
+    mkdirSync(join(cwd, '.docpath', 'rules'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'config.yaml'), 'project:\n  name: registry-warning\n');
+
+    const output = execSync(`node ${BIN} init --cwd ${cwd} 2>&1`, {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 20000,
+      env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
+    });
+
+    assert.match(output, /已补齐缺失 runtime/);
+    assert.match(output, /本地项目中心注册失败，已跳过/);
+    assert.match(output, /registry-as-directory/);
+    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'state.json')), true);
+    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'current.md')), true);
+    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'breadcrumb.md')), true);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('respects level 0 for non-interactive init', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'dp-init-level-zero-'));
     const registryDb = registryDbPath();
