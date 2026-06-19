@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-19T03:59:54.651Z",
+    "updated_at": "2026-06-19T03:59:54.651Z",
+    "content_sha256": "fc9cadf76886657ac65414171d9674c9cb63d08808e3c94da072b5191c2ce2b9"
+  },
+  "task_id": "T-20260619-quick-cover-phantom-task-no-sync-guidance",
+  "backlog_id": null,
+  "title": "T-20260619-quick-cover-phantom-task-no-sync-guidance - Cover phantom task no-sync guidance",
+  "markdown": "# T-20260619-quick-cover-phantom-task-no-sync-guidance - Cover phantom task no-sync guidance\n\n> workflow_profile: quick\n> source: docpath quick\n\n## 1. 背景与动机\n\nQuick task intent record. This task is intentionally lightweight and uses proportional gates.\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: Cover phantom task no-sync guidance\n\n### 非功能需求\n- [ ] NFR-1: Keep the change scoped and auditable.\n\n## 3. 范围界定\n\n### 包含\n- Cover phantom task no-sync guidance\n\n### 不包含\n- Full spec/plan ceremony for standard or strict tasks.\n- Architecture, protocol, migration, permission, or broad module changes.\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | Workflow profile | quick / standard | quick | User chose the fast track for a tiny task. |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [x] 否\n- [ ] 是，需要用户确认\n\n### 变更类型\n- [ ] 工作流 / Agent 行为\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）\n- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）\n\n### Decision Brief\n- 当前问题: Tiny task governance should be proportional.\n- 推荐方案: Use quick profile, require check, skip full review by profile.\n- 用户确认: `docpath quick` invocation.\n\n## 5. 验收标准\n\n- [ ] AC-1: The scoped change is completed.\n- [ ] AC-2: `docpath check` passes before closeout.\n- [ ] AC-3: Review skip is recorded as quick-profile policy evidence.\n",
+  "generated_at": "2026-06-19T03:59:54.651Z",
+  "scope": {
+    "included": [
+      "Cover phantom task no-sync guidance"
+    ],
+    "excluded": [
+      "Full spec/plan ceremony for standard or strict tasks.",
+      "Architecture, protocol, migration, permission, or broad module changes."
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "`docpath quick` invocation.",
+    "decision_brief_markdown": "- 当前问题: Tiny task governance should be proportional.\n- 推荐方案: Use quick profile, require check, skip full review by profile.\n- 用户确认: `docpath quick` invocation."
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Cover phantom task no-sync guidance",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "Keep the change scoped and auditable.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "The scoped change is completed.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`docpath check` passes before closeout.",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "Review skip is recorded as quick-profile policy evidence.",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: Tiny task governance should be proportional.\n- 推荐方案: Use quick profile, require check, skip full review by profile.\n- 用户确认: `docpath quick` invocation."
+}

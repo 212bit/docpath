@@ -176,6 +176,7 @@ describe('active task file drift', () => {
     assert.match(drift.out, /state\.task_id: T-DRIFT/);
     assert.match(drift.out, /current 别名与 canonical 任务目录均不存在/);
     assert.match(drift.out, /不要用 agent step 机械修复/);
+    assert.doesNotMatch(drift.out, /tasks sync --from canonical 或/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
