@@ -443,16 +443,48 @@ function checkDirectory(path: string, label: string): DoctorCheck {
   }
 }
 
-function checkSharedResource(path: string, label: string): DoctorCheck {
+function checkMergeMediated(path: string, label: string): DoctorCheck {
   if (!existsSync(path)) return { status: 'fail', label, detail: `missing: ${path}` };
   try {
     const stat = lstatSync(path);
+    // Merge-mediated resources are tracked copies shared via branch merges;
+    // a symlink (live-shared) is also acceptable.
     if (stat.isSymbolicLink()) return { status: 'pass', label, detail: `symlink: ${path}` };
-    if (stat.isDirectory()) return { status: 'pass', label, detail: `tracked copy: ${path}` };
+    if (stat.isDirectory()) return { status: 'pass', label, detail: `tracked copy (merge-mediated): ${path}` };
     return { status: 'fail', label, detail: `not a directory or symlink: ${path}` };
   } catch (error) {
     return { status: 'fail', label, detail: error instanceof Error ? error.message : String(error) };
   }
+}
+
+function checkLiveShared(path: string, label: string): DoctorCheck {
+  if (!existsSync(path)) return { status: 'fail', label, detail: `missing: ${path}` };
+  try {
+    const stat = lstatSync(path);
+    // Live-shared resources must be a symlink to the main checkout so every
+    // worktree sees one global view. A tracked copy is a stale snapshot, not
+    // live-shared — warn so the breakage is visible instead of masked.
+    if (stat.isSymbolicLink()) return { status: 'pass', label, detail: `symlink: ${path}` };
+    if (stat.isDirectory()) return { status: 'warn', label, detail: `tracked copy (not live-shared): ${path}` };
+    return { status: 'fail', label, detail: `not a directory or symlink: ${path}` };
+  } catch (error) {
+    return { status: 'fail', label, detail: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+async function checkIsolatedTasks(
+  docpathDir: string,
+  worktreePath: string,
+  label: string,
+): Promise<DoctorCheck> {
+  const tasksCurrent = join(docpathDir, 'tasks', 'current');
+  // The isolation contract for tasks/current is "not tracked by git": each
+  // worktree then owns its own current-task runtime without merge conflicts.
+  // ls-files is robust here (unlike check-ignore, which mis-matches trailing-
+  // slash directory patterns against non-existent paths).
+  const tracked = (await runGitCapture(worktreePath, ['ls-files', '--', '.docpath/tasks/current'])).trim().length > 0;
+  if (!tracked) return { status: 'pass', label, detail: `tasks/current untracked (isolated): ${tasksCurrent}` };
+  return { status: 'warn', label, detail: `tasks/current tracked (not isolated): ${tasksCurrent}` };
 }
 
 async function resolveDoctorTarget(cwd: string, name?: string): Promise<{ safeName: string; worktreePath: string }> {
@@ -486,13 +518,14 @@ async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
 
   const { safeName, worktreePath } = await resolveDoctorTarget(cwd, name);
   const docpathDir = join(worktreePath, '.docpath');
+  const tasksCurrentCheck = await checkIsolatedTasks(docpathDir, worktreePath, 'isolated tasks/current');
   const checks: DoctorCheck[] = [
     checkExists(join(worktreePath, '.git'), 'git worktree metadata'),
     checkDirectory(docpathDir, '.docpath directory'),
-    checkSharedResource(join(docpathDir, 'backlog'), 'shared backlog resource'),
-    checkSharedResource(join(docpathDir, 'rules'), 'shared rules resource'),
+    checkLiveShared(join(docpathDir, 'backlog'), 'live-shared backlog'),
+    checkMergeMediated(join(docpathDir, 'rules'), 'merge-mediated rules'),
     checkDirectory(join(docpathDir, 'workspace'), 'isolated workspace directory'),
-    checkDirectory(join(docpathDir, 'tasks'), 'isolated tasks directory'),
+    tasksCurrentCheck,
     checkDirectory(join(docpathDir, 'journal'), 'isolated journal directory'),
     checkExists(join(docpathDir, 'workspace', 'state.json'), 'workspace state'),
     checkExists(join(docpathDir, 'workspace', 'current.md'), 'workspace current view'),
