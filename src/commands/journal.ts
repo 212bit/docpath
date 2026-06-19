@@ -143,7 +143,7 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
     console.log('📌 完成后运行: docpath write-journal\n');
   }
 
-  const archiveMode = options.archiveMode || 'always';
+  const archiveMode = options.archiveMode || 'skip';
   const archive = await archiveCurrentTask(docpathDir, context.taskId, context.taskDir, archiveMode);
   if (archiveMode === 'dry-run') {
     printJournalDryRunComplete();
@@ -285,10 +285,11 @@ async function archiveCurrentTask(
   const archiveDir = archivedTaskDir(docpathDir, taskId || 'unknown');
   if (archiveMode === 'skip') {
     const canonicalPath = `.docpath/tasks/${taskId || 'unknown'}/`;
-    console.log('⏭️  物理任务目录归档已延后 (--optional-archive=skip)');
+    console.log('⏭️  物理任务目录归档已延后（journal 默认行为，对齐 agent done）');
     console.log(`   这不是完成失败；逻辑完成与 journal 收尾仍会继续执行。`);
     console.log(`   canonical evidence 保留在 ${canonicalPath}，用于 docpath changes --agent / git closeout。`);
     console.log('   closeout 后可运行 docpath gc --force，将非活跃 canonical 任务目录移动到 .docpath/tasks/done/。');
+    console.log('   如需 journal 同次归档（老行为），使用 --optional-archive=always。');
   } else {
     if (archiveMode === 'dry-run') console.log(`🔍  [dry-run] 将归档: ${currentTaskDir} → ${archiveDir}`);
     try {
