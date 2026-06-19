@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-19T17:01:42.867Z",
+    "updated_at": "2026-06-19T17:01:42.867Z",
+    "content_sha256": "adf1a76f03a9dbbe9186cdeb85e216fa4b910d6e9eca97a94bbf11bc9e100add"
+  },
+  "task_id": "T-20260619-state-json-backlog-id",
+  "backlog_id": "R-219",
+  "title": "T-20260619-state-json-backlog-id - state.json 加 backlog_id 字段，减少跨文件读取",
+  "generated_at": "2026-06-19T17:01:42.867Z",
+  "scope": {
+    "included": [
+      "state.json WorkflowState 接口新增 backlog_id 可选字段",
+      "agent enter / backlog promote 的 state 写入路径",
+      "next --agent 输出新增 backlog_id"
+    ],
+    "excluded": [
+      "go/check/changes 命令（暂不读取此字段）",
+      "历史 state.json 数据迁移"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "不需要（非重大变更）",
+    "decision_brief_markdown": "- 当前问题: next/go 读 backlog_id 需要打开 spec.json\n- 目标: state.json 包含 backlog_id，减少一次 IO\n- 不做什么: 不改变 spec.json 作为 backlog_id 权威来源\n- 用户确认: 不需要（非重大变更）"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "agent enter / backlog promote 写 state.json 时包含 backlog_id 字段",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "next --agent 输出包含 backlog_id 字段",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "向后兼容：旧 state.json 缺 backlog_id 时不报错，值为 null",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "agent enter 后 state.json 包含 backlog_id",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "next --agent 输出 backlog_id 字段",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "旧 state.json 无 backlog_id 时读取不报错",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "pnpm test 全量绿",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: next/go 读 backlog_id 需要打开 spec.json\n- 目标: state.json 包含 backlog_id，减少一次 IO\n- 不做什么: 不改变 spec.json 作为 backlog_id 权威来源\n- 用户确认: 不需要（非重大变更）"
+}
