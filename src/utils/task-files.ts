@@ -354,10 +354,9 @@ export async function syncActiveTaskFiles(
       const targetJsonPath = jsonFile ? join(dirname(toPath), jsonFile) : '';
       if (sourceJsonPath && targetJsonPath && existsSync(sourceJsonPath)) {
         await copyFile(sourceJsonPath, targetJsonPath);
-      } else {
-        await writeStructuredTaskJson(dirname(fromPath), structuredFile, content, { taskId });
-        await writeStructuredTaskJson(dirname(toPath), structuredFile, content, { taskId });
       }
+      // When no source JSON exists, skip generating one from the markdown to avoid
+      // transforming broken or non-canonical markdown into a new truth source.
     }
     synced.push({ file, fromPath, toPath });
   }

@@ -623,19 +623,7 @@ async function readStructuredTaskJsonDocument(dir: string, file: StructuredTaskM
     throw new Error(`${jsonPath} 结构化校验失败: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  const doc = file === 'spec.md' ? normalizeSpecDocument(parsed) : normalizePlanDocument(parsed);
-
-  // If JSON has no markdown field, hydrate from the companion .md file (in-memory only).
-  if (!doc.markdown) {
-    const mdPath = join(dir, file);
-    try {
-      doc.markdown = await readFile(mdPath, 'utf-8');
-    } catch {
-      // .md file absent or unreadable — render* functions will fall back to structured fields.
-    }
-  }
-
-  return doc;
+  return file === 'spec.md' ? normalizeSpecDocument(parsed) : normalizePlanDocument(parsed);
 }
 
 function expectedMarkdownHash(doc: StructuredTaskDocument): string {
