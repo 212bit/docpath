@@ -71,12 +71,28 @@ function recommendedSessionName(name: string): string {
 }
 
 async function resolveWorktreePaths(cwd: string, name: string): Promise<WorktreePaths> {
-  const repoRoot = await getGitTopLevel(cwd);
+  const repoRoot = await resolveWorktreeManagerRoot(cwd);
   const safeName = validateWorktreeName(name);
   const worktreesDir = join(repoRoot, '.worktrees');
   const worktreePath = resolve(worktreesDir, safeName);
   assertInside(worktreesDir, worktreePath);
   return { repoRoot, safeName, worktreesDir, worktreePath };
+}
+
+async function resolveWorktreeManagerRoot(cwd: string): Promise<string> {
+  const currentRoot = await getGitTopLevel(cwd);
+  const worktrees = await listWorktrees(currentRoot);
+
+  const primary = worktrees.find((wt) => {
+    if (wt.bare) return false;
+    try {
+      return lstatSync(join(wt.path, '.git')).isDirectory();
+    } catch {
+      return false;
+    }
+  });
+
+  return primary?.path || currentRoot;
 }
 
 async function runGit(cwd: string, args: string[]): Promise<void> {
@@ -269,7 +285,7 @@ async function worktreeList(cwd: string): Promise<void> {
     process.exit(1);
   }
 
-  const repoRoot = await getGitTopLevel(cwd);
+  const repoRoot = await resolveWorktreeManagerRoot(cwd);
   const worktrees = await listWorktrees(repoRoot);
 
   if (worktrees.length === 0) {

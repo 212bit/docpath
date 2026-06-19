@@ -121,6 +121,34 @@ describe('worktree command', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('anchors nested creates from a linked worktree at the main checkout', () => {
+    const cwd = mkRepo();
+    const parentPath = join(cwd, '.worktrees', 'parent-feature');
+    const childPath = join(cwd, '.worktrees', 'child-feature');
+
+    run(['worktree', 'create', 'parent-feature'], cwd);
+    const out = run(['worktree', 'create', 'child-feature'], parentPath).output;
+
+    assert.match(out, /worktree 已创建/);
+    assert.equal(existsSync(childPath), true);
+    assert.equal(
+      existsSync(join(parentPath, '.worktrees', 'child-feature')),
+      false,
+      'linked worktree create must not nest .worktrees under the invoking worktree',
+    );
+    assert.equal(
+      git(childPath, ['status', '--porcelain=v1', '--untracked-files=all']),
+      '',
+      'nested-created DocPath worktree must start clean',
+    );
+
+    const list = run(['worktree', 'list'], parentPath).output;
+    assert.match(list, new RegExp(`${cwd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\(main\\)`));
+    assert.doesNotMatch(list, new RegExp(`${parentPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\(main\\)`));
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('doctors worktree readiness without mutating files', () => {
     const cwd = mkRepo();
     const worktreePath = join(cwd, '.worktrees', 'feature-doctor');
