@@ -292,7 +292,10 @@ export async function detectActiveTaskFileDrift(
     const hasCanonical = existsSync(canonicalPath);
 
     if (!hasCurrent && !hasCanonical) {
-      // state.task_id 指向当前 checkout 中不存在的任务；不能静默当作一致。
+      // 既无 current 别名、又无 canonical 目录 = 幽灵任务:state.task_id 指向
+      // 当前 checkout 上不存在的任务(典型成因:任务在别的分支完成并归档,
+      // 但本地 gitignored 的 state.json 仍停在该任务)。这是状态-现实分叉,
+      // 必须 fail-loud,而非被当作"无可比对 = 一致"静默跳过。
       drifts.push({ file, currentPath, canonicalPath, reason: 'phantom-task' });
       continue;
     }

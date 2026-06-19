@@ -1,6 +1,6 @@
 # T-20260618-enforce-complete-docpath-plan-contract - Enforce complete docpath plan contract
 
-> backlog_id: R-204
+> backlog_id: R-207
 > backlog_source: docpath backlog capture
 
 ## 1. 背景与动机

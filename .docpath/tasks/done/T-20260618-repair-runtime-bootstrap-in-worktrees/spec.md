@@ -1,6 +1,6 @@
 # T-20260618-repair-runtime-bootstrap-in-worktrees - Repair runtime bootstrap in worktrees
 
-> backlog_id: R-203
+> backlog_id: R-206
 > backlog_source: docpath backlog capture
 
 ## 1. 背景与动机

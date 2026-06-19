@@ -164,6 +164,21 @@ describe('active task file drift', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('tasks drift fails loud on phantom active task state', () => {
+    const cwd = mkWorkspace();
+    rmSync(join(cwd, '.docpath', 'tasks', 'current'), { recursive: true, force: true });
+    rmSync(join(cwd, '.docpath', 'tasks', 'T-DRIFT'), { recursive: true, force: true });
+
+    const drift = run(`tasks drift --cwd ${cwd}`, cwd);
+
+    assert.equal(drift.code, 1);
+    assert.match(drift.out, /幽灵任务漂移/);
+    assert.match(drift.out, /state\.task_id: T-DRIFT/);
+    assert.match(drift.out, /current 别名与 canonical 任务目录均不存在/);
+    assert.match(drift.out, /不要用 agent step 机械修复/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('check reports current/canonical drift with paths and sync fixes it from canonical', () => {
     const cwd = mkWorkspace();
 

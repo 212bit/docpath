@@ -981,6 +981,19 @@ async function checkContextIndexHealth(docpathDir: string, currentTaskId: string
 }
 
 async function checkCurrentTaskContextFiles(cwd: string, docpathDir: string): Promise<CheckResult[]> {
+  const activeState = await readCurrentState(cwd);
+  const hasActiveTask = Boolean(activeState?.task_id)
+    && activeState?.phase !== 'idle'
+    && activeState?.phase !== 'completed';
+  if (!hasActiveTask) {
+    return [{
+      name: '当前任务上下文文件完整性',
+      passed: true,
+      output: '无活跃任务（idle/completed），跳过当前任务上下文文件检查',
+      category: 'context',
+    }];
+  }
+
   const required = [
     join(docpathDir, 'tasks', 'current', 'spec.md'),
     join(docpathDir, 'tasks', 'current', 'plan.md'),
