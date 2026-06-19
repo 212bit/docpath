@@ -2,14 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-19T16:34:24.714Z
+> 扫描时间: 2026-06-19T17:00:21.208Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
 | R-216 | Smart Git Merge Driver for Backlog and Rules Markdown files | proposed | P2 | 1 |  |
-| R-218 | 消除 spec.json/plan.json 内嵌 markdown 字段冗余 | active | P2 | 2 | T-20260619-spec-json-plan-json-markdown |
 | R-220 | breadcrumb.jsonl 按任务边界分隔，防止无限增长 | proposed | P2 | 2 |  |
 | R-219 | state.json 加 backlog_id 字段，减少跨文件读取 | proposed | P3 | 1 |  |
 

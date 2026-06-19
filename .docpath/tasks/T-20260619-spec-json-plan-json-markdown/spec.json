@@ -3,15 +3,14 @@
   "kind": "spec",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-06-19T16:36:31.119Z",
-    "updated_at": "2026-06-19T16:36:31.119Z",
-    "content_sha256": "39880b8584c9191714968694c6f0579eca6901ad8ac7baa9cd8305a43d065acb"
+    "created_at": "2026-06-19T17:00:37.680Z",
+    "updated_at": "2026-06-19T17:00:37.680Z",
+    "content_sha256": "0a66cabad494d71cef2d3dcd158b3cd68c20555e33d3cf542948ef8dbc226ed8"
   },
   "task_id": "T-20260619-spec-json-plan-json-markdown",
   "backlog_id": "R-218",
   "title": "T-20260619-spec-json-plan-json-markdown - 消除 spec.json/plan.json 内嵌 markdown 字段冗余",
-  "markdown": "# T-20260619-spec-json-plan-json-markdown - 消除 spec.json/plan.json 内嵌 markdown 字段冗余\n\n> backlog_id: R-218\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\nspec.json 和 plan.json 各自有一个 markdown 字段，内容与同目录 spec.md/plan.md 完全相同（100% 重合，已验证）。write-spec/write-plan 命令写入时双向维护，单次失败产生静默不一致；JSON 体积因此翻倍（spec.json 9.2KB vs spec.md 3.9KB）。\n\n架构分析：markdown 字段在 structured-docs.ts 有两个角色：\n1. render*FromDocument 优先返回 doc.markdown（原文保真 cache）\n2. normalizeSpecDocument 在结构化字段缺失时 fallback 到 markdown 解析\n\n修复方向：JSON 移除 markdown 字段，readStructuredTaskJsonDocument 读取时同时读取同目录 .md 文件填充内存 markdown，render 函数不变。\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: writeStructuredTaskJson 写出的 JSON 不含 markdown 字段\n- [ ] FR-2: readStructuredTaskJsonDocument 读 JSON 后同时读取 .md 文件，内存补齐 markdown（仅内存，不写回 JSON）\n- [ ] FR-3: 现有旧 JSON 有 markdown 字段时读取不报错（向后兼容忽略）\n\n### 非功能需求\n- [ ] NFR-1: spec.json 体积降至纯结构化字段大小\n- [ ] NFR-2: pnpm test 全量绿\n\n## 3. 范围界定\n\n### 包含\n- src/utils/structured-docs.ts: 接口、write、read、validate、render 路径\n- 所有读写 spec.json/plan.json 的代码路径\n\n### 不包含\n- spec.md/plan.md 文件格式变更\n- dashboard-ui 的 review.markdown 字段（不同 doc 类型）\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | markdown 字段处理方式 | 完全移除 vs 读取时从 .md 补齐 | 读取时从 .md 补齐（内存只） | render 函数依赖 markdown 字段做原文 cache，内存补齐避免格式损失 |\n| 2 | 向后兼容 | 强校验报错 vs 忽略旧字段 | 忽略旧字段 | 旧文件不应因升级读取失败 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [x] 否\n- [ ] 是，需要用户确认\n\n### 变更类型\n- [x] 架构 / 模块边界\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）\n\n### Decision Brief\n- 当前问题: spec.json 内嵌 markdown 字段与 spec.md 100% 重合，体积翻倍，双写维护风险\n- 目标: JSON 只存结构化字段，.md 文件是单一原文真相源\n- 背景: 分析确认 markdown 字段仅用于 render*FromDocument 的原文 cache 和 normalize 的 fallback 解析\n- 可选方案: (A) 写时移除，读时从 .md 补齐内存 markdown（当前选择）；(B) 完全移除 markdown cache，render 只从结构化字段重建\n- 推荐方案: A — 最小变更，render 行为不变，.md 文件成为单一真相\n- 不做什么: 不改变 .md 文件格式；不移除 render*FromDocument 逻辑\n- 成本: 中等，structured-docs.ts 约 30-50 行变更\n- 风险: readStructuredTaskJsonDocument 读取 .md 时文件不存在 → 缓解：fallback 到结构化字段重建\n- 回滚方案: git revert 本次提交即可\n- 用户确认: 已确认（2026-06-20），用户明确要求修复\n\n## 5. 验收标准\n\n- [ ] AC-1: spec.json/plan.json 不含 markdown 字段（新写入）\n- [ ] AC-2: 旧 spec.json 含 markdown 字段时读取不报错\n- [ ] AC-3: render*FromDocument 输出内容与 .md 文件一致\n- [ ] AC-4: pnpm test 全量绿\n\n---\n\n*此文件由 `docpath write-spec` 更新。*\n",
-  "generated_at": "2026-06-19T16:36:31.119Z",
+  "generated_at": "2026-06-19T17:00:37.680Z",
   "scope": {
     "included": [
       "src/utils/structured-docs.ts: 接口、write、read、validate、render 路径",

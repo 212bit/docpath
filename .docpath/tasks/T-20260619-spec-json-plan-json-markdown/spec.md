@@ -75,3 +75,23 @@ spec.json 和 plan.json 各自有一个 markdown 字段，内容与同目录 spe
 ---
 
 *此文件由 `docpath write-spec` 更新。*
+
+## Journal Record
+
+### 📝 任务摘要
+从 spec.json/plan.json 中移除 markdown 字段（双写冗余），改为写时不含该字段，读时从结构化字段重建内容。
+
+### 🏗️ 架构决策
+- spec.json/plan.json 不再包含 markdown 字段：.md 文件是唯一的 Markdown 原文真相源
+- readStructuredTaskJsonDocument 读取 JSON 后不从 .md 文件补充 markdown 字段，render 函数从结构化字段重建（"JSON is truth"原则）
+- syncActiveTaskFiles 当无 source spec.json 时跳过 writeStructuredTaskJson，避免从 broken markdown 生成新的 JSON 真相源
+- markdown 字段改为可选接口，向后兼容旧文件：validateBase 仅检查"若存在则必须是字符串"
+
+### 💡 经验教训
+- 接口字段改为可选后需检查所有使用该字段的代码（`doc.markdown.trim()` → `(doc.markdown ?? '').trim()`）
+- syncActiveTaskFiles 中"从 markdown 重建 JSON 再重写 md"的逻辑在 broken markdown 场景下会改变内容，需要跳过
+- 测试前先确认哪些失败是预先存在的（git stash + pnpm test），避免把旧 bug 归因为新变更
+
+### 🔮 后续改进
+- renderSpecMarkdownFromDocument 函数过长（60 行），可考虑拆分为 renderMajorGateSection/renderRequirementsSection 等子函数
+- 当 spec.json 存在但 spec.md 不存在时，check 命令应能从 JSON render spec.md（R-218 延伸：check reads spec.json before stale spec.md）
