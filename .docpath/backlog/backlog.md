@@ -2,13 +2,14 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-19T03:52:48.123Z
+> 扫描时间: 2026-06-19T04:33:28.579Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
 | R-196 | Fix command inference when check/review fails | dropped | P0 | 2 | T-20260617-fix-command-inference-when-check-review- |
+| R-210 | Fix workflow CLI dogfood issues | active | P1 | 2 | T-20260619-fix-workflow-cli-dogfood-issues |
 | R-169 | probe | dropped | P2 | 2 |  |
 | R-204 | 运行时 FSM 忽略 level:让 L0/quick 跳过 check/review 门禁 | proposed | P2 | 2 |  |
 | R-208 | install 非 force 模式刷 manifest 却跳过写盘，造成永久 manifest drift | proposed | P2 | 2 |  |

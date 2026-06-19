@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-19T04:33:28.558Z",
+    "updated_at": "2026-06-19T04:33:28.558Z",
+    "content_sha256": "d2adb2f84161f17327923be750da452a2f29ebf2e8f3594108141ef7e0ba0903"
+  },
+  "task_id": "T-20260619-fix-workflow-cli-dogfood-issues",
+  "backlog_id": "R-210",
+  "title": "T-20260619-fix-workflow-cli-dogfood-issues - Fix workflow CLI dogfood issues",
+  "markdown": "# T-20260619-fix-workflow-cli-dogfood-issues - Fix workflow CLI dogfood issues\n\n> backlog_id: R-210\n> backlog_source: docpath backlog add\n\n## 1. 背景与动机\n\n## 背景\n\nDogfood exposed several workflow and CLI defects: linked worktree create anchors .worktrees under the current linked worktree, docpath plan generation can write or propose incomplete plans, backlog promote leaves CLI/non-UI gates blank, quick review skip is represented as review_pass, worktree list/gc/doctor lack cleanup and repair guidance, and review suggests unsupported --force.\n\n## 验收\n\nCreate worktrees under the main checkout even when invoked from a linked worktree; generated plans cover all FR/AC ids or fail before state mutation; promoted CLI/non-UI specs default safe gate selections; quick review skip is explicit rather than review_pass; worktree list/gc/doctor expose actionable cleanup/repair guidance; review output and supported options are consistent.\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: Fix workflow CLI dogfood issues\n  - 来源 backlog: R-210\n\n### 非功能需求\n- [ ] NFR-1: 保持与现有 DocPath 工作流兼容\n\n## 3. 范围界定\n\n### 包含\n- Fix workflow CLI dogfood issues\n\n### 不包含\n- 待在后续规划中补充\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [ ] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [ ] 工作流 / Agent 行为\n- [ ] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### UI 设计门禁\n- [ ] 本任务不涉及产品 UI 实现（豁免设计五件套）\n- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）\n\n### Decision Brief\n- 当前问题:\n- 目标:\n- 背景:\n- 可选方案:\n- 推荐方案:\n- 不做什么:\n- 成本:\n- 风险:\n- 回滚方案:\n- 用户确认:\n\n## 5. 验收标准\n\n- [ ] AC-1: 生成的 spec 可直接进入 `docpath plan`\n- [ ] AC-2: backlog 条目 R-210 与任务 T-20260619-fix-workflow-cli-dogfood-issues 建立双向关联\n\n---\n\n*此文件由 `docpath backlog promote` 生成。*\n",
+  "generated_at": "2026-06-19T04:33:28.558Z",
+  "scope": {
+    "included": [
+      "Fix workflow CLI dogfood issues"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": "- 当前问题:\n- 目标:\n- 背景:\n- 可选方案:\n- 推荐方案:\n- 不做什么:\n- 成本:\n- 风险:\n- 回滚方案:\n- 用户确认:"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Fix workflow CLI dogfood issues",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-210 与任务 T-20260619-fix-workflow-cli-dogfood-issues 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题:\n- 目标:\n- 背景:\n- 可选方案:\n- 推荐方案:\n- 不做什么:\n- 成本:\n- 风险:\n- 回滚方案:\n- 用户确认:"
+}
