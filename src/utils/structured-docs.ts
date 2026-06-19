@@ -13,7 +13,7 @@ export type StructuredTaskJsonFile = 'spec.json' | 'plan.json';
 interface StructuredDocumentBase {
   schema_version: number;
   kind: 'spec' | 'plan';
-  markdown: string;
+  markdown?: string;
   generated_at: string;
 }
 
@@ -409,7 +409,7 @@ function validateBase(doc: unknown, kind: StructuredTaskDocument['kind']): strin
     errors.push(`${kind}.json schema_version 必须为 ${STRUCTURED_DOC_SCHEMA_VERSION}`);
   }
   if (doc.kind !== kind) errors.push(`${kind}.json kind 必须为 ${kind}`);
-  if (typeof doc.markdown !== 'string') errors.push(`${kind}.json markdown 必须是字符串`);
+  if ('markdown' in doc && typeof doc.markdown !== 'string') errors.push(`${kind}.json markdown 若存在则必须是字符串`);
   if (typeof doc.generated_at !== 'string') errors.push(`${kind}.json generated_at 必须是字符串`);
   if ('source' in doc) {
     if (doc.source === 'markdown') {
@@ -487,7 +487,8 @@ export function assertValidStructuredDocument(doc: unknown, file: StructuredTask
 }
 
 export function renderPlanMarkdownFromDocument(doc: StructuredPlanDocument): string {
-  if (doc.markdown.trim()) return doc.markdown.endsWith('\n') ? doc.markdown : `${doc.markdown}\n`;
+  const md = doc.markdown ?? '';
+  if (md.trim()) return md.endsWith('\n') ? md : `${md}\n`;
 
   const lines = [
     '## 执行计划',
@@ -511,7 +512,8 @@ export function renderPlanMarkdownFromDocument(doc: StructuredPlanDocument): str
 }
 
 export function renderSpecMarkdownFromDocument(doc: StructuredSpecDocument): string {
-  if (doc.markdown.trim()) return doc.markdown.endsWith('\n') ? doc.markdown : `${doc.markdown}\n`;
+  const md = doc.markdown ?? '';
+  if (md.trim()) return md.endsWith('\n') ? md : `${md}\n`;
   const renderItems = (items: StructuredSpecItem[]) => items.map((item) => `- [${item.done ? 'x' : ' '}] ${item.id}: ${item.text}`);
   const renderList = (items: string[], fallback: string) => (items.length > 0 ? items : [fallback]).map((item) => `- ${item}`);
   const renderMajorTypes = (items: string[]) => (items.length > 0 ? items : ['其他']).map((item) => `- [x] ${item}`);
@@ -587,9 +589,10 @@ export async function writeStructuredTaskJson(
   const doc = parseStructuredDocument(file, markdown, options);
   assertValidStructuredDocument(doc, file);
 
-  // Write JSON (always, it's the truth source)
+  // Write JSON (always, it's the truth source). Exclude markdown field — .md file is the canonical text.
   const jsonPath = join(dir, jsonFile);
-  await writeFile(jsonPath, `${JSON.stringify(doc, null, 2)}\n`, 'utf-8');
+  const { markdown: _omitted, ...docWithoutMarkdown } = doc;
+  await writeFile(jsonPath, `${JSON.stringify(docWithoutMarkdown, null, 2)}\n`, 'utf-8');
 
   // Conditionally write MD view based on config
   const config = await readArtifactConfig(options?.cwd || dir);
@@ -624,7 +627,7 @@ async function readStructuredTaskJsonDocument(dir: string, file: StructuredTaskM
 }
 
 function expectedMarkdownHash(doc: StructuredTaskDocument): string {
-  return doc.source.content_sha256 || markdownSha256(doc.markdown);
+  return doc.source.content_sha256 || markdownSha256(doc.markdown ?? '');
 }
 
 export async function detectStructuredMarkdownHashDrift(
