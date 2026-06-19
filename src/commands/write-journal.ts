@@ -6,9 +6,10 @@
  */
 
 import { existsSync } from 'fs';
+import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
-import { readActiveTaskFile, writeActiveTaskFile } from '../utils/task-files.js';
+import { archivedTaskDir, canonicalTaskDir, readActiveTaskFile, writeActiveTaskFile } from '../utils/task-files.js';
 import { readStdin } from '../utils/stdin.js';
 
 interface WriteJournalOptions {
@@ -44,6 +45,25 @@ export async function writeJournalCommand(options: WriteJournalOptions): Promise
 
   const current = await readCurrentState(cwd);
   const taskId = current?.task_id || 'current';
+
+  // Fail-loud guard: write-journal must run BEFORE the task is physically
+  // archived. If the canonical spec is gone but the archived dir exists, the
+  // task was already moved to tasks/done — writing here would re-create a
+  // zombie tasks/<id>/ + current alias with only the Journal Record. Refuse
+  // instead of silently resurrecting the dir.
+  if (taskId !== 'current') {
+    const canonicalSpec = join(canonicalTaskDir(docpathDir, taskId), 'spec.md');
+    const archivedExists = existsSync(archivedTaskDir(docpathDir, taskId));
+    if (!existsSync(canonicalSpec) && archivedExists) {
+      console.error('❌  任务已物理归档到 tasks/done/，write-journal 必须在归档前运行。');
+      console.error(`   task_id: ${taskId}`);
+      console.error('   修复建议:');
+      console.error('   - 若归档过早：恢复 tasks/<id>/ 后再 write-journal，再 gc --force。');
+      console.error('   - 若知识记录已无意义：跳过 write-journal，直接 docpath gc --force 收尾。');
+      process.exit(1);
+    }
+  }
+
   const previous = await readActiveTaskFile(docpathDir, taskId, 'spec.md');
 
   // 防御性检查：如果 spec.md 看起来不像一个正常的 spec（缺少标题或章节结构），警告用户
