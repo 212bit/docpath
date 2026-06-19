@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-19T15:33:56.263Z",
+    "updated_at": "2026-06-19T15:33:56.263Z",
+    "content_sha256": "0d508648d61ae472d1c77e5128d8a9c2f276afea6ae4bf72150847735b7f49a1"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: workflow-profile.ts 加 instant profile\n- **描述**: WorkflowProfile 类型加 `'instant'`;PROFILE_POLICIES.instant = { requiresSpec:false, requiresPlan:false, requiresCheck:false, requiresReview:false, journalMode:'minimal' };normalizeWorkflowProfile 接受 'instant';加 isInstantProfile 辅助。\n- **验收条件**: typecheck 通过;normalizeWorkflowProfile('instant') 返回 'instant';gatePolicyForProfile('instant').requiresCheck === false。\n- **依赖**: 无\n\n### S2: check.ts 加 lite 模式(仅 typecheck + 结构门禁)\n- **描述**: checkCommand 加 `lite?: boolean` 选项;lite=true 时跳过 build+test+lint(heavy),保留 typecheck(detectCompileChecks)+ plan-sync + task-file-drift + major-change-gate + context-health。\n- **验收条件**: lite 模式跑 typecheck 不跑 build/test;非 lite 行为不变;typecheck 失败时 lite 仍 fail。\n- **依赖**: 无\n\n### S3: agent.ts runAgentCheckGate 对 instant 走 lite\n- **描述**: runAgentCheckGate 检测 instant profile 时调 checkCommand({ lite:true })而非全量;runAgentReviewGate 对 instant 同 quick 跳 review。done.ts 门禁序列输出区分 instant。\n- **验收条件**: instant 任务 done 时跑 lite check(无 build/test)+ 跳 review;standard/quick 行为不变。\n- **依赖**: S1, S2\n\n### S4: quick.ts 加 --instant 入口 + quick-guard 守卫\n- **描述**: quick 命令加 `--instant` flag,设置 workflow_profile:'instant' + level:0;quick-guard 范围守卫(≤3 文件、风险路径拒绝)对 instant 同样适用。\n- **验收条件**: `docpath quick --instant \"x\"` 创建 instant 任务;超范围/风险路径被拒;状态 profile=instant。\n- **依赖**: S1\n\n### S5: 测试 + 全量校验\n- **描述**: 新增 instant profile 测试:创建 instant 任务、done 跑 lite check(无 build/test)、跳 review、quick-guard 守卫。跑 pnpm test + docpath check + review。\n- **验收条件**: 新测试覆盖 instant 路径;全量测试绿;docpath check/review 通过。\n- **依赖**: S1-S4\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n- [x] S5\n\n## 依赖关系图\nS1 → S3 → S5\nS2 → S3\nS1 → S4 → S5\n",
+  "generated_at": "2026-06-19T15:33:56.263Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "workflow-profile.ts 加 instant profile",
+      "description": "WorkflowProfile 类型加 `'instant'`;PROFILE_POLICIES.instant = { requiresSpec:false, requiresPlan:false, requiresCheck:false, requiresReview:false, journalMode:'minimal' };normalizeWorkflowProfile 接受 'instant';加 isInstantProfile 辅助。",
+      "acceptance": "typecheck 通过;normalizeWorkflowProfile('instant') 返回 'instant';gatePolicyForProfile('instant').requiresCheck === false。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "check.ts 加 lite 模式(仅 typecheck + 结构门禁)",
+      "description": "checkCommand 加 `lite?: boolean` 选项;lite=true 时跳过 build+test+lint(heavy),保留 typecheck(detectCompileChecks)+ plan-sync + task-file-drift + major-change-gate + context-health。",
+      "acceptance": "lite 模式跑 typecheck 不跑 build/test;非 lite 行为不变;typecheck 失败时 lite 仍 fail。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "agent.ts runAgentCheckGate 对 instant 走 lite",
+      "description": "runAgentCheckGate 检测 instant profile 时调 checkCommand({ lite:true })而非全量;runAgentReviewGate 对 instant 同 quick 跳 review。done.ts 门禁序列输出区分 instant。",
+      "acceptance": "instant 任务 done 时跑 lite check(无 build/test)+ 跳 review;standard/quick 行为不变。",
+      "dependencies": "S1, S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "quick.ts 加 --instant 入口 + quick-guard 守卫",
+      "description": "quick 命令加 `--instant` flag,设置 workflow_profile:'instant' + level:0;quick-guard 范围守卫(≤3 文件、风险路径拒绝)对 instant 同样适用。",
+      "acceptance": "`docpath quick --instant \"x\"` 创建 instant 任务;超范围/风险路径被拒;状态 profile=instant。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "测试 + 全量校验",
+      "description": "新增 instant profile 测试:创建 instant 任务、done 跑 lite check(无 build/test)、跳 review、quick-guard 守卫。跑 pnpm test + docpath check + review。",
+      "acceptance": "新测试覆盖 instant 路径;全量测试绿;docpath check/review 通过。",
+      "dependencies": "S1-S4",
+      "status": "done"
+    }
+  ]
+}

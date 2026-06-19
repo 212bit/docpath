@@ -2,13 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-19T14:59:40.643Z
+> 扫描时间: 2026-06-19T15:45:05.527Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-215 | instant profile:跳 check 留 typecheck(R-204) | proposed | P2 | 2 |  |
+| R-216 | Smart Git Merge Driver for Backlog and Rules Markdown files | proposed | P2 | 1 |  |
 
 ## 用途说明
 
