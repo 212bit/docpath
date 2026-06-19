@@ -40,6 +40,11 @@ interface CheckOptions {
   skipTests?: boolean;
   /** 跳过 lint */
   skipLint?: boolean;
+  /**
+   * 轻量模式（instant profile）：跳过 build+test+lint 重命令，仅保留 typecheck
+   * 与结构性门禁（plan-sync / task-file-drift / major-change-gate / context-health）。
+   */
+  lite?: boolean;
   /** 启用 harness 规则检查 */
   harness?: boolean;
   /** 只检查 pre-flight 规则 */
@@ -562,6 +567,9 @@ async function runCompileChecks(cwd: string, pkgPath: string, nodeCommands: Node
 async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeCommands: NodeCommandConfig, options: CheckOptions): Promise<CheckResult[]> {
   const pkg = await readPackageManifest(pkgPath);
   if (!pkg?.scripts) return [];
+
+  // lite 模式（instant profile）：跳过 build+test+lint 重命令，仅靠 typecheck 兜底。
+  if (options.lite) return [];
 
   const results: CheckResult[] = [];
   // 构建/测试是重命令：build 会重编译，test 还串行跑整个套件（本仓库单独跑就 ~33s）。
@@ -1285,6 +1293,9 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   warnWhenOutsideAgentSession(current, options);
 
   console.log('\n🔍  质量检查...\n');
+  if (options.lite) {
+    console.log('⚡  lite 模式（instant profile）：跳过 build/test/lint，仅 typecheck + 结构门禁\n');
+  }
   const results: CheckResult[] = [];
   normalizeHarnessOptions(options);
 
