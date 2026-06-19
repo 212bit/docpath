@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { registerCommands } from './commands/register.js';
 import { renderAdvancedHelp, renderDefaultHelp, renderDeprecatedHelp } from './commands/register/command-metadata.js';
+import { resolveSessionContext, verifySessionCwd } from './utils/session.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -88,6 +89,17 @@ try {
       console.error(`❌  命令 \`${cli.matchedCommand.rawName}\` 收到了未声明的位置参数: ${extraPositionals.join(' ')}`);
       console.error('    运行 `docpath --help` 查看用法。');
       process.exit(1);
+    }
+  }
+
+  if (cli.matchedCommand) {
+    const cmdName = cli.matchedCommand.rawName;
+    const isBypassed = ['worktree', 'projects', 'init', 'config'].includes(cmdName.split(' ')[0]);
+    if (!isBypassed) {
+      const cwd = (parsed.options.cwd as string) || process.cwd();
+      const sessionOption = parsed.options.session as string | undefined;
+      const { sessionId } = resolveSessionContext(sessionOption);
+      await verifySessionCwd(cwd, sessionId);
     }
   }
 
