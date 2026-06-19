@@ -71,3 +71,23 @@
 ---
 
 *此文件由 `docpath write-spec` 更新。*
+
+## Journal Record
+
+### 📝 任务摘要
+为 DocPath CLI 实现了跨 worktree session 绑定门禁（verifySessionCwd），防止多 Agent 并发时跨 cwd 干扰任务状态。
+
+### 🏗️ 架构决策
+- verifySessionCwd 仅对同一 git repo 的多 worktree 生效：通过 listWorktrees 找 session 文件，跨 repo 的独立目录不被拦截
+- bypass 命令列表（worktree/projects/init/config）不触发检查：这些命令不读写任务状态
+- session 文件不存在时放行（惰性创建语义）：避免首次调用前的误拦截
+- index.ts 作为 CLI 入口统一注入检查，而非在每个命令内部处理
+
+### 💡 经验教训
+- linter 回退 src 变更但不报错会导致实现丢失；提交应在构建验证后立即执行
+- 测试同一 repo 多 worktree 场景时，需要 git worktree add 真实创建 worktree，不能用两个独立 git repo 模拟
+- go --step 门禁会因 staged 变更未 commit 而拦截；最好每完成一个步骤立即 commit 再 go 下一步
+
+### 🔮 后续改进
+- 考虑 status 命令也调用 touchSession，使首次 status 即可创建 session 文件，减少"session 文件不存在放行"的盲区
+- bypass 列表当前硬编码，可考虑通过命令元数据（requiresSessionLock: false）声明

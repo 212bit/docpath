@@ -3,13 +3,13 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-06-19T16:21:34.772Z",
-    "updated_at": "2026-06-19T16:21:34.772Z",
-    "content_sha256": "72c981df5c7c56ad6096a41623b9c4dfb821812c9413f4e2749bb0e0ab350397"
+    "created_at": "2026-06-19T16:31:00.860Z",
+    "updated_at": "2026-06-19T16:31:00.860Z",
+    "content_sha256": "6e247b2bdb0475e8d16b9b30470f38e9b32230e87fcf745fa94f6773989dc3ed"
   },
   "title": "执行计划",
-  "markdown": "## 执行计划\n\n### S1: session.ts 加 verifySessionCwd + isAbsolute 导入修复\n- **描述**: 在 `src/utils/session.ts` 中从 `node:path` 导入 `resolve`、`relative`、`isAbsolute`；从 `./worktree.js` 导入 `getGitTopLevel`、`listWorktrees`；实现 `verifySessionCwd(cwd, sessionId)` — 当 sessionId 非 default 时遍历所有 worktree，若当前 cwd 不在 session 绑定目录下则抛出跨目录门禁错误\n- **验收条件**: `tsc --noEmit` 通过；verifySessionCwd 对非 default session 执行跨 cwd 检查；default session 直接返回\n- **依赖**: 无\n\n### S2: index.ts 加 pre-command verifySessionCwd 钩子\n- **描述**: 在 `src/index.ts` 中导入 `resolveSessionContext`、`verifySessionCwd`；在命令匹配成功后、执行前加 bypass 列表（`worktree`、`projects`、`init`、`config`）；对非 bypass 命令调用 `await verifySessionCwd(cwd, sessionId)`\n- **验收条件**: `tsc --noEmit` 通过；bypass 命令不触发检查；正常命令触发检查\n- **依赖**: S1\n\n### S3: 新增 tests/cwd-session-lock.test.mjs\n- **描述**: 新增测试文件覆盖三个场景：(1) default session 绕过检查（两个不同 cwd 均返回 0）；(2) 自定义 session 绑定首次 cwd（session 文件创建在 cwd1）；(3) 相同 session 在不同 cwd 执行被拦截（exit code 非 0，输出含\"跨目录门禁拦截\"）；bypass 命令（worktree list）不被拦截\n- **验收条件**: `node --test tests/cwd-session-lock.test.mjs` 全量绿\n- **依赖**: S1, S2\n\n### S4: pnpm build + pnpm test 全量验证\n- **描述**: 运行 `pnpm run build` 确认编译干净；运行 `pnpm test` 确认全量测试绿；运行 `docpath check` 通过\n- **验收条件**: 构建无 error；全量测试绿；docpath check 通过\n- **依赖**: S1, S2, S3\n\n## Checklist\n- [x] S1\n- [ ] S2\n- [ ] S3\n- [ ] S4\n\n## 依赖关系图\nS1 → S2 → S3 → S4\nS1 → S3\n",
-  "generated_at": "2026-06-19T16:21:34.772Z",
+  "markdown": "## 执行计划\n\n### S1: session.ts 加 verifySessionCwd + isAbsolute 导入修复\n- **描述**: 在 `src/utils/session.ts` 中从 `node:path` 导入 `resolve`、`relative`、`isAbsolute`；从 `./worktree.js` 导入 `getGitTopLevel`、`listWorktrees`；实现 `verifySessionCwd(cwd, sessionId)` — 当 sessionId 非 default 时遍历所有 worktree，若当前 cwd 不在 session 绑定目录下则抛出跨目录门禁错误\n- **验收条件**: `tsc --noEmit` 通过；verifySessionCwd 对非 default session 执行跨 cwd 检查；default session 直接返回\n- **依赖**: 无\n\n### S2: index.ts 加 pre-command verifySessionCwd 钩子\n- **描述**: 在 `src/index.ts` 中导入 `resolveSessionContext`、`verifySessionCwd`；在命令匹配成功后、执行前加 bypass 列表（`worktree`、`projects`、`init`、`config`）；对非 bypass 命令调用 `await verifySessionCwd(cwd, sessionId)`\n- **验收条件**: `tsc --noEmit` 通过；bypass 命令不触发检查；正常命令触发检查\n- **依赖**: S1\n\n### S3: 新增 tests/cwd-session-lock.test.mjs\n- **描述**: 新增测试文件覆盖三个场景：(1) default session 绕过检查（两个不同 cwd 均返回 0）；(2) 自定义 session 绑定首次 cwd（session 文件创建在 cwd1）；(3) 相同 session 在不同 cwd 执行被拦截（exit code 非 0，输出含\"跨目录门禁拦截\"）；bypass 命令（worktree list）不被拦截\n- **验收条件**: `node --test tests/cwd-session-lock.test.mjs` 全量绿\n- **依赖**: S1, S2\n\n### S4: pnpm build + pnpm test 全量验证\n- **描述**: 运行 `pnpm run build` 确认编译干净；运行 `pnpm test` 确认全量测试绿；运行 `docpath check` 通过\n- **验收条件**: 构建无 error；全量测试绿；docpath check 通过\n- **依赖**: S1, S2, S3\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n- [x] S4\n\n## 依赖关系图\nS1 → S2 → S3 → S4\nS1 → S3\n",
+  "generated_at": "2026-06-19T16:31:00.860Z",
   "steps": [
     {
       "id": "S1",
@@ -25,7 +25,7 @@
       "description": "在 `src/index.ts` 中导入 `resolveSessionContext`、`verifySessionCwd`；在命令匹配成功后、执行前加 bypass 列表（`worktree`、`projects`、`init`、`config`）；对非 bypass 命令调用 `await verifySessionCwd(cwd, sessionId)`",
       "acceptance": "`tsc --noEmit` 通过；bypass 命令不触发检查；正常命令触发检查",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S3",
@@ -33,7 +33,7 @@
       "description": "新增测试文件覆盖三个场景：(1) default session 绕过检查（两个不同 cwd 均返回 0）；(2) 自定义 session 绑定首次 cwd（session 文件创建在 cwd1）；(3) 相同 session 在不同 cwd 执行被拦截（exit code 非 0，输出含\"跨目录门禁拦截\"）；bypass 命令（worktree list）不被拦截",
       "acceptance": "`node --test tests/cwd-session-lock.test.mjs` 全量绿",
       "dependencies": "S1, S2",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S4",
@@ -41,7 +41,7 @@
       "description": "运行 `pnpm run build` 确认编译干净；运行 `pnpm test` 确认全量测试绿；运行 `docpath check` 通过",
       "acceptance": "构建无 error；全量测试绿；docpath check 通过",
       "dependencies": "S1, S2, S3",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }
