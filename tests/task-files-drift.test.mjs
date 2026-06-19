@@ -179,6 +179,41 @@ describe('active task file drift', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check fails loud (not sync) on phantom active task state', () => {
+    const cwd = mkWorkspace();
+    rmSync(join(cwd, '.docpath', 'tasks', 'current'), { recursive: true, force: true });
+    rmSync(join(cwd, '.docpath', 'tasks', 'T-DRIFT'), { recursive: true, force: true });
+
+    const check = run(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+
+    assert.equal(check.code, 1);
+    assert.match(check.out, /PHANTOM TASK DRIFT DETECTED/);
+    assert.match(check.out, /docpath task abort/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check skips current-task context files when workflow is idle (no active task)', () => {
+    const cwd = mkWorkspace();
+    rmSync(join(cwd, '.docpath', 'tasks', 'current'), { recursive: true, force: true });
+    rmSync(join(cwd, '.docpath', 'tasks', 'T-DRIFT'), { recursive: true, force: true });
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 3,
+      task_id: '',
+      task_title: '',
+      phase: 'idle',
+      gate: 'none',
+      current_step: 'task aborted',
+      started_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z',
+    }, null, 2));
+
+    const check = run(`check --cwd ${cwd} --skip-tests --skip-lint --force`, cwd);
+
+    assert.doesNotMatch(check.out, /当前任务上下文文件缺失/);
+    assert.doesNotMatch(check.out, /PHANTOM TASK DRIFT DETECTED/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('check reports current/canonical drift with paths and sync fixes it from canonical', () => {
     const cwd = mkWorkspace();
 
