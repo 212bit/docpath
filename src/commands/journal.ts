@@ -114,6 +114,67 @@ function isLowSignalJournalLine(line: string): boolean {
   ].some((pattern) => pattern.test(line));
 }
 
+interface AdrCandidate {
+  title: string;
+  decision: string;
+  context: string;
+}
+
+/**
+ * 从 structured spec 的 Decision Brief 提取 ADR 候选（最高信号来源）。
+ * decision_brief_markdown 是 spec 4.1 门禁里记录的推荐方案，比 breadcrumb
+ * 关键词匹配更可靠。
+ */
+function extractAdrFromDecisionBrief(
+  structuredSpec: StructuredSpecDocument | null,
+  fallbackTitle: string,
+): AdrCandidate[] {
+  if (!structuredSpec) return [];
+  const brief = structuredSpec.major_change_gate?.decision_brief_markdown?.trim();
+  if (!brief) return [];
+  const recommended = extractBriefField(brief, '推荐方案')
+    || extractBriefField(brief, '推荐')
+    || extractBriefField(brief, '目标');
+  const title = (recommended || fallbackTitle || 'Decision Brief').slice(0, 80).trim();
+  return [{
+    title: title || 'Decision Brief',
+    decision: (recommended || brief.split('\n')[0] || title).trim(),
+    context: brief,
+  }];
+}
+
+function extractBriefField(brief: string, field: string): string | null {
+  const m = brief.match(new RegExp(`(?:^|\\n)[\\-*]?\\s*${field}[:：]\\s*([^\\n]+)`));
+  return m ? m[1].trim() : null;
+}
+
+/**
+ * 从 spec.md「## 4. 关键决策」表提取 ADR 候选（次优先）。
+ * 表格式: | # | 决策 | 选项 | 结论 | 理由 |
+ */
+function extractAdrFromKeyDecisionsTable(specMarkdown: string): AdrCandidate[] {
+  const section = extractMarkdownSection(specMarkdown, '## 4. 关键决策')
+    || extractMarkdownSection(specMarkdown, '## 4.关键决策');
+  if (!section) return [];
+  const candidates: AdrCandidate[] = [];
+  const rows = section.split('\n').filter((l) => l.trim().startsWith('|'));
+  for (const row of rows.slice(1)) {
+    if (row.includes('---')) continue;
+    const cells = row.split('|').map((c) => c.trim()).filter((_, i, arr) => !(arr.length && _ === '' && (i === 0 || i === arr.length - 1)));
+    if (cells.length < 4) continue;
+    // [# , 决策, 选项, 结论, 理由]
+    const decision = cells[1];
+    const conclusion = cells[3] || decision;
+    if (!decision || /^决策$/i.test(decision)) continue;
+    candidates.push({
+      title: decision.slice(0, 48).trim(),
+      decision: conclusion.trim(),
+      context: row.trim(),
+    });
+  }
+  return candidates;
+}
+
 export async function journalCommand(options: JournalOptions): Promise<void> {
   const { cwd } = options;
   const docpathDir = await resolveDocpathDir(cwd);
@@ -267,7 +328,7 @@ async function finalizeJournal(
   });
   await writeLessonCandidate(context.docpathDir, context.taskId, summary);
   await updateWorkspaceMeta(context.docpathDir, context.meta);
-  await writeJournalDecisions(cwd, archive.taskDirName, summary);
+  await writeJournalDecisions(cwd, archive.taskDirName, summary, context);
   await gcJournalDecisions(cwd, skipDecisionGc);
   console.log('─── 完成 ───');
   console.log('所有步骤已归档。运行 `docpath init` 开始新任务。');
@@ -462,15 +523,33 @@ async function updateWorkspaceMeta(docpathDir: string, meta: Record<string, unkn
   }
 }
 
-async function writeJournalDecisions(cwd: string, taskDirName: string, summary: TaskSummary): Promise<void> {
+async function writeJournalDecisions(
+  cwd: string,
+  taskDirName: string,
+  summary: TaskSummary,
+  context: JournalContext,
+): Promise<void> {
   try {
-    const architectureDecisions = extractArchitectureDecisionCandidates(summary.keyDecisions);
-    if (architectureDecisions.length === 0) {
+    const candidates: AdrCandidate[] = [];
+    const seen = new Set<string>();
+    const push = (c: AdrCandidate): void => {
+      const key = c.title.toLowerCase();
+      if (!c.title || seen.has(key)) return;
+      seen.add(key);
+      candidates.push(c);
+    };
+
+    // 优先级: structured decision_brief > spec 关键决策表 > breadcrumb 关键词
+    for (const c of extractAdrFromDecisionBrief(context.structuredSpec, context.current?.task_title || summary.taskId)) push(c);
+    for (const c of extractAdrFromKeyDecisionsTable(context.spec)) push(c);
+    for (const c of extractArchitectureDecisionCandidates(summary.keyDecisions)) push(c);
+
+    if (candidates.length === 0) {
       console.log('📝  未发现可复用 ADR，跳过 decisions.md 写入');
       return;
     }
 
-    for (const candidate of architectureDecisions) {
+    for (const candidate of candidates) {
       await appendDecision(cwd, 'architecture', candidate.decision, candidate.context, {
         taskId: summary.taskId,
         context: `从 journal 关键决策自动提取:\n${candidate.context}`,
@@ -484,7 +563,7 @@ async function writeJournalDecisions(cwd: string, taskDirName: string, summary: 
       });
     }
     console.log('📝  决策日志已更新: workspace/decisions.md');
-    console.log(`🏗️  已从 journal 提取 ${architectureDecisions.length} 条架构决策`);
+    console.log(`🏗️  已从 journal 提取 ${candidates.length} 条架构决策`);
   } catch (e) {
     console.warn('⚠️  决策日志写入失败（非致命）:', (e as Error).message);
   }
