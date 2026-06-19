@@ -10,7 +10,7 @@
 import { execFile } from 'node:child_process';
 import { existsSync, statSync } from 'node:fs';
 import { symlink } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
@@ -44,45 +44,11 @@ export function isInWorktree(cwd: string): boolean {
 }
 
 /**
- * 获取主仓库路径
- */
-export async function getMainRepoPath(cwd: string): Promise<string> {
-  try {
-    const { stdout } = await execFileAsync('git', ['rev-parse', '--git-common-dir'], { cwd });
-    const commonDir = stdout.trim();
-    if (!commonDir) return getGitTopLevel(cwd);
-    const commonGitDir = resolve(cwd, commonDir);
-    return dirname(commonGitDir);
-  } catch {
-    return getGitTopLevel(cwd);
-  }
-}
-
-/**
  * 获取当前 Git 仓库 top-level。
  */
 export async function getGitTopLevel(cwd: string): Promise<string> {
   const { stdout } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], { cwd });
   return stdout.trim();
-}
-
-/**
- * 解析共享资源路径
- *
- * 在 worktree 中，某些资源（backlog/rules）共享到主仓库
- */
-export async function resolveSharedResource(
-  cwd: string,
-  resource: 'backlog' | 'rules' | 'spec' | 'templates'
-): Promise<string> {
-  if (isInWorktree(cwd)) {
-    const mainRepo = await getMainRepoPath(cwd);
-    return join(mainRepo, '.docpath', resource);
-  }
-
-  const { resolveDocpathDir } = await import('./file.js');
-  const docpathDir = await resolveDocpathDir(cwd);
-  return join(docpathDir, resource);
 }
 
 /**
