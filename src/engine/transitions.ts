@@ -26,6 +26,7 @@ export interface TransitionPayload {
   currentStep?: string;
   taskId?: string;
   taskTitle?: string;
+  backlogId?: string | null;
 }
 
 interface TransitionTarget {
@@ -161,6 +162,7 @@ export async function transitionWorkflow(
       gate: snapshot.gate,
       task_id: payload.taskId ?? previous.task_id,
       task_title: payload.taskTitle ?? previous.task_title,
+      ...(payload.backlogId !== undefined ? { backlog_id: payload.backlogId } : {}),
       current_step: payload.currentStep ?? DEFAULT_STEP[event],
       updated_at: nowIso(),
     };

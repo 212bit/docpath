@@ -23,7 +23,8 @@ import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { recordSkipReason } from '../engine/policy.js';
 import { markPlanStep } from '../utils/plan-sync.js';
 import { emit } from '../hooks/lifecycle.js';
-import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
+import { readCurrentState, resolveBoundTaskId, writeCurrentState } from '../utils/workspace.js';
+import { readActiveStructuredSpecDocument } from '../utils/task-files.js';
 import { releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
@@ -124,6 +125,16 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
     step: current?.current_step || 'agent enter',
     command: 'agent enter',
   });
+
+  // Refresh backlog_id in state.json from spec.json if not already set.
+  if (current?.task_id && !current.backlog_id) {
+    const docpathDir = await resolveDocpathDir(cwd);
+    const spec = await readActiveStructuredSpecDocument(docpathDir, current.task_id);
+    if (spec?.backlog_id) {
+      await writeCurrentState(cwd, { ...current, backlog_id: spec.backlog_id });
+    }
+  }
+
   try {
     await emit('task_start', cwd, current?.task_id || undefined, {
       phase: current?.phase || 'executing',

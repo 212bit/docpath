@@ -49,6 +49,8 @@ export interface AgentOutput {
   task_id: string;
   /** 任务标题 */
   task_title: string;
+  /** 关联的 backlog 条目 ID（可选） */
+  backlog_id?: string | null;
   /** 当前阶段 */
   phase: string;
   /** 当前门禁状态 */
@@ -1212,6 +1214,7 @@ export async function generateAgentOutput(
     })(),
     task_id: context.state?.task_id || '',
     task_title: context.state?.task_title || '',
+    ...(context.state?.backlog_id !== undefined ? { backlog_id: context.state.backlog_id } : {}),
     phase: context.state?.phase || '',
     gate: context.state?.gate || 'none',
     next_action: routeFields.next_action,

@@ -43,6 +43,7 @@ export interface CurrentState {
   state: RuntimeWorkflowState;
   task_id: string;
   task_title: string;
+  backlog_id?: string | null;
   phase: WorkflowPhase;
   gate: GateStatus;
   current_step: string;

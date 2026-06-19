@@ -691,6 +691,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   await transitionWorkflow(options.cwd, 'task.created', {
     taskId,
     taskTitle: item.title,
+    backlogId: item.id,
     currentStep: `backlog promote ${item.id} 完成，下一步: docpath plan`,
   });
 
