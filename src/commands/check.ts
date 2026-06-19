@@ -9,7 +9,7 @@
 
 import { existsSync } from 'fs';
 import { readFile, stat, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { delimiter, dirname, isAbsolute, join, resolve, sep } from 'path';
 import { execSync, execFileSync } from 'child_process';
 import { isCancel, select } from '@clack/prompts';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -92,6 +92,7 @@ function formatValidationFailure(filePath: string, issues: Array<{ message: stri
 
 function formatTaskFileDrift(drifts: TaskFileDrift[]): string {
   const reasonLabel: Record<TaskFileDrift['reason'], string> = {
+    'phantom-task': '幽灵任务',
     'missing-current': 'current 缺失',
     'missing-canonical': 'canonical 缺失',
     'content-mismatch': '内容不一致',
@@ -163,9 +164,40 @@ function isTimeoutKill(err: unknown): boolean {
   return record.killed === true || record.signal === 'SIGTERM' || record.signal === 'SIGKILL';
 }
 
-function checkCommandEnv(): NodeJS.ProcessEnv {
+function pathEntries(value: string | undefined): string[] {
+  return (value || '').split(delimiter).filter(Boolean);
+}
+
+function resolveMainCheckoutBin(cwd: string): string | null {
+  const commonDir = runGitOptional(cwd, ['rev-parse', '--git-common-dir']);
+  if (!commonDir) return null;
+  const absoluteCommonDir = isAbsolute(commonDir) ? commonDir : resolve(cwd, commonDir);
+  const candidates = new Set<string>();
+  const worktreeMarker = `${sep}.git${sep}worktrees${sep}`;
+  const markerIndex = absoluteCommonDir.indexOf(worktreeMarker);
+  if (markerIndex >= 0) {
+    candidates.add(absoluteCommonDir.slice(0, markerIndex));
+  }
+  candidates.add(dirname(absoluteCommonDir));
+  for (const candidate of candidates) {
+    const bin = join(candidate, 'node_modules', '.bin');
+    if (existsSync(bin)) return bin;
+  }
+  return null;
+}
+
+function checkCommandEnv(cwd: string): NodeJS.ProcessEnv {
   const env = { ...process.env };
   delete env.DOCPATH_SESSION;
+  const candidates = [
+    join(cwd, 'node_modules', '.bin'),
+    resolveMainCheckoutBin(cwd),
+  ].filter((value): value is string => Boolean(value && existsSync(value)));
+  const existingPath = pathEntries(env.PATH);
+  const prepend = candidates.filter((entry) => !existingPath.includes(entry));
+  if (prepend.length > 0) {
+    env.PATH = [...prepend, ...existingPath].join(delimiter);
+  }
   return env;
 }
 
@@ -183,7 +215,7 @@ function runCheck(
       timeout: timeoutMs,
       stdio: ['pipe', 'pipe', 'pipe'],
       maxBuffer: 10 * 1024 * 1024,
-      env: checkCommandEnv(),
+      env: checkCommandEnv(cwd),
     });
     return { name, passed: true, output: output.slice(0, 500), category };
   } catch (err: unknown) {
@@ -577,6 +609,7 @@ async function runProjectChecks(cwd: string, options: CheckOptions): Promise<Che
 async function checkTaskFileDrift(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
   const workflowState = await readCurrentState(cwd);
   if ((workflowState?.level || 0) < 2 || !workflowState?.task_id) return [];
+  if (workflowState.phase === 'idle' || workflowState.phase === 'completed') return [];
 
   const identityDrifts = await detectActiveTaskIdentityDrift(docpathDir, workflowState.task_id);
   if (identityDrifts.length > 0) {
@@ -589,6 +622,27 @@ async function checkTaskFileDrift(cwd: string, docpathDir: string, options: Chec
   }
 
   let drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
+
+  const phantomDrifts = drifts.filter((drift) => drift.reason === 'phantom-task');
+  if (phantomDrifts.length > 0) {
+    return [{
+      name: '任务身份一致性检查',
+      passed: false,
+      output: [
+        'PHANTOM TASK DRIFT DETECTED:',
+        `  state.task_id: ${workflowState.task_id}`,
+        `  phase: ${workflowState.phase}`,
+        '  current 别名与 canonical 任务目录均不存在（spec.md/plan.md 全缺）。',
+        '  常见成因: 任务在另一分支完成并归档，但本地 gitignored 的 state.json 仍停在该任务。',
+        '修复建议（需明确用户意图，不要用 agent step 机械修复）:',
+        '  - 若该任务已在别处完成/归档: docpath task abort 清理陈旧状态，回到 idle。',
+        '  - 若需在本 checkout 继续: 从 git/归档恢复 canonical 任务目录后再同步。',
+        '  - 若这其实是新需求: capture/promote 新 backlog 绑定新 task_id。',
+      ].join('\n'),
+      category: 'plan',
+    }];
+  }
+
   let driftOutput = drifts.length === 0 ? 'current 与 canonical 任务文件一致' : formatTaskFileDrift(drifts);
   const fixSource = drifts.length > 0
     ? options.fixDrift ?? await promptTaskFileDriftFix()

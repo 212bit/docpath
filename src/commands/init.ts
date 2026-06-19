@@ -31,7 +31,7 @@ import { loadTemplate } from '../utils/file.js';
 import { detectProject, formatProjectInfo, detectMonorepo, type ProjectInfo } from '../utils/detect.js';
 import { readCurrentState, writeCurrentState, type CurrentState } from '../utils/workspace.js';
 import { ensureRulesDir } from '../utils/rules.js';
-import { registerProject } from '../engine/project-registry.js';
+import { registerProject, resolveProjectRegistryDbPath } from '../engine/project-registry.js';
 
 interface InitOptions {
   cwd?: string;
@@ -136,8 +136,14 @@ async function registerExistingProject(cwd: string): Promise<void> {
   console.log('⚠️  当前目录已存在 .docpath/，默认不会覆盖已有工作区。');
   console.log('    已改为注册现有项目；如需重建，请明确运行: docpath init --force');
   await repairRuntimeWorkspace(cwd);
-  const registered = await registerProject(cwd);
-  console.log(`  🗄️  已注册到本地项目中心: ${registered.name}`);
+  try {
+    const registered = await registerProject(cwd);
+    console.log(`  🗄️  已注册到本地项目中心: ${registered.name}`);
+  } catch (error) {
+    console.warn('  ⚠️  本地项目中心注册失败，已跳过；DocPath runtime 修复已完成。');
+    console.warn(`     registry: ${resolveProjectRegistryDbPath()}`);
+    console.warn(`     reason: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 async function repairRuntimeWorkspace(cwd: string): Promise<void> {

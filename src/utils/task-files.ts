@@ -192,7 +192,7 @@ export interface TaskFileDrift {
   file: TaskFileAlias;
   currentPath: string;
   canonicalPath: string;
-  reason: 'missing-current' | 'missing-canonical' | 'content-mismatch';
+  reason: 'phantom-task' | 'missing-current' | 'missing-canonical' | 'content-mismatch';
   detail?: string;
 }
 
@@ -291,7 +291,11 @@ export async function detectActiveTaskFileDrift(
     const hasCurrent = existsSync(currentPath);
     const hasCanonical = existsSync(canonicalPath);
 
-    if (!hasCurrent && !hasCanonical) continue;
+    if (!hasCurrent && !hasCanonical) {
+      // state.task_id 指向当前 checkout 中不存在的任务；不能静默当作一致。
+      drifts.push({ file, currentPath, canonicalPath, reason: 'phantom-task' });
+      continue;
+    }
     if (!hasCurrent) {
       drifts.push({ file, currentPath, canonicalPath, reason: 'missing-current' });
       continue;

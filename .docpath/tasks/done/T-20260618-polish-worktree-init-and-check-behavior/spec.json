@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-18T17:06:28.496Z",
+    "updated_at": "2026-06-18T17:06:28.496Z",
+    "content_sha256": "d87e8e26f152eec61e4a73aba86d4575132a6224cc6ffa691115e5095f5d5269"
+  },
+  "task_id": "T-20260618-polish-worktree-init-and-check-behavior",
+  "backlog_id": "R-205",
+  "title": "T-20260618-polish-worktree-init-and-check-behavior - Polish worktree init and check behavior",
+  "markdown": "# T-20260618-polish-worktree-init-and-check-behavior - Polish worktree init and check behavior\n\n> backlog_id: R-205\n> backlog_source: docpath backlog capture\n\n## 1. 背景与动机\n\nDogfooding DocPath in isolated Git worktrees exposed two workflow polish issues:\n\n- `docpath init --cwd <existing-docpath>` can successfully repair missing runtime workspace files, then exit nonzero because the project registry database is read-only. The successful repair is masked by an unrelated registry write boundary failure.\n- `docpath check` in a Git worktree fails with `tsc: command not found` / `tsup: command not found` when the worktree itself has no `node_modules`, even though the main checkout has `node_modules/.bin` and validation can pass when that bin directory is added to `PATH`.\n\nBoth issues make worktree dogfooding noisier than necessary and push agents toward manual environment workarounds.\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails.\n- [ ] FR-2: Existing-project `docpath init` must report registry registration failure as a warning with actionable context instead of exiting nonzero after repair.\n- [ ] FR-3: `docpath check` must discover a main-checkout `node_modules/.bin` when running from a linked Git worktree without local dependencies.\n- [ ] FR-4: Check subprocesses must receive the enhanced `PATH` consistently for typecheck, build, lint, and test commands.\n\n### 非功能需求\n- [ ] NFR-1: New-project initialization should keep fail-loud behavior for core initialization failures.\n- [ ] NFR-2: Worktree dependency discovery must be deterministic and local; no dependency install or network access.\n- [ ] NFR-3: Existing non-worktree check behavior must remain unchanged when local dependencies are present.\n\n## 3. 范围界定\n\n### 包含\n- Existing-project init registry warning behavior.\n- Worktree-aware command environment for `docpath check`.\n- Regression tests for registry failure and worktree PATH augmentation.\n\n### 不包含\n- Redesigning the project registry schema.\n- Installing dependencies automatically.\n- Changing `docpath worktree doctor` output.\n- Merging previous worktree branches into main.\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | Registry failure after repair | Fail command / warn and continue | Warn and continue for existing-project registration | Runtime repair is the user-visible local fix; registry availability is secondary. |\n| 2 | Check dependency resolution | Require local node_modules / augment PATH from main checkout | Augment PATH from main checkout when available | Keeps validation local and avoids requiring duplicate installs per worktree. |\n| 3 | Discovery source | Hardcode parent path / use Git common dir | Use Git common dir to locate main checkout | Works for standard Git worktrees without repo-specific path assumptions. |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）\n- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）\n\n### Decision Brief\n- 当前问题: worktree 中 init/check 的环境边界导致成功修复被非核心失败掩盖，或需要手动 PATH workaround。\n- 目标: 让 existing-project init 和 check 在 DocPath worktree dogfood 中更稳健。\n- 背景: 用户同意修复上一轮暴露的 registry DB 和 worktree check 依赖解析问题。\n- 可选方案: 继续要求手动设置 registry/PATH；在命令中降级/自动发现；让 worktree doctor 只提示。\n- 推荐方案: existing init 对 registry 写失败 warning-only；check 使用 Git common dir 找 main `node_modules/.bin` 并注入子进程 PATH。\n- 不做什么: 不自动安装依赖；不改变新项目核心 init 失败语义；不绕过 check。\n- 成本: 增加环境解析逻辑和测试 fixture。\n- 风险: PATH 注入可能选择错误 checkout；通过只在检测到 Git common dir 且目标 bin 存在时追加降低风险。\n- 回滚方案: 移除 init warning catch 和 check PATH augmentation。\n- 用户确认: 用户明确同意修复这些 dogfood 问题。\n\n## 5. 验收标准\n\n- [ ] AC-1: Existing `.docpath/` 项目 runtime repair 成功但 registry DB 只读时，`docpath init` exit 0 并输出 warning。\n- [ ] AC-2: Existing `.docpath/` 项目 registry 可写时仍正常注册。\n- [ ] AC-3: `docpath check` 从 Git worktree 运行时，可使用 main checkout 的 `node_modules/.bin` 找到 `tsc` / `tsup`。\n- [ ] AC-4: Typecheck/build/test subprocesses 都使用增强后的 PATH。\n- [ ] AC-5: 回归测试覆盖 registry warning 和 worktree check PATH augmentation。\n",
+  "generated_at": "2026-06-18T17:06:28.496Z",
+  "scope": {
+    "included": [
+      "Existing-project init registry warning behavior.",
+      "Worktree-aware command environment for `docpath check`.",
+      "Regression tests for registry failure and worktree PATH augmentation."
+    ],
+    "excluded": [
+      "Redesigning the project registry schema.",
+      "Installing dependencies automatically.",
+      "Changing `docpath worktree doctor` output.",
+      "Merging previous worktree branches into main."
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界"
+    ],
+    "user_confirmed": "用户明确同意修复这些 dogfood 问题。",
+    "decision_brief_markdown": "- 当前问题: worktree 中 init/check 的环境边界导致成功修复被非核心失败掩盖，或需要手动 PATH workaround。\n- 目标: 让 existing-project init 和 check 在 DocPath worktree dogfood 中更稳健。\n- 背景: 用户同意修复上一轮暴露的 registry DB 和 worktree check 依赖解析问题。\n- 可选方案: 继续要求手动设置 registry/PATH；在命令中降级/自动发现；让 worktree doctor 只提示。\n- 推荐方案: existing init 对 registry 写失败 warning-only；check 使用 Git common dir 找 main `node_modules/.bin` 并注入子进程 PATH。\n- 不做什么: 不自动安装依赖；不改变新项目核心 init 失败语义；不绕过 check。\n- 成本: 增加环境解析逻辑和测试 fixture。\n- 风险: PATH 注入可能选择错误 checkout；通过只在检测到 Git common dir 且目标 bin 存在时追加降低风险。\n- 回滚方案: 移除 init warning catch 和 check PATH augmentation。\n- 用户确认: 用户明确同意修复这些 dogfood 问题。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Existing-project `docpath init` must keep runtime repair successful even when project registry registration fails.",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Existing-project `docpath init` must report registry registration failure as a warning with actionable context instead of exiting nonzero after repair.",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "`docpath check` must discover a main-checkout `node_modules/.bin` when running from a linked Git worktree without local dependencies.",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "Check subprocesses must receive the enhanced `PATH` consistently for typecheck, build, lint, and test commands.",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "New-project initialization should keep fail-loud behavior for core initialization failures.",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "Worktree dependency discovery must be deterministic and local; no dependency install or network access.",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "Existing non-worktree check behavior must remain unchanged when local dependencies are present.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "Existing `.docpath/` 项目 runtime repair 成功但 registry DB 只读时，`docpath init` exit 0 并输出 warning。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "Existing `.docpath/` 项目 registry 可写时仍正常注册。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`docpath check` 从 Git worktree 运行时，可使用 main checkout 的 `node_modules/.bin` 找到 `tsc` / `tsup`。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "Typecheck/build/test subprocesses 都使用增强后的 PATH。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "回归测试覆盖 registry warning 和 worktree check PATH augmentation。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: worktree 中 init/check 的环境边界导致成功修复被非核心失败掩盖，或需要手动 PATH workaround。\n- 目标: 让 existing-project init 和 check 在 DocPath worktree dogfood 中更稳健。\n- 背景: 用户同意修复上一轮暴露的 registry DB 和 worktree check 依赖解析问题。\n- 可选方案: 继续要求手动设置 registry/PATH；在命令中降级/自动发现；让 worktree doctor 只提示。\n- 推荐方案: existing init 对 registry 写失败 warning-only；check 使用 Git common dir 找 main `node_modules/.bin` 并注入子进程 PATH。\n- 不做什么: 不自动安装依赖；不改变新项目核心 init 失败语义；不绕过 check。\n- 成本: 增加环境解析逻辑和测试 fixture。\n- 风险: PATH 注入可能选择错误 checkout；通过只在检测到 Git common dir 且目标 bin 存在时追加降低风险。\n- 回滚方案: 移除 init warning catch 和 check PATH augmentation。\n- 用户确认: 用户明确同意修复这些 dogfood 问题。"
+}
