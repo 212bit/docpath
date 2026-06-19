@@ -434,7 +434,7 @@ function renderPromotedSpec(item: BacklogItem, taskId: string): string {
     '|---|------|------|------|------|',
     '| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |',
     '',
-    ...renderMajorDecisionGate(),
+    ...renderMajorDecisionGate(item),
     '',
     '## 5. 验收标准',
     '',
@@ -448,47 +448,99 @@ function renderPromotedSpec(item: BacklogItem, taskId: string): string {
   ].join('\n');
 }
 
-function renderMajorDecisionGate(): string[] {
+function backlogSearchText(item: BacklogItem): string {
+  return [
+    item.title,
+    item.body,
+    item.evidence.user_confirmed || '',
+    item.evidence.decision_brief || '',
+  ].join('\n');
+}
+
+function includesAny(value: string, patterns: RegExp[]): boolean {
+  return patterns.some((pattern) => pattern.test(value));
+}
+
+function isProductUiImplementationTask(item: BacklogItem): boolean {
+  const text = backlogSearchText(item);
+  return includesAny(text, [
+    /产品\s*UI\s*实现/i,
+    /\b(frontend|front-end|react|vue|svelte|component|layout)\b/i,
+    /页面|界面|前端|组件|布局|交互|视觉|设计系统|设计稿|design-preview/i,
+  ]);
+}
+
+function inferMajorChangeTypes(item: BacklogItem): Set<string> {
+  const text = backlogSearchText(item);
+  const types = new Set<string>();
+  if (includesAny(text, [/workflow|worktree|agent|docpath|fsm|门禁|工作流|状态机|任务流/i])) {
+    types.add('工作流 / Agent 行为');
+  }
+  if (includesAny(text, [/permission|write boundary|staging|commit|git add|权限|写操作|索引|提交/i])) {
+    types.add('权限 / 写操作边界');
+  }
+  if (includesAny(text, [/architecture|module boundary|架构|模块边界/i])) {
+    types.add('架构 / 模块边界');
+  }
+  if (includesAny(text, [/api|contract|schema|协议|契约/i])) {
+    types.add('API / 数据契约');
+  }
+  if (includesAny(text, [/scope|broad|全部|范围扩大/i])) {
+    types.add('范围扩大');
+  }
+  return types;
+}
+
+function renderMajorDecisionGate(item: BacklogItem): string[] {
+  const productUi = isProductUiImplementationTask(item);
+  const inferredTypes = inferMajorChangeTypes(item);
+  const userConfirmed = item.evidence.user_confirmed?.trim() || '';
+  const requiresMajorConfirmation = item.level >= 3 || userConfirmed.length > 0 || inferredTypes.size > 0;
+  const checked = (value: boolean) => value ? 'x' : ' ';
+  const typeLine = (label: string) => `- [${checked(inferredTypes.has(label))}] ${label}`;
+  const decisionBriefRef = item.evidence.decision_brief?.trim() || '';
+  const problem = item.body.trim().split('\n').find((line) => line.trim().length > 0)?.trim() || item.title;
+
   return [
     '## 4.1 重大变更门禁',
     '',
     '### 是否涉及重大变更',
-    '- [ ] 否',
-    '- [ ] 是，需要用户确认',
+    `- [${checked(!requiresMajorConfirmation)}] 否`,
+    `- [${checked(requiresMajorConfirmation)}] 是，需要用户确认`,
     '',
     '### 变更类型',
-    '- [ ] 技术栈 / 框架',
-    '- [ ] UI 框架 / 设计系统',
-    '- [ ] 构建工具 / 打包方式',
-    '- [ ] 数据库 / 存储模型',
-    '- [ ] API / 数据契约',
-    '- [ ] 部署 / 运行方式',
-    '- [ ] 安全 / 权限边界',
-    '- [ ] 外部 SDK / 大依赖',
-    '- [ ] 架构 / 模块边界',
-    '- [ ] UI 信息架构 / 用户主路径',
-    '- [ ] 工作流 / Agent 行为',
-    '- [ ] 权限 / 写操作边界',
-    '- [ ] 范围扩大',
-    '- [ ] 删除 / 替换已有能力',
-    '- [ ] 长期维护成本增加',
-    '- [ ] 其他',
+    typeLine('技术栈 / 框架'),
+    typeLine('UI 框架 / 设计系统'),
+    typeLine('构建工具 / 打包方式'),
+    typeLine('数据库 / 存储模型'),
+    typeLine('API / 数据契约'),
+    typeLine('部署 / 运行方式'),
+    typeLine('安全 / 权限边界'),
+    typeLine('外部 SDK / 大依赖'),
+    typeLine('架构 / 模块边界'),
+    typeLine('UI 信息架构 / 用户主路径'),
+    typeLine('工作流 / Agent 行为'),
+    typeLine('权限 / 写操作边界'),
+    typeLine('范围扩大'),
+    typeLine('删除 / 替换已有能力'),
+    typeLine('长期维护成本增加'),
+    typeLine('其他'),
     '',
     '### UI 设计门禁',
-    '- [ ] 本任务不涉及产品 UI 实现（豁免设计五件套）',
-    '- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）',
+    `- [${checked(!productUi)}] 本任务不涉及产品 UI 实现（豁免设计五件套）`,
+    `- [${checked(productUi)}] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）`,
     '',
     '### Decision Brief',
-    '- 当前问题:',
-    '- 目标:',
-    '- 背景:',
-    '- 可选方案:',
-    '- 推荐方案:',
-    '- 不做什么:',
-    '- 成本:',
-    '- 风险:',
-    '- 回滚方案:',
-    '- 用户确认:',
+    `- 当前问题: ${problem}`,
+    `- 目标: ${item.title}`,
+    `- 背景: 来自 backlog ${item.id}${decisionBriefRef ? `，Decision Brief 证据: ${decisionBriefRef}` : ''}`,
+    '- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行',
+    '- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程',
+    '- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围',
+    '- 成本: 中等，按 plan 拆分后逐步验证',
+    '- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移',
+    '- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed',
+    `- 用户确认: ${userConfirmed || '待确认'}`,
   ];
 }
 

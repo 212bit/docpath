@@ -620,8 +620,9 @@ created_at: 2026-05-31
     assert.match(spec, /来源 backlog: R-001/);
     assert.match(spec, /来自 backlog 的正文/);
     assert.match(spec, /### UI 设计门禁/);
-    assert.match(spec, /本任务不涉及产品 UI 实现/);
-    assert.match(spec, /本任务涉及产品 UI 实现/);
+    assert.match(spec, /- \[x\] 本任务不涉及产品 UI 实现/);
+    assert.match(spec, /- \[ \] 本任务涉及产品 UI 实现/);
+    assert.match(spec, /- \[x\] 否/);
     const taskId = spec.match(/^# (T-\d{8}-alpha-promote) - Alpha Promote/m)?.[1];
     assert.ok(taskId, 'task id should be rendered into promoted spec');
     const canonicalSpec = readFileSync(join(cwd, '.docpath', 'tasks', taskId, 'spec.md'), 'utf-8');
@@ -640,6 +641,61 @@ created_at: 2026-05-31
     assert.equal(state.phase, 'drafting');
     assert.equal(state.task_title, 'Alpha Promote');
     assert.match(state.task_id, /^T-\d{8}-alpha-promote$/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog promote pre-fills major change and UI gates for confirmed CLI workflow work', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-002-workflow.md'), `---
+id: R-002
+title: Fix docpath worktree workflow gate
+status: accepted
+priority: P1
+level: 2
+source: test
+readiness: confirmed
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: docs/decision.md
+  user_confirmed: 用户确认修复 workflow 和 git commit 边界
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+docpath worktree workflow gate blocks git commit staging.
+
+## 验收
+
+CLI workflow task can proceed without product UI design assets.
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 2,
+      task_id: '',
+      task_title: '',
+      phase: 'idle',
+      gate: 'none',
+      current_step: '等待下一步',
+      started_at: '2026-05-31T00:00:00.000Z',
+      updated_at: '2026-05-31T00:00:00.000Z',
+    }, null, 2));
+
+    run('backlog promote R-002', cwd);
+
+    const spec = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8');
+    assert.match(spec, /- \[ \] 否/);
+    assert.match(spec, /- \[x\] 是，需要用户确认/);
+    assert.match(spec, /- \[x\] 工作流 \/ Agent 行为/);
+    assert.match(spec, /- \[x\] 权限 \/ 写操作边界/);
+    assert.match(spec, /- \[x\] 本任务不涉及产品 UI 实现/);
+    assert.match(spec, /- 用户确认: 用户确认修复 workflow 和 git commit 边界/);
+    assert.match(spec, /Decision Brief 证据: docs\/decision\.md/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
