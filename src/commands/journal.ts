@@ -31,7 +31,6 @@ import { emitNextHint } from '../utils/next-hint.js';
 
 interface JournalOptions {
   cwd: string;
-  skipAi?: boolean;
   skipDecisionGc?: boolean;
   /** Suppress prompt contract output when journal runs as an automatic closeout sub-step. */
   quietPrompt?: boolean;

@@ -105,7 +105,7 @@ function decisionBlock(id, createdAt) {
 describe('backlog journal integration', () => {
   it('journal auto-completes linked backlog item', () => {
     const cwd = mkWorkspace();
-    const out = run('journal --skip-ai --optional-archive skip', cwd);
+    const out = run('journal --optional-archive skip', cwd);
 
     assert.match(out, /物理任务目录归档已延后/);
     assert.match(out, /canonical evidence 保留在 \.docpath\/tasks\/T-20260531-alpha-promote\//);
@@ -162,7 +162,7 @@ created_at: 2026-05-31
 - 待补充
 `);
 
-    run('journal --skip-ai --optional-archive skip', cwd);
+    run('journal --optional-archive skip', cwd);
 
     // After journal marks item as done, refreshBacklogIndex auto-archives it
     const item = readFileSync(join(dp, 'backlog', 'archived', 'R-001-alpha.md'), 'utf-8');
@@ -192,7 +192,7 @@ created_at: 2026-05-31
 Alpha
 `);
 
-    const out = run('journal --skip-ai --optional-archive skip', cwd);
+    const out = run('journal --optional-archive skip', cwd);
 
     assert.match(out, /所有步骤已归档/);
     // After journal marks item as done, refreshBacklogIndex auto-archives it
@@ -203,7 +203,7 @@ Alpha
 
   it('journal extracts architecture decisions into decisions.md', () => {
     const cwd = mkWorkspace();
-    const out = run('journal --skip-ai --optional-archive skip', cwd);
+    const out = run('journal --optional-archive skip', cwd);
 
     assert.match(out, /决策日志已更新/);
     assert.match(out, /提取 1 条架构决策/);
@@ -217,7 +217,7 @@ Alpha
 
   it('journal skips decisions.md for ordinary archive context', () => {
     const cwd = mkWorkspace({ breadcrumbContext: '质量检查通过 (14 项)' });
-    const out = run('journal --skip-ai --optional-archive skip', cwd);
+    const out = run('journal --optional-archive skip', cwd);
 
     assert.match(out, /未发现可复用 ADR，跳过 decisions\.md 写入/);
     assert.doesNotMatch(out, /决策日志已更新/);
@@ -238,7 +238,7 @@ Alpha
       decisionBlock('ADR-20260401-001', '2026-04-01T00:00:00.000Z'),
     ].join('\n'));
 
-    const out = run('journal --skip-ai --optional-archive skip', cwd);
+    const out = run('journal --optional-archive skip', cwd);
 
     assert.match(out, /decisions\.md 已老化/);
     const current = readFileSync(decisionsPath, 'utf-8');

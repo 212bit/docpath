@@ -62,14 +62,12 @@ export function registerQualityCommands(cli: CAC): void {
 
   cli.command('journal', '知识归档 — 从完成任务中提炼经验')
     .option('--cwd <path>', '项目目录')
-    .option('--skip-ai', '跳过 LLM，直接写模板')
     .option('--skip-gc', '跳过 decisions.md 自动老化')
     .option('--optional-archive <mode>', '物理任务目录归档模式: always|skip|dry-run；skip 会保留 canonical evidence 供 git closeout')
     .option('--dry-run', '预览归档，不写入状态、breadcrumb 或决策日志')
-    .action(async (options: { cwd?: string; 'skip-ai'?: boolean; skipAi?: boolean; 'skip-gc'?: boolean; skipGc?: boolean; 'optional-archive'?: 'always' | 'skip' | 'dry-run'; optionalArchive?: 'always' | 'skip' | 'dry-run'; 'dry-run'?: boolean; dryRun?: boolean }) => {
+    .action(async (options: { cwd?: string; 'skip-gc'?: boolean; skipGc?: boolean; 'optional-archive'?: 'always' | 'skip' | 'dry-run'; optionalArchive?: 'always' | 'skip' | 'dry-run'; 'dry-run'?: boolean; dryRun?: boolean }) => {
       await journalCommand({
         cwd: options.cwd || process.cwd(),
-        skipAi: options['skip-ai'] ?? options.skipAi,
         skipDecisionGc: options['skip-gc'] ?? options.skipGc,
         archiveMode: (options.dryRun || options['dry-run']) ? 'dry-run' : (options['optional-archive'] ?? options.optionalArchive),
       });
