@@ -145,6 +145,15 @@ describe('transitionWorkflow', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('records review.skipped explicitly after a passed check', async () => {
+    const cwd = mkWorkspace({ phase: 'checking', gate: 'check_pass' });
+    const next = await transitionWorkflow(cwd, 'review.skipped', { currentStep: 'quick skip' });
+    assert.equal(next.phase, 'reviewing');
+    assert.equal(next.gate, 'review_skipped');
+    assert.equal(next.state, 'review_skipped');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('rejects journal.archived when review gate not passed (gate-level guard)', async () => {
     const cwd = mkWorkspace({ phase: 'reviewing', gate: 'review_fail' });
     await assert.rejects(
@@ -153,16 +162,16 @@ describe('transitionWorkflow', () => {
     );
     await assert.rejects(
       () => transitionWorkflow(cwd, 'journal.archived'),
-      /允许门禁: review_pass, check_pass/,
+      /允许门禁: review_pass, review_skipped, check_pass/,
     );
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('allows journal.archived from check_pass when quick profile skips review', async () => {
-    const cwd = mkWorkspace({ phase: 'checking', gate: 'check_pass' });
+  it('preserves review_skipped when journal archives a quick closeout', async () => {
+    const cwd = mkWorkspace({ phase: 'reviewing', gate: 'review_skipped' });
     const next = await transitionWorkflow(cwd, 'journal.archived');
     assert.equal(next.phase, 'completed');
-    assert.equal(next.gate, 'review_pass');
+    assert.equal(next.gate, 'review_skipped');
     rmSync(cwd, { recursive: true, force: true });
   });
 });

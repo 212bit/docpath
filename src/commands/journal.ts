@@ -14,6 +14,7 @@ import { emitPrompt } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { evaluateCompletionPolicy } from '../engine/policy.js';
+import { isQuickProfile } from '../engine/workflow-profile.js';
 import { appendDecision, gcDecisions } from '../governance/decisions.js';
 import { listBacklogItems, transitionBacklog, writeBacklogItem } from '../engine/backlog.js';
 import {
@@ -252,6 +253,11 @@ async function finalizeJournal(
   summary: TaskSummary,
   skipDecisionGc: boolean,
 ): Promise<void> {
+  if (context.current?.gate === 'check_pass' && isQuickProfile(context.current.workflow_profile)) {
+    await transitionWorkflow(cwd, 'review.skipped', {
+      currentStep: 'review skipped by quick profile',
+    });
+  }
   await transitionWorkflow(cwd, 'journal.archived', { currentStep: '知识归档完成' });
   await completeLinkedBacklog(cwd, context.taskId, context.spec, context.structuredSpec);
   await writeBreadcrumb(cwd, {

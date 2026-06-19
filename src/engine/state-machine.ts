@@ -65,6 +65,7 @@ export type GateStatus =
   | 'check_pass'
   | 'check_fail'
   | 'review_pass'
+  | 'review_skipped'
   | 'review_fail'
   | 'blocked';
 
@@ -93,6 +94,7 @@ export type RuntimeWorkflowState =
   | 'check_pass'
   | 'check_fail'
   | 'review_pass'
+  | 'review_skipped'
   | 'build_pass'
   | 'archived';
 
@@ -114,6 +116,7 @@ export const VALID_WORKFLOW_STATES = new Set<RuntimeWorkflowState>([
   'check_fail',
   'reviewing',
   'review_pass',
+  'review_skipped',
   'build_pass',
   'journaling',
   'completed',
@@ -148,6 +151,7 @@ const STATE_TO_SNAPSHOT: Record<RuntimeWorkflowState, WorkflowSnapshot> = {
   check_fail: { phase: 'checking', gate: 'check_fail', state: 'check_fail' },
   reviewing: { phase: 'reviewing', gate: 'check_pass', state: 'reviewing' },
   review_pass: { phase: 'reviewing', gate: 'review_pass', state: 'review_pass' },
+  review_skipped: { phase: 'reviewing', gate: 'review_skipped', state: 'review_skipped' },
   build_pass: { phase: 'checking', gate: 'check_pass', state: 'build_pass' },
   journaling: { phase: 'journaling', gate: 'review_pass', state: 'journaling' },
   completed: { phase: 'completed', gate: 'review_pass', state: 'completed' },
@@ -163,9 +167,9 @@ const PHASE_GATE_TO_STATE: Record<WorkflowPhase, Partial<Record<GateStatus, Runt
   planning: { none: 'planning_done', blocked: 'check_fail' },
   executing: { none: 'executing', blocked: 'check_fail' },
   checking: { none: 'checking', check_pass: 'check_pass', check_fail: 'check_fail', blocked: 'check_fail' },
-  reviewing: { none: 'reviewing', check_pass: 'reviewing', review_pass: 'review_pass', review_fail: 'check_fail', blocked: 'check_fail' },
-  journaling: { none: 'journaling', review_pass: 'journaling', blocked: 'check_fail' },
-  completed: { none: 'completed', check_pass: 'completed', review_pass: 'completed' },
+  reviewing: { none: 'reviewing', check_pass: 'reviewing', review_pass: 'review_pass', review_skipped: 'review_skipped', review_fail: 'check_fail', blocked: 'check_fail' },
+  journaling: { none: 'journaling', review_pass: 'journaling', review_skipped: 'journaling', blocked: 'check_fail' },
+  completed: { none: 'completed', check_pass: 'completed', review_pass: 'completed', review_skipped: 'completed' },
 };
 
 export function snapshotFromState(state: string): WorkflowSnapshot | null {
@@ -179,7 +183,7 @@ export function normalizeWorkflowPhase(phase: string): WorkflowPhase | null {
 }
 
 export function normalizeGateStatus(gate: string): GateStatus | null {
-  const valid: GateStatus[] = ['none', 'check_pass', 'check_fail', 'review_pass', 'review_fail', 'blocked'];
+  const valid: GateStatus[] = ['none', 'check_pass', 'check_fail', 'review_pass', 'review_skipped', 'review_fail', 'blocked'];
   return valid.includes(gate as GateStatus) ? gate as GateStatus : null;
 }
 

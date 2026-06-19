@@ -633,7 +633,7 @@ function inferNextAction(
     };
   }
 
-  if (allPlanDone && !lastCheckPassed && gate !== 'check_pass' && gate !== 'review_pass') {
+  if (allPlanDone && !lastCheckPassed && gate !== 'check_pass' && gate !== 'review_pass' && gate !== 'review_skipped') {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'];
     return {
       next_action: '计划已完成，运行质量检查',
@@ -740,10 +740,15 @@ function inferNextAction(
     };
   }
 
-  if (gate === 'review_pass' || currentState === 'review_pass') {
-    const required = ['.docpath/workspace/current.md', '.docpath/workspace/review.md', '.docpath/workspace/last-check.md'];
+  if (gate === 'review_pass' || gate === 'review_skipped' || currentState === 'review_pass' || currentState === 'review_skipped') {
+    const reviewSkipped = gate === 'review_skipped' || currentState === 'review_skipped';
+    const required = reviewSkipped
+      ? ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md']
+      : ['.docpath/workspace/current.md', '.docpath/workspace/review.md', '.docpath/workspace/last-check.md'];
     return {
-      next_action: '审查已通过，执行知识归档',
+      next_action: reviewSkipped
+        ? '审查已按工作流策略跳过，执行知识归档'
+        : '审查已通过，执行知识归档',
       recommended_command: 'docpath journal',
       required_context: required,
       required_files: required,

@@ -20,7 +20,7 @@ function mkWorkspace({ gate = 'check_pass', lastCheck = 'pass' } = {}) {
     level: 1,
     task_id: 'T-POLICY',
     task_title: 'Policy test',
-    phase: gate === 'review_pass' ? 'reviewing' : 'checking',
+    phase: gate === 'review_pass' || gate === 'review_skipped' ? 'reviewing' : 'checking',
     gate,
     current_step: 'policy test',
     started_at: '2026-05-29T00:00:00.000Z',
@@ -64,6 +64,17 @@ describe('completion policy', () => {
     const verdict = await evaluateCompletionPolicy(cwd);
 
     assert.equal(verdict.allowed, true, verdict.reasons.join('; '));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('allows review_skipped only when review is not required', async () => {
+    const cwd = mkWorkspace({ gate: 'review_skipped', lastCheck: 'pass' });
+    const relaxed = await evaluateCompletionPolicy(cwd);
+    const strict = await evaluateCompletionPolicy(cwd, { requireReview: true });
+
+    assert.equal(relaxed.allowed, true, relaxed.reasons.join('; '));
+    assert.equal(strict.allowed, false);
+    assert.ok(strict.reasons.some((reason) => reason.includes('review_pass')));
     rmSync(cwd, { recursive: true, force: true });
   });
 

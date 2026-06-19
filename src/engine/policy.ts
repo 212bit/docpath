@@ -28,7 +28,11 @@ export async function evaluateCompletionPolicy(
   if (lastCheck && !lastCheck.passed) reasons.push('last-check.md 未显示 PASS，请先修复检查失败项');
 
   if (state?.gate === 'check_fail') reasons.push('当前 gate 为 check_fail，不能完成任务');
-  if (state && !['check_pass', 'review_pass'].includes(state.gate) && state.phase !== 'completed') {
+  const allowedCompletionGates = options.requireReview
+    ? ['check_pass', 'review_pass']
+    : ['check_pass', 'review_pass', 'review_skipped'];
+
+  if (state && !allowedCompletionGates.includes(state.gate) && state.phase !== 'completed') {
     reasons.push(`当前 gate 为 ${state.gate}，需要 check_pass${options.requireReview ? ' / review_pass' : ''}`);
   }
   if (options.requireReview && state?.gate !== 'review_pass' && state?.phase !== 'completed') {

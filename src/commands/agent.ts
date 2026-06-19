@@ -184,7 +184,7 @@ function isFreshEvidence(timestamp: string | undefined): boolean {
 }
 
 async function canReuseCheckGate(cwd: string, stateAtStart: Awaited<ReturnType<typeof readCurrentState>>): Promise<string | null> {
-  if (stateAtStart?.gate !== 'check_pass' && stateAtStart?.gate !== 'review_pass') {
+  if (stateAtStart?.gate !== 'check_pass' && stateAtStart?.gate !== 'review_pass' && stateAtStart?.gate !== 'review_skipped') {
     return `state gate is ${stateAtStart?.gate || 'none'}`;
   }
   const docpathDir = await resolveDocpathDir(cwd);
@@ -251,6 +251,9 @@ async function runAgentReviewGate(options: AgentOptions, stateAtStart: Awaited<R
       throw new Error('docpath agent done --enforce: quick profile review skip not allowed');
     }
     await recordSkipReason(cwd, 'review', 'quick profile: full review skipped; check gate remains required');
+    await transitionWorkflow(cwd, 'review.skipped', {
+      currentStep: 'review skipped by quick profile',
+    });
     console.log('⏭️  review skipped by quick profile');
     return;
   }

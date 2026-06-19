@@ -18,6 +18,7 @@ export type WorkflowEvent =
   | 'check.passed'
   | 'check.failed'
   | 'review.passed'
+  | 'review.skipped'
   | 'review.failed'
   | 'journal.archived';
 
@@ -48,6 +49,7 @@ const EVENT_RECOVERY_COMMAND: Record<WorkflowEvent, string> = {
   'check.passed': 'docpath review',
   'check.failed': 'docpath check',
   'review.passed': 'docpath journal',
+  'review.skipped': 'docpath journal',
   'review.failed': 'docpath review',
   'journal.archived': 'docpath check 或 docpath review',
 };
@@ -66,10 +68,11 @@ const EVENT_TARGETS: Record<WorkflowEvent, TransitionTarget> = {
   'check.failed': { phase: 'checking', gate: 'check_fail', from: ['executing', 'checking', 'reviewing', 'completed'] },
   // 评审前置：检查必须已通过（check_pass），或在评审内重入（review_pass/review_fail）。
   'review.passed': { phase: 'reviewing', gate: 'review_pass', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
+  'review.skipped': { phase: 'reviewing', gate: 'review_skipped', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_skipped'] },
   'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
   // 归档前置：评审已通过（review_pass），或 quick profile 跳过评审后检查已通过（check_pass）。
   // 仍拒绝 check_fail / review_fail——失败态不得归档。
-  'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'], requiredGate: ['review_pass', 'check_pass'] },
+  'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'], requiredGate: ['review_pass', 'review_skipped', 'check_pass'] },
 };
 
 const DEFAULT_STEP: Record<WorkflowEvent, string> = {
@@ -80,6 +83,7 @@ const DEFAULT_STEP: Record<WorkflowEvent, string> = {
   'check.passed': '质量检查通过，下一步: docpath review',
   'check.failed': '质量检查失败，请修复失败项',
   'review.passed': '审查通过，下一步: docpath journal',
+  'review.skipped': '审查已按工作流策略跳过，下一步: docpath journal',
   'review.failed': '审查未通过，请修复审查问题',
   'journal.archived': '知识归档完成',
 };
@@ -142,9 +146,12 @@ export async function transitionWorkflow(
       );
     }
 
-    const snapshot = normalizeWorkflowSnapshot({ phase: target.phase, gate: target.gate });
+    const targetGate = event === 'journal.archived' && previous.gate === 'review_skipped'
+      ? 'review_skipped'
+      : target.gate;
+    const snapshot = normalizeWorkflowSnapshot({ phase: target.phase, gate: targetGate });
     if (!snapshot) {
-      throw new Error(`[docpath] Invalid transition target for ${event}: phase=${target.phase}, gate=${target.gate}`);
+      throw new Error(`[docpath] Invalid transition target for ${event}: phase=${target.phase}, gate=${targetGate}`);
     }
 
     const next: CurrentState = {

@@ -98,9 +98,13 @@ describe('docpath quick', () => {
 
     assert.match(out, /review skipped by quick profile|quick profile policy/);
     assert.equal(state.phase, 'completed');
+    assert.equal(state.gate, 'review_skipped');
     assert.equal(state.workflow_profile, 'quick');
+    assert.doesNotMatch(out, /gate: review_pass/);
     assert.match(decisions, /quick profile: full review skipped/);
     assert.match(lastCheck, /PASS/);
+    const next = nextAgent(cwd);
+    assert.equal(next.gate, 'review_skipped');
     rmSync(cwd, { recursive: true, force: true });
   });
 
