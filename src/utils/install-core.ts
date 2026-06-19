@@ -133,7 +133,7 @@ export function wrapClaudeCommandWithShim(content: string): string {
   return content.replace(runBlock[0], `## Run\n\n\`\`\`bash\n${fallback}\n\`\`\``);
 }
 
-function sha256(content: string): string {
+export function sha256(content: string): string {
   return createHash('sha256').update(content).digest('hex');
 }
 

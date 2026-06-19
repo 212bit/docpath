@@ -33,6 +33,7 @@ import {
   sampleAssetPaths,
   buildInstallDoctorReportFromContext,
   createInstallContext,
+  sha256,
 } from '../utils/install-core.js';
 
 // ─── 复制目录工具 ───
@@ -326,11 +327,27 @@ async function installAgentSpecificFiles(context: InstallContext): Promise<void>
 }
 
 async function writeInstallMetadata(context: InstallContext): Promise<void> {
-  const { target, docpathDir, projectName, projectInfo } = context;
+  const { target, docpathDir, targetDir, projectName, projectInfo } = context;
   // ─── 4. 写入安装元数据 ───
   const metaPath = join(docpathDir, '.install-meta.json');
   const docpathVersion = await getDocpathPackageVersion();
-  const assets = await buildExpectedInstallAssets({ target, projectName });
+  const expectedAssets = await buildExpectedInstallAssets({ target, projectName });
+
+  const assets = [];
+  for (const asset of expectedAssets) {
+    const localPath = join(targetDir, asset.path);
+    if (await exists(localPath)) {
+      const content = await readFile(localPath, 'utf-8');
+      assets.push({
+        path: asset.path,
+        source: asset.source,
+        sha256: sha256(content),
+      });
+    } else {
+      assets.push(asset);
+    }
+  }
+
   const meta = {
     target,
     installedAt: new Date().toISOString(),
