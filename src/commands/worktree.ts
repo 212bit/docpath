@@ -22,7 +22,7 @@ const execFileAsync = promisify(execFile);
 
 interface WorktreeOptions {
   cwd: string;
-  action?: 'create' | 'list' | 'remove' | 'doctor';
+  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune';
   name?: string;
   force?: boolean;
 }
@@ -605,7 +605,84 @@ async function worktreeRemove(cwd: string, name: string, force: boolean): Promis
     process.exit(1);
   }
 
+  // 尝试删除关联的本地分支
+  try {
+    const branchExists = (await runGitCapture(repoRoot, ['branch', '--list', safeName])).trim().length > 0;
+    if (branchExists) {
+      console.log(`🧹  正在删除本地分支: ${safeName}`);
+      await runGit(repoRoot, ['branch', force ? '-D' : '-d', safeName]);
+    }
+  } catch (branchError) {
+    console.warn(`⚠️  删除本地分支 ${safeName} 失败 (可能未完全合并): ${branchError instanceof Error ? branchError.message : String(branchError)}`);
+    console.warn(`提示: 如果确认合并或丢弃该分支，可在主仓库运行: git branch -D ${safeName}`);
+  }
+
   console.log(`\n✅  worktree 已删除: ${safeName}`);
+}
+
+/**
+ * worktree prune — 自动清理已合并、已完成且没有未提交变更的 worktrees
+ */
+async function worktreePrune(cwd: string, force: boolean): Promise<void> {
+  if (!(await isGitRepo(cwd))) {
+    console.error('❌  当前目录不是 git 仓库');
+    process.exit(1);
+  }
+
+  const repoRoot = await resolveWorktreeManagerRoot(cwd);
+  const worktrees = await listWorktrees(repoRoot);
+  const worktreesDir = join(repoRoot, '.worktrees');
+
+  const candidates = worktrees.filter((wt) => !samePath(wt.path, repoRoot));
+
+  if (candidates.length === 0) {
+    console.log('📭  没有可清理的 worktrees');
+    return;
+  }
+
+  console.log(`\n🧹  开始自动清理已合并的 worktrees...\n`);
+
+  let prunedCount = 0;
+  for (const wt of candidates) {
+    const safeName = worktreeNameFromPath(worktreesDir, wt.path);
+    const diagnostics = await getWorktreeDiagnostics(repoRoot, wt.path, safeName, false);
+
+    // 自动清理规则：
+    // - 正常模式：已完成 (completed) 且已合并到 main (mergedToMain) 且无未提交修改 (!dirty)
+    // - force 模式：只要已完成 (completed)，即使 dirty 或未合并也强制清理
+    const shouldPrune = force
+      ? diagnostics.completed
+      : (diagnostics.completed && diagnostics.mergedToMain && !diagnostics.dirty);
+
+    if (shouldPrune) {
+      console.log(`🗑️  清理 worktree: ${safeName} (${wt.path})`);
+      try {
+        await runGit(repoRoot, ['worktree', 'remove', ...(force ? ['--force'] : []), relative(repoRoot, wt.path)]);
+        prunedCount++;
+
+        // 尝试删除分支
+        try {
+          const branchExists = (await runGitCapture(repoRoot, ['branch', '--list', safeName])).trim().length > 0;
+          if (branchExists) {
+            console.log(`    🧹 删除本地分支: ${safeName}`);
+            await runGit(repoRoot, ['branch', force ? '-D' : '-d', safeName]);
+          }
+        } catch (branchError) {
+          console.warn(`    ⚠️ 删除本地分支 ${safeName} 失败: ${branchError instanceof Error ? branchError.message : String(branchError)}`);
+        }
+      } catch (error) {
+        console.error(`  ❌ 清理 worktree ${safeName} 失败: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    } else {
+      const reasons: string[] = [];
+      if (!diagnostics.completed) reasons.push('任务未完成 (phase !== completed)');
+      if (!diagnostics.mergedToMain) reasons.push('分支未合并到 main');
+      if (diagnostics.dirty) reasons.push('有未提交变更 (dirty)');
+      console.log(`⏭️  跳过 worktree: ${safeName} (原因: ${reasons.join(', ')})`);
+    }
+  }
+
+  console.log(`\n✅  自动清理完成，共清理了 ${prunedCount} 个 worktree。`);
 }
 
 /**
@@ -639,6 +716,10 @@ export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
         process.exit(1);
       }
       await worktreeRemove(cwd, name, force);
+      break;
+
+    case 'prune':
+      await worktreePrune(cwd, force);
       break;
 
     default:

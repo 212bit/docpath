@@ -13,6 +13,7 @@ import { agentCommand } from './agent.js';
 import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { resolveSessionContext } from '../utils/session.js';
 import { gatePolicyForProfile, isQuickProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
+import { isInWorktree } from '../utils/worktree.js';
 
 interface DoneOptions {
   cwd: string;
@@ -83,4 +84,13 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
     console.log('    跳过 review: quick profile policy');
   }
   console.log('');
+
+  if (isInWorktree(cwd)) {
+    const worktreeName = cwd.split(/[\\/]/).filter(Boolean).at(-1) || 'worktree';
+    console.log('🌳  检测到您当前处于 Git Worktree 环境。');
+    console.log(`    当该分支代码合并入 main 后，您可在主仓库中运行以下命令清理工作区和分支：`);
+    console.log(`      docpath worktree remove ${worktreeName}`);
+    console.log('    或者在主仓库中运行 `docpath worktree prune` 自动清理所有已合并的 worktree。');
+    console.log('');
+  }
 }

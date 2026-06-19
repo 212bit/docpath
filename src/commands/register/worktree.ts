@@ -11,7 +11,7 @@ export function registerWorktreeCommands(cli: CAC): void {
     .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean }) => {
       await worktreeCommand({
         cwd: options.cwd || process.cwd(),
-        action: action as 'create' | 'list' | 'remove' | 'doctor' | undefined,
+        action: action as 'create' | 'list' | 'remove' | 'doctor' | 'prune' | undefined,
         name,
         force: options.force,
       });
@@ -26,6 +26,7 @@ export function registerWorktreeCommands(cli: CAC): void {
     create <name>       Create a new worktree with isolated .docpath/
     doctor [name]       Check worktree readiness before development
     remove <name>       Remove a worktree
+    prune               Prune all completed, merged, and clean worktrees
 
   Examples:
     $ docpath worktree list
