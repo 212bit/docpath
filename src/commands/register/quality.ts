@@ -49,12 +49,14 @@ export function registerQualityCommands(cli: CAC): void {
     .option('--scope <scope>', '审查范围: all|staged|last_commit (默认 all)')
     .option('--dry-run', '只预览审查结果，不写入状态')
     .option('--approve', '直接批准（跳过自动检查）')
-    .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean }) => {
+    .option('--force', '允许在无活跃 agent 会话时独立运行')
+    .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean; force?: boolean }) => {
       await reviewCommand({
         cwd: options.cwd || process.cwd(),
         scope: normalizeEnumOption(options.scope, 'review --scope', ['all', 'staged', 'last_commit'] as const) || 'all',
         dryRun: options['dry-run'] ?? options.dryRun,
         approve: options.approve ?? false,
+        force: options.force ?? false,
       });
     });
 

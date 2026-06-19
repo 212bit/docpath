@@ -133,6 +133,11 @@ describe('CLI positional argument guards', () => {
     const reviewHelp = run('review --help', cwd);
     assert.equal(reviewHelp.code, 0);
     assert.doesNotMatch(reviewHelp.out, /--no-ai/);
+    assert.match(reviewHelp.out, /--force/);
+
+    const reviewForce = run('review --force --dry-run', cwd);
+    assert.equal(reviewForce.code, 0);
+    assert.doesNotMatch(reviewForce.out, /Unknown option|未知/);
 
     const staleReviewFlag = run('review --no-ai', cwd);
     assert.equal(staleReviewFlag.code, 1);
