@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-19T14:30:06.840Z",
+    "updated_at": "2026-06-19T14:30:06.840Z",
+    "content_sha256": "bb7a86a80624c5e95177e94d332c2b1f3c7304791c6f46fe278ca653dd61565b"
+  },
+  "title": "执行计划",
+  "markdown": "## 执行计划\n\n### S1: 梳理 Auto-clean Git Worktrees and local branches when done\n- **描述**: 根据 spec 明确 FR-1: Auto-clean Git Worktrees and local branches when done 的实现边界和验收口径。\n- **验收条件**: AC-1: 生成的 spec 可直接进入 `docpath plan`\n- **依赖**: 无\n\n### S2: 实现 Auto-clean Git Worktrees and local branches when done\n- **描述**: 在现有架构内完成 FR-1: Auto-clean Git Worktrees and local branches when done 的代码与文档更新。\n- **验收条件**: FR-1 Auto-clean Git Worktrees and local branches when done 已实现，并保持现有工作流兼容。\n- **依赖**: S1\n\n### S3: 验证验收标准\n- **描述**: 验证 spec 中声明的验收标准：AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-214 与任务 T-20260619-auto-clean-git-worktrees-and-local-branc 建立双向关联\n- **验收条件**: AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-214 与任务 T-20260619-auto-clean-git-worktrees-and-local-branc 建立双向关联\n- **依赖**: S2\n\n## Checklist\n- [x] S1\n- [x] S2\n- [x] S3\n\n## 依赖关系图\nS1 → S2 → S3\n",
+  "generated_at": "2026-06-19T14:30:06.840Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Auto-clean Git Worktrees and local branches when done",
+      "description": "根据 spec 明确 FR-1: Auto-clean Git Worktrees and local branches when done 的实现边界和验收口径。",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Auto-clean Git Worktrees and local branches when done",
+      "description": "在现有架构内完成 FR-1: Auto-clean Git Worktrees and local branches when done 的代码与文档更新。",
+      "acceptance": "FR-1 Auto-clean Git Worktrees and local branches when done 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-214 与任务 T-20260619-auto-clean-git-worktrees-and-local-branc 建立双向关联",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-214 与任务 T-20260619-auto-clean-git-worktrees-and-local-branc 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

@@ -269,4 +269,64 @@ describe('worktree command', () => {
     assert.equal(out, 'true');
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('remove deletes the associated local branch', () => {
+    const cwd = mkRepo();
+    run(['worktree', 'create', 'branch-feature'], cwd);
+    
+    // Check branch exists in git
+    const branchesBefore = git(cwd, ['branch']).trim();
+    assert.match(branchesBefore, /branch-feature/);
+    
+    // Remove worktree
+    run(['worktree', 'remove', 'branch-feature'], cwd);
+    
+    // Check branch is deleted
+    const branchesAfter = git(cwd, ['branch']).trim();
+    assert.doesNotMatch(branchesAfter, /branch-feature/);
+    
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('prune removes completed, merged, and clean worktrees but skips others', () => {
+    const cwd = mkRepo();
+    
+    // 1. Create a worktree that will be completed and merged (prunable)
+    run(['worktree', 'create', 'prune-a'], cwd);
+    const wtPathA = join(cwd, '.worktrees', 'prune-a');
+    writeFileSync(join(wtPathA, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      task_id: 'T-PRUNE-A',
+      phase: 'completed',
+    }));
+
+    // 2. Create a worktree that is not completed (should be skipped)
+    run(['worktree', 'create', 'prune-b'], cwd);
+    const wtPathB = join(cwd, '.worktrees', 'prune-b');
+    writeFileSync(join(wtPathB, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      task_id: 'T-PRUNE-B',
+      phase: 'executing',
+    }));
+
+    // 3. Create a worktree that is completed but dirty (should be skipped)
+    run(['worktree', 'create', 'prune-c'], cwd);
+    const wtPathC = join(cwd, '.worktrees', 'prune-c');
+    writeFileSync(join(wtPathC, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      task_id: 'T-PRUNE-C',
+      phase: 'completed',
+    }));
+    writeFileSync(join(wtPathC, 'dirty.txt'), 'uncommitted\n');
+
+    // Run prune from main repo
+    const out = run(['worktree', 'prune'], cwd).output;
+    
+    assert.match(out, /清理 worktree: prune-a/);
+    assert.match(out, /跳过 worktree: prune-b/);
+    assert.match(out, /跳过 worktree: prune-c/);
+    
+    assert.equal(existsSync(wtPathA), false, 'pruned worktree should be removed');
+    assert.equal(existsSync(wtPathB), true, 'skipped uncompleted worktree should remain');
+    assert.equal(existsSync(wtPathC), true, 'skipped dirty worktree should remain');
+    
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
