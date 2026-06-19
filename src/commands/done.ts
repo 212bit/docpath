@@ -12,7 +12,7 @@
 import { agentCommand } from './agent.js';
 import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { resolveSessionContext } from '../utils/session.js';
-import { gatePolicyForProfile, isQuickProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
+import { gatePolicyForProfile, isQuickProfile, isInstantProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
 import { isInWorktree } from '../utils/worktree.js';
 
 interface DoneOptions {
@@ -37,6 +37,7 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
   const stateAtStart = await readCurrentState(cwd);
   const profile = normalizeWorkflowProfile(stateAtStart?.workflow_profile);
   const quickProfile = isQuickProfile(profile);
+  const instantProfile = isInstantProfile(profile);
   const policy = gatePolicyForProfile(profile);
 
   // 前置检查：必须有已绑定的 task_id
@@ -68,11 +69,11 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
   console.log(`✅  任务完成流程已执行: ${taskId}`);
   console.log(`    session: ${session.sessionId}`);
   console.log(`    workflow_profile: ${profile}`);
-  console.log(`    gate_policy: spec=${policy.requiresSpec}, plan=${policy.requiresPlan}, check=${policy.requiresCheck}, review=${policy.requiresReview}, journal=${policy.journalMode}`);
+  console.log(`    gate_policy: spec=${policy.requiresSpec}, plan=${policy.requiresPlan}, check=${policy.liteCheck ? 'lite' : policy.requiresCheck}, review=${policy.requiresReview}, journal=${policy.journalMode}`);
   console.log(`    底层调用: docpath agent done`);
   const gates: string[] = [];
-  if (!options.skipCheck) gates.push('check');
-  if (!options.skipReview && !quickProfile) gates.push('review');
+  if (!options.skipCheck) gates.push(instantProfile ? 'check(lite)' : 'check');
+  if (!options.skipReview && !quickProfile && !instantProfile) gates.push('review');
   gates.push('journal');
   console.log(`    门禁序列: ${gates.join(' → ')}`);
   if (options.skipCheck) {
@@ -80,6 +81,8 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
   }
   if (options.skipReview) {
     console.log(`    跳过 review: ${options.note || '(未提供原因)'}`);
+  } else if (instantProfile) {
+    console.log('    跳过 review: instant profile policy (lite check 已跑)');
   } else if (quickProfile) {
     console.log('    跳过 review: quick profile policy');
   }

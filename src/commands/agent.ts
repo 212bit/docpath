@@ -28,7 +28,7 @@ import { releaseExecutionLease, resolveSessionContext, touchSession } from '../u
 import { resolveDocpathDir } from '../utils/file.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
-import { isQuickProfile } from '../engine/workflow-profile.js';
+import { isQuickProfile, isInstantProfile, gatePolicyForProfile } from '../engine/workflow-profile.js';
 import { assertQuickScope } from '../engine/quick-guard.js';
 import { readLastCheckEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
@@ -217,6 +217,20 @@ async function runAgentCheckGate(options: AgentOptions, stateAtStart: Awaited<Re
     return;
   }
 
+  // instant profile: 跳 build+test+lint,仅跑 typecheck + 结构门禁(lite check)。
+  if (gatePolicyForProfile(stateAtStart?.workflow_profile).liteCheck) {
+    try {
+      console.log('⚡  instant profile: lite check (typecheck + 结构门禁,跳 build/test)');
+      await checkCommand({ cwd, lite: true });
+    } catch (error) {
+      await transitionWorkflow(cwd, 'check.failed', {
+        currentStep: `lite 检查失败: ${error instanceof Error ? error.message : String(error)}`,
+      });
+      throw error;
+    }
+    return;
+  }
+
   if (!options.skipTests && !options.skipLint) {
     const rejectReason = await canReuseCheckGate(cwd, stateAtStart);
     if (!rejectReason) {
@@ -246,7 +260,19 @@ async function runAgentCheckGate(options: AgentOptions, stateAtStart: Awaited<Re
 
 async function runAgentReviewGate(options: AgentOptions, stateAtStart: Awaited<ReturnType<typeof readCurrentState>>): Promise<void> {
   const { cwd } = options;
-  if (isQuickProfile(stateAtStart?.workflow_profile) && !options.skipReview) {
+  const profile = stateAtStart?.workflow_profile;
+  if (isInstantProfile(profile) && !options.skipReview) {
+    if (options.enforce) {
+      throw new Error('docpath agent done --enforce: instant profile review skip not allowed');
+    }
+    await recordSkipReason(cwd, 'review', 'instant profile: review skipped; lite check (typecheck) already run');
+    await transitionWorkflow(cwd, 'review.skipped', {
+      currentStep: 'review skipped by instant profile',
+    });
+    console.log('⏭️  review skipped by instant profile');
+    return;
+  }
+  if (isQuickProfile(profile) && !options.skipReview) {
     if (options.enforce) {
       throw new Error('docpath agent done --enforce: quick profile review skip not allowed');
     }
