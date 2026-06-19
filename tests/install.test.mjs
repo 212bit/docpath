@@ -5,6 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { parse } from 'yaml';
+import { createHash } from 'node:crypto';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 const TEMPLATE_COMMANDS_DIR = new URL('../templates/commands/', import.meta.url).pathname;
@@ -681,6 +682,39 @@ describe('install agent adapters', () => {
     assert.match(overwritten, /name: docpath/);
     assert.match(overwritten, /docpath status --agent/);
     assert.doesNotMatch(overwritten, /Custom Skill/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install in non-force mode records the actual hash of skipped files to prevent permanent manifest drift', () => {
+    const cwd = mkWorkspace();
+    // 1. First clean install
+    run(`install --cwd ${cwd} --target opencode`, cwd);
+
+    // 2. Modify a file locally so it drifts from the template
+    const filePath = join(cwd, 'OPENCODE.md');
+    const customContent = '# Custom Agent Rules\n\nDo not overwrite.\nLocally modified content.\n';
+    writeFileSync(filePath, customContent);
+
+    // 3. Re-run install without --force. It will skip overwriting OPENCODE.md.
+    const output = run(`install --cwd ${cwd} --target opencode`, cwd);
+    assert.match(output, /差异预览/);
+    assert.match(output, /使用 --force 覆盖/);
+    assert.equal(readFileSync(filePath, 'utf-8'), customContent);
+
+    // 4. Verify that the generated install-meta.json records the hash of customContent
+    const metaPath = join(cwd, '.docpath', '.install-meta.json');
+    const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+    const opencodeAsset = meta.assets.find((asset) => asset.path === 'OPENCODE.md');
+    assert.ok(opencodeAsset);
+    const expectedHash = createHash('sha256').update(customContent).digest('hex');
+    assert.equal(opencodeAsset.sha256, expectedHash);
+
+    // 5. Subsequent check-only command should fail with templateDrift=1 but modifiedLocal=0 (no modifiedLocal drift loop)
+    const checkResult = runResult(`install --cwd ${cwd} --target opencode --check-only`, cwd);
+    assert.equal(checkResult.code, 1);
+    assert.match(checkResult.out, /模板 1 项/);
+    assert.match(checkResult.out, /本地改动 0 项/);
+
     rmSync(cwd, { recursive: true, force: true });
   });
 });
