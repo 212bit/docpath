@@ -117,6 +117,9 @@ describe('worktree command', () => {
     const list = run(['worktree', 'list'], subdir).output;
     assert.match(list, /feature-a/);
     assert.match(list, /docpath: idle \(no active task\)/);
+    assert.match(list, /managed_by_docpath: true/);
+    assert.match(list, /dirty: false/);
+    assert.match(list, /safe_to_remove: false/);
 
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -165,6 +168,8 @@ describe('worktree command', () => {
 
     const current = run(['worktree', 'doctor'], worktreePath, { env: { DOCPATH_SESSION: '' } }).output;
     assert.match(current, /Worktree doctor: feature-doctor/);
+    assert.match(current, /managed_by_docpath: true/);
+    assert.match(current, /safe_to_remove: false/);
     assert.match(current, /worktree doctor passed/);
 
     const after = git(worktreePath, ['status', '--porcelain=v1', '--untracked-files=all']);

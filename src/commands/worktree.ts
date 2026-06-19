@@ -34,6 +34,15 @@ interface WorktreePaths {
   worktreePath: string;
 }
 
+interface WorktreeDiagnostics {
+  managed: boolean;
+  dirty: boolean;
+  completed: boolean;
+  mergedToMain: boolean;
+  safeToRemove: boolean;
+  cleanupCommand: string | null;
+}
+
 function validateWorktreeName(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) {
@@ -109,6 +118,11 @@ async function runGit(cwd: string, args: string[]): Promise<void> {
       : '';
     throw new Error(output.trim() || (error instanceof Error ? error.message : String(error)));
   }
+}
+
+async function runGitCapture(cwd: string, args: string[]): Promise<string> {
+  const { stdout } = await execFileAsync('git', args, { cwd, maxBuffer: 10 * 1024 * 1024 });
+  return stdout.trimEnd();
 }
 
 async function hasTrackedFiles(repoRoot: string, path: string): Promise<boolean> {
@@ -294,11 +308,13 @@ async function worktreeList(cwd: string): Promise<void> {
   }
 
   console.log('\n🌳  Worktrees:\n');
+  const worktreesDir = join(repoRoot, '.worktrees');
   for (const wt of worktrees) {
     const isBare = wt.bare ? ' (bare)' : '';
     const branch = wt.detached ? `detached at ${wt.head.substring(0, 7)}` : wt.branch;
     const isMain = samePath(wt.path, repoRoot);
     const label = isMain ? '(main)' : '';
+    const safeName = worktreeNameFromPath(worktreesDir, wt.path);
 
     console.log(`  • ${wt.path} ${label}`);
     console.log(`    branch: ${branch}${isBare}`);
@@ -307,6 +323,21 @@ async function worktreeList(cwd: string): Promise<void> {
     const stateInfo = await getWorktreeState(wt.path);
     if (stateInfo) {
       console.log(`    docpath: ${stateInfo}`);
+    }
+    const diagnostics = await getWorktreeDiagnostics(repoRoot, wt.path, safeName, isMain);
+    console.log(`    managed_by_docpath: ${diagnostics.managed}`);
+    console.log(`    dirty: ${diagnostics.dirty}`);
+    console.log(`    completed: ${diagnostics.completed}`);
+    console.log(`    merged_to_main: ${diagnostics.mergedToMain}`);
+    console.log(`    safe_to_remove: ${diagnostics.safeToRemove}`);
+    if (diagnostics.cleanupCommand) {
+      console.log(`    cleanup: ${diagnostics.cleanupCommand}`);
+    } else if (!isMain && diagnostics.completed && diagnostics.dirty) {
+      console.log(`    cleanup: commit/stash changes, then run docpath worktree remove ${safeName}`);
+    } else if (!isMain && diagnostics.completed && !diagnostics.mergedToMain) {
+      console.log(`    cleanup: merge or intentionally discard ${safeName} before removal`);
+    } else if (!isMain && !diagnostics.managed) {
+      console.log(`    repair: recreate with docpath worktree create ${safeName}, or remove the ordinary git worktree manually`);
     }
   }
   console.log('');
@@ -335,6 +366,56 @@ async function getWorktreeState(worktreePath: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+function worktreeNameFromPath(worktreesDir: string, wtPath: string): string {
+  const rel = relative(worktreesDir, wtPath);
+  if (rel && !rel.startsWith('..') && !isAbsolute(rel)) {
+    return rel.split(/[\\/]/)[0] || wtPath.split(/[\\/]/).filter(Boolean).at(-1) || 'current';
+  }
+  return wtPath.split(/[\\/]/).filter(Boolean).at(-1) || 'current';
+}
+
+async function getWorktreeDiagnostics(
+  repoRoot: string,
+  wtPath: string,
+  safeName: string,
+  isMain: boolean,
+): Promise<WorktreeDiagnostics> {
+  const docpathDir = join(wtPath, '.docpath');
+  const managed = existsSync(join(docpathDir, 'workspace'))
+    && existsSync(join(docpathDir, 'tasks'))
+    && existsSync(join(docpathDir, 'journal'));
+  const dirty = (await runGitCapture(wtPath, ['status', '--porcelain=v1', '--untracked-files=all'])).trim().length > 0;
+
+  let completed = false;
+  try {
+    const state = await readCurrentState(wtPath);
+    completed = state?.phase === 'completed';
+  } catch {
+    completed = false;
+  }
+
+  let mergedToMain = isMain;
+  if (!isMain) {
+    try {
+      const head = (await runGitCapture(wtPath, ['rev-parse', 'HEAD'])).trim();
+      await execFileAsync('git', ['merge-base', '--is-ancestor', head, 'HEAD'], { cwd: repoRoot });
+      mergedToMain = true;
+    } catch {
+      mergedToMain = false;
+    }
+  }
+
+  const safeToRemove = !isMain && managed && completed && mergedToMain && !dirty;
+  return {
+    managed,
+    dirty,
+    completed,
+    mergedToMain,
+    safeToRemove,
+    cleanupCommand: safeToRemove ? `docpath worktree remove ${safeName}` : null,
+  };
 }
 
 type DoctorStatus = 'pass' | 'warn' | 'fail';
@@ -434,6 +515,8 @@ async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
 
   const errors = checks.filter((check) => check.status === 'fail').length;
   const warnings = checks.filter((check) => check.status === 'warn').length;
+  const repoRoot = await resolveWorktreeManagerRoot(cwd);
+  const diagnostics = await getWorktreeDiagnostics(repoRoot, worktreePath, safeName, samePath(repoRoot, worktreePath));
 
   console.log(`\n🩺  Worktree doctor: ${safeName}`);
   console.log(`  path: ${worktreePath}`);
@@ -441,9 +524,18 @@ async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
     const icon = check.status === 'pass' ? '✅' : check.status === 'warn' ? '⚠️' : '❌';
     console.log(`  ${icon} ${check.label}: ${check.detail}`);
   }
+  console.log(`  ℹ️ managed_by_docpath: ${diagnostics.managed}`);
+  console.log(`  ℹ️ dirty: ${diagnostics.dirty}`);
+  console.log(`  ℹ️ completed: ${diagnostics.completed}`);
+  console.log(`  ℹ️ merged_to_main: ${diagnostics.mergedToMain}`);
+  console.log(`  ℹ️ safe_to_remove: ${diagnostics.safeToRemove}`);
+  if (diagnostics.cleanupCommand) {
+    console.log(`  ℹ️ cleanup: ${diagnostics.cleanupCommand}`);
+  }
 
   if (errors > 0) {
     console.log(`\n❌  worktree doctor failed (${errors} errors, ${warnings} warnings)`);
+    console.log('修复建议: 备份未提交变更后，用 `docpath worktree create <name>` 重新创建受管 worktree；普通 git worktree 可用 git worktree remove 清理。');
     process.exit(1);
   }
 

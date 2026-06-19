@@ -142,6 +142,8 @@ describe('gc command', () => {
 
     assert.match(out, /模式: dry-run/);
     assert.match(out, /Workspace cleanup/);
+    assert.match(out, /Worktree cleanup candidates/);
+    assert.match(out, /候选 worktrees: 0/);
     assert.match(out, /T-20260531-old/);
     assert.match(out, /T-20260530-orphan/);
     assert.doesNotMatch(out, /T-20260601-active\n/);

@@ -3,12 +3,15 @@
  */
 
 import { existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { lstatSync } from 'node:fs';
 import { mkdir, readdir, rename, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { isAbsolute, join, relative } from 'node:path';
 import { listBacklogItems } from '../engine/backlog.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { cleanupWorkspace, planWorkspaceCleanup, renderWorkspaceCleanupSummary } from '../utils/workspace-cleanup.js';
+import { getGitTopLevel, isGitRepo, listWorktrees } from '../utils/worktree.js';
 
 interface GcOptions {
   cwd: string;
@@ -21,6 +24,15 @@ interface GcCandidate {
   path: string;
   targetPath: string;
   reason: string;
+}
+
+interface WorktreeGcCandidate {
+  name: string;
+  path: string;
+  dirty: boolean;
+  completed: boolean;
+  mergedToMain: boolean;
+  recommendation: string;
 }
 
 function isTaskDirName(name: string): boolean {
@@ -40,6 +52,72 @@ async function collectProtectedTaskIds(cwd: string): Promise<Set<string>> {
   }
 
   return protectedIds;
+}
+
+function runGitText(cwd: string, args: string[]): string {
+  return execFileSync('git', args, { cwd, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+}
+
+function inferMainWorktree(worktrees: Awaited<ReturnType<typeof listWorktrees>>): string | null {
+  for (const wt of worktrees) {
+    try {
+      if (!wt.bare && lstatSync(join(wt.path, '.git')).isDirectory()) return wt.path;
+    } catch {
+      // Continue scanning.
+    }
+  }
+  return worktrees.find((wt) => !wt.bare)?.path || null;
+}
+
+function worktreeName(mainRoot: string, path: string): string {
+  const worktreesDir = join(mainRoot, '.worktrees');
+  const rel = relative(worktreesDir, path);
+  if (rel && !rel.startsWith('..') && !isAbsolute(rel)) return rel.split(/[\\/]/)[0] || path;
+  return path.split(/[\\/]/).filter(Boolean).at(-1) || path;
+}
+
+async function collectWorktreeGcCandidates(cwd: string): Promise<WorktreeGcCandidate[]> {
+  try {
+    if (!(await isGitRepo(cwd))) return [];
+    const top = await getGitTopLevel(cwd);
+    const worktrees = await listWorktrees(top);
+    const mainRoot = inferMainWorktree(worktrees);
+    if (!mainRoot) return [];
+
+    const candidates: WorktreeGcCandidate[] = [];
+    for (const wt of worktrees) {
+      if (wt.bare || wt.path === mainRoot) continue;
+      const state = await readCurrentState(wt.path);
+      const completed = state?.phase === 'completed';
+      if (!completed) continue;
+
+      const dirty = runGitText(wt.path, ['status', '--porcelain=v1', '--untracked-files=all']).length > 0;
+      let mergedToMain = false;
+      try {
+        const head = runGitText(wt.path, ['rev-parse', 'HEAD']);
+        execFileSync('git', ['merge-base', '--is-ancestor', head, 'HEAD'], { cwd: mainRoot, stdio: 'ignore' });
+        mergedToMain = true;
+      } catch {
+        mergedToMain = false;
+      }
+      const name = worktreeName(mainRoot, wt.path);
+      candidates.push({
+        name,
+        path: wt.path,
+        dirty,
+        completed,
+        mergedToMain,
+        recommendation: !dirty && mergedToMain
+          ? `docpath worktree remove ${name}`
+          : dirty
+            ? `commit/stash changes in ${name}, then run docpath worktree remove ${name}`
+            : `merge or intentionally discard ${name} before removal`,
+      });
+    }
+    return candidates;
+  } catch {
+    return [];
+  }
 }
 
 export async function gcCommand(options: GcOptions): Promise<void> {
@@ -73,6 +151,7 @@ export async function gcCommand(options: GcOptions): Promise<void> {
   const workspaceCleanup = options.force
     ? await cleanupWorkspace(cwd)
     : await planWorkspaceCleanup(cwd);
+  const worktreeCandidates = await collectWorktreeGcCandidates(cwd);
 
   console.log('\n🧹  DocPath GC\n');
   console.log(`模式: ${options.force ? (options.delete ? 'delete' : 'archive') : 'dry-run'}`);
@@ -80,6 +159,18 @@ export async function gcCommand(options: GcOptions): Promise<void> {
   for (const line of renderWorkspaceCleanupSummary(cwd, workspaceCleanup)) {
     console.log(line);
   }
+  console.log('');
+  console.log('Worktree cleanup candidates');
+  console.log(`候选 worktrees: ${worktreeCandidates.length}`);
+  for (const candidate of worktreeCandidates) {
+    console.log(`- ${candidate.name}`);
+    console.log(`  path: ${candidate.path}`);
+    console.log(`  completed: ${candidate.completed}`);
+    console.log(`  dirty: ${candidate.dirty}`);
+    console.log(`  merged_to_main: ${candidate.mergedToMain}`);
+    console.log(`  recommendation: ${candidate.recommendation}`);
+  }
+  console.log('  note: docpath gc only reports worktree cleanup; remove explicitly with docpath worktree remove.');
   console.log('');
   console.log('Historical task directories');
   console.log(`候选目录: ${candidates.length}`);
