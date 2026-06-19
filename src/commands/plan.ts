@@ -286,13 +286,12 @@ export async function planCommand(options: PlanOptions): Promise<void> {
 
   if (options.dryRun) {
     printDryRun(spec);
+    emitPlanPrompt(spec, analysis);
     return;
   }
 
   const current = await readCurrentState(cwd);
   await assertMajorChangeGateReady(cwd, docpathDir, current?.task_id, 'plan');
-
-  emitPlanPrompt(spec, analysis);
 
   // 已有计划时同步 active alias；无计划时生成保守草案，避免 planning 状态缺 plan.md。
   const canonicalPath = await writeGeneratedPlan(cwd, docpathDir, spec);

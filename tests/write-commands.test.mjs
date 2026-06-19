@@ -391,6 +391,8 @@ describe('write commands', () => {
     const output = run(`plan --cwd ${cwd} --dry-run`, cwd);
 
     assert.match(output, /\[dry-run\]/);
+    assert.match(output, /task: plan/);
+    assert.match(output, /output_format:/);
     assert.doesNotMatch(output, /plan\.md 已写入/);
     assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md')), false);
     assert.equal(existsSync(join(canonicalDir, 'plan.md')), false);
@@ -488,6 +490,8 @@ describe('write commands', () => {
     const output = run(`plan --cwd ${cwd}`, cwd);
 
     assert.match(output, /plan\.md 已写入/);
+    assert.doesNotMatch(output, /task: plan/);
+    assert.doesNotMatch(output, /output_format:/);
     assert.match(output, /next_hint:/);
     assert.match(output, /recommended_command: docpath go --step S1/);
     const currentPlan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
