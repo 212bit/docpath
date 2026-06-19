@@ -6,6 +6,7 @@ import {
   lstatSync,
   mkdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { mkdtempSync } from 'node:fs';
@@ -47,14 +48,27 @@ function mkRepo() {
   mkdirSync(join(dp, 'workspace'), { recursive: true });
   mkdirSync(join(dp, 'backlog'), { recursive: true });
   mkdirSync(join(dp, 'rules'), { recursive: true });
-  mkdirSync(join(dp, 'spec'), { recursive: true });
   mkdirSync(join(dp, 'tasks', 'done', 'T-OLD'), { recursive: true });
+  mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
   mkdirSync(join(dp, 'journal'), { recursive: true });
 
+  // Match the real hybrid contract (option C):
+  //   backlog        live-shared  (gitignored in main, symlinked in worktrees)
+  //   rules          merge-mediated (tracked)
+  //   tasks/done     merge-mediated (tracked)
+  //   workspace      isolated (gitignored)
+  //   tasks/current  isolated (gitignored)
+  //   journal        isolated (untracked runtime)
+  writeFileSync(join(cwd, '.gitignore'), [
+    '/.docpath/workspace/',
+    '/.docpath/tasks/current/',
+    '/.docpath/backlog',
+    '/.worktrees/',
+    '',
+  ].join('\n'));
   writeFileSync(join(dp, 'config.yaml'), 'default_level: 2\n');
   writeFileSync(join(dp, 'backlog', 'backlog.md'), '# Backlog\n');
   writeFileSync(join(dp, 'rules', 'style.md'), '# Style\n');
-  writeFileSync(join(dp, 'spec', 'architecture.md'), '# Architecture\n');
   writeFileSync(join(dp, 'docs.md'), '# Docs Index\n');
   writeFileSync(join(dp, 'docs-index.json'), '{"version":1,"entries":[]}\n');
   writeFileSync(join(dp, 'tasks', 'done', 'T-OLD', 'spec.md'), '# T-OLD - Old task\n');
@@ -75,6 +89,16 @@ function mkRepo() {
 
   git(cwd, ['add', '.']);
   git(cwd, ['commit', '-m', 'init']);
+  return cwd;
+}
+
+// Variant where backlog is tracked (old-style) to exercise the doctor's
+// "tracked copy is not live-shared" warning path.
+function mkRepoTrackedBacklog() {
+  const cwd = mkRepo();
+  // Force backlog into git despite the gitignore, then commit.
+  git(cwd, ['add', '-f', '.docpath/backlog/backlog.md']);
+  git(cwd, ['commit', '-m', 'track backlog']);
   return cwd;
 }
 
@@ -99,12 +123,25 @@ describe('worktree command', () => {
     );
 
     const backlogResource = join(worktreePath, '.docpath', 'backlog');
-    assert.equal(lstatSync(backlogResource).isDirectory(), true);
-    assert.equal(lstatSync(backlogResource).isSymbolicLink(), false);
+    assert.equal(lstatSync(backlogResource).isSymbolicLink(), true, 'backlog must be a live-shared symlink');
+    assert.equal(statSync(backlogResource).isDirectory(), true, 'symlinked backlog must resolve to a directory');
+    const rulesResource = join(worktreePath, '.docpath', 'rules');
+    assert.equal(lstatSync(rulesResource).isSymbolicLink(), false, 'rules must be a merge-mediated tracked copy, not a symlink');
+    assert.equal(lstatSync(rulesResource).isDirectory(), true);
     assert.equal(
       git(worktreePath, ['status', '--porcelain=v1', '--untracked-files=all', '--', '.docpath/backlog', '.docpath/rules']),
       '',
-      'tracked shared resources must not appear as deleted or type-changed files',
+      'backlog symlink must be gitignored and rules tracked copy must stay clean',
+    );
+    assert.equal(
+      git(worktreePath, ['ls-files', '--', '.docpath/tasks/current']).trim(),
+      '',
+      'tasks/current must be untracked (isolated) in the worktree',
+    );
+    assert.equal(
+      git(worktreePath, ['ls-files', '--', '.docpath/tasks/done']).trim().length > 0,
+      true,
+      'tasks/done must stay tracked (merge-mediated) in the worktree',
     );
 
     assert.equal(existsSync(join(worktreePath, '.docpath', 'workspace', 'state.json')), true);
@@ -160,9 +197,9 @@ describe('worktree command', () => {
 
     const named = run(['worktree', 'doctor', 'feature-doctor'], cwd, { env: { DOCPATH_SESSION: '' } }).output;
     assert.match(named, /Worktree doctor: feature-doctor/);
-    assert.match(named, /shared backlog resource/);
-    assert.match(named, /shared rules resource/);
-    assert.match(named, /tracked copy|symlink/);
+    assert.match(named, /live-shared backlog: symlink/);
+    assert.match(named, /merge-mediated rules: tracked copy/);
+    assert.match(named, /isolated tasks\/current: .*isolated/);
     assert.match(named, /set DOCPATH_SESSION=codex-feature-doctor/);
     assert.match(named, /worktree doctor passed/);
 
@@ -174,6 +211,19 @@ describe('worktree command', () => {
 
     const after = git(worktreePath, ['status', '--porcelain=v1', '--untracked-files=all']);
     assert.equal(after, before);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('warns when a tracked backlog is not live-shared', () => {
+    const cwd = mkRepoTrackedBacklog();
+    const worktreePath = join(cwd, '.worktrees', 'feature-stale');
+    run(['worktree', 'create', 'feature-stale'], cwd);
+    const out = run(['worktree', 'doctor', 'feature-stale'], cwd, { env: { DOCPATH_SESSION: 'codex-feature-stale' } }).output;
+    // Tracked backlog copy is a stale snapshot, not a live symlink -> warn, not pass.
+    assert.match(out, /⚠️.*live-shared backlog: tracked copy \(not live-shared\)/);
+    // rules stays merge-mediated (tracked copy is the expected design, no warning).
+    assert.match(out, /✅.*merge-mediated rules: tracked copy/);
+    assert.match(out, /worktree doctor passed/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
