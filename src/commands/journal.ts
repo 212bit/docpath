@@ -121,16 +121,31 @@ interface AdrCandidate {
 }
 
 /**
- * 从 structured spec 的 Decision Brief 提取 ADR 候选（最高信号来源）。
- * decision_brief_markdown 是 spec 4.1 门禁里记录的推荐方案，比 breadcrumb
- * 关键词匹配更可靠。
+ * 解析 Decision Brief 文本：优先 structured spec.json，回退到 spec.md 的
+ * 「### Decision Brief」段落。两者都不存在则返回 null。
+ */
+function resolveDecisionBrief(context: JournalContext): string | null {
+  const structured = context.structuredSpec?.major_change_gate?.decision_brief_markdown?.trim();
+  if (structured) return structured;
+  const md = context.spec || '';
+  const marker = '### Decision Brief';
+  const idx = md.indexOf(marker);
+  if (idx < 0) return null;
+  const rest = md.slice(idx + marker.length);
+  const next = rest.search(/\n##\s/);
+  const block = next >= 0 ? rest.slice(0, next) : rest;
+  return block.trim() || null;
+}
+
+/**
+ * 从 Decision Brief 提取 ADR 候选（最高信号来源）。
+ * brief 来自 spec.json 的 decision_brief_markdown 或 spec.md 的对应段落，
+ * 比 breadcrumb 关键词匹配更可靠。
  */
 function extractAdrFromDecisionBrief(
-  structuredSpec: StructuredSpecDocument | null,
+  brief: string | null,
   fallbackTitle: string,
 ): AdrCandidate[] {
-  if (!structuredSpec) return [];
-  const brief = structuredSpec.major_change_gate?.decision_brief_markdown?.trim();
   if (!brief) return [];
   const recommended = extractBriefField(brief, '推荐方案')
     || extractBriefField(brief, '推荐')
@@ -491,9 +506,9 @@ async function writeLessonCandidate(
     // 真实可固化内容：ADR 摘要 + decision_brief 推荐方案 + blocked 步骤。
     // 没有这些则退化为现状的执行统计模板。
     const adrCandidates = collectAdrCandidates(context, summary);
-    const briefRecommended = context.structuredSpec?.major_change_gate?.decision_brief_markdown?.trim()
-      ? (extractBriefField(context.structuredSpec.major_change_gate.decision_brief_markdown, '推荐方案')
-          || extractBriefField(context.structuredSpec.major_change_gate.decision_brief_markdown, '推荐'))
+    const brief = resolveDecisionBrief(context);
+    const briefRecommended = brief
+      ? (extractBriefField(brief, '推荐方案') || extractBriefField(brief, '推荐'))
       : null;
     const blockedSteps = context.breadcrumb.entries
       .filter((e) => e.taskId === taskId && e.status === 'blocked')
@@ -564,8 +579,8 @@ function collectAdrCandidates(context: JournalContext, summary: TaskSummary): Ad
     seen.add(key);
     candidates.push(c);
   };
-  // 优先级: structured decision_brief > spec 关键决策表 > breadcrumb 关键词
-  for (const c of extractAdrFromDecisionBrief(context.structuredSpec, context.current?.task_title || summary.taskId)) push(c);
+  // 优先级: structured/markdown decision_brief > spec 关键决策表 > breadcrumb 关键词
+  for (const c of extractAdrFromDecisionBrief(resolveDecisionBrief(context), context.current?.task_title || summary.taskId)) push(c);
   for (const c of extractAdrFromKeyDecisionsTable(context.spec)) push(c);
   for (const c of extractArchitectureDecisionCandidates(summary.keyDecisions)) push(c);
   return candidates;

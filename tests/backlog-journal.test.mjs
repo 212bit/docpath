@@ -249,4 +249,122 @@ Alpha
     assert.match(archive, /ADR-20260401-001/);
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('standalone journal does not physically archive by default (gc owns it)', () => {
+    const cwd = mkWorkspace();
+    const taskDir = join(cwd, '.docpath', 'tasks', 'T-20260531-alpha-promote');
+    const out = run('journal', cwd); // no --optional-archive
+
+    assert.match(out, /物理任务目录归档已延后/);
+    assert.match(out, /docpath gc --force/);
+    // task dir stays in place; nothing moved to tasks/done
+    assert.equal(existsSync(taskDir), true, 'canonical task dir must remain');
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'done', 'T-20260531-alpha-promote')), false, 'must not archive by default');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('--optional-archive=always still physically archives', () => {
+    const cwd = mkWorkspace();
+    const taskDir = join(cwd, '.docpath', 'tasks', 'T-20260531-alpha-promote');
+    run('journal --optional-archive always', cwd);
+    assert.equal(existsSync(taskDir), false, 'canonical task dir must be moved');
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'done', 'T-20260531-alpha-promote')), true, 'archived dir must exist');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('write-journal fails loud on an already-archived task (no zombie dir)', () => {
+    const cwd = mkWorkspace();
+    const taskId = 'T-20260531-alpha-promote';
+    // Physically archive first
+    run('journal --optional-archive always', cwd);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', taskId)), false);
+
+    // write-journal must refuse; state.json still references the task
+    let threw = false;
+    try {
+      execSync(`node ${BIN} write-journal --content "knowledge"`, { cwd, encoding: 'utf-8', timeout: 20000 });
+    } catch (e) {
+      threw = true;
+      assert.match(e.stdout + e.stderr, /已物理归档|write-journal 必须在归档前/);
+    }
+    assert.equal(threw, true, 'write-journal must fail on archived task');
+    // no zombie canonical dir or current alias re-created
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', taskId, 'spec.md')), false, 'must not re-create zombie canonical spec');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('journal extracts ADR from spec decision_brief + key-decisions table', () => {
+    const cwd = mkWorkspace({ breadcrumbContext: '完成 S1' });
+    const dp = join(cwd, '.docpath');
+    const taskId = 'T-20260531-alpha-promote';
+    // spec with a key-decisions table + decision_brief section; no keyword breadcrumb
+    const specMd = [
+      `# ${taskId} - Alpha Promote`,
+      '',
+      '## 4. 关键决策',
+      '',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | 采用事件溯源 | 状态机 / 事件溯源 | 事件溯源 | 审计可追溯 |',
+      '',
+      '## 4.1 重大变更门禁',
+      '',
+      '### Decision Brief',
+      '',
+      '- 推荐方案: 事件溯源统一状态边界',
+      '',
+    ].join('\n');
+    writeFileSync(join(dp, 'tasks', taskId, 'spec.md'), specMd);
+    writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), specMd);
+
+    const out = run('journal --optional-archive skip', cwd);
+    assert.match(out, /决策日志已更新/);
+    const decisions = readFileSync(join(dp, 'workspace', 'decisions.md'), 'utf-8');
+    assert.match(decisions, /事件溯源统一状态边界/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('lesson candidate includes decision brief + blocked steps when present', () => {
+    const cwd = mkWorkspace({ breadcrumbContext: '完成 S1' });
+    const dp = join(cwd, '.docpath');
+    const taskId = 'T-20260531-alpha-promote';
+    // breadcrumb with a blocked entry
+    const breadcrumb = [
+      '# Breadcrumb',
+      '',
+      '### ⚠️ S2 [T-20260531-alpha-promote] — 2026-05-31T00:00:00.000Z',
+      '',
+      '---',
+      'taskId: T-20260531-alpha-promote',
+      'step: S2',
+      'status: blocked',
+      'timestamp: 2026-05-31T00:00:00.000Z',
+      '---',
+      '',
+      '- **状态**: blocked',
+      '- **上下文**: 遇到 X 阻塞',
+      '',
+    ].join('\n');
+    writeFileSync(join(dp, 'workspace', 'breadcrumb.md'), breadcrumb);
+    const specMd = [
+      `# ${taskId} - Alpha Promote`,
+      '',
+      '## 4.1 重大变更门禁',
+      '',
+      '### Decision Brief',
+      '',
+      '- 推荐方案: 事件溯源统一状态边界',
+      '',
+    ].join('\n');
+    writeFileSync(join(dp, 'tasks', taskId, 'spec.md'), specMd);
+    writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), specMd);
+
+    run('journal --optional-archive skip', cwd);
+    const lessons = readFileSync(join(dp, 'workspace', 'lesson-candidates.md'), 'utf-8');
+    assert.match(lessons, /推荐方案/);
+    assert.match(lessons, /事件溯源统一状态边界/);
+    assert.match(lessons, /阻塞步骤/);
+    assert.match(lessons, /遇到 X 阻塞/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
