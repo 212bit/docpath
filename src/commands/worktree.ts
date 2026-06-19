@@ -100,6 +100,10 @@ async function hasTrackedFiles(repoRoot: string, path: string): Promise<boolean>
   return stdout.trim().length > 0;
 }
 
+async function isTrackedDocPath(repoRoot: string, item: string): Promise<boolean> {
+  return hasTrackedFiles(repoRoot, `.docpath/${item}`);
+}
+
 /**
  * worktree create <name> — 创建新 worktree
  */
@@ -161,9 +165,16 @@ async function initWorktreeDocpath(mainRepoPath: string, worktreePath: string, n
   console.log(`  🧹 清理 git 复制的 .docpath/ 内容...`);
   await mkdir(docpathDir, { recursive: true });
 
-  // 清理需要隔离的目录（git 复制过来的）
+  // 清理需要隔离的目录（git 复制过来的）。如果路径已被 Git 追踪，不能删除或
+  // 重写，否则新 worktree 会立即出现大量 deleted/modified 噪声。
   const toClean = ['workspace', 'tasks', 'journal', 'docs.md', 'docs-index.json'];
+  const trackedItems = new Set<string>();
   for (const item of toClean) {
+    if (await isTrackedDocPath(mainRepoPath, item)) {
+      trackedItems.add(item);
+      console.log(`    ↷ 保留 tracked ${item}`);
+      continue;
+    }
     const itemPath = join(docpathDir, item);
     if (existsSync(itemPath)) {
       await rm(itemPath, { recursive: true, force: true });
@@ -175,16 +186,22 @@ async function initWorktreeDocpath(mainRepoPath: string, worktreePath: string, n
   console.log(`  📁 创建独立目录...`);
   const isolatedDirs = ['workspace', 'tasks', 'journal'];
   for (const dir of isolatedDirs) {
+    if (trackedItems.has(dir)) {
+      console.log(`    ↷ ${dir}/ tracked copy`);
+      continue;
+    }
     const dirPath = join(docpathDir, dir);
     await mkdir(dirPath, { recursive: true });
     console.log(`    ✓ ${dir}/`);
   }
 
   // 创建 workspace 子目录
-  const workspaceDirs = ['sessions', 'leases', 'commands', 'bin'];
-  for (const dir of workspaceDirs) {
-    const dirPath = join(docpathDir, 'workspace', dir);
-    await mkdir(dirPath, { recursive: true });
+  if (!trackedItems.has('workspace')) {
+    const workspaceDirs = ['sessions', 'leases', 'commands', 'bin'];
+    for (const dir of workspaceDirs) {
+      const dirPath = join(docpathDir, 'workspace', dir);
+      await mkdir(dirPath, { recursive: true });
+    }
   }
 
   // 创建共享资源引用。Git 已跟踪的目录不能替换为 symlink，否则 worktree
@@ -219,22 +236,26 @@ async function initWorktreeDocpath(mainRepoPath: string, worktreePath: string, n
     }
   }
 
-  console.log(`  🧭 写入独立 runtime 初始状态...`);
-  const mainState = await readCurrentState(mainRepoPath);
-  const now = new Date().toISOString();
-  await writeCurrentState(worktreePath, {
-    level: mainState?.level || 2,
-    workflow_profile: 'standard',
-    state: 'idle',
-    task_id: '',
-    task_title: `Worktree ${name}`,
-    phase: 'idle',
-    gate: 'none',
-    current_step: '等待下一步',
-    started_at: now,
-    updated_at: now,
-  });
-  await writeFile(join(docpathDir, 'workspace', 'breadcrumb.md'), BREADCRUMB_HEADER, 'utf-8');
+  if (trackedItems.has('workspace')) {
+    console.log(`  ↷ 保留 tracked workspace runtime，避免创建即产生 Git 噪声`);
+  } else {
+    console.log(`  🧭 写入独立 runtime 初始状态...`);
+    const mainState = await readCurrentState(mainRepoPath);
+    const now = new Date().toISOString();
+    await writeCurrentState(worktreePath, {
+      level: mainState?.level || 2,
+      workflow_profile: 'standard',
+      state: 'idle',
+      task_id: '',
+      task_title: `Worktree ${name}`,
+      phase: 'idle',
+      gate: 'none',
+      current_step: '等待下一步',
+      started_at: now,
+      updated_at: now,
+    });
+    await writeFile(join(docpathDir, 'workspace', 'breadcrumb.md'), BREADCRUMB_HEADER, 'utf-8');
+  }
 
   console.log(`  ✅ .docpath/ 配置完成`);
 }

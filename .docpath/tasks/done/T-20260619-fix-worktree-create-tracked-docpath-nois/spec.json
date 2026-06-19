@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-19T03:44:44.233Z",
+    "updated_at": "2026-06-19T03:44:44.233Z",
+    "content_sha256": "76c44a9b1f52f3c0958e59e371f2e940085fd55f2a0878edcd614b1a3f6649ca"
+  },
+  "task_id": "T-20260619-fix-worktree-create-tracked-docpath-nois",
+  "backlog_id": "R-209",
+  "title": "T-20260619-fix-worktree-create-tracked-docpath-nois - Fix worktree create tracked DocPath noise",
+  "markdown": "# T-20260619-fix-worktree-create-tracked-docpath-nois - Fix worktree create tracked DocPath noise\n\n> backlog_id: R-209\n> backlog_source: docpath backlog add\n> user_confirmed: 用户同意修复 docpath worktree create 造成 tracked .docpath evidence 删除噪声的问题\n\n## 1. 背景与动机\n\nDogfooding showed that `docpath worktree create` deletes copied `.docpath/tasks`, `.docpath/docs.md`, and `.docpath/docs-index.json` while configuring a new worktree. In projects where durable DocPath evidence is tracked, this makes the newly created worktree immediately dirty with mass deleted files, defeating the goal of clean isolated worktrees.\n\nThe command should preserve tracked DocPath evidence as the branch worktree copy, while still initializing untracked runtime workspace paths for isolation when doing so will not create Git noise.\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: `docpath worktree create` must not delete `.docpath/tasks`, `.docpath/docs.md`, or `.docpath/docs-index.json` when those paths contain tracked files.\n- [ ] FR-2: Tracked DocPath resources must be preserved as tracked copies so the new worktree starts clean.\n- [ ] FR-3: Untracked runtime paths such as `.docpath/workspace` and `.docpath/journal` may still be initialized for isolation when doing so does not dirty the worktree.\n- [ ] FR-4: `worktree doctor` must continue to pass for worktrees created with tracked copies.\n\n### 非功能需求\n- [ ] NFR-1: Do not weaken existing safety around shared tracked resources such as backlog and rules.\n- [ ] NFR-2: Existing ignored-runtime projects should keep getting independent runtime initialization.\n- [ ] NFR-3: Regression tests must prove a newly created worktree is clean when durable DocPath evidence is tracked.\n\n## 3. 范围界定\n\n### 包含\n- `docpath worktree create` cleanup policy for tracked DocPath paths.\n- Regression coverage for tracked tasks/docs/workspace paths.\n- Real dogfood validation creating and removing a temporary worktree.\n\n### 不包含\n- Redesigning DocPath task storage.\n- Changing docs scan retention policy.\n- Removing existing historical task evidence.\n- Changing Git worktree branch naming semantics.\n\n## 4. 关键决策\n\n| # | 决策 | 选项 | 结论 | 理由 |\n|---|------|------|------|------|\n| 1 | Tracked DocPath paths during create | Delete and recreate / preserve tracked copy | Preserve tracked copy | Deleting tracked evidence makes the new worktree dirty immediately. |\n| 2 | Runtime isolation when workspace is tracked | Rewrite runtime and accept dirty status / keep tracked runtime copy | Keep tracked runtime copy | A clean worktree is more important than runtime rewrite when Git already tracks workspace files. |\n| 3 | Regression signal | Check only selected resources / check full git status | Check full git status | The bug was broad dirty worktree noise, so the test must inspect complete porcelain status. |\n\n## 4.1 重大变更门禁\n\n### 是否涉及重大变更\n- [ ] 否\n- [x] 是，需要用户确认\n\n### 变更类型\n- [ ] 技术栈 / 框架\n- [ ] UI 框架 / 设计系统\n- [ ] 构建工具 / 打包方式\n- [ ] 数据库 / 存储模型\n- [ ] API / 数据契约\n- [ ] 部署 / 运行方式\n- [ ] 安全 / 权限边界\n- [ ] 外部 SDK / 大依赖\n- [ ] 架构 / 模块边界\n- [ ] UI 信息架构 / 用户主路径\n- [x] 工作流 / Agent 行为\n- [x] 权限 / 写操作边界\n- [ ] 范围扩大\n- [ ] 删除 / 替换已有能力\n- [ ] 长期维护成本增加\n- [ ] 其他\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）\n- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）\n\n### Decision Brief\n- 当前问题: `docpath worktree create` 会删除 tracked DocPath evidence，导致新 worktree 一创建就有大量 deleted 文件。\n- 目标: 让 DocPath worktree create 在 tracked evidence 项目中保持 clean，同时保留可安全初始化的 runtime 隔离。\n- 背景: 用户要求修复 dogfood 暴露问题，并明确要求有未提交改动时通过 worktree 隔离开发。\n- 可选方案: 继续删除；删除后自动 git restore；对 tracked 路径跳过删除；把 tracked 路径替换为 symlink。\n- 推荐方案: 对 tracked `.docpath` 路径跳过删除和重写，保留为 tracked copy；仅对未 tracked runtime 路径进行隔离初始化。\n- 不做什么: 不自动 untrack 历史 evidence；不修改 task archive 策略；不把 tracked 目录替换成 symlink。\n- 成本: `worktree create` 的隔离语义需要区分 tracked 与 untracked 路径。\n- 风险: 历史 tracked workspace 项目中 runtime 初始状态不会被重写为独立 idle；但这避免了创建即 dirty，且可后续通过 doctor/doctor cleanup 处理。\n- 回滚方案: 恢复原 `toClean` 全量删除逻辑。\n- 用户确认: 用户两次确认修复这些 dogfood 暴露问题。\n\n## 5. 验收标准\n\n- [ ] AC-1: 测试仓库追踪 `.docpath/tasks`, `.docpath/docs.md`, `.docpath/docs-index.json`, `.docpath/workspace/*` 时，`docpath worktree create` 后新 worktree 的 `git status --porcelain` 为空。\n- [ ] AC-2: tracked backlog/rules 仍保留为 tracked copy，不显示 deleted 或 typechange。\n- [ ] AC-3: `docpath worktree doctor` 对新 worktree 仍通过。\n- [ ] AC-4: Typecheck、worktree 目标测试、真实 dogfood create/status/doctor/remove 均通过。\n",
+  "generated_at": "2026-06-19T03:44:44.233Z",
+  "scope": {
+    "included": [
+      "`docpath worktree create` cleanup policy for tracked DocPath paths.",
+      "Regression coverage for tracked tasks/docs/workspace paths.",
+      "Real dogfood validation creating and removing a temporary worktree."
+    ],
+    "excluded": [
+      "Redesigning DocPath task storage.",
+      "Changing docs scan retention policy.",
+      "Removing existing historical task evidence.",
+      "Changing Git worktree branch naming semantics."
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界"
+    ],
+    "user_confirmed": "用户两次确认修复这些 dogfood 暴露问题。",
+    "decision_brief_markdown": "- 当前问题: `docpath worktree create` 会删除 tracked DocPath evidence，导致新 worktree 一创建就有大量 deleted 文件。\n- 目标: 让 DocPath worktree create 在 tracked evidence 项目中保持 clean，同时保留可安全初始化的 runtime 隔离。\n- 背景: 用户要求修复 dogfood 暴露问题，并明确要求有未提交改动时通过 worktree 隔离开发。\n- 可选方案: 继续删除；删除后自动 git restore；对 tracked 路径跳过删除；把 tracked 路径替换为 symlink。\n- 推荐方案: 对 tracked `.docpath` 路径跳过删除和重写，保留为 tracked copy；仅对未 tracked runtime 路径进行隔离初始化。\n- 不做什么: 不自动 untrack 历史 evidence；不修改 task archive 策略；不把 tracked 目录替换成 symlink。\n- 成本: `worktree create` 的隔离语义需要区分 tracked 与 untracked 路径。\n- 风险: 历史 tracked workspace 项目中 runtime 初始状态不会被重写为独立 idle；但这避免了创建即 dirty，且可后续通过 doctor/doctor cleanup 处理。\n- 回滚方案: 恢复原 `toClean` 全量删除逻辑。\n- 用户确认: 用户两次确认修复这些 dogfood 暴露问题。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "`docpath worktree create` must not delete `.docpath/tasks`, `.docpath/docs.md`, or `.docpath/docs-index.json` when those paths contain tracked files.",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Tracked DocPath resources must be preserved as tracked copies so the new worktree starts clean.",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "Untracked runtime paths such as `.docpath/workspace` and `.docpath/journal` may still be initialized for isolation when doing so does not dirty the worktree.",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "`worktree doctor` must continue to pass for worktrees created with tracked copies.",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "Do not weaken existing safety around shared tracked resources such as backlog and rules.",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "Existing ignored-runtime projects should keep getting independent runtime initialization.",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "Regression tests must prove a newly created worktree is clean when durable DocPath evidence is tracked.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "测试仓库追踪 `.docpath/tasks`, `.docpath/docs.md`, `.docpath/docs-index.json`, `.docpath/workspace/*` 时，`docpath worktree create` 后新 worktree 的 `git status --porcelain` 为空。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "tracked backlog/rules 仍保留为 tracked copy，不显示 deleted 或 typechange。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`docpath worktree doctor` 对新 worktree 仍通过。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "Typecheck、worktree 目标测试、真实 dogfood create/status/doctor/remove 均通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: `docpath worktree create` 会删除 tracked DocPath evidence，导致新 worktree 一创建就有大量 deleted 文件。\n- 目标: 让 DocPath worktree create 在 tracked evidence 项目中保持 clean，同时保留可安全初始化的 runtime 隔离。\n- 背景: 用户要求修复 dogfood 暴露问题，并明确要求有未提交改动时通过 worktree 隔离开发。\n- 可选方案: 继续删除；删除后自动 git restore；对 tracked 路径跳过删除；把 tracked 路径替换为 symlink。\n- 推荐方案: 对 tracked `.docpath` 路径跳过删除和重写，保留为 tracked copy；仅对未 tracked runtime 路径进行隔离初始化。\n- 不做什么: 不自动 untrack 历史 evidence；不修改 task archive 策略；不把 tracked 目录替换成 symlink。\n- 成本: `worktree create` 的隔离语义需要区分 tracked 与 untracked 路径。\n- 风险: 历史 tracked workspace 项目中 runtime 初始状态不会被重写为独立 idle；但这避免了创建即 dirty，且可后续通过 doctor/doctor cleanup 处理。\n- 回滚方案: 恢复原 `toClean` 全量删除逻辑。\n- 用户确认: 用户两次确认修复这些 dogfood 暴露问题。"
+}

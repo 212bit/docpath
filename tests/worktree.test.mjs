@@ -48,13 +48,17 @@ function mkRepo() {
   mkdirSync(join(dp, 'backlog'), { recursive: true });
   mkdirSync(join(dp, 'rules'), { recursive: true });
   mkdirSync(join(dp, 'spec'), { recursive: true });
-  mkdirSync(join(dp, 'tasks'), { recursive: true });
+  mkdirSync(join(dp, 'tasks', 'done', 'T-OLD'), { recursive: true });
   mkdirSync(join(dp, 'journal'), { recursive: true });
 
   writeFileSync(join(dp, 'config.yaml'), 'default_level: 2\n');
   writeFileSync(join(dp, 'backlog', 'backlog.md'), '# Backlog\n');
   writeFileSync(join(dp, 'rules', 'style.md'), '# Style\n');
   writeFileSync(join(dp, 'spec', 'architecture.md'), '# Architecture\n');
+  writeFileSync(join(dp, 'docs.md'), '# Docs Index\n');
+  writeFileSync(join(dp, 'docs-index.json'), '{"version":1,"entries":[]}\n');
+  writeFileSync(join(dp, 'tasks', 'done', 'T-OLD', 'spec.md'), '# T-OLD - Old task\n');
+  writeFileSync(join(dp, 'tasks', 'done', 'T-OLD', 'plan.md'), '## 执行计划\n');
   writeFileSync(join(dp, 'workspace', 'breadcrumb.md'), '# breadcrumb\n');
   writeFileSync(join(dp, 'workspace', 'current.md'), '# current\n');
   writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
@@ -88,6 +92,11 @@ describe('worktree command', () => {
     assert.match(out, /export DOCPATH_SESSION=codex-feature-a/);
     assert.equal(existsSync(worktreePath), true);
     assert.equal(existsSync(join(subdir, '.worktrees')), false, 'must anchor .worktrees at git root');
+    assert.equal(
+      git(worktreePath, ['status', '--porcelain=v1', '--untracked-files=all']),
+      '',
+      'new DocPath worktree must not start with tracked .docpath deletions or runtime modifications',
+    );
 
     const backlogResource = join(worktreePath, '.docpath', 'backlog');
     assert.equal(lstatSync(backlogResource).isDirectory(), true);
