@@ -16,15 +16,18 @@ import { doneCommand } from '../done.js';
 import { quickCommand } from '../quick.js';
 import { recoverCommand, retryCommand, unblockCommand } from '../recovery.js';
 import { commitCommand } from '../commit.js';
+import { mergeDriverCommand } from '../merge-driver.js';
 
 export function registerOperationalCommands(cli: CAC): void {
   cli
     .command('quick <title>', '创建快车道任务（微型改动，压缩生命周期）')
     .option('--cwd <path>', '项目目录')
-    .action(async (title: string, options: { cwd?: string }) => {
+    .option('--instant', '即时档：跳 build/test，仅 typecheck + 结构门禁，跳 review')
+    .action(async (title: string, options: { cwd?: string; instant?: boolean }) => {
       await quickCommand({
         cwd: options.cwd || process.cwd(),
         title,
+        instant: options.instant,
       });
     });
 
@@ -153,6 +156,29 @@ export function registerOperationalCommands(cli: CAC): void {
         stage: options.stage || false,
         message: options.message,
         includePatterns,
+      });
+    });
+
+  cli
+    .command('merge-driver', 'Smart Git three-way merge driver (invoked by git)')
+    .option('--ancestor <file>', 'Ancestor (%O)')
+    .option('--current <file>', 'Current (%A)')
+    .option('--other <file>', 'Other (%B)')
+    .option('--path <path>', 'Path (%P)')
+    .option('--cwd <path>', 'Working directory')
+    .action(async (options: {
+      ancestor: string;
+      current: string;
+      other: string;
+      path: string;
+      cwd?: string;
+    }) => {
+      await mergeDriverCommand({
+        ancestor: options.ancestor,
+        current: options.current,
+        other: options.other,
+        path: options.path,
+        cwd: options.cwd || process.cwd(),
       });
     });
 }

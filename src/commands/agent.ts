@@ -377,8 +377,10 @@ async function handleAgentDone(options: AgentOptions): Promise<void> {
   const finalPlanStep = normalizePlanStepCandidate(options.step || stateAtStart?.current_step);
   const finalStatus = options.status || 'done';
   const quickProfile = isQuickProfile(stateAtStart?.workflow_profile);
+  const instantProfile = isInstantProfile(stateAtStart?.workflow_profile);
 
-  if (quickProfile) {
+  // quick / instant 都压缩了门禁，必须由范围守卫兜底：超文件数或触风险路径则拒绝完成。
+  if (quickProfile || instantProfile) {
     assertQuickScope(cwd);
   }
 

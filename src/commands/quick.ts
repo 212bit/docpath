@@ -11,6 +11,8 @@ import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 interface QuickOptions {
   cwd: string;
   title: string;
+  /** 即时档：跳 check(build/test)，仅 typecheck + 结构门禁；跳 review。比 quick 更轻。 */
+  instant?: boolean;
 }
 
 function slugifyTitle(title: string): string {
@@ -36,11 +38,11 @@ async function generateQuickTaskId(docpathDir: string, title: string): Promise<s
   throw new Error(`docpath quick: unable to generate unique task id for ${title}`);
 }
 
-function renderQuickSpec(taskId: string, title: string): string {
+function renderQuickSpec(taskId: string, title: string, profile: 'quick' | 'instant'): string {
   return [
     `# ${taskId} - ${title}`,
     '',
-    '> workflow_profile: quick',
+    `> workflow_profile: ${profile}`,
     '> source: docpath quick',
     '',
     '## 1. 背景与动机',
@@ -97,16 +99,21 @@ function renderQuickSpec(taskId: string, title: string): string {
   ].join('\n');
 }
 
-function renderQuickEvidence(taskId: string, title: string): string {
+function renderQuickEvidence(taskId: string, title: string, profile: 'quick' | 'instant'): string {
+  const instant = profile === 'instant';
   return [
-    `# Quick Task: ${taskId}`,
+    `# ${instant ? 'Instant' : 'Quick'} Task: ${taskId}`,
     '',
     `- title: ${title}`,
-    '- workflow_profile: quick',
+    `- workflow_profile: ${profile}`,
     '- created_by: docpath quick',
     '- gates:',
-    '  - check: required',
-    '  - review: skipped by quick profile unless escalated',
+    instant
+      ? '  - check: lite (typecheck + 结构门禁,跳 build/test)'
+      : '  - check: required',
+    instant
+      ? '  - review: skipped by instant profile'
+      : '  - review: skipped by quick profile unless escalated',
     '  - journal: minimal',
     '',
     '## Boundaries',
@@ -134,12 +141,13 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
   assertCleanWorktreeForNewTask(cwd, 'docpath quick');
 
   const taskId = await generateQuickTaskId(docpathDir, title);
+  const profile: 'quick' | 'instant' = options.instant ? 'instant' : 'quick';
   await clearCurrentTaskAlias(docpathDir);
-  await writeActiveTaskFile(docpathDir, taskId, 'spec.md', renderQuickSpec(taskId, title));
+  await writeActiveTaskFile(docpathDir, taskId, 'spec.md', renderQuickSpec(taskId, title, profile));
 
   await mkdir(canonicalTaskDir(docpathDir, taskId), { recursive: true });
   await mkdir(currentTaskDir(docpathDir), { recursive: true });
-  const quickEvidence = renderQuickEvidence(taskId, title);
+  const quickEvidence = renderQuickEvidence(taskId, title, profile);
   await writeFile(join(canonicalTaskDir(docpathDir, taskId), 'quick.md'), quickEvidence, 'utf-8');
   await writeFile(join(currentTaskDir(docpathDir), 'quick.md'), quickEvidence, 'utf-8');
 
@@ -155,16 +163,20 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
   });
   await writeCurrentState(cwd, {
     ...executing,
-    level: 1,
-    workflow_profile: 'quick',
-    current_step: 'quick task active',
+    level: options.instant ? 0 : 1,
+    workflow_profile: options.instant ? 'instant' : 'quick',
+    current_step: options.instant ? 'instant task active' : 'quick task active',
     updated_at: new Date().toISOString(),
   });
 
-  console.log(`✅  quick task 已创建: ${taskId}`);
+  console.log(`✅  ${profile} task 已创建: ${taskId}`);
   console.log(`   title: ${title}`);
-  console.log('   profile: quick');
-  console.log('   gates: check required, review skipped by quick profile');
+  console.log(`   profile: ${profile}`);
+  if (options.instant) {
+    console.log('   gates: lite check (typecheck + 结构门禁,跳 build/test), review skipped');
+  } else {
+    console.log('   gates: check required, review skipped by quick profile');
+  }
   console.log('   下一步: 完成修改后运行 docpath done');
   await emitNextHint(cwd);
 }
