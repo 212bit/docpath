@@ -17,19 +17,23 @@ Git Worktree 允许你在同一个仓库中同时检出多个分支到不同的�
 
 ### DocPath Worktree 的特殊之处
 
-DocPath 在每个 worktree 中创建**独立的 .docpath/ 状态**，同时**共享需求池和规则**：
+DocPath 在每个 worktree 中创建**独立的 .docpath/ 运行时**，同时按资源类型采用混合共享模型（option C）：
 
 ```
 主目录/.docpath/
-├─ backlog/  ← 共享（所有 worktrees 共用）
-├─ rules/    ← 共享
-└─ workspace/ ← 主目录的独立状态
+├─ backlog/    ← live-shared（gitignored，symlink 源）
+├─ rules/      ← merge-mediated（tracked，合并时对齐）
+├─ tasks/done/ ← merge-mediated（tracked，合并时对齐）
+├─ tasks/current/ ← isolated（gitignored）
+└─ workspace/  ← isolated（gitignored）
 
 .worktrees/feature-a/.docpath/
-├─ backlog -> ../../.docpath/backlog/  ← symlink 共享
-├─ rules -> ../../.docpath/rules/      ← symlink 共享
-├─ workspace/  ← feature-a 的独立状态
-└─ tasks/      ← feature-a 的独立任务
+├─ backlog -> ../../../.docpath/backlog/   ← symlink 真共享
+├─ rules/      ← tracked 快照（合并中介）
+├─ tasks/done/ ← tracked 快照（合并中介）
+├─ tasks/current/ ← feature-a 独立运行时（gitignored）
+├─ workspace/  ← feature-a 独立状态
+└─ journal/    ← feature-a 独立归档
 ```
 
 ---
@@ -190,8 +194,10 @@ docpath worktree create bugfix-123
 **检查内容**：
 - Git worktree metadata
 - `.docpath/` 目录结构
-- `backlog` / `rules` symlink
-- isolated `workspace` / `tasks` / `journal`
+- `backlog` live-shared symlink（tracked copy 降级为 warning）
+- `rules` merge-mediated tracked copy
+- `tasks/current` isolated（untracked；tracked 降级为 warning）
+- isolated `workspace` / `journal`
 - runtime state/current/breadcrumb 文件
 - `node_modules` 是否已安装（仅 warning，不自动安装）
 - `DOCPATH_SESSION` 是否已设置
@@ -228,39 +234,43 @@ docpath worktree remove feature-a --force
 
 ## 共享与隔离策略
 
-### 共享资源（Symlink）
+DocPath worktree 采用**混合策略（option C）**，按资源语义分别选择共享模型：
 
-以下资源在所有 worktrees 间共享：
+### Live-shared 资源（Symlink 到主仓库）
 
 | 资源 | 说明 |
 |------|------|
-| `backlog/` | 需求池（全局共享） |
-| `rules/` | 规则和最佳实践 |
-| `spec/` | 架构规范 |
-| `templates/` | 模板文件 |
+| `backlog/` | 需求池；主仓 gitignored，worktree 内 symlink，所有 worktrees 实时共用一份 |
 
-**实现**：通过 symlink 指向主仓库。
+**实现**：主仓 `.gitignore` 忽略 `/.docpath/backlog`，`worktree create` 对未跟踪的 backlog 建 symlink 指向主仓。
 
-**好处**：
-- 所有 worktrees 看到相同的需求池
-- 规则更新自动同步
-- 避免重复维护
+**好处**：所有 worktrees 看到同一份实时需求池；promote/edit 立即互见。
 
-### 隔离资源（独立）
+> 代价：backlog 不进 git，无版本备份与跨机同步；仅同一仓库本机的 worktrees 间共享。
 
-以下资源在每个 worktree 中独立：
+### Merge-mediated 资源（Tracked 快照，合并对齐）
+
+| 资源 | 说明 |
+|------|------|
+| `rules/` | 规则与最佳实践；tracked，worktree 取快照，合并时对齐 |
+| `tasks/done/` | 已完成任务归档；tracked，合并时对齐 |
+
+**实现**：保持 git 跟踪；`worktree create` 保留 tracked 副本（不 symlink，避免创建即产生 deleted 噪声）。
+
+**好处**：变更频率低、本就该全仓一致；合并中介即可，无需实时。
+
+### 隔离资源（独立，gitignored 运行时）
 
 | 资源 | 说明 |
 |------|------|
 | `workspace/` | 运行时状态（state.json, breadcrumb 等） |
-| `tasks/` | 任务文件和计划 |
+| `tasks/current/` | 当前活跃任务运行时 |
 | `journal/` | 知识归档 |
-| `docs-index.json` | 文档索引 |
 
-**好处**：
-- 完全物理隔离
-- 零冲突风险
-- 各自状态独立
+**实现**：主仓 gitignored；worktree 内独立目录，互不干扰。
+
+**好处**：完全物理隔离、零冲突风险、各自状态独立。
+
 
 ---
 
@@ -355,13 +365,13 @@ git add -f .docpath/tasks/current/*
 
 ### 处理 .docpath/ 合并冲突
 
-**自动合并**：
-- `backlog/`: Symlink，无冲突
-- `rules/`: Symlink，无冲突
+**无冲突（live-shared / 隔离）**：
+- `backlog/`: 主仓 gitignored + worktree symlink，不进 git，无冲突
+- `workspace/`、`tasks/current/`、`journal/`: gitignored 隔离运行时，不进 git，无冲突
 
-**手动处理**：
-- `workspace/`: 使用主目录版本（`git checkout --ours .docpath/workspace/`）
-- `tasks/`: 移动 worktree 的任务到 `tasks/done/`
+**需合并对齐（merge-mediated，tracked）**：
+- `rules/`: tracked 快照，合并时按常规三路合并对齐
+- `tasks/done/`: tracked 归档，合并时对齐；worktree 新完成的任务在此汇合
 
 ---
 
@@ -494,17 +504,21 @@ readlink .docpath/backlog
 ```
 project/
 ├─ .docpath/
-│  ├─ backlog/              ← 真实文件（共享）
-│  ├─ rules/                ← 真实文件（共享）
-│  ├─ workspace/            ← 主目录独立状态
-│  └─ tasks/                ← 主目录任务
+│  ├─ backlog/              ← live-shared 源（gitignored）
+│  ├─ rules/                ← merge-mediated（tracked）
+│  ├─ tasks/done/           ← merge-mediated（tracked）
+│  ├─ tasks/current/        ← isolated（gitignored）
+│  ├─ workspace/            ← 主目录独立状态（gitignored）
+│  └─ journal/              ← 主目录归档（gitignored）
 ├─ .worktrees/
 │  └─ feature-a/
 │     ├─ .docpath/
-│     │  ├─ backlog -> ../../.docpath/backlog/  ← symlink
-│     │  ├─ rules -> ../../.docpath/rules/      ← symlink
+│     │  ├─ backlog -> ../../../.docpath/backlog/  ← symlink 真共享
+│     │  ├─ rules/          ← tracked 快照（合并中介）
+│     │  ├─ tasks/done/     ← tracked 快照（合并中介）
+│     │  ├─ tasks/current/  ← feature-a 独立运行时（gitignored）
 │     │  ├─ workspace/      ← feature-a 独立状态
-│     │  └─ tasks/          ← feature-a 任务
+│     │  └─ journal/        ← feature-a 独立归档
 │     └─ src/               ← feature-a 代码
 └─ .git/
    └─ worktrees/
