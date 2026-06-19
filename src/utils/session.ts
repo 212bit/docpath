@@ -1,8 +1,9 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, unlink } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { resolveDocpathDir, writeFileAtomic } from './file.js';
 import { withLock } from './lock.js';
+import { getGitTopLevel, listWorktrees } from './worktree.js';
 
 export const SESSION_SCHEMA_VERSION = 1;
 export const LEASE_SCHEMA_VERSION = 1;
@@ -227,4 +228,39 @@ export async function releaseExecutionLease(cwd: string, claim: LeaseClaim): Pro
     await releaseLease(cwd, claim.sessionId, stepLeaseResource(claim.taskId, claim.step));
   }
   await releaseLease(cwd, claim.sessionId, taskLeaseResource(claim.taskId));
+}
+
+export async function verifySessionCwd(cwd: string, sessionId: string): Promise<void> {
+  if (sessionId === DEFAULT_SESSION_ID) return;
+
+  let repoRoot: string;
+  try {
+    repoRoot = await getGitTopLevel(cwd);
+  } catch {
+    return;
+  }
+
+  let worktrees;
+  try {
+    worktrees = await listWorktrees(repoRoot);
+  } catch {
+    return;
+  }
+
+  const normalizedCwd = resolve(cwd);
+  for (const wt of worktrees) {
+    const sessionFilePath = join(wt.path, '.docpath', 'workspace', 'sessions', `${sessionId}.json`);
+    if (existsSync(sessionFilePath)) {
+      const normalizedWtPath = resolve(wt.path);
+      const rel = relative(normalizedWtPath, normalizedCwd);
+      const isInside = !rel.startsWith('..') && !isAbsolute(rel);
+      if (!isInside && normalizedWtPath !== normalizedCwd) {
+        throw new Error(
+          `[docpath] 跨目录门禁拦截: Session '${sessionId}' 已在 worktree '${normalizedWtPath}' 中被激活。\n` +
+          `当前工作目录为 '${normalizedCwd}'。请 cd 回正确的 worktree，以防干扰其他 Agent 的任务执行。`
+        );
+      }
+      return;
+    }
+  }
 }

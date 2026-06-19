@@ -2,13 +2,17 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-19T15:45:05.527Z
+> 扫描时间: 2026-06-19T16:19:36.380Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
+| R-217 | cwd-session-lock guard: verifySessionCwd + index.ts integration | active | P1 | 1 | T-20260619-cwd-session-lock-guard-verifysessioncwd- |
 | R-216 | Smart Git Merge Driver for Backlog and Rules Markdown files | proposed | P2 | 1 |  |
+| R-218 | 消除 spec.json/plan.json 内嵌 markdown 字段冗余 | proposed | P2 | 2 |  |
+| R-220 | breadcrumb.jsonl 按任务边界分隔，防止无限增长 | proposed | P2 | 2 |  |
+| R-219 | state.json 加 backlog_id 字段，减少跨文件读取 | proposed | P3 | 1 |  |
 
 ## 用途说明
 
