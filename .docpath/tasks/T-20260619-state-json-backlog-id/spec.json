@@ -3,14 +3,14 @@
   "kind": "spec",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-06-19T17:01:42.867Z",
-    "updated_at": "2026-06-19T17:01:42.867Z",
-    "content_sha256": "adf1a76f03a9dbbe9186cdeb85e216fa4b910d6e9eca97a94bbf11bc9e100add"
+    "created_at": "2026-06-19T17:15:10.168Z",
+    "updated_at": "2026-06-19T17:15:10.168Z",
+    "content_sha256": "d0f7ccb2ab07f6f9ff48b12f135141d70ff18941b4582f6fb0bbfbf77c7b9337"
   },
   "task_id": "T-20260619-state-json-backlog-id",
   "backlog_id": "R-219",
   "title": "T-20260619-state-json-backlog-id - state.json 加 backlog_id 字段，减少跨文件读取",
-  "generated_at": "2026-06-19T17:01:42.867Z",
+  "generated_at": "2026-06-19T17:15:10.168Z",
   "scope": {
     "included": [
       "state.json WorkflowState 接口新增 backlog_id 可选字段",
@@ -24,7 +24,9 @@
   },
   "major_change_gate": {
     "required": false,
-    "types": [],
+    "types": [
+      "其他"
+    ],
     "user_confirmed": "不需要（非重大变更）",
     "decision_brief_markdown": "- 当前问题: next/go 读 backlog_id 需要打开 spec.json\n- 目标: state.json 包含 backlog_id，减少一次 IO\n- 不做什么: 不改变 spec.json 作为 backlog_id 权威来源\n- 用户确认: 不需要（非重大变更）"
   },

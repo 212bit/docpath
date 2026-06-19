@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-06-19T17:01:55.512Z",
-    "updated_at": "2026-06-19T17:01:55.512Z",
-    "content_sha256": "6cd623e07cd5fd55831812160e0d1dbf6fa723e9835e359fe34ebce66a8d6993"
+    "created_at": "2026-06-19T17:13:00.510Z",
+    "updated_at": "2026-06-19T17:13:00.510Z",
+    "content_sha256": "03cb4ddaa18fe0652bd694ba9928aa4192442ea4318f01d082bbf34b512c544d"
   },
   "title": "执行计划",
-  "generated_at": "2026-06-19T17:01:55.512Z",
+  "generated_at": "2026-06-19T17:13:00.510Z",
   "steps": [
     {
       "id": "S1",
@@ -16,7 +16,7 @@
       "description": "在 WorkflowState 类型定义加 `backlog_id?: string | null`；backlog promote 在创建任务时从 spec.json/backlog item 读取 backlog_id 写入 state；agent enter 在进入执行时读取 spec.json 的 backlog_id 刷新 state",
       "acceptance": "tsc --noEmit 通过；state.json 有 backlog_id 字段；旧 state.json 缺 backlog_id 时读取正常",
       "dependencies": "无",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S2",
@@ -24,7 +24,7 @@
       "description": "generateAgentOutput 的 next_action YAML 输出新增 backlog_id 字段（来自 state.json）",
       "acceptance": "docpath next --agent 输出包含 backlog_id 行",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S3",
@@ -32,7 +32,7 @@
       "description": "pnpm test 全量绿；docpath check 通过",
       "acceptance": "全量测试绿；docpath check 通过",
       "dependencies": "S1, S2",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }
