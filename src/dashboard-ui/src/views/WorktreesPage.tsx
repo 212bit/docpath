@@ -76,7 +76,7 @@ export function WorktreesPage({ data }: { data: DashboardData }) {
           <article className="panel">
             <div className="panel-heading">
               <h3>Git Worktree List</h3>
-              <span>{worktrees.length} worktrees</span>
+              <span className="badge">{worktrees.length} worktrees</span>
             </div>
             <div className="table-surface">
               {worktrees.length === 0 ? (
@@ -94,32 +94,32 @@ export function WorktreesPage({ data }: { data: DashboardData }) {
                       style={{ gridTemplateColumns: '1.2fr 1fr 1fr auto' }}
                     >
                       <div>
-                        <strong title={wt.path}>{folderName}</strong>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={wt.path}>
+                        <strong title={wt.path} style={{ color: '#ffffff' }}>{folderName}</strong>
+                        <div style={{ fontSize: '0.78rem', color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={wt.path}>
                           {wt.path}
                         </div>
                       </div>
                       <div>
-                        <span className="badge" style={{ borderColor: '#0ea5e9', color: '#0284c7', background: 'rgba(14, 165, 233, 0.05)' }}>
+                        <span className="badge" style={{ borderColor: '#0ea5e9', color: '#0ea5e9', background: 'rgba(14, 165, 233, 0.08)' }}>
                           {wt.branch || 'detached HEAD'}
                         </span>
                       </div>
                       <div>
-                        <code style={{ fontSize: '0.78rem', color: '#64748b' }}>{wt.head.slice(0, 7)}</code>
+                        <code style={{ fontSize: '0.78rem', color: '#9ca3af', background: 'rgba(255,255,255,0.02)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>{wt.head.slice(0, 7)}</code>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         {hasSession && (
-                          <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', borderColor: '#10b981' }}>
+                          <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.15)' }}>
                             Session Active
                           </span>
                         )}
                         {hasLease && (
-                          <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', borderColor: '#f59e0b' }}>
+                          <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.15)' }}>
                             Leased
                           </span>
                         )}
                         {!hasSession && !hasLease && (
-                          <span className="badge" style={{ color: '#94a3b8' }}>
+                          <span className="badge" style={{ color: '#6b7280', borderColor: 'rgba(255,255,255,0.05)' }}>
                             Idle
                           </span>
                         )}
@@ -138,19 +138,22 @@ export function WorktreesPage({ data }: { data: DashboardData }) {
           <article className="panel">
             <div className="panel-heading">
               <h3>Active Sessions</h3>
-              <span>{sessions.length} running</span>
+              <span className="badge">{sessions.length} running</span>
             </div>
             <div style={{ display: 'grid', gap: '12px' }}>
               {sessions.length === 0 ? (
                 <div className="empty-state compact">No active agent sessions.</div>
               ) : (
                 sessions.map((sess) => (
-                  <div key={sess.session_id} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)', paddingBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>PID {sess.pid}</strong>
-                      <span className="badge" style={{ fontSize: '0.75rem' }}>{sess.session_id.slice(0, 8)}</span>
+                  <div key={sess.session_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="status-dot active" />
+                        <strong style={{ fontSize: '0.9rem', color: '#ffffff' }}>PID {sess.pid}</strong>
+                      </div>
+                      <span className="badge" style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{sess.session_id.slice(0, 8)}</span>
                     </div>
-                    <div style={{ fontSize: '0.82rem', color: '#475569', margin: '4px 0' }}>
+                    <div style={{ fontSize: '0.82rem', color: '#d1d5db', margin: '4px 0' }}>
                       Command: <code>{sess.command}</code>
                     </div>
                     {sess.task_id && (
@@ -158,7 +161,7 @@ export function WorktreesPage({ data }: { data: DashboardData }) {
                         Task: {sess.task_id} {sess.step ? `/ Step: ${sess.step}` : ''}
                       </div>
                     )}
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
                       Updated: {new Date(sess.updated_at).toLocaleTimeString()}
                     </div>
                   </div>
@@ -171,29 +174,32 @@ export function WorktreesPage({ data }: { data: DashboardData }) {
           <article className="panel">
             <div className="panel-heading">
               <h3>Lease Locks</h3>
-              <span>{leases.length} active</span>
+              <span className="badge">{leases.length} active</span>
             </div>
             <div style={{ display: 'grid', gap: '12px' }}>
               {leases.length === 0 ? (
                 <div className="empty-state compact">No active lease locks.</div>
               ) : (
                 leases.map((lease, idx) => (
-                  <div key={`${lease.resource}-${idx}`} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)', paddingBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <strong style={{ fontSize: '0.9rem', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={lease.resource}>
+                  <div key={`${lease.resource}-${idx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <strong style={{ fontSize: '0.9rem', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={lease.resource}>
                         {lease.resource.split('/').pop() || lease.resource}
                       </strong>
-                      <span className="badge" style={{ background: 'rgba(239, 68, 68, 0.05)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.1)', fontSize: '0.75rem' }}>
-                        LOCKED
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className="pulse-indicator" style={{ marginRight: '6px' }} />
+                        <span className="badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.15)', fontSize: '0.75rem' }}>
+                          LOCKED
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.82rem', color: '#475569', margin: '4px 0' }}>
+                    <div style={{ fontSize: '0.82rem', color: '#d1d5db', margin: '4px 0' }}>
                       Session: <code>{lease.session_id.slice(0, 8)}</code> (PID {lease.pid})
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#0ea5e9' }}>
                       Task: {lease.task_id} {lease.step ? `/ Step: ${lease.step}` : ''}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
                       Expires: {new Date(lease.expires_at).toLocaleTimeString()}
                     </div>
                   </div>

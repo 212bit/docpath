@@ -8,9 +8,9 @@ import { WorktreesPage } from './views/WorktreesPage';
 import './styles.css';
 
 const views = [
-  { to: '/', label: 'Overview', end: true },
-  { to: '/workboard', label: 'Workboard' },
-  { to: '/worktrees', label: 'Worktrees' },
+  { to: '/', label: 'Overview', icon: '◰', end: true },
+  { to: '/workboard', label: 'Workboard', icon: '◫' },
+  { to: '/worktrees', label: 'Worktrees', icon: '◲' },
 ];
 
 function projectStatus(project: { status?: string; phase?: string; gate?: string; task_id?: string }): string {
@@ -26,6 +26,7 @@ function AppShell() {
   const dashboard = useDashboardData();
   const [projectFilter, setProjectFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const filteredProjects = useMemo(() => {
     const query = projectFilter.trim().toLowerCase();
@@ -45,20 +46,26 @@ function AppShell() {
   const isAllProjects = dashboard.selectedRoot === ALL_PROJECTS;
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <aside className="sidebar" aria-label="Dashboard navigation">
         <div className="brand">
-          <span className="brand-mark">D</span>
-          <span>
-            <strong>DocPath</strong>
-            <small>Read-only dashboard</small>
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span className="brand-mark">D</span>
+            <span>
+              <strong>DocPath</strong>
+              <small>Read-only dashboard</small>
+            </span>
+          </div>
+          <button className="sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title="Toggle Sidebar" type="button">
+            {sidebarCollapsed ? '❯' : '❮'}
+          </button>
         </div>
 
         <nav className="nav-list" aria-label="Views">
           {views.map((view) => (
             <NavLink key={view.to} to={view.to} end={view.end} className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-              {view.label}
+              <span style={{ marginRight: sidebarCollapsed ? '0' : '8px', fontSize: '1.1rem' }}>{view.icon}</span>
+              <span>{view.label}</span>
             </NavLink>
           ))}
         </nav>
