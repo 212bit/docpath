@@ -648,6 +648,33 @@ describe('install agent adapters', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('install registers the DocPath markdown merge driver for backlog and rules files', () => {
+    const cwd = mkWorkspace();
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, '.gitattributes'), '*.md text\n');
+
+    const output = run(`install --cwd ${cwd} --target codex`, cwd);
+
+    assert.match(output, /Git merge driver 已注册/);
+    assert.match(output, /Git attributes 已映射 DocPath backlog\/rules markdown/);
+
+    const config = readFileSync(join(cwd, '.git', 'config'), 'utf-8');
+    assert.match(config, /\[merge "docpath-markdown"\]/);
+    assert.match(config, /name = DocPath structured markdown merge driver/);
+    assert.match(config, /driver = \.\/\.docpath\/bin\/docpath merge-driver %O %A %B %P/);
+
+    const attributes = readFileSync(join(cwd, '.gitattributes'), 'utf-8');
+    assert.match(attributes, /^\*\.md text$/m);
+    assert.match(attributes, /^\.docpath\/backlog\/\*\.md merge=docpath-markdown$/m);
+    assert.match(attributes, /^\.docpath\/backlog\/archived\/\*\.md merge=docpath-markdown$/m);
+    assert.match(attributes, /^\.docpath\/rules\/\*\.md merge=docpath-markdown$/m);
+
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    const attributesAfter = readFileSync(join(cwd, '.gitattributes'), 'utf-8');
+    assert.equal((attributesAfter.match(/merge=docpath-markdown/g) || []).length, 3);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('does not overwrite existing protocol files without --force and prints a diff hint', () => {
     const cwd = mkWorkspace();
     writeFileSync(join(cwd, 'OPENCODE.md'), '# Custom Agent Rules\n\nDo not overwrite.\n');

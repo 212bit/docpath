@@ -25,6 +25,7 @@ const CLI_ENTRY = [
   'src/utils/lock.ts',
   'src/utils/session.ts',
   'src/utils/git-closeout.ts',
+  'src/utils/merge-driver.ts',
   'src/utils/payload.ts',
   'src/utils/context-index.ts',
   'src/utils/deliverables.ts',

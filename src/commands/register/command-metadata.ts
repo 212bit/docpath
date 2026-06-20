@@ -55,6 +55,7 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'continue', description: 'Read recovery context and route hints', visibility: 'advanced' },
   { name: 'resume', description: 'Compatibility recovery view', visibility: 'advanced' },
   { name: 'diff', description: 'Inspect scoped Git diffs', visibility: 'advanced' },
+  { name: 'merge-driver', description: 'Resolve DocPath markdown files as a Git merge driver', visibility: 'hidden' },
   { name: 'run', description: 'Low-level runtime lifecycle primitive', visibility: 'hidden' },
   { name: 'compact', description: 'Persist compact handoff context', visibility: 'hidden' },
   { name: 'discover', description: 'List context files for diagnostics', visibility: 'hidden' },

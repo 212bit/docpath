@@ -1,6 +1,7 @@
 import type { CAC } from 'cac';
 import { docsCommand } from '../docs.js';
 import { installCommand } from '../install.js';
+import { mergeDriverCommand } from '../merge-driver.js';
 import { revealCommand } from '../reveal.js';
 import { unlinkCommand } from '../unlink.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
@@ -56,6 +57,7 @@ export function registerDocsInstallCommands(cli: CAC): void {
     });
 
   registerInstallCommand(cli);
+  registerMergeDriverCommand(cli);
 }
 
 function registerInstallCommand(cli: CAC): void {
@@ -80,6 +82,30 @@ function registerInstallCommand(cli: CAC): void {
         json: !!options.json,
         hooks: !!options.hooks,
         hookMode: options.hookMode || options['hook-mode'],
+      });
+    });
+}
+
+function registerMergeDriverCommand(cli: CAC): void {
+  cli.command('merge-driver <ancestor> <current> <other> [path]', 'Git merge driver for DocPath backlog and rules markdown')
+    .option('--cwd <path>', '项目目录')
+    .action(async (
+      ancestor: string,
+      current: string,
+      other: string,
+      pathOrOptions: string | { cwd?: string } | undefined,
+      maybeOptions?: { cwd?: string },
+    ) => {
+      const path = typeof pathOrOptions === 'string' ? pathOrOptions : undefined;
+      const options = typeof pathOrOptions === 'object' && pathOrOptions !== null
+        ? pathOrOptions
+        : maybeOptions || {};
+      await mergeDriverCommand({
+        cwd: options.cwd || process.cwd(),
+        ancestor,
+        current,
+        other,
+        path,
       });
     });
 }
