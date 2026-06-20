@@ -2,19 +2,15 @@ import React, { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
 import { ALL_PROJECTS, useDashboardData } from './state/useDashboardData';
-import { BacklogPage } from './views/BacklogPage';
 import { DashboardPage } from './views/DashboardPage';
-import { EventsPage } from './views/EventsPage';
-import { GatesPage } from './views/GatesPage';
-import { TasksPage } from './views/TasksPage';
+import { WorkboardPage } from './views/WorkboardPage';
+import { WorktreesPage } from './views/WorktreesPage';
 import './styles.css';
 
 const views = [
   { to: '/', label: 'Overview', end: true },
-  { to: '/backlog', label: 'Backlog' },
-  { to: '/tasks', label: 'Tasks' },
-  { to: '/gates', label: 'Gates' },
-  { to: '/events', label: 'Events' },
+  { to: '/workboard', label: 'Workboard' },
+  { to: '/worktrees', label: 'Worktrees' },
 ];
 
 function projectStatus(project: { status?: string; phase?: string; gate?: string; task_id?: string }): string {
@@ -146,10 +142,8 @@ function AppShell() {
         <main className="content">
           <Routes>
             <Route path="/" element={<DashboardPage data={dashboard} />} />
-            <Route path="/backlog" element={<BacklogPage data={dashboard} />} />
-            <Route path="/tasks" element={<TasksPage data={dashboard} />} />
-            <Route path="/gates" element={<GatesPage data={dashboard} />} />
-            <Route path="/events" element={<EventsPage data={dashboard} />} />
+            <Route path="/workboard" element={<WorkboardPage data={dashboard} />} />
+            <Route path="/worktrees" element={<WorktreesPage data={dashboard} />} />
           </Routes>
         </main>
       </div>

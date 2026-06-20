@@ -14,6 +14,7 @@ import {
   type ProjectSummary,
   type ReviewPayload,
   type WorkflowState,
+  type PlanStep,
 } from '../lib/api';
 
 export const ALL_PROJECTS = '__all_projects__';
@@ -25,6 +26,7 @@ export type DashboardData = {
   selectedSnapshot: ProjectSnapshot | null;
   summary: DashboardSummary | null;
   state: WorkflowState | null;
+  steps: PlanStep[];
   checks: CheckHistoryEntry[];
   review: ReviewPayload | null;
   backlog: BacklogItem[];
@@ -42,6 +44,7 @@ export function useDashboardData(): DashboardData {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [selectedRoot, setSelectedRoot] = useState<string>(ALL_PROJECTS);
   const [state, setState] = useState<WorkflowState | null>(null);
+  const [steps, setSteps] = useState<PlanStep[]>([]);
   const [checks, setChecks] = useState<CheckHistoryEntry[]>([]);
   const [review, setReview] = useState<ReviewPayload | null>(null);
   const [backlog, setBacklog] = useState<BacklogItem[]>([]);
@@ -102,7 +105,7 @@ export function useDashboardData(): DashboardData {
       setDetailLoading(true);
       setDetailError(null);
       try {
-        const [nextState, nextChecks, nextReview, nextBacklog, nextEvents] = await Promise.all([
+        const [nextStatePayload, nextChecks, nextReview, nextBacklog, nextEvents] = await Promise.all([
           fetchState(selectedRoot),
           fetchChecks(selectedRoot),
           fetchReview(selectedRoot),
@@ -110,7 +113,8 @@ export function useDashboardData(): DashboardData {
           fetchEvents(selectedRoot, 100),
         ]);
         if (cancelled) return;
-        setState(nextState);
+        setState(nextStatePayload ? nextStatePayload.state : null);
+        setSteps(nextStatePayload ? nextStatePayload.steps : []);
         setChecks(nextChecks);
         setReview(nextReview);
         setBacklog(nextBacklog);
@@ -144,6 +148,7 @@ export function useDashboardData(): DashboardData {
     selectedSnapshot,
     summary,
     state,
+    steps,
     checks,
     review,
     backlog,
@@ -155,5 +160,5 @@ export function useDashboardData(): DashboardData {
     detailError,
     refresh,
     selectProject,
-  }), [projects, selectedRoot, selectedProject, selectedSnapshot, summary, state, checks, review, backlog, events, eventsTruncated, loading, detailLoading, error, detailError, refresh, selectProject]);
+  }), [projects, selectedRoot, selectedProject, selectedSnapshot, summary, state, steps, checks, review, backlog, events, eventsTruncated, loading, detailLoading, error, detailError, refresh, selectProject]);
 }

@@ -164,9 +164,19 @@ export async function fetchSummary(): Promise<DashboardSummary> {
   return await getJson<DashboardSummary>('/api/summary');
 }
 
-export async function fetchState(root: string | null): Promise<WorkflowState | null> {
-  const payload = await getJson<{ state: WorkflowState | null }>(`/api/state${rootQuery(root)}`);
-  return payload.state;
+export type PlanStep = {
+  id: string;
+  name: string;
+  description: string;
+  acceptance: string;
+  dependencies: string;
+  done: boolean;
+  marker: ' ' | 'x' | '~' | '!';
+};
+
+export async function fetchState(root: string | null): Promise<{ state: WorkflowState | null; steps: PlanStep[] }> {
+  const payload = await getJson<{ state: WorkflowState | null; steps: PlanStep[] }>(`/api/state${rootQuery(root)}`);
+  return { state: payload.state, steps: payload.steps || [] };
 }
 
 export async function fetchChecks(root: string | null): Promise<CheckHistoryEntry[]> {
@@ -191,3 +201,49 @@ export async function fetchEvents(root: string | null, limit = 100): Promise<{ e
   );
   return payload;
 }
+
+export type WorktreeInfo = {
+  path: string;
+  branch: string;
+  head: string;
+  bare: boolean;
+  detached: boolean;
+};
+
+export type SessionRecord = {
+  schema_version: number;
+  kind: 'session';
+  session_id: string;
+  pid: number;
+  cwd: string;
+  command: string;
+  task_id?: string;
+  step?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LeaseRecord = {
+  schema_version: number;
+  kind: 'lease';
+  resource: string;
+  session_id: string;
+  pid: number;
+  command: string;
+  task_id: string;
+  step?: string;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+};
+
+export type WorkspacesPayload = {
+  worktrees: WorktreeInfo[];
+  sessions: SessionRecord[];
+  leases: LeaseRecord[];
+};
+
+export async function fetchWorkspaces(): Promise<WorkspacesPayload> {
+  return await getJson<WorkspacesPayload & JsonObject>('/api/workspaces');
+}
+

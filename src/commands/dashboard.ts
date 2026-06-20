@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, stat, readdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { basename, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
@@ -9,6 +10,7 @@ import { parsePlanSteps } from '../utils/doc-parser.js';
 import { exists, readFileSafe, resolveDocpathDir } from '../utils/file.js';
 import { detectInstallAssetDrift, isInstallTarget, readInstallMetadata } from '../utils/install-core.js';
 import { readReviewMarkdown } from '../utils/workspace-evidence.js';
+import { listWorktrees } from '../utils/worktree.js';
 
 type DashboardOptions = {
   cwd?: string;
@@ -575,7 +577,7 @@ async function handleDashboardFetchInner(request: Request, options: DashboardReq
     return jsonResponse(200, {
       ok: true,
       mode: 'readonly',
-      endpoints: ['/api/projects', '/api/summary', '/api/state', '/api/checks', '/api/review', '/api/backlog', '/api/events'],
+      endpoints: ['/api/projects', '/api/summary', '/api/state', '/api/checks', '/api/review', '/api/backlog', '/api/events', '/api/workspaces'],
     });
   }
 
@@ -589,7 +591,23 @@ async function handleDashboardFetchInner(request: Request, options: DashboardReq
 
   if (path === '/api/state') {
     const projectRoot = await resolveRequestedRoot(url, options.cwd);
-    return jsonResponse(200, { projectRoot, state: await readProjectState(projectRoot) });
+    const state = asRecord(await readProjectState(projectRoot));
+    const docpathDir = await resolveDocpathDir(projectRoot);
+    const taskId = String(state.task_id || '');
+    const planPaths = [
+      join(docpathDir, 'tasks', 'current', 'plan.md'),
+      taskId ? join(docpathDir, 'tasks', taskId, 'plan.md') : '',
+    ].filter(Boolean);
+
+    let steps: any[] = [];
+    for (const planPath of planPaths) {
+      const content = await readFileSafe(planPath);
+      if (content) {
+        steps = parsePlanSteps(content);
+        break;
+      }
+    }
+    return jsonResponse(200, { projectRoot, state, steps });
   }
 
   if (path === '/api/checks') {
@@ -611,6 +629,46 @@ async function handleDashboardFetchInner(request: Request, options: DashboardReq
     const projectRoot = await resolveRequestedRoot(url, options.cwd);
     const limit = Math.max(1, Math.min(200, Number(url.searchParams.get('limit') || 100)));
     return jsonResponse(200, { projectRoot, limit, ...await readDashboardEvents(projectRoot, limit) });
+  }
+
+  if (path === '/api/workspaces') {
+    const docpathDir = await resolveDocpathDir(options.cwd);
+    let worktrees: any[] = [];
+    try {
+      worktrees = await listWorktrees(options.cwd);
+    } catch {
+      // Ignore
+    }
+
+    const sessionsPath = join(docpathDir, 'workspace', 'sessions');
+    let sessions: any[] = [];
+    if (existsSync(sessionsPath)) {
+      try {
+        const files = await readdir(sessionsPath);
+        for (const file of files) {
+          if (file.endsWith('.json')) {
+            const content = await readFile(join(sessionsPath, file), 'utf-8');
+            sessions.push(JSON.parse(content));
+          }
+        }
+      } catch {}
+    }
+
+    const leasesPath = join(docpathDir, 'workspace', 'leases');
+    let leases: any[] = [];
+    if (existsSync(leasesPath)) {
+      try {
+        const files = await readdir(leasesPath);
+        for (const file of files) {
+          if (file.endsWith('.json')) {
+            const content = await readFile(join(leasesPath, file), 'utf-8');
+            leases.push(JSON.parse(content));
+          }
+        }
+      } catch {}
+    }
+
+    return jsonResponse(200, { worktrees, sessions, leases });
   }
 
   if (!path.startsWith('/api/')) return await staticDashboardResponse(path);
