@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-20T08:25:31.364Z",
+    "updated_at": "2026-06-20T08:25:31.364Z",
+    "content_sha256": "ce8764e6c457da93bfaf664c32afe6461a2d8e27b948df8ca1712d94a88aa1d8"
+  },
+  "task_id": "T-20260620-framework-decision-gate",
+  "backlog_id": "R-222",
+  "title": "T-20260620-framework-decision-gate - 前端技术栈决策门禁 (Framework Decision Gate)",
+  "generated_at": "2026-06-20T08:25:31.364Z",
+  "scope": {
+    "included": [
+      "`frontend-stack.md` 模板 + `write-design --kind stack` 落盘。",
+      "`ui-gate.ts` framework-decision 判定 + `go.ts` 接入。",
+      "`docpath-design` skill 改写(序列首步 + 提问清单 + 加载提示)。",
+      "配套测试扩展(ui-gate / go-ui-gate)。"
+    ],
+    "excluded": [
+      "不内置任何框架专属 skill(react/vue/tailwind 等),只做\"决策记录 + 加载提示\"。",
+      "不改 DocPath 自身的 Dashboard UI。",
+      "不引入对讨论\"深度\"的自动度量(门禁只校验决策落痕 + 备选理由)。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "已确认(含 A=纯静态强制写被否决备选; B=先收口旧任务)。",
+    "decision_brief_markdown": "- 当前问题: UI 设计序列缺\"先定技术栈→充分讨论→再画图\"前置环节,门禁逼出视觉稿但讨论不充分(Dashboard 反复不符预期的根因)。\n- 目标: 在序列最前插入 Framework Decision 硬门禁,强制选定栈+≥1被否决备选+理由,并由 docpath-design skill 组织框架讨论。\n- 可选方案: (A)只加字段门禁;(B)门禁+备选理由+skill 提问清单(选定);(C)内置全套框架 skill。\n- 推荐方案: B — 门禁兜底决策落痕,skill 组织讨论深度,不内置框架 skill。\n- 不做什么: 不内置框架 skill;不改 Dashboard;不自动度量讨论深度。\n- 成本: 中等。代码改动轻(ui-gate/go/write-design),重头在 skill 内容与测试。\n- 风险: 门禁只能保证决策落痕+备选理由,无法保证讨论深度(接受的现实,由 skill 兜底)。\n- 回滚方案: 回滚本任务提交;门禁为 required 任务新增,exempt 路径不变,不影响存量。\n- 用户确认: 已确认(含 A=纯静态强制写被否决备选; B=先收口旧任务)。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "新增产物模板 `frontend-stack.md`，结构含「选定栈(JS/CSS/组件库)」「被否决备选(≥1,带理由)」「约束」「待加载 skill」。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "`ui-gate.ts` 新增 `missingFrameworkDecision`，go 前置硬门禁中排在 design-preview / design-approval **之前**。校验：选定栈 JS 项非占位；至少 1 个被否决备选且带理由。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "`go.ts` 接入 framework-decision 门禁，required 任务缺决策时拦截并给出明确指引。",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "`write-design` 支持 `--kind stack`，把 framework-decision 内容落盘为 `frontend-stack.md`。",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "改写 `docpath-design` skill：将 Framework Decision 列为序列第一步，新增框架讨论提问清单（是否需要框架/JS选型/CSS方案/组件库/纯静态），并在选定后提示加载对应框架 skill（不内置框架 skill）。",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "纯静态(无框架)是合法选定，但同样强制写\"为什么不用框架\"作为被否决备选。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容；老的已完成 UI 任务不受影响。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "增量 UI 任务不被惩罚——允许写\"沿用既定栈 X,理由:一致性\"+\"重写为其他栈—理由:成本不划算\",门禁仍通过。",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "spec 4.1 声明 exempt(不涉及产品 UI)的任务,framework-decision 门禁不触发。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "required UI 任务在缺 `frontend-stack.md` 或缺被否决备选/理由时,`docpath go` 被拦截并给出明确指引。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`frontend-stack.md` 含完整选定栈+≥1被否决备选+理由时,framework-decision 门禁放行,序列推进到 design-preview。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "纯静态选定但缺被否决备选时仍被拦截;补上\"为什么不用框架\"后放行。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "spec 4.1 exempt 任务不触发 framework-decision 门禁。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "`docpath-design` skill 以 Framework Decision 为序列首步,含框架讨论提问清单与加载提示。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "`pnpm test` 全绿,含新增 framework-decision 用例;`docpath check` 通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: UI 设计序列缺\"先定技术栈→充分讨论→再画图\"前置环节,门禁逼出视觉稿但讨论不充分(Dashboard 反复不符预期的根因)。\n- 目标: 在序列最前插入 Framework Decision 硬门禁,强制选定栈+≥1被否决备选+理由,并由 docpath-design skill 组织框架讨论。\n- 可选方案: (A)只加字段门禁;(B)门禁+备选理由+skill 提问清单(选定);(C)内置全套框架 skill。\n- 推荐方案: B — 门禁兜底决策落痕,skill 组织讨论深度,不内置框架 skill。\n- 不做什么: 不内置框架 skill;不改 Dashboard;不自动度量讨论深度。\n- 成本: 中等。代码改动轻(ui-gate/go/write-design),重头在 skill 内容与测试。\n- 风险: 门禁只能保证决策落痕+备选理由,无法保证讨论深度(接受的现实,由 skill 兜底)。\n- 回滚方案: 回滚本任务提交;门禁为 required 任务新增,exempt 路径不变,不影响存量。\n- 用户确认: 已确认(含 A=纯静态强制写被否决备选; B=先收口旧任务)。"
+}
