@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-20T12:30:00.465Z",
+    "updated_at": "2026-06-20T12:30:00.465Z",
+    "content_sha256": "7d800611607395966b73e71881057db42eb09f0d96b88aebc57dbb9ce42a5e24"
+  },
+  "task_id": "T-20260620-breadcrumb-jsonl",
+  "backlog_id": "R-220",
+  "title": "T-20260620-breadcrumb-jsonl - breadcrumb.jsonl 按任务边界分隔，防止无限增长",
+  "generated_at": "2026-06-20T12:30:00.465Z",
+  "scope": {
+    "included": [
+      "src/engine/breadcrumb.ts 的任务级 JSONL 存储、读取和懒迁移。",
+      "必要的读取方兼容验证，重点覆盖 next/check/reveal/runtime/journal 等依赖 readBreadcrumb 的路径。",
+      "tests/breadcrumb.test.mjs 及相关 focused tests。"
+    ],
+    "excluded": [
+      "不引入数据库或外部存储。",
+      "不删除 workspace/breadcrumb.jsonl 或 workspace/breadcrumb.md。",
+      "不重写 dashboard 事件模型；仅保持现有读取兼容。",
+      "不改变用户手动操作协议，仍通过 DocPath CLI 读写 breadcrumb。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "2026-06-20 用户明确回复“同意继续”，确认采用 task-local JSONL、保留旧 workspace breadcrumb 兼容视图、不引入数据库、不删除旧全局 breadcrumb 文件。",
+    "decision_brief_markdown": "- 当前问题: workspace/breadcrumb.jsonl 作为跨任务追加真源，会把当前任务恢复上下文和历史任务事件耦合在一起；长期运行后读取、漂移判断和上下文摘要都可能受无界历史影响。\n- 目标: 让 breadcrumb 事件按 taskId 拥有任务级真源，同时保持旧 workspace breadcrumb 文件可读可回退，避免破坏现有 CLI/Agent 工作流。\n- 背景: R-220 已经通过 brainstorm dry-run 分析并被 accept/promote；S1 技术分析确认核心边界在 src/engine/breadcrumb.ts，读取方包括 next/status/reveal/check/journal/runtime/dashboard 等。\n- 可选方案: A 继续依赖全局 JSONL + cleanup；B 新增 task-local JSONL 并保留全局兼容视图；C 引入数据库/索引层统一事件存储。\n- 推荐方案: B。它解决当前任务读取边界问题，同时避免数据库迁移和大规模调用方改动。\n- 不做什么: 不删除 legacy workspace/breadcrumb.jsonl；不改变用户命令协议；不把 dashboard 事件模型纳入本次重构。\n- 成本: 中等。核心实现集中，但需要覆盖迁移、兼容读取、任务切换和质量门禁回归。\n- 风险: 默认读取语义改变可能影响依赖全局历史的报告命令；迁移逻辑若有缺陷可能漏读旧事件；cleanup/gc 需要继续理解 legacy 视图。\n- 回滚方案: 回滚本任务提交后恢复全局 breadcrumb 真源；保留的 workspace/breadcrumb.jsonl 和 breadcrumb.md 可继续作为旧实现输入。\n- 用户确认: 2026-06-20 用户明确回复“同意继续”，确认采用 task-local JSONL、保留旧 workspace breadcrumb 兼容视图、不引入数据库、不删除旧全局 breadcrumb 文件。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "breadcrumb 写入应按 taskId 产生任务级 JSONL 真源，使新任务或任务切换后的当前任务上下文不依赖无限增长的全局 workspace/breadcrumb.jsonl。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "readBreadcrumb / readRecentBreadcrumbEntries 等公共读取边界应保持向后兼容；当存在当前任务 task-scoped breadcrumb 时默认读取当前任务切片，否则回退旧 workspace/breadcrumb.jsonl 或 breadcrumb.md。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "旧项目首次写入时应能从 legacy workspace/breadcrumb.jsonl 或 breadcrumb.md 懒迁移同 taskId 历史事件，不丢失已有 breadcrumb 历史。",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "workspace/breadcrumb.jsonl 与 workspace/breadcrumb.md 保持兼容视图和近期视图，现有命令、模板和手工 debug 路径不应失效。",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "增加自动化测试覆盖任务级写入、旧全局 JSONL 回退/迁移、任务切换隔离、next/check/reveal 等读取方兼容，以及大文件增长控制。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持现有 DocPath 生命周期命令和 Agent 协议兼容。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "不删除 legacy workspace/breadcrumb.jsonl；先兼容再逐步收敛，降低迁移风险。",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "当前任务读取路径应避免无界扫描全局历史；显式报告/归档场景可继续聚合历史。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "新任务或任务切换时 breadcrumb 事件写入任务级 JSONL，当前任务 readBreadcrumb 默认读取当前任务切片。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "旧 workspace/breadcrumb.jsonl 和 breadcrumb.md 仍可被读取；首次写入能把同 taskId 历史事件迁移到任务级 JSONL。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "next/status/check/reveal 等读取近期事件的命令保持兼容，不因任务级存储产生 plan/breadcrumb 漂移误报。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "workspace/breadcrumb.jsonl 与 breadcrumb.md 继续作为兼容/近期视图存在，compact --cleanup 行为不回归。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "自动化测试覆盖新旧格式、任务切换、迁移和大文件增长控制。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "pnpm test、docpath check、docpath review 通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: workspace/breadcrumb.jsonl 作为跨任务追加真源，会把当前任务恢复上下文和历史任务事件耦合在一起；长期运行后读取、漂移判断和上下文摘要都可能受无界历史影响。\n- 目标: 让 breadcrumb 事件按 taskId 拥有任务级真源，同时保持旧 workspace breadcrumb 文件可读可回退，避免破坏现有 CLI/Agent 工作流。\n- 背景: R-220 已经通过 brainstorm dry-run 分析并被 accept/promote；S1 技术分析确认核心边界在 src/engine/breadcrumb.ts，读取方包括 next/status/reveal/check/journal/runtime/dashboard 等。\n- 可选方案: A 继续依赖全局 JSONL + cleanup；B 新增 task-local JSONL 并保留全局兼容视图；C 引入数据库/索引层统一事件存储。\n- 推荐方案: B。它解决当前任务读取边界问题，同时避免数据库迁移和大规模调用方改动。\n- 不做什么: 不删除 legacy workspace/breadcrumb.jsonl；不改变用户命令协议；不把 dashboard 事件模型纳入本次重构。\n- 成本: 中等。核心实现集中，但需要覆盖迁移、兼容读取、任务切换和质量门禁回归。\n- 风险: 默认读取语义改变可能影响依赖全局历史的报告命令；迁移逻辑若有缺陷可能漏读旧事件；cleanup/gc 需要继续理解 legacy 视图。\n- 回滚方案: 回滚本任务提交后恢复全局 breadcrumb 真源；保留的 workspace/breadcrumb.jsonl 和 breadcrumb.md 可继续作为旧实现输入。\n- 用户确认: 2026-06-20 用户明确回复“同意继续”，确认采用 task-local JSONL、保留旧 workspace breadcrumb 兼容视图、不引入数据库、不删除旧全局 breadcrumb 文件。"
+}

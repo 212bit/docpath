@@ -142,7 +142,8 @@ export function formatEntry(entry: BreadcrumbEntry): string {
  * 重新写入文件。返回被裁剪的数量。
  */
 async function truncateBreadcrumbUnlocked(projectRoot: string): Promise<number> {
-  const summary = await readBreadcrumb(projectRoot);
+  const jsonlEntries = await readBreadcrumbJsonl(projectRoot);
+  const summary = jsonlEntries !== null ? summarizeBreadcrumb(jsonlEntries) : await readBreadcrumbMarkdown(projectRoot);
 
   if (summary.entries.length <= MAX_ENTRIES) {
     return 0;
@@ -177,6 +178,11 @@ function breadcrumbPath(projectRoot: string): string {
 
 function breadcrumbJsonlPath(projectRoot: string): string {
   return join(projectRoot, '.docpath', 'workspace', 'breadcrumb.jsonl');
+}
+
+function taskBreadcrumbJsonlPath(projectRoot: string, taskId: string): string | null {
+  if (!/^[A-Za-z0-9._-]+$/.test(taskId)) return null;
+  return join(projectRoot, '.docpath', 'tasks', taskId, 'breadcrumb.jsonl');
 }
 
 function breadcrumbLockPath(projectRoot: string): string {
@@ -231,8 +237,7 @@ function summarizeBreadcrumb(entries: BreadcrumbEntry[]): BreadcrumbSummary {
   };
 }
 
-async function readBreadcrumbJsonl(projectRoot: string): Promise<BreadcrumbEntry[] | null> {
-  const path = breadcrumbJsonlPath(projectRoot);
+async function readBreadcrumbJsonlFile(path: string): Promise<BreadcrumbEntry[] | null> {
   let content = '';
   try {
     content = await readFile(path, 'utf-8');
@@ -265,17 +270,33 @@ async function readBreadcrumbJsonl(projectRoot: string): Promise<BreadcrumbEntry
   return entries;
 }
 
-async function writeBreadcrumbJsonl(projectRoot: string, entries: BreadcrumbEntry[]): Promise<void> {
-  const path = breadcrumbJsonlPath(projectRoot);
+async function readBreadcrumbJsonl(projectRoot: string): Promise<BreadcrumbEntry[] | null> {
+  return readBreadcrumbJsonlFile(breadcrumbJsonlPath(projectRoot));
+}
+
+async function readTaskBreadcrumbJsonl(projectRoot: string, taskId: string): Promise<BreadcrumbEntry[] | null> {
+  const path = taskBreadcrumbJsonlPath(projectRoot, taskId);
+  if (!path) return null;
+  return readBreadcrumbJsonlFile(path);
+}
+
+async function writeBreadcrumbJsonlFile(path: string, entries: BreadcrumbEntry[]): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   const content = entries.map((entry) => JSON.stringify(toJsonlRecord(entry))).join('\n');
   await writeFileAtomic(path, content ? `${content}\n` : '');
 }
 
-async function appendBreadcrumbJsonl(projectRoot: string, entry: BreadcrumbEntry): Promise<void> {
-  const path = breadcrumbJsonlPath(projectRoot);
+async function writeBreadcrumbJsonl(projectRoot: string, entries: BreadcrumbEntry[]): Promise<void> {
+  await writeBreadcrumbJsonlFile(breadcrumbJsonlPath(projectRoot), entries);
+}
+
+async function appendBreadcrumbJsonlFile(path: string, entry: BreadcrumbEntry): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   await appendFile(path, `${JSON.stringify(toJsonlRecord(entry))}\n`, 'utf-8');
+}
+
+async function appendBreadcrumbJsonl(projectRoot: string, entry: BreadcrumbEntry): Promise<void> {
+  await appendBreadcrumbJsonlFile(breadcrumbJsonlPath(projectRoot), entry);
 }
 
 async function renderBreadcrumbMarkdown(projectRoot: string, entries: BreadcrumbEntry[]): Promise<void> {
@@ -288,6 +309,41 @@ async function ensureBreadcrumbJsonl(projectRoot: string): Promise<void> {
   const legacy = await readBreadcrumbMarkdown(projectRoot);
   if (legacy.entries.length === 0) return;
   await writeBreadcrumbJsonl(projectRoot, legacy.entries.slice(-MAX_ENTRIES));
+}
+
+async function readActiveTaskId(projectRoot: string): Promise<string | null> {
+  try {
+    const raw = await readFile(join(projectRoot, '.docpath', 'workspace', 'state.json'), 'utf-8');
+    const parsed = JSON.parse(raw) as { task_id?: unknown };
+    return typeof parsed.task_id === 'string' && parsed.task_id ? parsed.task_id : null;
+  } catch {
+    return null;
+  }
+}
+
+async function seedTaskBreadcrumbJsonl(projectRoot: string, taskId: string): Promise<BreadcrumbEntry[] | null> {
+  const path = taskBreadcrumbJsonlPath(projectRoot, taskId);
+  if (!path) return null;
+
+  const existing = await readBreadcrumbJsonlFile(path);
+  if (existing !== null) return existing;
+
+  const globalEntries = await readBreadcrumbJsonl(projectRoot);
+  const taskEntries = (globalEntries || []).filter((entry) => entry.taskId === taskId);
+  if (taskEntries.length > 0) await writeBreadcrumbJsonlFile(path, taskEntries);
+  return taskEntries;
+}
+
+async function appendTaskBreadcrumbJsonl(projectRoot: string, entry: BreadcrumbEntry): Promise<void> {
+  const path = taskBreadcrumbJsonlPath(projectRoot, entry.taskId);
+  if (!path) return;
+
+  const existing = await seedTaskBreadcrumbJsonl(projectRoot, entry.taskId);
+  if (existing && existing.length > 0) {
+    await writeBreadcrumbJsonlFile(path, [...existing, entry]);
+    return;
+  }
+  await appendBreadcrumbJsonlFile(path, entry);
 }
 
 /**
@@ -313,7 +369,8 @@ export async function writeBreadcrumb(
 
     // 去重检查：只针对 done 状态
     if (entry.status === 'done') {
-      const summary = await readBreadcrumb(projectRoot);
+      const taskEntries = entry.taskId ? await seedTaskBreadcrumbJsonl(projectRoot, entry.taskId) : null;
+      const summary = taskEntries !== null ? summarizeBreadcrumb(taskEntries) : await readBreadcrumb(projectRoot);
       const normalizedStep = normalizeStepName(entry.step);
       const latestForStep = [...summary.entries].reverse().find(
         (e) => e.taskId === entry.taskId &&
@@ -338,6 +395,7 @@ export async function writeBreadcrumb(
     }
 
     await appendFile(path, line, 'utf-8');
+    await appendTaskBreadcrumbJsonl(projectRoot, nextEntry);
     await appendBreadcrumbJsonl(projectRoot, nextEntry);
 
     // 截断轮转：超过 MAX_ENTRIES 时裁剪最旧记录（静默执行，不输出日志）
@@ -357,6 +415,12 @@ export async function writeBreadcrumb(
  * @param projectRoot 项目根目录
  */
 export async function readBreadcrumb(projectRoot: string): Promise<BreadcrumbSummary> {
+  const activeTaskId = await readActiveTaskId(projectRoot);
+  if (activeTaskId) {
+    const taskEntries = await readTaskBreadcrumbJsonl(projectRoot, activeTaskId);
+    if (taskEntries !== null) return summarizeBreadcrumb(taskEntries);
+  }
+
   const jsonlEntries = await readBreadcrumbJsonl(projectRoot);
   if (jsonlEntries !== null) return summarizeBreadcrumb(jsonlEntries);
   return readBreadcrumbMarkdown(projectRoot);

@@ -11,8 +11,21 @@ const { writeBreadcrumb, readBreadcrumb, readRecentBreadcrumbEntries, truncateBr
 
 const BC_PATH = (dp) => join(dp, '.docpath', 'workspace', 'breadcrumb.md');
 const BC_JSONL_PATH = (dp) => join(dp, '.docpath', 'workspace', 'breadcrumb.jsonl');
+const TASK_BC_JSONL_PATH = (dp, taskId) => join(dp, '.docpath', 'tasks', taskId, 'breadcrumb.jsonl');
 const readRaw = (dp) => readFileSync(BC_PATH(dp), 'utf-8');
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
+
+function writeActiveTaskState(root, taskId) {
+  mkdirSync(join(root, '.docpath', 'workspace'), { recursive: true });
+  writeFileSync(join(root, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+    level: 1,
+    phase: 'executing',
+    gate: 'none',
+    task_id: taskId,
+    task_title: taskId,
+    current_step: 'S1',
+  }, null, 2));
+}
 
 function mkDocpathProject(state = 'check_pass') {
   const d = mkdtempSync(join(tmpdir(), 'dp-test-'));
@@ -194,6 +207,60 @@ describe('Breadcrumb JSONL migration and validation', () => {
       () => readBreadcrumb(dp),
       /breadcrumb\.jsonl 第 1 行不是合法 JSON/,
     );
+    rmSync(dp, { recursive: true, force: true });
+  });
+
+  it('writes task-scoped JSONL and reads the active task slice by default', async () => {
+    const dp = mkdtempSync(join(tmpdir(), 'bc-task-scope-'));
+    writeActiveTaskState(dp, 'T-A');
+
+    await writeBreadcrumb(dp, { taskId: 'T-A', step: 'S1', status: 'done', context: 'active task' });
+    await writeBreadcrumb(dp, { taskId: 'T-B', step: 'S1', status: 'done', context: 'other task' });
+
+    const summary = await readBreadcrumb(dp);
+    const globalJsonl = readFileSync(BC_JSONL_PATH(dp), 'utf-8').trim().split('\n').map((line) => JSON.parse(line));
+    const taskJsonl = readFileSync(TASK_BC_JSONL_PATH(dp, 'T-A'), 'utf-8').trim().split('\n').map((line) => JSON.parse(line));
+
+    assert.equal(globalJsonl.length, 2, 'workspace JSONL remains a bounded compatibility view');
+    assert.equal(taskJsonl.length, 1);
+    assert.deepEqual(summary.entries.map((entry) => entry.taskId), ['T-A']);
+    assert.equal(summary.latest?.context, 'active task');
+    rmSync(dp, { recursive: true, force: true });
+  });
+
+  it('seeds task-scoped JSONL from legacy global JSONL before appending', async () => {
+    const dp = mkdtempSync(join(tmpdir(), 'bc-task-seed-'));
+    writeActiveTaskState(dp, 'T-LEGACY');
+    mkdirSync(join(dp, '.docpath', 'workspace'), { recursive: true });
+    writeFileSync(BC_JSONL_PATH(dp), [
+      JSON.stringify({
+        schema_version: 1,
+        kind: 'breadcrumb',
+        taskId: 'T-LEGACY',
+        step: 'S1',
+        status: 'done',
+        context: 'legacy active',
+        timestamp: '2026-06-01T00:00:00.000Z',
+      }),
+      JSON.stringify({
+        schema_version: 1,
+        kind: 'breadcrumb',
+        taskId: 'T-OTHER',
+        step: 'S1',
+        status: 'done',
+        context: 'legacy other',
+        timestamp: '2026-06-01T00:01:00.000Z',
+      }),
+      '',
+    ].join('\n'));
+
+    await writeBreadcrumb(dp, { taskId: 'T-LEGACY', step: 'S2', status: 'done', context: 'new active' });
+
+    const summary = await readBreadcrumb(dp);
+    const taskJsonl = readFileSync(TASK_BC_JSONL_PATH(dp, 'T-LEGACY'), 'utf-8').trim().split('\n').map((line) => JSON.parse(line));
+
+    assert.deepEqual(taskJsonl.map((entry) => entry.step), ['S1', 'S2']);
+    assert.deepEqual(summary.entries.map((entry) => entry.context), ['legacy active', 'new active']);
     rmSync(dp, { recursive: true, force: true });
   });
 });
