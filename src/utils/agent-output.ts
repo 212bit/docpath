@@ -29,12 +29,10 @@ import { detectDirtyWorktree, type DirtyWorktreeReport } from './git-dirty-guard
 export interface AgentOutput {
   /** 输出视图: status --agent 是状态快照, next --agent 是下一步路由。 */
   agent_view: 'status' | 'next';
-  /** 视图契约说明，帮助 Agent 区分读状态和执行路由。 */
-  agent_contract: string;
   /** 当前状态 (state machine state) */
   state: string;
   /** 复杂度级别 */
-  level: number | null;
+  level?: number | null;
   /** Proportional lifecycle profile. */
   workflow_profile: string;
   /** Gate policy resolved from workflow_profile. */
@@ -67,32 +65,19 @@ export interface AgentOutput {
   };
   /** 快速修复建议（检测到常见错误时提供） */
   quick_fix?: string;
-  /** Agent 上下文读取策略。 */
-  context_policy: {
-    mode: 'cli_first';
-    direct_file_reads: 'on_demand_only';
-    note: string;
-    expansion_commands: string[];
-  };
   /** 上下文索引项；优先用 DocPath CLI 展开，避免默认读取生成的 Markdown 视图。 */
-  context_refs: Array<{
+  context_refs?: Array<{
     path: string;
     role: string;
     access: 'index_only' | 'read_if_needed';
     preferred_command?: string;
   }>;
   /** 推荐命令预期更新的证据文件；这些不是手工编辑目标。 */
-  command_effects: {
+  command_effects?: {
     updates: string[];
     update_mode: 'via_docpath_command';
     do_not_edit_directly: string[];
   };
-  /** 兼容字段：上下文索引，不代表必须默认读取完整文件。 */
-  required_context: string[];
-  /** 兼容字段：required_context 的机器友好别名；不要当成强制 direct read 列表。 */
-  required_files: string[];
-  /** 兼容字段：推荐命令预期更新的文件；不要手工编辑这些证据文件。 */
-  must_update: string[];
   /** 退出标准 (任务完成条件) */
   exit_criteria: string;
   /** 面包屑进度 */
@@ -896,26 +881,10 @@ function contextPreferredCommand(path: string, topic: string | null): string | u
   return undefined;
 }
 
-function buildContextPolicy(route: RouteSummary): AgentOutput['context_policy'] {
-  const topic = routeStepTopic(route.recommended_command);
-  const expansion_commands = topic
-    ? [
-        `docpath reveal --topic ${topic} --level 1`,
-        `docpath context --max-tokens 5000 --topic ${topic}`,
-      ]
-    : ['docpath reveal --topic <keyword> --level 1', 'docpath context --max-tokens 5000 --topic <keyword>'];
-  return {
-    mode: 'cli_first',
-    direct_file_reads: 'on_demand_only',
-    note: 'Treat required_context and required_files as route indexes. Prefer DocPath CLI summaries/reveal/context before opening generated Markdown views.',
-    expansion_commands,
-  };
-}
-
 function buildContextRefs(route: RouteSummary): AgentOutput['context_refs'] {
   const topic = routeStepTopic(route.recommended_command);
   return Array.from(new Set(route.required_context)).map((path) => {
-    const ref: AgentOutput['context_refs'][number] = {
+    const ref: NonNullable<AgentOutput['context_refs']>[number] = {
       path,
       role: contextRole(path),
       access: contextAccess(path),
@@ -1152,9 +1121,6 @@ export async function generateAgentOutput(
     // 无 .docpath 时返回最小状态
     return stringify({
       agent_view: view,
-      agent_contract: view === 'status'
-        ? 'status_snapshot: read workflow state and health; use route_hint or docpath next --agent for execution routing'
-        : 'next_route: follow recommended_command unless the user explicitly redirects',
       state: 'uninitialized',
       next_action: view === 'status'
         ? '项目未初始化；需要执行路线时运行 docpath next --agent'
@@ -1194,13 +1160,13 @@ export async function generateAgentOutput(
         must_update: [...inferred.must_update],
       };
 
-  const output: AgentOutput = {
+  const refs = buildContextRefs(routeFields);
+  const effects = buildCommandEffects(routeFields);
+
+  const output: any = {
     agent_view: view,
-    agent_contract: view === 'status'
-      ? 'status_snapshot: read workflow state, progress, drift, and health; use route_hint or docpath next --agent for execution routing'
-      : 'next_route: use next_action and recommended_command as the active workflow route',
     state: context.state?.state || 'unknown',
-    level: context.state?.level ?? null,
+    ...(context.state?.level !== undefined && context.state?.level !== null ? { level: context.state.level } : {}),
     workflow_profile: normalizeWorkflowProfile(context.state?.workflow_profile),
     gate_policy: (() => {
       const policy = gatePolicyForProfile(context.state?.workflow_profile);
@@ -1220,12 +1186,8 @@ export async function generateAgentOutput(
     next_action: routeFields.next_action,
     recommended_command: routeFields.recommended_command,
     ...('route_hint' in routeFields ? { route_hint: routeFields.route_hint } : {}),
-    context_policy: buildContextPolicy(routeFields),
-    context_refs: buildContextRefs(routeFields),
-    command_effects: buildCommandEffects(routeFields),
-    required_context: routeFields.required_context,
-    required_files: routeFields.required_files,
-    must_update: routeFields.must_update,
+    ...(refs && refs.length > 0 ? { context_refs: refs } : {}),
+    ...(effects && effects.updates && effects.updates.length > 0 ? { command_effects: effects } : {}),
     exit_criteria: routeFields.exit_criteria,
     ...(quickFix ? { quick_fix: quickFix } : {}),
     progress: {
@@ -1234,14 +1196,14 @@ export async function generateAgentOutput(
       in_progress: context.bc.inProgress,
       blocked: context.bc.blocked,
     },
-    drift_summary: driftSummary,
+    ...(driftSummary ? { drift_summary: driftSummary } : {}),
     ...(verbose || driftSummary ? { drift_details: {
       plan_done_without_breadcrumb: [...context.drift.planDoneWithoutBreadcrumb],
       breadcrumb_done_without_plan: [...context.drift.breadcrumbDoneWithoutPlan],
     } } : {}),
-    identity_drift_summary: hasIdentityDrift
-      ? `state.task_id 与 spec task id 不一致: ${context.identityDrifts.map((drift) => `${drift.location}:${drift.declaredTaskId}`).join(', ')}`
-      : null,
+    ...(hasIdentityDrift ? {
+      identity_drift_summary: `state.task_id 与 spec task id 不一致: ${context.identityDrifts.map((drift) => `${drift.location}:${drift.declaredTaskId}`).join(', ')}`
+    } : {}),
     ...(verbose || hasIdentityDrift ? { identity_drift_details: context.identityDrifts.map((drift) => ({
       file: drift.file,
       location: drift.location,

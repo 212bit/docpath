@@ -26,7 +26,7 @@ interface ResumeOptions {
 type ResumeRoute = {
   next_action?: string;
   recommended_command?: string;
-  required_files?: string[];
+  context_refs?: Array<{ path: string }>;
 };
 
 function parseRoute(raw: string): ResumeRoute {
@@ -83,7 +83,7 @@ export async function resumeCommand(options: ResumeOptions): Promise<void> {
   const route = parseRoute(await generateAgentOutput(cwd));
   const nextAction = route.next_action || '运行 `docpath next --agent` 查看下一步';
   const recommended = route.recommended_command || 'docpath next --agent';
-  const requiredFiles = route.required_files || [];
+  const requiredFiles = route.context_refs?.map((ref) => ref.path) || [];
 
   console.log(`\n💡  下一步: ${nextAction}`);
   console.log(`推荐命令: ${recommended}`);

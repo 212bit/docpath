@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-20T15:14:51.398Z",
+    "updated_at": "2026-06-20T15:14:51.398Z",
+    "content_sha256": "6da522f64f4f3379d32d4c18b075d3e75a4b7ca4fced48da9c61f29aaab26b1f"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-06-20T15:14:51.398Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Optimize agent-output YAML to reduce token wastage",
+      "description": "根据 spec 明确 FR-1: Optimize agent-output YAML to reduce token wastage 的实现边界和验收口径。",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Optimize agent-output YAML to reduce token wastage",
+      "description": "在现有架构内完成 FR-1: Optimize agent-output YAML to reduce token wastage 的代码与文档更新。",
+      "acceptance": "FR-1 Optimize agent-output YAML to reduce token wastage 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-224 与任务 T-20260620-optimize-agent-output-yaml-to-reduce-tok 建立双向关联",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-224 与任务 T-20260620-optimize-agent-output-yaml-to-reduce-tok 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

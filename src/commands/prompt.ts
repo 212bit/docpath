@@ -85,13 +85,13 @@ function formatOMXPrompt(data: AgentOutput): string {
   sections.push('');
 
   // Section 4: context index / direct-read candidates
-  if (data.required_files && data.required_files.length > 0) {
+  if (data.context_refs && data.context_refs.length > 0) {
     sections.push('## Context Index / Direct-Read Candidates');
     sections.push('');
     sections.push('Use CLI summaries first. Treat these paths as candidates for scoped debug or deep context, not as files to read by default.');
     sections.push('');
-    for (const file of data.required_files) {
-      sections.push(`- ${file}`);
+    for (const ref of data.context_refs) {
+      sections.push(`- ${ref.path}`);
     }
     sections.push('');
   }

@@ -29,7 +29,7 @@ interface ContinueOptions {
 type ContinueRoute = {
   next_action?: string;
   recommended_command?: string;
-  required_files?: string[];
+  context_refs?: Array<{ path: string }>;
 };
 
 function parseContinueRoute(raw: string): ContinueRoute {
@@ -123,7 +123,7 @@ async function maybeEscalateLevel(cwd: string, docpathDir: string): Promise<void
 function printNextRoute(route: ContinueRoute, verbose?: boolean): void {
   const nextAction = route.next_action || '运行 `docpath next --agent` 查看下一步';
   const recommended = route.recommended_command || 'docpath next --agent';
-  const requiredFiles = route.required_files || [];
+  const requiredFiles = route.context_refs?.map((ref) => ref.path) || [];
 
   console.log(`👉  建议下一步: ${nextAction}\n`);
   console.log('─── 下一步操作 ───');

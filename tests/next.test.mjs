@@ -69,8 +69,6 @@ describe('next --agent routing', () => {
 
     assert.equal(status.agent_view, 'status');
     assert.equal(next.agent_view, 'next');
-    assert.match(status.agent_contract, /status_snapshot/);
-    assert.match(next.agent_contract, /next_route/);
     assert.equal(status.recommended_command, 'docpath next --agent');
     assert.match(status.next_action, /诊断当前工作流状态/);
     assert.equal(status.route_hint.recommended_command, next.recommended_command);
@@ -89,7 +87,7 @@ describe('next --agent routing', () => {
 
     assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
     assert.match(output.next_action, /捕获 raw backlog/);
-    assert.ok(output.required_files.includes('.docpath/workspace/current.md'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/current.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -113,7 +111,7 @@ describe('next --agent routing', () => {
 
     assert.equal(output.recommended_command, 'docpath learn --dry-run');
     assert.match(output.next_action, /1 条待固化 lesson 候选/);
-    assert.ok(output.required_files.includes('.docpath/workspace/lesson-candidates.md'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/lesson-candidates.md'));
     assert.equal(output.lesson_summary.pending_count, 1);
     assert.equal(output.lesson_summary.pending_keys.length, 1);
     assert.match(output.lesson_summary.pending_keys[0], /t-lesson-workflow/);
@@ -243,7 +241,7 @@ Ignored backlog
     const output = nextAgent(cwd);
 
     assert.equal(output.recommended_command, 'docpath learn --dry-run');
-    assert.ok(output.required_files.includes('.docpath/workspace/lesson-candidates.md'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/lesson-candidates.md'));
     assert.equal(output.lesson_summary.pending_count, 1);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -300,7 +298,7 @@ Alpha
 
     assert.equal(output.recommended_command, 'docpath backlog promote R-001');
     assert.match(output.next_action, /R-001 Alpha/);
-    assert.ok(output.required_files.includes('.docpath/backlog/backlog.md'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/backlog/backlog.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -439,8 +437,8 @@ Alpha
 
     assert.equal(output.recommended_command, 'docpath brainstorm --dry-run');
     assert.match(output.next_action, /补全需求/);
-    assert.ok(output.required_files.includes('.docpath/tasks/current/spec.md'));
-    assert.ok(output.must_update.includes('.docpath/tasks/current/spec.md'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/tasks/current/spec.md'));
+    assert.ok(output.command_effects.updates.includes('.docpath/tasks/current/spec.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -529,7 +527,7 @@ created_at: 2026-05-31
 
     assert.equal(output.recommended_command, 'docpath brainstorm --dry-run --input "Raw Idea"');
     assert.match(output.next_action, /先分析 backlog 条目/);
-    assert.ok(output.must_update.includes('.docpath/backlog/'));
+    assert.ok(output.command_effects.updates.includes('.docpath/backlog/'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -591,11 +589,7 @@ created_at: 2026-05-31
 
     assert.equal(output.recommended_command, 'docpath go --step S2');
     assert.match(output.next_action, /S2/);
-    assert.ok(output.required_files.includes('.docpath/tasks/current/plan.md'));
-    assert.equal(output.context_policy.mode, 'cli_first');
-    assert.equal(output.context_policy.direct_file_reads, 'on_demand_only');
-    assert.match(output.context_policy.note, /route indexes/);
-    assert.ok(output.context_policy.expansion_commands.includes('docpath reveal --topic S2 --level 1'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/tasks/current/plan.md'));
     assert.ok(output.context_refs.some((ref) =>
       ref.path === '.docpath/workspace/current.md'
       && ref.access === 'index_only'
@@ -667,7 +661,7 @@ created_at: 2026-05-31
 
     assert.equal(output.recommended_command, 'docpath debug reproduce');
     assert.match(output.next_action, /修复质量检查失败/);
-    assert.ok(output.required_files.includes('.docpath/workspace/last-check.md'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/last-check.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -742,8 +736,8 @@ created_at: 2026-05-31
 
     assert.equal(output.recommended_command, 'docpath write-plan --stdin');
     assert.match(output.next_action, /机器真理源不同步/);
-    assert.ok(output.required_files.some((file) => file.endsWith('plan.md')));
-    assert.ok(output.required_files.some((file) => file.endsWith('plan.json')));
+    assert.ok(output.context_refs.some((ref) => ref.path.endsWith('plan.md')));
+    assert.ok(output.context_refs.some((ref) => ref.path.endsWith('plan.json')));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -764,7 +758,7 @@ created_at: 2026-05-31
 
     assert.equal(output.recommended_command, 'docpath tdd next');
     assert.match(output.next_action, /TDD 循环推进/);
-    assert.ok(output.required_files.includes('.docpath/workspace/tdd-state.json'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/tdd-state.json'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -778,7 +772,7 @@ created_at: 2026-05-31
 
     assert.equal(output.recommended_command, 'docpath journal');
     assert.match(output.next_action, /知识归档/);
-    assert.ok(output.required_files.includes('.docpath/workspace/review.md'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/review.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -792,8 +786,8 @@ created_at: 2026-05-31
 
     assert.equal(output.recommended_command, 'docpath check');
     assert.match(output.next_action, /漂移/);
-    assert.ok(output.must_update.includes('.docpath/workspace/breadcrumb.md'));
-    assert.ok(output.must_update.includes('.docpath/tasks/current/plan.md'));
+    assert.ok(output.command_effects.updates.includes('.docpath/workspace/breadcrumb.md'));
+    assert.ok(output.command_effects.updates.includes('.docpath/tasks/current/plan.md'));
     assert.match(output.drift_summary, /plan 已完成但缺少 breadcrumb/);
     assert.deepEqual(output.drift_details.plan_done_without_breadcrumb, ['S1']);
     assert.deepEqual(output.drift_details.breadcrumb_done_without_plan, []);
@@ -824,7 +818,7 @@ created_at: 2026-05-31
     });
     const output = nextAgent(cwd);
 
-    assert.equal(output.drift_summary, null);
+    assert.equal(output.drift_summary, undefined);
     assert.equal(output.drift_details, undefined);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -888,7 +882,7 @@ warned: false
 
     assert.equal(output.recommended_command, 'docpath done');
     assert.match(output.next_action, /未收尾任务哨兵/);
-    assert.ok(output.required_files.includes('.docpath/workspace/pending-done.md'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/pending-done.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -923,7 +917,7 @@ warned: false
 
     assert.equal(output.recommended_command, 'docpath go --step S2');
     assert.match(output.next_action, /pending-done 哨兵/);
-    assert.ok(output.required_files.includes('.docpath/workspace/pending-done.md'));
+    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/pending-done.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 

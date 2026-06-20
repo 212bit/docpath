@@ -186,18 +186,31 @@ function extractScalarFromAgentYaml(agentOutput: string, key: string): string {
 
 function extractRequiredFiles(agentOutput: string): string[] {
   try {
-    const parsed = parseYaml(agentOutput) as { required_files?: unknown } | null;
-    if (Array.isArray(parsed?.required_files)) {
-      return parsed.required_files.filter((item): item is string => typeof item === 'string');
+    const parsed = parseYaml(agentOutput) as { context_refs?: Array<{ path: string }> } | null;
+    if (Array.isArray(parsed?.context_refs)) {
+      return parsed.context_refs.map((ref) => ref.path);
     }
   } catch { /* fallback below */ }
 
-  const match = agentOutput.match(/^required_files:\s*\n([\s\S]*?)(?=^\S|$)/m);
+  const match = agentOutput.match(/^context_refs:\s*\n([\s\S]*?)(?=^\S|$)/m);
   if (!match) return [];
-  return match[1]
-    .split('\n')
-    .map((line) => line.match(/^\s*-\s+(.+)\s*$/)?.[1]?.trim().replace(/^['"]|['"]$/g, '') || '')
-    .filter(Boolean);
+  const lines = match[1].split('\n');
+  const paths: string[] = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('-')) {
+      const pathMatch = line.match(/^\s*-\s+path:\s*(.+)$/);
+      if (pathMatch) {
+        paths.push(pathMatch[1].trim().replace(/^['"]|['"]$/g, ''));
+      }
+    } else if (trimmed.startsWith('path:')) {
+      const pathMatch = line.match(/^\s*path:\s*(.+)$/);
+      if (pathMatch) {
+        paths.push(pathMatch[1].trim().replace(/^['"]|['"]$/g, ''));
+      }
+    }
+  }
+  return paths.filter(Boolean);
 }
 
 function summarizeLastCheck(lastCheckContent: string): string {
