@@ -23,12 +23,15 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.10.0",
+    "@tailwindcss/vite": "^4.3.1",
     "@vitejs/plugin-react": "4.5.2",
     "cac": "^6.7.14",
+    "lucide-react": "^1.21.0",
     "minimatch": "^10.2.5",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-router-dom": "7.6.2",
+    "tailwindcss": "^4.3.1",
     "vite": "6.3.5",
     "yaml": "^2.7.1"
   },

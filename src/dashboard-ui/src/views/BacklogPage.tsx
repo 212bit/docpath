@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 import type { BacklogItem } from '../lib/api';
 import { ALL_PROJECTS, type DashboardData } from '../state/useDashboardData';
 
-function matches(value: string, expected: string): boolean {
+function matches(value: string, expected: string) {
   return expected === 'all' || value === expected;
 }
+
+const PRIORITY_CLASS: Record<string, string> = { P0: 'p0', P1: 'p1', P2: 'p2', P3: 'p3' };
 
 export function BacklogPage({ data }: { data: DashboardData }) {
   const [query, setQuery] = useState('');
@@ -25,26 +27,29 @@ export function BacklogPage({ data }: { data: DashboardData }) {
     });
   }, [data.backlog, query, status, priority, readiness]);
 
-  const selected = filtered.find((item) => item.id === selectedId) || filtered[0] || null;
+  const selected = filtered.find((item) => item.id === selectedId) ?? filtered[0] ?? null;
 
   if (isAll) {
     return (
       <section className="view-stack">
         <div className="view-heading">
           <h2>Backlog</h2>
-          <span>All Projects summary</span>
+          <span className="hint">All Projects</span>
         </div>
         <div className="table-surface">
-          {data.summary?.snapshots.length ? data.summary.snapshots.map((snapshot) => (
-            <button className="table-row wide" key={snapshot.project.root} onClick={() => data.selectProject(snapshot.project.root)} type="button">
-              <strong>{snapshot.project.name}</strong>
-              <span>proposed {snapshot.backlog_counts.proposed || 0} / accepted {snapshot.backlog_counts.accepted || 0}</span>
-              <span>done {snapshot.backlog_counts.done || 0}</span>
-              <small>{snapshot.project.status || 'ok'}</small>
+          {data.summary?.snapshots.length ? data.summary.snapshots.map((snap) => (
+            <button
+              key={snap.project.root}
+              className="table-row col-4"
+              onClick={() => data.selectProject(snap.project.root)}
+              type="button"
+            >
+              <strong>{snap.project.name}</strong>
+              <span>proposed {snap.backlog_counts.proposed ?? 0}</span>
+              <span>accepted {snap.backlog_counts.accepted ?? 0}</span>
+              <small>{snap.backlog_counts.done ?? 0} done</small>
             </button>
-          )) : (
-            <div className="empty-state">No projects available</div>
-          )}
+          )) : <div className="empty">No projects available</div>}
         </div>
       </section>
     );
@@ -54,40 +59,45 @@ export function BacklogPage({ data }: { data: DashboardData }) {
     <section className="view-stack">
       <div className="view-heading">
         <h2>Backlog</h2>
-        <span>{filtered.length} / {data.backlog.length}</span>
+        <span className="hint">{filtered.length} / {data.backlog.length} items</span>
       </div>
 
       <div className="filter-bar">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search id, title, body" type="search" />
-        <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Status">
-          {['all', 'proposed', 'accepted', 'planned', 'active', 'done', 'dropped'].map((item) => <option key={item} value={item}>{item}</option>)}
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search id, title, body…" type="search" />
+        <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
+          {['all', 'proposed', 'accepted', 'planned', 'active', 'done', 'dropped'].map((v) => <option key={v} value={v}>{v}</option>)}
         </select>
-        <select value={priority} onChange={(event) => setPriority(event.target.value)} aria-label="Priority">
-          {['all', 'P0', 'P1', 'P2', 'P3'].map((item) => <option key={item} value={item}>{item}</option>)}
+        <select value={priority} onChange={(e) => setPriority(e.target.value)} aria-label="Priority">
+          {['all', 'P0', 'P1', 'P2', 'P3'].map((v) => <option key={v} value={v}>{v}</option>)}
         </select>
-        <select value={readiness} onChange={(event) => setReadiness(event.target.value)} aria-label="Readiness">
-          {['all', 'raw', 'shaped', 'analyzed', 'confirmed'].map((item) => <option key={item} value={item}>{item}</option>)}
+        <select value={readiness} onChange={(e) => setReadiness(e.target.value)} aria-label="Readiness">
+          {['all', 'raw', 'shaped', 'analyzed', 'confirmed'].map((v) => <option key={v} value={v}>{v}</option>)}
         </select>
       </div>
 
-      <div className="split-grid wide-left">
-        <div className="table-surface">
-          {filtered.length === 0 ? (
-            <div className="empty-state">{data.backlog.length === 0 ? 'No backlog items' : 'No backlog items match filters'}</div>
-          ) : filtered.map((item) => (
-            <button
-              className={selected?.id === item.id ? 'table-row backlog selected' : 'table-row backlog'}
-              key={item.id}
-              onClick={() => setSelectedId(item.id)}
-              type="button"
-            >
-              <strong>{item.id} · {item.title}</strong>
-              <span>{item.status} / {item.priority}</span>
-              <span>{item.readiness || 'raw'} · L{item.level}</span>
-            </button>
-          ))}
-        </div>
-
+      <div className="split-grid split-grid-wide">
+        {filtered.length === 0 ? (
+          <div className="panel empty">{data.backlog.length === 0 ? 'No backlog items' : 'No items match filters'}</div>
+        ) : (
+          <div className="backlog-grid">
+            {filtered.map((item) => (
+              <button
+                key={item.id}
+                className={`backlog-card ${PRIORITY_CLASS[item.priority] ?? ''} ${selected?.id === item.id ? 'selected' : ''}`}
+                onClick={() => setSelectedId(item.id)}
+                type="button"
+              >
+                <div className="backlog-card-title">{item.id}: {item.title}</div>
+                <div className="backlog-card-meta">
+                  <span className="badge">{item.status}</span>
+                  <span className="badge accent">{item.priority}</span>
+                  <span className="badge">L{item.level}</span>
+                  {item.readiness && item.readiness !== 'raw' && <span className="badge">{item.readiness}</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
         <BacklogDetail item={selected} />
       </div>
     </section>
@@ -95,23 +105,31 @@ export function BacklogPage({ data }: { data: DashboardData }) {
 }
 
 function BacklogDetail({ item }: { item: BacklogItem | null }) {
-  if (!item) return <article className="panel"><div className="empty-state compact">Select a backlog item</div></article>;
-  const excerpt = item.body.length > 700 ? `${item.body.slice(0, 700)}...` : item.body;
+  if (!item) {
+    return (
+      <article className="panel">
+        <div className="empty inline">Select an item to inspect</div>
+      </article>
+    );
+  }
+  const excerpt = item.body.length > 800 ? `${item.body.slice(0, 800)}…` : item.body;
   return (
-    <article className="panel detail-panel">
+    <article className="panel" style={{ position: 'sticky', top: 0, alignSelf: 'start' }}>
       <div className="panel-heading">
-        <h3>{item.id}</h3>
-        <span>{item.status}</span>
+        <h3 style={{ fontFamily: 'var(--font-mono)' }}>{item.id}</h3>
+        <span className="badge">{item.status}</span>
       </div>
-      <h4>{item.title}</h4>
-      <dl className="detail-list">
-        <div><dt>Priority</dt><dd>{item.priority}</dd></div>
-        <div><dt>Readiness</dt><dd>{item.readiness || 'raw'}</dd></div>
-        <div><dt>Level</dt><dd>{item.level}</dd></div>
-        <div><dt>Task</dt><dd>{item.links?.task || '-'}</dd></div>
-        <div><dt>Spec</dt><dd>{item.links?.spec || '-'}</dd></div>
-      </dl>
-      <pre className="excerpt-block">{excerpt || 'No body content'}</pre>
+      <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 12, lineHeight: 1.4 }}>
+        {item.title}
+      </div>
+      <div className="detail-list" style={{ marginBottom: 12 }}>
+        <dl><dt>Priority</dt><dd style={{ fontWeight: 600 }}>{item.priority}</dd></dl>
+        <dl><dt>Readiness</dt><dd>{item.readiness || 'raw'}</dd></dl>
+        <dl><dt>Level</dt><dd>L{item.level}</dd></dl>
+        <dl><dt>Linked Task</dt><dd style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{item.links?.task || '-'}</dd></dl>
+        <dl><dt>Linked Spec</dt><dd style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{item.links?.spec || '-'}</dd></dl>
+      </div>
+      <pre className="code-block">{excerpt || 'No body content'}</pre>
     </article>
   );
 }

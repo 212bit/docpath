@@ -2,13 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-20T02:05:57.333Z
+> 扫描时间: 2026-06-20T05:26:22.423Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-216 | Smart Git Merge Driver for Backlog and Rules Markdown files | proposed | P2 | 1 |  |
+| R-216 | Smart Git Merge Driver for Backlog and Rules Markdown files | accepted | P2 | 1 |  |
 | R-220 | breadcrumb.jsonl 按任务边界分隔，防止无限增长 | proposed | P2 | 2 |  |
 
 ## 用途说明

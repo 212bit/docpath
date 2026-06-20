@@ -1,155 +1,220 @@
 import React, { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
+import {
+  Activity,
+  GitBranch,
+  KanbanSquare,
+  LayoutDashboard,
+  ListTodo,
+  RefreshCw,
+  ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { ALL_PROJECTS, useDashboardData } from './state/useDashboardData';
 import { DashboardPage } from './views/DashboardPage';
 import { WorkboardPage } from './views/WorkboardPage';
 import { WorktreesPage } from './views/WorktreesPage';
+import { BacklogPage } from './views/BacklogPage';
+import { EventsPage } from './views/EventsPage';
+import { GatesPage } from './views/GatesPage';
 import './styles.css';
 
-const views = [
-  { to: '/', label: 'Overview', icon: '◰', end: true },
-  { to: '/workboard', label: 'Workboard', icon: '◫' },
-  { to: '/worktrees', label: 'Worktrees', icon: '◲' },
+const PROJECT_VIEWS = [
+  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/workboard', label: 'Workboard', icon: KanbanSquare },
+  { to: '/gates', label: 'Gates', icon: ShieldCheck },
+  { to: '/events', label: 'Events', icon: Activity },
+];
+
+const WORKSPACE_VIEWS = [
+  { to: '/backlog', label: 'Backlog', icon: ListTodo },
+  { to: '/worktrees', label: 'Worktrees', icon: GitBranch },
 ];
 
 function projectStatus(project: { status?: string; phase?: string; gate?: string; task_id?: string }): string {
-  if (project.status === 'unavailable') return 'Unavailable';
-  if (project.status === 'partial') return 'Partial';
-  if (project.gate?.includes('fail') || project.phase === 'blocked') return 'Blocked';
-  if (project.task_id && project.phase !== 'completed') return 'Active';
-  if (project.phase === 'completed') return 'Completed';
-  return 'Idle';
+  if (project.status === 'unavailable') return 'unavailable';
+  if (project.status === 'partial') return 'partial';
+  if (project.gate?.includes('fail') || project.phase === 'blocked') return 'blocked';
+  if (project.task_id && project.phase !== 'completed') return 'active';
+  if (project.phase === 'completed') return 'completed';
+  return 'idle';
 }
 
 function AppShell() {
   const dashboard = useDashboardData();
   const [projectFilter, setProjectFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  const isAll = dashboard.selectedRoot === ALL_PROJECTS;
+  const selectedProject = dashboard.selectedProject;
+  const selectedSnapshot = dashboard.selectedSnapshot;
 
   const filteredProjects = useMemo(() => {
-    const query = projectFilter.trim().toLowerCase();
-    return dashboard.projects.filter((project) => {
-      const status = projectStatus(project);
-      const statusMatches = statusFilter === 'All' || status === statusFilter;
-      const textMatches = !query ||
-        project.name.toLowerCase().includes(query) ||
-        project.root.toLowerCase().includes(query);
-      return statusMatches && textMatches;
+    const q = projectFilter.trim().toLowerCase();
+    return dashboard.projects.filter((p) => {
+      const s = projectStatus(p);
+      const statusOk = statusFilter === 'All' || s === statusFilter.toLowerCase();
+      const textOk = !q || p.name.toLowerCase().includes(q) || p.root.toLowerCase().includes(q);
+      return statusOk && textOk;
     });
   }, [dashboard.projects, projectFilter, statusFilter]);
 
-  const selectedSnapshot = dashboard.selectedSnapshot;
-  const route = selectedSnapshot?.route;
-  const selectedProject = dashboard.selectedProject;
-  const isAllProjects = dashboard.selectedRoot === ALL_PROJECTS;
+  const headerTitle = isAll ? 'All Projects' : selectedProject?.name || 'Project unavailable';
+  const headerSub = isAll
+    ? 'Registry summary and cross-project attention queue'
+    : selectedProject?.root || dashboard.detailError || 'No project selected';
+  const headerEyebrow = isAll ? 'Global scope' : 'Selected project';
 
   return (
-    <div className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <aside className="sidebar" aria-label="Dashboard navigation">
+    <div className={`app-shell${collapsed ? ' sidebar-collapsed' : ''}`}>
+      {/* Sidebar */}
+      <aside className="sidebar" aria-label="Navigation">
+        {/* Brand */}
         <div className="brand">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="brand-inner">
             <span className="brand-mark">D</span>
-            <span>
+            <div className="brand-text">
               <strong>DocPath</strong>
-              <small>Read-only dashboard</small>
-            </span>
+              <small>Dashboard</small>
+            </div>
           </div>
-          <button className="sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} title="Toggle Sidebar" type="button">
-            {sidebarCollapsed ? '❯' : '❮'}
+          <button className="sidebar-toggle" onClick={() => setCollapsed(!collapsed)} title="Toggle sidebar" type="button">
+            {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
           </button>
         </div>
 
-        <nav className="nav-list" aria-label="Views">
-          {views.map((view) => (
-            <NavLink key={view.to} to={view.to} end={view.end} className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-              <span style={{ marginRight: sidebarCollapsed ? '0' : '8px', fontSize: '1.1rem' }}>{view.icon}</span>
-              <span>{view.label}</span>
-            </NavLink>
-          ))}
-        </nav>
+        {/* Nav groups */}
+        <div className="nav-groups">
+          <div className="nav-group">
+            <div className="nav-group-label">Project</div>
+            {PROJECT_VIEWS.map((v) => (
+              <NavLink
+                key={v.to}
+                to={v.to}
+                end={v.end}
+                className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                title={collapsed ? v.label : undefined}
+              >
+                <v.icon className="nav-icon" size={15} />
+                <span className="nav-label">{v.label}</span>
+              </NavLink>
+            ))}
+          </div>
+          <div className="nav-group" style={{ marginTop: 8 }}>
+            <div className="nav-group-label">Workspace</div>
+            {WORKSPACE_VIEWS.map((v) => (
+              <NavLink
+                key={v.to}
+                to={v.to}
+                className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                title={collapsed ? v.label : undefined}
+              >
+                <v.icon className="nav-icon" size={15} />
+                <span className="nav-label">{v.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </div>
 
-        <section className="rail-section" aria-label="Project selector">
-          <div className="section-title">Projects</div>
+        {/* Project rail */}
+        <div className="project-rail">
+          <div className="rail-header">
+            <span className="rail-label">Projects</span>
+          </div>
           <input
             className="project-search"
             type="search"
-            placeholder="Search projects"
+            placeholder="Search…"
             value={projectFilter}
-            onChange={(event) => setProjectFilter(event.target.value)}
+            onChange={(e) => setProjectFilter(e.target.value)}
           />
-          <div className="chip-row" aria-label="Project status filter">
-            {['All', 'Active', 'Blocked', 'Unavailable'].map((status) => (
+          <div className="status-chips">
+            {['All', 'Active', 'Blocked', 'Idle'].map((s) => (
               <button
-                className={statusFilter === status ? 'chip active' : 'chip'}
-                key={status}
-                onClick={() => setStatusFilter(status)}
+                key={s}
+                className={`chip${statusFilter === s ? ' active' : ''}`}
+                onClick={() => setStatusFilter(s)}
                 type="button"
               >
-                {status}
+                {s}
               </button>
             ))}
           </div>
-          <button
-            className={isAllProjects ? 'project-item selected' : 'project-item'}
-            onClick={() => dashboard.selectProject(ALL_PROJECTS)}
-            type="button"
-          >
-            <span>All Projects</span>
-            <small>{dashboard.summary?.metrics.projects ?? 0} projects / {dashboard.summary?.metrics.blocked_projects ?? 0} blocked</small>
-          </button>
-          {filteredProjects.length === 0 ? (
-            <div className="empty-line">No matching projects</div>
-          ) : filteredProjects.map((project) => {
-            const status = projectStatus(project);
-            return (
-              <button
-                className={project.root === dashboard.selectedRoot ? 'project-item selected' : 'project-item'}
-                key={project.root}
-                onClick={() => dashboard.selectProject(project.root)}
-                type="button"
-              >
-                <span><i className={`status-dot ${status.toLowerCase()}`} />{project.name || project.root}</span>
-                <small>{status} / {project.gate || 'none'}</small>
-              </button>
-            );
-          })}
-        </section>
-
+          <div className="project-list">
+            <button
+              className={`project-item${isAll ? ' selected' : ''}`}
+              onClick={() => dashboard.selectProject(ALL_PROJECTS)}
+              type="button"
+            >
+              <div className="project-item-name">All Projects</div>
+              <div className="project-item-meta">{dashboard.summary?.metrics.projects ?? 0} projects</div>
+            </button>
+            {filteredProjects.length === 0 ? (
+              <div className="empty-rail">No matches</div>
+            ) : filteredProjects.map((p) => {
+              const s = projectStatus(p);
+              return (
+                <button
+                  key={p.root}
+                  className={`project-item${p.root === dashboard.selectedRoot ? ' selected' : ''}`}
+                  onClick={() => dashboard.selectProject(p.root)}
+                  type="button"
+                >
+                  <div className="project-item-name">
+                    <i className={`dot ${s}`} />
+                    {p.name || p.root}
+                  </div>
+                  <div className="project-item-meta">{s} / {p.gate || 'none'}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </aside>
 
+      {/* Main */}
       <div className="main-column">
-        <header className="route-band">
-          <div className="route-title">
-            <div className="eyebrow">{isAllProjects ? 'Global scope' : 'Selected project'}</div>
-            <h1>{isAllProjects ? 'All Projects' : selectedProject?.name || 'Project unavailable'}</h1>
-            <p>{isAllProjects ? 'Registry summary and cross-project attention queue' : selectedProject?.root || dashboard.detailError || 'No project selected'}</p>
+        {/* 2-zone header */}
+        <header className="top-header">
+          <div className="header-identity">
+            <div className="header-eyebrow">{headerEyebrow}</div>
+            <div className="header-title">{headerTitle}</div>
+            <div className="header-subtitle">{headerSub}</div>
           </div>
-          <div className="route-status">
-            <span className="badge">{isAllProjects ? `${dashboard.projects.length} projects` : selectedSnapshot?.state?.phase || selectedProject?.phase || 'unknown'}</span>
-            <span className="badge">{isAllProjects ? `${dashboard.summary?.metrics.active_tasks ?? 0} active` : selectedSnapshot?.state?.gate || selectedProject?.gate || 'none'}</span>
-            {!isAllProjects && <span className="badge">{selectedSnapshot?.task_progress.current_step || 'no step'}</span>}
+          <div className="header-actions">
+            {!isAll && (
+              <>
+                <span className="badge">{selectedSnapshot?.state?.phase || selectedProject?.phase || 'idle'}</span>
+                <span className="badge">{selectedSnapshot?.state?.gate || selectedProject?.gate || 'none'}</span>
+              </>
+            )}
+            {isAll && (
+              <>
+                <span className="badge">{dashboard.projects.length} projects</span>
+                <span className="badge">{dashboard.summary?.metrics.active_tasks ?? 0} active</span>
+              </>
+            )}
+            <button className="btn" type="button" onClick={dashboard.refresh}>
+              <RefreshCw size={13} />
+              Refresh
+            </button>
           </div>
-          <div className="route-action">
-            <span>{isAllProjects ? 'Select a project for detail reads.' : route?.next_action || 'Read-only project summary.'}</span>
-            {!isAllProjects && route?.recommended_command ? (
-              <code>{route.recommended_command}</code>
-            ) : null}
-          </div>
-          <button className="refresh-button" type="button" onClick={dashboard.refresh}>
-            Refresh
-          </button>
         </header>
 
         {(dashboard.error || dashboard.detailError) && (
-          <div className="banner error">{dashboard.error || dashboard.detailError}</div>
+          <div className="error-banner">{dashboard.error || dashboard.detailError}</div>
         )}
 
         <main className="content">
           <Routes>
             <Route path="/" element={<DashboardPage data={dashboard} />} />
             <Route path="/workboard" element={<WorkboardPage data={dashboard} />} />
+            <Route path="/gates" element={<GatesPage data={dashboard} />} />
+            <Route path="/events" element={<EventsPage data={dashboard} />} />
+            <Route path="/backlog" element={<BacklogPage data={dashboard} />} />
             <Route path="/worktrees" element={<WorktreesPage data={dashboard} />} />
           </Routes>
         </main>
