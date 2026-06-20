@@ -1,0 +1,293 @@
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { readDocPathConfig } from './config.js';
+
+export type ReviewScope = 'all' | 'staged' | 'last_commit';
+export type ReviewSkillGateStatus = 'disabled' | 'not_required' | 'required' | 'pass' | 'fail' | 'pass_with_skips';
+export type ReviewSkillStatus = 'pass' | 'fail';
+
+export interface ReviewSkillRequirement {
+  skill: string;
+  language: 'typescript' | 'javascript';
+  role: 'language';
+  frameworks: string[];
+  files: string[];
+  diff_fingerprint: string;
+  skill_source_path: string;
+  write_command: string;
+  skill_missing: boolean;
+}
+
+export interface ReviewSkillFinding {
+  file: string;
+  severity: 'info' | 'warn' | 'error';
+  message: string;
+  line?: number;
+}
+
+export interface ReviewSkillEvidence {
+  skill: string;
+  language: string;
+  role: 'language';
+  frameworks: string[];
+  scope: ReviewScope | string;
+  files: string[];
+  diff_fingerprint: string;
+  status: ReviewSkillStatus;
+  findings: ReviewSkillFinding[];
+  summary?: string;
+  generated_at: string;
+}
+
+export interface ReviewSkillSkip {
+  skill: string;
+  reason: string;
+  scope: ReviewScope | string;
+  files: string[];
+  diff_fingerprint: string;
+  generated_at: string;
+}
+
+export interface ReviewSkillGate {
+  status: ReviewSkillGateStatus;
+  scope: ReviewScope;
+  requirements: ReviewSkillRequirement[];
+  missing_evidence: string[];
+  invalid_evidence: Array<{ skill: string; reason: string }>;
+  skips: ReviewSkillSkip[];
+}
+
+const LANGUAGE_RULES: Array<{
+  language: 'typescript' | 'javascript';
+  skill: string;
+  extensions: RegExp;
+  sourceDir: string;
+}> = [
+  { language: 'typescript', skill: 'docpath-review-typescript', extensions: /\.(ts|tsx)$/i, sourceDir: 'typescript' },
+  { language: 'javascript', skill: 'docpath-review-javascript', extensions: /\.(js|jsx|mjs|cjs)$/i, sourceDir: 'javascript' },
+];
+
+const EXCLUDED_SOURCE_PATHS = [
+  /(^|\/)node_modules\//,
+  /(^|\/)(dist|build|coverage|dashboard-dist|\.turbo|\.next|out)\//,
+  /(^|\/)(vendor|fixtures|__snapshots__)\//,
+  /(^|\/).*\.min\.(js|mjs|cjs)$/i,
+  /(^|\/).*\.d\.ts$/i,
+  /(^|\/).*generated.*\.(ts|tsx|js|jsx|mjs|cjs)$/i,
+];
+
+function runGit(cwd: string, args: string[]): string {
+  return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000 });
+}
+
+export function isReviewSkillGateSourceFile(file: string): boolean {
+  if (EXCLUDED_SOURCE_PATHS.some((pattern) => pattern.test(file))) return false;
+  return LANGUAGE_RULES.some((rule) => rule.extensions.test(file));
+}
+
+function languageForFile(file: string): (typeof LANGUAGE_RULES)[number] | null {
+  if (!isReviewSkillGateSourceFile(file)) return null;
+  return LANGUAGE_RULES.find((rule) => rule.extensions.test(file)) || null;
+}
+
+function diffForFile(cwd: string, file: string, scope: ReviewScope): string {
+  try {
+    if (scope === 'staged') return runGit(cwd, ['diff', '--cached', '--', file]);
+    if (scope === 'last_commit') return runGit(cwd, ['diff', 'HEAD~1..HEAD', '--', file]);
+    const unstaged = runGit(cwd, ['diff', '--', file]);
+    const staged = runGit(cwd, ['diff', '--cached', '--', file]);
+    if (unstaged.trim() || staged.trim()) return `${unstaged}\n${staged}`;
+  } catch {
+    // Fall through to content hashing for untracked files or non-git workspaces.
+  }
+  try {
+    return readFileSync(join(cwd, file), 'utf-8');
+  } catch {
+    return '';
+  }
+}
+
+function fingerprintForFiles(cwd: string, scope: ReviewScope, files: string[]): string {
+  const hash = createHash('sha256');
+  hash.update(`scope:${scope}\n`);
+  for (const file of [...files].sort()) {
+    hash.update(`file:${file}\n`);
+    hash.update(diffForFile(cwd, file, scope));
+    hash.update('\n');
+  }
+  return `sha256:${hash.digest('hex')}`;
+}
+
+export async function isReviewSkillGateEnabled(cwd: string): Promise<boolean> {
+  const config = await readDocPathConfig(cwd);
+  return config.review_skill_gate?.enabled !== false;
+}
+
+export async function buildReviewSkillRequirements(
+  cwd: string,
+  docpathDir: string,
+  changedFiles: string[],
+  scope: ReviewScope,
+): Promise<{ enabled: boolean; requirements: ReviewSkillRequirement[] }> {
+  const enabled = await isReviewSkillGateEnabled(cwd);
+  if (!enabled) return { enabled, requirements: [] };
+
+  const bySkill = new Map<string, { rule: (typeof LANGUAGE_RULES)[number]; files: string[] }>();
+  for (const file of changedFiles) {
+    const rule = languageForFile(file);
+    if (!rule) continue;
+    const current = bySkill.get(rule.skill) || { rule, files: [] };
+    current.files.push(file);
+    bySkill.set(rule.skill, current);
+  }
+
+  const requirements = [...bySkill.values()]
+    .map(({ rule, files }) => {
+      const sortedFiles = [...new Set(files)].sort();
+      const skillSourcePath = join(docpathDir, 'review-skills', rule.sourceDir, 'SKILL.md');
+      return {
+        skill: rule.skill,
+        language: rule.language,
+        role: 'language' as const,
+        frameworks: [],
+        files: sortedFiles,
+        diff_fingerprint: fingerprintForFiles(cwd, scope, sortedFiles),
+        skill_source_path: `.docpath/review-skills/${rule.sourceDir}/SKILL.md`,
+        write_command: `docpath write-review-skill --skill ${rule.skill} --language ${rule.language} --scope ${scope} --stdin`,
+        skill_missing: !existsSync(skillSourcePath),
+      };
+    })
+    .sort((a, b) => a.skill.localeCompare(b.skill));
+
+  return { enabled, requirements };
+}
+
+function sameFileSet(actual: string[], expected: string[]): boolean {
+  const left = [...actual].sort();
+  const right = [...expected].sort();
+  return left.length === right.length && left.every((file, index) => file === right[index]);
+}
+
+function validateEvidenceForRequirement(
+  evidence: ReviewSkillEvidence | undefined,
+  requirement: ReviewSkillRequirement,
+  scope: ReviewScope,
+): string | null {
+  if (!evidence) return 'missing skill review evidence';
+  if (evidence.skill !== requirement.skill) return 'skill mismatch';
+  if (evidence.language !== requirement.language) return 'language mismatch';
+  if (evidence.role !== requirement.role) return 'role mismatch';
+  if (evidence.scope !== scope) return 'scope mismatch';
+  if (!sameFileSet(evidence.files, requirement.files)) return 'file set mismatch';
+  if (evidence.diff_fingerprint !== requirement.diff_fingerprint) return 'diff fingerprint mismatch';
+  if (evidence.status !== 'pass' && evidence.status !== 'fail') return 'status must be pass or fail';
+  if (evidence.status === 'pass' && evidence.findings.some((finding) => finding.severity === 'error')) {
+    return 'pass evidence contains error findings';
+  }
+  if (evidence.status === 'fail') return 'skill review status is fail';
+  return null;
+}
+
+export function evaluateReviewSkillGate(input: {
+  enabled: boolean;
+  requirements: ReviewSkillRequirement[];
+  skillReviews?: ReviewSkillEvidence[];
+  skillSkips?: ReviewSkillSkip[];
+  scope: ReviewScope;
+}): ReviewSkillGate {
+  if (!input.enabled) {
+    return { status: 'disabled', scope: input.scope, requirements: [], missing_evidence: [], invalid_evidence: [], skips: [] };
+  }
+  if (input.requirements.length === 0) {
+    return { status: 'not_required', scope: input.scope, requirements: [], missing_evidence: [], invalid_evidence: [], skips: [] };
+  }
+
+  const reviews = input.skillReviews || [];
+  const skips = input.skillSkips || [];
+  const missingEvidence: string[] = [];
+  const invalidEvidence: Array<{ skill: string; reason: string }> = [];
+  const acceptedSkips: ReviewSkillSkip[] = [];
+
+  for (const requirement of input.requirements) {
+    if (requirement.skill_missing) {
+      invalidEvidence.push({ skill: requirement.skill, reason: `missing skill source: ${requirement.skill_source_path}` });
+      continue;
+    }
+
+    const skip = skips.find((candidate) =>
+      candidate.skill === requirement.skill
+      && candidate.reason.trim().length > 0
+      && candidate.scope === input.scope
+      && candidate.diff_fingerprint === requirement.diff_fingerprint
+      && sameFileSet(candidate.files, requirement.files)
+    );
+    if (skip) {
+      acceptedSkips.push(skip);
+      continue;
+    }
+
+    const evidence = reviews.find((candidate) => candidate.skill === requirement.skill);
+    const invalidReason = validateEvidenceForRequirement(evidence, requirement, input.scope);
+    if (!evidence) missingEvidence.push(requirement.skill);
+    else if (invalidReason) invalidEvidence.push({ skill: requirement.skill, reason: invalidReason });
+  }
+
+  const failed = missingEvidence.length > 0 || invalidEvidence.length > 0;
+  return {
+    status: failed ? 'fail' : acceptedSkips.length > 0 ? 'pass_with_skips' : 'pass',
+    scope: input.scope,
+    requirements: input.requirements,
+    missing_evidence: missingEvidence,
+    invalid_evidence: invalidEvidence,
+    skips: acceptedSkips,
+  };
+}
+
+export function createReviewSkillSkip(
+  requirement: ReviewSkillRequirement,
+  scope: ReviewScope,
+  reason: string,
+): ReviewSkillSkip {
+  return {
+    skill: requirement.skill,
+    reason,
+    scope,
+    files: requirement.files,
+    diff_fingerprint: requirement.diff_fingerprint,
+    generated_at: new Date().toISOString(),
+  };
+}
+
+export function createReviewSkillEvidence(input: {
+  requirement: ReviewSkillRequirement;
+  scope: ReviewScope;
+  status: ReviewSkillStatus;
+  findings?: ReviewSkillFinding[];
+  summary?: string;
+}): ReviewSkillEvidence {
+  return {
+    skill: input.requirement.skill,
+    language: input.requirement.language,
+    role: input.requirement.role,
+    frameworks: input.requirement.frameworks,
+    scope: input.scope,
+    files: input.requirement.files,
+    diff_fingerprint: input.requirement.diff_fingerprint,
+    status: input.status,
+    findings: input.findings || [],
+    ...(input.summary ? { summary: input.summary } : {}),
+    generated_at: new Date().toISOString(),
+  };
+}
+
+export function findRequirement(
+  requirements: ReviewSkillRequirement[],
+  skill: string,
+  language?: string,
+): ReviewSkillRequirement | null {
+  return requirements.find((requirement) =>
+    requirement.skill === skill && (!language || requirement.language === language)
+  ) || null;
+}

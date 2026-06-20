@@ -153,6 +153,12 @@ export async function listCodexSkillNames(): Promise<string[]> {
   return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 }
 
+export async function listReviewSkillNames(): Promise<string[]> {
+  const dir = await resolveTemplate('review-skills');
+  const entries = await readdir(dir, { withFileTypes: true });
+  return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+}
+
 function entryProtocolFiles(target: Target): string[] {
   if (target === 'universal') return ['CLAUDE.md', 'AGENTS.md', 'CODEX.md', 'OPENCODE.md'];
   if (target === 'codex') return ['AGENTS.md', 'CODEX.md'];
@@ -203,6 +209,15 @@ export async function buildExpectedInstallAssets(options: {
       const content = await readFile(await resolveTemplate(group, file), 'utf-8');
       assets.push(manifestEntry(`.docpath/${group}/${file}`, `docpath:${group}/${file}`, content));
     }
+  }
+
+  for (const skillName of await listReviewSkillNames()) {
+    const content = await readFile(await resolveTemplate('review-skills', skillName, 'SKILL.md'), 'utf-8');
+    assets.push(manifestEntry(
+      `.docpath/review-skills/${skillName}/SKILL.md`,
+      `docpath-review-skill:${skillName}/SKILL.md`,
+      content
+    ));
   }
 
   if (options.target === 'claude' || options.target === 'universal') {

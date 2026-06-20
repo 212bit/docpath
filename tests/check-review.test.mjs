@@ -333,9 +333,11 @@ describe('check and review commands', () => {
     mkExecWorkspace(cwd);
     markReadyForReview(cwd);
     execSync('git init', { cwd, encoding: 'utf-8' });
+    mkdirSync(join(cwd, '.docpath', 'review-skills', 'typescript'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'review-skills', 'typescript', 'SKILL.md'), '# TypeScript Review Skill\n\n## Scope\n\n## Review Checklist\n\n## Evidence Contract\n');
     writeFileSync(join(cwd, 'todo.ts'), '// TODO review evidence stays out of ADR\n');
 
-    const out = run(`review --cwd ${cwd}`, cwd);
+    const out = run(`review --cwd ${cwd} --skip-skill-review docpath-review-typescript --reason "baseline scanner regression test"`, cwd);
     const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');
     const reviewJsonPath = join(cwd, '.docpath', 'workspace', 'review.json');
     const reviewJson = JSON.parse(readFileSync(reviewJsonPath, 'utf-8'));
@@ -345,6 +347,7 @@ describe('check and review commands', () => {
     assert.match(out, /next_hint:/);
     assert.match(out, /recommended_command:/);
     assert.equal(reviewJson.scope, 'all');
+    assert.equal(reviewJson.skill_review_gate.status, 'pass_with_skips');
     assert.equal(reviewJson.finding_scope, 'mixed');
     assert.equal(reviewJson.finding_scope_counts.current_diff.infos, 1);
     assert.equal(existsSync(decisionsPath), false);
@@ -394,6 +397,7 @@ describe('check and review commands', () => {
     mkExecWorkspace(cwd);
     markReadyForReview(cwd);
     execSync('git init', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
     writeFileSync(join(cwd, 'manual.ts'), 'export const manual = true;\n');
 
     const out = run(`review --cwd ${cwd} --approve`, cwd);

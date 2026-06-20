@@ -25,6 +25,7 @@ import {
   shellQuote,
   wrapClaudeCommandWithShim,
   listCodexSkillNames,
+  listReviewSkillNames,
   renderCodexConfigContent,
   renderOpenCodeConfigContent,
   buildExpectedInstallAssets,
@@ -389,6 +390,33 @@ async function installDocpathTemplates(context: InstallContext): Promise<void> {
     join(docpathDir, 'commands'),
     { force, label: 'Commands 模板 → .docpath/commands/' }
   );
+
+  await installReviewSkills(docpathDir, force);
+}
+
+async function installReviewSkills(docpathDir: string, force: boolean): Promise<void> {
+  let written = 0;
+  let skipped = 0;
+  for (const skillName of await listReviewSkillNames()) {
+    const content = await readFile(await resolveTemplate('review-skills', skillName, 'SKILL.md'), 'utf-8');
+    const skillDir = join(docpathDir, 'review-skills', skillName);
+    const skillFile = join(skillDir, 'SKILL.md');
+    await mkdir(skillDir, { recursive: true });
+    const result = await writeManagedFile(
+      skillFile,
+      content,
+      force,
+      `Review Skill → .docpath/review-skills/${skillName}/SKILL.md`,
+    );
+    if (result === 'skipped') skipped++;
+    else written++;
+  }
+  if (written > 0) {
+    const suffix = skipped > 0 ? ` (跳过 ${skipped} 个已存在)` : '';
+    console.log(`✅  Review Skills 已处理 (${written} 个)${suffix}`);
+  } else {
+    console.log('⏭️  Review Skills 已存在，跳过');
+  }
 }
 
 async function installCodexSkills(targetDir: string, force: boolean): Promise<void> {

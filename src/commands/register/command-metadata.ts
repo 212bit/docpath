@@ -31,6 +31,7 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'agent', description: 'Agent lifecycle: enter, step, done, handoff', visibility: 'core' },
   { name: 'check', description: 'Run quality and workflow gates', visibility: 'core' },
   { name: 'review', description: 'Run local static review gate', visibility: 'core' },
+  { name: 'write-review-skill', description: 'Persist language review skill evidence', visibility: 'core' },
   { name: 'journal', description: 'Archive completed task knowledge', visibility: 'core' },
   { name: 'changes', description: 'Read-only git closeout view', visibility: 'core' },
   { name: 'context', description: 'Build a budgeted agent context package', visibility: 'core' },
