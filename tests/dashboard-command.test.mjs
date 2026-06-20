@@ -75,10 +75,14 @@ describe('dashboard readonly API', () => {
     assert.equal(health.status, 200);
     assert.equal(health.body.mode, 'readonly');
     assert.ok(health.body.endpoints.includes('/api/projects'));
+    assert.ok(health.body.endpoints.includes('/api/summary'));
+    assert.ok(health.body.endpoints.includes('/api/events'));
 
     const projects = await request('/api/projects', cwd);
     assert.equal(projects.status, 200);
-    assert.deepEqual(projects.body.projects, []);
+    assert.equal(projects.body.projects.length, 1);
+    assert.equal(projects.body.projects[0].root, cwd);
+    assert.equal(projects.body.projects[0].source, 'local');
 
     if (oldRegistry === undefined) delete process.env.DOCPATH_REGISTRY_DB;
     else process.env.DOCPATH_REGISTRY_DB = oldRegistry;
@@ -87,6 +91,8 @@ describe('dashboard readonly API', () => {
 
   it('reads state, checks, review, and backlog without mutating files', async () => {
     const cwd = mkDashboardWorkspace();
+    const oldRegistry = process.env.DOCPATH_REGISTRY_DB;
+    process.env.DOCPATH_REGISTRY_DB = join(cwd, 'dashboard-registry.sqlite');
     const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
     const beforeState = readFileSync(statePath, 'utf-8');
 
@@ -111,12 +117,27 @@ describe('dashboard readonly API', () => {
     assert.equal(backlog.body.items.length, 1);
     assert.equal(backlog.body.items[0].title, 'Dashboard');
 
+    const summary = await request('/api/summary', cwd);
+    assert.equal(summary.status, 200);
+    assert.equal(summary.body.metrics.projects, 1);
+    assert.equal(summary.body.snapshots[0].project.root, cwd);
+    assert.equal(summary.body.snapshots[0].backlog_counts.accepted, 1);
+
+    const events = await request('/api/events?limit=5', cwd);
+    assert.equal(events.status, 200);
+    assert.equal(events.body.limit, 5);
+    assert.ok(Array.isArray(events.body.events));
+
     assert.equal(readFileSync(statePath, 'utf-8'), beforeState);
+    if (oldRegistry === undefined) delete process.env.DOCPATH_REGISTRY_DB;
+    else process.env.DOCPATH_REGISTRY_DB = oldRegistry;
     rmSync(cwd, { recursive: true, force: true });
   });
 
   it('rejects mutation methods and does not expose command execution endpoint', async () => {
     const cwd = mkDashboardWorkspace();
+    const oldRegistry = process.env.DOCPATH_REGISTRY_DB;
+    process.env.DOCPATH_REGISTRY_DB = join(cwd, 'dashboard-registry.sqlite');
 
     const postState = await request('/api/state', cwd, { method: 'POST' });
     assert.equal(postState.status, 405);
@@ -126,6 +147,12 @@ describe('dashboard readonly API', () => {
     assert.equal(oldCommandEndpoint.status, 404);
     assert.equal(oldCommandEndpoint.body.error, 'not_found');
 
+    const unknownRoot = await request(`/api/state?root=${encodeURIComponent(join(cwd, '..', 'unknown'))}`, cwd);
+    assert.equal(unknownRoot.status, 404);
+    assert.equal(unknownRoot.body.error, 'unknown_project_root');
+
+    if (oldRegistry === undefined) delete process.env.DOCPATH_REGISTRY_DB;
+    else process.env.DOCPATH_REGISTRY_DB = oldRegistry;
     rmSync(cwd, { recursive: true, force: true });
   });
 });

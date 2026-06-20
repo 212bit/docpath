@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-19T17:48:15.990Z",
+    "updated_at": "2026-06-19T17:48:15.990Z",
+    "content_sha256": "bd8d580e3d82a3208851711ad2f38f5170eab0941ba613a4ca44149db9129726"
+  },
+  "task_id": "T-20260619-build-docpath-frontend-dashboard",
+  "backlog_id": "R-221",
+  "title": "T-20260619-build-docpath-frontend-dashboard - Build DocPath frontend dashboard",
+  "generated_at": "2026-06-19T17:48:15.990Z",
+  "scope": {
+    "included": [
+      "扩展 dashboard 只读 API 与 payload shape。",
+      "多项目 registry 读取、当前 cwd fallback、unknown/stale/unavailable 项目状态。",
+      "React dashboard 的信息架构、导航、总览、Backlog、Tasks、Gates、Events/消息视图升级。",
+      "只读边界和路径读取安全保护。",
+      "UI brief、design preview、design approval、visual acceptance 证据。",
+      "dashboard API/UI/build/typecheck/test 回归验证。"
+    ],
+    "excluded": [
+      "浏览器内执行 `docpath` 命令。",
+      "写入 backlog、accept/promote/go/check/review、注册/删除项目或修改 workflow state。",
+      "多用户权限系统、认证、远程公网 dashboard。",
+      "完整 daemon 重构或长期后台 watcher。",
+      "替换现有 CLI 工作流或改变 DocPath 核心状态机语义。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "UI 框架 / 设计系统",
+      "API / 数据契约",
+      "架构 / 模块边界",
+      "UI 信息架构 / 用户主路径",
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界",
+      "范围扩大",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "用户已确认“同意”按多项目只读 dashboard MVP 推进。",
+    "decision_brief_markdown": "- 当前问题: 现有 DocPath dashboard 只有基础只读 API 和轻量页面，无法支撑多项目 dogfood 时对状态、下一步、backlog、任务和事件的快速判断。\n- 目标: 构建本地只读多项目 dashboard MVP，让 operator/agent 能在一个界面中观察多个 DocPath 项目的状态和近期事件，并能进入单项目详情。\n- 背景: 用户要求为 DocPath 实现前端，用于展示 DocPath 信息、backlog、正在运行的任务和消息；随后明确补充“支持多项目”。\n- 可选方案: A 从零做新 web app；B 复用现有 dashboard 命令和 React/Vite UI，扩展只读 API；C 建完整 daemon/远程管理端并加入写操作。\n- 推荐方案: 采用 B。它利用现有 dashboard、project registry 和测试基础，最小化架构风险，同时满足多项目可见性需求。\n- 不做什么: 不做浏览器内命令执行；不写 backlog 或 workflow state；不注册/删除项目；不做远程公网服务、多用户权限或完整 daemon 重构。\n- 成本: 中高，涉及 API shape、前端信息架构、UI 状态、事件读取、测试和视觉验收。\n- 风险: 多项目聚合可能变慢；已注册项目可能移动/删除；不同项目 schema 可能不一致；Markdown 解析脆弱；如果后续加入写操作会扩大安全边界。\n- 回滚方案: 回退 dashboard API/UI 变更，保留现有 dashboard 命令和 CLI workflow；若某个页面有问题，可按 route 局部回退。\n- 用户确认: 用户已确认“同意”按多项目只读 dashboard MVP 推进。"
+  },
+  "ui_gate": {
+    "state": "required"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "多项目总览",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "项目切换与单项目钻取",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "当前路线与健康状态展示",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "Backlog 体验升级",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "Tasks 体验升级",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "Messages / Events 视图",
+      "done": false
+    },
+    {
+      "id": "FR-7",
+      "text": "UI 状态与响应式",
+      "done": false
+    },
+    {
+      "id": "FR-8",
+      "text": "只读 API 契约",
+      "done": false
+    },
+    {
+      "id": "FR-9",
+      "text": "测试与构建",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持本地优先和只读安全边界，不扩大到远程公网服务。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "数据读取应限制范围和成本，避免多项目场景一次性扫描大型日志。",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "尽量使用 JSON/JSONL machine truth；避免依赖 Markdown 人类视图解析。",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "保持现有 dashboard command、API endpoint 和 package build scripts 兼容。",
+      "done": false
+    },
+    {
+      "id": "NFR-5",
+      "text": "UI 必须通过设计 brief、design preview、design approval 后才能实现产品 UI 代码。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`docpath dashboard` 启动后，多项目总览展示项目数、活跃任务数、阻塞项目数、最近失败 gate、registry health 和 install health 摘要。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "当前启动 cwd 未注册时仍作为 local project 可见；已注册项目按 `last_seen_at` / name 排序；stale/unavailable/unknown schema 项目有明确状态。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "项目切换后，Dashboard/Backlog/Tasks/Gates/Events 读取所选项目数据；unknown root 返回错误且不读取任意路径。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "单项目首页展示 phase、gate、current step、task、next action、recommended command、gate policy、install health 和最近 gate 状态。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "Backlog 页面支持项目维度、搜索、状态/优先级/readiness 筛选、列表和详情摘要。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "Tasks 页面支持跨项目分组和单项目任务详情，展示当前任务、步骤状态、canonical/current 状态和 closeout 信号。",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "Events/消息视图展示所选项目近期事件摘要，并对读取数量设上限；跨项目只展示摘要。",
+      "done": false
+    },
+    {
+      "id": "AC-8",
+      "text": "UI 覆盖 loading、empty、error、partial data、unknown/deleted project、permission/read error 和 responsive 状态。",
+      "done": false
+    },
+    {
+      "id": "AC-9",
+      "text": "API 保持只读，拒绝非 GET/HEAD 方法，不暴露命令执行 endpoint。",
+      "done": false
+    },
+    {
+      "id": "AC-10",
+      "text": "UI brief、design preview、design approval 已写入当前任务；实现后完成 visual acceptance。",
+      "done": false
+    },
+    {
+      "id": "AC-11",
+      "text": "`pnpm run build:test`、`pnpm run build:dashboard`、`pnpm run typecheck`、相关 dashboard tests 和 `docpath check` 通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: 现有 DocPath dashboard 只有基础只读 API 和轻量页面，无法支撑多项目 dogfood 时对状态、下一步、backlog、任务和事件的快速判断。\n- 目标: 构建本地只读多项目 dashboard MVP，让 operator/agent 能在一个界面中观察多个 DocPath 项目的状态和近期事件，并能进入单项目详情。\n- 背景: 用户要求为 DocPath 实现前端，用于展示 DocPath 信息、backlog、正在运行的任务和消息；随后明确补充“支持多项目”。\n- 可选方案: A 从零做新 web app；B 复用现有 dashboard 命令和 React/Vite UI，扩展只读 API；C 建完整 daemon/远程管理端并加入写操作。\n- 推荐方案: 采用 B。它利用现有 dashboard、project registry 和测试基础，最小化架构风险，同时满足多项目可见性需求。\n- 不做什么: 不做浏览器内命令执行；不写 backlog 或 workflow state；不注册/删除项目；不做远程公网服务、多用户权限或完整 daemon 重构。\n- 成本: 中高，涉及 API shape、前端信息架构、UI 状态、事件读取、测试和视觉验收。\n- 风险: 多项目聚合可能变慢；已注册项目可能移动/删除；不同项目 schema 可能不一致；Markdown 解析脆弱；如果后续加入写操作会扩大安全边界。\n- 回滚方案: 回退 dashboard API/UI 变更，保留现有 dashboard 命令和 CLI workflow；若某个页面有问题，可按 route 局部回退。\n- 用户确认: 用户已确认“同意”按多项目只读 dashboard MVP 推进。"
+}

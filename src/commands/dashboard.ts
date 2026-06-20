@@ -1,10 +1,13 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { extname, join, normalize, sep } from 'node:path';
+import { basename, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { listBacklogItems } from '../engine/backlog.js';
-import { listRegisteredProjects } from '../engine/project-registry.js';
-import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
+import { listRegisteredProjects, type RegisteredProject } from '../engine/project-registry.js';
+import { parsePlanSteps } from '../utils/doc-parser.js';
+import { exists, readFileSafe, resolveDocpathDir } from '../utils/file.js';
+import { detectInstallAssetDrift, isInstallTarget, readInstallMetadata } from '../utils/install-core.js';
 import { readReviewMarkdown } from '../utils/workspace-evidence.js';
 
 type DashboardOptions = {
@@ -16,6 +19,68 @@ type DashboardOptions = {
 type DashboardRequestOptions = {
   cwd: string;
 };
+
+type DashboardProject = RegisteredProject & {
+  source: 'local' | 'registry';
+  reachable: boolean;
+  status: 'ok' | 'unavailable' | 'partial';
+  current: boolean;
+  read_error: string | null;
+};
+
+type DashboardRoute = {
+  next_action: string;
+  recommended_command: string | null;
+};
+
+type DashboardInstallHealth = {
+  passed: boolean;
+  target: string | null;
+  asset_count: number;
+  errors: number;
+  warnings: number;
+  issue_ids: string[];
+  recommended_command: string | null;
+};
+
+type DashboardProjectSnapshot = {
+  project: DashboardProject;
+  state: unknown;
+  route: DashboardRoute;
+  backlog_counts: Record<string, number>;
+  check: {
+    latest: unknown | null;
+    passed: number;
+    failed: number;
+  };
+  review: ReturnType<typeof summarizeReview>;
+  install_health: DashboardInstallHealth;
+  events: {
+    latest: DashboardEvent | null;
+    count: number;
+    truncated: boolean;
+  };
+  task_progress: {
+    done: number;
+    total: number;
+    blocked: number;
+    current_step: string;
+  };
+  errors: string[];
+};
+
+type DashboardEvent = {
+  time: string;
+  source: 'breadcrumb' | 'check' | 'review';
+  status: string;
+  severity: 'info' | 'pass' | 'warning' | 'fail' | 'blocked';
+  project_root?: string;
+  task_id?: string;
+  step?: string;
+  message: string;
+};
+
+type DashboardReviewSummary = ReturnType<typeof summarizeReview>;
 
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 5179;
@@ -128,6 +193,10 @@ function parseJsonOrFallback(content: string | null, fallback: unknown): unknown
   }
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
 function summarizeReview(markdown: string | null): { status: 'pass' | 'fail' | 'unknown'; errors: number; warnings: number; hints: number } {
   const content = markdown || '';
   const status = /PASS|通过|✅/i.test(content)
@@ -145,9 +214,59 @@ async function resolveRequestedRoot(url: URL, cwd: string): Promise<string> {
   const requestedRoot = url.searchParams.get('root');
   if (!requestedRoot || requestedRoot === cwd) return cwd;
 
-  const projects = await listRegisteredProjects();
+  const projects = await listDashboardProjects(cwd);
   if (projects.some((project) => project.root === requestedRoot)) return requestedRoot;
   throw new Error('unknown_project_root');
+}
+
+async function buildLocalProject(cwd: string): Promise<DashboardProject> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const state = asRecord(await readProjectState(cwd));
+  const reachable = await exists(join(docpathDir, 'config.yaml')) || await exists(join(docpathDir, 'workspace', 'state.json'));
+  return {
+    root: cwd,
+    docpath_dir: docpathDir,
+    name: basename(cwd) || 'local project',
+    description: '',
+    type: '-',
+    language: '-',
+    framework: '-',
+    task_id: String(state.task_id || ''),
+    task_title: String(state.task_title || ''),
+    phase: String(state.phase || 'idle'),
+    gate: String(state.gate || 'none'),
+    registered_at: '',
+    last_seen_at: String(state.updated_at || new Date().toISOString()),
+    source: 'local',
+    reachable,
+    status: reachable ? 'ok' : 'unavailable',
+    current: true,
+    read_error: null,
+  };
+}
+
+async function normalizeRegistryProject(project: RegisteredProject, cwd: string): Promise<DashboardProject> {
+  const reachable = await exists(join(project.docpath_dir, 'config.yaml')) || await exists(join(project.docpath_dir, 'workspace', 'state.json'));
+  return {
+    ...project,
+    source: project.root === cwd ? 'local' : 'registry',
+    reachable,
+    status: reachable ? 'ok' : 'unavailable',
+    current: project.root === cwd,
+    read_error: reachable ? null : 'project_unavailable',
+  };
+}
+
+async function listDashboardProjects(cwd: string): Promise<DashboardProject[]> {
+  const registered = await Promise.all((await listRegisteredProjects()).map((project) => normalizeRegistryProject(project, cwd)));
+  if (!registered.some((project) => project.root === cwd)) {
+    registered.unshift(await buildLocalProject(cwd));
+  }
+  return registered.sort((a, b) => {
+    if (a.current && !b.current) return -1;
+    if (!a.current && b.current) return 1;
+    return (b.last_seen_at || '').localeCompare(a.last_seen_at || '') || (a.name || a.root).localeCompare(b.name || b.root);
+  });
 }
 
 async function readProjectState(projectRoot: string): Promise<unknown> {
@@ -176,7 +295,274 @@ async function readReview(projectRoot: string): Promise<{ markdown: string; summ
   };
 }
 
-export async function handleDashboardFetch(request: Request, options: DashboardRequestOptions): Promise<Response> {
+function deriveRoute(state: unknown): DashboardRoute {
+  const snapshot = asRecord(state);
+  const phase = String(snapshot.phase || '');
+  const gate = String(snapshot.gate || '');
+  const taskId = String(snapshot.task_id || '');
+  const currentStep = String(snapshot.current_step || '');
+
+  if (!taskId) {
+    return {
+      next_action: 'No active task. Capture or promote backlog before execution.',
+      recommended_command: 'docpath backlog capture --title <title>',
+    };
+  }
+  if (phase === 'planning' || phase === 'drafting') {
+    return {
+      next_action: phase === 'drafting' ? 'Spec is ready; generate the execution plan.' : 'Plan is ready; start the next open step.',
+      recommended_command: phase === 'drafting' ? 'docpath plan' : 'docpath go --step <step>',
+    };
+  }
+  if (phase === 'executing') {
+    return {
+      next_action: currentStep ? `Continue current step: ${currentStep}` : 'Continue the active execution step.',
+      recommended_command: currentStep ? `docpath agent step --step ${currentStep} --status done` : 'docpath next --agent',
+    };
+  }
+  if (phase === 'reviewing' || gate.includes('check')) {
+    return { next_action: 'Quality gates are pending or failed.', recommended_command: 'docpath check' };
+  }
+  if (phase === 'completed') {
+    return { next_action: 'Task is complete. Capture or promote the next backlog item.', recommended_command: 'docpath backlog capture --title <title>' };
+  }
+  return { next_action: 'Read the active route before taking action.', recommended_command: 'docpath next --agent' };
+}
+
+async function readTaskProgress(projectRoot: string, state: unknown): Promise<DashboardProjectSnapshot['task_progress']> {
+  const docpathDir = await resolveDocpathDir(projectRoot);
+  const taskId = String(asRecord(state).task_id || '');
+  const planPaths = [
+    join(docpathDir, 'tasks', 'current', 'plan.md'),
+    taskId ? join(docpathDir, 'tasks', taskId, 'plan.md') : '',
+  ].filter(Boolean);
+  for (const planPath of planPaths) {
+    const content = await readFileSafe(planPath);
+    if (!content) continue;
+    const steps = parsePlanSteps(content);
+    return {
+      done: steps.filter((step) => step.done).length,
+      total: steps.length,
+      blocked: steps.filter((step) => step.marker === '!').length,
+      current_step: String(asRecord(state).current_step || ''),
+    };
+  }
+  return { done: 0, total: 0, blocked: 0, current_step: String(asRecord(state).current_step || '') };
+}
+
+async function readInstallHealth(projectRoot: string): Promise<DashboardInstallHealth> {
+  const docpathDir = await resolveDocpathDir(projectRoot);
+  try {
+    const meta = await readInstallMetadata(docpathDir);
+    if (!meta) {
+      return {
+        passed: false,
+        target: null,
+        asset_count: 0,
+        errors: 1,
+        warnings: 0,
+        issue_ids: ['install-meta-missing'],
+        recommended_command: 'docpath install --target universal',
+      };
+    }
+    const target = isInstallTarget(meta.target) ? meta.target : 'universal';
+    const report = await detectInstallAssetDrift(projectRoot, meta, {
+      target,
+      projectName: meta.projectName || basename(projectRoot) || 'docpath project',
+    });
+    return {
+      passed: !report.hasDrift,
+      target: report.target,
+      asset_count: report.assetCount,
+      errors: report.hasDrift ? 1 : 0,
+      warnings: 0,
+      issue_ids: report.hasDrift ? ['install-manifest-drift'] : [],
+      recommended_command: report.hasDrift ? `docpath install --target ${report.target}` : null,
+    };
+  } catch (error) {
+    return {
+      passed: false,
+      target: null,
+      asset_count: 0,
+      errors: 1,
+      warnings: 0,
+      issue_ids: ['install-health-error'],
+      recommended_command: 'docpath install --target universal',
+    };
+  }
+}
+
+function countBacklog(items: Array<{ status: string }>): Record<string, number> {
+  return items.reduce<Record<string, number>>((counts, item) => {
+    counts[item.status] = (counts[item.status] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function summarizeChecks(history: unknown[]): DashboardProjectSnapshot['check'] {
+  const passed = history.filter((entry) => Boolean(asRecord(entry).passed)).length;
+  return {
+    latest: history.at(-1) || null,
+    passed,
+    failed: history.length - passed,
+  };
+}
+
+function eventSeverity(status: string): DashboardEvent['severity'] {
+  if (status === 'blocked') return 'blocked';
+  if (status === 'fail' || status === 'failed' || status === 'false') return 'fail';
+  if (status === 'pass' || status === 'passed' || status === 'done' || status === 'true') return 'pass';
+  if (status === 'warning' || status === 'warn') return 'warning';
+  return 'info';
+}
+
+async function readDashboardEvents(projectRoot: string, limit: number): Promise<{ events: DashboardEvent[]; truncated: boolean }> {
+  const events: DashboardEvent[] = [];
+  const breadcrumb = await readBreadcrumb(projectRoot);
+  for (const entry of breadcrumb.entries.slice(-limit)) {
+    events.push({
+      time: entry.timestamp || '',
+      source: 'breadcrumb',
+      status: entry.status,
+      severity: eventSeverity(entry.status),
+      task_id: entry.taskId,
+      step: entry.step,
+      message: entry.context,
+    });
+  }
+  const checks = await readCheckHistory(projectRoot);
+  for (const check of checks.slice(-Math.min(limit, 20))) {
+    const record = asRecord(check);
+    const passed = Boolean(record.passed);
+    events.push({
+      time: String(record.timestamp || ''),
+      source: 'check',
+      status: passed ? 'pass' : 'fail',
+      severity: passed ? 'pass' : 'fail',
+      message: passed ? 'Check passed' : `Check failed: ${(record.failedChecks as string[] | undefined)?.join(', ') || 'unknown'}`,
+    });
+  }
+  const review = await readReview(projectRoot);
+  if (review.markdown) {
+    events.push({
+      time: '',
+      source: 'review',
+      status: review.summary.status,
+      severity: eventSeverity(review.summary.status),
+      message: `Review ${review.summary.status}: ${review.summary.errors} errors, ${review.summary.warnings} warnings, ${review.summary.hints} hints`,
+    });
+  }
+  const sorted = events
+    .filter((event) => event.message)
+    .sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+  return {
+    events: sorted.slice(0, limit),
+    truncated: sorted.length > limit || breadcrumb.entries.length > limit,
+  };
+}
+
+async function readProjectSnapshot(project: DashboardProject): Promise<DashboardProjectSnapshot> {
+  const errors: string[] = [];
+  if (!project.reachable) {
+    return {
+      project,
+      state: null,
+      route: { next_action: 'Project is unavailable on disk.', recommended_command: null },
+      backlog_counts: {},
+      check: { latest: null, passed: 0, failed: 0 },
+      review: { status: 'unknown', errors: 0, warnings: 0, hints: 0 },
+      install_health: { passed: false, target: null, asset_count: 0, errors: 1, warnings: 0, issue_ids: ['project-unavailable'], recommended_command: null },
+      events: { latest: null, count: 0, truncated: false },
+      task_progress: { done: 0, total: 0, blocked: 0, current_step: '' },
+      errors: ['project_unavailable'],
+    };
+  }
+
+  let state: unknown = null;
+  let backlog: Awaited<ReturnType<typeof listBacklogItems>> = [];
+  let checks: unknown[] = [];
+  let reviewSummary: DashboardReviewSummary = { status: 'unknown', errors: 0, warnings: 0, hints: 0 };
+  let installHealth: DashboardInstallHealth = { passed: false, target: null, asset_count: 0, errors: 0, warnings: 0, issue_ids: [], recommended_command: null };
+  let events = { events: [] as DashboardEvent[], truncated: false };
+  let taskProgress: DashboardProjectSnapshot['task_progress'] = { done: 0, total: 0, blocked: 0, current_step: '' };
+
+  try { state = await readProjectState(project.root); } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
+  try { backlog = await listBacklogItems(project.root); } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
+  try { checks = await readCheckHistory(project.root); } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
+  try { reviewSummary = (await readReview(project.root)).summary; } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
+  try { installHealth = await readInstallHealth(project.root); } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
+  try { events = await readDashboardEvents(project.root, 20); } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
+  try { taskProgress = await readTaskProgress(project.root, state); } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
+
+  return {
+    project: errors.length > 0 ? { ...project, status: 'partial', read_error: errors[0] || null } : project,
+    state,
+    route: deriveRoute(state),
+    backlog_counts: countBacklog(backlog),
+    check: summarizeChecks(checks),
+    review: reviewSummary,
+    install_health: installHealth,
+    events: {
+      latest: events.events[0] || null,
+      count: events.events.length,
+      truncated: events.truncated,
+    },
+    task_progress: taskProgress,
+    errors,
+  };
+}
+
+function buildDashboardMetrics(snapshots: DashboardProjectSnapshot[]) {
+  const active = snapshots.filter((snapshot) => Boolean(asRecord(snapshot.state).task_id) && asRecord(snapshot.state).phase !== 'completed').length;
+  const blocked = snapshots.filter((snapshot) => snapshot.project.status === 'unavailable' || String(asRecord(snapshot.state).phase) === 'blocked' || String(asRecord(snapshot.state).gate).includes('fail')).length;
+  const failedGates = snapshots.filter((snapshot) => snapshot.check.latest && !Boolean(asRecord(snapshot.check.latest).passed)).length;
+  const staleOrUnavailable = snapshots.filter((snapshot) => snapshot.project.status !== 'ok').length;
+  return {
+    projects: snapshots.length,
+    active_tasks: active,
+    blocked_projects: blocked,
+    failed_gates: failedGates,
+    stale_or_unavailable: staleOrUnavailable,
+    install_failures: snapshots.filter((snapshot) => !snapshot.install_health.passed).length,
+  };
+}
+
+async function readDashboardSummary(cwd: string) {
+  const projects = await listDashboardProjects(cwd);
+  const snapshots = await Promise.all(projects.map((project) => readProjectSnapshot(project)));
+  return {
+    generated_at: new Date().toISOString(),
+    cwd,
+    projects,
+    metrics: buildDashboardMetrics(snapshots),
+    snapshots,
+    attention: snapshots
+      .map((snapshot) => ({
+        project_root: snapshot.project.root,
+        project_name: snapshot.project.name,
+        reason: snapshot.project.status === 'unavailable'
+          ? 'Project unavailable'
+          : !snapshot.install_health.passed
+            ? 'Install health failed'
+            : snapshot.check.latest && !Boolean(asRecord(snapshot.check.latest).passed)
+              ? 'Latest check failed'
+              : String(asRecord(snapshot.state).task_id)
+                ? 'Active task'
+                : 'No active task',
+        severity: snapshot.project.status === 'unavailable' || !snapshot.install_health.passed ? 'fail' : String(asRecord(snapshot.state).task_id) ? 'info' : 'pass',
+        phase: String(asRecord(snapshot.state).phase || snapshot.project.phase || 'idle'),
+        gate: String(asRecord(snapshot.state).gate || snapshot.project.gate || 'none'),
+        task_title: String(asRecord(snapshot.state).task_title || snapshot.project.task_title || ''),
+        recommended_command: snapshot.route.recommended_command,
+      }))
+      .sort((a, b) => {
+        const weight = (severity: string) => severity === 'fail' ? 0 : severity === 'info' ? 1 : 2;
+        return weight(a.severity) - weight(b.severity) || a.project_name.localeCompare(b.project_name);
+      }),
+  };
+}
+
+async function handleDashboardFetchInner(request: Request, options: DashboardRequestOptions): Promise<Response> {
   const url = new URL(request.url);
   const method = request.method || 'GET';
   const path = url.pathname;
@@ -189,12 +575,16 @@ export async function handleDashboardFetch(request: Request, options: DashboardR
     return jsonResponse(200, {
       ok: true,
       mode: 'readonly',
-      endpoints: ['/api/projects', '/api/state', '/api/checks', '/api/review', '/api/backlog'],
+      endpoints: ['/api/projects', '/api/summary', '/api/state', '/api/checks', '/api/review', '/api/backlog', '/api/events'],
     });
   }
 
   if (path === '/api/projects') {
-    return jsonResponse(200, { projects: await listRegisteredProjects() });
+    return jsonResponse(200, { projects: await listDashboardProjects(options.cwd) });
+  }
+
+  if (path === '/api/summary') {
+    return jsonResponse(200, await readDashboardSummary(options.cwd));
   }
 
   if (path === '/api/state') {
@@ -217,9 +607,24 @@ export async function handleDashboardFetch(request: Request, options: DashboardR
     return jsonResponse(200, { projectRoot, items: await listBacklogItems(projectRoot) });
   }
 
+  if (path === '/api/events') {
+    const projectRoot = await resolveRequestedRoot(url, options.cwd);
+    const limit = Math.max(1, Math.min(200, Number(url.searchParams.get('limit') || 100)));
+    return jsonResponse(200, { projectRoot, limit, ...await readDashboardEvents(projectRoot, limit) });
+  }
+
   if (!path.startsWith('/api/')) return await staticDashboardResponse(path);
 
   return jsonResponse(404, { error: 'not_found' });
+}
+
+export async function handleDashboardFetch(request: Request, options: DashboardRequestOptions): Promise<Response> {
+  try {
+    return await handleDashboardFetchInner(request, options);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return jsonResponse(message === 'unknown_project_root' ? 404 : 500, { error: message });
+  }
 }
 
 async function handleDashboardRequest(

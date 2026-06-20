@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-20T01:55:39.358Z",
+    "updated_at": "2026-06-20T01:55:39.358Z",
+    "content_sha256": "0c1ab5ed3025035246f435b54883f0f0b667e6e79a8134dca2df6ed09ffca2e6"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-06-20T01:55:39.358Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 多项目总览",
+      "description": "根据 spec 明确 FR-1: 多项目总览 的实现边界和验收口径。",
+      "acceptance": "AC-1: `docpath dashboard` 启动后，多项目总览展示项目数、活跃任务数、阻塞项目数、最近失败 gate、registry health 和 install health 摘要。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 多项目总览",
+      "description": "在现有架构内完成 FR-1: 多项目总览 的代码与文档更新。",
+      "acceptance": "FR-1 多项目总览 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 项目切换与单项目钻取",
+      "description": "在现有架构内完成 FR-2: 项目切换与单项目钻取。",
+      "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 FR-3 当前路线与健康状态展示",
+      "description": "在现有架构内完成 FR-3: 当前路线与健康状态展示。",
+      "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "实现 FR-4 Backlog 体验升级",
+      "description": "在现有架构内完成 FR-4: Backlog 体验升级。",
+      "acceptance": "FR-4 已实现，并保持现有工作流兼容。",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "实现 FR-5 Tasks 体验升级",
+      "description": "在现有架构内完成 FR-5: Tasks 体验升级。",
+      "acceptance": "FR-5 已实现，并保持现有工作流兼容。",
+      "dependencies": "S5",
+      "status": "done"
+    },
+    {
+      "id": "S7",
+      "name": "实现 FR-6 Messages / Events 视图",
+      "description": "在现有架构内完成 FR-6: Messages / Events 视图。",
+      "acceptance": "FR-6 已实现，并保持现有工作流兼容。",
+      "dependencies": "S6",
+      "status": "done"
+    },
+    {
+      "id": "S8",
+      "name": "实现 FR-7 UI 状态与响应式",
+      "description": "在现有架构内完成 FR-7: UI 状态与响应式。",
+      "acceptance": "FR-7 已实现，并保持现有工作流兼容。",
+      "dependencies": "S7",
+      "status": "done"
+    },
+    {
+      "id": "S9",
+      "name": "实现 FR-8 只读 API 契约",
+      "description": "在现有架构内完成 FR-8: 只读 API 契约。",
+      "acceptance": "FR-8 已实现，并保持现有工作流兼容。",
+      "dependencies": "S8",
+      "status": "done"
+    },
+    {
+      "id": "S10",
+      "name": "实现 FR-9 测试与构建",
+      "description": "在现有架构内完成 FR-9: 测试与构建。",
+      "acceptance": "FR-9 已实现，并保持现有工作流兼容。",
+      "dependencies": "S9",
+      "status": "done"
+    },
+    {
+      "id": "S11",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: `docpath dashboard` 启动后，多项目总览展示项目数、活跃任务数、阻塞项目数、最近失败 gate、registry health 和 install health 摘要。；AC-2: 当前启动 cwd 未注册时仍作为 local project 可见；已注册项目按 `last_seen_at` / name 排序；stale/unavailable/unknown schema 项目有明确状态。；AC-3: 项目切换后，Dashboard/Backlog/Tasks/Gates/Events 读取所选项目数据；unknown root 返回错误且不读取任意路径。；AC-4: 单项目首页展示 phase、gate、current step、task、next action、recommended command、gate policy、install health 和最近 gate 状态。；AC-5: Backlog 页面支持项目维度、搜索、状态/优先级/readiness 筛选、列表和详情摘要。；AC-6: Tasks 页面支持跨项目分组和单项目任务详情，展示当前任务、步骤状态、canonical/current 状态和 closeout 信号。；AC-7: Events/消息视图展示所选项目近期事件摘要，并对读取数量设上限；跨项目只展示摘要。；AC-8: UI 覆盖 loading、empty、error、partial data、unknown/deleted project、permission/read error 和 responsive 状态。；AC-9: API 保持只读，拒绝非 GET/HEAD 方法，不暴露命令执行 endpoint。；AC-10: UI brief、design preview、design approval 已写入当前任务；实现后完成 visual acceptance。；AC-11: `pnpm run build:test`、`pnpm run build:dashboard`、`pnpm run typecheck`、相关 dashboard tests 和 `docpath check` 通过。",
+      "acceptance": "AC-1: `docpath dashboard` 启动后，多项目总览展示项目数、活跃任务数、阻塞项目数、最近失败 gate、registry health 和 install health 摘要。；AC-2: 当前启动 cwd 未注册时仍作为 local project 可见；已注册项目按 `last_seen_at` / name 排序；stale/unavailable/unknown schema 项目有明确状态。；AC-3: 项目切换后，Dashboard/Backlog/Tasks/Gates/Events 读取所选项目数据；unknown root 返回错误且不读取任意路径。；AC-4: 单项目首页展示 phase、gate、current step、task、next action、recommended command、gate policy、install health 和最近 gate 状态。；AC-5: Backlog 页面支持项目维度、搜索、状态/优先级/readiness 筛选、列表和详情摘要。；AC-6: Tasks 页面支持跨项目分组和单项目任务详情，展示当前任务、步骤状态、canonical/current 状态和 closeout 信号。；AC-7: Events/消息视图展示所选项目近期事件摘要，并对读取数量设上限；跨项目只展示摘要。；AC-8: UI 覆盖 loading、empty、error、partial data、unknown/deleted project、permission/read error 和 responsive 状态。；AC-9: API 保持只读，拒绝非 GET/HEAD 方法，不暴露命令执行 endpoint。；AC-10: UI brief、design preview、design approval 已写入当前任务；实现后完成 visual acceptance。；AC-11: `pnpm run build:test`、`pnpm run build:dashboard`、`pnpm run typecheck`、相关 dashboard tests 和 `docpath check` 通过。",
+      "dependencies": "S10",
+      "status": "done"
+    }
+  ]
+}
