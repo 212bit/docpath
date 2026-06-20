@@ -43,7 +43,7 @@
 - **依赖**: S6
 
 ### S8: 验证验收标准
-- [ ] S8: 验证验收标准
+- [x] S8: 验证验收标准
 - **描述**: 验证 spec 中声明的验收标准：AC-1: required UI 任务在缺 `frontend-stack.md` 或缺被否决备选/理由时,`docpath go` 被拦截并给出明确指引。；AC-2: `frontend-stack.md` 含完整选定栈+≥1被否决备选+理由时,framework-decision 门禁放行,序列推进到 design-preview。；AC-3: 纯静态选定但缺被否决备选时仍被拦截;补上"为什么不用框架"后放行。；AC-4: spec 4.1 exempt 任务不触发 framework-decision 门禁。；AC-5: `docpath-design` skill 以 Framework Decision 为序列首步,含框架讨论提问清单与加载提示。；AC-6: `pnpm test` 全绿,含新增 framework-decision 用例;`docpath check` 通过。
 - **验收条件**: AC-1: required UI 任务在缺 `frontend-stack.md` 或缺被否决备选/理由时,`docpath go` 被拦截并给出明确指引。；AC-2: `frontend-stack.md` 含完整选定栈+≥1被否决备选+理由时,framework-decision 门禁放行,序列推进到 design-preview。；AC-3: 纯静态选定但缺被否决备选时仍被拦截;补上"为什么不用框架"后放行。；AC-4: spec 4.1 exempt 任务不触发 framework-decision 门禁。；AC-5: `docpath-design` skill 以 Framework Decision 为序列首步,含框架讨论提问清单与加载提示。；AC-6: `pnpm test` 全绿,含新增 framework-decision 用例;`docpath check` 通过。
 - **依赖**: S7
@@ -55,7 +55,7 @@
 - [x] S4
 - [x] S5
 - [x] S6
-- [ ] S7
+- [x] S7
 - [ ] S8
 
 ## 依赖关系图
