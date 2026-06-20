@@ -35,6 +35,7 @@ fi
 ```
 
 ## kind
+- `stack` / `frontend-stack` / `framework` / `framework-decision`: write `frontend-stack.md`.
 - `brief` / `ui-brief` / `ui-prompt-brief`: write `ui-brief.md`.
 - `handoff` / `external-design-handoff` / `design-handoff`: write `external-design-handoff.md`.
 - `preview` / `design-preview`: write `design-preview.md`.
@@ -43,6 +44,7 @@ fi
 
 ## Recommended Order
 ```bash
+docpath write-design --kind stack --stdin
 docpath write-design --kind brief --stdin
 docpath write-design --kind handoff --stdin
 docpath write-design --kind preview --stdin
@@ -56,6 +58,7 @@ docpath write-design --kind acceptance --stdin
 ## Check Gate
 `docpath check` verifies the following when a UI/UX task has implementation steps or product UI file changes:
 
+- `frontend-stack.md`
 - `ui-brief.md`
 - `external-design-handoff.md`
 - `design-preview.md`
