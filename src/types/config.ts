@@ -28,6 +28,12 @@ export interface ArtifactConfig {
 export interface DocPathConfig {
   /** Artifact 生成策略 */
   artifacts?: ArtifactConfig;
+
+  /** Review Skill Router 配置 */
+  review_skill_gate?: {
+    /** 是否启用语言级 review skill gate；默认启用 */
+    enabled?: boolean;
+  };
 }
 
 /**

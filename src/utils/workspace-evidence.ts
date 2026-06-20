@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { readFileSafe, writeFileAtomic } from './file.js';
+import type { ReviewSkillEvidence, ReviewSkillGate, ReviewSkillSkip } from './review-skill-router.js';
 
 export interface GitBaselineEvidence {
   ref: string;
@@ -52,6 +53,9 @@ export interface ReviewEvidence {
   infos: number;
   approved: boolean;
   manual?: boolean;
+  skill_reviews?: ReviewSkillEvidence[];
+  skill_review_skips?: ReviewSkillSkip[];
+  skill_review_gate?: ReviewSkillGate;
 }
 
 function lastCheckJsonPath(docpathDir: string): string {
@@ -151,6 +155,11 @@ export function renderReviewMarkdown(evidence: ReviewEvidence): string {
     `**文件**: ${evidence.files.length}`,
     `${evidence.approved ? '✅' : '❌'} 代码审查: ${evidence.errors} 错误, ${evidence.warnings} 警告, ${evidence.infos} 提示`,
     ...(evidence.manual ? ['**状态**: ✅ 手动批准 (跳过自动检查)'] : []),
+    ...(evidence.skill_review_gate ? [
+      `review_skill_gate: ${evidence.skill_review_gate.status}`,
+      `skill_reviews: ${evidence.skill_reviews?.length || 0}`,
+      `skill_review_skips: ${evidence.skill_review_skips?.length || 0}`,
+    ] : []),
     '',
   ];
   for (const finding of evidence.findings) {

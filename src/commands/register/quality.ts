@@ -2,6 +2,7 @@ import type { CAC } from 'cac';
 import { checkCommand } from '../check.js';
 import { journalCommand } from '../journal.js';
 import { reviewCommand } from '../review.js';
+import { writeReviewSkillCommand } from '../write-review-skill.js';
 import { writeJournalCommand } from '../write-journal.js';
 import { getOptionValue, normalizeEnumOption, normalizeTaskFileSyncSource } from './shared.js';
 
@@ -50,13 +51,43 @@ export function registerQualityCommands(cli: CAC): void {
     .option('--dry-run', '只预览审查结果，不写入状态')
     .option('--approve', '直接批准（跳过自动检查）')
     .option('--force', '允许在无活跃 agent 会话时独立运行')
-    .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean; force?: boolean }) => {
+    .option('--skip-skill-review <skill>', '按 skill 粒度临时跳过 Review Skill Gate，可用逗号分隔')
+    .option('--reason <reason>', 'skip skill review 的必填原因')
+    .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean; force?: boolean; 'skip-skill-review'?: string; skipSkillReview?: string; reason?: string }) => {
       await reviewCommand({
         cwd: options.cwd || process.cwd(),
         scope: normalizeEnumOption(options.scope, 'review --scope', ['all', 'staged', 'last_commit'] as const) || 'all',
         dryRun: options['dry-run'] ?? options.dryRun,
         approve: options.approve ?? false,
         force: options.force ?? false,
+        skipSkillReview: [options['skip-skill-review'], options.skipSkillReview].filter(Boolean) as string[],
+        skipSkillReviewReason: options.reason,
+      });
+    });
+
+  cli.command('write-review-skill', '写入语言级 review skill evidence')
+    .option('--cwd <path>', '项目目录')
+    .option('--skill <skill>', 'Router requirement skill id')
+    .option('--language <language>', '语言: typescript|javascript')
+    .option('--scope <scope>', '审查范围: all|staged|last_commit (默认 all)')
+    .option('--status <status>', '结果: pass|fail')
+    .option('--files <files>', '逗号分隔的文件列表，必须覆盖当前 requirement')
+    .option('--findings-json <json>', 'findings JSON，形如 {"findings":[]}')
+    .option('--summary <summary>', '审查摘要')
+    .option('--content <json>', 'review skill evidence JSON')
+    .option('--stdin', '从 stdin 读取 review skill evidence JSON')
+    .action(async (options: { cwd?: string; skill?: string; language?: string; scope?: string; status?: string; files?: string; 'findings-json'?: string; findingsJson?: string; summary?: string; content?: string; stdin?: boolean }) => {
+      await writeReviewSkillCommand({
+        cwd: options.cwd || process.cwd(),
+        skill: options.skill,
+        language: options.language,
+        scope: normalizeEnumOption(options.scope, 'write-review-skill --scope', ['all', 'staged', 'last_commit'] as const) || 'all',
+        status: options.status,
+        files: options.files,
+        findingsJson: options['findings-json'] || options.findingsJson,
+        summary: options.summary,
+        content: options.content,
+        stdin: options.stdin,
       });
     });
 

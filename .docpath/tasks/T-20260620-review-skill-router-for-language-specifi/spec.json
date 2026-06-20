@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-20T15:03:27.611Z",
+    "updated_at": "2026-06-20T15:03:27.611Z",
+    "content_sha256": "83e3fec1f8e1a1d1e12f7f178061a390fe364cc37ff0307004dba6b512b02f06"
+  },
+  "task_id": "T-20260620-review-skill-router-for-language-specifi",
+  "backlog_id": "R-001",
+  "title": "T-20260620-review-skill-router-for-language-specifi - Review Skill Router for language-specific agent review",
+  "generated_at": "2026-06-20T15:03:27.611Z",
+  "scope": {
+    "included": [
+      "`docpath review` Router/gate 集成。",
+      "`docpath review --dry-run` preview contract。",
+      "新 `docpath write-review-skill` 命令或等价注册入口。",
+      "`review.json` schema/evidence 扩展。",
+      "TypeScript/JavaScript language router。",
+      "DocPath-owned review skill default assets。",
+      "配置开关。",
+      "聚焦测试覆盖 router、evidence validation、skip、install/assets。"
+    ],
+    "excluded": [
+      "Rust/Go/Python 等更多语言。",
+      "框架级 skill routing 的实际推断和 gate。",
+      "CLI 自己执行自然语言深度 code review。",
+      "依赖 Codex 自动触发 skills。",
+      "新增状态机 gate 或更改 closeout 状态枚举。",
+      "对配置、lockfile、生成物、文档做 language skill gate。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "API / 数据契约",
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "范围扩大",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "用户已确认该重大变更，并明确“同意，利用docpath 进行开发”。",
+    "decision_brief_markdown": "- 当前问题: CLI 内置全部语言规则不现实；agent 自发 review 容易漏 scope、漏文件、证据不可复算。\n- 目标: 把语言 review 变成 CLI 确定性路由 + agent 执行 skill + CLI 校验证据的闭环。\n- 背景: 用户通过 grill 确认 deterministic Review Skill Router、TS/JS first、blocking gate、skill-granular skip、CLI evidence sink、DocPath-owned skill source。\n- 可选方案: 继续 baseline-only；把所有语言规则写进 CLI；依赖 Codex 自动 skill；采用 Router + evidence contract。\n- 推荐方案: 在 `docpath review` 正常流程中加入 Review Skill Router，使用 DocPath-owned review skill 文件和 `write-review-skill` sink。\n- 不做什么: 不把所有语言规则写进 CLI；不依赖 Codex 自动 skill；不在第一版加入框架推断或新状态机 gate。\n- 成本: review 流程更严格，新增命令、schema 和测试；维护 review skill assets。\n- 风险: 首次使用时缺 evidence 会 fail-loud；skip 可能被滥用；fingerprint/scope 校验实现需避免误报。\n- 回滚方案: 通过配置关闭 skill gate，或回滚本任务提交恢复 baseline-only review。\n- 用户确认: 用户已确认该重大变更，并明确“同意，利用docpath 进行开发”。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "`docpath review` 默认接入 Review Skill Router；仅在命中已支持语言的 changed source files 时触发，第一版支持 TypeScript 和 JavaScript。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Router 识别源代码文件集并绑定 `review --scope`，支持 `all`, `staged`, `last_commit`；第一版只纳入 `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs` 源文件，排除 lockfile、生成物、文档、配置和常见 build/dependency 目录。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "`docpath review --dry-run` 输出稳定的 `review_skill_gate` preview contract，包含 status、scope、requirements、skill、language、role、frameworks metadata、files、CLI-generated diff_fingerprint、skill_source_path、write command、missing/invalid evidence 和 skips。",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "标准 `docpath review` 在缺失 required DocPath-owned review skill 或缺失 required skill evidence 时必须 fail-loud；不能自动用 generic skill 或 baseline scanner 兜底。",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "新增 agent-agnostic `docpath write-review-skill` artifact sink；命令实时复算 Router requirement，校验 skill/language/scope/files/status/findings，并由 CLI 写入 diff_fingerprint，agent 不提供 fingerprint。",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "扩展 `review.json` 语义字段，支持 `skill_reviews[]`, `skill_review_skips[]`, `skill_review_gate`；skill review status 只允许 `pass | fail`，aggregate 可表达 `pass_with_skips`。",
+      "done": false
+    },
+    {
+      "id": "FR-7",
+      "text": "CLI 校验 evidence schema 和语义 invalid：scope mismatch、文件覆盖不完整或越界、fingerprint 过期、`pass` 搭配 `severity:error` finding、`status:fail` 均导致 review fail。",
+      "done": false
+    },
+    {
+      "id": "FR-8",
+      "text": "支持按 skill 粒度 skip：`docpath review --skip-skill-review <skill> --reason <reason>`；skip 必须绑定当前 requirement 中存在的 skill 且 reason 非空；skip 可让 gate 通过，但 evidence 必须显示 `pass_with_skips`，不能伪装完全通过。",
+      "done": false
+    },
+    {
+      "id": "FR-9",
+      "text": "新增 DocPath-owned 默认 review skill resources：`.docpath/review-skills/typescript/SKILL.md` 和 `.docpath/review-skills/javascript/SKILL.md`；每个 skill 必须包含 Scope、Review Checklist、Evidence Contract 三块。",
+      "done": false
+    },
+    {
+      "id": "FR-10",
+      "text": "支持默认安装 TS/JS review skills，并允许配置关闭 Review Skill Gate；配置关闭时 review output 应显示 disabled，gate 启用且命中 supported source files 时缺失 skill 仍 fail-loud。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持 baseline scanner；baseline scanner 的 error findings 仍阻塞 review，且不能替代语言 skill review evidence。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "第一版不新增状态机 gate，仍沿用现有 review pass/fail 机制；skip 语义仅记录在 `review.json` 和 review output。",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "Router 和 `write-review-skill` 必须实时复算 requirement，不依赖持久化预生成 contract。",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "Gate/evidence 命令必须 agent-agnostic；skill 文件第一版可面向 Codex 文案优化，但 gate truth 不依赖 Codex 自动触发目录。",
+      "done": false
+    },
+    {
+      "id": "NFR-5",
+      "text": "输出字段稳定、可测试，并尽量沿用现有 review/check/schema/test 风格。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`docpath review --dry-run` 在 TS/JS changed source files 下输出 `review_skill_gate.required` contract，包含 skill/language/scope/files/fingerprint/source/write command。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "标准 `docpath review` 在缺失 required skill 文件时 fail-loud。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "标准 `docpath review` 在缺失 required skill evidence 时 fail-loud。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "`docpath write-review-skill` 可写入有效 TypeScript/JavaScript skill evidence，并让对应 skill gate pass。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "scope mismatch、文件覆盖不完整、fingerprint 过期、`pass + severity:error`、`status: fail` 均导致 review fail。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "`--skip-skill-review <skill> --reason <reason>` 可让 gate 通过，并在 `review.json` 中记录 `pass_with_skips` 语义。",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "TypeScript/JavaScript review skill resources 默认安装或由模板覆盖，且每个 skill 包含 Scope、Review Checklist、Evidence Contract。",
+      "done": false
+    },
+    {
+      "id": "AC-8",
+      "text": "Baseline scanner 保留，baseline error findings 仍会阻塞 review，且不能替代 skill review。",
+      "done": false
+    },
+    {
+      "id": "AC-9",
+      "text": "聚焦测试覆盖 router、write-review-skill、skip、install assets；`pnpm test`、`docpath check`、`docpath review` 通过或明确记录无法运行原因。",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: CLI 内置全部语言规则不现实；agent 自发 review 容易漏 scope、漏文件、证据不可复算。\n- 目标: 把语言 review 变成 CLI 确定性路由 + agent 执行 skill + CLI 校验证据的闭环。\n- 背景: 用户通过 grill 确认 deterministic Review Skill Router、TS/JS first、blocking gate、skill-granular skip、CLI evidence sink、DocPath-owned skill source。\n- 可选方案: 继续 baseline-only；把所有语言规则写进 CLI；依赖 Codex 自动 skill；采用 Router + evidence contract。\n- 推荐方案: 在 `docpath review` 正常流程中加入 Review Skill Router，使用 DocPath-owned review skill 文件和 `write-review-skill` sink。\n- 不做什么: 不把所有语言规则写进 CLI；不依赖 Codex 自动 skill；不在第一版加入框架推断或新状态机 gate。\n- 成本: review 流程更严格，新增命令、schema 和测试；维护 review skill assets。\n- 风险: 首次使用时缺 evidence 会 fail-loud；skip 可能被滥用；fingerprint/scope 校验实现需避免误报。\n- 回滚方案: 通过配置关闭 skill gate，或回滚本任务提交恢复 baseline-only review。\n- 用户确认: 用户已确认该重大变更，并明确“同意，利用docpath 进行开发”。"
+}

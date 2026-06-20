@@ -16,7 +16,14 @@ import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { emitNextHint } from '../utils/next-hint.js';
-import { writeReviewEvidence } from '../utils/workspace-evidence.js';
+import { writeReviewEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
+import {
+  buildReviewSkillRequirements,
+  createReviewSkillSkip,
+  evaluateReviewSkillGate,
+  type ReviewSkillGate,
+  type ReviewSkillSkip,
+} from '../utils/review-skill-router.js';
 
 interface ReviewOptions {
   cwd: string;
@@ -26,6 +33,8 @@ interface ReviewOptions {
   dryRun?: boolean;
   /** 强制执行，即使不在 agent 会话中 */
   force?: boolean;
+  skipSkillReview?: string[];
+  skipSkillReviewReason?: string;
 }
 
 interface ReviewFinding {
@@ -261,22 +270,57 @@ async function alreadyReviewed(cwd: string): Promise<boolean> {
   );
 }
 
-async function writeReviewReport(docpathDir: string, changedFiles: string[], findings: ReviewFinding[], scope: string): Promise<void> {
-  const finding_scope_counts = countFindingScopes(findings);
-  await writeReviewEvidence(docpathDir, {
-    schema_version: 1,
-    kind: 'review',
-    timestamp: new Date().toISOString(),
-    scope,
-    finding_scope: 'mixed',
-    finding_scope_counts,
-    files: changedFiles,
-    findings,
-    errors: findings.filter((finding) => finding.severity === 'error').length,
-    warnings: findings.filter((finding) => finding.severity === 'warn').length,
-    infos: findings.filter((finding) => finding.severity === 'info').length,
-    approved: findings.every((finding) => finding.severity !== 'error'),
-  });
+function printReviewSkillGate(gate: ReviewSkillGate): void {
+  console.log(`\nreview_skill_gate: ${gate.status}`);
+  console.log(`    scope: ${gate.scope}`);
+  if (gate.status === 'disabled') {
+    console.log('    disabled: review_skill_gate.enabled=false');
+    return;
+  }
+  if (gate.requirements.length === 0) {
+    console.log('    requirements: 0');
+    return;
+  }
+  console.log(`    requirements: ${gate.requirements.length}`);
+  for (const requirement of gate.requirements) {
+    console.log(`    - skill: ${requirement.skill}`);
+    console.log(`      language: ${requirement.language}`);
+    console.log(`      role: ${requirement.role}`);
+    console.log(`      files: ${requirement.files.join(', ')}`);
+    console.log(`      diff_fingerprint: ${requirement.diff_fingerprint}`);
+    console.log(`      skill_source_path: ${requirement.skill_source_path}`);
+    console.log(`      write_command: ${requirement.write_command}`);
+    if (requirement.skill_missing) console.log('      skill_missing: true');
+  }
+  if (gate.missing_evidence.length > 0) {
+    console.log(`    missing_evidence: ${gate.missing_evidence.join(', ')}`);
+  }
+  if (gate.invalid_evidence.length > 0) {
+    console.log('    invalid_evidence:');
+    for (const item of gate.invalid_evidence) console.log(`      - ${item.skill}: ${item.reason}`);
+  }
+  if (gate.skips.length > 0) {
+    console.log('    skips:');
+    for (const skip of gate.skips) console.log(`      - ${skip.skill}: ${skip.reason}`);
+  }
+}
+
+function normalizeSkillSkipList(input?: string[]): string[] {
+  if (!input) return [];
+  return input.flatMap((item) => item.split(',')).map((item) => item.trim()).filter(Boolean);
+}
+
+function buildRequestedSkips(gate: ReviewSkillGate, skillNames: string[], reason?: string): ReviewSkillSkip[] {
+  if (skillNames.length === 0) return [];
+  if (!reason?.trim()) throw new Error('--skip-skill-review requires --reason');
+
+  const skips: ReviewSkillSkip[] = [];
+  for (const skill of skillNames) {
+    const requirement = gate.requirements.find((candidate) => candidate.skill === skill);
+    if (!requirement) throw new Error(`--skip-skill-review 指向了当前 requirement 不存在的 skill: ${skill}`);
+    skips.push(createReviewSkillSkip(requirement, gate.scope, reason.trim()));
+  }
+  return skips;
 }
 
 async function handleApprove(cwd: string, docpathDir: string, taskId: string): Promise<void> {
@@ -299,9 +343,8 @@ async function handleApprove(cwd: string, docpathDir: string, taskId: string): P
   }
 }
 
-async function persistReviewResult(cwd: string, taskId: string, groups: FindingGroups): Promise<void> {
+async function persistReviewResult(cwd: string, taskId: string, groups: FindingGroups, approved: boolean): Promise<void> {
   const { errors, warns, infos } = groups;
-  const approved = errors.length === 0;
   await writeBreadcrumb(cwd, {
     taskId,
     step: 'review',
@@ -342,19 +385,66 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   }
   const groups = groupFindings(findings);
   printFindings(groups);
+  const previousReview = await readReviewEvidence(docpathDir);
+  const { enabled, requirements } = await buildReviewSkillRequirements(opts.cwd, docpathDir, changedFiles, scope);
+  const previewGate = evaluateReviewSkillGate({
+    enabled,
+    requirements,
+    skillReviews: previousReview?.skill_reviews,
+    skillSkips: previousReview?.skill_review_skips,
+    scope,
+  });
+  const requestedSkips = buildRequestedSkips(
+    previewGate,
+    normalizeSkillSkipList(opts.skipSkillReview),
+    opts.skipSkillReviewReason,
+  );
+  const skillReviewGate = evaluateReviewSkillGate({
+    enabled,
+    requirements,
+    skillReviews: previousReview?.skill_reviews,
+    skillSkips: [...(previousReview?.skill_review_skips || []), ...requestedSkips],
+    scope,
+  });
   if (opts.dryRun) {
+    printReviewSkillGate(
+      enabled && requirements.length > 0 && skillReviewGate.status === 'fail'
+        ? { ...skillReviewGate, status: 'required' }
+        : skillReviewGate,
+    );
     console.log('\n📝  [dry-run] 仅预览审查结果，不写入状态、breadcrumb、review.md 或决策日志');
     return;
   }
+  printReviewSkillGate(skillReviewGate);
   const taskId = current?.task_id || 'review';
   if (opts.approve) {
+    if (!(skillReviewGate.status === 'pass' || skillReviewGate.status === 'pass_with_skips' || skillReviewGate.status === 'not_required' || skillReviewGate.status === 'disabled')) {
+      throw new Error('docpath review --approve cannot bypass Review Skill Gate; use --skip-skill-review <skill> --reason <reason> for explicit skill-level exemption');
+    }
     await handleApprove(opts.cwd, docpathDir, taskId);
     await emitNextHint(opts.cwd);
     return;
   }
-  const approved = groups.errors.length === 0;
+  const approved = groups.errors.length === 0 && (skillReviewGate.status === 'pass' || skillReviewGate.status === 'pass_with_skips' || skillReviewGate.status === 'not_required' || skillReviewGate.status === 'disabled');
   console.log(`\n${approved ? '✅ 审查通过' : '❌ 需要修改'} (${groups.errors.length} 错误, ${groups.warns.length} 警告)`);
-  await persistReviewResult(opts.cwd, taskId, groups);
-  await writeReviewReport(docpathDir, changedFiles, findings, scope);
+  await persistReviewResult(opts.cwd, taskId, groups, approved);
+  const finding_scope_counts = countFindingScopes(findings);
+  await writeReviewEvidence(docpathDir, {
+    schema_version: 1,
+    kind: 'review',
+    timestamp: new Date().toISOString(),
+    scope,
+    finding_scope: 'mixed',
+    finding_scope_counts,
+    files: changedFiles,
+    findings,
+    errors: findings.filter((finding) => finding.severity === 'error').length,
+    warnings: findings.filter((finding) => finding.severity === 'warn').length,
+    infos: findings.filter((finding) => finding.severity === 'info').length,
+    approved,
+    skill_reviews: previousReview?.skill_reviews || [],
+    skill_review_skips: [...(previousReview?.skill_review_skips || []), ...requestedSkips],
+    skill_review_gate: skillReviewGate,
+  });
   await emitNextHint(opts.cwd);
 }
