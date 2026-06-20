@@ -2,13 +2,12 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-20T12:58:43.677Z
+> 扫描时间: 2026-06-20T14:05:08.281Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-223 | Dashboard UI 交互控制与 Session 管理 | active | P2 | 2 | T-20260620-dashboard-ui-session |
 
 ## 用途说明
 

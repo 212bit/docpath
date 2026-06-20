@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-06-20T14:03:07.098Z",
-    "updated_at": "2026-06-20T14:03:07.098Z",
-    "content_sha256": "73a81c4c197a75d63daada4e36c19cf285c5725e6fcad9a9d1ed3e222b15db87"
+    "created_at": "2026-06-20T14:04:49.509Z",
+    "updated_at": "2026-06-20T14:04:49.509Z",
+    "content_sha256": "552c3d9454aa3acb2b1076c9247d97537ad41ba4b8419fd1de5549d8cd59ba97"
   },
   "title": "执行计划",
-  "generated_at": "2026-06-20T14:03:07.098Z",
+  "generated_at": "2026-06-20T14:04:49.509Z",
   "steps": [
     {
       "id": "S1",
@@ -32,7 +32,7 @@
       "description": "验证 spec 中声明的验收标准：AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-223 与任务 T-20260620-dashboard-ui-session 建立双向关联",
       "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-223 与任务 T-20260620-dashboard-ui-session 建立双向关联",
       "dependencies": "S2",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }
