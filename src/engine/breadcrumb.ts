@@ -10,6 +10,7 @@
  */
 
 import { join, dirname } from 'path';
+import { existsSync } from 'fs';
 import { readFile, appendFile, writeFile, mkdir } from 'fs/promises';
 import { writeFileAtomic } from '../utils/file.js';
 import { withLock } from '../utils/lock.js';
@@ -182,6 +183,8 @@ function breadcrumbJsonlPath(projectRoot: string): string {
 
 function taskBreadcrumbJsonlPath(projectRoot: string, taskId: string): string | null {
   if (!/^[A-Za-z0-9._-]+$/.test(taskId)) return null;
+  const archivedTaskDir = join(projectRoot, '.docpath', 'tasks', 'done', taskId);
+  if (existsSync(archivedTaskDir)) return join(archivedTaskDir, 'breadcrumb.jsonl');
   return join(projectRoot, '.docpath', 'tasks', taskId, 'breadcrumb.jsonl');
 }
 
