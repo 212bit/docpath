@@ -207,6 +207,7 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-product', 'SKILL.md')), true);
     assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-design', 'SKILL.md')), true);
     assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-software', 'SKILL.md')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'skills', 'grilling', 'SKILL.md')), true);
     assert.equal(existsSync(join(cwd, 'CLAUDE.md')), false);
     assert.equal(existsSync(join(cwd, 'OPENCODE.md')), false);
     assert.equal(existsSync(join(cwd, '.claude', 'commands')), false);
@@ -269,6 +270,7 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-product', 'SKILL.md')), true);
     assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-design', 'SKILL.md')), true);
     assert.equal(existsSync(join(cwd, '.codex', 'skills', 'docpath-software', 'SKILL.md')), true);
+    assert.equal(existsSync(join(cwd, '.codex', 'skills', 'grilling', 'SKILL.md')), true);
     assert.equal(existsSync(join(cwd, '.opencode', 'docpath.json')), true);
 
     const codex = readFileSync(join(cwd, '.codex', 'config.toml'), 'utf-8');
@@ -311,6 +313,7 @@ describe('install agent adapters', () => {
     assert.ok(assetPaths.includes('.codex/skills/docpath-product/SKILL.md'));
     assert.ok(assetPaths.includes('.codex/skills/docpath-design/SKILL.md'));
     assert.ok(assetPaths.includes('.codex/skills/docpath-software/SKILL.md'));
+    assert.ok(assetPaths.includes('.codex/skills/grilling/SKILL.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
