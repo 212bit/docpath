@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-20T13:59:14.890Z",
+    "updated_at": "2026-06-20T13:59:14.890Z",
+    "content_sha256": "1bd2a4590ee517d5503eb2540b11cf02d5655861f82818e5ff3d89c7e1311a90"
+  },
+  "task_id": "T-20260620-dashboard-ui-session",
+  "backlog_id": "R-223",
+  "title": "T-20260620-dashboard-ui-session - Dashboard UI 交互控制与 Session 管理",
+  "generated_at": "2026-06-20T13:59:14.890Z",
+  "scope": {
+    "included": [
+      "Dashboard UI 交互控制与 Session 管理"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "已经在 grill-me 对齐中完成设计方案确认并获得批准",
+    "decision_brief_markdown": "- 当前问题: 涉及对工作流 check 和 go 命令的修改以及 Dashboard UI 设计。\n- 目标: Dashboard UI 交互控制与 Session 管理。\n- 背景: 来自 backlog R-223。\n- 可选方案: 在 spec.md 中记录并勾选重大变更门禁。\n- 推荐方案: 勾选重大变更门禁，用户确认已记录。\n- 不做什么: 不扩大至其他工作流之外的范围。\n- 成本: 无额外开发成本。\n- 风险: 无。\n- 回滚方案: 撤销 spec.md 的修改。\n- 用户确认: 已经在 grill-me 对齐中完成设计方案确认并获得批准"
+  },
+  "ui_gate": {
+    "state": "required"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Dashboard UI 交互控制与 Session 管理",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-223 与任务 T-20260620-dashboard-ui-session 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: 涉及对工作流 check 和 go 命令的修改以及 Dashboard UI 设计。\n- 目标: Dashboard UI 交互控制与 Session 管理。\n- 背景: 来自 backlog R-223。\n- 可选方案: 在 spec.md 中记录并勾选重大变更门禁。\n- 推荐方案: 勾选重大变更门禁，用户确认已记录。\n- 不做什么: 不扩大至其他工作流之外的范围。\n- 成本: 无额外开发成本。\n- 风险: 无。\n- 回滚方案: 撤销 spec.md 的修改。\n- 用户确认: 已经在 grill-me 对齐中完成设计方案确认并获得批准"
+}

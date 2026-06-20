@@ -19,6 +19,7 @@ import { WorktreesPage } from './views/WorktreesPage';
 import { BacklogPage } from './views/BacklogPage';
 import { EventsPage } from './views/EventsPage';
 import { GatesPage } from './views/GatesPage';
+import { executeAction, deleteSession, deleteLease } from './lib/api';
 import './styles.css';
 
 const PROJECT_VIEWS = [
@@ -47,6 +48,70 @@ function AppShell() {
   const [projectFilter, setProjectFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [collapsed, setCollapsed] = useState(false);
+
+  const [executionModal, setExecutionModal] = useState<{
+    isOpen: boolean;
+    command: string;
+    status: 'running' | 'success' | 'failed';
+    stdout: string;
+    stderr: string;
+  } | null>(null);
+
+  const executeCliCommand = async (root: string | null, action: string, args: Record<string, string>) => {
+    const cmdStr = `docpath ${action} ${Object.entries(args).map(([k, v]) => {
+      if (k === 'action') return v;
+      if (v === 'true') return `--${k}`;
+      return `--${k} ${v}`;
+    }).join(' ')}`;
+
+    setExecutionModal({
+      isOpen: true,
+      command: cmdStr,
+      status: 'running',
+      stdout: '',
+      stderr: '',
+    });
+
+    try {
+      const res = await executeAction(root, action, args);
+      setExecutionModal({
+        isOpen: true,
+        command: res.command || cmdStr,
+        status: res.code === 0 ? 'success' : 'failed',
+        stdout: res.stdout,
+        stderr: res.stderr,
+      });
+      dashboard.refresh();
+    } catch (err: any) {
+      setExecutionModal({
+        isOpen: true,
+        command: cmdStr,
+        status: 'failed',
+        stdout: '',
+        stderr: err.message || String(err),
+      });
+    }
+  };
+
+  const handleDeleteSession = async (root: string | null, sessionId: string) => {
+    if (!confirm(`Are you sure you want to terminate session "${sessionId}"?`)) return;
+    try {
+      await deleteSession(root, sessionId);
+      dashboard.refresh();
+    } catch (err: any) {
+      alert(`Failed to terminate session: ${err.message}`);
+    }
+  };
+
+  const handleDeleteLease = async (root: string | null, resource: string) => {
+    if (!confirm(`Are you sure you want to release lease for "${resource}"?`)) return;
+    try {
+      await deleteLease(root, resource);
+      dashboard.refresh();
+    } catch (err: any) {
+      alert(`Failed to release lease: ${err.message}`);
+    }
+  };
 
   const isAll = dashboard.selectedRoot === ALL_PROJECTS;
   const selectedProject = dashboard.selectedProject;
@@ -211,14 +276,79 @@ function AppShell() {
         <main className="content">
           <Routes>
             <Route path="/" element={<DashboardPage data={dashboard} />} />
-            <Route path="/workboard" element={<WorkboardPage data={dashboard} />} />
+            <Route path="/workboard" element={<WorkboardPage data={dashboard} onExecuteCommand={executeCliCommand} />} />
             <Route path="/gates" element={<GatesPage data={dashboard} />} />
             <Route path="/events" element={<EventsPage data={dashboard} />} />
             <Route path="/backlog" element={<BacklogPage data={dashboard} />} />
-            <Route path="/worktrees" element={<WorktreesPage data={dashboard} />} />
+            <Route path="/worktrees" element={
+              <WorktreesPage
+                data={dashboard}
+                onDeleteSession={handleDeleteSession}
+                onDeleteLease={handleDeleteLease}
+              />
+            } />
           </Routes>
         </main>
       </div>
+
+      {/* Execution Modal */}
+      {executionModal?.isOpen && (
+        <div className="modal-overlay">
+          <div className="modal-dialog">
+            <div className="modal-header">
+              <h3>CLI Command Execution</h3>
+              {executionModal.status !== 'running' && (
+                <button
+                  className="modal-close"
+                  type="button"
+                  onClick={() => setExecutionModal(null)}
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+            <div className="modal-body">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <strong>Running Command:</strong>
+                <code className="mono" style={{ padding: '8px 12px', fontSize: '0.8rem', alignSelf: 'flex-start' }}>
+                  {executionModal.command}
+                </code>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <strong>Status:</strong>
+                {executionModal.status === 'running' && (
+                  <span className="badge accent" style={{ animation: 'pulse-anim 1.6s infinite' }}>RUNNING</span>
+                )}
+                {executionModal.status === 'success' && (
+                  <span className="badge pass">SUCCESS</span>
+                )}
+                {executionModal.status === 'failed' && (
+                  <span className="badge fail">FAILED</span>
+                )}
+              </div>
+              {(executionModal.stdout || executionModal.stderr) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minHeight: 0 }}>
+                  <strong>Execution Logs:</strong>
+                  <pre className="code-block" style={{ flex: 1, margin: 0 }}>
+                    {executionModal.stderr ? `Error:\n${executionModal.stderr}\n\n` : ''}
+                    {executionModal.stdout}
+                  </pre>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn"
+                type="button"
+                disabled={executionModal.status === 'running'}
+                onClick={() => setExecutionModal(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

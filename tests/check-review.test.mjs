@@ -6,6 +6,28 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkExecWorkspace } from './helpers.mjs';
 
+// 8 维度齐全、全部具体值的合格设计稿，满足 missingDesignPreviewDepth 深度门禁。
+const CONCRETE_PREVIEW = [
+  '# Design Preview',
+  '## 1. 布局与栅格',
+  '栅格 12 列，gutter 24px，断点 640px / 1024px；区域 Header / Sidebar / Main。',
+  '## 2. 尺寸规格',
+  'Header 高 64px；Sidebar 宽 240px；主按钮 高 40px。',
+  '## 3. 间距标度',
+  '标度（base 4px）: 4px / 8px / 16px / 24px / 32px。',
+  '## 4. 图标系统',
+  '图标库 lucide，默认 24px，描边 1.5px；新增=plus，删除=trash。',
+  '## 5. 颜色与 Tokens',
+  '--bg #FFFFFF；--text #1A1D23；--primary #2563EB；--error #DC2626。',
+  '## 6. 动效规格',
+  '时长 fast 120ms / base 200ms；缓动 cubic-bezier(0.16, 1, 0.3, 1)。',
+  '## 7. 交互逻辑',
+  '主操作 hover 高亮，focus 焦点环 2px，loading 占位，error 行内提示。',
+  '## 8. 技术约束',
+  '绑定 frontend-stack；对比度 ≥ 4.5:1；首屏预算 150KB；支持最近两版浏览器。',
+  '',
+].join('\n');
+
 const CLI = new URL('../dist/index.js', import.meta.url).pathname;
 const run = (args, cwd) => {
   try {
@@ -839,7 +861,7 @@ describe('check and review commands', () => {
       '- **依赖**: 无',
       '',
     ].join('\n'));
-    writeFileSync(join(tasks, 'design-preview.md'), '# Design Preview\n\n信息架构 布局 状态 交互 移动 响应式 参考 不做 边界 snapshot HTML '.repeat(20));
+    writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
     writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
     writeFileSync(join(tasks, 'ui-brief.md'), [
       '# UI Prompt Brief',
@@ -927,7 +949,7 @@ describe('check and review commands', () => {
       '- **依赖**: 无',
       '',
     ].join('\n'));
-    writeFileSync(join(tasks, 'design-preview.md'), '# Design Preview\n\n信息架构 布局 状态 交互 移动 响应式 参考 不做 边界 snapshot HTML '.repeat(20));
+    writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
     writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
     writeFileSync(join(tasks, 'ui-brief.md'), [
       '# UI Prompt Brief',
@@ -1017,7 +1039,7 @@ describe('check and review commands', () => {
       '- **依赖**: 无',
       '',
     ].join('\n'));
-    writeFileSync(join(tasks, 'design-preview.md'), '# Design Preview\n\n信息架构 布局 状态 交互 移动 响应式 参考 不做 边界 snapshot HTML '.repeat(20));
+    writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
     writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
     writeFileSync(join(tasks, 'ui-brief.md'), [
       '# UI Prompt Brief',

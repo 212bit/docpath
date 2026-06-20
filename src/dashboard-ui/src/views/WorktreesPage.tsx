@@ -3,7 +3,15 @@ import { fetchWorkspaces, type WorkspacesPayload } from '../lib/api';
 import type { DashboardData } from '../state/useDashboardData';
 import { RefreshCw } from 'lucide-react';
 
-export function WorktreesPage({ data }: { data: DashboardData }) {
+export function WorktreesPage({
+  data,
+  onDeleteSession,
+  onDeleteLease,
+}: {
+  data: DashboardData;
+  onDeleteSession?: (root: string | null, sessionId: string) => void;
+  onDeleteLease?: (root: string | null, resource: string) => void;
+}) {
   const [workspaces, setWorkspaces] = useState<WorkspacesPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +102,19 @@ export function WorktreesPage({ data }: { data: DashboardData }) {
                     <i className="dot active" />
                     <strong style={{ fontSize: '0.82rem' }}>PID {sess.pid}</strong>
                   </div>
-                  <code className="mono">{sess.session_id.slice(0, 8)}</code>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <code className="mono">{sess.session_id.slice(0, 8)}</code>
+                    {onDeleteSession && (
+                      <button
+                        className="btn sm danger"
+                        type="button"
+                        onClick={() => onDeleteSession(data.selectedRoot, sess.session_id)}
+                        style={{ height: 20, padding: '0 6px', fontSize: '0.68rem' }}
+                      >
+                        Terminate
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: 2 }}>
                   <code className="mono">{sess.command}</code>
@@ -126,7 +146,17 @@ export function WorktreesPage({ data }: { data: DashboardData }) {
                   </strong>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span className="pulse" />
-                    <span className="badge fail">LOCKED</span>
+                    <span className="badge fail" style={{ marginRight: 4 }}>LOCKED</span>
+                    {onDeleteLease && (
+                      <button
+                        className="btn sm danger"
+                        type="button"
+                        onClick={() => onDeleteLease(data.selectedRoot, lease.resource)}
+                        style={{ height: 20, padding: '0 6px', fontSize: '0.68rem' }}
+                      >
+                        Release
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: 2 }}>

@@ -20,7 +20,7 @@ import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
 import { detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatTaskIdentityDrift, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
-import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent } from '../utils/ui-gate.js';
+import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, missingDesignPreviewDepth } from '../utils/ui-gate.js';
 import { resolveMajorChangeGateStatus } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { CHECK_HISTORY_MAX_ENTRIES } from '../utils/workspace-cleanup.js';
@@ -782,10 +782,11 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
 
   if (!existsSync(previewPath)) missing.push('design-preview.md');
   else {
-    const preview = (await readFile(previewPath, 'utf-8')).trim();
-    if (preview.length < 500 || !/信息架构|布局|状态|交互|移动|响应式|参考|不做|边界|snapshot|HTML/i.test(preview)) {
-      weak.push('design-preview.md 缺少足够的视觉意图、布局/状态/响应式/边界描述');
-    }
+    // 与 go 前置门禁共用 missingDesignPreviewDepth：8 维度齐全 + 具体值（px/hex/ms/缓动/图标库），
+    // 取代旧的「长度≥500 + 宽松关键词」启发式，杜绝「够长就过」与「方向占位」。
+    const depth = await missingDesignPreviewDepth(cwd);
+    for (const m of depth.missing) weak.push(`design-preview.md 缺维度: ${m}`);
+    for (const w of depth.weak) weak.push(`design-preview.md ${w}`);
   }
 
   if (!existsSync(acceptancePath)) missing.push('visual-acceptance.md');
@@ -808,7 +809,8 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
           ...weak,
           '修复建议:',
           '  - 在写 UI 代码前运行: docpath write-design --kind preview --stdin',
-          '  - 写入布局、信息架构、核心状态、响应式边界、参考/反参考与 HTML snapshot 要求',
+          '  - 按 templates/design/design-preview.md 冻结 8 维度具体值:',
+          '    布局/尺寸/间距/图标/颜色/动效/交互/技术约束（填 px/hex/ms/缓动/图标库，非方向）',
           '  - 再运行: docpath write-design --kind acceptance --stdin',
           '  - 写入可执行的视觉验收项、禁止项、review 方式与 snapshot/screenshot 要求',
         ].filter(Boolean).join('\n'),

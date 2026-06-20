@@ -18,7 +18,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { parsePlanSteps, type PlanStep } from '../utils/doc-parser.js';
 import { markPlanStep, type PlanStepStatus } from '../utils/plan-sync.js';
 import { runCommand } from './runtime.js';
-import { resolveUiDesignRequirement, missingDesignArtifacts, missingFrameworkDecision } from '../utils/ui-gate.js';
+import { resolveUiDesignRequirement, missingDesignArtifacts, missingFrameworkDecision, missingDesignPreviewDepth } from '../utils/ui-gate.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { acquireExecutionLease, releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
@@ -288,6 +288,18 @@ export async function goCommand(options: GoOptions): Promise<void> {
       console.error('      docpath write-design --kind preview --stdin     # 布局/信息架构/状态/响应式/边界');
       console.error('      docpath write-design --kind approval --stdin    # frontmatter 须含 approval.state: approved');
       console.error('    若本任务实际不涉及产品 UI，请在 spec.md 的「## 4.1 ... UI 设计门禁」勾选「不涉及产品 UI 实现」。');
+      process.exit(1);
+    }
+
+    // 硬门禁 C：设计稿必须把 8 维度冻结成具体值（防「够长就行」与「方向占位」）。
+    // 与 check 共用 missingDesignPreviewDepth，保证「设计稿够不够细」只有一个定义。
+    const depth = await missingDesignPreviewDepth(cwd);
+    if (depth.missing.length > 0 || depth.weak.length > 0) {
+      console.error('❌  设计稿深度门禁未通过：design-preview.md 还停留在「方向」，未冻结成可实现的具体值。');
+      if (depth.missing.length > 0) console.error(`    缺维度: ${depth.missing.join('; ')}`);
+      for (const w of depth.weak) console.error(`    缺具体值: ${w}`);
+      console.error('    设计稿须覆盖布局/尺寸/间距/图标/颜色/动效/交互/技术约束，且填具体值（px/hex/ms/缓动/图标库）。');
+      console.error('    模板见 templates/design/design-preview.md，补齐后运行: docpath write-design --kind preview --stdin');
       process.exit(1);
     }
   }

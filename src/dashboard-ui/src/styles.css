@@ -582,6 +582,142 @@ button { background: none; border: none; cursor: pointer; padding: 0; }
 .empty { padding: 20px; text-align: center; font-size: 0.78rem; color: var(--color-text-muted); }
 .empty.inline { padding: 8px 0; text-align: left; }
 
+/* ── Modal Overlay & Dialog ── */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-dialog {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 650px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.2s ease;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.modal-close {
+  color: var(--color-text-muted);
+  font-size: 1.2rem;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+.modal-close:hover {
+  background: var(--color-elevated);
+  color: var(--color-text-primary);
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: var(--color-canvas);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ── Interactive Buttons & sizing ── */
+.btn.sm {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 0.72rem;
+  border-radius: 3px;
+}
+.btn.accent {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent);
+}
+.btn.accent:hover {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+.btn.success {
+  background: var(--color-status-active-dim);
+  border-color: rgba(76, 175, 130, 0.3);
+  color: var(--color-status-active);
+}
+.btn.success:hover {
+  background: var(--color-status-active);
+  color: #fff;
+  border-color: var(--color-status-active);
+}
+.btn.danger {
+  background: var(--color-status-fail-dim);
+  border-color: rgba(224, 92, 92, 0.3);
+  color: var(--color-status-fail);
+}
+.btn.danger:hover {
+  background: var(--color-status-fail);
+  color: #fff;
+  border-color: var(--color-status-fail);
+}
+.btn.warn {
+  background: var(--color-status-warn-dim);
+  border-color: rgba(212, 151, 106, 0.3);
+  color: var(--color-status-warn);
+}
+.btn.warn:hover {
+  background: var(--color-status-warn);
+  color: #fff;
+  border-color: var(--color-status-warn);
+}
+
 /* ── Responsive ── */
 @media (max-width: 1100px) {
   .metric-grid-4, .metric-grid-5 { grid-template-columns: repeat(2, minmax(0,1fr)); }

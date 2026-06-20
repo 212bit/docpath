@@ -1,8 +1,13 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readFile, stat, readdir } from 'node:fs/promises';
+import { readFile, stat, readdir, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { basename, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFilePromise = promisify(execFile);
+const cliBinPath = fileURLToPath(new URL('../../bin/docpath.js', import.meta.url));
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { listBacklogItems } from '../engine/backlog.js';
 import { listRegisteredProjects, type RegisteredProject } from '../engine/project-registry.js';
@@ -569,15 +574,30 @@ async function handleDashboardFetchInner(request: Request, options: DashboardReq
   const method = request.method || 'GET';
   const path = url.pathname;
 
-  if (method !== 'GET' && method !== 'HEAD') {
+  if (method !== 'GET' && method !== 'HEAD' && method !== 'POST' && method !== 'DELETE') {
+    return jsonResponse(405, { error: 'method_not_allowed' });
+  }
+
+  const readonlyPaths = [
+    '/api/health',
+    '/api/projects',
+    '/api/summary',
+    '/api/state',
+    '/api/checks',
+    '/api/review',
+    '/api/backlog',
+    '/api/events',
+    '/api/workspaces',
+  ];
+  if (readonlyPaths.includes(path) && method !== 'GET' && method !== 'HEAD') {
     return jsonResponse(405, { error: 'method_not_allowed' });
   }
 
   if (path === '/api/health') {
     return jsonResponse(200, {
       ok: true,
-      mode: 'readonly',
-      endpoints: ['/api/projects', '/api/summary', '/api/state', '/api/checks', '/api/review', '/api/backlog', '/api/events', '/api/workspaces'],
+      mode: 'active',
+      endpoints: ['/api/projects', '/api/summary', '/api/state', '/api/checks', '/api/review', '/api/backlog', '/api/events', '/api/workspaces', '/api/actions/execute'],
     });
   }
 
@@ -671,6 +691,95 @@ async function handleDashboardFetchInner(request: Request, options: DashboardReq
     return jsonResponse(200, { worktrees, sessions, leases });
   }
 
+  if (method === 'POST' && path === '/api/actions/execute') {
+    let body: any;
+    try {
+      body = await request.json();
+    } catch (err) {
+      return jsonResponse(400, { error: 'invalid_json_body' });
+    }
+
+    const { root, action, args } = body;
+    const projectRoot = root ? await resolveRequestedRoot(url, options.cwd) : options.cwd;
+
+    if (action !== 'go' && action !== 'step' && action !== 'agent') {
+      return jsonResponse(400, { error: 'forbidden_action' });
+    }
+
+    // Build arguments array
+    const cmdArgs = [cliBinPath];
+    if (action === 'agent' && args.action) {
+      cmdArgs.push('agent', args.action);
+    } else {
+      cmdArgs.push(action);
+    }
+
+    // Add key-value arguments
+    for (const [key, val] of Object.entries(args || {})) {
+      if (key === 'action') continue;
+      if (val === true || val === 'true') {
+        cmdArgs.push(`--${key}`);
+      } else if (val) {
+        cmdArgs.push(`--${key}`, String(val));
+      }
+    }
+
+    const fullCommand = `node ${cmdArgs.join(' ')}`;
+
+    try {
+      const { stdout, stderr } = await execFilePromise('node', cmdArgs, { cwd: projectRoot });
+      return jsonResponse(200, {
+        command: fullCommand,
+        code: 0,
+        stdout,
+        stderr,
+      });
+    } catch (error: any) {
+      return jsonResponse(200, {
+        command: fullCommand,
+        code: error.code || 1,
+        stdout: error.stdout || '',
+        stderr: error.stderr || error.message || String(error),
+      });
+    }
+  }
+
+  if (method === 'DELETE' && path.startsWith('/api/workspaces/sessions/')) {
+    const projectRoot = await resolveRequestedRoot(url, options.cwd);
+    const docpathDir = await resolveDocpathDir(projectRoot);
+    const sessionId = decodeURIComponent(path.slice('/api/workspaces/sessions/'.length));
+    if (!sessionId || sessionId.includes('/') || sessionId.includes('..')) {
+      return jsonResponse(400, { error: 'invalid_session_id' });
+    }
+    const sessionFile = join(docpathDir, 'workspace', 'sessions', `${sessionId}.json`);
+    if (existsSync(sessionFile)) {
+      await unlink(sessionFile);
+      return jsonResponse(200, { success: true });
+    }
+    return jsonResponse(404, { error: 'session_not_found' });
+  }
+
+  if (method === 'DELETE' && path.startsWith('/api/workspaces/leases/')) {
+    const projectRoot = await resolveRequestedRoot(url, options.cwd);
+    const docpathDir = await resolveDocpathDir(projectRoot);
+    const resource = decodeURIComponent(path.slice('/api/workspaces/leases/'.length));
+    const safeName = encodeURIComponent(resource).replace(/%/g, '_');
+    const leaseFile = join(docpathDir, 'workspace', 'leases', `${safeName}.json`);
+    const leaseLock = join(docpathDir, 'workspace', 'leases', `${safeName}.lock`);
+    let deleted = false;
+    if (existsSync(leaseFile)) {
+      await unlink(leaseFile);
+      deleted = true;
+    }
+    if (existsSync(leaseLock)) {
+      await unlink(leaseLock);
+    }
+    if (deleted) {
+      return jsonResponse(200, { success: true });
+    }
+    return jsonResponse(404, { error: 'lease_not_found' });
+  }
+
   if (!path.startsWith('/api/')) return await staticDashboardResponse(path);
 
   return jsonResponse(404, { error: 'not_found' });
@@ -685,6 +794,15 @@ export async function handleDashboardFetch(request: Request, options: DashboardR
   }
 }
 
+async function readBody(request: IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    request.on('data', (chunk) => chunks.push(chunk));
+    request.on('end', () => resolve(Buffer.concat(chunks)));
+    request.on('error', reject);
+  });
+}
+
 async function handleDashboardRequest(
   request: IncomingMessage,
   response: ServerResponse,
@@ -692,8 +810,17 @@ async function handleDashboardRequest(
 ): Promise<void> {
   const requestUrl = request.url ? new URL(request.url, 'http://localhost') : new URL('/', 'http://localhost');
   try {
+    let body: Buffer | undefined;
+    if (request.method === 'POST' || request.method === 'PUT' || request.method === 'PATCH') {
+      body = await readBody(request);
+    }
     const fetchResponse = await handleDashboardFetch(
-      new Request(requestUrl, { method: request.method || 'GET' }),
+      new Request(requestUrl, {
+        method: request.method || 'GET',
+        headers: request.headers as HeadersInit,
+        body,
+        duplex: body ? 'half' : undefined,
+      } as RequestInit),
       options,
     );
     await sendFetchResponse(response, fetchResponse, request.method === 'HEAD');
@@ -720,6 +847,6 @@ export async function dashboardCommand(options: DashboardOptions = {}): Promise<
   });
 
   console.log(`\nDocPath dashboard listening on http://${host}:${port}`);
-  console.log('Mode: read-only\n');
+  console.log('Mode: active\n');
   console.log('Dev UI: pnpm exec vite --config vite.dashboard.config.ts\n');
 }

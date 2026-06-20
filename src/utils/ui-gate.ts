@@ -154,6 +154,159 @@ export async function missingDesignArtifacts(cwd: string): Promise<DesignArtifac
   return { missing, approval };
 }
 
+// ── 设计稿深度门禁（design-preview 8 维度 + 具体值校验）────────
+
+export interface DesignPreviewDepthGap {
+  /** 缺失/仅占位的维度（章节不存在或正文未填）。 */
+  missing: string[];
+  /** 维度在但填的是「方向」而非具体值（缺 px/hex/ms 等可机检信号）。 */
+  weak: string[];
+}
+
+interface PreviewDimension {
+  /** 报错用维度名。 */
+  label: string;
+  /** 匹配 `## ` 标题的关键词（容忍编号与措辞微调）。 */
+  heading: RegExp;
+  /** 具体值校验：传入「已剥离占位与引用行」的正文，返回缺失提示或 null。 */
+  concrete: (filled: string) => string | null;
+}
+
+/** 剥离 `<...>` 占位段与 `>` 引用说明行，只留用户真正填入的内容。 */
+function stripPreviewPlaceholders(body: string): string {
+  return body
+    .split('\n')
+    .filter((line) => !/^\s*>/.test(line)) // 去掉模板引用说明
+    .join('\n')
+    .replace(/<[^>\n]*>/g, ''); // 去掉 <...> 占位（含表格示例值）
+}
+
+const HEX_OR_FUNC_COLOR = /#[0-9a-fA-F]{3,8}\b|hsl\(|hsla\(|rgb\(|rgba\(|oklch\(/g;
+const SIZE_UNIT = /\d+(?:\.\d+)?\s*(?:px|rem|em|vh|vw)\b/g;
+const DURATION = /\d+(?:\.\d+)?\s*ms\b|\b\d+(?:\.\d+)?\s*s\b/;
+const EASING = /ease(?:-in|-out|-in-out)?\b|cubic-bezier\(|spring|\blinear\b|steps\(/i;
+const ICON_SET = /lucide|heroicons|material(?:[\s-]?symbols)?|tabler|feather|font[\s-]?awesome|iconfont|remix[\s-]?icon|phosphor|carbon|fluent|bootstrap[\s-]?icons|\bant\b|自绘|\bSVG\b/i;
+
+const PREVIEW_DIMENSIONS: PreviewDimension[] = [
+  {
+    label: '布局与栅格',
+    heading: /布局|栅格|layout|grid/i,
+    concrete: (f) => (/\d/.test(f) && /(列|栏|column|grid|断点|breakpoint|区域|区块|header|sidebar|main)/i.test(f)
+      ? null
+      : '需写出栅格列数/断点/区域的具体值（如「12 列，断点 640/1024px」）'),
+  },
+  {
+    label: '尺寸规格',
+    heading: /尺寸|规格|dimension|size|sizing/i,
+    concrete: (f) => ((f.match(SIZE_UNIT) || []).length >= 2
+      ? null
+      : '需写出容器/组件的精确尺寸（≥2 处 px/rem 等具体单位）'),
+  },
+  {
+    label: '间距标度',
+    heading: /间距|spacing|gap/i,
+    concrete: (f) => ((f.match(/\d+(?:\.\d+)?\s*(?:px|rem)\b/g) || []).length >= 2
+      ? null
+      : '需写出间距标度的具体值（≥2 处 px/rem）'),
+  },
+  {
+    label: '图标系统',
+    heading: /图标|icon/i,
+    concrete: (f) => (ICON_SET.test(f) && /\d+\s*px|\d+\s*rem/.test(f)
+      ? null
+      : '需指明图标库名与默认尺寸（如「lucide，24px」）'),
+  },
+  {
+    label: '颜色与 Tokens',
+    heading: /颜色|色彩|color|tokens?/i,
+    concrete: (f) => ((f.match(HEX_OR_FUNC_COLOR) || []).length >= 3
+      ? null
+      : '需写出精确色值（≥3 个 hex/hsl/rgb），而非「偏冷的蓝」'),
+  },
+  {
+    label: '动效规格',
+    heading: /动效|动画|motion|animation|transition/i,
+    concrete: (f) => (DURATION.test(f) && EASING.test(f)
+      ? null
+      : '需写出动效时长（ms/s）与缓动曲线（ease/cubic-bezier 等）'),
+  },
+  {
+    label: '交互逻辑',
+    heading: /交互|interaction|behaviou?r/i,
+    concrete: (f) => ((f.match(/hover|focus|active|disabled|loading|empty|error|键盘|焦点|确认|状态/gi) || []).length >= 2
+      ? null
+      : '需逐组件写清行为与关键状态（hover/focus/loading/empty/error 等）'),
+  },
+  {
+    label: '技术约束',
+    heading: /技术约束|约束|constraint|tech/i,
+    concrete: (f) => (/对比度|性能|预算|a11y|可访问|aria|浏览器|视口|frontend-stack|60fps|\d/i.test(f)
+      ? null
+      : '需绑定 frontend-stack 并写出性能预算/可访问性/浏览器支持等约束'),
+  },
+];
+
+/** 按 `## ` 标题切分文档为「标题 → 正文」段。 */
+function splitMarkdownSections(text: string): Array<{ heading: string; body: string }> {
+  const sections: Array<{ heading: string; body: string }> = [];
+  let current: { heading: string; body: string[] } | null = null;
+  for (const line of text.split('\n')) {
+    const m = line.match(/^##\s+(.*)$/);
+    if (m) {
+      if (current) sections.push({ heading: current.heading, body: current.body.join('\n') });
+      current = { heading: m[1].trim(), body: [] };
+    } else if (current) {
+      current.body.push(line);
+    }
+  }
+  if (current) sections.push({ heading: current.heading, body: current.body.join('\n') });
+  return sections;
+}
+
+/**
+ * 设计稿深度门禁：required UI 任务的 design-preview.md 必须把 8 个维度
+ * 全部冻结成具体值，而非停留在 ui-brief 的「方向」。
+ * 校验（防「够长就行」与「方向占位」）：
+ * - 8 个维度章节都在，且正文非空/非纯占位（否则计 missing）
+ * - 每个维度按其性质命中具体值信号（px/hex/ms/缓动/图标库），否则计 weak
+ * go 与 check 共用本函数，保证「设计稿够不够细」只有一个定义。
+ */
+export async function missingDesignPreviewDepth(cwd: string): Promise<DesignPreviewDepthGap> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const state = await readCurrentState(cwd);
+  const taskId = state?.task_id || '';
+  const previewPath = resolveActiveTaskDocPath(docpathDir, taskId, 'design-preview.md');
+
+  const missing: string[] = [];
+  const weak: string[] = [];
+  if (!existsSync(previewPath)) {
+    missing.push('design-preview.md');
+    return { missing, weak };
+  }
+
+  const content = (await readFile(previewPath, 'utf-8')).trim();
+  const sections = splitMarkdownSections(content);
+
+  for (const dim of PREVIEW_DIMENSIONS) {
+    const section = sections.find((s) => dim.heading.test(s.heading));
+    if (!section) {
+      missing.push(`${dim.label}（缺少 ## 章节）`);
+      continue;
+    }
+    const filled = stripPreviewPlaceholders(section.body).trim();
+    // 去掉表格分隔行与裸符号后判断是否真有内容。
+    const meaningful = filled.replace(/^[\s|:\-—–_.]+$/gm, '').trim();
+    if (meaningful.length < 8) {
+      missing.push(`${dim.label}（章节为空或仅占位）`);
+      continue;
+    }
+    const gap = dim.concrete(filled);
+    if (gap) weak.push(`${dim.label}: ${gap}`);
+  }
+
+  return { missing, weak };
+}
+
 // ── 前端技术栈决策门禁（Framework Decision，序列最前）──────────
 
 export interface FrameworkDecisionGap {

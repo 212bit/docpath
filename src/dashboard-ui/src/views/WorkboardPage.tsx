@@ -13,7 +13,13 @@ function groupName(snap: NonNullable<DashboardData['summary']>['snapshots'][numb
 
 const GROUPS = ['Blocked', 'Active', 'Planning', 'Completed', 'Idle'] as const;
 
-export function WorkboardPage({ data }: { data: DashboardData }) {
+export function WorkboardPage({
+  data,
+  onExecuteCommand,
+}: {
+  data: DashboardData;
+  onExecuteCommand?: (root: string | null, action: string, args: Record<string, string>) => void;
+}) {
   const isAll = data.selectedRoot === ALL_PROJECTS;
   const selected = data.selectedSnapshot;
 
@@ -116,12 +122,48 @@ export function WorkboardPage({ data }: { data: DashboardData }) {
               <div
                 key={step.id}
                 className={`table-row${isCurrent ? ' selected' : ''}`}
-                style={{ gridTemplateColumns: '72px 1fr 1.4fr 80px' }}
+                style={{ gridTemplateColumns: '72px 1fr 1.4fr 80px 180px' }}
               >
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: isCurrent ? 'var(--color-accent)' : 'var(--color-text-muted)' }}>{step.id}</span>
                 <strong>{step.name}</strong>
                 <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{step.description}</span>
                 <span style={{ fontSize: '0.72rem', color: statusColor, fontWeight: 600 }}>{statusLabel}</span>
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                  {step.marker === ' ' && !isCurrent && onExecuteCommand && (
+                    <button
+                      className="btn sm accent"
+                      type="button"
+                      onClick={() => onExecuteCommand(selected?.project.root || null, 'go', { step: step.id })}
+                    >
+                      Claim
+                    </button>
+                  )}
+                  {isCurrent && onExecuteCommand && (
+                    <>
+                      <button
+                        className="btn sm success"
+                        type="button"
+                        onClick={() => onExecuteCommand(selected?.project.root || null, 'agent', { action: 'step', step: step.id, status: 'done' })}
+                      >
+                        Done
+                      </button>
+                      <button
+                        className="btn sm danger"
+                        type="button"
+                        onClick={() => onExecuteCommand(selected?.project.root || null, 'agent', { action: 'step', step: step.id, status: 'blocked' })}
+                      >
+                        Block
+                      </button>
+                      <button
+                        className="btn sm warn"
+                        type="button"
+                        onClick={() => onExecuteCommand(selected?.project.root || null, 'agent', { action: 'step', step: step.id, status: 'skipped' })}
+                      >
+                        Skip
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}

@@ -28,6 +28,7 @@ Framework Decision
 Hard rules:
 
 - Do not write product UI code before `frontend-stack.md`, `ui-brief.md`, `design-preview.md`, and `design-approval.md` exist in the current task.
+- `design-preview.md` must freeze 8 dimensions into concrete values, not directions: layout/grid, dimensions, spacing scale, icon system, colors & tokens, motion specs, interaction logic, technical constraints. Use real px/rem/hex/ms/easing/icon-set names — `go` and `check` hard-block on missing dimensions or direction-only placeholders (shared `missingDesignPreviewDepth`). Keep directional language (north star, feeling) in `ui-brief.md`.
 - Framework Decision must record the selected JS framework/runtime, CSS strategy, component library decision, or explicit pure static choice before visual design work.
 - Do not treat pure static as skipping trade-off analysis; still record at least one rejected alternative and its reason.
 - After selecting the stack, load the corresponding framework skill if one is available. Keep framework-specific guidance in that skill instead of embedding it here.

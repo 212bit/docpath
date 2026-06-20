@@ -73,7 +73,7 @@ describe('dashboard readonly API', () => {
 
     const health = await request('/api/health', cwd);
     assert.equal(health.status, 200);
-    assert.equal(health.body.mode, 'readonly');
+    assert.equal(health.body.mode, 'active');
     assert.ok(health.body.endpoints.includes('/api/projects'));
     assert.ok(health.body.endpoints.includes('/api/summary'));
     assert.ok(health.body.endpoints.includes('/api/events'));
@@ -134,7 +134,7 @@ describe('dashboard readonly API', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('rejects mutation methods and does not expose command execution endpoint', async () => {
+  it('rejects mutation methods on read-only endpoints and exposes command execution and workspace endpoints', async () => {
     const cwd = mkDashboardWorkspace();
     const oldRegistry = process.env.DOCPATH_REGISTRY_DB;
     process.env.DOCPATH_REGISTRY_DB = join(cwd, 'dashboard-registry.sqlite');
@@ -142,6 +142,16 @@ describe('dashboard readonly API', () => {
     const postState = await request('/api/state', cwd, { method: 'POST' });
     assert.equal(postState.status, 405);
     assert.equal(postState.body.error, 'method_not_allowed');
+
+    const invalidPost = await request('/api/actions/execute', cwd, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'invalid_action' }),
+    });
+    assert.equal(invalidPost.status, 400);
+
+    const delSession = await request('/api/workspaces/sessions/session123', cwd, { method: 'DELETE' });
+    assert.equal(delSession.status, 404);
 
     const oldCommandEndpoint = await request('/api/docpath', cwd);
     assert.equal(oldCommandEndpoint.status, 404);

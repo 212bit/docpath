@@ -247,3 +247,66 @@ export async function fetchWorkspaces(): Promise<WorkspacesPayload> {
   return await getJson<WorkspacesPayload & JsonObject>('/api/workspaces');
 }
 
+async function postJson<T extends JsonObject>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      accept: 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorJson;
+    try { errorJson = JSON.parse(errorText); } catch {}
+    throw new Error(errorJson?.error || `POST ${path} failed: ${response.status}`);
+  }
+  return await response.json() as T;
+}
+
+async function deleteRequest<T extends JsonObject>(path: string): Promise<T> {
+  const response = await fetch(path, {
+    method: 'DELETE',
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorJson;
+    try { errorJson = JSON.parse(errorText); } catch {}
+    throw new Error(errorJson?.error || `DELETE ${path} failed: ${response.status}`);
+  }
+  return await response.json() as T;
+}
+
+export type ActionExecutionResult = {
+  command: string;
+  code: number;
+  stdout: string;
+  stderr: string;
+};
+
+export async function executeAction(
+  root: string | null,
+  action: string,
+  args: Record<string, string>,
+): Promise<ActionExecutionResult> {
+  return await postJson<ActionExecutionResult & JsonObject>('/api/actions/execute', {
+    root,
+    action,
+    args,
+  });
+}
+
+export async function deleteSession(root: string | null, sessionId: string): Promise<{ success: boolean }> {
+  return await deleteRequest<{ success: boolean } & JsonObject>(
+    `/api/workspaces/sessions/${encodeURIComponent(sessionId)}${rootQuery(root)}`,
+  );
+}
+
+export async function deleteLease(root: string | null, resource: string): Promise<{ success: boolean }> {
+  return await deleteRequest<{ success: boolean } & JsonObject>(
+    `/api/workspaces/leases/${encodeURIComponent(resource)}${rootQuery(root)}`,
+  );
+}
+
