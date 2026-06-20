@@ -19,6 +19,7 @@ const {
   resolveUiDesignRequirement,
   approvalState,
   missingDesignArtifacts,
+  missingFrameworkDecision,
 } = await import(new URL('../dist/utils/ui-gate.js', import.meta.url).href);
 
 // spec 4.1 模板里的两行原文，确保测试与真实模板措辞对齐。
@@ -170,5 +171,64 @@ describe('missingDesignArtifacts', () => {
     const gap = await missingDesignArtifacts(root);
     assert.equal(gap.missing.length, 0, 'no gap when approved');
     assert.equal(gap.approval, 'approved');
+  });
+});
+
+describe('missingFrameworkDecision', () => {
+  let root, tasks;
+  before(() => {
+    root = mkdtempSync(join(tmpdir(), 'dp-framework-gap-'));
+    const workspace = join(root, '.docpath', 'workspace');
+    tasks = join(root, '.docpath', 'tasks', 'current');
+    mkdirSync(workspace, { recursive: true });
+    mkdirSync(tasks, { recursive: true });
+    writeFileSync(join(workspace, 'state.json'), JSON.stringify({
+      level: 2, task_id: 'T-FRAMEWORK', task_title: '框架决策缺口',
+      phase: 'executing', gate: 'none', state: 'executing', current_step: 'S1',
+      started_at: '2026-06-01T00:00:00.000Z', updated_at: '2026-06-01T00:00:00.000Z',
+    }));
+  });
+  after(() => rmSync(root, { recursive: true, force: true }));
+
+  it('frontend-stack.md 缺失 → missing 含文件名', async () => {
+    const gap = await missingFrameworkDecision(root);
+    assert.ok(gap.missing.includes('frontend-stack.md'));
+    assert.equal(gap.rejectedCount, 0);
+  });
+
+  it('选定 JS 仍是占位且无合格被否决备选 → 同时报两个缺口', async () => {
+    writeFileSync(join(tasks, 'frontend-stack.md'), [
+      '# Frontend Stack',
+      '',
+      '## 选定栈',
+      '- JS 框架: <待定>',
+      '',
+      '## 被否决备选',
+      '- React - 理由: <待补充>',
+      '',
+    ].join('\n'));
+
+    const gap = await missingFrameworkDecision(root);
+    assert.ok(gap.missing.some((item) => item.includes('JS 框架')));
+    assert.ok(gap.missing.some((item) => item.includes('被否决备选')));
+    assert.equal(gap.rejectedCount, 0);
+  });
+
+  it('选定 JS 非占位且至少一个被否决备选带理由 → 无缺口', async () => {
+    writeFileSync(join(tasks, 'frontend-stack.md'), [
+      '# Frontend Stack',
+      '',
+      '## 选定栈',
+      '- JS 框架: 纯静态',
+      '- CSS: 原生 CSS',
+      '',
+      '## 被否决备选',
+      '- React - 理由: 当前页面不需要组件状态模型，增加构建和运行复杂度',
+      '',
+    ].join('\n'));
+
+    const gap = await missingFrameworkDecision(root);
+    assert.deepEqual(gap.missing, []);
+    assert.equal(gap.rejectedCount, 1);
   });
 });

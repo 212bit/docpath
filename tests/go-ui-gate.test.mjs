@@ -2,7 +2,8 @@
  * go UI 设计门禁端到端测试（plan.md S5 覆盖项）。
  *
  * 验证 go 在进入执行前的硬门禁行为（src/commands/go.ts）：
- * - spec 显式勾选「涉及产品 UI」(required) 且缺 design-preview/approval → fail-loud, exit 1
+ * - spec 显式勾选「涉及产品 UI」(required) 且缺 frontend-stack → fail-loud, exit 1
+ * - frontend-stack 合格后缺 design-preview/approval → fail-loud, exit 1
  * - spec 显式勾选「不涉及产品 UI」(exempt) → 放行
  * - dry-run → 不受门禁影响，始终可预览
  *
@@ -113,6 +114,24 @@ function writeUiSpecJson(tasks, markdown, state) {
   }, null, 2)}\n`);
 }
 
+function writeValidFrontendStack(tasks) {
+  writeFileSync(join(tasks, 'frontend-stack.md'), [
+    '# Frontend Stack',
+    '',
+    '## 选定栈',
+    '- JS 框架: 纯静态',
+    '- CSS: 原生 CSS',
+    '- 组件库: 无',
+    '',
+    '## 被否决备选',
+    '- React - 理由: 当前测试场景不需要组件运行时，增加复杂度',
+    '',
+    '## 约束',
+    '- 保持测试夹具最小化',
+    '',
+  ].join('\n'));
+}
+
 describe('go UI 设计门禁', () => {
   const dirs = [];
   const mkWorkspace = (declaration) => {
@@ -136,8 +155,17 @@ describe('go UI 设计门禁', () => {
 
   after(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })));
 
-  it('required + 缺设计产物 → fail-loud 拒绝进入执行', () => {
+  it('required + 缺 framework decision → fail-loud 且先于设计产物门禁', () => {
     const { cwd } = mkWorkspace('required');
+    const out = run('go --step S1', cwd);
+    assert.match(out, /Framework Decision 门禁未通过/, '应先拒绝缺少前端技术栈决策');
+    assert.match(out, /frontend-stack\.md/, '应提示缺失的框架决策产物');
+    assert.doesNotMatch(out, /UI 设计门禁未通过/, '不应先报设计产物缺失');
+  });
+
+  it('required + framework decision 合格但缺设计产物 → fail-loud 拒绝进入执行', () => {
+    const { cwd, tasks } = mkWorkspace('required');
+    writeValidFrontendStack(tasks);
     const out = run('go --step S1', cwd);
     assert.match(out, /UI 设计门禁未通过/, '应明确拒绝');
     assert.match(out, /design-preview\.md/, '应提示缺失的设计产物');
@@ -159,6 +187,7 @@ describe('go UI 设计门禁', () => {
   it('spec.json ui_gate 优先于 spec.md 显式声明', () => {
     const { cwd, tasks } = mkWorkspace('exempt');
     writeUiSpecJson(tasks, specWithUiDeclaration('exempt'), 'required');
+    writeValidFrontendStack(tasks);
     const out = run('go --step S1', cwd);
     assert.match(out, /UI 设计门禁未通过/, 'JSON required 应覆盖 Markdown exempt');
     assert.match(out, /design-preview\.md/, '应按 required 提示缺失设计产物');

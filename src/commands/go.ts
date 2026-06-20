@@ -18,7 +18,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { parsePlanSteps, type PlanStep } from '../utils/doc-parser.js';
 import { markPlanStep, type PlanStepStatus } from '../utils/plan-sync.js';
 import { runCommand } from './runtime.js';
-import { resolveUiDesignRequirement, missingDesignArtifacts } from '../utils/ui-gate.js';
+import { resolveUiDesignRequirement, missingDesignArtifacts, missingFrameworkDecision } from '../utils/ui-gate.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { acquireExecutionLease, releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
@@ -258,14 +258,27 @@ export async function goCommand(options: GoOptions): Promise<void> {
     return;
   }
 
-  // 硬门禁 A：UI 任务进入执行前必须有 design-preview + 已批准 design-approval。
+  // 硬门禁 A：UI 任务进入执行前必须先完成 Framework Decision，再进入设计预览/批准。
   // 判定优先级：spec 4.1 显式框 > 关键词回退（resolveUiDesignRequirement）。
-  // - required + 缺产物 → fail-loud，绝不让 UI 实现先于设计批准开始
+  // - required + 缺 frontend-stack.md → fail-loud，绝不让画图先于技术栈讨论
+  // - required + 缺设计产物 → fail-loud，绝不让 UI 实现先于设计批准开始
   // - exempt / unknown(未命中关键词) → 放行
   // 不设绕过 flag：合法的「无需设计」走 spec「不涉及产品 UI」框，留痕可审计。
   // 与 check 阶段共用 ui-gate.ts，保证 go 前置门禁与 check 门禁判定一致。
   const uiRequirement = await resolveUiDesignRequirement(cwd);
   if (uiRequirement === 'required') {
+    const frameworkGap = await missingFrameworkDecision(cwd);
+    if (frameworkGap.missing.length > 0) {
+      console.error('❌  Framework Decision 门禁未通过：本任务涉及产品 UI 实现，但缺少前端技术栈决策。');
+      console.error(`    缺失: ${frameworkGap.missing.join(', ')}`);
+      console.error('    go 不会在技术栈和备选方案讨论前进入设计预览或 UI 实现。');
+      console.error('    请先补齐 frontend-stack.md：');
+      console.error('      - 选定栈: JS 框架必须非占位（纯静态请显式写「纯静态」）');
+      console.error('      - 被否决备选: 至少 1 条，并包含「理由: ...」');
+      console.error('    然后再补齐 design-preview.md 与 approved design-approval.md。');
+      process.exit(1);
+    }
+
     const gap = await missingDesignArtifacts(cwd);
     if (gap.missing.length > 0) {
       console.error('❌  UI 设计门禁未通过：本任务涉及产品 UI 实现，但缺少已批准的设计产物。');

@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-06-20T08:46:02.432Z",
-    "updated_at": "2026-06-20T08:46:02.432Z",
-    "content_sha256": "988f7632c34d25c37ebbcfffabe3fb8dd1acbe7781869bf686d76d62dd54f226"
+    "created_at": "2026-06-20T11:18:43.260Z",
+    "updated_at": "2026-06-20T11:18:43.260Z",
+    "content_sha256": "66659f542d73f37af47b133474a9a02788b0416f318337a0dd95cdc8c606b5fd"
   },
   "title": "执行计划",
-  "generated_at": "2026-06-20T08:46:02.432Z",
+  "generated_at": "2026-06-20T11:18:43.260Z",
   "steps": [
     {
       "id": "S1",
@@ -32,7 +32,7 @@
       "description": "在现有架构内完成 FR-2: `ui-gate.ts` 新增 `missingFrameworkDecision`，go 前置硬门禁中排在 design-preview / design-approval **之前**。校验：选定栈 JS 项非占位；至少 1 个被否决备选且带理由。。",
       "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
       "dependencies": "S2",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S4",
@@ -40,7 +40,7 @@
       "description": "在现有架构内完成 FR-3: `go.ts` 接入 framework-decision 门禁，required 任务缺决策时拦截并给出明确指引。。",
       "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
       "dependencies": "S3",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S5",
@@ -48,7 +48,7 @@
       "description": "在现有架构内完成 FR-4: `write-design` 支持 `--kind stack`，把 framework-decision 内容落盘为 `frontend-stack.md`。。",
       "acceptance": "FR-4 已实现，并保持现有工作流兼容。",
       "dependencies": "S4",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S6",

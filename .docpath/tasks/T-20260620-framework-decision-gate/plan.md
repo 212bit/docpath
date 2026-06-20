@@ -13,19 +13,19 @@
 - **依赖**: S1
 
 ### S3: 实现 FR-2 `ui-gate.ts` 新增 `missingFrameworkDecision`，go 前置硬门禁中排在 design-preview / design-approval **之前**。校验：选定栈 JS 项非占位；至少 1 个被否决备选且带理由。
-- [ ] S3: 实现 FR-2 `ui-gate.ts` 新增 `missingFrameworkDecision`，go 前置硬门禁中排在 design-preview / design-approval **之前**。校验：选定栈 JS 项非占位；至少 1 个被否决备选且带理由。
+- [x] S3: 实现 FR-2 `ui-gate.ts` 新增 `missingFrameworkDecision`，go 前置硬门禁中排在 design-preview / design-approval **之前**。校验：选定栈 JS 项非占位；至少 1 个被否决备选且带理由。
 - **描述**: 在现有架构内完成 FR-2: `ui-gate.ts` 新增 `missingFrameworkDecision`，go 前置硬门禁中排在 design-preview / design-approval **之前**。校验：选定栈 JS 项非占位；至少 1 个被否决备选且带理由。。
 - **验收条件**: FR-2 已实现，并保持现有工作流兼容。
 - **依赖**: S2
 
 ### S4: 实现 FR-3 `go.ts` 接入 framework-decision 门禁，required 任务缺决策时拦截并给出明确指引。
-- [ ] S4: 实现 FR-3 `go.ts` 接入 framework-decision 门禁，required 任务缺决策时拦截并给出明确指引。
+- [x] S4: 实现 FR-3 `go.ts` 接入 framework-decision 门禁，required 任务缺决策时拦截并给出明确指引。
 - **描述**: 在现有架构内完成 FR-3: `go.ts` 接入 framework-decision 门禁，required 任务缺决策时拦截并给出明确指引。。
 - **验收条件**: FR-3 已实现，并保持现有工作流兼容。
 - **依赖**: S3
 
 ### S5: 实现 FR-4 `write-design` 支持 `--kind stack`，把 framework-decision 内容落盘为 `frontend-stack.md`。
-- [ ] S5: 实现 FR-4 `write-design` 支持 `--kind stack`，把 framework-decision 内容落盘为 `frontend-stack.md`。
+- [x] S5: 实现 FR-4 `write-design` 支持 `--kind stack`，把 framework-decision 内容落盘为 `frontend-stack.md`。
 - **描述**: 在现有架构内完成 FR-4: `write-design` 支持 `--kind stack`，把 framework-decision 内容落盘为 `frontend-stack.md`。。
 - **验收条件**: FR-4 已实现，并保持现有工作流兼容。
 - **依赖**: S4
@@ -50,9 +50,9 @@
 
 ## Checklist
 - [x] S1
-- [ ] S2
-- [ ] S3
-- [ ] S4
+- [x] S2
+- [x] S3
+- [x] S4
 - [ ] S5
 - [ ] S6
 - [ ] S7

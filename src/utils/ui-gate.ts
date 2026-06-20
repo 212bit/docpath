@@ -153,3 +153,109 @@ export async function missingDesignArtifacts(cwd: string): Promise<DesignArtifac
 
   return { missing, approval };
 }
+
+// ── 前端技术栈决策门禁（Framework Decision，序列最前）──────────
+
+export interface FrameworkDecisionGap {
+  /** 缺失/不合格项：文件不存在、JS 选定项为占位、缺带理由的被否决备选。 */
+  missing: string[];
+  /** 解析到的合格"被否决备选(带理由)"条数。 */
+  rejectedCount: number;
+}
+
+/** 占位符判定：空串、仍是 `<...>` 模板占位、或纯破折号视为"未填"。 */
+function isStackPlaceholder(value: string): boolean {
+  const v = value.trim();
+  if (!v) return true;
+  if (/^[<＜][\s\S]*[>＞]$/.test(v)) return true; // 整体仍是 <...> 占位
+  if (/^[-—–_.]+$/.test(v)) return true;
+  return false;
+}
+
+/** 抽取某个 `## 标题` 到下一个 `## ` 之间的正文块（不含标题行）。 */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function sliceMarkdownSection(text: string, heading: string): string {
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let inSection = false;
+  const headingRe = new RegExp(`^##\\s+${escapeRegExp(heading)}\\s*$`);
+  for (const line of lines) {
+    if (/^##\s+/.test(line)) {
+      if (inSection) break;
+      inSection = headingRe.test(line);
+      continue;
+    }
+    if (inSection) out.push(line);
+  }
+  return out.join('\n');
+}
+
+/** 从「选定栈」块解析 `JS 框架:` 后的值。 */
+function parseSelectedJs(stackSection: string): string {
+  for (const line of stackSection.split('\n')) {
+    const m = line.match(/^\s*-\s*JS\s*框架\s*[:：]\s*(.*)$/i);
+    if (m) return m[1].trim();
+  }
+  return '';
+}
+
+/**
+ * 从「被否决备选」块解析合格条目数。
+ * 合格条件：列表项含 `理由:`，且"方案"与"理由"两侧都非占位、非空。
+ * 注释行（以 `>` 开头的引用说明）不计入。
+ */
+function countRejectedWithReason(rejectedSection: string): number {
+  let count = 0;
+  for (const raw of rejectedSection.split('\n')) {
+    const line = raw.trim();
+    if (!line.startsWith('-')) continue;
+    const item = line.replace(/^-\s*/, '');
+    const m = item.match(/^([\s\S]*?)\s*(?:—|--|-|：|:)?\s*理由\s*[:：]\s*([\s\S]*)$/);
+    if (!m) continue;
+    const option = m[1].replace(/[—–-]+\s*$/, '').trim();
+    const reason = m[2].trim();
+    if (isStackPlaceholder(option) || isStackPlaceholder(reason)) continue;
+    count += 1;
+  }
+  return count;
+}
+
+/**
+ * Framework Decision 前置硬门禁：required UI 任务进入实现前必须先定技术栈。
+ * 校验（防"填了框架名就放行"）：
+ * - frontend-stack.md 必须存在
+ * - 「选定栈」的 JS 框架项非占位（纯静态也算合法选定）
+ * - 至少 1 个「被否决备选」且带实义理由（逼出"为什么不选别的"）
+ * 排在 design-preview / design-approval 之前，确保框架选型先于画图。
+ */
+export async function missingFrameworkDecision(cwd: string): Promise<FrameworkDecisionGap> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const state = await readCurrentState(cwd);
+  const taskId = state?.task_id || '';
+  const stackPath = resolveActiveTaskDocPath(docpathDir, taskId, 'frontend-stack.md');
+
+  const missing: string[] = [];
+  if (!existsSync(stackPath)) {
+    missing.push('frontend-stack.md');
+    return { missing, rejectedCount: 0 };
+  }
+
+  const content = (await readFile(stackPath, 'utf-8')).trim();
+  const stackSection = sliceMarkdownSection(content, '选定栈');
+  const rejectedSection = sliceMarkdownSection(content, '被否决备选');
+
+  const selectedJs = parseSelectedJs(stackSection);
+  if (isStackPlaceholder(selectedJs)) {
+    missing.push('frontend-stack.md「选定栈 > JS 框架」未填（纯静态请显式写「纯静态」）');
+  }
+
+  const rejectedCount = countRejectedWithReason(rejectedSection);
+  if (rejectedCount < 1) {
+    missing.push('frontend-stack.md「被否决备选」缺至少 1 条带「理由:」的条目');
+  }
+
+  return { missing, rejectedCount };
+}

@@ -111,9 +111,9 @@ function registerWriteSpecCommand(cli: CAC): void {
 }
 
 function registerWriteDesignCommand(cli: CAC): void {
-  cli.command('write-design', 'artifact sink：写入当前 Agent 生成的设计 brief/handoff/approval')
+  cli.command('write-design', 'artifact sink：写入当前 Agent 生成的设计 stack/brief/handoff/approval')
     .option('--cwd <path>', '项目目录')
-    .option('--kind <kind>', '文档类型: brief/handoff/preview/approval/acceptance（默认 preview）')
+    .option('--kind <kind>', '文档类型: stack/brief/handoff/preview/approval/acceptance（默认 preview）')
     .option('--content <content>', '设计文档内容（Markdown）')
     .option('--stdin', '从 stdin 读取内容')
     .action(async (options: { cwd?: string; kind?: string; content?: string; stdin?: boolean }) => {

@@ -692,9 +692,10 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('write-design writes brief, handoff, approval, preview and acceptance artifacts', () => {
+  it('write-design writes stack, brief, handoff, approval, preview and acceptance artifacts', () => {
     const cwd = mkWorkspace({ phase: 'executing', gate: 'none' });
     const artifacts = [
+      ['stack', 'frontend-stack.md', '# Frontend Stack\n\n## 选定栈\n- JS 框架: 纯静态\n\n## 被否决备选\n- React - 理由: 当前任务不需要组件运行时\n'],
       ['brief', 'ui-brief.md', '# UI Prompt Brief\n\n## Product Context\n'],
       ['handoff', 'external-design-handoff.md', '# External Design Handoff\n\n## Tool Inputs\n'],
       ['approval', 'design-approval.md', '---\napproval:\n  state: approved\n---\n# Design Approval\n'],

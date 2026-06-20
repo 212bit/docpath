@@ -1,4 +1,4 @@
-/** docpath:write-design — 写入 UI/UX 设计预览与视觉验收文档 */
+/** docpath:write-design — 写入 UI/UX 设计决策、预览与视觉验收文档 */
 
 import { existsSync } from 'fs';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -8,7 +8,7 @@ import { readStdin } from '../utils/stdin.js';
 
 interface WriteDesignOptions {
   cwd: string;
-  /** 写入目标: brief/ui-brief, handoff/external-design-handoff, preview/design-preview, approval/design-approval, acceptance/visual-acceptance */
+  /** 写入目标: stack/frontend-stack, brief/ui-brief, handoff/external-design-handoff, preview/design-preview, approval/design-approval, acceptance/visual-acceptance */
   kind?: string;
   /** Markdown 内容 */
   content?: string;
@@ -17,6 +17,7 @@ interface WriteDesignOptions {
 }
 
 const DESIGN_FILES: Record<string, string> = {
+  stack: 'frontend-stack.md',
   brief: 'ui-brief.md',
   handoff: 'external-design-handoff.md',
   preview: 'design-preview.md',
@@ -41,7 +42,7 @@ export async function writeDesignCommand(options: WriteDesignOptions): Promise<v
 
   if (!designContent.trim()) {
     console.error('❌  未提供设计文档内容。用法：');
-    console.error('   docpath write-design --kind preview --content "..."');
+    console.error('   docpath write-design --kind stack --content "..."');
     console.error('   echo "..." | docpath write-design --kind acceptance --stdin');
     process.exit(1);
   }
@@ -56,11 +57,11 @@ export async function writeDesignCommand(options: WriteDesignOptions): Promise<v
 
 function normalizeDesignKind(kind: string | undefined): keyof typeof DESIGN_FILES {
   const normalized = (kind || 'preview').trim().toLowerCase();
+  if (normalized === 'stack' || normalized === 'frontend-stack' || normalized === 'framework' || normalized === 'framework-decision') return 'stack';
   if (normalized === 'brief' || normalized === 'ui-brief' || normalized === 'ui-prompt-brief') return 'brief';
   if (normalized === 'handoff' || normalized === 'external-design-handoff' || normalized === 'design-handoff') return 'handoff';
   if (normalized === 'preview' || normalized === 'design' || normalized === 'design-preview') return 'preview';
   if (normalized === 'approval' || normalized === 'design-approval') return 'approval';
   if (normalized === 'acceptance' || normalized === 'visual' || normalized === 'visual-acceptance') return 'acceptance';
-  throw new Error(`未知 design kind: ${kind}（允许: brief, handoff, preview, approval, acceptance）`);
+  throw new Error(`未知 design kind: ${kind}（允许: stack, brief, handoff, preview, approval, acceptance）`);
 }
-
