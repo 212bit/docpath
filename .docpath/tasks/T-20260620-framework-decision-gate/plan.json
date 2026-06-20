@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-06-20T11:18:43.260Z",
-    "updated_at": "2026-06-20T11:18:43.260Z",
-    "content_sha256": "66659f542d73f37af47b133474a9a02788b0416f318337a0dd95cdc8c606b5fd"
+    "created_at": "2026-06-20T11:30:50.366Z",
+    "updated_at": "2026-06-20T11:30:50.366Z",
+    "content_sha256": "f774f9d96839c2d4b9a756506c88c72cd035f9d7db852d23a3fd3cfb9cbb5e09"
   },
   "title": "执行计划",
-  "generated_at": "2026-06-20T11:18:43.260Z",
+  "generated_at": "2026-06-20T11:30:50.366Z",
   "steps": [
     {
       "id": "S1",
@@ -56,7 +56,7 @@
       "description": "在现有架构内完成 FR-5: 改写 `docpath-design` skill：将 Framework Decision 列为序列第一步，新增框架讨论提问清单（是否需要框架/JS选型/CSS方案/组件库/纯静态），并在选定后提示加载对应框架 skill（不内置框架 skill）。。",
       "acceptance": "FR-5 已实现，并保持现有工作流兼容。",
       "dependencies": "S5",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S7",

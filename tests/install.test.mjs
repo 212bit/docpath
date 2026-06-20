@@ -217,6 +217,7 @@ describe('install agent adapters', () => {
     const codexProtocol = readFileSync(join(cwd, 'CODEX.md'), 'utf-8');
     const codexConfig = readFileSync(join(cwd, '.codex', 'config.toml'), 'utf-8');
     const codexSkill = readFileSync(join(cwd, '.codex', 'skills', 'docpath', 'SKILL.md'), 'utf-8');
+    const codexDesignSkill = readFileSync(join(cwd, '.codex', 'skills', 'docpath-design', 'SKILL.md'), 'utf-8');
     const codexSoftwareSkill = readFileSync(join(cwd, '.codex', 'skills', 'docpath-software', 'SKILL.md'), 'utf-8');
     const protocolAgents = readFileSync(join(cwd, '.docpath', 'protocols', 'AGENTS.md'), 'utf-8');
 
@@ -246,6 +247,11 @@ describe('install agent adapters', () => {
     assert.match(codexSkill, /docpath roles list/);
     assert.match(codexSkill, /docpath deliverables list/);
     assert.match(codexSkill, /Do not bypass `spec -> plan -> go -> check -> review -> journal`/);
+    assert.match(codexDesignSkill, /Framework Decision\n→ UI Prompt Brief/);
+    assert.match(codexDesignSkill, /frontend-stack\.md/);
+    assert.match(codexDesignSkill, /whether a framework is needed or pure static is enough/);
+    assert.match(codexDesignSkill, /After selecting the stack, load the corresponding framework skill/);
+    assert.match(codexDesignSkill, /docpath write-design --kind stack --stdin/);
     assert.match(codexSoftwareSkill, /^---\nname: docpath-software\ndescription:/);
     assert.match(codexSoftwareSkill, /docpath agent enter/);
     assert.match(codexSoftwareSkill, /docpath roles context --role software-engineer/);

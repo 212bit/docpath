@@ -31,7 +31,7 @@
 - **依赖**: S4
 
 ### S6: 实现 FR-5 改写 `docpath-design` skill：将 Framework Decision 列为序列第一步，新增框架讨论提问清单（是否需要框架/JS选型/CSS方案/组件库/纯静态），并在选定后提示加载对应框架 skill（不内置框架 skill）。
-- [ ] S6: 实现 FR-5 改写 `docpath-design` skill：将 Framework Decision 列为序列第一步，新增框架讨论提问清单（是否需要框架/JS选型/CSS方案/组件库/纯静态），并在选定后提示加载对应框架 skill（不内置框架 skill）。
+- [x] S6: 实现 FR-5 改写 `docpath-design` skill：将 Framework Decision 列为序列第一步，新增框架讨论提问清单（是否需要框架/JS选型/CSS方案/组件库/纯静态），并在选定后提示加载对应框架 skill（不内置框架 skill）。
 - **描述**: 在现有架构内完成 FR-5: 改写 `docpath-design` skill：将 Framework Decision 列为序列第一步，新增框架讨论提问清单（是否需要框架/JS选型/CSS方案/组件库/纯静态），并在选定后提示加载对应框架 skill（不内置框架 skill）。。
 - **验收条件**: FR-5 已实现，并保持现有工作流兼容。
 - **依赖**: S5
@@ -53,7 +53,7 @@
 - [x] S2
 - [x] S3
 - [x] S4
-- [ ] S5
+- [x] S5
 - [ ] S6
 - [ ] S7
 - [ ] S8

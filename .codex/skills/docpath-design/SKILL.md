@@ -16,7 +16,8 @@ When the request or active task mentions UI, UX, page, layout, navigation, visua
 Required sequence before product UI implementation:
 
 ```text
-UI Prompt Brief
+Framework Decision
+→ UI Prompt Brief
 → External Design Handoff
 → Design Preview
 → Design Approval
@@ -26,11 +27,26 @@ UI Prompt Brief
 
 Hard rules:
 
-- Do not write product UI code before `ui-brief.md`, `design-preview.md`, and `design-approval.md` exist in the current task.
+- Do not write product UI code before `frontend-stack.md`, `ui-brief.md`, `design-preview.md`, and `design-approval.md` exist in the current task.
+- Framework Decision must record the selected JS framework/runtime, CSS strategy, component library decision, or explicit pure static choice before visual design work.
+- Do not treat pure static as skipping trade-off analysis; still record at least one rejected alternative and its reason.
+- After selecting the stack, load the corresponding framework skill if one is available. Keep framework-specific guidance in that skill instead of embedding it here.
 - Do not treat the user's approval of this workflow as approval of a concrete visual design.
 - If `design-approval.md` is missing, `pending`, or `rejected`, stop and ask the user to approve or reject the concrete design direction before implementation.
 - Approval must be recorded as a DocPath task artifact, not as a separate state machine outside DocPath.
 - External design tools such as Stitch, Figma, v0, or Framer may be used as handoff sources, but their prompts, outputs, selected direction, rejected direction, and constraints must be recorded in `external-design-handoff.md`.
+
+## Framework Decision
+
+Before design preview work, decide and record:
+
+- whether a framework is needed or pure static is enough
+- JS framework/runtime choice
+- CSS strategy
+- component library decision
+- implementation constraints that affect the visual design
+- rejected alternatives with reasons
+- framework-specific skill to load next, when available
 
 ## Design quality bar
 
@@ -70,6 +86,7 @@ docpath deliverables check
 For approval-gated UI/UX work, also create or update:
 
 ```bash
+docpath write-design --kind stack --stdin
 docpath write-design --kind brief --stdin
 docpath write-design --kind handoff --stdin
 docpath write-design --kind preview --stdin
