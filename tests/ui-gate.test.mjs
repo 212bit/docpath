@@ -231,4 +231,22 @@ describe('missingFrameworkDecision', () => {
     assert.deepEqual(gap.missing, []);
     assert.equal(gap.rejectedCount, 1);
   });
+
+  it('选定纯静态时必须说明为什么不用框架', async () => {
+    writeFileSync(join(tasks, 'frontend-stack.md'), [
+      '# Frontend Stack',
+      '',
+      '## 选定栈',
+      '- JS 框架: 纯静态',
+      '- CSS: 原生 CSS',
+      '',
+      '## 被否决备选',
+      '- CSS Modules - 理由: 当前页面不需要模块化 CSS 构建',
+      '',
+    ].join('\n'));
+
+    const gap = await missingFrameworkDecision(root);
+    assert.ok(gap.missing.some((item) => item.includes('为什么不用框架')));
+    assert.equal(gap.rejectedCount, 1);
+  });
 });

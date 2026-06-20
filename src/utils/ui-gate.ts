@@ -163,6 +163,11 @@ export interface FrameworkDecisionGap {
   rejectedCount: number;
 }
 
+interface RejectedAlternative {
+  option: string;
+  reason: string;
+}
+
 /** 占位符判定：空串、仍是 `<...>` 模板占位、或纯破折号视为"未填"。 */
 function isStackPlaceholder(value: string): boolean {
   const v = value.trim();
@@ -202,13 +207,21 @@ function parseSelectedJs(stackSection: string): string {
   return '';
 }
 
+function isPureStaticSelection(value: string): boolean {
+  return /(纯静态|无框架|vanilla|static|plain\s*(html|css|js)?|原生\s*JS)/i.test(value);
+}
+
+function isFrameworkAlternative(option: string): boolean {
+  return /(框架|React|Vue|Svelte|Angular|Next(?:\.js)?|Nuxt|Remix|Astro|Solid|Preact|Qwik|Lit)/i.test(option);
+}
+
 /**
- * 从「被否决备选」块解析合格条目数。
+ * 从「被否决备选」块解析合格条目。
  * 合格条件：列表项含 `理由:`，且"方案"与"理由"两侧都非占位、非空。
  * 注释行（以 `>` 开头的引用说明）不计入。
  */
-function countRejectedWithReason(rejectedSection: string): number {
-  let count = 0;
+function parseRejectedWithReason(rejectedSection: string): RejectedAlternative[] {
+  const alternatives: RejectedAlternative[] = [];
   for (const raw of rejectedSection.split('\n')) {
     const line = raw.trim();
     if (!line.startsWith('-')) continue;
@@ -218,9 +231,9 @@ function countRejectedWithReason(rejectedSection: string): number {
     const option = m[1].replace(/[—–-]+\s*$/, '').trim();
     const reason = m[2].trim();
     if (isStackPlaceholder(option) || isStackPlaceholder(reason)) continue;
-    count += 1;
+    alternatives.push({ option, reason });
   }
-  return count;
+  return alternatives;
 }
 
 /**
@@ -229,6 +242,7 @@ function countRejectedWithReason(rejectedSection: string): number {
  * - frontend-stack.md 必须存在
  * - 「选定栈」的 JS 框架项非占位（纯静态也算合法选定）
  * - 至少 1 个「被否决备选」且带实义理由（逼出"为什么不选别的"）
+ * - 选定纯静态时，被否决备选必须包含一个框架方案（逼出"为什么不用框架"）
  * 排在 design-preview / design-approval 之前，确保框架选型先于画图。
  */
 export async function missingFrameworkDecision(cwd: string): Promise<FrameworkDecisionGap> {
@@ -252,9 +266,12 @@ export async function missingFrameworkDecision(cwd: string): Promise<FrameworkDe
     missing.push('frontend-stack.md「选定栈 > JS 框架」未填（纯静态请显式写「纯静态」）');
   }
 
-  const rejectedCount = countRejectedWithReason(rejectedSection);
+  const rejectedAlternatives = parseRejectedWithReason(rejectedSection);
+  const rejectedCount = rejectedAlternatives.length;
   if (rejectedCount < 1) {
     missing.push('frontend-stack.md「被否决备选」缺至少 1 条带「理由:」的条目');
+  } else if (isPureStaticSelection(selectedJs) && !rejectedAlternatives.some((alt) => isFrameworkAlternative(alt.option))) {
+    missing.push('frontend-stack.md「被否决备选」需写明为什么不用框架（例如 React/Vue/Svelte 等）');
   }
 
   return { missing, rejectedCount };

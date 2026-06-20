@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-06-20T11:30:50.366Z",
-    "updated_at": "2026-06-20T11:30:50.366Z",
-    "content_sha256": "f774f9d96839c2d4b9a756506c88c72cd035f9d7db852d23a3fd3cfb9cbb5e09"
+    "created_at": "2026-06-20T11:32:58.742Z",
+    "updated_at": "2026-06-20T11:32:58.742Z",
+    "content_sha256": "9006d76c9722cae7ad6c3c365ed03afd780e324a44c18cd85cb5f126da8c53be"
   },
   "title": "执行计划",
-  "generated_at": "2026-06-20T11:30:50.366Z",
+  "generated_at": "2026-06-20T11:32:58.742Z",
   "steps": [
     {
       "id": "S1",
@@ -64,7 +64,7 @@
       "description": "在现有架构内完成 FR-6: 纯静态(无框架)是合法选定，但同样强制写\"为什么不用框架\"作为被否决备选。。",
       "acceptance": "FR-6 已实现，并保持现有工作流兼容。",
       "dependencies": "S6",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S8",

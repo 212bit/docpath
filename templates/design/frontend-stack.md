@@ -21,7 +21,8 @@ rejected_count: 0
 > tasks until this document names a selected stack AND records at least one
 > rejected alternative WITH a reason.
 >
-> 纯静态(无框架)是合法选定，但同样必须把"为什么不用框架"写成被否决备选。
+> 纯静态(无框架)是合法选定，但同样必须把"为什么不用框架"写成被否决备选；
+> 该备选需要明确指向一个框架方案（如 React / Vue / Svelte / 使用框架）。
 > 增量 UI 任务可写"沿用既定栈 X — 理由: 一致性"，被否决备选写
 > "重写为其他栈 — 理由: 成本不划算"，门禁仍放行（不惩罚增量）。
 
