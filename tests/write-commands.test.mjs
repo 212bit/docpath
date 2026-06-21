@@ -715,4 +715,29 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('write-design supports template initialization', () => {
+    const cwd = mkWorkspace({ phase: 'executing', gate: 'none' });
+
+    // 1. Test initializing a specific kind (e.g. stack)
+    const outputStack = run(`write-design --cwd ${cwd} --kind stack --template`, cwd);
+    assert.match(outputStack, /frontend-stack\.md 已初始化/);
+    const stackContent = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'frontend-stack.md'), 'utf-8');
+    assert.match(stackContent, /# Frontend Stack Decision/);
+
+    // 2. Test initializing all kinds at once
+    const outputAll = run(`write-design --cwd ${cwd} --kind all --template`, cwd);
+    assert.match(outputAll, /frontend-stack\.md 已初始化/);
+    assert.match(outputAll, /ui-brief\.md 已初始化/);
+    assert.match(outputAll, /external-design-handoff\.md 已初始化/);
+    assert.match(outputAll, /design-preview\.md 已初始化/);
+    assert.match(outputAll, /design-approval\.md 已初始化/);
+    assert.match(outputAll, /visual-acceptance\.md 已初始化/);
+
+    const previewContent = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'design-preview.md'), 'utf-8');
+    assert.match(previewContent, /# Design Preview/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
 });
+
