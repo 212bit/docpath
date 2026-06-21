@@ -89,8 +89,19 @@ page_priorities:
 
 - 
 
-### First Screen Layout
+### First Screen Layout & Wireframe (首屏布局与线稿)
 
+> 可以使用 ASCII 艺术图绘制简易结构线框，或贴入 Excalidraw/Figma 线稿的截图/快照链接。
+>
+> ┌────────────────────────────────────────────────────────┐
+> │ Header (Logo, Navigation, UserProfile)                 │
+> ├──────────────┬─────────────────────────────────────────┤
+> │ Sidebar      │ Main Content Area (Title, Actions)      │
+> │ (Navigation, ├─────────────────────────────────────────┤
+> │  Filters)    │ Data Visualizations / Cards / Lists     │
+> └──────────────┴─────────────────────────────────────────┘
+
+- Layout Wireframe: <ASCII 线稿 / 图片链接>
 - Header:
 - Primary content:
 - Secondary content:
