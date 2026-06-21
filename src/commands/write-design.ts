@@ -1,4 +1,4 @@
-/** docpath:write-design — 写入 UI/UX 设计决策、预览与视觉验收文档 */
+/** docpath:write-design — 写入 UI/UX 设计证据；不负责触发 UI 设计门禁 */
 
 import { existsSync } from 'fs';
 import { resolveDocpathDir } from '../utils/file.js';

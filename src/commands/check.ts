@@ -20,7 +20,7 @@ import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
 import { detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatTaskIdentityDrift, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
-import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, missingDesignPreviewDepth } from '../utils/ui-gate.js';
+import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, missingDesignPreviewDepth, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
 import { resolveMajorChangeGateStatus } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { CHECK_HISTORY_MAX_ENTRIES } from '../utils/workspace-cleanup.js';
@@ -770,7 +770,16 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
   const text = haystack.join('\n');
   // 判定优先级：spec 4.1 显式框 > 关键词回退（与 go 前置门禁共用 ui-gate.ts）。
   const requirement = await resolveUiDesignRequirement(cwd);
-  if (requirement !== 'required') return [];
+  if (requirement !== 'required') {
+    if (!await shouldAdviseUiDesignOptIn(cwd)) return [];
+    return [{
+      name: 'UI/UX Design Opt-in Advisory',
+      passed: true,
+      severity: 'warning',
+      output: '检测到 UI/前端相关描述，但未显式开启 UI 设计流程；check 不会要求设计五件套。如需设计审批，请在 spec 中将 UI 设计门禁标记为 required。',
+      category: 'analysis',
+    }];
+  }
 
   const uiBriefPath = join(docpathDir, 'tasks', 'current', 'ui-brief.md');
   const handoffPath = join(docpathDir, 'tasks', 'current', 'external-design-handoff.md');

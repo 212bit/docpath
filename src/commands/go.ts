@@ -18,7 +18,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { parsePlanSteps, type PlanStep } from '../utils/doc-parser.js';
 import { markPlanStep, type PlanStepStatus } from '../utils/plan-sync.js';
 import { runCommand } from './runtime.js';
-import { resolveUiDesignRequirement, missingDesignArtifacts, missingFrameworkDecision, missingDesignPreviewDepth } from '../utils/ui-gate.js';
+import { resolveUiDesignRequirement, missingDesignArtifacts, missingFrameworkDecision, missingDesignPreviewDepth, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { acquireExecutionLease, releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
@@ -245,6 +245,14 @@ export async function goCommand(options: GoOptions): Promise<void> {
   if (!status) {
     assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go');
   }
+  const uiRequirement = !status ? await resolveUiDesignRequirement(cwd) : 'exempt';
+  const uiOptInAdvisory = !status && uiRequirement !== 'required'
+    ? await shouldAdviseUiDesignOptIn(cwd)
+    : false;
+  if (uiOptInAdvisory) {
+    console.log('⚠️  检测到 UI/前端相关描述，但未显式开启 UI 设计流程；go 将继续执行。');
+    console.log('    如需设计审批，请在 spec 的 UI 设计门禁中勾选 required，或先写入 design-preview/design-approval 证据。');
+  }
   await renderExecutionContext(cwd, tasks, target, current?.level || 0);
   await touchSession(cwd, {
     sessionId: session.sessionId,
@@ -265,7 +273,6 @@ export async function goCommand(options: GoOptions): Promise<void> {
   // - exempt / unknown(未命中关键词) → 放行
   // 不设绕过 flag：合法的「无需设计」走 spec「不涉及产品 UI」框，留痕可审计。
   // 与 check 阶段共用 ui-gate.ts，保证 go 前置门禁与 check 门禁判定一致。
-  const uiRequirement = await resolveUiDesignRequirement(cwd);
   if (uiRequirement === 'required') {
     const frameworkGap = await missingFrameworkDecision(cwd);
     if (frameworkGap.missing.length > 0) {

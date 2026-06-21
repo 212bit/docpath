@@ -3,7 +3,7 @@
  *
  * 覆盖 go 与 check 共享的判定真源 src/utils/ui-gate.ts：
  * - parseExplicitUiDeclaration: spec 4.1 显式框 → required / exempt / unknown，同勾从严
- * - resolveUiDesignRequirement: 显式框优先于关键词；未勾选时关键词回退；
+ * - resolveUiDesignRequirement: 显式框优先；未勾选时只有明确设计意图触发 required；
  *   workflow-only（讲门禁/模板但声明不做产品 UI）回退为 exempt
  * - approvalState: frontmatter 嵌套 / 直写 state / markdown 行三种解析
  * - missingDesignArtifacts: design-preview 缺失、approval 未 approved 的产物缺口
@@ -122,8 +122,13 @@ describe('resolveUiDesignRequirement（端到端：读 spec/plan 文本）', () 
     assert.equal(await resolveUiDesignRequirement(root), 'exempt');
   });
 
-  it('未勾选 + 命中 UI 关键词 → required（关键词回退）', async () => {
-    writeSpec('# T-UIGATE - 页面重构\n## 背景\n本任务重做 layout 与 navigation 视觉设计。');
+  it('未勾选 + 泛 UI/前端关键词 → exempt（不自动触发设计门禁）', async () => {
+    writeSpec('# T-UIGATE - 页面重构\n## 背景\n本任务重做 page layout、navigation、dashboard CSS 与 frontend component。');
+    assert.equal(await resolveUiDesignRequirement(root), 'exempt');
+  });
+
+  it('未勾选 + 明确设计意图 → required（显式 opt-in 回退）', async () => {
+    writeSpec('# T-UIGATE - 视觉方案\n## 背景\n先设计 UI 设计稿，输出 Figma / design-preview 并完成设计审批。');
     assert.equal(await resolveUiDesignRequirement(root), 'required');
   });
 

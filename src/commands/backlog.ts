@@ -28,6 +28,7 @@ import { transitionWorkflow } from '../engine/transitions.js';
 import { archivedTaskDir, canonicalTaskRelativePath, canonicalTaskDir, clearCurrentTaskAlias, writeActiveTaskFile } from '../utils/task-files.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
+import { hasExplicitUiDesignIntent } from '../utils/ui-gate.js';
 
 interface BacklogCommandOptions {
   cwd: string;
@@ -463,11 +464,17 @@ function includesAny(value: string, patterns: RegExp[]): boolean {
 
 function isProductUiImplementationTask(item: BacklogItem): boolean {
   const text = backlogSearchText(item);
-  return includesAny(text, [
-    /产品\s*UI\s*实现/i,
-    /\b(frontend|front-end|react|vue|svelte|component|layout)\b/i,
-    /页面|界面|前端|组件|布局|交互|视觉|设计系统|设计稿|design-preview/i,
-  ]);
+  if (includesAny(text, [
+    /without[\s\S]{0,160}(product\s*UI\s*design|UI\/UX\s*design|design\s*assets|design-preview)/i,
+    /no[\s\S]{0,160}(product\s*UI\s*design|UI\/UX\s*design|design\s*assets|design-preview)/i,
+    /不涉及[\s\S]{0,160}(产品\s*UI|UI\s*设计|设计稿|设计审批|design-preview)/i,
+    /不包含[\s\S]{0,160}(产品\s*UI|UI\s*设计|设计稿|设计审批|design-preview)/i,
+    /不做[\s\S]{0,160}(产品\s*UI|UI\s*设计|设计稿|设计审批|design-preview)/i,
+    /豁免[\s\S]{0,80}(设计五件套|UI\s*设计门禁|design gate)/i,
+  ])) {
+    return false;
+  }
+  return hasExplicitUiDesignIntent(text);
 }
 
 function inferMajorChangeTypes(item: BacklogItem): Set<string> {

@@ -4,9 +4,9 @@
  * 解决两类根因：
  * 1. 判定漂移：以前 go 对 UI 设计零感知，check 用一套正则，标准不一致。
  *    现在两者都走本模块，"是否需要设计 / 缺哪些产物" 只有一个定义。
- * 2. 措辞脆弱：以前靠正则猜 "是不是 UI 任务"，英文/别的说法即假阴性，
- *    且 spec 写 "不包含产品 UI" 就能自证豁免。现在以 spec 4.1 的
- *    **显式勾选框** 为准，关键词只在没勾选时兜底（向后兼容老 spec）。
+ * 2. 措辞脆弱：以前靠泛 UI 正则猜 "是不是 UI 任务"，普通页面/布局改动
+ *    也会被升级成设计审批。现在以 spec 4.1 的 **显式勾选框** 为准；
+ *    旧 spec 只有在文本里出现明确设计意图时才兜底为 required。
  */
 
 import { existsSync } from 'node:fs';
@@ -19,19 +19,29 @@ import { readCurrentState } from './workspace.js';
  * UI 设计要求判定结果。
  * - required: 任务涉及产品 UI 实现，go 前必须有 design-preview + 已批准 design-approval
  * - exempt:   任务显式声明不涉及产品 UI，合法豁免（可审计，留痕在 spec）
- * - unknown:  spec 未声明，回退到关键词检测决定是否拦截
+ * - unknown:  spec 未声明；普通 UI/前端关键词不拦截，最多用于 advisory
  */
 export type UiDesignRequirement = 'required' | 'exempt' | 'unknown';
 
-// ── 关键词回退（仅 unknown 时使用）──────────────────────────
+// ── UI 信号与显式设计意图（unknown 时使用）───────────────────
 
+/** 广义 UI/前端信号：只用于非阻塞 advisory，不直接触发硬门禁。 */
 export function isUiUxTaskText(text: string): boolean {
-  return /UI\/UX|UX|用户界面|界面重构|页面重构|页面|layout|navigation|visual|视觉设计|设计预览|视觉验收|Design Preview|Visual Acceptance|responsive UI|响应式界面|Figma|Stitch|v0|Framer/i.test(text);
+  return /UI\/UX|\bUI\b|产品\s*UI|UX|用户界面|界面重构|页面重构|页面|layout|navigation|visual|视觉|设计预览|视觉验收|Design Preview|Visual Acceptance|responsive UI|响应式界面|Figma|Stitch|v0|Framer|frontend|front-end|前端|component|组件|dashboard|CSS/i.test(text);
 }
 
 export function isUiUxWorkflowOnlyTask(text: string): boolean {
   return /Codex Skill|Agent 指引|check gate|Approval Gate|Design Approval Gate|门禁|模板|流程|workflow|write-design|docpath check/i.test(text)
     && /不包含[\s\S]{0,240}(实际重构|产品 UI|页面实现)|不做[\s\S]{0,240}(实际重构|产品 UI|页面实现)/i.test(text);
+}
+
+/** 明确设计意图：允许旧 spec 或 backlog 文本在无勾选框时 opt-in UI 设计门禁。 */
+export function hasExplicitUiDesignIntent(text: string): boolean {
+  const source = stripUiGateDeclarationSection(text)
+    .split('\n')
+    .filter((line) => !/本任务不涉及产品\s*UI|本任务涉及产品\s*UI|go 前必须有 design-preview|design-approval/i.test(line))
+    .join('\n');
+  return /UI\/UX\s*(design|analysis|review)|\bUI\s*design\b|\bUX\s*analysis\b|visual\s*(direction|design|brief|review)|prototype|wireframe|mockup|Figma|Stitch|\bv0\b|Framer|design-preview|Design Preview|design approval|Design Approval|approval-gated|先设计|做\s*UI\s*设计|UI\s*设计|UX\s*分析|视觉方案|视觉方向|视觉设计|原型|线框图|设计稿|设计预览|设计审批|设计批准/i.test(source);
 }
 
 export function hasUiImplementationIntent(text: string): boolean {
@@ -83,7 +93,8 @@ async function readActiveTaskText(cwd: string): Promise<{ specText: string; hays
 
 /**
  * 判定当前任务是否需要 UI 设计产物。
- * 优先级：spec 4.1 显式声明 > 关键词回退。
+ * 优先级：spec.json 显式声明 > spec 4.1 显式声明 > 明确设计意图兜底。
+ * 普通 UI/前端关键词不自动升级为 required。
  */
 export async function resolveUiDesignRequirement(cwd: string): Promise<UiDesignRequirement> {
   const docpathDir = await resolveDocpathDir(cwd);
@@ -98,11 +109,32 @@ export async function resolveUiDesignRequirement(cwd: string): Promise<UiDesignR
   const explicit = parseExplicitUiDeclaration(specText);
   if (explicit !== 'unknown') return explicit;
 
-  // 回退：未显式声明时，沿用关键词检测（保护老 spec 不破）。
+  // 回退：未显式声明时，只接受明确设计意图作为 opt-in。广义 UI/前端
+  // 信号留给 advisory，不能自动升级为硬门禁。
   const fallbackHaystack = stripUiGateDeclarationSection(haystack);
-  if (!isUiUxTaskText(fallbackHaystack)) return 'exempt';
   if (isUiUxWorkflowOnlyTask(fallbackHaystack)) return 'exempt';
-  return 'required';
+  if (hasExplicitUiDesignIntent(fallbackHaystack)) return 'required';
+  return 'exempt';
+}
+
+/**
+ * 非阻塞提示：任务文本看起来涉及 UI/前端，但没有显式开启设计流程。
+ * 这不是门禁，只用于提醒用户如需设计审批应显式 opt-in。
+ */
+export async function shouldAdviseUiDesignOptIn(cwd: string): Promise<boolean> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const state = await readCurrentState(cwd);
+  const structuredSpec = await readActiveStructuredSpecDocument(docpathDir, state?.task_id);
+  if (structuredSpec?.ui_gate?.state && structuredSpec.ui_gate.state !== 'unknown') return false;
+
+  const { specText, haystack } = await readActiveTaskText(cwd);
+  const explicit = parseExplicitUiDeclaration(specText);
+  if (explicit !== 'unknown') return false;
+
+  const fallbackHaystack = stripUiGateDeclarationSection(haystack);
+  if (isUiUxWorkflowOnlyTask(fallbackHaystack)) return false;
+  if (hasExplicitUiDesignIntent(fallbackHaystack)) return false;
+  return isUiUxTaskText(fallbackHaystack);
 }
 
 // ── 设计产物状态 ─────────────────────────────────────────────

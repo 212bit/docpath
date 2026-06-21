@@ -1,6 +1,6 @@
 # UI/UX Design Evidence Templates
 
-DocPath UI/UX 任务使用一组可检查的设计证据，目标是在产品 UI 实现前冻结具体视觉方向，并在实现后保留视觉验收依据。
+DocPath 在显式 opt-in 的 UI/UX 设计任务中使用一组可检查的设计证据，目标是在产品 UI 实现前冻结具体视觉方向，并在实现后保留视觉验收依据。普通 UI/前端实现任务不会仅因页面、布局、组件或 CSS 关键词自动进入此流程。
 
 ## Required Sequence
 

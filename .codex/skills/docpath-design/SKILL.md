@@ -5,13 +5,15 @@ description: Design quality lens for DocPath work covering UX information archit
 
 # DocPath Design
 
-Use this skill when a DocPath task needs a UX/design lens: new pages, management screens, workflow views, prototype critique, interaction decisions, or design-to-implementation handoff.
+Use this skill when the user explicitly asks for a UX/design lens or the active DocPath task explicitly opts into UI design (`ui_gate.state: required`): UI/UX design, visual direction, prototype critique, design approval, Figma/Stitch/v0/Framer handoff, or design-to-implementation handoff.
 
 This is a **quality lens**, not a parallel workflow. Use the main `docpath` skill for lifecycle routing and pre-development analysis commands.
 
+Ordinary product UI or frontend implementation work does not automatically trigger this skill. Mentions of pages, layout, navigation, components, CSS, dashboard, or frontend code are implementation scope unless the user also asks for design, prototype, approval, or design-preview evidence.
+
 ## Approval-gated UI/UX route
 
-When the request or active task mentions UI, UX, page, layout, navigation, visual design, responsive behavior, Figma, Stitch, v0, Framer, or equivalent interface work, treat it as an approval-gated UI/UX task.
+When the user explicitly requests design work, or the active task has `ui_gate.state: required`, treat it as an approval-gated UI/UX task.
 
 Required sequence before product UI implementation:
 
@@ -25,7 +27,7 @@ Framework Decision
 → Visual Acceptance
 ```
 
-Hard rules:
+Hard rules after explicit opt-in:
 
 - Do not write product UI code before `frontend-stack.md`, `ui-brief.md`, `design-preview.md`, and `design-approval.md` exist in the current task.
 - `design-preview.md` must freeze 8 dimensions into concrete values, not directions: layout/grid, dimensions, spacing scale, icon system, colors & tokens, motion specs, interaction logic, technical constraints. Use real px/rem/hex/ms/easing/icon-set names — `go` and `check` hard-block on missing dimensions or direction-only placeholders (shared `missingDesignPreviewDepth`). Keep directional language (north star, feeling) in `ui-brief.md`.

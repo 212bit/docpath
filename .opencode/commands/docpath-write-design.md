@@ -3,10 +3,16 @@
 Artifact sink: write UI/UX design evidence already generated or selected by the
 current agent session into the active DocPath task.
 
-Required flow:
+This command is an evidence writer, not a workflow trigger. Writing a design
+artifact does not by itself enable the UI design gate; the task must explicitly
+opt in through `spec.json ui_gate.state: required`, the spec UI gate checkbox,
+or a user-requested design flow.
+
+Required flow after explicit opt-in:
 
 ```text
-UI Prompt Brief
+Framework Decision
+→ UI Prompt Brief
 → External Design Handoff
 → Design Preview
 → Design Approval
@@ -56,7 +62,7 @@ docpath write-design --kind acceptance --stdin
 `external-design-handoff.md` should record prompts, output links or snapshots, selected directions, rejected directions, and implementation constraints from Stitch, Figma, v0, Framer, or another design tool. If no external tool is used, record equivalent design inputs, candidate directions, and rejected directions so implementation is not based only on verbal preference.
 
 ## Check Gate
-`docpath check` verifies the following when a UI/UX task has implementation steps or product UI file changes:
+`docpath check` verifies the following when an explicitly opted-in UI/UX task has implementation steps or product UI file changes:
 
 - `frontend-stack.md`
 - `ui-brief.md`

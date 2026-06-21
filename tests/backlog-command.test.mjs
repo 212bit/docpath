@@ -699,6 +699,106 @@ CLI workflow task can proceed without product UI design assets.
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('backlog promote keeps ordinary frontend work UI-exempt without explicit design intent', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-003-frontend.md'), `---
+id: R-003
+title: Implement dashboard frontend layout
+status: accepted
+priority: P1
+level: 2
+source: test
+readiness: confirmed
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+Implement dashboard page layout, frontend components, navigation, and CSS spacing.
+
+## 验收
+
+Dashboard UI implementation works.
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 2,
+      task_id: '',
+      task_title: '',
+      phase: 'idle',
+      gate: 'none',
+      current_step: '等待下一步',
+      started_at: '2026-05-31T00:00:00.000Z',
+      updated_at: '2026-05-31T00:00:00.000Z',
+    }, null, 2));
+
+    run('backlog promote R-003', cwd);
+
+    const spec = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8');
+    assert.match(spec, /- \[x\] 本任务不涉及产品 UI 实现/);
+    assert.match(spec, /- \[ \] 本任务涉及产品 UI 实现/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog promote marks UI required only for explicit design intent', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-004-design.md'), `---
+id: R-004
+title: Create UI design approval for settings page
+status: accepted
+priority: P1
+level: 2
+source: test
+readiness: confirmed
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: 用户确认先设计再实现
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+先设计 settings page 的 UI 设计稿，输出 Figma 方向和 design-preview，并完成设计审批。
+
+## 验收
+
+design-approval approved 后再实现。
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 2,
+      task_id: '',
+      task_title: '',
+      phase: 'idle',
+      gate: 'none',
+      current_step: '等待下一步',
+      started_at: '2026-05-31T00:00:00.000Z',
+      updated_at: '2026-05-31T00:00:00.000Z',
+    }, null, 2));
+
+    run('backlog promote R-004', cwd);
+
+    const spec = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8');
+    assert.match(spec, /- \[ \] 本任务不涉及产品 UI 实现/);
+    assert.match(spec, /- \[x\] 本任务涉及产品 UI 实现/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('backlog promote creates missing workspace runtime before state locking', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'dp-backlog-missing-workspace-'));
     const dp = join(cwd, '.docpath');

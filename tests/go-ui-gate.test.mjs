@@ -5,6 +5,7 @@
  * - spec 显式勾选「涉及产品 UI」(required) 且缺 frontend-stack → fail-loud, exit 1
  * - frontend-stack 合格后缺 design-preview/approval → fail-loud, exit 1
  * - spec 显式勾选「不涉及产品 UI」(exempt) → 放行
+ * - unknown + 普通 UI/前端词 → 只提示，不阻塞
  * - dry-run → 不受门禁影响，始终可预览
  *
  * 判定真源为 src/utils/ui-gate.ts，与 check 阶段共用，避免两处标准漂移。
@@ -70,6 +71,28 @@ function specWithUiDeclaration(declaration) {
     '## 5. 验收标准',
     '',
     '- [ ] AC-1: go 门禁行为正确',
+    '',
+  ].join('\n');
+}
+
+function specWithGenericUiUnknown() {
+  return [
+    '# T-AGENT - Agent Lifecycle',
+    '',
+    '## 1. 背景与动机',
+    '',
+    'Implement dashboard page layout, frontend components, navigation, and CSS spacing.',
+    '',
+    '## 4.1 重大变更门禁',
+    '',
+    '### UI 设计门禁',
+    '',
+    '- [ ] 本任务不涉及产品 UI 实现（豁免设计五件套）',
+    '- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）',
+    '',
+    '## 5. 验收标准',
+    '',
+    '- [ ] AC-1: 普通前端词不触发硬门禁',
     '',
   ].join('\n');
 }
@@ -175,6 +198,15 @@ describe('go UI 设计门禁', () => {
     const { cwd } = mkWorkspace('exempt');
     const out = run('go --step S1', cwd);
     assert.doesNotMatch(out, /UI 设计门禁未通过/, '显式豁免不应被门禁拦截');
+  });
+
+  it('unknown + 普通 UI/前端关键词 → 非阻塞提示并放行', () => {
+    const { cwd, tasks } = mkWorkspace('exempt');
+    writeFileSync(join(tasks, 'spec.md'), specWithGenericUiUnknown());
+    const out = run('go --step S1', cwd);
+    assert.match(out, /检测到 UI\/前端相关描述/, '应给出非阻塞提示');
+    assert.doesNotMatch(out, /Framework Decision 门禁未通过|UI 设计门禁未通过/, '普通前端词不应触发硬门禁');
+    assert.match(out, /执行子任务/, 'go 应继续进入执行上下文');
   });
 
   it('required + 缺产物 + dry-run → 不受门禁影响，仍可预览', () => {

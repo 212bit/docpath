@@ -28,6 +28,15 @@ const CONCRETE_PREVIEW = [
   '',
 ].join('\n');
 
+const REQUIRED_UI_GATE_SECTION = [
+  '## 4.1 重大变更门禁',
+  '',
+  '### UI 设计门禁',
+  '- [ ] 本任务不涉及产品 UI 实现（豁免设计五件套）',
+  '- [x] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）',
+  '',
+];
+
 const CLI = new URL('../dist/index.js', import.meta.url).pathname;
 const run = (args, cwd) => {
   try {
@@ -851,6 +860,7 @@ describe('check and review commands', () => {
       '|---|------|------|------|------|',
       '| 1 | UI | 旧版 / 新版 | 新版 | 测试 |',
       '',
+      ...REQUIRED_UI_GATE_SECTION,
       '## 5. 验收标准',
       '- [ ] AC-1: UI implementation 通过 approval gate',
       '',
@@ -939,6 +949,7 @@ describe('check and review commands', () => {
       '|---|------|------|------|------|',
       '| 1 | UI | 旧版 / 新版 | 新版 | 测试 |',
       '',
+      ...REQUIRED_UI_GATE_SECTION,
       '## 5. 验收标准',
       '- [ ] AC-1: UI implementation 通过 approval gate',
       '',
@@ -1029,6 +1040,7 @@ describe('check and review commands', () => {
       '|---|------|------|------|------|',
       '| 1 | UI | 旧版 / 新版 | 新版 | 测试 |',
       '',
+      ...REQUIRED_UI_GATE_SECTION,
       '## 5. 验收标准',
       '- [ ] AC-1: UI implementation 通过 approval gate',
       '',
