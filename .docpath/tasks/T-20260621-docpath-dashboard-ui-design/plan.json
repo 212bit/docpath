@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-21T13:34:40.132Z",
+    "updated_at": "2026-06-21T13:34:40.132Z",
+    "content_sha256": "71107cc982ff3a8a08742e650131a6e0b54d73cd486381baa64f58fe115fe743"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-06-21T13:34:40.132Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 DocPath Dashboard UI Design",
+      "description": "根据 spec 明确 FR-1: DocPath Dashboard UI Design 的实现边界和验收口径。",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 DocPath Dashboard UI Design",
+      "description": "在现有架构内完成 FR-1: DocPath Dashboard UI Design 的代码与文档更新。",
+      "acceptance": "FR-1 DocPath Dashboard UI Design 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-227 与任务 T-20260621-docpath-dashboard-ui-design 建立双向关联",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-227 与任务 T-20260621-docpath-dashboard-ui-design 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

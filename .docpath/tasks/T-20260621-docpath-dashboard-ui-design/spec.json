@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-21T13:38:12.061Z",
+    "updated_at": "2026-06-21T13:38:12.061Z",
+    "content_sha256": "b1c60b4f97a3cc000e05c32e90adfc25524dcceac1ccc5b0cb409b952840edb8"
+  },
+  "task_id": "T-20260621-docpath-dashboard-ui-design",
+  "backlog_id": "R-227",
+  "title": "T-20260621-docpath-dashboard-ui-design - DocPath Dashboard UI Design",
+  "generated_at": "2026-06-21T13:38:12.061Z",
+  "scope": {
+    "included": [
+      "DocPath Dashboard UI Design"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "User requested UI design flow",
+    "decision_brief_markdown": "- 当前问题: ## 背景\n- 目标: DocPath Dashboard UI Design\n- 背景: 来自 backlog R-227，Decision Brief 证据: Design DocPath Dashboard UI\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: User requested UI design flow"
+  },
+  "ui_gate": {
+    "state": "required"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "DocPath Dashboard UI Design",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-227 与任务 T-20260621-docpath-dashboard-ui-design 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: ## 背景\n- 目标: DocPath Dashboard UI Design\n- 背景: 来自 backlog R-227，Decision Brief 证据: Design DocPath Dashboard UI\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: User requested UI design flow"
+}

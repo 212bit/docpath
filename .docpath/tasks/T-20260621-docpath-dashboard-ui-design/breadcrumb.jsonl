@@ -1,0 +1,9 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260621-docpath-dashboard-ui-design","step":"S1","status":"in_progress","context":"开始执行: 梳理 DocPath Dashboard UI Design","timestamp":"2026-06-21T13:34:07.372Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260621-docpath-dashboard-ui-design","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-06-21T13:34:14.015Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260621-docpath-dashboard-ui-design","step":"S2","status":"in_progress","context":"开始执行: 实现 DocPath Dashboard UI Design","timestamp":"2026-06-21T13:34:18.399Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260621-docpath-dashboard-ui-design","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-06-21T13:34:24.659Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260621-docpath-dashboard-ui-design","step":"S3","status":"in_progress","context":"开始执行: 验证验收标准","timestamp":"2026-06-21T13:34:31.262Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260621-docpath-dashboard-ui-design","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-06-21T13:34:40.125Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260621-docpath-dashboard-ui-design","step":"check","status":"done","context":"质量检查通过 (6 项)","timestamp":"2026-06-21T13:36:33.142Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260621-docpath-dashboard-ui-design","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-06-21T13:37:23.663Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260621-docpath-dashboard-ui-design","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-06-21T13:37:37.507Z"}
