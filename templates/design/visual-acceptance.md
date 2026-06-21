@@ -1,74 +1,41 @@
 ---
 kind: visual-acceptance
 status: draft
-version: 1
-required_sections:
-  - Acceptance Scope
-  - Must Pass
-  - Must Not Regress
-  - Review Evidence
-  - Responsive Matrix
-  - Accessibility Matrix
+version: 2
+source: ui-brief.md
 ---
 
 # Visual Acceptance
 
-> Purpose: record executable visual验收 criteria after implementation.
-> This file is the bridge from approved design intent to review evidence:
-> screenshots, snapshot checks, HTML inspection, and reviewer notes.
+> Purpose: record post-implementation evidence against `ui-brief.md`.
+> Do not redefine the design here; record screenshots, checks, drift, and result.
 
-## Acceptance Scope
+## Source
 
-- Approved design artifact:
-- Implemented pages / views:
-- Implemented components:
-- Out of scope:
+- UI blueprint: ui-brief.md
+- Approved by: design-approval.md
 
-## Must Pass
+## Evidence
 
-> 写成可执行的必须项，review 时逐项对比实现和 design-preview.md。
-
-- Layout:
-- Dimensions:
-- Spacing:
-- Colors / tokens:
-- Icons:
-- Motion:
-- Interaction states:
-- Copy / readability:
-- Navigation:
-
-## Must Not Regress
-
-> 写明不得出现的视觉、信息架构、交互或响应式退化。
-
-- Must not:
-- Forbidden visual directions:
-- Disabled / loading / error state constraints:
-- Destructive-action constraints:
-
-## Review Evidence
-
-| Evidence | Path / URL | Required check | Result |
+| Evidence | Path / URL | Check | Result |
 |---|---|---|---|
-| Desktop screenshot |  | screenshot review + design-preview 对比 | pending |
-| Mobile screenshot |  | screenshot review + responsive 对比 | pending |
-| Snapshot / DOM |  | snapshot 或 HTML 结构检查 | pending |
-| Keyboard review |  | focus / navigation / aria-label 检查 | pending |
+| Desktop screenshot |  | Compare against UI Blueprint | pending |
+| Mobile screenshot |  | Compare against responsive rules | pending |
+| State screenshot |  | Loading / empty / error / permission states | pending |
+| Accessibility review |  | Focus / semantics / accessible names | pending |
 
-## Responsive Matrix
+## Checks
 
-| Viewport | Must show | Must not show | Notes |
-|---|---|---|---|
-| 360px mobile |  |  |  |
-| 768px tablet |  |  |  |
-| 1280px desktop |  |  |  |
+- [ ] Primary path matches `ui-brief.md`.
+- [ ] Main and secondary actions match `ui-brief.md`.
+- [ ] Required states are implemented.
+- [ ] Desktop layout has no overlap or horizontal overflow.
+- [ ] Mobile layout remains readable or follows the approved degradation strategy.
+- [ ] Text does not overflow buttons, cards, tables, panels, or controls.
+- [ ] Dangerous actions remain separated and confirmed.
+- [ ] No unapproved visual direction was introduced.
 
-## Accessibility Matrix
+## Result
 
-| Area | Acceptance |
-|---|---|
-| Readability | Text remains 可读; contrast meets the design-preview target. |
-| Focus | Keyboard focus is visible and follows the intended navigation order. |
-| Semantics | Interactive controls have accessible names and valid HTML semantics. |
-| Motion | Reduced-motion preference is respected where motion is non-essential. |
+- State: pending
+- Notes:

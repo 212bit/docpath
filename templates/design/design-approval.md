@@ -1,13 +1,13 @@
 ---
 kind: design-approval
 status: pending
-version: 1
+version: 2
 approval:
   state: pending
-  source: null
+  source: ui-brief.md
   approved_at: null
-  summary: null
-  forbidden_directions: []
+  approver: null
+  notes: null
 valid_states:
   - pending
   - approved
@@ -16,39 +16,23 @@ valid_states:
 
 # Design Approval
 
-> Purpose: prove that the user approved a concrete design direction, not merely the UI/UX process.
+> Purpose: record whether the concrete `ui-brief.md` blueprint is approved for implementation.
+> Do not duplicate design decisions here; update `ui-brief.md` when the design changes.
 
 ## Approval State
 
 - State: pending
-- Approval source:
+- Source: ui-brief.md
 - Approved at:
-- Approved design artifact:
-- Approval summary:
+- Approver:
+- Notes:
 
-## Scope Of Approval
+## Non-Approval Rules
 
-- Approved pages:
-- Approved components:
-- Approved responsive behavior:
-- Approved visual tokens:
-- Approved interaction model:
-
-## Explicit Non-Approval
-
-- The user agreeing to use this workflow is not approval of a concrete visual design.
-- A generated Design Preview without user confirmation is not approval.
-- A passing Visual Acceptance matrix without user confirmation is not approval.
-
-## Forbidden Directions
-
-- 
+- User agreement to use the UI workflow is not approval of the concrete UI blueprint.
+- Generated mockups, wireframes, or visual acceptance evidence do not approve implementation without explicit user approval.
 
 ## Rejection Notes
 
 - Rejected because:
 - Required changes before resubmission:
-
-## Implementation Release Condition
-
-- Implementation may start only when frontmatter `approval.state` is `approved` and this document names the approved artifact or design direction.

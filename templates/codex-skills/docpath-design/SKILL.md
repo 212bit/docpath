@@ -9,7 +9,7 @@ Use this skill when the user explicitly asks for a UX/design lens or the active 
 
 This is a **quality lens**, not a parallel workflow. Use the main `docpath` skill for lifecycle routing and pre-development analysis commands.
 
-Ordinary product UI or frontend implementation work does not automatically trigger this skill. Mentions of pages, layout, navigation, components, CSS, dashboard, or frontend code are implementation scope unless the user also asks for design, prototype, approval, or design-preview evidence.
+Ordinary product UI or frontend implementation work does not automatically trigger this skill. Mentions of pages, layout, navigation, components, CSS, dashboard, or frontend code are implementation scope unless the user also asks for design, prototype, approval, wireframes, mockups, or UI brief evidence.
 
 ## Approval-gated UI/UX route
 
@@ -18,10 +18,7 @@ When the user explicitly requests design work, or the active task has `ui_gate.s
 Required sequence before product UI implementation:
 
 ```text
-Framework Decision
-→ UI Prompt Brief
-→ External Design Handoff
-→ Design Preview
+UI Blueprint
 → Design Approval
 → Implementation
 → Visual Acceptance
@@ -29,28 +26,28 @@ Framework Decision
 
 Hard rules after explicit opt-in:
 
-- Product UI implementation may start only after the minimum implementation gate passes: `frontend-stack.md` is valid, `design-preview.md` passes the 8-dimension depth check, and `design-approval.md` has `approval.state: approved`.
-- The full UI/UX design evidence package for `check`/review also includes `ui-brief.md`, `external-design-handoff.md`, and `visual-acceptance.md`; keep these artifacts in the required sequence so closeout evidence is complete.
-- `design-preview.md` must freeze 8 dimensions into concrete values, not directions: layout/grid, dimensions, spacing scale, icon system, colors & tokens, motion specs, interaction logic, technical constraints. Use real px/rem/hex/ms/easing/icon-set names — `go` and `check` hard-block on missing dimensions or direction-only placeholders (shared `missingDesignPreviewDepth`). Keep directional language (north star, feeling) in `ui-brief.md`.
-- Framework Decision must record the selected JS framework/runtime, CSS strategy, component library decision, or explicit pure static choice before visual design work.
-- Do not treat pure static as skipping trade-off analysis; still record at least one rejected alternative and its reason.
-- After selecting the stack, load the corresponding framework skill if one is available. Keep framework-specific guidance in that skill instead of embedding it here.
+- Product UI implementation may start only after the minimum implementation gate passes: `ui-brief.md` exists as the canonical UI Blueprint and `design-approval.md` has `approval.state: approved`.
+- `ui-brief.md` is the only default UI design truth source. It should be dense enough to drive high-fidelity image generation, wireframes, frontend implementation, and visual review.
+- `design-approval.md` must stay thin: approval state, source, time, approver, and notes only. Do not duplicate the design there.
+- `visual-acceptance.md` is post-implementation evidence against `ui-brief.md`; it is not required before implementation.
+- Optional artifacts such as `frontend-stack.md`, `external-design-handoff.md`, and `design-preview.md` may be used for unusual tasks, but selected design decisions must be reflected back into `ui-brief.md` before implementation.
 - Do not treat the user's approval of this workflow as approval of a concrete visual design.
 - If `design-approval.md` is missing, `pending`, or `rejected`, stop and ask the user to approve or reject the concrete design direction before implementation.
 - Approval must be recorded as a DocPath task artifact, not as a separate state machine outside DocPath.
-- External design tools such as Stitch, Figma, v0, or Framer may be used as handoff sources, but their prompts, outputs, selected direction, rejected direction, and constraints must be recorded in `external-design-handoff.md`.
+- External design tools such as Stitch, Figma, v0, or Framer may be used, but the approved direction must be captured in `ui-brief.md`; archive large prompt/output history separately only when it is useful.
 
-## Framework Decision
+## UI Blueprint
 
-Before design preview work, decide and record:
+Before implementation, `ui-brief.md` should record:
 
-- whether a framework is needed or pure static is enough
-- JS framework/runtime choice
-- CSS strategy
-- component library decision
-- implementation constraints that affect the visual design
-- rejected alternatives with reasons
-- framework-specific skill to load next, when available
+- screen contract: product area, target user, entry point, primary job, success outcome, non-goals
+- flow contract: before/main/secondary/exit paths, risky actions, confirmations, read/write boundary, permissions
+- layout contract: regions, navigation, primary/secondary content, actions, detail panels, status placement, priority, density, overflow
+- component contract: component purpose, data, states, actions, notes
+- state contract: loading, empty, error, partial data, permission denied, disabled, success, destructive confirmation
+- visual contract: grid, dimensions, spacing, typography, colors, icons, radius, elevation, motion, responsive behavior, accessibility, technical constraints
+- generation contract: high-fidelity UI prompt, wireframe prompt, negative prompt
+- acceptance contract: screenshot/review checks implementation must satisfy
 
 ## Design quality bar
 
@@ -90,11 +87,10 @@ docpath deliverables check
 For approval-gated UI/UX work, also create or update:
 
 ```bash
-docpath write-design --kind stack --stdin
+docpath write-design --kind brief --template
 docpath write-design --kind brief --stdin
-docpath write-design --kind handoff --stdin
-docpath write-design --kind preview --stdin
 docpath write-design --kind approval --stdin
+# after implementation
 docpath write-design --kind acceptance --stdin
 ```
 

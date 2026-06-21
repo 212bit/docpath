@@ -535,7 +535,7 @@ function renderMajorDecisionGate(item: BacklogItem): string[] {
     '',
     '### UI 设计门禁',
     `- [${checked(!productUi)}] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）`,
-    `- [${checked(productUi)}] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）`,
+    `- [${checked(productUi)}] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）`,
     '',
     '### Decision Brief',
     `- 当前问题: ${problem}`,

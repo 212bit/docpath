@@ -16,15 +16,15 @@ rejected_count: 0
 
 # Frontend Stack Decision
 
-> Purpose: freeze the frontend technology stack BEFORE any UI prompt brief or
-> design preview. The Framework Decision gate blocks `docpath go` for product-UI
-> tasks until this document names a selected stack AND records at least one
-> rejected alternative WITH a reason.
+> Purpose: optionally freeze the frontend technology stack when a UI task needs
+> a separate framework/runtime/CSS decision before the canonical `ui-brief.md`.
+> This is no longer part of the default UI gate; reflect any stack constraints
+> that affect design back into `ui-brief.md`.
 >
 > 纯静态(无框架)是合法选定，但同样必须把"为什么不用框架"写成被否决备选；
 > 该备选需要明确指向一个框架方案（如 React / Vue / Svelte / 使用框架）。
 > 增量 UI 任务可写"沿用既定栈 X — 理由: 一致性"，被否决备选写
-> "重写为其他栈 — 理由: 成本不划算"，门禁仍放行（不惩罚增量）。
+> "重写为其他栈 — 理由: 成本不划算"。
 
 ## 选定栈
 
@@ -34,8 +34,7 @@ rejected_count: 0
 
 ## 被否决备选
 
-> 至少 1 条，每条必须带「理由:」。门禁逼出"为什么不选别的"，
-> 防止"填了框架名就放行"。
+> 建议至少 1 条，每条带「理由:」，用于记录"为什么不选别的"。
 
 - <被否决方案> — 理由: <为什么不选它>
 

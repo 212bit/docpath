@@ -134,7 +134,7 @@ describe('write commands', () => {
       '',
       '### UI 设计门禁',
       '- [x] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）',
-      '- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）',
+      '- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）',
       '',
       '### Decision Brief',
       '- 用户确认: 无',
@@ -696,7 +696,7 @@ describe('write commands', () => {
     const cwd = mkWorkspace({ phase: 'executing', gate: 'none' });
     const artifacts = [
       ['stack', 'frontend-stack.md', '# Frontend Stack\n\n## 选定栈\n- JS 框架: 纯静态\n\n## 被否决备选\n- React - 理由: 当前任务不需要组件运行时\n'],
-      ['brief', 'ui-brief.md', '# UI Prompt Brief\n\n## Product Context\n'],
+      ['brief', 'ui-brief.md', '# UI Blueprint\n\n## Screen Contract\n'],
       ['handoff', 'external-design-handoff.md', '# External Design Handoff\n\n## Tool Inputs\n'],
       ['approval', 'design-approval.md', '---\napproval:\n  state: approved\n---\n# Design Approval\n'],
       ['preview', 'design-preview.md', '# Design Preview\n\n布局 状态 响应式 snapshot HTML '.repeat(20)],
@@ -718,26 +718,31 @@ describe('write commands', () => {
   it('write-design supports template initialization', () => {
     const cwd = mkWorkspace({ phase: 'executing', gate: 'none' });
 
-    // 1. Test initializing a specific kind (e.g. stack)
+    // 1. Test initializing the default canonical kind.
+    const outputBrief = run(`write-design --cwd ${cwd} --template`, cwd);
+    assert.match(outputBrief, /ui-brief\.md 已初始化/);
+    assert.match(outputBrief, /design-approval\.md 已初始化/);
+    assert.match(outputBrief, /visual-acceptance\.md 已初始化/);
+    assert.doesNotMatch(outputBrief, /frontend-stack\.md 已初始化/);
+    const briefContent = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'ui-brief.md'), 'utf-8');
+    assert.match(briefContent, /# UI Blueprint/);
+    assert.match(briefContent, /High-Fidelity UI Prompt/);
+
+    // 2. Test initializing all canonical kinds at once.
+    const outputAll = run(`write-design --cwd ${cwd} --kind all --template`, cwd);
+    assert.match(outputAll, /ui-brief\.md 已初始化/);
+    assert.match(outputAll, /design-approval\.md 已初始化/);
+    assert.match(outputAll, /visual-acceptance\.md 已初始化/);
+    assert.doesNotMatch(outputAll, /external-design-handoff\.md 已初始化/);
+    assert.doesNotMatch(outputAll, /design-preview\.md 已初始化/);
+
+    // 3. Optional artifacts can still be initialized explicitly.
     const outputStack = run(`write-design --cwd ${cwd} --kind stack --template`, cwd);
     assert.match(outputStack, /frontend-stack\.md 已初始化/);
     const stackContent = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'frontend-stack.md'), 'utf-8');
     assert.match(stackContent, /# Frontend Stack Decision/);
 
-    // 2. Test initializing all kinds at once
-    const outputAll = run(`write-design --cwd ${cwd} --kind all --template`, cwd);
-    assert.match(outputAll, /frontend-stack\.md 已初始化/);
-    assert.match(outputAll, /ui-brief\.md 已初始化/);
-    assert.match(outputAll, /external-design-handoff\.md 已初始化/);
-    assert.match(outputAll, /design-preview\.md 已初始化/);
-    assert.match(outputAll, /design-approval\.md 已初始化/);
-    assert.match(outputAll, /visual-acceptance\.md 已初始化/);
-
-    const previewContent = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'design-preview.md'), 'utf-8');
-    assert.match(previewContent, /# Design Preview/);
-
     rmSync(cwd, { recursive: true, force: true });
   });
 
 });
-

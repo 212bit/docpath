@@ -8,19 +8,23 @@ artifact does not by itself enable the UI design gate; the task must explicitly
 opt in through `spec.json ui_gate.state: required`, the spec UI gate checkbox,
 or a user-requested design flow.
 
-Required flow after explicit opt-in:
+Default flow after explicit opt-in:
 
 ```text
-Framework Decision
-→ UI Prompt Brief
-→ External Design Handoff
-→ Design Preview
+UI Blueprint
 → Design Approval
 → Implementation
 → Visual Acceptance
 ```
 
-User agreement to use this workflow is not approval of a specific visual direction. Product UI implementation may start only after `frontend-stack.md` is valid, `design-preview.md` freezes the concrete design, and `design-approval.md` has `approval.state: approved` with the approval source, approval time, approval rationale, and rejected directions recorded.
+`ui-brief.md` is the canonical UI design source. It should be dense enough to
+drive high-fidelity UI image generation, wireframes, frontend implementation,
+and review. `design-approval.md` records only whether that blueprint is approved.
+`visual-acceptance.md` records post-implementation evidence against the blueprint.
+
+Optional artifacts such as `frontend-stack.md`, `external-design-handoff.md`,
+and `design-preview.md` may be written for unusual tasks, but they are not the
+default UI gate.
 
 ## Run
 ```bash
@@ -41,34 +45,29 @@ fi
 ```
 
 ## kind
-- `stack` / `frontend-stack` / `framework` / `framework-decision`: write `frontend-stack.md`.
 - `brief` / `ui-brief` / `ui-prompt-brief`: write `ui-brief.md`.
-- `handoff` / `external-design-handoff` / `design-handoff`: write `external-design-handoff.md`.
-- `preview` / `design-preview`: write `design-preview.md`.
 - `approval` / `design-approval`: write `design-approval.md`.
 - `acceptance` / `visual-acceptance`: write `visual-acceptance.md`.
+- `stack` / `frontend-stack` / `framework` / `framework-decision`: optionally write `frontend-stack.md`.
+- `handoff` / `external-design-handoff` / `design-handoff`: optionally write `external-design-handoff.md`.
+- `preview` / `design-preview`: optionally write `design-preview.md`.
+- `all`: with `--template`, initialize `ui-brief.md`, `design-approval.md`, and `visual-acceptance.md`.
 
 ## Recommended Order
 ```bash
-docpath write-design --kind stack --stdin
+docpath write-design --kind brief --template
 docpath write-design --kind brief --stdin
-docpath write-design --kind handoff --stdin
-docpath write-design --kind preview --stdin
 docpath write-design --kind approval --stdin
+# after implementation
 docpath write-design --kind acceptance --stdin
 ```
-
-## External Design Handoff
-`external-design-handoff.md` should record prompts, output links or snapshots, selected directions, rejected directions, and implementation constraints from Stitch, Figma, v0, Framer, or another design tool. If no external tool is used, record equivalent design inputs, candidate directions, and rejected directions so implementation is not based only on verbal preference.
 
 ## Check Gate
 `docpath check` verifies the following when an explicitly opted-in UI/UX task has implementation steps or product UI file changes:
 
-- `frontend-stack.md`
-- `ui-brief.md`
-- `external-design-handoff.md`
-- `design-preview.md`
-- `visual-acceptance.md`
-- `design-approval.md`, with `approval.state` set to `approved`
+- `ui-brief.md`, with the required UI Blueprint sections.
+- `design-approval.md`, with `approval.state` set to `approved`.
 
-If approval is `pending` or `rejected`, or if the approval source, approval time, or rejected directions are missing, stop implementation and ask the user to approve a specific visual direction.
+If approval is `pending` or `rejected`, or if the approval source or approval
+time is missing, stop implementation and ask the user to approve the concrete
+`ui-brief.md` blueprint.

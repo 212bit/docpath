@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkExecWorkspace } from './helpers.mjs';
 
-// 8 维度齐全、全部具体值的合格设计稿，满足 missingDesignPreviewDepth 深度门禁。
+// 8 维度齐全、全部具体值的可选设计稿，覆盖 missingDesignPreviewDepth 工具函数夹具。
 const CONCRETE_PREVIEW = [
   '# Design Preview',
   '## 1. 布局与栅格',
@@ -33,7 +33,7 @@ const REQUIRED_UI_GATE_SECTION = [
   '',
   '### UI 设计门禁',
   '- [ ] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）',
-  '- [x] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）',
+  '- [x] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）',
   '',
 ];
 
@@ -921,13 +921,15 @@ describe('check and review commands', () => {
     writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
     writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
     writeFileSync(join(tasks, 'ui-brief.md'), [
-      '# UI Prompt Brief',
-      '## Product Context',
-      '## Design North Star',
-      '## Visual Direction',
-      '## Anti-goals',
-      '## Design Tokens',
-      '## Shared Components',
+      '# UI Blueprint',
+      '## 1. Screen Contract',
+      '## 2. Flow Contract',
+      '## 3. Layout Contract',
+      '## 4. Component Contract',
+      '## 5. State Contract',
+      '## 6. Visual Contract',
+      '## 7. Generation Contract',
+      '## 8. Acceptance Contract',
       '',
     ].join('\n'));
     writeFileSync(join(tasks, 'external-design-handoff.md'), [
@@ -1013,13 +1015,15 @@ describe('check and review commands', () => {
     writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
     writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
     writeFileSync(join(tasks, 'ui-brief.md'), [
-      '# UI Prompt Brief',
-      '## Product Context',
-      '## Design North Star',
-      '## Visual Direction',
-      '## Anti-goals',
-      '## Design Tokens',
-      '## Shared Components',
+      '# UI Blueprint',
+      '## 1. Screen Contract',
+      '## 2. Flow Contract',
+      '## 3. Layout Contract',
+      '## 4. Component Contract',
+      '## 5. State Contract',
+      '## 6. Visual Contract',
+      '## 7. Generation Contract',
+      '## 8. Acceptance Contract',
       '',
     ].join('\n'));
     writeFileSync(join(tasks, 'external-design-handoff.md'), [

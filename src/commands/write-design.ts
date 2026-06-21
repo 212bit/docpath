@@ -10,7 +10,7 @@ import { readStdin } from '../utils/stdin.js';
 
 interface WriteDesignOptions {
   cwd: string;
-  /** 写入目标: stack/frontend-stack, brief/ui-brief, handoff/external-design-handoff, preview/design-preview, approval/design-approval, acceptance/visual-acceptance */
+  /** 写入目标: brief/ui-brief, approval/design-approval, acceptance/visual-acceptance；stack/handoff/preview 为按需可选产物 */
   kind?: string;
   /** Markdown 内容 */
   content?: string;
@@ -38,6 +38,8 @@ const DESIGN_TEMPLATES: Record<string, string> = {
   acceptance: 'visual-acceptance.md',
 };
 
+const DEFAULT_DESIGN_TEMPLATE_KINDS: Array<keyof typeof DESIGN_FILES> = ['brief', 'approval', 'acceptance'];
+
 export async function writeDesignCommand(options: WriteDesignOptions): Promise<void> {
   const { cwd, content } = options;
   const docpathDir = await resolveDocpathDir(cwd);
@@ -59,7 +61,7 @@ export async function writeDesignCommand(options: WriteDesignOptions): Promise<v
     );
 
     const kindsToInit = kind === 'all'
-      ? (Object.keys(DESIGN_FILES) as Array<keyof typeof DESIGN_FILES>)
+      ? DEFAULT_DESIGN_TEMPLATE_KINDS
       : [kind as keyof typeof DESIGN_FILES];
 
     for (const k of kindsToInit) {
@@ -88,14 +90,18 @@ export async function writeDesignCommand(options: WriteDesignOptions): Promise<v
 
   if (!designContent.trim()) {
     console.error('❌  未提供设计文档内容。用法：');
-    console.error('   docpath write-design --kind stack --content "..."');
-    console.error('   echo "..." | docpath write-design --kind acceptance --stdin');
+    console.error('   docpath write-design --kind brief --template');
+    console.error('   docpath write-design --kind brief --content "..."');
+    console.error('   echo "..." | docpath write-design --kind approval --stdin');
     console.error('   docpath write-design --kind all --template');
     process.exit(1);
   }
 
   const current = await readCurrentState(cwd);
   const taskId = current?.task_id || 'current';
+  if (kind === 'all') {
+    throw new Error('write-design --kind all 仅支持 --template；写入内容时请指定 brief、approval、acceptance 或一个可选设计产物 kind');
+  }
   const file = DESIGN_FILES[kind as keyof typeof DESIGN_FILES];
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, file, `${designContent.trim()}\n`);
 
@@ -103,7 +109,7 @@ export async function writeDesignCommand(options: WriteDesignOptions): Promise<v
 }
 
 function normalizeDesignKind(kind: string | undefined, isTemplate = false): keyof typeof DESIGN_FILES | 'all' {
-  const defaultKind = isTemplate ? 'all' : 'preview';
+  const defaultKind = isTemplate ? 'all' : 'brief';
   const normalized = (kind || defaultKind).trim().toLowerCase();
   if (normalized === 'all') return 'all';
   if (normalized === 'stack' || normalized === 'frontend-stack' || normalized === 'framework' || normalized === 'framework-decision') return 'stack';
@@ -112,5 +118,5 @@ function normalizeDesignKind(kind: string | undefined, isTemplate = false): keyo
   if (normalized === 'preview' || normalized === 'design' || normalized === 'design-preview') return 'preview';
   if (normalized === 'approval' || normalized === 'design-approval') return 'approval';
   if (normalized === 'acceptance' || normalized === 'visual' || normalized === 'visual-acceptance') return 'acceptance';
-  throw new Error(`未知 design kind: ${kind}（允许: stack, brief, handoff, preview, approval, acceptance, all）`);
+  throw new Error(`未知 design kind: ${kind}（允许: brief, approval, acceptance, stack, handoff, preview, all）`);
 }

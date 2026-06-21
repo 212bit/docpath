@@ -17,7 +17,7 @@ import { readCurrentState } from './workspace.js';
 
 /**
  * UI 设计要求判定结果。
- * - required: 任务涉及产品 UI 实现，go 前必须有 frontend-stack + design-preview + 已批准 design-approval
+ * - required: 任务涉及产品 UI 实现，go 前必须有 ui-brief + 已批准 design-approval
  * - exempt:   任务显式声明不涉及产品 UI，合法豁免（可审计，留痕在 spec）
  * - unknown:  spec 未声明；普通 UI/前端关键词不拦截，最多用于 advisory
  */
@@ -39,9 +39,9 @@ export function isUiUxWorkflowOnlyTask(text: string): boolean {
 export function hasExplicitUiDesignIntent(text: string): boolean {
   const source = stripUiGateDeclarationSection(text)
     .split('\n')
-    .filter((line) => !/本任务不涉及产品\s*UI|本任务涉及产品\s*UI|go 前必须有 (?:frontend-stack|design-preview)|design-approval/i.test(line))
+    .filter((line) => !/本任务不涉及产品\s*UI|本任务涉及产品\s*UI|go 前必须有 (?:ui-brief|frontend-stack|design-preview)|design-approval/i.test(line))
     .join('\n');
-  return /UI\/UX\s*(design|analysis|review)|\bUI\s*design\b|\bUX\s*analysis\b|visual\s*(direction|design|brief|review)|prototype|wireframe|mockup|Figma|Stitch|\bv0\b|Framer|design-preview|Design Preview|design approval|Design Approval|approval-gated|先设计|做\s*UI\s*设计|UI\s*设计|UX\s*分析|视觉方案|视觉方向|视觉设计|原型|线框图|设计稿|设计预览|设计审批|设计批准/i.test(source);
+  return /UI\/UX\s*(design|analysis|review)|\bUI\s*design\b|\bUX\s*analysis\b|visual\s*(direction|design|brief|review)|prototype|wireframe|mockup|high[-\s]?fidelity|高清\s*UI|Figma|Stitch|\bv0\b|Framer|ui-brief|UI\s*Brief|design-preview|Design Preview|design approval|Design Approval|approval-gated|先设计|做\s*UI\s*设计|UI\s*设计|UX\s*分析|视觉方案|视觉方向|视觉设计|原型|线框图|设计稿|设计预览|设计审批|设计批准/i.test(source);
 }
 
 export function hasUiImplementationIntent(text: string): boolean {
@@ -58,7 +58,7 @@ function stripUiGateDeclarationSection(text: string): string {
  * 从 spec 文本解析 4.1 的显式 UI 设计门禁勾选。
  * 模板行：
  *   - [ ] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）
- *   - [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）
+ *   - [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）
  * 注意 "不涉及" 是 "涉及" 的超串，必须先判 "不涉及"，避免误命中。
  */
 export function parseExplicitUiDeclaration(specText: string): UiDesignRequirement {
@@ -152,7 +152,7 @@ export function approvalState(content: string): string {
 }
 
 export interface DesignArtifactGap {
-  /** 缺失的硬产物：design-preview.md 不存在、design-approval.md 不存在或未 approved。 */
+  /** 缺失的硬产物：ui-brief.md 不存在、design-approval.md 不存在或未 approved。 */
   missing: string[];
   /** approval 当前状态（approved 时门禁放行）。 */
   approval: string;
@@ -160,10 +160,11 @@ export interface DesignArtifactGap {
 
 /**
  * 检查 go 前置硬门禁所需的最小设计产物：
- * - design-preview.md 必须存在
+ * - ui-brief.md 必须存在，并作为唯一 UI 设计真源
  * - design-approval.md 必须存在且 state=approved
- * （ui-brief / handoff / acceptance 等其余产物由 check 阶段的完整门禁覆盖，
- *   不在 go 前置门禁内，避免阻断尚未到验收阶段的实现。）
+ * visual-acceptance.md 是实现后的验收证据，不阻断进入实现。
+ * frontend-stack.md、design-preview.md、external-design-handoff.md 仍可按需写入，
+ * 但不再是默认 UI gate 的必需产物。
  */
 export async function missingDesignArtifacts(cwd: string): Promise<DesignArtifactGap> {
   const docpathDir = await resolveDocpathDir(cwd);
@@ -339,7 +340,7 @@ export async function missingDesignPreviewDepth(cwd: string): Promise<DesignPrev
   return { missing, weak };
 }
 
-// ── 前端技术栈决策门禁（Framework Decision，序列最前）──────────
+// ── 可选前端技术栈决策校验（Framework Decision）──────────
 
 export interface FrameworkDecisionGap {
   /** 缺失/不合格项：文件不存在、JS 选定项为占位、缺带理由的被否决备选。 */
@@ -422,13 +423,13 @@ function parseRejectedWithReason(rejectedSection: string): RejectedAlternative[]
 }
 
 /**
- * Framework Decision 前置硬门禁：required UI 任务进入实现前必须先定技术栈。
+ * Framework Decision 可选校验：复杂 UI 任务可用它检查技术栈决策质量。
  * 校验（防"填了框架名就放行"）：
  * - frontend-stack.md 必须存在
  * - 「选定栈」的 JS 框架项非占位（纯静态也算合法选定）
  * - 至少 1 个「被否决备选」且带实义理由（逼出"为什么不选别的"）
  * - 选定纯静态时，被否决备选必须包含一个框架方案（逼出"为什么不用框架"）
- * 排在 design-preview / design-approval 之前，确保框架选型先于画图。
+ * 默认 UI gate 不调用本函数；如使用该产物，影响 UI 的约束需回写到 ui-brief.md。
  */
 export async function missingFrameworkDecision(cwd: string): Promise<FrameworkDecisionGap> {
   const docpathDir = await resolveDocpathDir(cwd);

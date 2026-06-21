@@ -18,7 +18,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { parsePlanSteps, type PlanStep } from '../utils/doc-parser.js';
 import { markPlanStep, type PlanStepStatus } from '../utils/plan-sync.js';
 import { runCommand } from './runtime.js';
-import { resolveUiDesignRequirement, missingDesignArtifacts, missingFrameworkDecision, missingDesignPreviewDepth, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
+import { resolveUiDesignRequirement, missingDesignArtifacts, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { acquireExecutionLease, releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
@@ -251,7 +251,7 @@ export async function goCommand(options: GoOptions): Promise<void> {
     : false;
   if (uiOptInAdvisory) {
     console.log('⚠️  检测到 UI/前端相关描述，但未显式开启 UI 设计流程；go 将继续执行。');
-    console.log('    如需设计审批，请先在 spec 的 UI 设计门禁中显式勾选 required；写入 design-preview/design-approval 只是证据，不会单独开启门禁。');
+    console.log('    如需设计审批，请先在 spec 的 UI 设计门禁中显式勾选 required；写入 ui-brief/design-approval 只是证据，不会单独开启门禁。');
   }
   await renderExecutionContext(cwd, tasks, target, current?.level || 0);
   await touchSession(cwd, {
@@ -273,7 +273,8 @@ export async function goCommand(options: GoOptions): Promise<void> {
       console.error(`    缺失: ${gap.missing.join(', ')}`);
       console.error('    go 不会在设计批准前进入 UI 实现，以免实现先于设计方案确认。');
       console.error('    请先补齐并获得批准：');
-      console.error('      docpath write-design --kind brief --stdin       # ui-brief.md');
+      console.error('      docpath write-design --kind brief --template    # 初始化高密度 ui-brief.md 蓝图');
+      console.error('      docpath write-design --kind brief --stdin       # 写入确认后的 ui-brief.md');
       console.error('      docpath write-design --kind approval --stdin    # design-approval.md (frontmatter 须含 approval.state: approved)');
       console.error('    若本任务实际不涉及产品 UI，请在 spec.md 的「UI 设计门禁」勾选「不涉及产品 UI 实现」。');
       process.exit(1);

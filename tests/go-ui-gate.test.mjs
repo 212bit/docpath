@@ -2,8 +2,7 @@
  * go UI 设计门禁端到端测试（plan.md S5 覆盖项）。
  *
  * 验证 go 在进入执行前的硬门禁行为（src/commands/go.ts）：
- * - spec 显式勾选「涉及产品 UI」(required) 且缺 frontend-stack → fail-loud, exit 1
- * - frontend-stack 合格后缺 design-preview/approval → fail-loud, exit 1
+ * - spec 显式勾选「涉及产品 UI」(required) 且缺 ui-brief/approval → fail-loud, exit 1
  * - spec 显式勾选「不涉及产品 UI」(exempt) → 放行
  * - unknown + 普通 UI/前端词 → 只提示，不阻塞
  * - dry-run → 不受门禁影响，始终可预览
@@ -66,7 +65,7 @@ function specWithUiDeclaration(declaration) {
     '### UI 设计门禁',
     '',
     `- [${exemptMark}] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）`,
-    `- [${requiredMark}] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）`,
+    `- [${requiredMark}] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）`,
     '',
     '## 5. 验收标准',
     '',
@@ -88,7 +87,7 @@ function specWithGenericUiUnknown() {
     '### UI 设计门禁',
     '',
     '- [ ] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）',
-    '- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）',
+    '- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）',
     '',
     '## 5. 验收标准',
     '',

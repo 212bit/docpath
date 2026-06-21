@@ -20,7 +20,7 @@ import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
 import { detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatTaskIdentityDrift, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
-import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, missingDesignPreviewDepth, missingFrameworkDecision, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
+import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
 import { resolveMajorChangeGateStatus } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { CHECK_HISTORY_MAX_ENTRIES } from '../utils/workspace-cleanup.js';
@@ -795,7 +795,7 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
   if (!existsSync(uiBriefPath)) approvalMissing.push('ui-brief.md');
   else {
     const brief = (await readFile(uiBriefPath, 'utf-8')).trim();
-    for (const signal of ['Product Context', 'Design North Star', 'Visual Direction', 'Anti-goals', 'Design Tokens', 'Shared Components']) {
+    for (const signal of ['Screen Contract', 'Flow Contract', 'Layout Contract', 'Component Contract', 'State Contract', 'Visual Contract', 'Generation Contract', 'Acceptance Contract']) {
       if (!brief.includes(signal)) approvalWeak.push(`ui-brief.md 缺少 ${signal}`);
     }
   }
@@ -807,7 +807,6 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
     if (state !== 'approved') approvalWeak.push(`design-approval.md 状态不是 approved（当前: ${state}）`);
     if (!/approved[_ -]?at|批准时间|Approved at/i.test(approval)) approvalWeak.push('design-approval.md 缺少批准时间');
     if (!/source|批准来源|Approval source/i.test(approval)) approvalWeak.push('design-approval.md 缺少批准来源');
-    if (!/forbidden|禁止方向|Forbidden Directions/i.test(approval)) approvalWeak.push('design-approval.md 缺少禁止方向');
   }
 
   const approvalPassed = approvalMissing.length === 0 && approvalWeak.length === 0;
@@ -822,8 +821,9 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
           approvalMissing.length ? `缺少文件: ${approvalMissing.join(', ')}` : '',
           ...approvalWeak,
           '修复建议:',
-          '  - 先运行: docpath write-design --kind brief --stdin',
-          '  - 确认具体视觉方案后运行: docpath write-design --kind approval --stdin',
+          '  - 先运行: docpath write-design --kind brief --template',
+          '  - 补全高密度 UI 蓝图后运行: docpath write-design --kind brief --stdin',
+          '  - 用户确认具体 UI 蓝图后运行: docpath write-design --kind approval --stdin',
           '  - design-approval.md frontmatter 必须包含 approval.state: approved',
           '  - 用户同意采用流程不等于批准具体设计方案。',
         ].filter(Boolean).join('\n'),

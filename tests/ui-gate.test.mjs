@@ -6,7 +6,7 @@
  * - resolveUiDesignRequirement: 显式框优先；未勾选时只有明确设计意图触发 required；
  *   workflow-only（讲门禁/模板但声明不做产品 UI）回退为 exempt
  * - approvalState: frontmatter 嵌套 / 直写 state / markdown 行三种解析
- * - missingDesignArtifacts: design-preview 缺失、approval 未 approved 的产物缺口
+ * - missingDesignArtifacts: ui-brief 缺失、approval 未 approved 的产物缺口
  */
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -46,10 +46,10 @@ const FULL_PREVIEW = [
 
 // spec 4.1 模板里的两行原文，确保测试与真实模板措辞对齐。
 const EXEMPT_LINE = '- [x] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）';
-const REQUIRED_LINE = '- [x] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）';
+const REQUIRED_LINE = '- [x] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）';
 const UNCHECKED = [
   '- [ ] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）',
-  '- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）',
+  '- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）',
 ].join('\n');
 
 describe('parseExplicitUiDeclaration', () => {
@@ -184,7 +184,7 @@ describe('missingDesignArtifacts', () => {
   });
 
   it('ui-brief.md 在、approval 未 approved → 仍缺 approval', async () => {
-    writeFileSync(join(tasks, 'ui-brief.md'), '# Brief\nProduct Context\nDesign North Star\nVisual Direction\nAnti-goals\nDesign Tokens\nShared Components');
+    writeFileSync(join(tasks, 'ui-brief.md'), '# UI Blueprint\nScreen Contract\nFlow Contract\nLayout Contract\nComponent Contract\nState Contract\nVisual Contract\nGeneration Contract\nAcceptance Contract');
     writeFileSync(join(tasks, 'design-approval.md'), '---\napproval:\n  state: pending\n---\n');
     const gap = await missingDesignArtifacts(root);
     assert.ok(!gap.missing.some((m) => m.startsWith('ui-brief.md')), 'ui-brief present');
@@ -193,7 +193,7 @@ describe('missingDesignArtifacts', () => {
   });
 
   it('ui-brief.md 在、approval=approved → 无缺口', async () => {
-    writeFileSync(join(tasks, 'ui-brief.md'), '# Brief\nProduct Context\nDesign North Star\nVisual Direction\nAnti-goals\nDesign Tokens\nShared Components');
+    writeFileSync(join(tasks, 'ui-brief.md'), '# UI Blueprint\nScreen Contract\nFlow Contract\nLayout Contract\nComponent Contract\nState Contract\nVisual Contract\nGeneration Contract\nAcceptance Contract');
     writeFileSync(join(tasks, 'design-approval.md'), '---\napproval:\n  state: approved\n---\n');
     const gap = await missingDesignArtifacts(root);
     assert.equal(gap.missing.length, 0, 'no gap when approved');
