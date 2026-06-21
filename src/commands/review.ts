@@ -76,6 +76,7 @@ function parsePorcelainPaths(output: string): string[] {
 }
 
 function isReviewableFile(file: string): boolean {
+  if (/^\.docpath\/workspace\//.test(file)) return false;
   return /\.(ts|tsx|js|jsx|mjs|cjs|json)$/.test(file);
 }
 

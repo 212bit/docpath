@@ -77,6 +77,17 @@ describe('transitionWorkflow', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('records a failed review rerun from completed state', async () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    await transitionWorkflow(cwd, 'review.failed', { currentStep: 'review rerun failed' });
+    const persisted = readState(cwd);
+
+    assert.equal(persisted.phase, 'reviewing');
+    assert.equal(persisted.gate, 'review_fail');
+    assert.equal(persisted.current_step, 'review rerun failed');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('records a failed re-check from completed state', async () => {
     const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
     await transitionWorkflow(cwd, 'check.failed', { currentStep: 're-check failed' });

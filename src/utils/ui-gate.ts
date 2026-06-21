@@ -169,11 +169,11 @@ export async function missingDesignArtifacts(cwd: string): Promise<DesignArtifac
   const docpathDir = await resolveDocpathDir(cwd);
   const state = await readCurrentState(cwd);
   const taskId = state?.task_id || '';
-  const previewPath = resolveActiveTaskDocPath(docpathDir, taskId, 'design-preview.md');
+  const briefPath = resolveActiveTaskDocPath(docpathDir, taskId, 'ui-brief.md');
   const approvalPath = resolveActiveTaskDocPath(docpathDir, taskId, 'design-approval.md');
 
   const missing: string[] = [];
-  if (!existsSync(previewPath)) missing.push('design-preview.md');
+  if (!existsSync(briefPath)) missing.push('ui-brief.md');
 
   let approval = 'missing';
   if (!existsSync(approvalPath)) {

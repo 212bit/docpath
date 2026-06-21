@@ -70,7 +70,7 @@ const EVENT_TARGETS: Record<WorkflowEvent, TransitionTarget> = {
   // 评审前置：检查必须已通过（check_pass），或在评审内重入（review_pass/review_fail）。
   'review.passed': { phase: 'reviewing', gate: 'review_pass', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
   'review.skipped': { phase: 'reviewing', gate: 'review_skipped', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_skipped'] },
-  'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
+  'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing', 'completed'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
   // 归档前置：评审已通过（review_pass），或 quick profile 跳过评审后检查已通过（check_pass）。
   // 仍拒绝 check_fail / review_fail——失败态不得归档。
   'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'], requiredGate: ['review_pass', 'review_skipped', 'check_pass'] },

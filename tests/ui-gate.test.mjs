@@ -177,23 +177,23 @@ describe('missingDesignArtifacts', () => {
   });
   after(() => rmSync(root, { recursive: true, force: true }));
 
-  it('preview 与 approval 都缺 → missing 含两者', async () => {
+  it('ui-brief.md 与 approval 都缺 → missing 含两者', async () => {
     const gap = await missingDesignArtifacts(root);
-    assert.ok(gap.missing.some((m) => m.includes('design-preview.md')), 'should report missing preview');
+    assert.ok(gap.missing.some((m) => m.includes('ui-brief.md')), 'should report missing ui-brief');
     assert.ok(gap.missing.some((m) => m.includes('design-approval.md')), 'should report missing approval');
   });
 
-  it('preview 在、approval 未 approved → 仍缺 approval', async () => {
-    writeFileSync(join(tasks, 'design-preview.md'), '# 预览\n布局/状态/响应式/边界');
+  it('ui-brief.md 在、approval 未 approved → 仍缺 approval', async () => {
+    writeFileSync(join(tasks, 'ui-brief.md'), '# Brief\nProduct Context\nDesign North Star\nVisual Direction\nAnti-goals\nDesign Tokens\nShared Components');
     writeFileSync(join(tasks, 'design-approval.md'), '---\napproval:\n  state: pending\n---\n');
     const gap = await missingDesignArtifacts(root);
-    assert.ok(!gap.missing.some((m) => m.startsWith('design-preview.md')), 'preview present');
+    assert.ok(!gap.missing.some((m) => m.startsWith('ui-brief.md')), 'ui-brief present');
     assert.ok(gap.missing.some((m) => m.includes('approval')), 'approval not approved → still missing');
     assert.equal(gap.approval, 'pending');
   });
 
-  it('preview 在、approval=approved → 无缺口', async () => {
-    writeFileSync(join(tasks, 'design-preview.md'), '# 预览\n布局/状态/响应式/边界');
+  it('ui-brief.md 在、approval=approved → 无缺口', async () => {
+    writeFileSync(join(tasks, 'ui-brief.md'), '# Brief\nProduct Context\nDesign North Star\nVisual Direction\nAnti-goals\nDesign Tokens\nShared Components');
     writeFileSync(join(tasks, 'design-approval.md'), '---\napproval:\n  state: approved\n---\n');
     const gap = await missingDesignArtifacts(root);
     assert.equal(gap.missing.length, 0, 'no gap when approved');

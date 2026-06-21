@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-21T16:15:23.057Z",
+    "updated_at": "2026-06-21T16:15:23.057Z",
+    "content_sha256": "b18b2ddad5b5037fed3bbb522f17a559084ec9ab28927546cb5d2e9ab5a69600"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-06-21T16:15:23.057Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Simplify UI design gate validation to only require ui-brief.md and design-approval.md",
+      "description": "根据 spec 明确 FR-1: Simplify UI design gate validation to only require ui-brief.md and design-approval.md 的实现边界和验收口径。",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Simplify UI design gate validation to only require ui-brief.md and design-approval.md",
+      "description": "在现有架构内完成 FR-1: Simplify UI design gate validation to only require ui-brief.md and design-approval.md 的代码与文档更新。",
+      "acceptance": "FR-1 Simplify UI design gate validation to only require ui-brief.md and design-approval.md 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-228 与任务 T-20260621-simplify-ui-design-gate-validation-to-on 建立双向关联",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-228 与任务 T-20260621-simplify-ui-design-gate-validation-to-on 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

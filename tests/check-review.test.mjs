@@ -355,6 +355,30 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('review ignores DocPath workspace runtime session files', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-runtime-session-'));
+    mkExecWorkspace(cwd);
+    markReadyForReview(cwd);
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
+    execSync('git add baseline.ts', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+    mkdirSync(join(cwd, '.docpath', 'workspace', 'sessions'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'sessions', 'default.json'), JSON.stringify({ cwd: './mock-flow-runner' }, null, 2));
+    writeFileSync(join(cwd, 'clean.ts'), 'export const clean = true;\n');
+
+    const out = run(`review --cwd ${cwd}`, cwd);
+    const reviewJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'review.json'), 'utf-8'));
+
+    assert.match(out, /审查通过/);
+    assert.doesNotMatch(out, /硬编码绝对路径/);
+    assert.equal(reviewJson.files.includes('.docpath/workspace/sessions/default.json'), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('review result does not write ordinary review summaries into decisions', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-no-decisions-'));
     mkExecWorkspace(cwd);
@@ -942,95 +966,7 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('check blocks required UI tasks when frontend stack decision is missing', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-ui-missing-stack-'));
-    const { tasks } = mkExecWorkspace(cwd);
-    writeFileSync(join(tasks, 'spec.md'), [
-      '# T-AGENT - Project UI',
-      '',
-      '## 1. 背景与动机',
-      '重构 项目页面布局。',
-      '',
-      '## 2. 需求清单',
-      '### 功能需求',
-      '- [ ] FR-1: 实现 project UI layout',
-      '### 非功能需求',
-      '- [ ] NFR-1: 响应式界面',
-      '',
-      '## 3. 范围界定',
-      '### 包含',
-      '- 页面实现',
-      '### 不包含',
-      '- 后端改造',
-      '',
-      '## 4. 关键决策',
-      '| # | 决策 | 选项 | 结论 | 理由 |',
-      '|---|------|------|------|------|',
-      '| 1 | UI | 旧版 / 新版 | 新版 | 测试 |',
-      '',
-      ...REQUIRED_UI_GATE_SECTION,
-      '## 5. 验收标准',
-      '- [ ] AC-1: UI implementation 通过 framework decision gate',
-      '',
-    ].join('\n'));
-    writeFileSync(join(tasks, 'plan.md'), [
-      '## 执行计划',
-      '',
-      '### S1: UI implementation',
-      '- [x] S1: UI implementation',
-      '- **描述**: 写产品 UI 代码',
-      '- **验收条件**: 页面实现完成',
-      '- **依赖**: 无',
-      '',
-    ].join('\n'));
-    writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
-    writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
-    writeFileSync(join(tasks, 'ui-brief.md'), [
-      '# UI Prompt Brief',
-      '## Product Context',
-      '## Design North Star',
-      '## Visual Direction',
-      '## Anti-goals',
-      '## Design Tokens',
-      '## Shared Components',
-      '',
-    ].join('\n'));
-    writeFileSync(join(tasks, 'external-design-handoff.md'), [
-      '# External Design Handoff',
-      '## Tool Prompt',
-      'Stitch Figma v0 Framer prompt',
-      '## Tool Outputs',
-      'output link and snapshot',
-      '## Selected Direction',
-      'selected project page direction',
-      '## Rejected Directions',
-      'rejected marketing hero',
-      '## Implementation Constraints',
-      'constraints for responsive implementation',
-      '',
-    ].join('\n'));
-    writeFileSync(join(tasks, 'design-approval.md'), [
-      '---',
-      'approval:',
-      '  state: approved',
-      '  source: user',
-      '  approved_at: 2026-06-10T00:00:00.000Z',
-      '  summary: Approved concrete project page visual direction',
-      '  forbidden_directions: [marketing hero]',
-      '---',
-      '# Design Approval',
-      '## Forbidden Directions',
-      '- marketing hero',
-      '',
-    ].join('\n'));
 
-    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
-
-    assert.equal(result.code, 1);
-    assert.match(result.out, /UI\/UX Framework Decision Gate/);
-    assert.match(result.out, /frontend-stack\.md/);
-    rmSync(cwd, { recursive: true, force: true });
-  });
 
   it('check allows UI implementation when design approval is approved', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-ui-approved-'));
@@ -1124,82 +1060,7 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('check blocks UI implementation when external design handoff is missing', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-ui-missing-handoff-'));
-    const { tasks } = mkExecWorkspace(cwd);
-    writeFileSync(join(tasks, 'spec.md'), [
-      '# T-AGENT - Project UI',
-      '',
-      '## 1. 背景与动机',
-      '重构 项目页面布局。',
-      '',
-      '## 2. 需求清单',
-      '### 功能需求',
-      '- [ ] FR-1: 实现 project UI layout',
-      '### 非功能需求',
-      '- [ ] NFR-1: 响应式界面',
-      '',
-      '## 3. 范围界定',
-      '### 包含',
-      '- 页面实现',
-      '### 不包含',
-      '- 后端改造',
-      '',
-      '## 4. 关键决策',
-      '| # | 决策 | 选项 | 结论 | 理由 |',
-      '|---|------|------|------|------|',
-      '| 1 | UI | 旧版 / 新版 | 新版 | 测试 |',
-      '',
-      ...REQUIRED_UI_GATE_SECTION,
-      '## 5. 验收标准',
-      '- [ ] AC-1: UI implementation 通过 approval gate',
-      '',
-    ].join('\n'));
-    writeFileSync(join(tasks, 'plan.md'), [
-      '## 执行计划',
-      '',
-      '### S1: UI implementation',
-      '- [x] S1: UI implementation',
-      '- **描述**: 写产品 UI 代码',
-      '- **验收条件**: 页面实现完成',
-      '- **依赖**: 无',
-      '',
-    ].join('\n'));
-    writeValidFrontendStack(tasks);
-    writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
-    writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
-    writeFileSync(join(tasks, 'ui-brief.md'), [
-      '# UI Prompt Brief',
-      '## Product Context',
-      '## Design North Star',
-      '## Visual Direction',
-      '## Anti-goals',
-      '## Design Tokens',
-      '## Shared Components',
-      '',
-    ].join('\n'));
-    writeFileSync(join(tasks, 'design-approval.md'), [
-      '---',
-      'approval:',
-      '  state: approved',
-      '  source: user',
-      '  approved_at: 2026-06-10T00:00:00.000Z',
-      '  summary: Approved concrete project page visual direction',
-      '  forbidden_directions: [marketing hero]',
-      '---',
-      '# Design Approval',
-      '## Forbidden Directions',
-      '- marketing hero',
-      '',
-    ].join('\n'));
 
-    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
-
-    assert.equal(result.code, 1);
-    assert.match(result.out, /UI\/UX Design Approval Gate/);
-    assert.match(result.out, /缺少文件: external-design-handoff\.md/);
-    rmSync(cwd, { recursive: true, force: true });
-  });
 
   it('check does not require UI approval for non-UI tasks', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-non-ui-'));

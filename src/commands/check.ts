@@ -782,67 +782,8 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
   }
 
   const uiBriefPath = join(docpathDir, 'tasks', 'current', 'ui-brief.md');
-  const handoffPath = join(docpathDir, 'tasks', 'current', 'external-design-handoff.md');
   const approvalPath = join(docpathDir, 'tasks', 'current', 'design-approval.md');
-  const previewPath = join(docpathDir, 'tasks', 'current', 'design-preview.md');
-  const acceptancePath = join(docpathDir, 'tasks', 'current', 'visual-acceptance.md');
   const results: CheckResult[] = [];
-
-  const frameworkGap = await missingFrameworkDecision(cwd);
-  const frameworkPassed = frameworkGap.missing.length === 0;
-  results.push({
-    name: 'UI/UX Framework Decision Gate',
-    passed: frameworkPassed,
-    output: frameworkPassed
-      ? 'UI/UX 任务已提供 frontend-stack.md，前端技术栈与被否决备选可追踪'
-      : [
-          `缺失或不合格: ${frameworkGap.missing.join(', ')}`,
-          '修复建议:',
-          '  - 先运行: docpath write-design --kind stack --stdin',
-          '  - 按 templates/design/frontend-stack.md 填写选定栈、被否决备选和理由',
-          '  - 纯静态也是合法选定，但必须说明为什么不用框架。',
-        ].join('\n'),
-    category: 'analysis',
-  });
-
-  const missing: string[] = [];
-  const weak: string[] = [];
-
-  if (!existsSync(previewPath)) missing.push('design-preview.md');
-  else {
-    // 与 go 前置门禁共用 missingDesignPreviewDepth：8 维度齐全 + 具体值（px/hex/ms/缓动/图标库），
-    // 取代旧的「长度≥500 + 宽松关键词」启发式，杜绝「够长就过」与「方向占位」。
-    const depth = await missingDesignPreviewDepth(cwd);
-    for (const m of depth.missing) weak.push(`design-preview.md 缺维度: ${m}`);
-    for (const w of depth.weak) weak.push(`design-preview.md ${w}`);
-  }
-
-  if (!existsSync(acceptancePath)) missing.push('visual-acceptance.md');
-  else {
-    const acceptance = (await readFile(acceptancePath, 'utf-8')).trim();
-    if (acceptance.length < 300 || !/验收|必须|不得|snapshot|HTML|截图|review|对比|可读|导航/i.test(acceptance)) {
-      weak.push('visual-acceptance.md 缺少可执行的视觉验收标准');
-    }
-  }
-
-  const previewGatePassed = missing.length === 0 && weak.length === 0;
-  results.push({
-    name: 'UI/UX Design Preview Gate',
-    passed: previewGatePassed,
-    output: previewGatePassed
-      ? 'UI/UX 任务已提供 design-preview.md 与 visual-acceptance.md，视觉意图和验收标准可追踪'
-      : [
-          missing.length ? `缺少文件: ${missing.join(', ')}` : '',
-          ...weak,
-          '修复建议:',
-          '  - 在写 UI 代码前运行: docpath write-design --kind preview --stdin',
-          '  - 按 templates/design/design-preview.md 冻结 8 维度具体值:',
-          '    布局/尺寸/间距/图标/颜色/动效/交互/技术约束（填 px/hex/ms/缓动/图标库，非方向）',
-          '  - 再运行: docpath write-design --kind acceptance --stdin',
-          '  - 写入可执行的视觉验收项、禁止项、review 方式与 snapshot/screenshot 要求',
-        ].filter(Boolean).join('\n'),
-    category: 'analysis',
-  });
 
   const changedUiFiles = productUiChangedFiles(cwd);
   // 顶层已确认 requirement === 'required'；approval gate 是否触发取决于是否进入实现阶段。
@@ -859,15 +800,6 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
     }
   }
 
-  if (!existsSync(handoffPath)) approvalMissing.push('external-design-handoff.md');
-  else {
-    const handoff = (await readFile(handoffPath, 'utf-8')).trim();
-    for (const signal of ['Stitch', 'Figma', 'v0', 'Framer', 'prompt', 'output', 'selected', 'rejected', 'constraints']) {
-      if (new RegExp(signal, 'i').test(handoff)) continue;
-      approvalWeak.push(`external-design-handoff.md 缺少 ${signal}`);
-    }
-  }
-
   if (!existsSync(approvalPath)) approvalMissing.push('design-approval.md');
   else {
     const approval = (await readFile(approvalPath, 'utf-8')).trim();
@@ -878,12 +810,12 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
     if (!/forbidden|禁止方向|Forbidden Directions/i.test(approval)) approvalWeak.push('design-approval.md 缺少禁止方向');
   }
 
-  const approvalPassed = approvalMissing.length === 0 && approvalWeak.length === 0 && previewGatePassed;
+  const approvalPassed = approvalMissing.length === 0 && approvalWeak.length === 0;
   results.push({
     name: 'UI/UX Design Approval Gate',
     passed: approvalPassed,
     output: approvalPassed
-      ? 'UI/UX 实现已具备 ui-brief、external-design-handoff、design-preview、visual-acceptance 与 approved design-approval'
+      ? 'UI/UX 实现已具备 ui-brief 与 approved design-approval'
       : [
           changedUiFiles.length ? `检测到产品 UI 改动: ${changedUiFiles.slice(0, 8).join(', ')}${changedUiFiles.length > 8 ? ` ... +${changedUiFiles.length - 8}` : ''}` : '',
           hasUiImplementationIntent(text) ? '检测到计划或规约包含 UI implementation / 实现意图' : '',
@@ -891,7 +823,6 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
           ...approvalWeak,
           '修复建议:',
           '  - 先运行: docpath write-design --kind brief --stdin',
-          '  - 记录外部设计工具交接: docpath write-design --kind handoff --stdin',
           '  - 确认具体视觉方案后运行: docpath write-design --kind approval --stdin',
           '  - design-approval.md frontmatter 必须包含 approval.state: approved',
           '  - 用户同意采用流程不等于批准具体设计方案。',

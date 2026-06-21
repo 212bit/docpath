@@ -178,20 +178,12 @@ describe('go UI 设计门禁', () => {
 
   after(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })));
 
-  it('required + 缺 framework decision → fail-loud 且先于设计产物门禁', () => {
+  it('required + 缺设计产物 → fail-loud 拒绝进入执行', () => {
     const { cwd } = mkWorkspace('required');
     const out = run('go --step S1', cwd);
-    assert.match(out, /Framework Decision 门禁未通过/, '应先拒绝缺少前端技术栈决策');
-    assert.match(out, /frontend-stack\.md/, '应提示缺失的框架决策产物');
-    assert.doesNotMatch(out, /UI 设计门禁未通过/, '不应先报设计产物缺失');
-  });
-
-  it('required + framework decision 合格但缺设计产物 → fail-loud 拒绝进入执行', () => {
-    const { cwd, tasks } = mkWorkspace('required');
-    writeValidFrontendStack(tasks);
-    const out = run('go --step S1', cwd);
     assert.match(out, /UI 设计门禁未通过/, '应明确拒绝');
-    assert.match(out, /design-preview\.md/, '应提示缺失的设计产物');
+    assert.match(out, /ui-brief\.md/, '应提示缺失的设计产物 ui-brief.md');
+    assert.match(out, /design-approval\.md/, '应提示缺失的审批文件');
   });
 
   it('exempt（显式声明不涉及 UI）→ 放行进入执行', () => {
@@ -205,7 +197,7 @@ describe('go UI 设计门禁', () => {
     writeFileSync(join(tasks, 'spec.md'), specWithGenericUiUnknown());
     const out = run('go --step S1', cwd);
     assert.match(out, /检测到 UI\/前端相关描述/, '应给出非阻塞提示');
-    assert.doesNotMatch(out, /Framework Decision 门禁未通过|UI 设计门禁未通过/, '普通前端词不应触发硬门禁');
+    assert.doesNotMatch(out, /UI 设计门禁未通过/, '普通前端词不应触发硬门禁');
     assert.match(out, /执行子任务/, 'go 应继续进入执行上下文');
   });
 
@@ -219,9 +211,8 @@ describe('go UI 设计门禁', () => {
   it('spec.json ui_gate 优先于 spec.md 显式声明', () => {
     const { cwd, tasks } = mkWorkspace('exempt');
     writeUiSpecJson(tasks, specWithUiDeclaration('exempt'), 'required');
-    writeValidFrontendStack(tasks);
     const out = run('go --step S1', cwd);
     assert.match(out, /UI 设计门禁未通过/, 'JSON required 应覆盖 Markdown exempt');
-    assert.match(out, /design-preview\.md/, '应按 required 提示缺失设计产物');
+    assert.match(out, /ui-brief\.md/, '应按 required 提示缺失设计产物');
   });
 });

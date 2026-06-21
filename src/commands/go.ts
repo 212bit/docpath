@@ -266,47 +266,16 @@ export async function goCommand(options: GoOptions): Promise<void> {
     return;
   }
 
-  // 硬门禁 A：UI 任务进入执行前必须先完成 Framework Decision，再进入设计预览/批准。
-  // 判定优先级：spec 4.1 显式框 > 关键词回退（resolveUiDesignRequirement）。
-  // - required + 缺 frontend-stack.md → fail-loud，绝不让画图先于技术栈讨论
-  // - required + 缺设计产物 → fail-loud，绝不让 UI 实现先于设计批准开始
-  // - exempt / unknown(未命中关键词) → 放行
-  // 不设绕过 flag：合法的「无需设计」走 spec「不涉及产品 UI」框，留痕可审计。
-  // 与 check 阶段共用 ui-gate.ts，保证 go 前置门禁与 check 门禁判定一致。
   if (uiRequirement === 'required') {
-    const frameworkGap = await missingFrameworkDecision(cwd);
-    if (frameworkGap.missing.length > 0) {
-      console.error('❌  Framework Decision 门禁未通过：本任务涉及产品 UI 实现，但缺少前端技术栈决策。');
-      console.error(`    缺失: ${frameworkGap.missing.join(', ')}`);
-      console.error('    go 不会在技术栈和备选方案讨论前进入设计预览或 UI 实现。');
-      console.error('    请先补齐 frontend-stack.md：');
-      console.error('      - 选定栈: JS 框架必须非占位（纯静态请显式写「纯静态」）');
-      console.error('      - 被否决备选: 至少 1 条，并包含「理由: ...」');
-      console.error('    然后再补齐 design-preview.md 与 approved design-approval.md。');
-      process.exit(1);
-    }
-
     const gap = await missingDesignArtifacts(cwd);
     if (gap.missing.length > 0) {
       console.error('❌  UI 设计门禁未通过：本任务涉及产品 UI 实现，但缺少已批准的设计产物。');
       console.error(`    缺失: ${gap.missing.join(', ')}`);
       console.error('    go 不会在设计批准前进入 UI 实现，以免实现先于设计方案确认。');
       console.error('    请先补齐并获得批准：');
-      console.error('      docpath write-design --kind preview --stdin     # 布局/信息架构/状态/响应式/边界');
-      console.error('      docpath write-design --kind approval --stdin    # frontmatter 须含 approval.state: approved');
+      console.error('      docpath write-design --kind brief --stdin       # ui-brief.md');
+      console.error('      docpath write-design --kind approval --stdin    # design-approval.md (frontmatter 须含 approval.state: approved)');
       console.error('    若本任务实际不涉及产品 UI，请在 spec.md 的「UI 设计门禁」勾选「不涉及产品 UI 实现」。');
-      process.exit(1);
-    }
-
-    // 硬门禁 C：设计稿必须把 8 维度冻结成具体值（防「够长就行」与「方向占位」）。
-    // 与 check 共用 missingDesignPreviewDepth，保证「设计稿够不够细」只有一个定义。
-    const depth = await missingDesignPreviewDepth(cwd);
-    if (depth.missing.length > 0 || depth.weak.length > 0) {
-      console.error('❌  设计稿深度门禁未通过：design-preview.md 还停留在「方向」，未冻结成可实现的具体值。');
-      if (depth.missing.length > 0) console.error(`    缺维度: ${depth.missing.join('; ')}`);
-      for (const w of depth.weak) console.error(`    缺具体值: ${w}`);
-      console.error('    设计稿须覆盖布局/尺寸/间距/图标/颜色/动效/交互/技术约束，且填具体值（px/hex/ms/缓动/图标库）。');
-      console.error('    模板见 templates/design/design-preview.md，补齐后运行: docpath write-design --kind preview --stdin');
       process.exit(1);
     }
   }
