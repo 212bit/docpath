@@ -23,6 +23,10 @@ concrete_value_rule: >
 > 交互、技术约束全部写成具体值。审批以本文件为准（design-approval.md）。
 > 方向/北极星/用户目标留在 ui-brief.md，本文件不重复，只做精确冻结。
 
+## UI 效果图预览
+
+![DocPath Dashboard Dark Glassmorphic Theme Mockup](/Users/mac/.gemini/antigravity-ide/brain/1dbdb200-858e-4963-9dc9-0c3ca9009f42/docpath_dashboard_design_1782054504905.png)
+
 ## 1. 布局与栅格
 
 - 栅格：12 列，column-gap 24px，max-width 1440px

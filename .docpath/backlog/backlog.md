@@ -2,12 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-21T05:46:07.378Z
+> 扫描时间: 2026-06-21T16:08:55.770Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
+| R-228 | Simplify UI design gate validation to only require ui-brief.md and design-approval.md | proposed | P2 | 2 |  |
 
 ## 用途说明
 
