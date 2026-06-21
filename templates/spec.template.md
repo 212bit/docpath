@@ -69,11 +69,11 @@
 ## 4.2 UI 设计门禁
 
 > 显式声明本任务是否涉及产品 UI 实现。此声明优先于关键词推断。
-> 勾选「涉及」后，`docpath go` 在进入执行前会强制要求 design-preview.md 与已批准的 design-approval.md，否则 fail-loud。
-> 未勾选任何项时，回退到关键词检测（兼容旧任务）。
+> 勾选「涉及」后，`docpath go` 在进入执行前会强制要求 frontend-stack.md、design-preview.md 与已批准的 design-approval.md，否则 fail-loud。
+> 未勾选任何项时，普通 UI/前端关键词不会触发硬门禁；仅明确设计意图（如 UI design、Figma、design-preview、设计审批、先设计）会兼容旧任务回退为 required。
 
-- [ ] 本任务不涉及产品 UI 实现（豁免设计五件套）
-- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）
+- [ ] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）
+- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）
 
 ## 5. 验收标准
 

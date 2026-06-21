@@ -249,9 +249,11 @@ describe('install agent adapters', () => {
     assert.match(codexSkill, /Do not bypass `spec -> plan -> go -> check -> review -> journal`/);
     assert.match(codexDesignSkill, /Framework Decision\n→ UI Prompt Brief/);
     assert.match(codexDesignSkill, /frontend-stack\.md/);
+    assert.match(codexDesignSkill, /visual-acceptance\.md/);
     assert.match(codexDesignSkill, /whether a framework is needed or pure static is enough/);
     assert.match(codexDesignSkill, /After selecting the stack, load the corresponding framework skill/);
     assert.match(codexDesignSkill, /docpath write-design --kind stack --stdin/);
+    assert.match(codexDesignSkill, /docpath write-design --kind acceptance --stdin/);
     assert.match(codexSoftwareSkill, /^---\nname: docpath-software\ndescription:/);
     assert.match(codexSoftwareSkill, /docpath agent enter/);
     assert.match(codexSoftwareSkill, /docpath roles context --role software-engineer/);

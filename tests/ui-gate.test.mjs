@@ -45,11 +45,11 @@ const FULL_PREVIEW = [
 ].join('\n');
 
 // spec 4.1 模板里的两行原文，确保测试与真实模板措辞对齐。
-const EXEMPT_LINE = '- [x] 本任务不涉及产品 UI 实现（豁免设计五件套）';
-const REQUIRED_LINE = '- [x] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）';
+const EXEMPT_LINE = '- [x] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）';
+const REQUIRED_LINE = '- [x] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）';
 const UNCHECKED = [
-  '- [ ] 本任务不涉及产品 UI 实现（豁免设计五件套）',
-  '- [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）',
+  '- [ ] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）',
+  '- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）',
 ].join('\n');
 
 describe('parseExplicitUiDeclaration', () => {

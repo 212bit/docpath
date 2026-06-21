@@ -20,7 +20,7 @@ import { detectPlanBreadcrumbDrift } from '../utils/plan-sync.js';
 import { validatePlanContent, validateSpecContent } from '../utils/doc-parser.js';
 import { detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatTaskIdentityDrift, readActiveTaskFile, syncActiveTaskFiles, type TaskFileDrift } from '../utils/task-files.js';
 import { validateDeliverables } from '../utils/deliverables.js';
-import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, missingDesignPreviewDepth, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
+import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, missingDesignPreviewDepth, missingFrameworkDecision, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
 import { resolveMajorChangeGateStatus } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { CHECK_HISTORY_MAX_ENTRIES } from '../utils/workspace-cleanup.js';
@@ -776,7 +776,7 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
       name: 'UI/UX Design Opt-in Advisory',
       passed: true,
       severity: 'warning',
-      output: '检测到 UI/前端相关描述，但未显式开启 UI 设计流程；check 不会要求设计五件套。如需设计审批，请在 spec 中将 UI 设计门禁标记为 required。',
+      output: '检测到 UI/前端相关描述，但未显式开启 UI 设计流程；check 不会要求 UI/UX 设计证据包。如需设计审批，请先在 spec 中将 UI 设计门禁显式标记为 required。',
       category: 'analysis',
     }];
   }
@@ -786,6 +786,25 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
   const approvalPath = join(docpathDir, 'tasks', 'current', 'design-approval.md');
   const previewPath = join(docpathDir, 'tasks', 'current', 'design-preview.md');
   const acceptancePath = join(docpathDir, 'tasks', 'current', 'visual-acceptance.md');
+  const results: CheckResult[] = [];
+
+  const frameworkGap = await missingFrameworkDecision(cwd);
+  const frameworkPassed = frameworkGap.missing.length === 0;
+  results.push({
+    name: 'UI/UX Framework Decision Gate',
+    passed: frameworkPassed,
+    output: frameworkPassed
+      ? 'UI/UX 任务已提供 frontend-stack.md，前端技术栈与被否决备选可追踪'
+      : [
+          `缺失或不合格: ${frameworkGap.missing.join(', ')}`,
+          '修复建议:',
+          '  - 先运行: docpath write-design --kind stack --stdin',
+          '  - 按 templates/design/frontend-stack.md 填写选定栈、被否决备选和理由',
+          '  - 纯静态也是合法选定，但必须说明为什么不用框架。',
+        ].join('\n'),
+    category: 'analysis',
+  });
+
   const missing: string[] = [];
   const weak: string[] = [];
 
@@ -806,7 +825,6 @@ async function checkUiUxDesignGate(cwd: string, docpathDir: string): Promise<Che
     }
   }
 
-  const results: CheckResult[] = [];
   const previewGatePassed = missing.length === 0 && weak.length === 0;
   results.push({
     name: 'UI/UX Design Preview Gate',

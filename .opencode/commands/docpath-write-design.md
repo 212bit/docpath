@@ -20,7 +20,7 @@ Framework Decision
 → Visual Acceptance
 ```
 
-User agreement to use this workflow is not approval of a specific visual direction. Product UI implementation may start only after `design-approval.md` has `approval.state: approved` with the approval source, approval time, approval rationale, and rejected directions recorded.
+User agreement to use this workflow is not approval of a specific visual direction. Product UI implementation may start only after `frontend-stack.md` is valid, `design-preview.md` freezes the concrete design, and `design-approval.md` has `approval.state: approved` with the approval source, approval time, approval rationale, and rejected directions recorded.
 
 ## Run
 ```bash

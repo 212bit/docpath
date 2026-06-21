@@ -17,7 +17,7 @@ import { readCurrentState } from './workspace.js';
 
 /**
  * UI 设计要求判定结果。
- * - required: 任务涉及产品 UI 实现，go 前必须有 design-preview + 已批准 design-approval
+ * - required: 任务涉及产品 UI 实现，go 前必须有 frontend-stack + design-preview + 已批准 design-approval
  * - exempt:   任务显式声明不涉及产品 UI，合法豁免（可审计，留痕在 spec）
  * - unknown:  spec 未声明；普通 UI/前端关键词不拦截，最多用于 advisory
  */
@@ -39,7 +39,7 @@ export function isUiUxWorkflowOnlyTask(text: string): boolean {
 export function hasExplicitUiDesignIntent(text: string): boolean {
   const source = stripUiGateDeclarationSection(text)
     .split('\n')
-    .filter((line) => !/本任务不涉及产品\s*UI|本任务涉及产品\s*UI|go 前必须有 design-preview|design-approval/i.test(line))
+    .filter((line) => !/本任务不涉及产品\s*UI|本任务涉及产品\s*UI|go 前必须有 (?:frontend-stack|design-preview)|design-approval/i.test(line))
     .join('\n');
   return /UI\/UX\s*(design|analysis|review)|\bUI\s*design\b|\bUX\s*analysis\b|visual\s*(direction|design|brief|review)|prototype|wireframe|mockup|Figma|Stitch|\bv0\b|Framer|design-preview|Design Preview|design approval|Design Approval|approval-gated|先设计|做\s*UI\s*设计|UI\s*设计|UX\s*分析|视觉方案|视觉方向|视觉设计|原型|线框图|设计稿|设计预览|设计审批|设计批准/i.test(source);
 }
@@ -57,8 +57,8 @@ function stripUiGateDeclarationSection(text: string): string {
 /**
  * 从 spec 文本解析 4.1 的显式 UI 设计门禁勾选。
  * 模板行：
- *   - [ ] 本任务不涉及产品 UI 实现（豁免设计五件套）
- *   - [ ] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）
+ *   - [ ] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）
+ *   - [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）
  * 注意 "不涉及" 是 "涉及" 的超串，必须先判 "不涉及"，避免误命中。
  */
 export function parseExplicitUiDeclaration(specText: string): UiDesignRequirement {

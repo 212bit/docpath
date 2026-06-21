@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-21T05:42:40.818Z",
+    "updated_at": "2026-06-21T05:42:40.818Z",
+    "content_sha256": "e1fbfb5c526fcd7194c35f97eb8a1f6b12204ec790f097ed7546981fc6935ffb"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-06-21T05:42:40.818Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Align UI gate contract",
+      "description": "Align the explicit UI design gate contract across code comments, CLI messages, spec template, design README, and installed skill templates. Keep generic UI/frontend text advisory-only and make opt-in wording explicit.",
+      "acceptance": "User-facing guidance no longer says generic keywords trigger UI design flow; advisory text says explicit opt-in is required before design evidence matters; references to design five-piece are replaced with UI/UX design evidence package.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "Enforce stack evidence in check",
+      "description": "Reuse the existing missingFrameworkDecision gate in check for explicit required UI tasks so closeout catches missing or weak frontend-stack.md even when go is bypassed or historical evidence is incomplete.",
+      "acceptance": "check fails required UI tasks missing frontend-stack.md and reports actionable remediation without changing exempt/advisory behavior.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "Add visual acceptance template assets",
+      "description": "Add templates/design/visual-acceptance.md and update design README, write-design command docs, installed command copies, and design skill templates to treat acceptance as a first-class artifact.",
+      "acceptance": "visual-acceptance.md template exists in source templates and installed assets reference the same evidence package sequence.",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "Tests and verification",
+      "description": "Update focused tests for UI gate wording, check frontend-stack enforcement, write-design acceptance support, and install/template coverage; run build and impacted test suites before full check.",
+      "acceptance": "build:test, focused node tests, pnpm test, docpath check, and docpath review pass.",
+      "dependencies": "S2, S3",
+      "status": "done"
+    }
+  ]
+}

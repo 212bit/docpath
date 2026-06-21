@@ -251,7 +251,7 @@ export async function goCommand(options: GoOptions): Promise<void> {
     : false;
   if (uiOptInAdvisory) {
     console.log('⚠️  检测到 UI/前端相关描述，但未显式开启 UI 设计流程；go 将继续执行。');
-    console.log('    如需设计审批，请在 spec 的 UI 设计门禁中勾选 required，或先写入 design-preview/design-approval 证据。');
+    console.log('    如需设计审批，请先在 spec 的 UI 设计门禁中显式勾选 required；写入 design-preview/design-approval 只是证据，不会单独开启门禁。');
   }
   await renderExecutionContext(cwd, tasks, target, current?.level || 0);
   await touchSession(cwd, {
@@ -294,7 +294,7 @@ export async function goCommand(options: GoOptions): Promise<void> {
       console.error('    请先补齐并获得批准：');
       console.error('      docpath write-design --kind preview --stdin     # 布局/信息架构/状态/响应式/边界');
       console.error('      docpath write-design --kind approval --stdin    # frontmatter 须含 approval.state: approved');
-      console.error('    若本任务实际不涉及产品 UI，请在 spec.md 的「## 4.1 ... UI 设计门禁」勾选「不涉及产品 UI 实现」。');
+      console.error('    若本任务实际不涉及产品 UI，请在 spec.md 的「UI 设计门禁」勾选「不涉及产品 UI 实现」。');
       process.exit(1);
     }
 

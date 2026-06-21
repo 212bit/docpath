@@ -32,10 +32,28 @@ const REQUIRED_UI_GATE_SECTION = [
   '## 4.1 重大变更门禁',
   '',
   '### UI 设计门禁',
-  '- [ ] 本任务不涉及产品 UI 实现（豁免设计五件套）',
-  '- [x] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）',
+  '- [ ] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）',
+  '- [x] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）',
   '',
 ];
+
+function writeValidFrontendStack(tasks) {
+  writeFileSync(join(tasks, 'frontend-stack.md'), [
+    '# Frontend Stack',
+    '',
+    '## 选定栈',
+    '- JS 框架: 纯静态',
+    '- CSS / 样式方案: 原生 CSS',
+    '- 组件库 / 设计系统: 无',
+    '',
+    '## 被否决备选',
+    '- React - 理由: 当前测试场景不需要组件运行时，增加构建和运行复杂度',
+    '',
+    '## 约束',
+    '- 性能 / 包体约束: 保持夹具最小',
+    '',
+  ].join('\n'));
+}
 
 const CLI = new URL('../dist/index.js', import.meta.url).pathname;
 const run = (args, cwd) => {
@@ -875,6 +893,7 @@ describe('check and review commands', () => {
       '- **依赖**: 无',
       '',
     ].join('\n'));
+    writeValidFrontendStack(tasks);
     writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
     writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
     writeFileSync(join(tasks, 'ui-brief.md'), [
@@ -923,6 +942,96 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check blocks required UI tasks when frontend stack decision is missing', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-ui-missing-stack-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    writeFileSync(join(tasks, 'spec.md'), [
+      '# T-AGENT - Project UI',
+      '',
+      '## 1. 背景与动机',
+      '重构 项目页面布局。',
+      '',
+      '## 2. 需求清单',
+      '### 功能需求',
+      '- [ ] FR-1: 实现 project UI layout',
+      '### 非功能需求',
+      '- [ ] NFR-1: 响应式界面',
+      '',
+      '## 3. 范围界定',
+      '### 包含',
+      '- 页面实现',
+      '### 不包含',
+      '- 后端改造',
+      '',
+      '## 4. 关键决策',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | UI | 旧版 / 新版 | 新版 | 测试 |',
+      '',
+      ...REQUIRED_UI_GATE_SECTION,
+      '## 5. 验收标准',
+      '- [ ] AC-1: UI implementation 通过 framework decision gate',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: UI implementation',
+      '- [x] S1: UI implementation',
+      '- **描述**: 写产品 UI 代码',
+      '- **验收条件**: 页面实现完成',
+      '- **依赖**: 无',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
+    writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
+    writeFileSync(join(tasks, 'ui-brief.md'), [
+      '# UI Prompt Brief',
+      '## Product Context',
+      '## Design North Star',
+      '## Visual Direction',
+      '## Anti-goals',
+      '## Design Tokens',
+      '## Shared Components',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'external-design-handoff.md'), [
+      '# External Design Handoff',
+      '## Tool Prompt',
+      'Stitch Figma v0 Framer prompt',
+      '## Tool Outputs',
+      'output link and snapshot',
+      '## Selected Direction',
+      'selected project page direction',
+      '## Rejected Directions',
+      'rejected marketing hero',
+      '## Implementation Constraints',
+      'constraints for responsive implementation',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'design-approval.md'), [
+      '---',
+      'approval:',
+      '  state: approved',
+      '  source: user',
+      '  approved_at: 2026-06-10T00:00:00.000Z',
+      '  summary: Approved concrete project page visual direction',
+      '  forbidden_directions: [marketing hero]',
+      '---',
+      '# Design Approval',
+      '## Forbidden Directions',
+      '- marketing hero',
+      '',
+    ].join('\n'));
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /UI\/UX Framework Decision Gate/);
+    assert.match(result.out, /frontend-stack\.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('check allows UI implementation when design approval is approved', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-ui-approved-'));
     const { tasks } = mkExecWorkspace(cwd);
@@ -964,6 +1073,7 @@ describe('check and review commands', () => {
       '- **依赖**: 无',
       '',
     ].join('\n'));
+    writeValidFrontendStack(tasks);
     writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
     writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
     writeFileSync(join(tasks, 'ui-brief.md'), [
@@ -1055,6 +1165,7 @@ describe('check and review commands', () => {
       '- **依赖**: 无',
       '',
     ].join('\n'));
+    writeValidFrontendStack(tasks);
     writeFileSync(join(tasks, 'design-preview.md'), CONCRETE_PREVIEW);
     writeFileSync(join(tasks, 'visual-acceptance.md'), '# Visual Acceptance\n\n验收 必须 不得 snapshot HTML 截图 review 对比 可读 导航 '.repeat(12));
     writeFileSync(join(tasks, 'ui-brief.md'), [

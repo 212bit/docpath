@@ -470,7 +470,7 @@ function isProductUiImplementationTask(item: BacklogItem): boolean {
     /不涉及[\s\S]{0,160}(产品\s*UI|UI\s*设计|设计稿|设计审批|design-preview)/i,
     /不包含[\s\S]{0,160}(产品\s*UI|UI\s*设计|设计稿|设计审批|design-preview)/i,
     /不做[\s\S]{0,160}(产品\s*UI|UI\s*设计|设计稿|设计审批|design-preview)/i,
-    /豁免[\s\S]{0,80}(设计五件套|UI\s*设计门禁|design gate)/i,
+    /豁免[\s\S]{0,80}(设计五件套|UI\/UX\s*设计证据包|UI\s*设计门禁|design gate)/i,
   ])) {
     return false;
   }
@@ -534,8 +534,8 @@ function renderMajorDecisionGate(item: BacklogItem): string[] {
     typeLine('其他'),
     '',
     '### UI 设计门禁',
-    `- [${checked(!productUi)}] 本任务不涉及产品 UI 实现（豁免设计五件套）`,
-    `- [${checked(productUi)}] 本任务涉及产品 UI 实现（go 前必须有 design-preview + 已批准 design-approval）`,
+    `- [${checked(!productUi)}] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）`,
+    `- [${checked(productUi)}] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 frontend-stack + design-preview + 已批准 design-approval）`,
     '',
     '### Decision Brief',
     `- 当前问题: ${problem}`,
