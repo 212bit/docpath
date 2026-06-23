@@ -151,7 +151,7 @@ async function truncateBreadcrumbUnlocked(projectRoot: string): Promise<number> 
   const summary = jsonlEntries !== null ? summarizeBreadcrumb(jsonlEntries) : await readBreadcrumbMarkdown(projectRoot);
 
   // Check file size
-  const mdPath = breadcrumbMarkdownPath(projectRoot);
+  const mdPath = join(projectRoot, '.docpath', 'workspace', 'breadcrumb.md');
   let needsAggressiveTruncate = false;
   if (existsSync(mdPath)) {
     const content = await readFile(mdPath, 'utf-8');

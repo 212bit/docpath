@@ -647,8 +647,8 @@ async function gcJournalDecisions(cwd: string, skipDecisionGc: boolean): Promise
     for (const file of files) {
       if (/^decisions-\d{4}-\d{2}\.md$/.test(file)) {
         const archivePath = join(workspaceDir, file);
-        const stat = await stat(archivePath);
-        const sizeKb = stat.size / 1024;
+        const fileStats = await stat(archivePath);
+        const sizeKb = fileStats.size / 1024;
         if (sizeKb > 200) {
           console.log(`⚠️  月度归档 ${file} 超过 200KB (${Math.round(sizeKb)}KB)，建议拆分或压缩`);
         }

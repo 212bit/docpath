@@ -79,7 +79,7 @@ export function stateSignal(currentLevel: ComplexityLevel, currentState: string)
 
   // 检查必经状态路径
   const mandatoryStates = levelConfig.mandatoryStates;
-  const currentIdx = mandatoryStates.indexOf(currentState as any);
+  const currentIdx = mandatoryStates.indexOf(currentState);
 
   if (currentIdx === -1) {
     // 当前状态不在必经路径中，可能是可选状态，不影响升级

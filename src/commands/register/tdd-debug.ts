@@ -11,9 +11,13 @@ export function registerTddDebugCommands(cli: CAC): void {
     .option('--dry-run', '仅预览')
     .action(async (options: { cwd?: string; action?: string; 'dry-run'?: boolean }) => {
       warnDeprecatedCommand('tdd', 'plan, go, check, review');
+      const validActions = ['start', 'next', 'done'] as const;
+      const action = options.action && validActions.includes(options.action as typeof validActions[number])
+        ? (options.action as typeof validActions[number])
+        : 'next';
       await tddCommand({
         cwd: options.cwd || process.cwd(),
-        action: (options.action as any) || 'next',
+        action,
         dryRun: options['dry-run'],
       });
     });
@@ -33,10 +37,11 @@ export function registerTddDebugCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .action(async (phase: string | undefined, options: { cwd?: string }) => {
       const cwd = options.cwd || process.cwd();
-      if (!phase || !['reproduce', 'isolate', 'hypothesize', 'verify', 'fix'].includes(phase)) {
+      const validPhases = ['reproduce', 'isolate', 'hypothesize', 'verify', 'fix'] as const;
+      if (!phase || !validPhases.includes(phase as typeof validPhases[number])) {
         console.log('用法: docpath debug <reproduce|isolate|hypothesize|verify|fix>');
         return;
       }
-      await debugCommand({ cwd, action: phase as any });
+      await debugCommand({ cwd, action: phase as typeof validPhases[number] });
     });
 }

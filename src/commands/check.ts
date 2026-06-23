@@ -33,104 +33,16 @@ import {
 import { resolveRulePaths, type RuleName } from '../utils/rules.js';
 import { writeLastCheckEvidence as writeLastCheckEvidenceFiles, type CheckEvidenceItem } from '../utils/workspace-evidence.js';
 import { reviewCommand } from './review.js';
-
-interface CheckOptions {
-  cwd: string;
-  /** 跳过测试，只检查编译 */
-  skipTests?: boolean;
-  /** 跳过 lint */
-  skipLint?: boolean;
-  /**
-   * 轻量模式（instant profile）：跳过 build+test+lint 重命令，仅保留 typecheck
-   * 与结构性门禁（plan-sync / task-file-drift / major-change-gate / context-health）。
-   */
-  lite?: boolean;
-  /** 启用 harness 规则检查 */
-  harness?: boolean;
-  /** 只检查 pre-flight 规则 */
-  preflight?: boolean;
-  /** 只检查 boundary 规则 */
-  boundary?: boolean;
-  /** 只检查 pattern 规则 */
-  pattern?: boolean;
-  /** 只运行 harness 检查，跳过编译/测试/lint */
-  onlyHarness?: boolean;
-  /** 强制执行，即使不在 agent 会话中 */
-  force?: boolean;
-  /** 检测到 active task 文件漂移时按指定来源自动同步 */
-  fixDrift?: 'canonical' | 'current';
-  /** 显示所有检查项（包括成功项） */
-  verbose?: boolean;
-  /** 检查后自动运行 review */
-  withReview?: boolean;
-}
-
-interface CheckResult {
-  name: string;
-  passed: boolean;
-  output: string;
-  category?: 'compile' | 'test' | 'lint' | 'plan' | 'analysis' | 'context' | 'preflight' | 'boundary' | 'pattern';
-  severity?: 'error' | 'warning';
-}
-
-interface GitBaseline {
-  ref: string;
-  branch: string;
-  worktreeDirty: boolean;
-}
-
-function formatValidationIssue(issue: { message: string; line?: number; section?: string; field?: string }): string {
-  const details = [
-    issue.line ? `line ${issue.line}` : '',
-    issue.section ? `section ${issue.section}` : '',
-    issue.field ? `field ${issue.field}` : '',
-  ].filter(Boolean);
-  return details.length > 0 ? `${issue.message} (${details.join(', ')})` : issue.message;
-}
-
-function formatValidationFailure(filePath: string, issues: Array<{ message: string; line?: number; section?: string; field?: string }>): string {
-  return [
-    `检查文件: ${filePath}`,
-    ...issues.map((issue) => `  - ${formatValidationIssue(issue)}`),
-  ].join('\n');
-}
-
-function formatTaskFileDrift(drifts: TaskFileDrift[]): string {
-  const reasonLabel: Record<TaskFileDrift['reason'], string> = {
-    'phantom-task': '幽灵任务',
-    'missing-current': 'current 缺失',
-    'missing-canonical': 'canonical 缺失',
-    'content-mismatch': '内容不一致',
-  };
-  return [
-    'TASK FILE DRIFT DETECTED:',
-    ...drifts.flatMap((drift) => {
-      const lines = [
-        `  [${drift.file}] ${reasonLabel[drift.reason]}`,
-        `    current: ${drift.currentPath}`,
-        `    canonical: ${drift.canonicalPath}`,
-      ];
-      if (drift.detail) {
-        lines.push(...drift.detail.split('\n').map((line) => `    ${line}`));
-      }
-      return lines;
-    }),
-    '修复建议:',
-    '  - 以任务目录为准同步 current: docpath tasks sync --from canonical',
-    '  - 以 current 为准回写任务目录: docpath tasks sync --from current',
-  ].join('\n');
-}
-
-function formatSyncedTaskFiles(synced: Array<{ file: string; fromPath: string; toPath: string }>): string {
-  return [
-    '已自动同步 active task 文件:',
-    ...synced.flatMap((item) => [
-      `  [${item.file}]`,
-      `    from: ${item.fromPath}`,
-      `    to: ${item.toPath}`,
-    ]),
-  ].join('\n');
-}
+import type { CheckOptions, CheckResult, GitBaseline, NodeCommandConfig, PackageManifest, TaskPlanProgress, HarnessRule, HarnessEvaluation } from './check/types.js';
+import {
+  formatValidationIssue,
+  formatValidationFailure,
+  formatTaskFileDrift,
+  formatSyncedTaskFiles,
+  errorOutput,
+  warningResult,
+  contextFailureResult,
+} from './check/formatters.js';
 
 async function promptTaskFileDriftFix(): Promise<'canonical' | 'current' | undefined> {
   if (!process.stdin.isTTY || !process.stdout.isTTY) return undefined;
@@ -146,17 +58,6 @@ async function promptTaskFileDriftFix(): Promise<'canonical' | 'current' | undef
 
   if (isCancel(choice) || choice === 'skip') return undefined;
   return choice;
-}
-
-function errorOutput(err: unknown): string {
-  if (err && typeof err === 'object') {
-    const record = err as { stderr?: unknown; stdout?: unknown; message?: unknown };
-    for (const value of [record.stderr, record.stdout, record.message]) {
-      if (typeof value === 'string' && value) return value;
-      if (Buffer.isBuffer(value)) return value.toString('utf-8');
-    }
-  }
-  return err instanceof Error ? err.message : '';
 }
 
 /** 默认检查超时；测试/构建等重命令通过 timeoutMs 单独放宽。 */
@@ -272,14 +173,6 @@ async function checkMajorDecisionGate(cwd: string, docpathDir: string): Promise<
 
 // ─── Harness 规则解析 ───
 
-interface HarnessRule {
-  id: string;
-  trigger: string;
-  level: 'WARN' | 'MUST' | 'INFO';
-  description: string;
-  enforced?: string;
-}
-
 function parseHarnessRules(content: string): HarnessRule[] {
   const rules: HarnessRule[] = [];
   const lines = content.split('\n');
@@ -308,11 +201,6 @@ function parseHarnessRules(content: string): HarnessRule[] {
 }
 
 // ─── Harness 规则检查 ───
-
-interface HarnessEvaluation {
-  passed: boolean;
-  output: string;
-}
 
 function harnessRuleCategory(ruleId: string): CheckResult['category'] {
   if (ruleId.startsWith('pre_')) return 'preflight';
@@ -464,22 +352,6 @@ async function runHarnessChecks(cwd: string, options: CheckOptions): Promise<Che
   if (filteredRules.length === 0) return [noMatchingHarnessRulesResult()];
 
   return Promise.all(filteredRules.map(rule => runSingleHarnessRule(rule, cwd, docpathDir)));
-}
-
-interface NodeCommandConfig {
-  pkgRunner: string;
-  runCmd: string;
-}
-
-interface PackageManifest {
-  scripts?: Record<string, string>;
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-}
-
-interface TaskPlanProgress {
-  planDoneCount: number;
-  planTotalCount: number;
 }
 
 function isTerminalVerificationTask(task: { id: string; title: string; done: boolean }): boolean {
@@ -874,26 +746,6 @@ async function checkDeliverablesIndex(cwd: string): Promise<CheckResult[]> {
     ].join('\n'),
     category: 'plan',
   }];
-}
-
-function warningResult(name: string, output: string): CheckResult {
-  return {
-    name,
-    passed: true,
-    output,
-    category: 'context',
-    severity: 'warning',
-  };
-}
-
-function contextFailureResult(name: string, output: string): CheckResult {
-  return {
-    name,
-    passed: false,
-    output,
-    category: 'context',
-    severity: 'error',
-  };
 }
 
 async function checkContextIndexHealth(docpathDir: string, currentTaskId: string | undefined): Promise<CheckResult[]> {

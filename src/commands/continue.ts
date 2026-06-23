@@ -104,9 +104,13 @@ async function maybeEscalateLevel(cwd: string, docpathDir: string): Promise<void
   const planContent = await readActiveTaskFile(docpathDir, current.task_id, 'plan.md');
 
   const taskDescription = [specContent, planContent].filter(Boolean).join('\n\n') || 'unknown task';
+
+  // Type guard: ensure level is a valid ComplexityLevel
+  const level = current.level >= 0 && current.level <= 3 ? current.level as 0 | 1 | 2 | 3 : 0;
+
   const escalation = evaluateEscalation(
     taskDescription,
-    current.level as any,
+    level,
     current.state,
     current.started_at,
   );
