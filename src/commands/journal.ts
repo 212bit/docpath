@@ -6,7 +6,7 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile, rename } from 'fs/promises';
+import { readFile, writeFile, rename, readdir, stat } from 'fs/promises';
 import { join } from 'path';
 import { readCurrentState, readWorkspaceMeta, parsePlanTasks, type CurrentState } from '../utils/workspace.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
@@ -627,7 +627,35 @@ async function gcJournalDecisions(cwd: string, skipDecisionGc: boolean): Promise
   }
 
   try {
-    const result = await gcDecisions(cwd);
+    // Check if immediate gc is needed due to size bloat
+    const docpathDir = await resolveDocpathDir(cwd);
+    const workspaceDir = join(docpathDir, 'workspace');
+    const decisionsPath = join(workspaceDir, 'decisions.md');
+
+    let needsForceGc = false;
+    if (existsSync(decisionsPath)) {
+      const content = await readFile(decisionsPath, 'utf-8');
+      const sizeKb = Buffer.byteLength(content, 'utf-8') / 1024;
+      if (sizeKb > 100) {
+        console.log(`⚠️  decisions.md 超过 100KB (${Math.round(sizeKb)}KB)，强制执行 gc`);
+        needsForceGc = true;
+      }
+    }
+
+    // Also check monthly archives for bloat
+    const files = await readdir(workspaceDir);
+    for (const file of files) {
+      if (/^decisions-\d{4}-\d{2}\.md$/.test(file)) {
+        const archivePath = join(workspaceDir, file);
+        const stat = await stat(archivePath);
+        const sizeKb = stat.size / 1024;
+        if (sizeKb > 200) {
+          console.log(`⚠️  月度归档 ${file} 超过 200KB (${Math.round(sizeKb)}KB)，建议拆分或压缩`);
+        }
+      }
+    }
+
+    const result = await gcDecisions(cwd, needsForceGc ? { retentionDays: 14, maxSizeKb: 100, maxRecords: 1000 } : {});
     if (result.archived > 0) {
       console.log(`🧹  decisions.md 已老化: 归档 ${result.archived} 条，保留 ${result.retained} 条`);
     }

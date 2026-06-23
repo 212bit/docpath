@@ -199,6 +199,58 @@ describe('structured decisions ADR', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('gcDecisions force-rotates oldest 50% when size exceeds maxSizeKb', async () => {
+    const cwd = mkWorkspace();
+    const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');
+
+    // Create a large decisions file with 10 recent records
+    const blocks = [];
+    for (let i = 1; i <= 10; i++) {
+      const date = new Date('2026-06-20T00:00:00.000Z');
+      date.setDate(date.getDate() + i);
+      blocks.push(decisionBlock(`ADR-20260620-${String(i).padStart(3, '0')}`, date.toISOString()));
+    }
+
+    writeFileSync(decisionsPath, [
+      '# 决策日志 — DocPath ADR',
+      '',
+      '> test decisions',
+      '',
+      '---',
+      '',
+      ...blocks,
+    ].join('\n'));
+
+    // Simulate size bloat by setting a very low maxSizeKb (1KB)
+    const result = await gcDecisions(cwd, {
+      retentionDays: 365, // All are within retention window by age
+      maxSizeKb: 1,       // But file exceeds size limit
+      now: new Date('2026-06-30T00:00:00.000Z'),
+    });
+
+    const current = readFileSync(decisionsPath, 'utf-8');
+
+    // Should archive oldest 50% (5 records) regardless of age
+    assert.equal(result.archived, 5, 'Should archive 5 oldest records');
+    assert.equal(result.retained, 5, 'Should retain 5 newest records');
+
+    // Verify oldest 5 are gone
+    assert.doesNotMatch(current, /ADR-20260620-001/);
+    assert.doesNotMatch(current, /ADR-20260620-002/);
+    assert.doesNotMatch(current, /ADR-20260620-003/);
+    assert.doesNotMatch(current, /ADR-20260620-004/);
+    assert.doesNotMatch(current, /ADR-20260620-005/);
+
+    // Verify newest 5 remain
+    assert.match(current, /ADR-20260620-006/);
+    assert.match(current, /ADR-20260620-007/);
+    assert.match(current, /ADR-20260620-008/);
+    assert.match(current, /ADR-20260620-009/);
+    assert.match(current, /ADR-20260620-010/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('getRecentDecisions fails loud when decisions.jsonl is corrupt', async () => {
     const cwd = mkWorkspace();
     writeFileSync(join(cwd, '.docpath', 'workspace', 'decisions.jsonl'), '{not-json\n');

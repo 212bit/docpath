@@ -17,6 +17,8 @@ import { withLock } from '../utils/lock.js';
 
 /** 面包屑最大保留条数 */
 export const MAX_ENTRIES = 200;
+/** 面包屑文件最大 KB 数（超过则触发更激进的裁剪） */
+export const MAX_SIZE_KB = 50;
 export const BREADCRUMB_JSONL_SCHEMA_VERSION = 1;
 
 export interface BreadcrumbEntry {
@@ -64,7 +66,7 @@ export const BREADCRUMB_HEADER = `# 面包屑 — 上下文恢复索引
 > 此文件由 DocPath 自动生成。每完成一个子任务追加一条记录。
 > 格式：YAML frontmatter（结构化字段）+ Markdown body（人类可读）。
 > 结构化真源：breadcrumb.jsonl；本 Markdown 文件是可重建视图。
-> 超过 ${MAX_ENTRIES} 条记录时自动裁剪最旧条目。
+> 超过 ${MAX_ENTRIES} 条记录或 ${MAX_SIZE_KB}KB 时自动裁剪最旧条目。
 `;
 
 const STATUS_EMOJI: Record<BreadcrumbEntry['status'], string> = {
@@ -141,16 +143,31 @@ export function formatEntry(entry: BreadcrumbEntry): string {
  *
  * 解析 breadcrumb.md 中所有条目，只保留最后 MAX_ENTRIES 条，
  * 重新写入文件。返回被裁剪的数量。
+ *
+ * 如果文件超过 MAX_SIZE_KB，强制裁剪到 MAX_ENTRIES 的 60%。
  */
 async function truncateBreadcrumbUnlocked(projectRoot: string): Promise<number> {
   const jsonlEntries = await readBreadcrumbJsonl(projectRoot);
   const summary = jsonlEntries !== null ? summarizeBreadcrumb(jsonlEntries) : await readBreadcrumbMarkdown(projectRoot);
 
-  if (summary.entries.length <= MAX_ENTRIES) {
+  // Check file size
+  const mdPath = breadcrumbMarkdownPath(projectRoot);
+  let needsAggressiveTruncate = false;
+  if (existsSync(mdPath)) {
+    const content = await readFile(mdPath, 'utf-8');
+    const sizeKb = Buffer.byteLength(content, 'utf-8') / 1024;
+    if (sizeKb > MAX_SIZE_KB) {
+      needsAggressiveTruncate = true;
+    }
+  }
+
+  const targetCount = needsAggressiveTruncate ? Math.floor(MAX_ENTRIES * 0.6) : MAX_ENTRIES;
+
+  if (summary.entries.length <= targetCount) {
     return 0;
   }
 
-  const keep = summary.entries.slice(-MAX_ENTRIES);
+  const keep = summary.entries.slice(-targetCount);
   const trimmedCount = summary.entries.length - keep.length;
 
   await writeBreadcrumbJsonl(projectRoot, keep);

@@ -25,6 +25,10 @@ export interface DecisionRecordInput {
 export interface GcDecisionsOptions {
   retentionDays?: number;
   now?: Date;
+  /** Maximum size in KB before forcing rotation (default: 100KB) */
+  maxSizeKb?: number;
+  /** Maximum number of records before forcing rotation (default: 1000) */
+  maxRecords?: number;
 }
 
 export interface GcDecisionsResult {
@@ -330,7 +334,7 @@ async function appendArchiveBlocks(archivePath: string, month: string, blocks: D
 }
 
 /**
- * 追加一条决策记录
+ * 追加一条决策记录，并在接近大小限制时发出警告
  */
 export async function appendDecision(
   cwd: string,
@@ -351,6 +355,15 @@ export async function appendDecision(
     existing = DECISIONS_HEADER;
   } else {
     existing = await readFile(decisionsPath, 'utf-8');
+  }
+
+  // Check size and warn if approaching limits
+  const sizeKb = Buffer.byteLength(existing, 'utf-8') / 1024;
+  const records = await readDecisionJsonl(workspaceDir);
+  const recordCount = records?.length || 0;
+
+  if (sizeKb > 80 || recordCount > 800) {
+    console.warn(`⚠️  decisions.md 即将超限 (${Math.round(sizeKb)}KB, ${recordCount} 条)，建议运行 docpath journal 触发 gc`);
   }
 
   const now = new Date();
@@ -374,12 +387,17 @@ export async function appendDecision(
 /**
  * 按 created_at 将超过保留窗口的 ADR 轮转到 decisions-YYYY-MM.md。
  * 缺失或无法解析 created_at 的条目保留在主文件，避免误归档。
+ *
+ * Size-based rotation: If decisions.md exceeds maxSizeKb or records exceed maxRecords,
+ * force rotation of oldest 50% of records regardless of age.
  */
 export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {}): Promise<GcDecisionsResult> {
   const docpathDir = await resolveDocpathDir(cwd);
   const workspaceDir = join(docpathDir, 'workspace');
   const decisionsPath = join(workspaceDir, 'decisions.md');
   const retentionDays = options.retentionDays ?? 14;
+  const maxSizeKb = options.maxSizeKb ?? 100;
+  const maxRecords = options.maxRecords ?? 1000;
   const now = options.now ?? new Date();
 
   if (!existsSync(decisionsPath)) {
@@ -393,10 +411,30 @@ export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {})
 
   const records = await ensureDecisionJsonl(workspaceDir);
   const cutoff = cutoffTime(now, retentionDays);
-  const retainedRecords = records.filter((record) => {
-    const createdAt = new Date(record.createdAt);
-    return Number.isNaN(createdAt.getTime()) || createdAt.getTime() >= cutoff;
-  });
+
+  // Check if size-based rotation is needed
+  const decisionsContent = await readFile(decisionsPath, 'utf-8');
+  const sizeKb = Buffer.byteLength(decisionsContent, 'utf-8') / 1024;
+  const needsSizeRotation = sizeKb > maxSizeKb || records.length > maxRecords;
+
+  let retainedRecords: DecisionJsonlRecord[];
+
+  if (needsSizeRotation) {
+    // Force rotation of oldest 50% regardless of age
+    const sortedRecords = [...records].sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return timeA - timeB;
+    });
+    const splitIndex = Math.ceil(sortedRecords.length / 2);
+    retainedRecords = sortedRecords.slice(splitIndex);
+  } else {
+    // Normal age-based rotation
+    retainedRecords = records.filter((record) => {
+      const createdAt = new Date(record.createdAt);
+      return Number.isNaN(createdAt.getTime()) || createdAt.getTime() >= cutoff;
+    });
+  }
   const archivableRecords = records.filter((record) => {
     const createdAt = new Date(record.createdAt);
     return !Number.isNaN(createdAt.getTime()) && createdAt.getTime() < cutoff;
