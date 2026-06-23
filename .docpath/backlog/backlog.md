@@ -2,12 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-21T17:22:46.346Z
+> 扫描时间: 2026-06-21T17:44:03.325Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
+| R-230 | Design UI for DocPath workflow dashboard | active | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 
 ## 用途说明
 

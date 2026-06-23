@@ -38,16 +38,18 @@ Hard rules after explicit opt-in:
 
 ## UI Blueprint
 
-Before implementation, `ui-brief.md` should record:
+Before implementation, `ui-brief.md` should record all 8 sections. Apply the lean rule: **every line must answer a developer/agent question at implementation time. Delete anything that only explains *why* a decision was made.**
 
-- screen contract: product area, target user, entry point, primary job, success outcome, non-goals
-- flow contract: before/main/secondary/exit paths, risky actions, confirmations, read/write boundary, permissions
-- layout contract: regions, navigation, primary/secondary content, actions, detail panels, status placement, priority, density, overflow
-- component contract: component purpose, data, states, actions, notes
-- state contract: loading, empty, error, partial data, permission denied, disabled, success, destructive confirmation
-- visual contract: grid, dimensions, spacing, typography, colors, icons, radius, elevation, motion, responsive behavior, accessibility, technical constraints
-- generation contract: high-fidelity UI prompt, wireframe prompt, negative prompt
-- acceptance contract: screenshot/review checks implementation must satisfy
+Section-level guidance:
+
+- **Screen Contract** (3–5 lines): target user, entry point, primary job, non-goals. No background narrative.
+- **Flow Contract**: navigation map (code block) + 2–3 key paths in 1–2 sentences each. No long user journey prose.
+- **Layout Contract**: ASCII skeleton showing regions + brief spec (widths, heights, backgrounds). No rationale.
+- **Component Contract**: a table — component name, visual style (exact values), hover/interaction. No CSS blocks.
+- **State Contract**: a table — state, UI behavior, copy/action. Covers: loading, empty, error, success at minimum.
+- **Visual Contract**: exact hex tokens with contrast ratios, font stack, spacing scale, radius/shadow values. No color-theory commentary.
+- **Generation Contract** (**most detailed section**): a runnable high-fidelity prompt that an AI image generator can execute to produce a reviewable mockup, plus a wireframe prompt. Include all exact hex values, font names, layout dimensions, and component descriptions so the output is immediately usable for visual validation before coding starts.
+- **Acceptance Contract**: a checklist of visual/behavioral conditions that the implemented UI must satisfy.
 
 ## Design quality bar
 
