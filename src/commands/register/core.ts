@@ -2,6 +2,7 @@ import type { CAC } from 'cac';
 import { doctorCommand } from '../doctor.js';
 import { initCommand } from '../init.js';
 import { statusCommand } from '../status.js';
+import { onboardCommand } from '../onboard.js';
 import type { ComplexityLevel } from '../../engine/state-machine.js';
 
 function parseInitLevel(value?: string): ComplexityLevel | undefined {
@@ -51,6 +52,16 @@ export function registerCoreCommands(cli: CAC): void {
         cwd: options.cwd || process.cwd(),
         json: !!options.json,
         untrackNoise: !!(options.untrackNoise || options['untrack-noise']),
+      });
+    });
+
+  cli.command('onboard', '交互式入门向导（适合新用户）')
+    .option('--cwd <path>', '项目目录')
+    .option('--reset', '重置入门向导状态')
+    .action(async (options: { cwd?: string; reset?: boolean }) => {
+      await onboardCommand({
+        cwd: options.cwd || process.cwd(),
+        reset: !!options.reset,
       });
     });
 }
