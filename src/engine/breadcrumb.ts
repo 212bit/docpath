@@ -1,12 +1,18 @@
 /**
  * Breadcrumb 协议 — GSD 上下文追踪
  *
- * 每个子任务完成后写入一条记录到 .docpath/workspace/breadcrumb.md，
- * 格式：YAML frontmatter + Markdown body。
+ * **方案 A（任务级优先架构）**
+ *
+ * - 写入：每个任务的 breadcrumb 写入 `.docpath/tasks/{taskId}/breadcrumb.jsonl`
+ * - 读取：
+ *   - 有 activeTaskId：读取该任务的 breadcrumb.jsonl
+ *   - idle 状态：聚合所有活跃任务的 breadcrumb
+ *   - 降级：读取遗留的全局 breadcrumb.jsonl/breadcrumb.md（用于迁移期）
+ * - 归档：任务完成后，breadcrumb.jsonl 随任务目录一起保留完整历史
+ *
+ * **迁移**：运行 `docpath migrate-breadcrumb` 将现有全局 breadcrumb 拆分到各任务目录。
  *
  * 断线重连时由 docpath:continue 命令读取，恢复上下文。
- *
- * **截断轮转**：超过 MAX_ENTRIES（默认 50）时自动裁剪最旧记录。
  */
 
 import { join, dirname } from 'path';
@@ -341,6 +347,30 @@ async function readActiveTaskId(projectRoot: string): Promise<string | null> {
   }
 }
 
+async function aggregateAllTaskBreadcrumbs(projectRoot: string): Promise<BreadcrumbSummary> {
+  const tasksDir = join(projectRoot, '.docpath', 'tasks');
+  let taskDirs: string[] = [];
+
+  try {
+    const { readdir } = await import('fs/promises');
+    const entries = await readdir(tasksDir, { withFileTypes: true });
+    taskDirs = entries
+      .filter((entry) => entry.isDirectory() && entry.name !== 'done' && entry.name !== 'current')
+      .map((entry) => entry.name);
+  } catch {
+    return { total: 0, done: 0, inProgress: 0, blocked: 0, latest: null, entries: [] };
+  }
+
+  const allEntries: BreadcrumbEntry[] = [];
+  for (const taskId of taskDirs) {
+    const entries = await readTaskBreadcrumbJsonl(projectRoot, taskId);
+    if (entries) allEntries.push(...entries);
+  }
+
+  allEntries.sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
+  return summarizeBreadcrumb(allEntries);
+}
+
 async function seedTaskBreadcrumbJsonl(projectRoot: string, taskId: string): Promise<BreadcrumbEntry[] | null> {
   const path = taskBreadcrumbJsonlPath(projectRoot, taskId);
   if (!path) return null;
@@ -369,8 +399,10 @@ async function appendTaskBreadcrumbJsonl(projectRoot: string, entry: BreadcrumbE
 /**
  * 写入一条面包屑记录
  *
+ * 方案 A（任务级优先）：只写入任务级 breadcrumb.jsonl，不再写入全局文件。
+ * 全局视图通过聚合活跃任务生成。
+ *
  * 追加前检查去重：如果同一任务中已有相同步骤（归一化后）的 done 记录，则跳过。
- * 追加后自动执行截断轮转（保留最近 MAX_ENTRIES 条）。
  *
  * @param projectRoot 项目根目录 (包含 .docpath/ 的目录)
  * @param entry 面包屑条目
@@ -383,54 +415,40 @@ export async function writeBreadcrumb(
   const lockPath = breadcrumbLockPath(projectRoot);
   await mkdir(dirname(lockPath), { recursive: true });
   return withLock(lockPath, async () => {
-    const path = breadcrumbPath(projectRoot);
     const ts = entry.timestamp || new Date().toISOString();
-    await ensureBreadcrumbJsonl(projectRoot);
 
     // 去重检查：只针对 done 状态
     if (entry.status === 'done') {
       const taskEntries = entry.taskId ? await seedTaskBreadcrumbJsonl(projectRoot, entry.taskId) : null;
-      const summary = taskEntries !== null ? summarizeBreadcrumb(taskEntries) : await readBreadcrumb(projectRoot);
-      const normalizedStep = normalizeStepName(entry.step);
-      const latestForStep = [...summary.entries].reverse().find(
-        (e) => e.taskId === entry.taskId &&
-               normalizeStepName(e.step) === normalizedStep
-      );
+      if (taskEntries) {
+        const summary = summarizeBreadcrumb(taskEntries);
+        const normalizedStep = normalizeStepName(entry.step);
+        const latestForStep = [...summary.entries].reverse().find(
+          (e) => e.taskId === entry.taskId &&
+                 normalizeStepName(e.step) === normalizedStep
+        );
 
-      if (latestForStep?.status === 'done') {
-        reporter(`⚠️  步骤 ${entry.step} 已完成（记录时间: ${latestForStep.timestamp}），跳过重复记录`);
-        return;
+        if (latestForStep?.status === 'done') {
+          reporter(`⚠️  步骤 ${entry.step} 已完成（记录时间: ${latestForStep.timestamp}），跳过重复记录`);
+          return;
+        }
       }
     }
 
     const nextEntry = { ...entry, timestamp: ts };
-    const line = formatEntry(nextEntry);
 
-    try {
-      // 检查文件是否存在，不存在则写入 header
-      await readFile(path, 'utf-8');
-    } catch {
-      await mkdir(dirname(path), { recursive: true });
-      await writeFile(path, BREADCRUMB_HEADER, 'utf-8');
-    }
-
-    await appendFile(path, line, 'utf-8');
+    // 只写入任务级文件（真源）
     await appendTaskBreadcrumbJsonl(projectRoot, nextEntry);
-    await appendBreadcrumbJsonl(projectRoot, nextEntry);
-
-    // 截断轮转：超过 MAX_ENTRIES 时裁剪最旧记录（静默执行，不输出日志）
-    const trimmed = await truncateBreadcrumbUnlocked(projectRoot);
-    // 轮转日志已移除：频繁轮转不再产生噪音
   });
 }
 
 /**
  * 读取所有面包屑记录
  *
- * 解析 breadcrumb.md 中的格式化记录。
- * 支持两种格式向后兼容：
- * - 新格式：YAML frontmatter（--- 围栏）+ Markdown body
- * - 旧格式：仅 Markdown heading + bullet list
+ * 方案 A（任务级优先）：
+ * - 有 activeTaskId：读取该任务的 breadcrumb.jsonl
+ * - idle 状态：聚合所有活跃任务的 breadcrumb
+ * - 降级：尝试读取遗留的全局 breadcrumb.jsonl 和 breadcrumb.md
  *
  * @param projectRoot 项目根目录
  */
@@ -441,6 +459,11 @@ export async function readBreadcrumb(projectRoot: string): Promise<BreadcrumbSum
     if (taskEntries !== null) return summarizeBreadcrumb(taskEntries);
   }
 
+  // idle 状态：聚合所有活跃任务
+  const aggregated = await aggregateAllTaskBreadcrumbs(projectRoot);
+  if (aggregated.entries.length > 0) return aggregated;
+
+  // 降级：读取遗留全局文件（用于迁移期）
   const jsonlEntries = await readBreadcrumbJsonl(projectRoot);
   if (jsonlEntries !== null) return summarizeBreadcrumb(jsonlEntries);
   return readBreadcrumbMarkdown(projectRoot);

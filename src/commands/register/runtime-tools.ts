@@ -1,6 +1,7 @@
 import type { CAC } from 'cac';
 import { compactCommand, discoverCommand, nextCommand } from '../runtime.js';
 import { getOptionValue, normalizeEnumOption, normalizeTaskFileSyncSource, parseIntegerOption } from './shared.js';
+import { run as migrateBreadcrumbCommand } from '../migrate-breadcrumb.js';
 
 export function registerRuntimeToolCommands(cli: CAC): void {
   cli.command('compact', '持久化压缩运行上下文到 workspace/compact-context.md')
@@ -39,6 +40,14 @@ export function registerRuntimeToolCommands(cli: CAC): void {
         agent: !!options.agent,
         verbose: !!options.verbose,
         autoFix: normalizeTaskFileSyncSource(options['auto-fix'] || options.autoFix || getOptionValue(argv, '--auto-fix'), 'next --auto-fix'),
+      });
+    });
+
+  cli.command('migrate-breadcrumb', '将全局 breadcrumb.jsonl 迁移到任务级文件')
+    .option('--cwd <path>', '项目目录')
+    .action(async (options: { cwd?: string }) => {
+      await migrateBreadcrumbCommand({
+        cwd: options.cwd || process.cwd(),
       });
     });
 }

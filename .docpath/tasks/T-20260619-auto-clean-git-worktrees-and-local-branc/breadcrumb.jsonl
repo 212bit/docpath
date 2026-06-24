@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-auto-clean-git-worktrees-and-local-branc","step":"S3","status":"in_progress","context":"开始执行: 验证验收标准","timestamp":"2026-06-19T14:26:34.872Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-auto-clean-git-worktrees-and-local-branc","step":"check","status":"blocked","context":"质量检查失败: 子任务完成度 (2/3)","timestamp":"2026-06-19T14:30:03.819Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-auto-clean-git-worktrees-and-local-branc","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-06-19T14:30:06.835Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-auto-clean-git-worktrees-and-local-branc","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-06-19T14:31:41.665Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-auto-clean-git-worktrees-and-local-branc","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-06-19T14:31:43.976Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-auto-clean-git-worktrees-and-local-branc","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-06-19T14:31:46.650Z"}

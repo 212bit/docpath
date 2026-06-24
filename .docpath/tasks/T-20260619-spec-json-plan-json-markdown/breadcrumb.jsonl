@@ -1,0 +1,12 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"S1","status":"in_progress","context":"开始执行: 分析 markdown 字段的所有使用路径","timestamp":"2026-06-19T16:36:37.310Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-06-19T16:36:44.915Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"S2","status":"in_progress","context":"开始执行: JSON 写入时移除 markdown 字段，.md 文件成为单一原文","timestamp":"2026-06-19T16:36:53.570Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-06-19T16:38:32.958Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"S3","status":"in_progress","context":"开始执行: render*FromDocument 改为从 .md 文件读取（或参数传入）","timestamp":"2026-06-19T16:38:43.553Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-06-19T16:39:18.213Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"S4","status":"in_progress","context":"开始执行: pnpm test 全量验证 + 体积确认","timestamp":"2026-06-19T16:39:26.395Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-06-19T16:49:52.869Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"check","status":"blocked","context":"质量检查失败: 测试","timestamp":"2026-06-19T16:51:36.336Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-06-19T16:59:54.714Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-06-19T17:00:01.243Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260619-spec-json-plan-json-markdown","step":"journal","status":"done","context":"知识归档完成 (4/4 步)","timestamp":"2026-06-19T17:00:21.209Z"}
