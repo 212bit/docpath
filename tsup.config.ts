@@ -31,6 +31,9 @@ const CLI_ENTRY = [
   'src/utils/deliverables.ts',
   'src/utils/roles.ts',
   'src/utils/worktree.ts',
+  'src/utils/output-formatter.ts',
+  'src/utils/error-messages.ts',
+  'src/utils/error-helpers.ts',
 ];
 
 export default defineConfig({
