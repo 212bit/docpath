@@ -34,6 +34,7 @@ const CLI_ENTRY = [
   'src/utils/output-formatter.ts',
   'src/utils/error-messages.ts',
   'src/utils/error-helpers.ts',
+  'src/utils/contextual-help.ts',
 ];
 
 export default defineConfig({

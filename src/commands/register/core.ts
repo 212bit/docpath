@@ -3,6 +3,7 @@ import { doctorCommand } from '../doctor.js';
 import { initCommand } from '../init.js';
 import { statusCommand } from '../status.js';
 import { onboardCommand } from '../onboard.js';
+import { helpMeCommand } from '../help-me.js';
 import type { ComplexityLevel } from '../../engine/state-machine.js';
 
 function parseInitLevel(value?: string): ComplexityLevel | undefined {
@@ -62,6 +63,14 @@ export function registerCoreCommands(cli: CAC): void {
       await onboardCommand({
         cwd: options.cwd || process.cwd(),
         reset: !!options.reset,
+      });
+    });
+
+  cli.command('help-me', '根据当前状态提供相关帮助')
+    .option('--cwd <path>', '项目目录')
+    .action(async (options: { cwd?: string }) => {
+      await helpMeCommand({
+        cwd: options.cwd || process.cwd(),
       });
     });
 }
