@@ -24,6 +24,7 @@ import { acquireExecutionLease, releaseExecutionLease, resolveSessionContext, to
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
+import { exitWithError } from '../utils/error-helpers.js';
 
 interface GoOptions {
   cwd: string;
@@ -47,8 +48,7 @@ async function resolveGoContext(cwd: string): Promise<GoContext> {
   const docpathDir = await resolveDocpathDir(cwd);
   const tasksDir = join(docpathDir, 'tasks', 'current');
   if (!existsSync(docpathDir)) {
-    console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
-    process.exit(1);
+    exitWithError('NO_DOCPATH_DIR');
   }
 
   return {
@@ -77,14 +77,14 @@ async function readSpecFields(specPath: string): Promise<Record<string, string>>
 async function readPlanSteps(docpathDir: string, taskId: string | undefined): Promise<PlanStep[]> {
   const planContent = await readActiveTaskFile(docpathDir, taskId, 'plan.md');
   if (!planContent.trim()) {
-    console.error('❌  未找到 plan.md。请先运行 `docpath:plan` 生成计划。');
-    process.exit(1);
+    exitWithError('MISSING_PLAN');
   }
 
   const tasks = parsePlanSteps(planContent);
   if (tasks.length === 0) {
-    console.error('❌  plan.md 中未找到子任务。格式须为 `### S1: 名称` 或 `- [ ] 任务`');
-    process.exit(1);
+    exitWithError('MISSING_PLAN', {
+      detail: 'plan.md 中未找到子任务。格式须为 `### S1: 名称` 或 `- [ ] 任务`'
+    });
   }
   return tasks;
 }

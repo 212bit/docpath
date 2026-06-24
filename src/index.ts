@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { registerCommands } from './commands/register.js';
 import { renderAdvancedHelp, renderDefaultHelp, renderDeprecatedHelp } from './commands/register/command-metadata.js';
 import { resolveSessionContext, verifySessionCwd } from './utils/session.js';
+import { DocPathError } from './utils/error-helpers.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -105,7 +106,25 @@ try {
 
   await cli.runMatchedCommand();
 } catch (err) {
-  console.error(`❌  ${err instanceof Error ? err.message : String(err)}`);
-  console.error('    运行 `docpath --help` 查看用法。');
+  // DocPath 结构化错误
+  if (err instanceof DocPathError) {
+    console.error(err.message);
+    process.exit(err.getExitCode());
+  }
+
+  // 未预期的错误
+  const isDebug = process.env.DOCPATH_DEBUG === '1';
+  console.error('❌ 未预期的错误');
+
+  if (isDebug && err instanceof Error) {
+    console.error('\n调试信息：');
+    console.error(err.stack);
+  } else if (err instanceof Error) {
+    console.error(`   ${err.message}`);
+    console.error('\n运行 DOCPATH_DEBUG=1 docpath ... 查看详细堆栈');
+  } else {
+    console.error(`   ${String(err)}`);
+  }
+
   process.exit(1);
 }

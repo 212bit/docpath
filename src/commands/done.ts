@@ -14,6 +14,7 @@ import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { resolveSessionContext } from '../utils/session.js';
 import { gatePolicyForProfile, isQuickProfile, isInstantProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
 import { isInWorktree } from '../utils/worktree.js';
+import { exitWithError } from '../utils/error-helpers.js';
 
 interface DoneOptions {
   cwd: string;
@@ -43,11 +44,7 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
   // 前置检查：必须有已绑定的 task_id
   const taskId = await resolveBoundTaskId(cwd);
   if (!taskId) {
-    console.error('❌  无法完成任务: 当前没有已绑定的任务');
-    console.error('    done 命令需要活跃任务上下文。');
-    console.error('    建议:');
-    console.error('      - 运行: docpath status --agent 诊断当前状态');
-    process.exit(1);
+    exitWithError('NO_ACTIVE_TASK');
   }
 
   // 调用底层 agent done 命令（保留所有门禁序列）
