@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-25T02:26:35.018Z",
+    "updated_at": "2026-06-25T02:26:35.018Z",
+    "content_sha256": "4bc6f58a73f3f061797ae3620f5d54e0805fee753569794bb78ea0ecae2b5ce9"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-06-25T02:26:35.018Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "分析测试失败根本原因",
+      "description": "调查测试失败的真实原因，确认是测试环境问题而非错误处理系统问题",
+      "acceptance": "确认失败根因并记录在 spec.md 中",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "修复 mkWorkspace 创建完整测试环境",
+      "description": "修改 `mkWorkspace()` 函数，创建符合当前架构的完整工作区：",
+      "acceptance": "mkWorkspace 创建的环境能通过所有 check 检查",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证测试通过",
+      "description": "运行 `pnpm test` 确认所有测试通过，特别是 3 个 task-files-drift 测试",
+      "acceptance": "`pnpm test` 完整通过，无失败测试",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}
