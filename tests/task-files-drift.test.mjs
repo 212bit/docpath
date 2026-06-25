@@ -98,6 +98,21 @@ function mkWorkspace({ phase = 'executing' } = {}) {
     '- **上下文**: 完成',
     '',
   ].join('\n'));
+  // Create task-level breadcrumb.jsonl (required for current architecture)
+  writeFileSync(join(dp, 'tasks', 'T-DRIFT', 'breadcrumb.jsonl'), JSON.stringify({
+    schema_version: 1,
+    kind: 'breadcrumb',
+    taskId: 'T-DRIFT',
+    step: 'S1',
+    status: 'done',
+    timestamp: '2026-06-01T00:00:00.000Z',
+    context: '完成',
+  }) + '\n');
+  // Create docs-index.json (required to pass deliverables check)
+  writeFileSync(join(dp, 'docs-index.json'), JSON.stringify({
+    documents: [],
+    generated_at: '2026-06-01T00:00:00.000Z',
+  }, null, 2));
   writeFileSync(join(dp, 'tasks', 'T-DRIFT', 'spec.md'), validSpec('canonical'));
   writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), validSpec('current'));
   writeFileSync(join(dp, 'tasks', 'T-DRIFT', 'plan.md'), validPlan('canonical'));

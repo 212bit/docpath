@@ -1124,13 +1124,13 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     results.push(...harnessResults);
   }
 
-  const allPassed = results.every(r => r.passed);
+  const allPassed = results.every(r => r.passed || r.severity === 'warning');
   printCheckReport(results, allPassed, options.verbose);
   await persistCheckEvidence(cwd, docpathDir, current?.task_id || 'unknown', results, allPassed);
 
   if (!allPassed) {
     console.log('请修复失败项后重新运行 `docpath check`\n');
-    throw new Error(`docpath check failed: ${results.filter(r => !r.passed).map(r => r.name).join(', ')}`);
+    throw new Error(`docpath check failed: ${results.filter(r => !r.passed && r.severity !== 'warning').map(r => r.name).join(', ')}`);
   } else {
     if (options.withReview) {
       console.log('\n🔄  自动执行 review...\n');
