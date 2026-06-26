@@ -48,6 +48,7 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'roles', description: 'Render role-specific context', visibility: 'advanced' },
   { name: 'export', description: 'Export workflow state as Markdown', visibility: 'advanced' },
   { name: 'stats', description: 'Show project statistics', visibility: 'advanced' },
+  { name: 'trace', description: 'Trace & analyze agent command behavior', visibility: 'advanced' },
   { name: 'dashboard', description: 'Start the read-only dashboard', visibility: 'advanced' },
   { name: 'debug', description: 'Run the systematic debug workflow', visibility: 'advanced' },
   { name: 'projects', description: 'List locally registered projects', visibility: 'advanced' },

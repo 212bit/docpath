@@ -10,6 +10,8 @@ import { registerCommands } from './commands/register.js';
 import { renderAdvancedHelp, renderDefaultHelp, renderDeprecatedHelp } from './commands/register/command-metadata.js';
 import { resolveSessionContext, verifySessionCwd } from './utils/session.js';
 import { DocPathError } from './utils/error-helpers.js';
+import { isTraceEnabled, writeTraceEntry, isTraceEnabledSync, writeTraceEntrySync } from './utils/trace.js';
+
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -93,18 +95,67 @@ try {
     }
   }
 
+  let traceCwd = process.cwd();
+  let cmdName = '';
+  let cmdArgs: string[] = [];
+
   if (cli.matchedCommand) {
-    const cmdName = cli.matchedCommand.rawName;
-    const isBypassed = ['worktree', 'projects', 'init', 'config'].includes(cmdName.split(' ')[0]);
+    cmdName = cli.matchedCommand.rawName.split(' ')[0];
+    cmdArgs = process.argv.slice(3);
+    const isBypassed = ['worktree', 'projects', 'init', 'config'].includes(cmdName);
     if (!isBypassed) {
       const cwd = (parsed.options.cwd as string) || process.cwd();
+      traceCwd = cwd;
       const sessionOption = parsed.options.session as string | undefined;
       const { sessionId } = resolveSessionContext(sessionOption);
       await verifySessionCwd(cwd, sessionId);
     }
   }
 
-  await cli.runMatchedCommand();
+  const startMs = Date.now();
+  const originalExit = process.exit;
+  let traceWritten = false;
+
+  const writeTraceBeforeExit = (code: number) => {
+    if (traceWritten || !cmdName || cmdName === 'trace') return;
+    traceWritten = true;
+    try {
+      const enabled = isTraceEnabledSync(traceCwd);
+      if (enabled) {
+        const durationMs = Date.now() - startMs;
+        writeTraceEntrySync(traceCwd, {
+          cmd: cmdName,
+          args: cmdArgs,
+          durationMs,
+          exitCode: code,
+        });
+      }
+    } catch {
+      // 忽略
+    }
+  };
+
+  // 拦截 process.exit
+  process.exit = function(code?: number) {
+    const exitCode = code ?? 0;
+    writeTraceBeforeExit(exitCode);
+    return originalExit.call(process, exitCode) as never;
+  } as any;
+
+  let runError: any = null;
+
+  try {
+    await cli.runMatchedCommand();
+    writeTraceBeforeExit(0);
+  } catch (err) {
+    const exitCode = err instanceof DocPathError ? err.getExitCode() : 1;
+    writeTraceBeforeExit(exitCode);
+    runError = err;
+  }
+
+  if (runError) {
+    throw runError;
+  }
 } catch (err) {
   // DocPath 结构化错误
   if (err instanceof DocPathError) {
