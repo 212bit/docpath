@@ -117,6 +117,7 @@ export async function writeTraceEntry(
     }
 
     await appendFile(traceFile, JSON.stringify(entry) + '\n', 'utf-8');
+    truncateTraceFileIfNeeded(traceFile);
   } catch {
     // 追踪写入失败需静默，不能阻塞正常 CLI 命令
   }
@@ -218,6 +219,24 @@ export function writeTraceEntrySync(
     if (!existsSync(workspaceDir)) return;
 
     appendFileSync(traceFile, JSON.stringify(entry) + '\n', 'utf-8');
+    truncateTraceFileIfNeeded(traceFile);
+  } catch {
+    // 忽略
+  }
+}
+
+/**
+ * 限制追踪文件大小，当记录超过 2000 条时保留最近的 1000 条以保性能
+ */
+function truncateTraceFileIfNeeded(traceFile: string): void {
+  try {
+    if (!existsSync(traceFile)) return;
+    const content = readFileSync(traceFile, 'utf-8');
+    const lines = content.split('\n').filter(line => line.trim() !== '');
+    if (lines.length > 2000) {
+      const truncated = lines.slice(-1000);
+      writeFileSync(traceFile, truncated.join('\n') + '\n', 'utf-8');
+    }
   } catch {
     // 忽略
   }

@@ -117,7 +117,7 @@ try {
   let traceWritten = false;
 
   const writeTraceBeforeExit = (code: number) => {
-    if (traceWritten || !cmdName || cmdName === 'trace') return;
+    if (traceWritten || !cmdName || ['trace', 'dashboard', 'projects', 'init'].includes(cmdName)) return;
     traceWritten = true;
     try {
       const enabled = isTraceEnabledSync(traceCwd);
