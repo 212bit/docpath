@@ -18,6 +18,7 @@
 # Local agent/tool state
 /.claude/
 /.sisyphus/
+/.opencode/node_modules/
 
 # DocPath worktrees
 /.worktrees/

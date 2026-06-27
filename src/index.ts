@@ -136,11 +136,12 @@ try {
   };
 
   // 拦截 process.exit
-  process.exit = function(code?: number) {
+  const wrappedExit: typeof process.exit = function(code?: number): never {
     const exitCode = code ?? 0;
     writeTraceBeforeExit(exitCode);
-    return originalExit.call(process, exitCode) as never;
-  } as any;
+    return originalExit.call(process, exitCode);
+  };
+  process.exit = wrappedExit;
 
   let runError: any = null;
 

@@ -86,7 +86,7 @@ export async function traceCommand(opts: TraceOptions): Promise<void> {
     } else if (action === 'health') {
       console.log(JSON.stringify(buildHealthReport(entries), null, 2));
     } else if (action === 'anomaly') {
-      console.log(JSON.stringify(detectAnomalies(entries), null, 2));
+      console.log(JSON.stringify(await detectAnomalies(entries, cwd), null, 2));
     }
     return;
   }
@@ -172,12 +172,12 @@ export async function traceCommand(opts: TraceOptions): Promise<void> {
       console.log(`   └──────────────────────────────────────────────────────┘`);
     }
   } else if (action === 'anomaly') {
-    const anomalies = detectAnomalies(entries);
+    const anomalies = await detectAnomalies(entries, cwd);
     console.log(`🚨 DocPath 异常检测报告`);
-    console.log(`   分析 ${entries.length} 条追踪记录，共发现 ${anomalies.length} 个异常模式\n`);
+    console.log(`   共发现 ${anomalies.length} 个异常模式\n`);
 
     if (anomalies.length === 0) {
-      console.log('   ✅ 未发现明显反模式或异常，Agent 表现良好！');
+      console.log('   ✅ 未发现明显反模式或环境异常，环境与 Agent 表现良好！');
       return;
     }
 

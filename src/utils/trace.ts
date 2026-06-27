@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, appendFileSync } from 'fs';
+import { existsSync, readFileSync, appendFileSync, writeFileSync } from 'fs';
 import { appendFile, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from './file.js';

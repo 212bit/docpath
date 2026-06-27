@@ -111,8 +111,27 @@ export function computeCompliance(entries: TraceEntry[]): {
 /**
  * 异常模式检测
  */
-export function detectAnomalies(entries: TraceEntry[]): AnomalyRecord[] {
+export async function detectAnomalies(entries: TraceEntry[], cwd?: string): Promise<AnomalyRecord[]> {
   const anomalies: AnomalyRecord[] = [];
+
+  if (cwd) {
+    try {
+      const { buildInstallDoctorReport } = await import('./install-core.js');
+      const report = await buildInstallDoctorReport({ cwd });
+      if (!report.passed) {
+        anomalies.push({
+          severity: 'HIGH',
+          ruleId: 'install-drift',
+          message: `项目 Agent 协议与环境依赖发生失效或未完整激活 (errors: ${report.errors})`,
+          evidence: `未通过的 issue: ${report.issues.map(i => `${i.id} (${i.message})`).join(', ') || '依赖漂移'}`,
+          recommendation: `立即运行 \`${report.recommended_command || 'docpath install --target universal'}\` 重新建立并激活 Agent 适配基线。`
+        });
+      }
+    } catch {
+      // 忽略
+    }
+  }
+
   if (entries.length === 0) return anomalies;
 
   // 1. 同 phase 连续调用 next 异常检测
