@@ -15,7 +15,7 @@ import {
 
 interface TraceOptions {
   cwd: string;
-  action?: 'show' | 'session' | 'health' | 'anomaly' | 'clear';
+  action?: 'show' | 'session' | 'health' | 'anomaly' | 'clear' | 'enable' | 'disable';
   session?: string;
   limit?: number;
   json?: boolean;
@@ -31,6 +31,7 @@ export async function traceCommand(opts: TraceOptions): Promise<void> {
   const cwd = opts.cwd;
   const action = opts.action || 'show';
   const limit = opts.limit || 50;
+  const session = typeof opts.session === 'string' ? opts.session : undefined;
 
   const docpathDir = await resolveDocpathDir(cwd);
   if (!existsSync(docpathDir)) {
@@ -44,12 +45,32 @@ export async function traceCommand(opts: TraceOptions): Promise<void> {
     return;
   }
 
+  if (action === 'enable') {
+    const { configCommand } = await import('./config.js');
+    await configCommand({ cwd, set: 'trace', value: 'true' });
+    console.log('🚀 项目级 CLI 调用追踪已开启 (配置 trace: true)。\n此后 Agent 调用均会自动记录。可以使用 DOCPATH_TRACE=1 临时强制启用。');
+    return;
+  }
+
+  if (action === 'disable') {
+    const { configCommand } = await import('./config.js');
+    await configCommand({ cwd, set: 'trace', value: 'false' });
+    console.log('🛑 项目级 CLI 调用追踪已关闭 (配置 trace: false)。');
+    return;
+  }
+
   const entries = await readTraceEntries(cwd);
   if (entries.length === 0) {
     if (opts.json) {
       console.log(JSON.stringify([], null, 2));
     } else {
-      console.log('💡 暂无追踪记录。请先设置 `DOCPATH_TRACE=1` 运行一些命令。');
+      const { isTraceEnabledSync } = await import('../utils/trace.js');
+      const enabled = isTraceEnabledSync(cwd);
+      if (enabled) {
+        console.log('💡 追踪已在配置中开启，但目前暂无其他命令的调用记录。\n请试着运行一些其他命令（例如 `docpath status` 或 `docpath next`），系统将自动采集并生成分析数据！');
+      } else {
+        console.log('💡 追踪目前未开启。您可以运行 `docpath trace enable` 开启项目级追踪，或使用 `DOCPATH_TRACE=1` 环境变量临时强制记录。');
+      }
     }
     return;
   }
@@ -59,7 +80,7 @@ export async function traceCommand(opts: TraceOptions): Promise<void> {
       console.log(JSON.stringify(entries.slice(-limit), null, 2));
     } else if (action === 'session') {
       const groups = groupBySession(entries);
-      const targetSession = opts.session || Object.keys(groups).pop() || '';
+      const targetSession = session || Object.keys(groups).pop() || '';
       const sessionEntries = groups[targetSession] || [];
       console.log(JSON.stringify(analyzeSession(targetSession, sessionEntries), null, 2));
     } else if (action === 'health') {
@@ -88,7 +109,7 @@ export async function traceCommand(opts: TraceOptions): Promise<void> {
     }
   } else if (action === 'session') {
     const groups = groupBySession(entries);
-    const targetSession = opts.session || Object.keys(groups).pop() || '';
+    const targetSession = session || Object.keys(groups).pop() || '';
     const sessionEntries = groups[targetSession] || [];
     if (sessionEntries.length === 0) {
       console.log(`❌ 未找到 Session ID 为 "${targetSession}" 的记录。`);

@@ -46,14 +46,14 @@ export function registerTddDebugCommands(cli: CAC): void {
       await debugCommand({ cwd, action: phase as typeof validPhases[number] });
     });
 
-  cli.command('trace [action]', 'Trace & analyze agent command behavior — show|session|health|anomaly|clear')
+  cli.command('trace [action]', 'Trace & analyze agent command behavior — show|session|health|anomaly|clear|enable|disable')
     .option('--cwd <path>', '项目目录')
-    .option('--session <id>', '过滤 Session ID')
+    .option('--session [id]', '过滤 Session ID')
     .option('--limit <n>', '只显示最近的 n 条记录 (默认 50)')
     .option('--json', '输出 JSON 格式')
     .action(async (action: string | undefined, options: { cwd?: string; session?: string; limit?: string; json?: boolean }) => {
       const cwd = options.cwd || process.cwd();
-      const validActions = ['show', 'session', 'health', 'anomaly', 'clear'] as const;
+      const validActions = ['show', 'session', 'health', 'anomaly', 'clear', 'enable', 'disable'] as const;
       const act = action && validActions.includes(action as typeof validActions[number])
         ? (action as typeof validActions[number])
         : 'show';

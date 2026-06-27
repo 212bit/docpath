@@ -75,9 +75,9 @@ function leaseTtlMs(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_LEASE_TTL_MS;
 }
 
-export function resolveSessionContext(explicit?: string): SessionContext {
-  const optionValue = explicit?.trim();
-  const envValue = process.env.DOCPATH_SESSION?.trim();
+export function resolveSessionContext(explicit?: any): SessionContext {
+  const optionValue = typeof explicit === 'string' ? explicit.trim() : undefined;
+  const envValue = typeof process.env.DOCPATH_SESSION === 'string' ? process.env.DOCPATH_SESSION.trim() : undefined;
   const raw = optionValue || envValue || DEFAULT_SESSION_ID;
   const source = optionValue ? 'option' : envValue ? 'env' : 'default';
   return { sessionId: normalizeSessionId(raw), source };
