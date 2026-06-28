@@ -57,8 +57,8 @@ Claude-only state file.
 | --- | --- | --- |
 | `state.json` | Runtime state truth | Use `/docpath-next` or `docpath next --agent` for start/resume; use `/docpath-status` or `docpath status --agent` for diagnostics. |
 | `current.md` | Human rendered state view | Do not read by default. |
-| `breadcrumb.jsonl` (task-level) | Execution event truth | Lives in `.docpath/tasks/{taskId}/breadcrumb.jsonl`. Use CLI summaries; direct tail only for debug. |
-| `breadcrumb.md` (deprecated) | Legacy human rendered progress view | Deprecated in favor of task-level breadcrumb.jsonl. |
+| `breadcrumb.jsonl` | Execution event truth | Use CLI summaries; direct tail only for debug. |
+| `breadcrumb.md` | Human rendered progress view | Do not read by default. |
 | `spec.json` | Structured task spec truth | Prefer CLI summaries and schema-aware routes. |
 | `spec.md` | Human narrative spec | Read on demand for full requirements. |
 | `plan.json` | Structured plan truth | Prefer `/docpath-next`, `/docpath-go`, and reveal. |
@@ -68,12 +68,6 @@ Claude-only state file.
 Direct file reads are allowed only when the CLI route, debugging need, or user
 request requires them. Keep the read scoped by topic, task id, exact path, or
 tail range.
-
-**Breadcrumb Architecture**: Since 2026-06-24, breadcrumb uses task-level priority:
-- Each task's breadcrumb lives in `.docpath/tasks/{taskId}/breadcrumb.jsonl`
-- Global `.docpath/workspace/breadcrumb.jsonl` is deprecated (kept for migration compatibility)
-- Reading aggregates all active task breadcrumbs when idle
-- See `docs/architecture/breadcrumb-task-level-architecture.md` for details
 
 ## Command Boundaries
 

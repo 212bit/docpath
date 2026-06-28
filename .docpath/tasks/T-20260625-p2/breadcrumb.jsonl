@@ -15,3 +15,6 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260625-p2","step":"check","status":"blocked","context":"质量检查失败: 测试","timestamp":"2026-06-26T15:16:42.937Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260625-p2","step":"check","status":"blocked","context":"质量检查失败: 测试","timestamp":"2026-06-26T15:17:11.571Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260625-p2","step":"check","status":"blocked","context":"质量检查失败: 测试","timestamp":"2026-06-26T15:19:32.498Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260625-p2","step":"check","status":"blocked","context":"质量检查失败: 测试","timestamp":"2026-06-27T16:34:12.809Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260625-p2","step":"check","status":"blocked","context":"质量检查失败: 测试","timestamp":"2026-06-27T16:41:13.077Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260625-p2","step":"check","status":"done","context":"质量检查通过 (3 项)","timestamp":"2026-06-27T16:43:42.522Z"}
