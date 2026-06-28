@@ -73,16 +73,17 @@ async function taskAbort(options: TaskCommandOptions): Promise<void> {
   const docpathDir = await resolveDocpathDir(options.cwd);
   const taskId = current.task_id;
 
-  const archivedPath = await archiveCanonicalTask(docpathDir, taskId);
-  await clearCurrentTaskAlias(docpathDir);
   const droppedBacklogId = await dropLinkedBacklog(options.cwd, taskId);
-  await writeIdleState(options.cwd, current, `任务已废弃: ${taskId}`);
   await writeBreadcrumb(options.cwd, {
     taskId,
     step: 'task.abort',
     status: 'done',
     context: `任务已废弃并回到 idle${droppedBacklogId ? `，backlog ${droppedBacklogId} -> dropped` : ''}`,
   });
+
+  const archivedPath = await archiveCanonicalTask(docpathDir, taskId);
+  await clearCurrentTaskAlias(docpathDir);
+  await writeIdleState(options.cwd, current, `任务已废弃: ${taskId}`);
 
   console.log(`✅  当前任务已废弃: ${taskId}`);
   if (archivedPath) {
@@ -101,14 +102,15 @@ async function taskReset(options: TaskCommandOptions): Promise<void> {
   const docpathDir = await resolveDocpathDir(options.cwd);
   const taskId = current.task_id;
 
-  await clearCurrentTaskAlias(docpathDir);
-  await writeIdleState(options.cwd, current, `任务上下文已重置: ${taskId}`);
   await writeBreadcrumb(options.cwd, {
     taskId,
     step: 'task.reset',
     status: 'done',
     context: '任务上下文已清空并回到 idle',
   });
+
+  await clearCurrentTaskAlias(docpathDir);
+  await writeIdleState(options.cwd, current, `任务上下文已重置: ${taskId}`);
 
   console.log(`✅  当前任务上下文已重置: ${taskId}`);
   console.log('📌  工作流已回到 idle');

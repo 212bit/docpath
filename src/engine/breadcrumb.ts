@@ -415,6 +415,9 @@ export async function writeBreadcrumb(
   const lockPath = breadcrumbLockPath(projectRoot);
   await mkdir(dirname(lockPath), { recursive: true });
   return withLock(lockPath, async () => {
+    // 写入前，先迁移遗留的 breadcrumb.md 记录到 breadcrumb.jsonl，保证全局 JSONL 链不断
+    await ensureBreadcrumbJsonl(projectRoot);
+
     const ts = entry.timestamp || new Date().toISOString();
 
     // 去重检查：只针对 done 状态
@@ -437,8 +440,14 @@ export async function writeBreadcrumb(
 
     const nextEntry = { ...entry, timestamp: ts };
 
-    // 只写入任务级文件（真源）
+    // 写入任务级文件（真源）
     await appendTaskBreadcrumbJsonl(projectRoot, nextEntry);
+    // 写入全局文件（保持测试兼容性与备用）
+    await appendBreadcrumbJsonl(projectRoot, nextEntry);
+
+    // 回显/同步渲染到全局 breadcrumb.md 供人类/测试校验
+    const summary = await readBreadcrumb(projectRoot);
+    await renderBreadcrumbMarkdown(projectRoot, summary.entries);
   });
 }
 

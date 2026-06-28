@@ -317,7 +317,7 @@ describe('YAML escaping', () => {
     const md = readRaw(dp);
     // yamlEscape wraps colons in double quotes: "task: with: colons"
     // The value should still be present, possibly quoted
-    assert.ok(md.includes('task: with: colons'), 'taskId value should appear');
+    assert.ok(md.includes('task: with: colons') || md.includes('"task: with: colons"'), 'taskId value should appear');
     assert.ok(md.includes('step "quoted"') || md.includes('"step \\"quoted\\""'), 'step value should appear');
   });
 

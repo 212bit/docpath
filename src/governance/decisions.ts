@@ -418,6 +418,7 @@ export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {})
   const needsSizeRotation = sizeKb > maxSizeKb || records.length > maxRecords;
 
   let retainedRecords: DecisionJsonlRecord[];
+  let archivableRecords: DecisionJsonlRecord[];
 
   if (needsSizeRotation) {
     // Force rotation of oldest 50% regardless of age
@@ -427,6 +428,7 @@ export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {})
       return timeA - timeB;
     });
     const splitIndex = Math.ceil(sortedRecords.length / 2);
+    archivableRecords = sortedRecords.slice(0, splitIndex);
     retainedRecords = sortedRecords.slice(splitIndex);
   } else {
     // Normal age-based rotation
@@ -434,11 +436,11 @@ export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {})
       const createdAt = new Date(record.createdAt);
       return Number.isNaN(createdAt.getTime()) || createdAt.getTime() >= cutoff;
     });
+    archivableRecords = records.filter((record) => {
+      const createdAt = new Date(record.createdAt);
+      return !Number.isNaN(createdAt.getTime()) && createdAt.getTime() < cutoff;
+    });
   }
-  const archivableRecords = records.filter((record) => {
-    const createdAt = new Date(record.createdAt);
-    return !Number.isNaN(createdAt.getTime()) && createdAt.getTime() < cutoff;
-  });
   const archiveFiles: string[] = [];
 
   const byMonth = new Map<string, DecisionBlock[]>();

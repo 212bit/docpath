@@ -123,6 +123,7 @@ export async function handleStalePendingDoneWarning(
   if (record.warned === true) return record;
   if (!isPendingDoneStale(record.entered_at)) return record;
 
+  const nextRecord = { ...record, warned: true };
   if (!await hasStalePendingDoneWarning(cwd, record.task_id)) {
     await writeBreadcrumb(cwd, {
       taskId: current.task_id || record.task_id,
@@ -131,6 +132,6 @@ export async function handleStalePendingDoneWarning(
       context: `[WARN] Task ${record.task_id} active >24h without done`,
     });
   }
-  await markPendingDoneWarned(cwd, true);
-  return { ...record, warned: true };
+  await writePendingDone(cwd, nextRecord);
+  return nextRecord;
 }
