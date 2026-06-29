@@ -1,2 +1,3 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260628-quick-refactoring-testing-health-agent-protocol-adapte","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译","timestamp":"2026-06-29T13:15:28.821Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260628-quick-refactoring-testing-health-agent-protocol-adapte","step":"check","status":"done","context":"质量检查通过 (3 项)","timestamp":"2026-06-29T13:18:02.069Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260628-quick-refactoring-testing-health-agent-protocol-adapte","step":"task.abort","status":"done","context":"任务已废弃并回到 idle","timestamp":"2026-06-29T13:47:57.547Z"}
