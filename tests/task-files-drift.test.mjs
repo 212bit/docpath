@@ -4,8 +4,65 @@ import { execSync } from 'child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { createHash } from 'crypto';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
+
+function writeSpecJson(dir, markdown, taskId = 'T-DRIFT') {
+  const sha256 = createHash('sha256').update(markdown).digest('hex');
+  const specJson = {
+    schema_version: 1,
+    kind: 'spec',
+    source: {
+      kind: 'markdown',
+      created_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z',
+      content_sha256: sha256
+    },
+    task_id: taskId,
+    backlog_id: null,
+    title: `${taskId} - Task Title`,
+    markdown,
+    generated_at: '2026-06-01T00:00:00.000Z',
+    scope: { included: [], excluded: [] },
+    major_change_gate: { required: false, types: [], user_confirmed: null, decision_brief_markdown: '' },
+    ui_gate: { state: 'exempt' },
+    functional_requirements: [{ id: 'FR-1', text: '检测漂移', done: false }],
+    non_functional_requirements: [{ id: 'NFR-1', text: '保持兼容', done: false }],
+    acceptance_criteria: [{ id: 'AC-1', text: '能跑通', done: false }],
+    decision_brief: ''
+  };
+  writeFileSync(join(dir, 'spec.json'), JSON.stringify(specJson, null, 2));
+}
+
+function writePlanJson(dir, markdown, taskId = 'T-DRIFT') {
+  const sha256 = createHash('sha256').update(markdown).digest('hex');
+  const planJson = {
+    schema_version: 1,
+    kind: 'plan',
+    source: {
+      kind: 'markdown',
+      created_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z',
+      content_sha256: sha256
+    },
+    task_id: taskId,
+    title: 'Plan Title',
+    markdown,
+    generated_at: '2026-06-01T00:00:00.000Z',
+    steps: [
+      {
+        id: 'S1',
+        name: 'Step 1',
+        description: 'Step description',
+        acceptance: 'Criteria met',
+        dependencies: '无',
+        status: 'done'
+      }
+    ]
+  };
+  writeFileSync(join(dir, 'plan.json'), JSON.stringify(planJson, null, 2));
+}
 
 function validSpec(title = 'canonical') {
   return [
@@ -57,6 +114,9 @@ function validPlan(title = 'canonical') {
     '- **描述**: 检测漂移',
     '- **验收条件**: 输出两边路径',
     '- **依赖**: 无',
+    '',
+    '## Checklist',
+    `- [x] S1`,
     '',
   ].join('\n');
 }
@@ -113,10 +173,23 @@ function mkWorkspace({ phase = 'executing' } = {}) {
     documents: [],
     generated_at: '2026-06-01T00:00:00.000Z',
   }, null, 2));
-  writeFileSync(join(dp, 'tasks', 'T-DRIFT', 'spec.md'), validSpec('canonical'));
-  writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), validSpec('current'));
-  writeFileSync(join(dp, 'tasks', 'T-DRIFT', 'plan.md'), validPlan('canonical'));
-  writeFileSync(join(dp, 'tasks', 'current', 'plan.md'), validPlan('current'));
+  const specCanonical = validSpec('canonical');
+  const specCurrent = validSpec('current');
+  const planCanonical = validPlan('canonical');
+  const planCurrent = validPlan('current');
+
+  writeFileSync(join(dp, 'tasks', 'T-DRIFT', 'spec.md'), specCanonical);
+  writeSpecJson(join(dp, 'tasks', 'T-DRIFT'), specCanonical);
+
+  writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), specCurrent);
+  writeSpecJson(join(dp, 'tasks', 'current'), specCurrent);
+
+  writeFileSync(join(dp, 'tasks', 'T-DRIFT', 'plan.md'), planCanonical);
+  writePlanJson(join(dp, 'tasks', 'T-DRIFT'), planCanonical);
+
+  writeFileSync(join(dp, 'tasks', 'current', 'plan.md'), planCurrent);
+  writePlanJson(join(dp, 'tasks', 'current'), planCurrent);
+
   return cwd;
 }
 
@@ -151,8 +224,14 @@ function runShell(command, cwd) {
 describe('active task file drift', () => {
   it('check and next fail loud on task identity drift before plan/breadcrumb drift', () => {
     const cwd = mkWorkspace({ phase: 'drafting' });
-    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), validSpecForTask('T-DRAFT-data-uniform', 'wrong current'));
-    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-DRIFT', 'spec.md'), validSpecForTask('T-DRAFT-data-uniform', 'wrong canonical'));
+    const wrongCurrent = validSpecForTask('T-DRAFT-data-uniform', 'wrong current');
+    const wrongCanonical = validSpecForTask('T-DRAFT-data-uniform', 'wrong canonical');
+
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), wrongCurrent);
+    writeSpecJson(join(cwd, '.docpath', 'tasks', 'current'), wrongCurrent, 'T-DRAFT-data-uniform');
+
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-DRIFT', 'spec.md'), wrongCanonical);
+    writeSpecJson(join(cwd, '.docpath', 'tasks', 'T-DRIFT'), wrongCanonical, 'T-DRAFT-data-uniform');
 
     const check = run(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
     assert.equal(check.code, 1);

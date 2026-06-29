@@ -388,7 +388,13 @@ export async function tryThreeWayMerge(
 
   writeFileSync(tempCurrent, currentContent, 'utf-8');
   writeFileSync(tempCanonical, canonicalContent, 'utf-8');
-  writeFileSync(tempBase, '', 'utf-8'); // 空文件基底，非覆盖修改可完美合并
+  
+  // 提取 current 和 canonical 的共同行作为 base
+  const currentLines = currentContent.split('\n');
+  const canonicalLines = canonicalContent.split('\n');
+  const baseLines = currentLines.filter(line => canonicalLines.includes(line));
+  const baseContent = baseLines.join('\n');
+  writeFileSync(tempBase, baseContent, 'utf-8');
 
   let conflict = false;
   try {

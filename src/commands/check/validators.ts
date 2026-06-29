@@ -33,8 +33,8 @@ export async function promptTaskFileDriftFix(): Promise<'canonical' | 'current' 
   const choice = await select({
     message: '检测到 active task 文件漂移，选择修复方式',
     options: [
-      { value: 'merge', label: '尝试三方合并 (3-way merge)' },
       { value: 'canonical', label: '使用任务目录覆盖 current' },
+      { value: 'merge', label: '尝试三方合并 (3-way merge)' },
       { value: 'current', label: '使用 current 回写任务目录' },
       { value: 'skip', label: '暂不修复，仅报告失败' },
     ],

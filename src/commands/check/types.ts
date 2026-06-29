@@ -26,7 +26,7 @@ export interface CheckOptions {
   /** 强制执行，即使不在 agent 会话中 */
   force?: boolean;
   /** 检测到 active task 文件漂移时按指定来源自动同步 */
-  fixDrift?: 'canonical' | 'current';
+  fixDrift?: 'canonical' | 'current' | 'merge';
   /** 显示所有检查项（包括成功项） */
   verbose?: boolean;
   /** 检查后自动运行 review */

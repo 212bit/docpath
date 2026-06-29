@@ -795,6 +795,80 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check supports 3-way merge conflict suggestions on file drift', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-merge-drift-'));
+    const { tasks, workspace } = mkExecWorkspace(cwd);
+    const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
+    writeDoneBreadcrumb(workspace, 'T-AGENT', ['S1']);
+    // 写入任务级别的 breadcrumb.jsonl 以通过子任务完成度检查
+    const tasksDir = join(cwd, '.docpath', 'tasks', 'T-AGENT');
+    mkdirSync(tasksDir, { recursive: true });
+    writeFileSync(join(tasksDir, 'breadcrumb.jsonl'), JSON.stringify({
+      schema_version: 1,
+      kind: 'breadcrumb',
+      taskId: 'T-AGENT',
+      step: 'S1',
+      status: 'done',
+      timestamp: '2026-06-01T00:00:00.000Z',
+      context: '完成',
+    }) + '\n');
+
+    // 1. 无冲突三方合并测试
+    // 制造 canonical 和 current 在不同位置添加内容的无冲突漂移
+    const baseContent = readFileSync(join(tasks, 'spec.md'), 'utf-8');
+    // canonical 在第一段后添加内容
+    const canonicalContent = baseContent.replace(
+      '## 1. 背景与动机',
+      '## 1. 背景与动机\n\n> Canonical added this note'
+    );
+    // current 在最后一段后添加内容
+    const currentContent = baseContent.replace(
+      '- [ ] AC-1: agent done 清理 pending-done',
+      '- [ ] AC-1: agent done 清理 pending-done\n- [ ] AC-2: Current added this'
+    );
+
+    writeFileSync(join(canonical, 'spec.md'), canonicalContent, 'utf-8');
+    writeActiveSpecJson(cwd, canonical, structuredSpecJson(canonicalContent), 'T-AGENT');
+
+    writeFileSync(join(tasks, 'spec.md'), currentContent, 'utf-8');
+    writeActiveSpecJson(cwd, tasks, structuredSpecJson(currentContent), 'T-AGENT');
+
+    // 运行 check 并指定 --fix-drift merge 
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift merge`, cwd);
+    assert.equal(result.code, 0);
+
+    const mergedContent = readFileSync(join(tasks, 'spec.md'), 'utf-8');
+    assert.match(mergedContent, /Canonical added this note/);
+    assert.match(mergedContent, /Current added this/);
+
+    // 2. 有冲突三方合并测试
+    // 制造在同一位置进行不同修改的冲突漂移
+    const conflictCanonical = mergedContent.replace(
+      'Canonical added this note',
+      'Canonical Conflict Note'
+    );
+    const conflictCurrent = mergedContent.replace(
+      'Canonical added this note',
+      'Current Conflict Note'
+    );
+
+    writeFileSync(join(canonical, 'spec.md'), conflictCanonical, 'utf-8');
+    writeActiveSpecJson(cwd, canonical, structuredSpecJson(conflictCanonical), 'T-AGENT');
+
+    writeFileSync(join(tasks, 'spec.md'), conflictCurrent, 'utf-8');
+    writeActiveSpecJson(cwd, tasks, structuredSpecJson(conflictCurrent), 'T-AGENT');
+
+    const conflictResult = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift merge`, cwd);
+    assert.equal(conflictResult.code, 1);
+    assert.match(conflictResult.out, /三方合并已执行但存在冲突/);
+    assert.match(conflictResult.out, /冲突文件: spec.md/);
+
+    const conflictMergedContent = readFileSync(join(tasks, 'spec.md'), 'utf-8');
+    assert.match(conflictMergedContent, /<<<<<<<|=======|>>>>>>>/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('check reads major change confirmation from spec.json before spec.md', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-major-json-'));
     const { tasks } = mkExecWorkspace(cwd);
