@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-29T14:37:46.079Z
+> 扫描时间: 2026-06-29T14:40:36.075Z
 
 ## 条目列表
 
@@ -11,7 +11,7 @@
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-231 | P1: 易用性优化 - 降低学习曲线和改进用户体验 | proposed | P2 | 2 |  |
 | R-234 | Automatically upgrade workflow profile to standard for high level tasks or spec requirements | proposed | P2 | 2 |  |
-| R-236 | Support smart merge conflict suggestions in task file drift check | proposed | P2 | 2 |  |
+| R-236 | Support smart merge conflict suggestions in task file drift check | active | P2 | 2 | T-20260629-support-smart-merge-conflict-suggestions |
 | R-237 | Elevate /learn priority in status when pending lesson candidates and regression warnings exist | proposed | P2 | 2 |  |
 
 ## 用途说明

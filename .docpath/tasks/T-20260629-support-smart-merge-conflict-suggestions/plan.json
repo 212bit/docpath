@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-29T14:42:35.285Z",
+    "updated_at": "2026-06-29T14:42:35.285Z",
+    "content_sha256": "74ec23985232c468339f41fa26282da0582143e076f9566c83af700a5de50c82"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-06-29T14:42:35.285Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "设计并在 task-files.ts 中引入三方合并检测与合并函数",
+      "description": "在 `src/utils/task-files.ts` 中实现一个 `tryThreeWayMerge` 辅助函数。它使用当前工作区文件的 git 历史或临时基底版本，通过 `git merge-file`（或回退至内存三方合并文本算法）将 `canonical` 漂移内容与 `current` 合并。",
+      "acceptance": "模块导出的 `tryThreeWayMerge` 能够成功执行三方合并，或者在冲突时将冲突标记写入目标文件并抛出 Conflict 异常。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "在 drift 同步逻辑中接入三方合并",
+      "description": "在 `src/commands/check/validators.ts` 和 `src/utils/task-files.ts` 中，当检查到 `content-mismatch` 且执行 `syncActiveTaskFiles` 时，如果选择三方合并，自动调用 `tryThreeWayMerge` 合并并回写规约和计划文件。",
+      "acceptance": "漂移同步选择中，增加并支持自动三方合并选项。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "编写对应的单元测试",
+      "description": "在 `tests/check-review.test.mjs` 或 `tests/helpers.mjs` 相关的测试文件中补充有关 `tryThreeWayMerge` 的单元测试：验证无冲突合并自动写入、有冲突合并写入冲突标记并抛出警报。",
+      "acceptance": "单元测试覆盖此漂移场景并 100% 通过。",
+      "dependencies": "S2",
+      "status": "pending"
+    }
+  ]
+}
