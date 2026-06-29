@@ -135,6 +135,7 @@ Rules:
 7. Run `docpath check` before marking work complete.
 8. Let `docpath agent step` update breadcrumb and plan checklist state.
 9. Do not automatically promote (`docpath backlog promote`) a backlog item unless the user has explicitly requested it or run the command themselves. Always default to keeping new items in `proposed` or `accepted` states to allow user review, and ask/wait for promotion directives.
+10. In multi-agent concurrent environments, always develop within isolated Git worktrees (e.g. `wt-<name>`). Commit, push, and create PRs directly from the worktree folder. Regularly merge `main` into your branch to stay synchronized, and run `docpath worktree prune` in the main repo root after merging.
 
 
 ## Useful Commands

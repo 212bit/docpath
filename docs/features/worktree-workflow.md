@@ -151,6 +151,37 @@ export DOCPATH_SESSION=claude-feature-auth-frontend
 docpath worktree doctor
 ```
 
+### 场景 3：多 Agent 并发开发下的分支合并与演进 (Closeout & Sync Pipeline)
+
+当多个 Agent 同时在各自的 worktrees (或者 main 分支) 进行并发开发时，合并与同步流程应当如下：
+
+1. **工作区内提交与推送 (Commit & Push)**
+   在各自的 worktree 目录（如 `.worktrees/wt-feature-a`）中完成开发并成功运行 `docpath done` 后，在该工作区中创建 commit 并推送到 remote：
+   ```bash
+   cd .worktrees/wt-feature-a
+   git add <commit_relevant_files>
+   git commit -m "feat: implement feature A"
+   git push origin wt-feature-a
+   ```
+
+2. **拉取 PR 并合并至 main**
+   在 Git 托管平台上发起 PR 并将分支合并回主分支（如 `main`）。
+
+3. **同步其他活跃工作区 (Merge main)**
+   对于其他仍在进行中的 worktrees（如仍在开发中的 `wt-feature-b`），可以通过 merge 最新的主分支拉取已完成的特性与最新的需求池/任务状态更新：
+   ```bash
+   cd ../wt-feature-b
+   git checkout wt-feature-b
+   git fetch origin
+   git merge origin/main  # 将 main 合并进来以保持演进一致
+   ```
+
+4. **一键批量清理 (Prune)**
+   回到主仓库根目录下，运行以下命令一键批量清理所有已合并、干净的 worktree 开发目录：
+   ```bash
+   docpath worktree prune
+   ```
+
 ---
 
 ## 命令参考

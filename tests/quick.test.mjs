@@ -38,6 +38,16 @@ function run(args, cwd) {
   });
 }
 
+function runWithInput(args, cwd, input) {
+  return execSync(`node ${BIN} ${args}`, {
+    cwd,
+    encoding: 'utf-8',
+    timeout: 20000,
+    input,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+}
+
 function runResult(args, cwd) {
   try {
     return { code: 0, out: run(args, cwd) };
@@ -199,4 +209,58 @@ describe('docpath quick', () => {
     assert.match(result.out, /Policy: max_changed_files=/);
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('automatically upgrades quick profile to standard during docpath check if quick scope is exceeded', () => {
+    const cwd = mkWorkspace();
+    run(`quick "Test scope upgrade" --cwd ${cwd}`, cwd);
+    initGitRepo(cwd);
+    
+    // Create changes that exceed quick scope (e.g. modify 4 files)
+    for (const file of ['a.txt', 'b.txt', 'c.txt', 'd.txt']) {
+      writeFileSync(join(cwd, file), 'changed\n');
+    }
+
+    // Run check, which should trigger the upgrade
+    const result = runResult(`check --cwd ${cwd}`, cwd);
+
+    // It should log the upgrade warning and block because standard spec/plan is missing
+    assert.match(result.out, /检测到高等级属性、需求规格或超限变更，已自动将工作流 Profile 从 "quick" 升级为 "standard"/);
+    assert.match(result.out, /代码变更超出 quick 限制/);
+    assert.notEqual(result.code, 0);
+
+    // Verify state.json was mutated
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.workflow_profile, 'standard');
+    assert.equal(state.level, 2);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('automatically upgrades quick profile to standard during docpath check if spec requires major change gate', () => {
+    const cwd = mkWorkspace();
+    run(`quick "Test spec upgrade" --cwd ${cwd}`, cwd);
+    initGitRepo(cwd);
+
+    // Modify spec.md to require major change gate
+    const stateBefore = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    const specPath = join(cwd, '.docpath', 'tasks', stateBefore.task_id, 'spec.md');
+    let specContent = readFileSync(specPath, 'utf-8');
+    specContent = specContent.replace('- [ ] 是，需要用户确认', '- [x] 是，需要用户确认');
+    specContent = specContent.replace('- [x] 否', '- [ ] 否');
+    runWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, specContent);
+
+    // Run check, which should trigger the upgrade
+    const result = runResult(`check --cwd ${cwd}`, cwd);
+
+    assert.match(result.out, /检测到高等级属性、需求规格或超限变更，已自动将工作流 Profile 从 "quick" 升级为 "standard"/);
+    assert.match(result.out, /任务需求规格（spec.md）要求重大变更确认门禁/);
+    assert.notEqual(result.code, 0);
+
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.workflow_profile, 'standard');
+    assert.equal(state.level, 2);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
+

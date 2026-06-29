@@ -5,7 +5,7 @@
 import { stringify } from 'yaml';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { isAbsolute, join } from 'node:path';
+import { isAbsolute, join, relative } from 'node:path';
 import {
   type BacklogItem,
   type BacklogEvidence,
@@ -27,8 +27,9 @@ import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { archivedTaskDir, canonicalTaskRelativePath, canonicalTaskDir, clearCurrentTaskAlias, writeActiveTaskFile } from '../utils/task-files.js';
 import { emitNextHint } from '../utils/next-hint.js';
-import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
+import { assertCleanWorktreeForNewTask, detectDirtyWorktree } from '../utils/git-dirty-guard.js';
 import { hasExplicitUiDesignIntent } from '../utils/ui-gate.js';
+import { resolveWorktreePaths, worktreeCommand } from './worktree.js';
 
 interface BacklogCommandOptions {
   cwd: string;
@@ -49,6 +50,7 @@ interface BacklogCommandOptions {
   status?: string;
   agent?: boolean;
   draft?: boolean;
+  nonInteractive?: boolean;
 }
 
 interface BacklogGroomIssue {
@@ -665,17 +667,45 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   }
 
   const current = await readCurrentState(options.cwd);
-  if (current && current.phase !== 'idle' && current.phase !== 'completed') {
-    throw new Error(`docpath backlog promote: 当前已有活跃任务（phase=${current.phase}），请先 done，或用 docpath task abort/reset 显式清理当前任务`);
-  }
+  const activeTaskExists = current && current.phase !== 'idle' && current.phase !== 'completed';
 
   const item = await readBacklogItem(options.cwd, options.id.trim());
   if (!item) {
     throw new Error(`docpath backlog promote: backlog 条目不存在: ${options.id}`);
   }
-  assertCleanWorktreeForNewTask(options.cwd, 'docpath backlog promote', {
-    allowDirtyPath: (path) => isPromoteBacklogEvidencePath(path, item.id),
-  });
+
+  const dirtyReport = detectDirtyWorktree(options.cwd);
+  const isDirty = dirtyReport.isGitRepo && dirtyReport.files.some(f => !isPromoteBacklogEvidencePath(f, item.id));
+
+  let inWorktree = false;
+  let worktreePath = options.cwd;
+
+  const isInteractive = process.stdout.isTTY && !options.nonInteractive;
+
+  if ((activeTaskExists || isDirty) && isInteractive) {
+    const safeWtName = `wt-${item.id.toLowerCase()}`;
+    const paths = await resolveWorktreePaths(options.cwd, safeWtName);
+    worktreePath = paths.worktreePath;
+    inWorktree = true;
+
+    console.warn(`\n⚠️  检测到当前有活跃任务或 Git 处于非干净状态，将自动启动隔离开发区 (Git Worktree)...`);
+    
+    await worktreeCommand({
+      action: 'create',
+      name: safeWtName,
+      cwd: options.cwd,
+    });
+
+    options.cwd = worktreePath;
+  } else {
+    if (activeTaskExists) {
+      throw new Error(`docpath backlog promote: 当前已有活跃任务（phase=${current.phase}），请先 done，或用 docpath task abort/reset 显式清理当前任务`);
+    }
+    assertCleanWorktreeForNewTask(options.cwd, 'docpath backlog promote', {
+      allowDirtyPath: (path) => isPromoteBacklogEvidencePath(path, item.id),
+    });
+  }
+
   if (item.links.task) {
     throw new Error(`docpath backlog promote: backlog 条目 ${item.id} 已关联任务 ${item.links.task}`);
   }
@@ -705,7 +735,16 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   console.log(`✅  已 promote backlog 条目: ${item.id}`);
   console.log(`   task_id: ${taskId}`);
   console.log(`   spec: .docpath/${canonicalTaskRelativePath(taskId, 'spec.md')}`);
-  await emitNextHint(options.cwd);
+
+  if (inWorktree) {
+    const parentRoot = dirtyReport.repoRoot || options.cwd;
+    const relWorktreePath = relative(parentRoot, worktreePath);
+    console.log(`\n🌳  自动隔离工作区已就绪！请立刻切换目录以执行后续命令：`);
+    console.log(`    cd ${relWorktreePath}`);
+    console.log(`    docpath next --agent\n`);
+  } else {
+    await emitNextHint(options.cwd);
+  }
 }
 
 async function backlogAdvanceStatus(
