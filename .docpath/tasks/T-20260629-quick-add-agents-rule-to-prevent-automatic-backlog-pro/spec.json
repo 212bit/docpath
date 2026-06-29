@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-29T13:48:07.735Z",
+    "updated_at": "2026-06-29T13:48:07.735Z",
+    "content_sha256": "0bc893895d36ef18cc0ce58c7cd718c84186182ce27e02cc6f5aa92136dc824b"
+  },
+  "task_id": "T-20260629-quick-add-agents-rule-to-prevent-automatic-backlog-pro",
+  "backlog_id": null,
+  "title": "T-20260629-quick-add-agents-rule-to-prevent-automatic-backlog-pro - Add AGENTS rule to prevent automatic backlog promote",
+  "generated_at": "2026-06-29T13:48:07.735Z",
+  "scope": {
+    "included": [
+      "Add AGENTS rule to prevent automatic backlog promote"
+    ],
+    "excluded": [
+      "Full spec/plan ceremony for standard or strict tasks.",
+      "Architecture, protocol, migration, permission, or broad module changes."
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "`docpath quick` invocation.",
+    "decision_brief_markdown": "- 当前问题: Tiny task governance should be proportional.\n- 推荐方案: Use quick profile, require check, skip full review by profile.\n- 用户确认: `docpath quick` invocation."
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Add AGENTS rule to prevent automatic backlog promote",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "Keep the change scoped and auditable.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "The scoped change is completed.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`docpath check` passes before closeout.",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "Review skip is recorded as quick-profile policy evidence.",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: Tiny task governance should be proportional.\n- 推荐方案: Use quick profile, require check, skip full review by profile.\n- 用户确认: `docpath quick` invocation."
+}

@@ -134,6 +134,8 @@ Rules:
    workspace runtime views.
 7. Run `docpath check` before marking work complete.
 8. Let `docpath agent step` update breadcrumb and plan checklist state.
+9. Do not automatically promote (`docpath backlog promote`) a backlog item unless the user has explicitly requested it or run the command themselves. Always default to keeping new items in `proposed` or `accepted` states to allow user review, and ask/wait for promotion directives.
+
 
 ## Useful Commands
 
