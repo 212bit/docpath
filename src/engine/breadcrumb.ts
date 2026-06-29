@@ -205,10 +205,10 @@ function breadcrumbJsonlPath(projectRoot: string): string {
 }
 
 function taskBreadcrumbJsonlPath(projectRoot: string, taskId: string): string | null {
-  if (!/^[A-Za-z0-9._-]+$/.test(taskId)) return null;
-  const archivedTaskDir = join(projectRoot, '.docpath', 'tasks', 'done', taskId);
+  const safeTaskId = taskId.replace(/[^A-Za-z0-9._-]/g, '_');
+  const archivedTaskDir = join(projectRoot, '.docpath', 'tasks', 'done', safeTaskId);
   if (existsSync(archivedTaskDir)) return join(archivedTaskDir, 'breadcrumb.jsonl');
-  return join(projectRoot, '.docpath', 'tasks', taskId, 'breadcrumb.jsonl');
+  return join(projectRoot, '.docpath', 'tasks', safeTaskId, 'breadcrumb.jsonl');
 }
 
 function breadcrumbLockPath(projectRoot: string): string {

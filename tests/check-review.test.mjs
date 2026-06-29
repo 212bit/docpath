@@ -79,6 +79,17 @@ const runResult = (args, cwd) => {
 };
 
 function writeDoneBreadcrumb(workspace, taskId, steps) {
+  const jsonlLines = steps.map((step, index) => JSON.stringify({
+    schema_version: 1,
+    kind: 'breadcrumb',
+    taskId,
+    step,
+    status: 'done',
+    context: '已完成',
+    timestamp: `2026-06-01T00:0${index}:00.000Z`,
+  }));
+  writeFileSync(join(workspace, 'breadcrumb.jsonl'), jsonlLines.join('\n') + '\n');
+
   writeFileSync(join(workspace, 'breadcrumb.md'), [
     '# breadcrumb.md',
     '',
@@ -158,10 +169,19 @@ function structuredSpecJson(markdown, overrides = {}) {
   };
 }
 
-function writeActiveSpecJson(cwd, tasks, specJson, taskId = 'T-AGENT') {
-  const canonical = join(cwd, '.docpath', 'tasks', taskId);
+function writeActiveSpecJson(cwd, tasks, specJson, taskId = undefined) {
+  const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+  let resolvedTaskId = taskId;
+  if (!resolvedTaskId && existsSync(statePath)) {
+    try {
+      const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+      resolvedTaskId = state.task_id;
+    } catch {}
+  }
+  resolvedTaskId = resolvedTaskId || 'T-AGENT';
+  const canonical = join(cwd, '.docpath', 'tasks', resolvedTaskId);
   mkdirSync(canonical, { recursive: true });
-  const content = `${JSON.stringify(specJson, null, 2)}\n`;
+  const content = `${JSON.stringify({ ...specJson, task_id: resolvedTaskId }, null, 2)}\n`;
   writeFileSync(join(tasks, 'spec.json'), content);
   writeFileSync(join(canonical, 'spec.json'), content);
 }
@@ -627,7 +647,8 @@ describe('check and review commands', () => {
 
   it('check blocks major dependency additions without a confirmed Decision Brief', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-major-decision-'));
-    const { tasks } = mkExecWorkspace(cwd);
+    const { tasks, workspace } = mkExecWorkspace(cwd);
+    writeDoneBreadcrumb(workspace, 'T-AGENT', ['S1']);
     execSync('git init', { cwd, encoding: 'utf-8' });
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
@@ -699,6 +720,11 @@ describe('check and review commands', () => {
 
     const confirmed = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
     const confirmedLastCheck = readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
+
+    if (confirmed.code !== 0) {
+      console.log('Confirmed Test Result Out:', confirmed.out);
+      console.log('Confirmed Last Check:', confirmedLastCheck);
+    }
 
     assert.equal(confirmed.code, 0);
     assert.match(confirmedLastCheck, /重大决策确认检查/);
@@ -799,7 +825,8 @@ describe('check and review commands', () => {
 
   it('check blocks strategic workflow or UI changes without confirmed major change gate', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-strategic-change-'));
-    const { tasks } = mkExecWorkspace(cwd);
+    const { tasks, workspace } = mkExecWorkspace(cwd);
+    writeDoneBreadcrumb(workspace, 'T-AGENT', ['S1']);
     mkdirSync(join(cwd, 'templates'), { recursive: true });
     execSync('git init', { cwd, encoding: 'utf-8' });
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });

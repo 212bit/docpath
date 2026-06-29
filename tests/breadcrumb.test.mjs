@@ -24,6 +24,9 @@ function writeActiveTaskState(root, taskId) {
     task_id: taskId,
     task_title: taskId,
     current_step: 'S1',
+    state: 'executing',
+    started_at: '2026-05-29T00:00:00.000Z',
+    updated_at: '2026-05-29T00:00:00.000Z',
   }, null, 2));
 }
 
@@ -307,13 +310,21 @@ describe('YAML escaping', () => {
 
   before(async () => {
     dp = mkdtempSync(join(tmpdir(), 'bc-yaml-'));
+    writeActiveTaskState(dp, 'task: with: colons');
     await writeBreadcrumb(dp, { taskId: 'task: with: colons', step: 'step "quoted"', status: 'done', context: 'ctx' });
+    writeActiveTaskState(dp, 'normal-task');
     await writeBreadcrumb(dp, { taskId: 'normal-task', step: 'S1', status: 'done', context: 'with "quotes" inside' });
   });
 
   after(() => { rmSync(dp, { recursive: true, force: true }); });
 
   it('escapes values with special chars in YAML fields', async () => {
+    // Delete state.json so readBreadcrumb aggregates all tasks in breadcrumb.md
+    const statePath = join(dp, '.docpath', 'workspace', 'state.json');
+    if (existsSync(statePath)) rmSync(statePath);
+    // Write one more dummy breadcrumb to force re-aggregation and rendering of all tasks
+    await writeBreadcrumb(dp, { taskId: 'another-task', step: 'S2', status: 'done', context: 'done' });
+
     const md = readRaw(dp);
     // yamlEscape wraps colons in double quotes: "task: with: colons"
     // The value should still be present, possibly quoted
