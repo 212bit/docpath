@@ -27,12 +27,13 @@ import {
   contextFailureResult,
 } from './formatters.js';
 
-export async function promptTaskFileDriftFix(): Promise<'canonical' | 'current' | undefined> {
+export async function promptTaskFileDriftFix(): Promise<'canonical' | 'current' | 'merge' | undefined> {
   if (!process.stdin.isTTY || !process.stdout.isTTY) return undefined;
 
   const choice = await select({
     message: '检测到 active task 文件漂移，选择修复方式',
     options: [
+      { value: 'merge', label: '尝试三方合并 (3-way merge)' },
       { value: 'canonical', label: '使用任务目录覆盖 current' },
       { value: 'current', label: '使用 current 回写任务目录' },
       { value: 'skip', label: '暂不修复，仅报告失败' },
@@ -40,7 +41,7 @@ export async function promptTaskFileDriftFix(): Promise<'canonical' | 'current' 
   });
 
   if (isCancel(choice) || choice === 'skip') return undefined;
-  return choice as 'canonical' | 'current' | undefined;
+  return choice as 'canonical' | 'current' | 'merge' | undefined;
 }
 
 export async function checkMajorDecisionGate(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
@@ -170,14 +171,54 @@ export async function checkTaskFileDrift(cwd: string, docpathDir: string, option
     ? options.fixDrift ?? await promptTaskFileDriftFix()
     : undefined;
   if (drifts.length > 0 && fixSource) {
-    const synced = await syncActiveTaskFiles(docpathDir, workflowState.task_id, fixSource);
-    await syncCurrentDocument(cwd);
-    const mode = options.fixDrift ? '自动同步' : '交互式同步';
-    console.log(`🔧  已${mode} active task 文件 (${fixSource}): ${synced.map((item) => item.file).join(', ')}`);
-    drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
-    driftOutput = drifts.length === 0
-      ? formatSyncedTaskFiles(synced)
-      : `${formatSyncedTaskFiles(synced)}\n${formatTaskFileDrift(drifts)}`;
+    if (fixSource === 'merge') {
+      const { tryThreeWayMerge, writeActiveTaskFile } = await import('../../utils/task-files.js');
+      const { syncCurrentDocument } = await import('../../utils/workspace.js');
+      let hasConflict = false;
+      const mergedFiles: string[] = [];
+      const conflictFiles: string[] = [];
+
+      for (const drift of drifts) {
+        if (drift.reason === 'content-mismatch') {
+          const res = await tryThreeWayMerge(drift.currentPath, drift.canonicalPath, drift.file);
+          // 写入合并后的内容（不论是否有冲突，均写入，以便用户或 Agent 处理冲突标记）
+          await writeActiveTaskFile(docpathDir, workflowState.task_id, drift.file, res.mergedContent);
+          if (res.conflict) {
+            hasConflict = true;
+            conflictFiles.push(drift.file);
+          } else {
+            mergedFiles.push(drift.file);
+          }
+        }
+      }
+
+      await syncCurrentDocument(cwd);
+      drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
+
+      if (hasConflict) {
+        return [{
+          name: '任务文件 current/canonical 漂移检查',
+          passed: false,
+          output: `三方合并已执行但存在冲突，冲突文件: ${conflictFiles.join(', ')}\n请手工解决冲突标记 (<<<<<<<) 并重新运行 check。`,
+          category: 'plan',
+        }];
+      } else {
+        const mode = options.fixDrift ? '自动' : '交互式';
+        console.log(`🔧  已通过${mode}三方合并同步 active task 文件: ${mergedFiles.join(', ')}`);
+        driftOutput = drifts.length === 0
+          ? `已成功通过三方合并同步: ${mergedFiles.join(', ')}`
+          : `三方合并已完成部分，仍有漂移: ${formatTaskFileDrift(drifts)}`;
+      }
+    } else {
+      const synced = await syncActiveTaskFiles(docpathDir, workflowState.task_id, fixSource);
+      await syncCurrentDocument(cwd);
+      const mode = options.fixDrift ? '自动同步' : '交互式同步';
+      console.log(`🔧  已${mode} active task 文件 (${fixSource}): ${synced.map((item) => item.file).join(', ')}`);
+      drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
+      driftOutput = drifts.length === 0
+        ? formatSyncedTaskFiles(synced)
+        : `${formatSyncedTaskFiles(synced)}\n${formatTaskFileDrift(drifts)}`;
+    }
   }
 
   return [{

@@ -367,3 +367,52 @@ export async function syncActiveTaskFiles(
 function isStructuredTaskMarkdownFile(file: string): file is StructuredTaskMarkdownFile {
   return file === 'spec.md' || file === 'plan.md';
 }
+
+export async function tryThreeWayMerge(
+  currentPath: string,
+  canonicalPath: string,
+  file: TaskFileAlias,
+): Promise<{ success: boolean; mergedContent: string; conflict: boolean }> {
+  const { execFileSync } = await import('node:child_process');
+  const { writeFileSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+
+  const currentContent = await readFile(currentPath, 'utf-8');
+  const canonicalContent = await readFile(canonicalPath, 'utf-8');
+
+  // 创建临时文件用作 git merge-file 运算
+  const tempCurrent = join(tmpdir(), `dp-merge-current-${Date.now()}-${file}`);
+  const tempCanonical = join(tmpdir(), `dp-merge-canonical-${Date.now()}-${file}`);
+  const tempBase = join(tmpdir(), `dp-merge-base-${Date.now()}-${file}`);
+
+  writeFileSync(tempCurrent, currentContent, 'utf-8');
+  writeFileSync(tempCanonical, canonicalContent, 'utf-8');
+  writeFileSync(tempBase, '', 'utf-8'); // 空文件基底，非覆盖修改可完美合并
+
+  let conflict = false;
+  try {
+    // git merge-file <current> <base> <canonical>
+    // 如果返回 0，无冲突顺利合并；如果返回非 0 且带正值，表示有冲突但已写入冲突标记
+    execFileSync('git', ['merge-file', '--quiet', tempCurrent, tempBase, tempCanonical]);
+  } catch (err: any) {
+    conflict = true;
+  }
+
+  const merged = await readFile(tempCurrent, 'utf-8');
+
+  // 清理临时文件
+  try {
+    rmSync(tempCurrent, { force: true });
+    rmSync(tempCanonical, { force: true });
+    rmSync(tempBase, { force: true });
+  } catch {
+    // 忽略清理失败
+  }
+
+  return {
+    success: true,
+    mergedContent: merged,
+    conflict,
+  };
+}

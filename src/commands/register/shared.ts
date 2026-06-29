@@ -6,10 +6,10 @@ export function getOptionValue(argv: string[], flag: string): string | undefined
 export function normalizeTaskFileSyncSource(
   value: string | undefined,
   optionName: string,
-): 'canonical' | 'current' | undefined {
+): 'canonical' | 'current' | 'merge' | undefined {
   if (!value) return undefined;
-  if (value === 'canonical' || value === 'current') return value;
-  throw new Error(`docpath ${optionName}: 参数非法: ${value}（允许: canonical|current）`);
+  if (value === 'canonical' || value === 'current' || value === 'merge') return value;
+  throw new Error(`docpath ${optionName}: 参数非法: ${value}（允许: canonical|current|merge）`);
 }
 
 export function normalizeEnumOption<const T extends readonly string[]>(

@@ -54,7 +54,7 @@ type DiscoverOptions = {
 type NextOptions = {
   cwd: string;
   agent?: boolean;
-  autoFix?: 'canonical' | 'current';
+  autoFix?: 'canonical' | 'current' | 'merge';
   verbose?: boolean;
 };
 
@@ -650,9 +650,23 @@ export async function nextCommand(options: NextOptions): Promise<void> {
       const docpathDir = await resolveDocpathDir(options.cwd);
       const drifts = await detectActiveTaskFileDrift(docpathDir, state.task_id);
       if (drifts.length > 0) {
-        const synced = await syncActiveTaskFiles(docpathDir, state.task_id, options.autoFix);
-        await syncCurrentDocument(options.cwd);
-        console.error(`已自动修复 active task 文件漂移 (${options.autoFix}): ${synced.map((item) => item.file).join(', ')}`);
+        if (options.autoFix === 'merge') {
+          const { tryThreeWayMerge, writeActiveTaskFile } = await import('../utils/task-files.js');
+          const mergedFiles: string[] = [];
+          for (const drift of drifts) {
+            if (drift.reason === 'content-mismatch') {
+              const res = await tryThreeWayMerge(drift.currentPath, drift.canonicalPath, drift.file);
+              await writeActiveTaskFile(docpathDir, state.task_id, drift.file, res.mergedContent);
+              mergedFiles.push(drift.file);
+            }
+          }
+          await syncCurrentDocument(options.cwd);
+          console.error(`已自动通过三方合并修复 active task 文件漂移: ${mergedFiles.join(', ')}`);
+        } else {
+          const synced = await syncActiveTaskFiles(docpathDir, state.task_id, options.autoFix);
+          await syncCurrentDocument(options.cwd);
+          console.error(`已自动修复 active task 文件漂移 (${options.autoFix}): ${synced.map((item) => item.file).join(', ')}`);
+        }
       }
     }
   }
