@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-29T14:11:25.725Z",
+    "updated_at": "2026-06-29T14:11:25.725Z",
+    "content_sha256": "a7b21eff628317dfce3f178458f0bdc2a8ac36c11582f2c28f34b7f42d903a6a"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-06-29T14:11:25.725Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Automatically upgrade workflow profile to standard for high level tasks or spec requirements",
+      "description": "根据 spec 明确 FR-1: Automatically upgrade workflow profile to standard for high level tasks or spec requirements 的实现边界和验收口径。",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Automatically upgrade workflow profile to standard for high level tasks or spec requirements",
+      "description": "在现有架构内完成 FR-1: Automatically upgrade workflow profile to standard for high level tasks or spec requirements 的代码与文档更新。",
+      "acceptance": "FR-1 Automatically upgrade workflow profile to standard for high level tasks or spec requirements 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-232 与任务 T-20260629-automatically-upgrade-workflow-profile-t 建立双向关联",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-232 与任务 T-20260629-automatically-upgrade-workflow-profile-t 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

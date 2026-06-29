@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-29T14:11:08.325Z",
+    "updated_at": "2026-06-29T14:11:08.325Z",
+    "content_sha256": "53d97d0b94472b4812e2d36a614cd4cfaee6649866d1390e9d57cea826ce469a"
+  },
+  "task_id": "T-20260629-automatically-upgrade-workflow-profile-t",
+  "backlog_id": "R-232",
+  "title": "T-20260629-automatically-upgrade-workflow-profile-t - Automatically upgrade workflow profile to standard for high level tasks or spec requirements",
+  "generated_at": "2026-06-29T14:11:08.325Z",
+  "scope": {
+    "included": [
+      "Automatically upgrade workflow profile to standard for high level tasks or spec requirements"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为",
+      "范围扩大"
+    ],
+    "user_confirmed": "已在 grill-me 面试中取得用户批准，通过实现方案设计。",
+    "decision_brief_markdown": "- 当前问题: ## 背景\n- 目标: Automatically upgrade workflow profile to standard for high level tasks or spec requirements\n- 背景: 来自 backlog R-232\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 已在 grill-me 面试中取得用户批准，通过实现方案设计。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Automatically upgrade workflow profile to standard for high level tasks or spec requirements",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-232 与任务 T-20260629-automatically-upgrade-workflow-profile-t 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: ## 背景\n- 目标: Automatically upgrade workflow profile to standard for high level tasks or spec requirements\n- 背景: 来自 backlog R-232\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 已在 grill-me 面试中取得用户批准，通过实现方案设计。"
+}
