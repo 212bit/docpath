@@ -43,15 +43,63 @@ export async function promptTaskFileDriftFix(): Promise<'canonical' | 'current' 
   return choice as 'canonical' | 'current' | undefined;
 }
 
-export async function checkMajorDecisionGate(cwd: string, docpathDir: string): Promise<CheckResult[]> {
+export async function checkMajorDecisionGate(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
   const state = await readCurrentState(cwd);
   if ((state?.level || 0) < 2) return [];
   const gate = await resolveMajorChangeGateStatus(cwd, docpathDir, state?.task_id);
   if (gate.signals.length === 0) return [];
+
+  let passed = gate.confirmed;
+  let output = gate.output;
+
+  const isTty = process.stdin.isTTY && process.stdout.isTTY;
+  if (!passed && isTty && !options.nonInteractive) {
+    const choice = await select({
+      message: '检测到重大变更，是否立即批准并继续？',
+      options: [
+        { value: 'approve_cli', label: '是，通过 CLI 确认 (Approved by user in CLI)' },
+        { value: 'approve_review', label: '是，确认已完成设计评审 (Confirmed after design review)' },
+        { value: 'custom', label: '手打输入其他审批原因...' },
+        { value: 'skip', label: '否，不批准（中断检查）' },
+      ],
+    });
+
+    if (choice && choice !== 'skip' && !isCancel(choice)) {
+      let reason = 'Approved by user in CLI';
+      if (choice === 'approve_review') {
+        reason = 'Confirmed after design review';
+      } else if (choice === 'custom') {
+        const { text } = await import('@clack/prompts');
+        const typed = await text({
+          message: '请输入审批原因:',
+          placeholder: '例如: Confirmed with team',
+        });
+        if (typed && typeof typed === 'string' && typed.trim() && !isCancel(typed)) {
+          reason = typed.trim();
+        } else {
+          reason = '';
+        }
+      }
+
+      if (reason) {
+        // S3 阶段回写逻辑预留: 我们将在 S3 步骤中实现具体的回写函数 writeMajorChangeConfirmation
+        const { writeMajorChangeConfirmation } = await import('./evidence.js');
+        try {
+          await writeMajorChangeConfirmation(docpathDir, state?.task_id, reason);
+          passed = true;
+          output = `已通过交互式 CLI 批准重大变更: ${reason}`;
+          console.log(`\n✅  重大变更确认成功！已自动写入规约档案: "${reason}"\n`);
+        } catch (e) {
+          output = `自动回写规约失败: ${e instanceof Error ? e.message : String(e)}`;
+        }
+      }
+    }
+  }
+
   return [{
     name: '重大决策确认检查',
-    passed: gate.confirmed,
-    output: gate.output,
+    passed,
+    output,
     category: 'plan',
   }];
 }
@@ -140,7 +188,7 @@ export async function checkTaskFileDrift(cwd: string, docpathDir: string, option
   }];
 }
 
-export async function validateTaskDocuments(cwd: string, docpathDir: string): Promise<{ results: CheckResult[]; progress: TaskPlanProgress }> {
+export async function validateTaskDocuments(cwd: string, docpathDir: string, options: CheckOptions): Promise<{ results: CheckResult[]; progress: TaskPlanProgress }> {
   const planPath = join(docpathDir, 'tasks', 'current', 'plan.md');
   const specPath = join(docpathDir, 'tasks', 'current', 'spec.md');
   const workflowState = await readCurrentState(cwd);
@@ -159,7 +207,7 @@ export async function validateTaskDocuments(cwd: string, docpathDir: string): Pr
     });
   }
 
-  results.push(...await checkMajorDecisionGate(cwd, docpathDir));
+  results.push(...await checkMajorDecisionGate(cwd, docpathDir, options));
 
   const planContent = await readActiveTaskFile(docpathDir, workflowState?.task_id, 'plan.md');
   if (!planContent.trim()) return { results, progress };
@@ -504,7 +552,7 @@ export async function runTaskDocumentChecks(cwd: string, docpathDir: string, opt
   const driftResults = await checkTaskFileDrift(cwd, docpathDir, options);
   results.push(...driftResults);
   if (driftResults.some((result) => !result.passed)) return results;
-  const { results: documentResults } = await validateTaskDocuments(cwd, docpathDir);
+  const { results: documentResults } = await validateTaskDocuments(cwd, docpathDir, options);
   results.push(...documentResults);
   results.push(...await checkUiUxDesignGate(cwd, docpathDir));
   results.push(...await syncCurrentChecklistView(cwd));

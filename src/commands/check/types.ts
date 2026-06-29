@@ -31,6 +31,8 @@ export interface CheckOptions {
   verbose?: boolean;
   /** 检查后自动运行 review */
   withReview?: boolean;
+  /** 禁用交互式提示（脚本/CI 环境） */
+  nonInteractive?: boolean;
 }
 
 export interface CheckResult {

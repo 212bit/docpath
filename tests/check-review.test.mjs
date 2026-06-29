@@ -732,6 +732,69 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check accepts --non-interactive and allows programmatic evidence writeback', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-interactive-writeback-'));
+    const { tasks, workspace } = mkExecWorkspace(cwd);
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'package.json'), JSON.stringify({
+      type: 'module',
+      dependencies: { cac: '^6.7.14' },
+      scripts: {},
+    }, null, 2) + '\n');
+    execSync('git add .', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+
+    // 新增依赖触发重大变更门禁
+    writeFileSync(join(cwd, 'package.json'), JSON.stringify({
+      type: 'module',
+      dependencies: {
+        cac: '^6.7.14',
+        react: '^19.0.0',
+      },
+      scripts: {},
+    }, null, 2) + '\n');
+
+    // 注入含有待确认重大决策门禁的 spec
+    const originalSpec = readFileSync(join(tasks, 'spec.md'), 'utf-8');
+    const specWithGate = originalSpec.replace('## 5. 验收标准', [
+      '## 4.1 重大决策门禁',
+      '',
+      '### 是否涉及重大技术决策',
+      '- [ ] 是，需要用户确认',
+      '',
+      '### Decision Brief',
+      '- 背景: 测试交互确认',
+      '- 推荐方案: React',
+      '- 用户确认: 待确认',
+      '',
+      '## 5. 验收标准',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'spec.md'), specWithGate);
+
+    // 1. 验证 --non-interactive 阻止交互并直接失败
+    const nonInteractiveResult = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current --non-interactive`, cwd);
+    assert.equal(nonInteractiveResult.code, 1);
+    assert.match(nonInteractiveResult.out, /重大决策确认检查/);
+    assert.match(nonInteractiveResult.out, /未记录 Decision Brief 和用户确认/);
+
+    // 2. 调用 writeMajorChangeConfirmation 回写证据
+    const { writeMajorChangeConfirmation } = await import('../dist/commands/check/evidence.js');
+    await writeMajorChangeConfirmation(join(cwd, '.docpath'), 'T-AGENT', 'Approved programmatically via test');
+
+    // 3. 验证规约自动写入 spec.md 且可通过重大变更门禁
+    const checkPassedResult = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current --non-interactive`, cwd);
+    assert.equal(checkPassedResult.code, 0);
+    assert.match(checkPassedResult.out, /全部通过/);
+
+    const specMd = readFileSync(join(tasks, 'spec.md'), 'utf-8');
+    assert.match(specMd, /-\s*\[x\]\s*是，需要用户确认/);
+    assert.match(specMd, /- 用户确认: Approved programmatically via test/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('check reads major change confirmation from spec.json before spec.md', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-major-json-'));
     const { tasks } = mkExecWorkspace(cwd);

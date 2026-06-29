@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-29T13:57:20.678Z",
+    "updated_at": "2026-06-29T13:57:20.678Z",
+    "content_sha256": "b9c43d3a0611f7c6a31b1685f5e2387f0383003014d10017baebcc14edaa2f9e"
+  },
+  "task_id": "T-20260629-support-interactive-major-change-gate-co",
+  "backlog_id": "R-233",
+  "title": "T-20260629-support-interactive-major-change-gate-co - Support Interactive Major Change Gate Confirmation in docpath check",
+  "generated_at": "2026-06-29T13:57:20.678Z",
+  "scope": {
+    "included": [
+      "Support Interactive Major Change Gate Confirmation in docpath check"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "Confirmed in brainstorm chat session.",
+    "decision_brief_markdown": "- 当前问题: 手动编辑 spec 确认重大变更太慢\n- 目标: 在 docpath check 中支持交互式确认\n- 背景: 来自 backlog R-233\n- 可选方案: 保持原样 / 支持 CLI 交互式确认\n- 推荐方案: 支持 CLI 交互式确认并自动回写 spec.md/spec.json\n- 不做什么: 不涉及非 TTY/脚本化环境的强制交互确认\n- 成本: 低\n- 风险: CLI 提示可能被其他进程拦截\n- 回滚方案: 回滚此提交\n- 用户确认: Confirmed in brainstorm chat session."
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Support Interactive Major Change Gate Confirmation in docpath check",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-233 与任务 T-20260629-support-interactive-major-change-gate-co 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: 手动编辑 spec 确认重大变更太慢\n- 目标: 在 docpath check 中支持交互式确认\n- 背景: 来自 backlog R-233\n- 可选方案: 保持原样 / 支持 CLI 交互式确认\n- 推荐方案: 支持 CLI 交互式确认并自动回写 spec.md/spec.json\n- 不做什么: 不涉及非 TTY/脚本化环境的强制交互确认\n- 成本: 低\n- 风险: CLI 提示可能被其他进程拦截\n- 回滚方案: 回滚此提交\n- 用户确认: Confirmed in brainstorm chat session."
+}

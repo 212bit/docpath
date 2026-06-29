@@ -176,3 +176,35 @@ export async function persistCheckEvidence(cwd: string, docpathDir: string, task
   await syncCurrentDocument(cwd);
   await updateCheckHistory(cwd, docpathDir, results, allPassed);
 }
+
+export async function writeMajorChangeConfirmation(docpathDir: string, taskId: string | undefined, reason: string): Promise<void> {
+  const activeTaskId = taskId || 'unknown';
+  const { readActiveTaskFile, writeActiveTaskFile } = await import('../../utils/task-files.js');
+  let specContent = '';
+  try {
+    specContent = await readActiveTaskFile(docpathDir, activeTaskId, 'spec.md');
+  } catch {
+    throw new Error(`无法读取当前任务的 spec.md`);
+  }
+
+  // 1. 替换 - [ ] 是，需要用户确认 -> - [x] 是，需要用户确认
+  let next = specContent.replace(/-\s*\[\s*\]\s*是，需要用户确认/g, '- [x] 是，需要用户确认');
+
+  // 2. 替换 - 用户确认: ... -> - 用户确认: reason (支持任何前置空白和回车)
+  if (/\s*-\s*用户确认:/i.test(next)) {
+    next = next.replace(/^\s*-\s*用户确认:\s*.*$/mi, `- 用户确认: ${reason}`);
+  } else {
+    // 降级：如果不存在用户确认这一行，在 ## 4.1 重大变更门禁 的合适位置插入它
+    const index = next.indexOf('## 4.1 重大变更门禁');
+    if (index === -1) {
+      const altIndex = next.indexOf('## 4.1 重大决策门禁');
+      if (altIndex !== -1) {
+        next = next.slice(0, altIndex + 16) + `\n- 用户确认: ${reason}\n` + next.slice(altIndex + 16);
+      }
+    } else {
+      next = next.slice(0, index + 16) + `\n- 用户确认: ${reason}\n` + next.slice(index + 16);
+    }
+  }
+
+  await writeActiveTaskFile(docpathDir, activeTaskId, 'spec.md', next);
+}
