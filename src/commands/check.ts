@@ -32,6 +32,9 @@ import {
 } from './check/evidence.js';
 
 import { logger } from '../utils/logger.js';
+import { evaluateQuickScope } from '../engine/quick-guard.js';
+import { readActiveStructuredSpecDocument } from '../utils/task-files.js';
+import { writeCurrentState } from '../utils/workspace.js';
 
 function normalizeHarnessOptions(options: CheckOptions): void {
   if (options.onlyHarness) {
@@ -60,7 +63,54 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     process.exit(1);
   }
 
-  const current = await readCurrentState(cwd);
+  let current = await readCurrentState(cwd);
+
+  // Automatically upgrade workflow profile to standard if needed
+  if (current && current.task_id && (current.workflow_profile === 'quick' || current.workflow_profile === 'instant')) {
+    const upgradeReasons: string[] = [];
+
+    // 1. Check complexity level
+    if (current.level >= 2) {
+      upgradeReasons.push(`任务复杂度级别为 L${current.level}（quick/instant 限制在 L0/L1）`);
+    }
+
+    // 2. Check spec requirements
+    try {
+      const spec = await readActiveStructuredSpecDocument(docpathDir, current.task_id);
+      if (spec) {
+        if (spec.major_change_gate?.required) {
+          upgradeReasons.push('任务需求规格（spec.md）要求重大变更确认门禁');
+        }
+        if (spec.ui_gate?.state === 'required') {
+          upgradeReasons.push('任务需求规格（spec.md）要求 UI 设计门禁');
+        }
+      }
+    } catch {
+      // Ignore errors reading spec document during initial check
+    }
+
+    // 3. Check Git scope
+    const scopeVerdict = evaluateQuickScope(cwd);
+    if (!scopeVerdict.allowed) {
+      scopeVerdict.reasons.forEach((reason) => {
+        upgradeReasons.push(`代码变更超出 quick 限制: ${reason}`);
+      });
+    }
+
+    if (upgradeReasons.length > 0) {
+      logger.warn(`⚠️  检测到高等级属性、需求规格或超限变更，已自动将工作流 Profile 从 "${current.workflow_profile}" 升级为 "standard"`);
+      upgradeReasons.forEach((reason) => logger.log(`   - ${reason}`));
+
+      current = {
+        ...current,
+        workflow_profile: 'standard',
+        level: Math.max(current.level, 2) as any,
+        updated_at: new Date().toISOString(),
+      };
+      await writeCurrentState(cwd, current);
+      logger.log('👉 已更新 .docpath/workspace/state.json，后续检查将强制执行 standard 门禁（如 plan/spec 校验与代码审查）。\n');
+    }
+  }
 
   warnWhenOutsideAgentSession(current, options);
 

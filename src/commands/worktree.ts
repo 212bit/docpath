@@ -79,7 +79,7 @@ function recommendedSessionName(name: string): string {
   return `codex-${name}`;
 }
 
-async function resolveWorktreePaths(cwd: string, name: string): Promise<WorktreePaths> {
+export async function resolveWorktreePaths(cwd: string, name: string): Promise<WorktreePaths> {
   const repoRoot = await resolveWorktreeManagerRoot(cwd);
   const safeName = validateWorktreeName(name);
   const worktreesDir = join(repoRoot, '.worktrees');
@@ -172,6 +172,14 @@ async function worktreeCreate(cwd: string, name: string): Promise<void> {
   // 5. 初始化 .docpath/ 并创建 symlinks
   console.log(`\n📁  配置 .docpath/ 目录...\n`);
   await initWorktreeDocpath(repoRoot, worktreePath, safeName);
+
+  // 5.1 自动软链接 node_modules 以复用依赖与构建缓存
+  const mainNodeModules = join(repoRoot, 'node_modules');
+  if (existsSync(mainNodeModules)) {
+    console.log('  🔗 配置 node_modules 共享软链接...');
+    await createSymlink(mainNodeModules, join(worktreePath, 'node_modules'), 'dir');
+    console.log('    ✓ node_modules -> shared parent copy');
+  }
 
   console.log(`\n✅  worktree 已创建: ${worktreePath}`);
   console.log(`\n从主仓库检查:`);
