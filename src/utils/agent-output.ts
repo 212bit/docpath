@@ -1,4 +1,3 @@
-import { stringify } from 'yaml';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
@@ -13,6 +12,7 @@ export async function generateAgentOutput(
   cwd: string,
   options: { view?: 'status' | 'next'; verbose?: boolean } = {},
 ): Promise<string> {
+  const { stringify } = await import('yaml');
   const view = options.view || 'next';
   const verbose = options.verbose === true;
   const docpathDir = await resolveDocpathDir(cwd);

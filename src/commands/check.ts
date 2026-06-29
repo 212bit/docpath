@@ -14,23 +14,6 @@ import { emitNextHint } from '../utils/next-hint.js';
 import { reviewCommand } from './review.js';
 import type { CheckOptions, CheckResult } from './check/types.js';
 
-import {
-  runProjectChecks,
-} from './check/runners.js';
-
-import {
-  runTaskDocumentChecks,
-} from './check/validators.js';
-
-import {
-  runHarnessChecks,
-} from './check/harness.js';
-
-import {
-  printCheckReport,
-  persistCheckEvidence,
-} from './check/evidence.js';
-
 import { logger } from '../utils/logger.js';
 
 function normalizeHarnessOptions(options: CheckOptions): void {
@@ -73,6 +56,8 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
   // 1-5. 常规检查（--only-harness 时跳过）
   if (!options.onlyHarness) {
+    const { runProjectChecks } = await import('./check/runners.js');
+    const { runTaskDocumentChecks } = await import('./check/validators.js');
     results.push(...await runProjectChecks(cwd, { ...options, skipTests, skipLint }));
     results.push(...await runTaskDocumentChecks(cwd, docpathDir, options));
   }
@@ -80,10 +65,12 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   // 6. Harness 规则检查 (--harness 选项)
   if (options.harness) {
     console.log('\n🔍  检查工作流护栏...\n');
+    const { runHarnessChecks } = await import('./check/harness.js');
     const harnessResults = await runHarnessChecks(cwd, docpathDir, options);
     results.push(...harnessResults);
   }
 
+  const { printCheckReport, persistCheckEvidence } = await import('./check/evidence.js');
   const allPassed = results.every(r => r.passed || r.severity === 'warning');
   printCheckReport(results, allPassed, options.verbose);
   await persistCheckEvidence(cwd, docpathDir, current?.task_id || 'unknown', results, allPassed);

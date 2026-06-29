@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-29T14:31:09.043Z",
+    "updated_at": "2026-06-29T14:31:09.043Z",
+    "content_sha256": "aed246a302beb743445cb143c3cc5b6e34adea46bbac3940fb0289bfa4ce790f"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-06-29T14:31:09.043Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "重构 check.ts 命令子模块为动态加载",
+      "description": "在 `src/commands/check.ts` 和 `src/commands/check/validators.ts` 中，将静态的 `runProjectChecks`、`runTaskDocumentChecks` 等大块子模块依赖改造为动态引入，将 `execSync` 改造为调用链路内加载。",
+      "acceptance": "文件编译成功，静态导入依赖被清除。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "重构 agent-output.ts 相关大型输出组件",
+      "description": "优化 `src/utils/agent-output.ts` 及其内部的格式化输出逻辑，将 yaml、marked 等仅在生成提示或展示格式时才使用的第三方或内部格式化逻辑重构为动态加载。",
+      "acceptance": "依赖项延迟按需加载，热路径命令无额外多余模块导入。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "自动化单元测试与编译检查",
+      "description": "重新编译整个项目，并运行所有 467 个测试，确保动态加载后的行为和原有工作流完全兼容，无任何 runtime loading 挂起。",
+      "acceptance": "`npm run build && npm test` 100% 通行。",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}
