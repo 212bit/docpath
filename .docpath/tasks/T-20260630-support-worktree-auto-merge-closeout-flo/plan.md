@@ -13,14 +13,14 @@
 - **依赖**: S1
 
 ### S3: 验证验收标准
-- [ ] S3: 验证验收标准
+- [x] S3: 验证验收标准
 - **描述**: 验证 spec 中声明的验收标准：AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-239 与任务 T-20260630-support-worktree-auto-merge-closeout-flo 建立双向关联
 - **验收条件**: AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-239 与任务 T-20260630-support-worktree-auto-merge-closeout-flo 建立双向关联
 - **依赖**: S2
 
 ## Checklist
 - [x] S1
-- [ ] S2
+- [x] S2
 - [ ] S3
 
 ## 依赖关系图

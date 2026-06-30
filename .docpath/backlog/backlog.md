@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-06-30T08:08:50.333Z
+> 扫描时间: 2026-06-30T08:26:57.123Z
 
 ## 条目列表
 
@@ -12,7 +12,6 @@
 | R-231 | P1: 易用性优化 - 降低学习曲线和改进用户体验 | proposed | P2 | 2 |  |
 | R-234 | Automatically upgrade workflow profile to standard for high level tasks or spec requirements | proposed | P2 | 2 |  |
 | R-237 | Elevate /learn priority in status when pending lesson candidates and regression warnings exist | proposed | P2 | 2 |  |
-| R-239 | Support worktree auto merge closeout flow | active | P2 | 2 | T-20260630-support-worktree-auto-merge-closeout-flo |
 
 ## 用途说明
 
