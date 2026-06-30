@@ -182,3 +182,101 @@ describe('session-aware CLI flow', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 });
+
+import { listActiveSessions, touchSession } from '../dist/utils/session.js';
+import { generateAgentOutput } from '../dist/utils/agent-output.js';
+
+describe('listActiveSessions and concurrency outputs', () => {
+  it('correctly filters active, stale and non-surviving PID sessions', async () => {
+    const cwd = mkProject();
+
+    // 1. Alpha session: active
+    await touchSession(cwd, {
+      sessionId: 'alpha',
+      taskId: 'T-ACTIVE',
+      command: 'test',
+    });
+
+    // 2. Beta session: stale (updated_at expired)
+    const betaSessionPath = join(cwd, '.docpath', 'workspace', 'sessions', 'beta.json');
+    const timestamp = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(); // 5 hours ago
+    const betaRecord = {
+      schema_version: 1,
+      kind: 'session',
+      session_id: 'beta',
+      pid: process.pid,
+      cwd,
+      command: 'test',
+      task_id: 'T-ACTIVE',
+      created_at: timestamp,
+      updated_at: timestamp,
+    };
+    const { mkdirSync, writeFileSync } = await import('node:fs');
+    const { dirname } = await import('node:path');
+    mkdirSync(dirname(betaSessionPath), { recursive: true });
+    writeFileSync(betaSessionPath, JSON.stringify(betaRecord, null, 2));
+
+    // 3. Gamma session: dead PID
+    const gammaSessionPath = join(cwd, '.docpath', 'workspace', 'sessions', 'gamma.json');
+    const gammaRecord = {
+      schema_version: 1,
+      kind: 'session',
+      session_id: 'gamma',
+      pid: 999999, // Highly likely non-existent PID
+      cwd,
+      command: 'test',
+      task_id: 'T-ACTIVE',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    writeFileSync(gammaSessionPath, JSON.stringify(gammaRecord, null, 2));
+
+    // Test listActiveSessions filtering
+    const active = await listActiveSessions(cwd);
+    const sessionIds = active.map(s => s.session_id);
+    assert.ok(sessionIds.includes('alpha'));
+    assert.ok(!sessionIds.includes('beta'));
+    assert.ok(!sessionIds.includes('gamma'));
+
+    // Test excludeSelf
+    const activeExclude = await listActiveSessions(cwd, { excludeSelf: true, selfSessionId: 'alpha' });
+    const sessionIdsExclude = activeExclude.map(s => s.session_id);
+    assert.ok(!sessionIdsExclude.includes('alpha'));
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('generateAgentOutput appends concurrency fields when active sessions exist', async () => {
+    const cwd = mkProject();
+
+    // Setup active session other than default
+    const sessionPath = join(cwd, '.docpath', 'workspace', 'sessions', 'other.json');
+    const record = {
+      schema_version: 1,
+      kind: 'session',
+      session_id: 'other',
+      pid: process.pid,
+      cwd,
+      command: 'test',
+      task_id: 'T-ACTIVE',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    const { mkdirSync, writeFileSync } = await import('node:fs');
+    const { dirname } = await import('node:path');
+    mkdirSync(dirname(sessionPath), { recursive: true });
+    writeFileSync(sessionPath, JSON.stringify(record, null, 2));
+
+    const output = await generateAgentOutput(cwd, { view: 'next' });
+    const parsed = (await import('yaml')).parse(output);
+
+    assert.ok(Array.isArray(parsed.active_sessions));
+    assert.equal(parsed.active_sessions.length, 1);
+    assert.equal(parsed.active_sessions[0].session_id, 'other');
+    assert.equal(parsed.state_freshness, 'potentially_stale');
+    assert.match(parsed.concurrent_session_warning, /检测到/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+});
+

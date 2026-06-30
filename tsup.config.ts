@@ -35,6 +35,7 @@ const CLI_ENTRY = [
   'src/utils/error-messages.ts',
   'src/utils/error-helpers.ts',
   'src/utils/contextual-help.ts',
+  'src/utils/agent-output.ts',
   'src/commands/check/evidence.ts',
   'src/commands/check/validators.ts',
 ];
