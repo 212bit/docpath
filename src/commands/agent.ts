@@ -137,6 +137,20 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
     }
   }
 
+  // FR-3: If there are other active sessions, print warning
+  try {
+    const { listActiveSessions } = await import('../utils/session.js');
+    const activeSessions = await listActiveSessions(cwd, {
+      excludeSelf: true,
+      selfSessionId: session.sessionId,
+    });
+    if (activeSessions.length > 0) {
+      console.warn(`\n⚠️  警告: 检测到其他活跃 Agent 会话正在运行 (PIDs: ${activeSessions.map((s) => s.pid).join(', ')}). 并发执行可能会导致状态竞争或文件冲突。\n`);
+    }
+  } catch (error) {
+    // Non-blocking try-catch
+  }
+
   try {
     await emit('task_start', cwd, current?.task_id || undefined, {
       phase: current?.phase || 'executing',
