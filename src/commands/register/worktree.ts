@@ -11,7 +11,7 @@ export function registerWorktreeCommands(cli: CAC): void {
     .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean }) => {
       await worktreeCommand({
         cwd: options.cwd || process.cwd(),
-        action: action as 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | undefined,
+        action: action as 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | undefined,
         name,
         force: options.force,
       });
@@ -26,6 +26,7 @@ export function registerWorktreeCommands(cli: CAC): void {
     create <name>       Create a new worktree with isolated .docpath/
     doctor [name]       Check worktree readiness before development
     repair [name]       Automatically repair worktree contract drifts
+    merge [branch]      Automatically merge changes and closeout to main
     remove <name>       Remove a worktree
     prune               Prune all completed, merged, and clean worktrees
 
@@ -34,6 +35,8 @@ export function registerWorktreeCommands(cli: CAC): void {
     $ docpath worktree create feature-auth
     $ docpath worktree doctor feature-auth
     $ docpath worktree repair feature-auth
+    $ docpath worktree merge
+    $ docpath worktree merge develop
     $ docpath worktree remove feature-auth
     $ docpath worktree remove feature-auth --force
 
@@ -53,6 +56,8 @@ export function registerWorktreeCommands(cli: CAC): void {
   worktree.example('docpath worktree create feature-a');
   worktree.example('docpath worktree doctor feature-a');
   worktree.example('docpath worktree repair feature-a');
+  worktree.example('docpath worktree merge');
+  worktree.example('docpath worktree merge develop');
   worktree.example('docpath worktree remove feature-a');
   worktree.example('docpath worktree remove feature-a --force');
 }

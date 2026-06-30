@@ -1,0 +1,4 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260630-support-worktree-auto-merge-closeout-flo","step":"S1","status":"in_progress","context":"开始执行: 梳理 Support worktree auto merge closeout flow","timestamp":"2026-06-30T08:09:20.843Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260630-support-worktree-auto-merge-closeout-flo","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-06-30T08:09:23.320Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260630-support-worktree-auto-merge-closeout-flo","step":"S2","status":"in_progress","context":"开始执行: 实现 Support worktree auto merge closeout flow","timestamp":"2026-06-30T08:09:25.458Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260630-support-worktree-auto-merge-closeout-flo","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-06-30T08:24:36.483Z","sessionId":"default"}

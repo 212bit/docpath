@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-30T08:08:50.310Z",
+    "updated_at": "2026-06-30T08:08:50.310Z",
+    "content_sha256": "63c2e6cf2fa633e4832d0a0f6e2399e8e34c8c375106d19ba6f8102bd076e103"
+  },
+  "task_id": "T-20260630-support-worktree-auto-merge-closeout-flo",
+  "backlog_id": "R-239",
+  "title": "T-20260630-support-worktree-auto-merge-closeout-flo - Support worktree auto merge closeout flow",
+  "generated_at": "2026-06-30T08:08:50.310Z",
+  "scope": {
+    "included": [
+      "Support worktree auto merge closeout flow"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "API / 数据契约",
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界"
+    ],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: ## 背景\n- 目标: Support worktree auto merge closeout flow\n- 背景: 来自 backlog R-239\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Support worktree auto merge closeout flow",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-239 与任务 T-20260630-support-worktree-auto-merge-closeout-flo 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: ## 背景\n- 目标: Support worktree auto merge closeout flow\n- 背景: 来自 backlog R-239\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+}

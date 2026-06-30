@@ -428,4 +428,84 @@ Test backlog description`);
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('rejects worktree merge if not in a worktree', () => {
+    const cwd = mkRepo();
+    const res = run(['worktree', 'merge'], cwd, { expectFailure: true });
+    assert.match(res.output, /worktree merge 必须在 git worktree 中运行/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('performs sync merge and commits dirty files when phase is not completed', () => {
+    const cwd = mkRepo();
+    const worktreePath = join(cwd, '.worktrees', 'feature-merge-sync');
+    run(['worktree', 'create', 'feature-merge-sync'], cwd);
+
+    // Set phase to executing in state.json
+    const stateJsonPath = join(worktreePath, '.docpath', 'workspace', 'state.json');
+    writeFileSync(stateJsonPath, JSON.stringify({
+      task_id: 'T-TEST',
+      backlog_id: 'R-TEST',
+      phase: 'executing',
+    }));
+
+    // Create a commit on main branch
+    writeFileSync(join(cwd, 'upstream.txt'), 'upstream content\n');
+    git(cwd, ['add', 'upstream.txt']);
+    git(cwd, ['commit', '-m', 'add upstream file']);
+
+    // Make some dirty changes in worktree
+    writeFileSync(join(worktreePath, 'dirty.txt'), 'dirty content\n');
+
+    // Run merge (defaults to merging main)
+    const activeBranch = git(cwd, ['rev-parse', '--abbrev-ref', 'HEAD']).trim();
+    const mergeOut = run(['worktree', 'merge', activeBranch], worktreePath).output;
+    assert.match(mergeOut, /=== worktree-merge 启动 ===/);
+    assert.match(mergeOut, /检测到未提交的残余文件，正在自动 commit/);
+    assert.match(mergeOut, /正在合并目标分支/);
+    assert.match(mergeOut, /当前任务 phase=executing/);
+    assert.match(mergeOut, /已将 .* 成功合并至当前开发分支，保持开发分支同步更新/);
+
+    // Verify upstream file is present in worktree
+    assert.equal(existsSync(join(worktreePath, 'upstream.txt')), true);
+    // Verify dirty file is committed
+    const status = git(worktreePath, ['status', '--porcelain=v1']);
+    assert.equal(status, '');
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('performs full closeout merge back to target branch when phase is completed', () => {
+    const cwd = mkRepo();
+    const worktreePath = join(cwd, '.worktrees', 'feature-merge-closeout');
+    run(['worktree', 'create', 'feature-merge-closeout'], cwd);
+
+    // Set phase to completed in state.json
+    const stateJsonPath = join(worktreePath, '.docpath', 'workspace', 'state.json');
+    writeFileSync(stateJsonPath, JSON.stringify({
+      task_id: 'T-TEST',
+      backlog_id: 'R-TEST',
+      phase: 'completed',
+    }));
+
+    // Make some dirty changes in worktree so it creates a commit
+    writeFileSync(join(worktreePath, 'dirty.txt'), 'closeout changes\n');
+
+    // Run merge
+    const activeBranch = git(cwd, ['rev-parse', '--abbrev-ref', 'HEAD']).trim();
+    // Configure target branch env
+    const env = { CODE_MERGE_TARGET: activeBranch };
+    const mergeOut = run(['worktree', 'merge', activeBranch], worktreePath, { env }).output;
+    assert.match(mergeOut, /任务已标记为 completed，开始将分支合回/);
+    assert.match(mergeOut, /切换主仓分支到/);
+    assert.match(mergeOut, /在主仓合并分支/);
+    assert.match(mergeOut, /worktree-merge 完成/);
+
+    // Verify worktree branch is merged into main (target) branch
+    git(cwd, ['checkout', activeBranch]);
+    const log = git(cwd, ['log', '-2', '--oneline']);
+    assert.match(log, /Merge branch 'feature-merge-closeout'/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
