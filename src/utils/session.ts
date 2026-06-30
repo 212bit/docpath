@@ -264,3 +264,62 @@ export async function verifySessionCwd(cwd: string, sessionId: string): Promise<
     }
   }
 }
+
+function isProcessAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
+export interface ListActiveSessionsOptions {
+  excludeSelf?: boolean;
+  selfSessionId?: string;
+}
+
+export async function listActiveSessions(
+  cwd: string,
+  options: ListActiveSessionsOptions = {}
+): Promise<SessionRecord[]> {
+  const dir = await sessionsDir(cwd);
+  if (!existsSync(dir)) {
+    return [];
+  }
+
+  const { readdir } = await import('node:fs/promises');
+  const files = await readdir(dir);
+  const active: SessionRecord[] = [];
+  const now = Date.now();
+  const ttl = leaseTtlMs();
+
+  for (const file of files) {
+    if (!file.endsWith('.json')) continue;
+    const filePath = join(dir, file);
+    const record = await readSessionRecord(filePath);
+    if (!record) continue;
+
+    // Check excludeSelf
+    if (options.excludeSelf && options.selfSessionId && record.session_id === options.selfSessionId) {
+      continue;
+    }
+
+    // Check TTL (stale check)
+    const updated = Date.parse(record.updated_at || record.created_at || '');
+    if (!Number.isFinite(updated) || now - updated > ttl) {
+      continue;
+    }
+
+    // Check PID survival
+    if (!isProcessAlive(record.pid)) {
+      continue;
+    }
+
+    active.push(record);
+  }
+
+  return active;
+}
+
