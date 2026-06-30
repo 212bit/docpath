@@ -429,7 +429,7 @@ async function getWorktreeDiagnostics(
 
 type DoctorStatus = 'pass' | 'warn' | 'fail';
 
-interface DoctorCheck {
+export interface DoctorCheck {
   status: DoctorStatus;
   label: string;
   detail: string;
@@ -536,11 +536,6 @@ async function resolveDoctorTarget(cwd: string, name?: string): Promise<{ safeNa
   };
 }
 
-export interface DoctorCheck {
-  status: DoctorStatus;
-  label: string;
-  detail: string;
-}
 
 export async function getWorktreeDoctorStatus(cwd: string, name?: string): Promise<{
   errors: number;
