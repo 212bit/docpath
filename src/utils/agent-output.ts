@@ -148,8 +148,33 @@ export async function generateAgentOutput(
       })),
     } : {}),
     ...(verbose && currentFocus ? { current_focus: currentFocus } : {}),
-    generated_at: new Date().toISOString(),
   };
+
+  // Add active_sessions, concurrent_session_warning, and state_freshness to generateAgentOutput
+  const { listActiveSessions, resolveSessionContext } = await import('./session.js');
+  const selfSession = resolveSessionContext();
+  const activeSessions = await listActiveSessions(cwd, {
+    excludeSelf: true,
+    selfSessionId: selfSession.sessionId,
+  });
+
+  output.active_sessions = activeSessions.map((sess) => ({
+    session_id: sess.session_id,
+    pid: sess.pid,
+    cwd: sess.cwd,
+    command: sess.command,
+    task_id: sess.task_id,
+    step: sess.step,
+    updated_at: sess.updated_at,
+  }));
+
+  if (activeSessions.length > 0) {
+    output.concurrent_session_warning = `检测到 ${activeSessions.length} 个其它活跃 Agent 会话正在运行。请确保没有并发修改或锁冲突。`;
+  }
+  output.state_freshness = activeSessions.length > 0 ? 'potentially_stale' : 'fresh';
+
+  output.generated_at = new Date().toISOString();
 
   return stringify(output, { indent: 2 });
 }
+
