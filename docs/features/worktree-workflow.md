@@ -279,6 +279,8 @@ DocPath worktree 采用**混合策略（option C）**，按资源语义分别选
 
 > 代价：backlog 不进 git，无版本备份与跨机同步；仅同一仓库本机的 worktrees 间共享。
 
+> ⚠️ **tracked 漂移注意**：若 backlog 文件（`backlog.md`、`R-xxx.md`）在加 `/.docpath/backlog` gitignore 规则**之前**就被提交过，`.gitignore` 对已 tracked 文件无效，规则形同虚设。此时 worktree 拿到的是 tracked 副本而非 symlink，`doctor` 会 warn "tracked copy (not live-shared)"，且 `backlog.md` 会在合并时参与三方合并（与"无冲突"承诺不符）。修复：在主仓 `git rm --cached .docpath/backlog/*` 后提交，再重建 worktree 即可正确 symlink。可用 `git ls-files .docpath/backlog/` 检测是否已 tracked。
+
 ### Merge-mediated 资源（Tracked 快照，合并对齐）
 
 | 资源 | 说明 |
@@ -403,6 +405,8 @@ git add -f .docpath/tasks/current/*
 **需合并对齐（merge-mediated，tracked）**：
 - `rules/`: tracked 快照，合并时按常规三路合并对齐
 - `tasks/done/`: tracked 归档，合并时对齐；worktree 新完成的任务在此汇合
+
+> ⚠️ **`gc --force` 不要在 worktree 合并前跑**：worktree 内 `tasks/` 顶层的历史任务是 tracked 快照，`docpath gc --force` 会把它们批量搬到 `tasks/done/`，产生大量 `D`/`??` 合并噪声，却不归档当前任务（被保护）。`gc` 检测到 worktree 模式会自动跳过历史归档并告警；归档操作请在 **main** 运行 `docpath gc --force`，或加 `--allow-worktree-archive` 显式开锁。
 
 ---
 

@@ -72,6 +72,47 @@ export function skippedIgnoredEvidenceReport(reason: string): IgnoredEvidenceRep
   };
 }
 
+export interface UntrackedEvidenceReport {
+  files: string[];
+  add_command: string | null;
+}
+
+export const SKIPPED_UNTRACKED_EVIDENCE: UntrackedEvidenceReport = {
+  files: [],
+  add_command: null,
+};
+
+/**
+ * 当前任务 canonical 路径下 untracked 但非 gitignored 的证据文件（如 closeout 后
+ * 尚未提交的 spec/plan/breadcrumb）。这些文件不需要 `git add -f`，普通 `git add`
+ * 即可，但 changes --agent 之前对它们没有 stage 提示，迫使 agent 手动判断。
+ *
+ * 仅扫 `.docpath/tasks/<taskId>/` 与 `.docpath/tasks/done/<taskId>/`（canonical
+ * 位置），不扫 `tasks/current/`（alias，默认不提交）。
+ */
+export function readUntrackedCanonicalEvidence(
+  gitRoot: string,
+  taskId: string | undefined,
+): UntrackedEvidenceReport {
+  if (!taskId) return SKIPPED_UNTRACKED_EVIDENCE;
+  const paths = [`.docpath/tasks/${taskId}`, `.docpath/tasks/done/${taskId}`];
+  try {
+    const files = Array.from(new Set(
+      runGit(gitRoot, ['ls-files', '--others', '--exclude-standard', '--', ...paths])
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .filter((file) => !file.endsWith('/')),
+    )).sort();
+    return {
+      files,
+      add_command: files.length > 0 ? `git add ${files.map(shellQuotePath).join(' ')}` : null,
+    };
+  } catch {
+    return SKIPPED_UNTRACKED_EVIDENCE;
+  }
+}
+
 export function readIgnoredEvidenceReport(
   gitRoot: string,
   taskId: string | undefined,

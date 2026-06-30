@@ -13,9 +13,12 @@ import { join } from 'node:path';
 import {
   readIgnoredEvidenceReport,
   readLinkedBacklogId,
+  readUntrackedCanonicalEvidence,
   runGit,
+  SKIPPED_UNTRACKED_EVIDENCE,
   skippedIgnoredEvidenceReport,
   type IgnoredEvidenceReport,
+  type UntrackedEvidenceReport,
 } from './git-closeout.js';
 
 export type ChangeGroupName = 'source' | 'tests' | 'docpath' | 'templates_docs' | 'other';
@@ -63,6 +66,7 @@ export interface ChangesReport {
   groups: Record<ChangeGroupName, string[]>;
   worktree_isolation: WorktreeIsolationReport;
   ignored_evidence: IgnoredEvidenceReport;
+  untracked_evidence: UntrackedEvidenceReport;
   recommended_stage_command: string | null;
   ready_to_commit: boolean;
   blocking_reasons: string[];
@@ -255,10 +259,16 @@ function buildBlockingReasons(args: {
   lastCheckPass: boolean;
   reviewPass: boolean;
   ignoredEvidence: IgnoredEvidenceReport;
+  untrackedEvidence: UntrackedEvidenceReport;
 }): string[] {
   const blockingReasons: string[] = [];
   if (args.files.length === 0) blockingReasons.push(args.since ? `相对 ${args.since} 没有变更` : '当前工作树没有可提交变更');
-  if (!args.since && args.files.some((file) => file.untracked)) blockingReasons.push('存在未跟踪文件，请确认是否需要纳入提交');
+  const evidenceFiles = new Set(args.untrackedEvidence.files);
+  const otherUntracked = !args.since && args.files.some((file) => file.untracked && !evidenceFiles.has(file.path));
+  if (!args.since && args.untrackedEvidence.files.length > 0) {
+    blockingReasons.push(`当前任务 ${args.untrackedEvidence.files.length} 个证据文件待 stage（见 recommended_stage_command）`);
+  }
+  if (otherUntracked) blockingReasons.push('存在未跟踪文件，请确认是否需要纳入提交');
   if (!args.since && args.ignoredEvidence.canonical_files.length > 0) {
     blockingReasons.push('存在被 gitignore 忽略的 DocPath canonical evidence，请使用 git add -f 纳入提交');
   }
@@ -268,8 +278,12 @@ function buildBlockingReasons(args: {
   return blockingReasons;
 }
 
-function buildRecommendedStageCommand(ignoredEvidence: IgnoredEvidenceReport): string | null {
-  return ignoredEvidence.canonical_files.length > 0 ? 'docpath commit --stage' : null;
+function buildRecommendedStageCommand(
+  ignoredEvidence: IgnoredEvidenceReport,
+  untrackedEvidence: UntrackedEvidenceReport,
+): string | null {
+  if (ignoredEvidence.canonical_files.length > 0) return 'docpath commit --stage';
+  return untrackedEvidence.add_command;
 }
 
 export async function buildChangesReport(cwd: string, options: ChangesReportOptions = {}): Promise<ChangesReport> {
@@ -286,6 +300,9 @@ export async function buildChangesReport(cwd: string, options: ChangesReportOpti
   const ignoredEvidence = since
     ? skippedIgnoredEvidenceReport('since mode summarizes committed diff and skips pre-commit ignored evidence readiness')
     : readIgnoredEvidenceReport(gitRoot, current?.task_id, backlogId);
+  const untrackedEvidence = since
+    ? SKIPPED_UNTRACKED_EVIDENCE
+    : readUntrackedCanonicalEvidence(gitRoot, current?.task_id);
   const blockingReasons = buildBlockingReasons({
     files,
     since,
@@ -293,6 +310,7 @@ export async function buildChangesReport(cwd: string, options: ChangesReportOpti
     lastCheckPass: await readLastCheckPass(docpathDir),
     reviewPass: await readReviewPass(docpathDir),
     ignoredEvidence,
+    untrackedEvidence,
   });
 
   const partial: Omit<ChangesReport, 'suggested_commit_message'> = {
@@ -315,7 +333,8 @@ export async function buildChangesReport(cwd: string, options: ChangesReportOpti
     groups,
     worktree_isolation: worktreeIsolation,
     ignored_evidence: ignoredEvidence,
-    recommended_stage_command: buildRecommendedStageCommand(ignoredEvidence),
+    untracked_evidence: untrackedEvidence,
+    recommended_stage_command: buildRecommendedStageCommand(ignoredEvidence, untrackedEvidence),
     ready_to_commit: blockingReasons.length === 0,
     blocking_reasons: blockingReasons,
   };

@@ -71,6 +71,15 @@ function renderAgentYaml(report: ChangesReport): string {
   lines.push(`  canonical_count: ${report.ignored_evidence.canonical_files.length}`);
   lines.push(`  add_command: ${report.ignored_evidence.add_command === null ? 'null' : yamlString(report.ignored_evidence.add_command)}`);
 
+  // untracked_evidence: 当前任务 canonical 路径下 untracked 非 gitignored 的证据文件
+  lines.push('untracked_evidence:');
+  lines.push(`  count: ${report.untracked_evidence.files.length}`);
+  lines.push(`  add_command: ${report.untracked_evidence.add_command === null ? 'null' : yamlString(report.untracked_evidence.add_command)}`);
+  if (report.untracked_evidence.files.length > 0) {
+    lines.push('  files:');
+    for (const file of report.untracked_evidence.files) lines.push(`    - ${yamlString(file)}`);
+  }
+
   lines.push(`recommended_stage_command: ${report.recommended_stage_command === null ? 'null' : yamlString(report.recommended_stage_command)}`);
   lines.push('blocking_reasons:');
   for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
@@ -98,6 +107,9 @@ function renderCompactAgentYaml(report: ChangesReport): string {
 
   if (report.ignored_evidence.add_command) {
     lines.push(`add_command: ${yamlString(report.ignored_evidence.add_command)}`);
+  }
+  if (report.untracked_evidence.add_command) {
+    lines.push(`stage_command: ${yamlString(report.untracked_evidence.add_command)}`);
   }
 
   return `${lines.join('\n')}\n`;
@@ -160,6 +172,14 @@ function renderHuman(report: ChangesReport): string {
   if (report.blocking_reasons.length > 0) {
     lines.push('\n  阻塞原因');
     for (const reason of report.blocking_reasons) lines.push(`    - ${reason}`);
+  }
+
+  if (report.untracked_evidence.files.length > 0) {
+    lines.push(`\n  当前任务未提交证据 (${report.untracked_evidence.files.length})`);
+    for (const file of report.untracked_evidence.files) lines.push(`    - ${file}`);
+    if (report.untracked_evidence.add_command) {
+      lines.push(`  stage 提示: ${report.untracked_evidence.add_command}`);
+    }
   }
 
   lines.push('\n  建议 commit message');

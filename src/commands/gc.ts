@@ -11,12 +11,13 @@ import { listBacklogItems } from '../engine/backlog.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { cleanupWorkspace, planWorkspaceCleanup, renderWorkspaceCleanupSummary } from '../utils/workspace-cleanup.js';
-import { getGitTopLevel, isGitRepo, listWorktrees } from '../utils/worktree.js';
+import { getGitTopLevel, isInWorktree, isGitRepo, listWorktrees } from '../utils/worktree.js';
 
 interface GcOptions {
   cwd: string;
   force?: boolean;
   delete?: boolean;
+  allowWorktreeArchive?: boolean;
 }
 
 interface GcCandidate {
@@ -134,11 +135,20 @@ export async function gcCommand(options: GcOptions): Promise<void> {
   const entries = await readdir(tasksDir, { withFileTypes: true });
   const candidates: GcCandidate[] = [];
 
+  // Worktree guard: historical task dirs under tasks/ are tracked snapshots shared
+  // via branch merges. Moving them en masse to tasks/done/ inside a worktree
+  // produces large merge noise (every moved file shows as D at the old location
+  // and ?? under done/) without archiving the current task (which is protected).
+  // Scope this sweep to the main checkout; allow explicit opt-in via flag.
+  const inWorktree = isInWorktree(cwd);
+  const skipHistoricalArchive = inWorktree && !options.allowWorktreeArchive;
+
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     if (entry.name === 'current' || entry.name === 'done') continue;
     if (!isTaskDirName(entry.name)) continue;
     if (protectedTaskIds.has(entry.name)) continue;
+    if (skipHistoricalArchive) continue;
 
     candidates.push({
       taskId: entry.name,
@@ -173,6 +183,15 @@ export async function gcCommand(options: GcOptions): Promise<void> {
   console.log('  note: docpath gc only reports worktree cleanup; remove explicitly with docpath worktree remove.');
   console.log('');
   console.log('Historical task directories');
+  if (skipHistoricalArchive) {
+    console.log('⚠️  worktree 模式：跳过历史任务归档（批量移动会在合并时产生噪声）。');
+    console.log('    如需归档，请在 main 运行 docpath gc --force，或加 --allow-worktree-archive 显式开锁。');
+    console.log(`候选目录: 0 (skipped in worktree)`);
+    if (!options.force) {
+      console.log('\n[dry-run] 未修改文件。实际清理运行: docpath gc --force');
+    }
+    return;
+  }
   console.log(`候选目录: ${candidates.length}`);
 
   if (candidates.length === 0) {

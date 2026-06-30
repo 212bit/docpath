@@ -3,3 +3,9 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260629-support-smart-merge-conflict-suggestions","step":"S2","status":"in_progress","context":"开始执行: 在 drift 同步逻辑中接入三方合并","timestamp":"2026-06-29T14:41:10.752Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260629-support-smart-merge-conflict-suggestions","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-06-29T14:42:35.280Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260629-support-smart-merge-conflict-suggestions","step":"S3","status":"in_progress","context":"开始执行: 编写对应的单元测试","timestamp":"2026-06-29T14:42:39.349Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260629-support-smart-merge-conflict-suggestions","step":"check","status":"blocked","context":"质量检查失败: 子任务完成度 (2/3)","timestamp":"2026-06-30T01:53:42.635Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260629-support-smart-merge-conflict-suggestions","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-06-30T01:53:48.142Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260629-support-smart-merge-conflict-suggestions","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-06-30T01:55:39.009Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260629-support-smart-merge-conflict-suggestions","step":"review","status":"blocked","context":"代码审查: 0 错误, 6 警告, 0 提示","timestamp":"2026-06-30T01:55:39.718Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260629-support-smart-merge-conflict-suggestions","step":"review","status":"done","context":"代码审查: 0 错误, 6 警告, 0 提示","timestamp":"2026-06-30T01:58:01.920Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260629-support-smart-merge-conflict-suggestions","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-06-30T01:58:02.049Z"}

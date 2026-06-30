@@ -70,11 +70,13 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--force', '执行 workspace cleanup 和历史任务归档，而不是仅预览')
     .option('--delete', '在 force 模式下直接删除而不是归档到 done')
-    .action(async (options: { cwd?: string; force?: boolean; delete?: boolean }) => {
+    .option('--allow-worktree-archive', 'worktree 内也归档历史任务（默认跳过，避免合并噪声）')
+    .action(async (options: { cwd?: string; force?: boolean; delete?: boolean; 'allow-worktree-archive'?: boolean; allowWorktreeArchive?: boolean }) => {
       await gcCommand({
         cwd: options.cwd || process.cwd(),
         force: !!options.force,
         delete: !!options.delete,
+        allowWorktreeArchive: !!options['allow-worktree-archive'] || !!options.allowWorktreeArchive,
       });
     });
 

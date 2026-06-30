@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-06-29T14:42:35.285Z",
-    "updated_at": "2026-06-29T14:42:35.285Z",
-    "content_sha256": "74ec23985232c468339f41fa26282da0582143e076f9566c83af700a5de50c82"
+    "created_at": "2026-06-30T01:53:48.147Z",
+    "updated_at": "2026-06-30T01:53:48.147Z",
+    "content_sha256": "0ee00e22f58c3bcf667acedb9b4622a4974863cc4f4368d7dbf27d03665970ee"
   },
   "title": "执行计划",
-  "generated_at": "2026-06-29T14:42:35.285Z",
+  "generated_at": "2026-06-30T01:53:48.147Z",
   "steps": [
     {
       "id": "S1",
@@ -32,7 +32,7 @@
       "description": "在 `tests/check-review.test.mjs` 或 `tests/helpers.mjs` 相关的测试文件中补充有关 `tryThreeWayMerge` 的单元测试：验证无冲突合并自动写入、有冲突合并写入冲突标记并抛出警报。",
       "acceptance": "单元测试覆盖此漂移场景并 100% 通过。",
       "dependencies": "S2",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

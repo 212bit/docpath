@@ -134,6 +134,15 @@ function run(args, cwd) {
   return execSync(`node ${BIN} ${args}`, { cwd, encoding: 'utf-8', timeout: 20000 });
 }
 
+function runInWorktree(args, cwd) {
+  return execSync(`node ${BIN} ${args}`, {
+    cwd,
+    encoding: 'utf-8',
+    timeout: 20000,
+    env: { ...process.env, DOCPATH_WORKTREE: '1' },
+  });
+}
+
 describe('gc command', () => {
   it('dry-run previews historical task dirs without moving them', () => {
     const cwd = mkWorkspace();
@@ -233,6 +242,32 @@ describe('gc command', () => {
     assert.match(out, /sessions: error/);
     assert.equal(readFileSync(join(workspace, 'breadcrumb.jsonl'), 'utf-8'), badBreadcrumb);
     assert.equal(readFileSync(join(workspace, 'sessions', 'bad.json'), 'utf-8'), badSession);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('worktree mode skips historical task archiving to avoid merge noise', () => {
+    const cwd = mkWorkspace();
+
+    const out = runInWorktree(`gc --cwd ${cwd} --force`, cwd);
+
+    assert.match(out, /worktree 模式：跳过历史任务归档/);
+    assert.match(out, /skipped in worktree/);
+    // historical tasks stay in place; nothing moved to done/
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'T-20260531-old')), true);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'T-20260530-orphan')), true);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'done', 'T-20260531-old')), false);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'done', 'T-20260530-orphan')), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('worktree mode --allow-worktree-archive restores historical archiving', () => {
+    const cwd = mkWorkspace();
+
+    const out = runInWorktree(`gc --cwd ${cwd} --force --allow-worktree-archive`, cwd);
+
+    assert.match(out, /已归档 2 个历史任务目录/);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'T-20260531-old')), false);
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'done', 'T-20260531-old')), true);
     rmSync(cwd, { recursive: true, force: true });
   });
 });
