@@ -5,6 +5,7 @@
  */
 
 import { buildChangesReport, type ChangesReport, type ChangeGroupName } from '../utils/changes-report.js';
+import { assertWorktreeContract } from './worktree.js';
 
 interface ChangesOptions {
   cwd: string;
@@ -189,6 +190,7 @@ function renderHuman(report: ChangesReport): string {
 }
 
 export async function changesCommand(options: ChangesOptions): Promise<void> {
+  await assertWorktreeContract(options.cwd);
   const report = await buildChangesReport(options.cwd, { since: options.since });
   if (options.json) {
     process.stdout.write(JSON.stringify(report, null, 2) + '\n');

@@ -8,6 +8,7 @@ import {
   rmSync,
   statSync,
   writeFileSync,
+  readFileSync,
 } from 'node:fs';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -197,7 +198,7 @@ describe('worktree command', () => {
 
     const named = run(['worktree', 'doctor', 'feature-doctor'], cwd, { env: { DOCPATH_SESSION: '' } }).output;
     assert.match(named, /Worktree doctor: feature-doctor/);
-    assert.match(named, /live-shared backlog: symlink/);
+    assert.match(named, /merge-mediated backlog: symlink/);
     assert.match(named, /merge-mediated rules: tracked copy/);
     assert.match(named, /isolated tasks\/current: .*isolated/);
     assert.match(named, /set DOCPATH_SESSION=codex-feature-doctor/);
@@ -214,13 +215,13 @@ describe('worktree command', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('warns when a tracked backlog is not live-shared', () => {
+  it('allows tracked backlog as merge-mediated copy without warnings', () => {
     const cwd = mkRepoTrackedBacklog();
     const worktreePath = join(cwd, '.worktrees', 'feature-stale');
     run(['worktree', 'create', 'feature-stale'], cwd);
     const out = run(['worktree', 'doctor', 'feature-stale'], cwd, { env: { DOCPATH_SESSION: 'codex-feature-stale' } }).output;
-    // Tracked backlog copy is a stale snapshot, not a live symlink -> warn, not pass.
-    assert.match(out, /⚠️.*live-shared backlog: tracked copy \(not live-shared\)/);
+    // Tracked backlog copy is merge-mediated under Option B -> pass, no warnings
+    assert.match(out, /✅ merge-mediated backlog: tracked copy/);
     // rules stays merge-mediated (tracked copy is the expected design, no warning).
     assert.match(out, /✅.*merge-mediated rules: tracked copy/);
     assert.match(out, /worktree doctor passed/);
@@ -327,6 +328,104 @@ describe('worktree command', () => {
     assert.equal(existsSync(wtPathB), true, 'skipped uncompleted worktree should remain');
     assert.equal(existsSync(wtPathC), true, 'skipped dirty worktree should remain');
     
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('strictly gates operational commands on doctor failure', () => {
+    const cwd = mkRepo();
+    const worktreePath = join(cwd, '.worktrees', 'feature-gate');
+    run(['worktree', 'create', 'feature-gate'], cwd);
+
+    // Make the doctor fail by tracking tasks/current in git
+    const docpathDir = join(worktreePath, '.docpath');
+    const tasksCurrent = join(docpathDir, 'tasks', 'current');
+    mkdirSync(tasksCurrent, { recursive: true });
+    writeFileSync(join(tasksCurrent, 'spec.md'), '# T-GATE\n');
+    git(worktreePath, ['add', '-f', '.docpath/tasks/current/spec.md']);
+    // Verify it fails doctor
+    const doctorOut = run(['worktree', 'doctor', 'feature-gate'], cwd, { expectFailure: true }).output;
+    assert.match(doctorOut, /❌  worktree doctor failed/);
+
+    // Verify operational commands block on doctor failure in worktreePath
+    const changesRes = run(['changes'], worktreePath, { expectFailure: true });
+    assert.match(changesRes.output, /Git Worktree contract validation failed/);
+
+    const goRes = run(['go', '--step', 'S1'], worktreePath, { expectFailure: true });
+    assert.match(goRes.output, /Git Worktree contract validation failed/);
+
+    const enterRes = run(['agent', 'enter'], worktreePath, { expectFailure: true });
+    assert.match(enterRes.output, /Git Worktree contract validation failed/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('scans and blocks backlog promote when active in another worktree', () => {
+    const cwd = mkRepo();
+    
+    // Create backlog R-238
+    const backlogDir = join(cwd, '.docpath', 'backlog');
+    mkdirSync(backlogDir, { recursive: true });
+    writeFileSync(join(backlogDir, 'R-238.md'), `---
+id: R-238
+title: Test backlog
+status: accepted
+priority: P0
+readiness: analyzed
+created_at: 2026-06-30
+---
+Test backlog description`);
+    run(['backlog', 'refresh'], cwd);
+
+    // Create a worktree feature-lease
+    run(['worktree', 'create', 'feature-lease'], cwd);
+    const wtPath = join(cwd, '.worktrees', 'feature-lease');
+    
+    // Simulate that R-238 is active in feature-lease by writing state.json
+    const stateJsonPath = join(wtPath, '.docpath', 'workspace', 'state.json');
+    writeFileSync(stateJsonPath, JSON.stringify({
+      task_id: 'T-238',
+      backlog_id: 'R-238',
+      phase: 'executing',
+    }));
+
+    // Trying to promote R-238 in main repo must fail due to active lease in feature-lease worktree
+    const promoteRes = run(['backlog', 'promote', 'R-238'], cwd, { expectFailure: true });
+    assert.match(promoteRes.output, /已经在另一个工作区 'feature-lease' 中处于活跃状态，禁止重复 promote/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('automatically repairs contract drifts via worktree repair', () => {
+    const cwd = mkRepo();
+    const worktreePath = join(cwd, '.worktrees', 'feature-repair');
+    run(['worktree', 'create', 'feature-repair'], cwd);
+
+    const docpathDir = join(worktreePath, '.docpath');
+    const tasksCurrent = join(docpathDir, 'tasks', 'current');
+    mkdirSync(tasksCurrent, { recursive: true });
+    writeFileSync(join(tasksCurrent, 'spec.md'), '# T-REPAIR\n');
+    
+    // 1. Simulate drift A: track isolated tasks/current in git
+    git(worktreePath, ['add', '-f', '.docpath/tasks/current/spec.md']);
+    
+    // 2. Simulate drift B: put backlog ignore pattern into .gitignore
+    const gitignorePath = join(worktreePath, '.gitignore');
+    writeFileSync(gitignorePath, '/.docpath/backlog\n');
+
+    // Run repair
+    const repairOut = run(['worktree', 'repair', 'feature-repair'], cwd).output;
+    assert.match(repairOut, /成功从 git 暂存区移除: \.docpath\/tasks\/current/);
+    assert.match(repairOut, /移除了 backlog 排除规则/);
+    assert.match(repairOut, /worktree 契约修复成功/);
+
+    // Verify it is now untracked (isolated)
+    const tracked = git(worktreePath, ['ls-files', '--', '.docpath/tasks/current']).trim().length > 0;
+    assert.equal(tracked, false, 'tasks/current should be untracked after repair');
+
+    // Verify backlog pattern is gone from .gitignore
+    const gitignoreContent = readFileSync(gitignorePath, 'utf-8');
+    assert.equal(gitignoreContent.includes('/.docpath/backlog'), false, 'gitignore should be updated');
+
     rmSync(cwd, { recursive: true, force: true });
   });
 });

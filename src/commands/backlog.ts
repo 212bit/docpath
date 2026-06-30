@@ -5,7 +5,7 @@
 import { stringify } from 'yaml';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { isAbsolute, join, relative } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import {
   type BacklogItem,
   type BacklogEvidence,
@@ -661,6 +661,35 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
   console.log(`   level: ${updated.level}`);
 }
 
+async function assertNotActiveInOtherWorktrees(cwd: string, backlogId: string): Promise<void> {
+  const { isGitRepo } = await import('../utils/worktree.js');
+  if (!(await isGitRepo(cwd))) return;
+
+  const { listWorktrees, getGitTopLevel } = await import('../utils/worktree.js');
+  const repoRoot = await getGitTopLevel(cwd);
+  const worktrees = await listWorktrees(repoRoot);
+
+  for (const wt of worktrees) {
+    if (resolve(wt.path) === resolve(cwd)) continue;
+
+    const stateJsonPath = join(wt.path, '.docpath', 'workspace', 'state.json');
+    if (existsSync(stateJsonPath)) {
+      try {
+        const stateContent = await readFile(stateJsonPath, 'utf-8');
+        const state = JSON.parse(stateContent) as { task_id?: string; backlog_id?: string };
+        if (state.backlog_id === backlogId || (state.task_id && state.task_id.includes(backlogId))) {
+          const wtName = wt.path.split(/[\\/]/).filter(Boolean).at(-1) || wt.path;
+          throw new Error(
+            `docpath backlog promote: backlog 条目 ${backlogId} 已经在另一个工作区 '${wtName}' 中处于活跃状态，禁止重复 promote。`
+          );
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('promote')) throw err;
+      }
+    }
+  }
+}
+
 async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   if (!options.id?.trim()) {
     throw new Error('docpath backlog promote requires <id>');
@@ -673,6 +702,12 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   if (!item) {
     throw new Error(`docpath backlog promote: backlog 条目不存在: ${options.id}`);
   }
+
+  if (item.links.task) {
+    throw new Error(`docpath backlog promote: backlog 条目 ${item.id} 已关联任务 ${item.links.task}`);
+  }
+
+  await assertNotActiveInOtherWorktrees(options.cwd, item.id);
 
   const dirtyReport = detectDirtyWorktree(options.cwd);
   const isDirty = dirtyReport.isGitRepo && dirtyReport.files.some(f => !isPromoteBacklogEvidencePath(f, item.id));
@@ -706,9 +741,6 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
     });
   }
 
-  if (item.links.task) {
-    throw new Error(`docpath backlog promote: backlog 条目 ${item.id} 已关联任务 ${item.links.task}`);
-  }
   assertBacklogReadyForExecution(item, 'promote', options.draft);
 
   const docpathDir = await resolveDocpathDir(options.cwd);

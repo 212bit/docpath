@@ -11,7 +11,7 @@ export function registerWorktreeCommands(cli: CAC): void {
     .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean }) => {
       await worktreeCommand({
         cwd: options.cwd || process.cwd(),
-        action: action as 'create' | 'list' | 'remove' | 'doctor' | 'prune' | undefined,
+        action: action as 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | undefined,
         name,
         force: options.force,
       });
@@ -25,6 +25,7 @@ export function registerWorktreeCommands(cli: CAC): void {
     list                List all worktrees (default)
     create <name>       Create a new worktree with isolated .docpath/
     doctor [name]       Check worktree readiness before development
+    repair [name]       Automatically repair worktree contract drifts
     remove <name>       Remove a worktree
     prune               Prune all completed, merged, and clean worktrees
 
@@ -32,12 +33,13 @@ export function registerWorktreeCommands(cli: CAC): void {
     $ docpath worktree list
     $ docpath worktree create feature-auth
     $ docpath worktree doctor feature-auth
+    $ docpath worktree repair feature-auth
     $ docpath worktree remove feature-auth
     $ docpath worktree remove feature-auth --force
 
   Isolation Strategy:
-    - Shared (symlink): backlog/, rules/, spec/, templates/
-    - Isolated: workspace/, tasks/, journal/
+    - Merge-mediated (tracked): backlog/, rules/, spec/, templates/
+    - Isolated (ignored): workspace/, tasks/, journal/
 
   Use Cases:
     - Develop Feature A with Codex in one worktree
@@ -50,6 +52,7 @@ export function registerWorktreeCommands(cli: CAC): void {
   worktree.example('docpath worktree list');
   worktree.example('docpath worktree create feature-a');
   worktree.example('docpath worktree doctor feature-a');
+  worktree.example('docpath worktree repair feature-a');
   worktree.example('docpath worktree remove feature-a');
   worktree.example('docpath worktree remove feature-a --force');
 }

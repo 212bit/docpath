@@ -17,6 +17,7 @@ import { journalCommand } from './journal.js';
 import { reviewCommand } from './review.js';
 import { compactCommand, runCommand } from './runtime.js';
 import { goCommand } from './go.js';
+import { assertWorktreeContract } from './worktree.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
@@ -100,6 +101,7 @@ function syncStatusForAgentStep(status: NonNullable<AgentOptions['status']>): 'd
 
 async function handleAgentEnter(options: AgentOptions): Promise<void> {
   const { cwd } = options;
+  await assertWorktreeContract(cwd);
   const current = await readCurrentState(cwd);
   const session = resolveSessionContext(options.session);
   const phase = current?.phase || '';

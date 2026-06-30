@@ -6,14 +6,11 @@
 
 # DocPath runtime state
 #
-# Live-shared resources (backlog) are gitignored and symlinked into worktrees
-# from the main checkout so every worktree sees one global requirement pool.
-# Merge-mediated resources (rules, tasks/done) stay tracked; isolated runtime
+# Merge-mediated resources (backlog, rules, tasks/done) stay tracked; isolated runtime
 # (workspace, tasks/current) stays gitignored per worktree.
 /.docpath/workspace/
 /.docpath/.install-meta.json
 /.docpath/tasks/current/
-/.docpath/backlog
 
 # Local agent/tool state
 /.claude/

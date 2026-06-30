@@ -5,7 +5,7 @@
  */
 
 import { existsSync, lstatSync } from 'node:fs';
-import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, rm, writeFile, readFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -16,13 +16,14 @@ import {
   listWorktrees,
   getGitTopLevel,
   createSymlink,
+  isInWorktree,
 } from '../utils/worktree.js';
 
 const execFileAsync = promisify(execFile);
 
 interface WorktreeOptions {
   cwd: string;
-  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune';
+  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair';
   name?: string;
   force?: boolean;
 }
@@ -488,11 +489,31 @@ async function checkIsolatedTasks(
   const tasksCurrent = join(docpathDir, 'tasks', 'current');
   // The isolation contract for tasks/current is "not tracked by git": each
   // worktree then owns its own current-task runtime without merge conflicts.
-  // ls-files is robust here (unlike check-ignore, which mis-matches trailing-
-  // slash directory patterns against non-existent paths).
   const tracked = (await runGitCapture(worktreePath, ['ls-files', '--', '.docpath/tasks/current'])).trim().length > 0;
   if (!tracked) return { status: 'pass', label, detail: `tasks/current untracked (isolated): ${tasksCurrent}` };
-  return { status: 'warn', label, detail: `tasks/current tracked (not isolated): ${tasksCurrent}` };
+  return { status: 'fail', label, detail: `tasks/current tracked (not isolated): ${tasksCurrent}` };
+}
+
+async function checkIsolatedWorkspace(
+  docpathDir: string,
+  worktreePath: string,
+  label: string,
+): Promise<DoctorCheck> {
+  const workspaceDir = join(docpathDir, 'workspace');
+  const tracked = (await runGitCapture(worktreePath, ['ls-files', '--', '.docpath/workspace'])).trim().length > 0;
+  if (!tracked) return { status: 'pass', label, detail: `workspace untracked (isolated): ${workspaceDir}` };
+  return { status: 'fail', label, detail: `workspace tracked (not isolated): ${workspaceDir}` };
+}
+
+async function checkIsolatedJournal(
+  docpathDir: string,
+  worktreePath: string,
+  label: string,
+): Promise<DoctorCheck> {
+  const journalDir = join(docpathDir, 'journal');
+  const tracked = (await runGitCapture(worktreePath, ['ls-files', '--', '.docpath/journal'])).trim().length > 0;
+  if (!tracked) return { status: 'pass', label, detail: `journal untracked (isolated): ${journalDir}` };
+  return { status: 'fail', label, detail: `journal tracked (not isolated): ${journalDir}` };
 }
 
 async function resolveDoctorTarget(cwd: string, name?: string): Promise<{ safeName: string; worktreePath: string }> {
@@ -515,26 +536,33 @@ async function resolveDoctorTarget(cwd: string, name?: string): Promise<{ safeNa
   };
 }
 
-/**
- * worktree doctor [name] — 只读检查 worktree 开发前置条件
- */
-async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
-  if (!(await isGitRepo(cwd))) {
-    console.error('❌  当前目录不是 git 仓库');
-    process.exit(1);
-  }
+export interface DoctorCheck {
+  status: DoctorStatus;
+  label: string;
+  detail: string;
+}
 
+export async function getWorktreeDoctorStatus(cwd: string, name?: string): Promise<{
+  errors: number;
+  warnings: number;
+  checks: DoctorCheck[];
+  safeName: string;
+  worktreePath: string;
+}> {
   const { safeName, worktreePath } = await resolveDoctorTarget(cwd, name);
   const docpathDir = join(worktreePath, '.docpath');
   const tasksCurrentCheck = await checkIsolatedTasks(docpathDir, worktreePath, 'isolated tasks/current');
+  const workspaceCheck = await checkIsolatedWorkspace(docpathDir, worktreePath, 'isolated workspace directory');
+  const journalCheck = await checkIsolatedJournal(docpathDir, worktreePath, 'isolated journal directory');
+
   const checks: DoctorCheck[] = [
     checkExists(join(worktreePath, '.git'), 'git worktree metadata'),
     checkDirectory(docpathDir, '.docpath directory'),
-    checkLiveShared(join(docpathDir, 'backlog'), 'live-shared backlog'),
+    checkMergeMediated(join(docpathDir, 'backlog'), 'merge-mediated backlog'),
     checkMergeMediated(join(docpathDir, 'rules'), 'merge-mediated rules'),
-    checkDirectory(join(docpathDir, 'workspace'), 'isolated workspace directory'),
+    workspaceCheck,
     tasksCurrentCheck,
-    checkDirectory(join(docpathDir, 'journal'), 'isolated journal directory'),
+    journalCheck,
     checkExists(join(docpathDir, 'workspace', 'state.json'), 'workspace state'),
     checkExists(join(docpathDir, 'workspace', 'current.md'), 'workspace current view'),
     checkExists(join(docpathDir, 'workspace', 'breadcrumb.md'), 'workspace breadcrumb view'),
@@ -556,6 +584,32 @@ async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
 
   const errors = checks.filter((check) => check.status === 'fail').length;
   const warnings = checks.filter((check) => check.status === 'warn').length;
+
+  return { errors, warnings, checks, safeName, worktreePath };
+}
+
+export async function assertWorktreeContract(cwd: string): Promise<void> {
+  if (!isInWorktree(cwd)) return;
+  if (!(await isGitRepo(cwd))) return;
+  const { errors } = await getWorktreeDoctorStatus(cwd);
+  if (errors > 0) {
+    throw new Error(
+      `❌  Git Worktree contract validation failed. Operational commands blocked.\n` +
+      `    修复建议: 运行 'docpath worktree repair' 自动校准共享/隔离契约。`
+    );
+  }
+}
+
+/**
+ * worktree doctor [name] — 只读检查 worktree 开发前置条件
+ */
+async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
+  if (!(await isGitRepo(cwd))) {
+    console.error('❌  当前目录不是 git 仓库');
+    process.exit(1);
+  }
+
+  const { errors, warnings, checks, safeName, worktreePath } = await getWorktreeDoctorStatus(cwd, name);
   const repoRoot = await resolveWorktreeManagerRoot(cwd);
   const diagnostics = await getWorktreeDiagnostics(repoRoot, worktreePath, safeName, samePath(repoRoot, worktreePath));
 
@@ -576,7 +630,7 @@ async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
 
   if (errors > 0) {
     console.log(`\n❌  worktree doctor failed (${errors} errors, ${warnings} warnings)`);
-    console.log('修复建议: 备份未提交变更后，用 `docpath worktree create <name>` 重新创建受管 worktree；普通 git worktree 可用 git worktree remove 清理。');
+    console.log('修复建议: 备份未提交变更后，用 `docpath worktree repair` 自动校准，或者用 `docpath worktree create <name>` 重新创建受管 worktree。');
     process.exit(1);
   }
 
@@ -694,6 +748,117 @@ async function worktreePrune(cwd: string, force: boolean): Promise<void> {
 }
 
 /**
+ * worktree repair [name] — 自动校准共享/隔离契约，修复漂移
+ */
+async function worktreeRepair(cwd: string, name?: string): Promise<void> {
+  if (!(await isGitRepo(cwd))) {
+    console.error('❌  当前目录不是 git 仓库');
+    process.exit(1);
+  }
+
+  const { safeName, worktreePath } = await resolveDoctorTarget(cwd, name);
+  const docpathDir = join(worktreePath, '.docpath');
+  const repoRoot = await resolveWorktreeManagerRoot(cwd);
+
+  console.log(`\n🔧  开始修复 worktree 契约: ${safeName}`);
+  console.log(`    path: ${worktreePath}`);
+
+  // 1. 修复被误追踪的隔离路径 (git rm --cached)
+  const isolatedPaths = ['.docpath/tasks/current', '.docpath/workspace', '.docpath/journal'];
+  for (const relPath of isolatedPaths) {
+    const isTracked = (await runGitCapture(worktreePath, ['ls-files', '--', relPath])).trim().length > 0;
+    if (isTracked) {
+      console.log(`  🧹 发现被误追踪的隔离路径: ${relPath}，正在执行 untrack...`);
+      try {
+        await runGit(worktreePath, ['rm', '--cached', '-r', relPath]);
+        console.log(`    ✓ 成功从 git 暂存区移除: ${relPath}`);
+      } catch (err) {
+        console.warn(`    ⚠️ 移除失败: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  }
+
+  // 2. 纠正 .gitignore 规则 (移除 backlog 规则)
+  const gitignores = [join(worktreePath, '.gitignore'), join(repoRoot, '.gitignore')];
+  for (const gitignorePath of gitignores) {
+    if (existsSync(gitignorePath)) {
+      try {
+        const content = await readFile(gitignorePath, 'utf-8');
+        const lines = content.split('\n');
+        const nextLines = lines.filter((line) => line.trim() !== '/.docpath/backlog' && line.trim() !== '.docpath/backlog');
+        if (nextLines.length !== lines.length) {
+          await writeFile(gitignorePath, nextLines.join('\n'), 'utf-8');
+          console.log(`  ✓  已在 ${relative(repoRoot, gitignorePath)} 中移除了 backlog 排除规则`);
+        }
+      } catch (err) {
+        console.warn(`  ⚠️ 写入 .gitignore 失败: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  }
+
+  // 3. 重新校准共享资源 (symlink vs tracked copy)
+  console.log(`  🔗 重新校准共享与合并资源引用...`);
+  const sharedResources = ['backlog', 'rules', 'spec', 'templates'];
+  for (const resource of sharedResources) {
+    const targetPath = join(repoRoot, '.docpath', resource);
+    const linkPath = join(docpathDir, resource);
+    const tracked = await hasTrackedFiles(repoRoot, `.docpath/${resource}`);
+
+    try {
+      if (tracked) {
+        // Tracked: should be a directory copy (not a symlink)
+        if (!existsSync(linkPath) || lstatSync(linkPath).isSymbolicLink()) {
+          await rm(linkPath, { recursive: true, force: true });
+          if (existsSync(targetPath)) {
+            await cp(targetPath, linkPath, { recursive: true });
+          } else {
+            await mkdir(linkPath, { recursive: true });
+          }
+          console.log(`    ✓ ${resource} 修正为 tracked copy`);
+        } else {
+          console.log(`    ✓ ${resource} 已经是 tracked copy`);
+        }
+      } else {
+        // Untracked: should be a symlink pointing to the main checkout
+        if (existsSync(targetPath)) {
+          let shouldCreate = true;
+          if (existsSync(linkPath)) {
+            if (lstatSync(linkPath).isSymbolicLink()) {
+              shouldCreate = false; // already symlink
+            } else {
+              await rm(linkPath, { recursive: true, force: true });
+            }
+          }
+          if (shouldCreate) {
+            const relativePath = relative(dirname(linkPath), targetPath);
+            await createSymlink(relativePath, linkPath, 'dir');
+            console.log(`    ✓ ${resource} 修正为 symlink -> ${relativePath}`);
+          } else {
+            console.log(`    ✓ ${resource} 已经是 symlink`);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`    ⚠️ 修正 ${resource} 失败: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  console.log(`\n🩺  修复完成，重新进行诊断...`);
+  const { errors, warnings, checks } = await getWorktreeDoctorStatus(cwd, name);
+  for (const check of checks) {
+    const icon = check.status === 'pass' ? '✅' : check.status === 'warn' ? '⚠️' : '❌';
+    console.log(`  ${icon} ${check.label}: ${check.detail}`);
+  }
+
+  if (errors > 0) {
+    console.error(`\n❌  worktree 修复后仍存在 ${errors} 个错误。请检查底层问题。`);
+    process.exit(1);
+  } else {
+    console.log(`\n✅  worktree 契约修复成功！所有卡点均已消除。`);
+  }
+}
+
+/**
  * docpath worktree 命令入口
  */
 export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
@@ -715,6 +880,10 @@ export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
 
     case 'doctor':
       await worktreeDoctor(cwd, name);
+      break;
+
+    case 'repair':
+      await worktreeRepair(cwd, name);
       break;
 
     case 'remove':

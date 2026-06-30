@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-30T01:59:53.459Z",
+    "updated_at": "2026-06-30T01:59:53.459Z",
+    "content_sha256": "f5310f193eb0ddddced8ea0f55f121f8ad95f3f96ba7ddd8fa0c6eeb18600bf1"
+  },
+  "task_id": "T-20260630-optimize-git-worktree-isolation-contract",
+  "backlog_id": "R-238",
+  "title": "T-20260630-optimize-git-worktree-isolation-contract - Optimize Git Worktree isolation contract, verification gating, repair, and lease checks",
+  "generated_at": "2026-06-30T01:59:53.459Z",
+  "scope": {
+    "included": [
+      "Optimize Git Worktree isolation contract, verification gating, repair, and lease checks"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "API / 数据契约",
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "true",
+    "decision_brief_markdown": "- 当前问题: ## 背景\n- 目标: Optimize Git Worktree isolation contract, verification gating, repair, and lease checks\n- 背景: 来自 backlog R-238，Decision Brief 证据: Aligned on Option B for Backlog tracking (merge-mediated with git merge driver), Option A for duplicate promote scanning, strict doctor gating, and introducing docpath worktree repair.\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: true"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Optimize Git Worktree isolation contract, verification gating, repair, and lease checks",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-238 与任务 T-20260630-optimize-git-worktree-isolation-contract 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": "- 当前问题: ## 背景\n- 目标: Optimize Git Worktree isolation contract, verification gating, repair, and lease checks\n- 背景: 来自 backlog R-238，Decision Brief 证据: Aligned on Option B for Backlog tracking (merge-mediated with git merge driver), Option A for duplicate promote scanning, strict doctor gating, and introducing docpath worktree repair.\n- 可选方案: 按 backlog 原始范围执行；或先补充分析后再执行\n- 推荐方案: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: true"
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-06-30T02:00:09.922Z",
+    "updated_at": "2026-06-30T02:00:09.922Z",
+    "content_sha256": "9cbea1713aa958d6e01555eebf6fde81bb7f955eec09ebf4904d92e4366ca7f4"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-06-30T02:00:09.922Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Optimize Git Worktree isolation contract, verification gating, repair, and lease checks",
+      "description": "根据 spec 明确 FR-1: Optimize Git Worktree isolation contract, verification gating, repair, and lease checks 的实现边界和验收口径。",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Optimize Git Worktree isolation contract, verification gating, repair, and lease checks",
+      "description": "在现有架构内完成 FR-1: Optimize Git Worktree isolation contract, verification gating, repair, and lease checks 的代码与文档更新。",
+      "acceptance": "FR-1 Optimize Git Worktree isolation contract, verification gating, repair, and lease checks 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "pending"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-238 与任务 T-20260630-optimize-git-worktree-isolation-contract 建立双向关联",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-238 与任务 T-20260630-optimize-git-worktree-isolation-contract 建立双向关联",
+      "dependencies": "S2",
+      "status": "pending"
+    }
+  ]
+}

@@ -25,6 +25,7 @@ import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
 import { exitWithError } from '../utils/error-helpers.js';
+import { assertWorktreeContract } from './worktree.js';
 
 interface GoOptions {
   cwd: string;
@@ -206,6 +207,7 @@ async function startStep(
 
 export async function goCommand(options: GoOptions): Promise<void> {
   const { cwd, step, status, dryRun } = options;
+  await assertWorktreeContract(cwd);
   const session = resolveSessionContext(options.session);
   const { docpathDir, specPath } = await resolveGoContext(cwd);
   const extraFields = await readSpecFields(specPath);
