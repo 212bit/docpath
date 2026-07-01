@@ -1,6 +1,7 @@
 import { existsSync, type Dirent } from 'node:fs';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { basename, extname, join, resolve, sep } from 'node:path';
+import { normalizeTopic } from './topic-synonyms.js';
 
 export const PROJECT_DOCS_INDEX_VERSION = 1;
 export const DEFAULT_CONTEXT_TOKEN_BUDGET = 15000;
@@ -355,20 +356,32 @@ export function validateTaskId(taskId: string | undefined): void {
 }
 
 export function matchesDocumentSelection(entry: ProjectDocumentIndexEntry, options: DocumentSelectionOptions): boolean {
-  const topic = options.topic?.trim().toLowerCase();
+  const topic = options.topic?.trim();
   const taskId = options.taskId?.trim();
   const hasExplicitSelection = !!topic || !!taskId;
   const taskMatched = !!taskId && entry.task_id === taskId;
-  const topicMatched = !!topic && [
-    entry.path,
-    entry.type,
-    entry.kind,
-    entry.scope,
-    entry.title,
-    entry.summary,
-    entry.task_id || '',
-    ...entry.topic_tags,
-  ].join(' ').toLowerCase().includes(topic);
+  
+  // 使用同义词扩展进行主题匹配
+  let topicMatched = false;
+  if (topic) {
+    // 将用户输入扩展为同义词集合
+    const synonymSet = normalizeTopic(topic);
+    
+    // 构建文档的可搜索文本（小写）
+    const searchableText = [
+      entry.path,
+      entry.type,
+      entry.kind,
+      entry.scope,
+      entry.title,
+      entry.summary,
+      entry.task_id || '',
+      ...entry.topic_tags,
+    ].join(' ').toLowerCase();
+    
+    // 检查任意一个同义词是否匹配
+    topicMatched = synonymSet.some(synonym => searchableText.includes(synonym.toLowerCase()));
+  }
 
   if (taskMatched || topicMatched) return true;
   if (hasExplicitSelection) return false;
