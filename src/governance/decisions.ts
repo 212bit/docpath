@@ -9,6 +9,7 @@ import { readFile, writeFile, appendFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
+import { normalizeTopic } from '../utils/topic-synonyms.js';
 
 export const DECISIONS_JSONL_SCHEMA_VERSION = 1;
 
@@ -493,4 +494,56 @@ export async function getRecentDecisions(cwd: string, count: number = 5): Promis
   const content = await readFile(decisionsPath, 'utf-8');
   const blocks = content.split(/^## /m).filter((block) => /^ADR-/.test(block.trim())).slice(-count);
   return blocks.map(b => '## ' + b.trim());
+}
+
+/**
+ * 按主题查询相关决策（同义词子串匹配）
+ *
+ * 将 DecisionJsonlRecord 的 category + context + decision 拼接为可搜索文本，
+ * 使用 normalizeTopic(topic) 同义词集做子串匹配。
+ * 匹配越多同义词的排越前，同分则新的优先。
+ */
+export async function getTopicRelevantDecisions(
+  cwd: string,
+  topic: string,
+  maxResults: number = 3,
+): Promise<string[]> {
+  if (!topic?.trim()) return [];
+
+  const docpathDir = await resolveDocpathDir(cwd);
+  const workspaceDir = join(docpathDir, 'workspace');
+  const records = await readDecisionJsonl(workspaceDir);
+  if (!records || records.length === 0) return [];
+
+  const synonyms = normalizeTopic(topic).map((s) => s.toLowerCase());
+
+  // 对每条记录计算匹配分数
+  const scored: Array<{ record: DecisionJsonlRecord; score: number }> = [];
+  for (const record of records) {
+    const searchableText = [
+      record.category,
+      record.context,
+      record.decision,
+    ].join(' ').toLowerCase();
+
+    let score = 0;
+    for (const synonym of synonyms) {
+      if (searchableText.includes(synonym)) {
+        score++;
+      }
+    }
+    if (score > 0) {
+      scored.push({ record, score });
+    }
+  }
+
+  // 排序：匹配分数降序，同分则 createdAt 降序（新的优先）
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return b.record.createdAt.localeCompare(a.record.createdAt);
+  });
+
+  return scored
+    .slice(0, maxResults)
+    .map(({ record }) => renderDecision(fromJsonlRecord(record)).trim());
 }

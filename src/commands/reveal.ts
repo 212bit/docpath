@@ -19,7 +19,7 @@ import { join } from 'path';
 import { readCurrentState } from '../utils/workspace.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
-import { getRecentDecisions } from '../governance/decisions.js';
+import { getRecentDecisions, getTopicRelevantDecisions } from '../governance/decisions.js';
 import { compactRuleContent, readRuleFile } from '../utils/rules.js';
 import {
   assertDocumentIndexContainsTaskId,
@@ -344,10 +344,25 @@ export async function revealCommand(options: RevealOptions): Promise<void> {
       }
     }
 
-    const decisions = await getRecentDecisions(cwd, 5);
+    const topic = options.topic;
+    let decisions: string[];
+    let decisionsHeader: string;
+    if (topic) {
+      decisions = await getTopicRelevantDecisions(cwd, topic, 3);
+      if (decisions.length === 0) {
+        // 无主题匹配时回退到最近 3 条
+        decisions = await getRecentDecisions(cwd, 3);
+        decisionsHeader = `最近决策摘要 (topic "${topic}" 无匹配，回退)`;
+      } else {
+        decisionsHeader = `主题相关决策 (topic: ${topic})`;
+      }
+    } else {
+      decisions = await getRecentDecisions(cwd, 5);
+      decisionsHeader = '最近决策摘要 (decisions)';
+    }
     if (decisions.length > 0) {
       sections.push(
-        header('🧭', '相关决策摘要 (decisions)') + '\n' +
+        header('🧭', decisionsHeader) + '\n' +
         decisions.map(decisionSummary).join('\n')
       );
     }

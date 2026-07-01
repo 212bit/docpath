@@ -514,9 +514,13 @@ async function writeLessonCandidate(
       .filter((e) => e.taskId === taskId && e.status === 'blocked')
       .map((e) => `- ${e.step}: ${e.context}`);
 
-    const lessonBody: string[] = [
-      `✅ 推荐保留本次任务的执行经验：完成 ${summary.completedSteps}/${summary.totalSteps} 步，阻塞 ${summary.blockedSteps} 步。`,
-    ];
+    // 无实质内容时跳过 lesson 候选写入，避免产生空壳 lesson
+    if (!briefRecommended && adrCandidates.length === 0 && blockedSteps.length === 0) {
+      console.log('📝  无 ADR/brief/blocked 内容，跳过 lesson 候选写入');
+      return;
+    }
+
+    const lessonBody: string[] = [];
     if (briefRecommended) {
       lessonBody.push('', `### 推荐方案`, '', briefRecommended);
     }

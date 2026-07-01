@@ -9,10 +9,11 @@ const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 
 let appendDecision;
 let getRecentDecisions;
+let getTopicRelevantDecisions;
 let gcDecisions;
 
 before(async () => {
-  ({ appendDecision, getRecentDecisions, gcDecisions } = await import('../dist/governance/decisions.js'));
+  ({ appendDecision, getRecentDecisions, getTopicRelevantDecisions, gcDecisions } = await import('../dist/governance/decisions.js'));
 });
 
 function mkWorkspace() {
@@ -121,7 +122,7 @@ describe('structured decisions ADR', () => {
       timeout: 20000,
     });
 
-    assert.match(output, /相关决策摘要 \(decisions\)/);
+    assert.match(output, /最近决策摘要 \(decisions\)/);
     assert.match(output, /ADR-\d{8}-001 — architecture/);
     assert.match(output, /Reveal 需要包含最近 ADR/);
     assert.match(output, /task_id: T-ADR/);
@@ -259,6 +260,68 @@ describe('structured decisions ADR', () => {
       () => getRecentDecisions(cwd, 1),
       /decisions\.jsonl 第 1 行不是合法 JSON/,
     );
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('getTopicRelevantDecisions matches by topic synonyms', async () => {
+    const cwd = mkWorkspace();
+    await appendDecision(cwd, 'architecture', '采用 React 作为 Dashboard 框架', '需要选择前端架构方案', {
+      impact: 'Dashboard 技术栈确定',
+      alternatives: ['Vue', 'Svelte'],
+      relatedFiles: ['src/dashboard-ui/'],
+    });
+    await appendDecision(cwd, 'policy.skip', '跳过 E2E 测试', '当前无 E2E 框架', {
+      impact: '无自动化端到端验证',
+      alternatives: ['Playwright', 'Cypress'],
+      relatedFiles: [],
+    });
+    await appendDecision(cwd, 'review', '采用简洁输出风格', '用户偏好简洁', {
+      impact: '命令输出更紧凑',
+      alternatives: ['详细输出', '可配置输出'],
+      relatedFiles: [],
+    });
+
+    // topic="architecture" should match the first decision (category=architecture)
+    const archResults = await getTopicRelevantDecisions(cwd, 'architecture', 3);
+    assert.equal(archResults.length, 1);
+    assert.match(archResults[0], /React/);
+
+    // topic="设计" should match via synonyms (设计 -> design -> architecture)
+    const designResults = await getTopicRelevantDecisions(cwd, '设计', 3);
+    assert.ok(designResults.length >= 1, 'should match at least one decision via synonyms');
+
+    // topic="nonexistent" should return empty
+    const noResults = await getTopicRelevantDecisions(cwd, 'xyznonexistent', 3);
+    assert.equal(noResults.length, 0);
+
+    // empty topic should return empty
+    const emptyResults = await getTopicRelevantDecisions(cwd, '', 3);
+    assert.equal(emptyResults.length, 0);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('getTopicRelevantDecisions returns empty when no decisions.jsonl', async () => {
+    const cwd = mkWorkspace();
+    const results = await getTopicRelevantDecisions(cwd, 'architecture', 3);
+    assert.equal(results.length, 0);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('reveal with --topic shows topic-relevant decisions', async () => {
+    const cwd = mkWorkspace();
+    await appendDecision(cwd, 'architecture', '采用 workspace/decisions.md 作为 ADR 索引', '需要长期追踪设计取舍', {
+      relatedFiles: ['src/governance/decisions.ts'],
+    });
+
+    const output = execSync(`node ${BIN} reveal --cwd ${cwd} --level 2 --topic architecture --format raw`, {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 20000,
+    });
+
+    assert.match(output, /主题相关决策 \(topic: architecture\)/);
+    assert.match(output, /ADR-\d{8}-001/);
     rmSync(cwd, { recursive: true, force: true });
   });
 });

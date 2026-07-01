@@ -14,6 +14,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { compactRuleContent, readRuleFile } from '../utils/rules.js';
 import { readLastCheckMarkdown } from '../utils/workspace-evidence.js';
+import { getTopicRelevantDecisions } from '../governance/decisions.js';
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
   assertDocumentIndexContainsTaskId,
@@ -237,6 +238,17 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
     currentTaskId,
   });
   sections.push(...indexedDocs);
+
+  // ── 8. 主题相关 ADR ──
+  if (options.topic) {
+    const topicDecisions = await getTopicRelevantDecisions(cwd, options.topic, 3);
+    if (topicDecisions.length > 0) {
+      sections.push(
+        `## 主题相关决策 (topic: ${options.topic})\n` +
+        topicDecisions.map((d) => compressMarkdown(d, 200)).join('\n---\n')
+      );
+    }
+  }
 
   // ── 组装输出 ──
   const fullContext = sections.join('\n\n---\n\n');
