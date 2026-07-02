@@ -299,11 +299,12 @@ function renderGroomedCandidates(original: string, issues: GroomIssue[]): string
 }
 
 function printGroomReport(candidates: CandidateBlock[], issues: GroomIssue[], dryRun: boolean): void {
-  console.log(`📊  lesson 候选: ${candidates.length} 条，建议清理: ${issues.length} 条`);
-  for (const issue of issues.slice(0, 20)) {
+  const customIssues = issues.filter((issue) => !issue.block.key.endsWith('-workflow'));
+  console.log(`📊  lesson 候选: ${candidates.length} 条，建议清理: ${issues.length} 条（过滤系统统计: ${issues.length - customIssues.length} 条）`);
+  for (const issue of customIssues.slice(0, 20)) {
     console.log(`  - ${issue.block.taskId || '-'} / ${issue.block.key}: ${issue.reasons.join('、')}`);
   }
-  if (issues.length > 20) console.log(`  ... 省略 ${issues.length - 20} 条`);
+  if (customIssues.length > 20) console.log(`  ... 省略 ${customIssues.length - 20} 条`);
   console.log(dryRun ? '\n📝  [dry-run] 未写入 lesson-candidates.md\n' : '\n✅  lesson-candidates.md 已清理\n');
 }
 
@@ -584,12 +585,14 @@ function countClassifications(classifications: CandidateClassification[], action
 function printCandidateClassifications(classifications: CandidateClassification[]): void {
   if (classifications.length === 0) return;
 
+  const customClassifications = classifications.filter((c) => !c.block.key.endsWith('-workflow'));
+
   console.log(`📎  候选分类: 保留 ${countClassifications(classifications, 'keep')} / 归档 ${countClassifications(classifications, 'archive')} / 跳过 ${countClassifications(classifications, 'skip')}\n`);
-  for (const classification of classifications.slice(0, 20)) {
+  for (const classification of customClassifications.slice(0, 20)) {
     const label = classification.action === 'keep' ? '保留' : classification.action === 'archive' ? '归档' : '跳过';
     console.log(`  - [${label}] ${classification.block.taskId || '-'} / ${classification.block.key}: ${classification.reasons.join('、')}`);
   }
-  if (classifications.length > 20) console.log(`  ... 省略 ${classifications.length - 20} 条候选`);
+  if (customClassifications.length > 20) console.log(`  ... 省略 ${customClassifications.length - 20} 条候选`);
   console.log('');
 }
 
