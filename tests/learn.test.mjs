@@ -539,6 +539,16 @@ describe('journal to learn loop', () => {
 
   it('journal writes lesson candidates after successful archive', () => {
     const cwd = mkWorkspace();
+    // FR-4: writeLessonCandidate skips when there is no brief/ADR/blocked content.
+    // Give this task a Decision Brief so a lesson candidate is still written.
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), [
+      '# Spec',
+      '',
+      '### Decision Brief',
+      '- 推荐方案: 在 CLI 输出中保留明确下一步指引',
+      '- 不做什么: 不引入隐式状态推断',
+      '',
+    ].join('\n'));
     execSync(`node ${BIN} journal --cwd ${cwd} --optional-archive skip`, { cwd, encoding: 'utf-8', timeout: 20000 });
 
     const lessonsPath = join(cwd, '.docpath', 'workspace', 'lesson-candidates.md');

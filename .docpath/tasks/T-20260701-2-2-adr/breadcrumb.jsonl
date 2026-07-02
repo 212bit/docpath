@@ -8,3 +8,5 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"check","status":"done","context":"质量检查通过 (3 项)","timestamp":"2026-07-01T16:41:15.521Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-07-01T16:41:21.035Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-07-01T16:41:21.224Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"check","status":"blocked","context":"质量检查失败: 测试, Plan/Breadcrumb 漂移检查","timestamp":"2026-07-02T01:52:08.765Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"check","status":"blocked","context":"质量检查失败: Plan/Breadcrumb 漂移检查","timestamp":"2026-07-02T02:00:03.869Z"}
