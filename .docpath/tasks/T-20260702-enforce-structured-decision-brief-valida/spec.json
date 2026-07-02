@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-02T06:39:06.148Z",
+    "updated_at": "2026-07-02T06:39:06.148Z",
+    "content_sha256": "d1b4b1b56f429b6a9a4bec6ebefb5206553fa93b6e8db93270bcf18ddad8a631"
+  },
+  "task_id": "T-20260702-enforce-structured-decision-brief-valida",
+  "backlog_id": "R-241",
+  "title": "T-20260702-enforce-structured-decision-brief-valida - Enforce structured decision brief validation and add plan go reminders",
+  "generated_at": "2026-07-02T06:39:06.148Z",
+  "scope": {
+    "included": [
+      "Enforce structured decision brief validation and add plan go reminders"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "已在 implementation plan 批复并确认采用方案 B",
+    "decision_brief_markdown": "- 当前问题: Enforce structured decision brief validation to guarantee knowledge retention quality, and add prompts for plan/go.\n- 可选方案:\n  - 方案 A: 保持原有 plain string 校验\n  - 方案 B: 引入结构化验证并强化提醒\n- 推荐方案: 方案 B\n- 决策理由: 方案 B 在不影响兼容性的前提下保证知识固化质量，且能引导开发者即时记录决策。\n- 不做什么: 不引入任何重量级 agent 自动总结流程\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 已在 implementation plan 批复并确认采用方案 B"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Enforce structured decision brief validation and add plan go reminders",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog 条目 R-241 与任务 T-20260702-enforce-structured-decision-brief-valida 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "Enforce structured decision brief validation to guarantee knowledge retention quality, and add prompts for plan/go.",
+    "options": [
+      "- 方案 A: 保持原有 plain string 校验"
+    ],
+    "chosen": "方案 B",
+    "rationale": "方案 B 在不影响兼容性的前提下保证知识固化质量，且能引导开发者即时记录决策。"
+  }
+}
