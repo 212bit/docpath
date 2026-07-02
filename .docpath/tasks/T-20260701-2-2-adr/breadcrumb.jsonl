@@ -10,3 +10,8 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-07-01T16:41:21.224Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"check","status":"blocked","context":"质量检查失败: 测试, Plan/Breadcrumb 漂移检查","timestamp":"2026-07-02T01:52:08.765Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"check","status":"blocked","context":"质量检查失败: Plan/Breadcrumb 漂移检查","timestamp":"2026-07-02T02:00:03.869Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"S4","status":"in_progress","context":"开始执行: lesson 候选空壳收敛（FR-4）","timestamp":"2026-07-02T02:05:07.130Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-07-02T02:05:24.064Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"S5","status":"in_progress","context":"开始执行: 测试与回归验证","timestamp":"2026-07-02T02:05:53.231Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"S5","status":"done","context":"agent-step: S5","timestamp":"2026-07-02T02:05:53.515Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260701-2-2-adr","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-07-02T02:08:09.212Z"}
