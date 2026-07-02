@@ -16,19 +16,32 @@ docs/product-panorama.md §2.2 记忆层宣称与实现存在差距：'新 API �
 ## 2. 需求清单
 
 ### 功能需求
-- [ ] FR-1: 优化记忆层(§2.2)：对齐文档宣称与实现 + 加固 ADR 提取/主动展示
+- [x] FR-1: 文档降调——§2.2 删"新 API 契约"、"自动归档"→"归档"、"高精度检索"→"按主题过滤的检索"、"防止反复争论"→"减少重复争论的风险"
+  - 来源 backlog: R-240
+- [x] FR-2: ADR 提取源优先 spec.json `decision_brief`（→ spec.md 关键决策表 → breadcrumb 双正则兜底），由 `collectAdrCandidates`（journal.ts:577）编排；本任务前已于 commit `13309a6` 实现，本任务确认其在范围内有效
+  - 来源 backlog: R-240
+- [x] FR-3: `reveal --topic` / `context --topic` 命中主题时附带展示相关 ADR（`getTopicRelevantDecisions`，同义词+打分+createdAt 降序破平）；reveal 无匹配回退最近 N 条
+  - 来源 backlog: R-240
+- [x] FR-4: `writeLessonCandidate` 在无 brief/ADR/blocked 时跳过写入，避免空壳 lesson
   - 来源 backlog: R-240
 
 ### 非功能需求
-- [ ] NFR-1: 保持与现有 DocPath 工作流兼容
+- [x] NFR-1: `--agent` YAML 字段 append-only；decisions.jsonl schema 不变，与现有工作流兼容
+- [x] NFR-2: 新增行为可通过本地单元测试验证（decisions.test.mjs + backlog-journal.test.mjs）
 
 ## 3. 范围界定
 
 ### 包含
-- 优化记忆层(§2.2)：对齐文档宣称与实现 + 加固 ADR 提取/主动展示
+- §2.2 文档降调（FR-1）
+- ADR 提取源优先级链确认（FR-2，已存在于 `collectAdrCandidates`）
+- `getTopicRelevantDecisions` + reveal/context 主题相关 ADR 展示（FR-3）
+- lesson 候选空壳收敛（FR-4）
 
 ### 不包含
-- 待在后续规划中补充
+- 不实现"新 API 契约"自动提取（删宣称，非实现）
+- 不引入 embedding/向量检索
+- 不改 decisions.jsonl schema 或老化归档机制
+- 不重构 document-index 启发式打分
 
 ## 4. 关键决策
 
@@ -78,8 +91,13 @@ docs/product-panorama.md §2.2 记忆层宣称与实现存在差距：'新 API �
 
 ## 5. 验收标准
 
-- [ ] AC-1: 生成的 spec 可直接进入 `docpath plan`
-- [ ] AC-2: backlog 条目 R-240 与任务 T-20260701-2-2-adr 建立双向关联
+- [x] AC-1: §2.2 措辞与实现对齐——无未实现宣称（"新 API 契约"已删，"自动归档"/"高精度检索"已降调）
+- [x] AC-2: `collectAdrCandidates` 优先级为 decision_brief > 关键决策表 > breadcrumb 正则；有 brief 时 ADR 来自 brief 而非正则
+- [x] AC-3: `reveal --topic X` 输出含与 X 相关的 ADR；无匹配时回退最近 N 条并标注；`context --topic X` 追加主题决策段
+- [x] AC-4: `writeLessonCandidate` 在无 brief/ADR/blocked 时不写空壳 lesson
+- [x] AC-5: 单元测试覆盖主题查询（含同义词、无匹配、空 topic）+ reveal 集成 + brief-first 提取，全部通过
+- [x] AC-6: `--agent` YAML / decisions.jsonl schema 未破坏，现有解析器回归通过
+- [x] AC-7: backlog 条目 R-240 与任务 T-20260701-2-2-adr 建立双向关联
 
 ---
 
