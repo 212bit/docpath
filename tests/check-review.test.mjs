@@ -1040,6 +1040,92 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check enforces structured decision_brief fields when major change gate is required', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-structured-brief-'));
+    const { tasks, workspace } = mkExecWorkspace(cwd);
+    writeDoneBreadcrumb(workspace, 'T-AGENT', ['S1']);
+    mkdirSync(join(cwd, 'templates'), { recursive: true });
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'templates', 'AGENTS.md'), '# Agent Protocol\n\nOld rule.\n');
+    execSync('git add .', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+
+    writeFileSync(join(cwd, 'templates', 'AGENTS.md'), '# Agent Protocol\n\nNew rule.\n');
+
+    // Case 1: missing required fields in Decision Brief (e.g. empty chosen/options)
+    const invalidSpec = `${readFileSync(join(tasks, 'spec.md'), 'utf-8').replace('## 5. 验收标准', [
+      '## 4.1 重大变更门禁',
+      '',
+      '### 是否涉及重大变更',
+      '- [x] 是，需要用户确认',
+      '',
+      '### Decision Brief',
+      '- 当前问题: 测试',
+      '- 用户确认: N/A',
+      '',
+      '## 5. 验收标准',
+    ].join('\n'))}`;
+    writeFileSync(join(tasks, 'spec.md'), invalidSpec);
+    writeActiveSpecJson(cwd, tasks, structuredSpecJson(invalidSpec, {
+      major_change_gate: {
+        required: true,
+        types: ['工作流 / Agent 行为'],
+        user_confirmed: 'N/A', // Invalid user confirmation, should block
+        decision_brief_markdown: [
+          '- 当前问题: 测试',
+          '- 用户确认: N/A',
+        ].join('\n'),
+      },
+    }));
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+    assert.equal(result.code, 1);
+    assert.match(result.out, /重大决策确认检查/);
+
+    // Case 2: fully structured decision brief passes
+    const validSpec = `${readFileSync(join(tasks, 'spec.md'), 'utf-8').replace('## 5. 验收标准', [
+      '## 4.1 重大变更门禁',
+      '',
+      '### 是否涉及重大变更',
+      '- [x] 是，需要用户确认',
+      '',
+      '### Decision Brief',
+      '- 当前问题: 测试协议模板重大变更门禁',
+      '- 可选方案:',
+      '  - 方案 A: 直接修改',
+      '  - 方案 B: 先确认',
+      '- 推荐方案: 方案 B',
+      '- 决策理由: 方案 B 安全',
+      '- 用户确认: 2026-06-08 用户确认协议模板重大变更',
+      '',
+      '## 5. 验收标准',
+    ].join('\n'))}`;
+    writeFileSync(join(tasks, 'spec.md'), validSpec);
+    writeActiveSpecJson(cwd, tasks, structuredSpecJson(validSpec, {
+      major_change_gate: {
+        required: true,
+        types: ['工作流 / Agent 行为'],
+        user_confirmed: '2026-06-08 用户确认协议模板重大变更',
+        decision_brief_markdown: [
+          '- 当前问题: 测试协议模板重大变更门禁',
+          '- 可选方案:',
+          '  - 方案 A: 直接修改',
+          '  - 方案 B: 先确认',
+          '- 推荐方案: 方案 B',
+          '- 决策理由: 方案 B 安全',
+          '- 用户确认: 2026-06-08 用户确认协议模板重大变更',
+        ].join('\n'),
+      },
+    }));
+
+    const confirmed = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current`, cwd);
+    assert.equal(confirmed.code, 0);
+    assert.match(confirmed.out, /全部通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('check blocks UI implementation when design approval is not approved', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-ui-approval-'));
     const { tasks } = mkExecWorkspace(cwd);

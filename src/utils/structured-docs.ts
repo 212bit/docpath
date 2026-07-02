@@ -46,6 +46,13 @@ export interface StructuredSpecItem {
   done: boolean;
 }
 
+export interface StructuredDecisionBrief {
+  problem: string;
+  options: string[];
+  chosen: string;
+  rationale: string;
+}
+
 export interface StructuredSpecDocument extends StructuredDocumentBase {
   kind: 'spec';
   source: StructuredDocumentSource;
@@ -68,7 +75,7 @@ export interface StructuredSpecDocument extends StructuredDocumentBase {
   functional_requirements: StructuredSpecItem[];
   non_functional_requirements: StructuredSpecItem[];
   acceptance_criteria: StructuredSpecItem[];
-  decision_brief?: string;
+  decision_brief?: string | StructuredDecisionBrief;
 }
 
 export type StructuredTaskDocument = StructuredPlanDocument | StructuredSpecDocument;
@@ -251,6 +258,54 @@ export function parsePlanMarkdownDocument(markdown: string, now = new Date()): S
   };
 }
 
+export function parseDecisionBrief(text: string): StructuredDecisionBrief | undefined {
+  if (!text) return undefined;
+  
+  let briefText = text;
+  if (text.includes('### Decision Brief')) {
+    briefText = extractSection(text, /^###\s+Decision Brief\s*$/m);
+  }
+  
+  if (!briefText.trim()) return undefined;
+
+  const problemMatch = briefText.match(/^(?:-\s*)?(?:当前问题|问题|Problem)\s*[:：]\s*(.+)$/mi);
+  const targetMatch = briefText.match(/^(?:-\s*)?(?:目标|背景|Title|Background)\s*[:：]\s*(.+)$/mi);
+  const chosenMatch = briefText.match(/^(?:-\s*)?(?:推荐方案|选择|Chosen|Chosen option)\s*[:：]\s*(.+)$/mi);
+  const rationaleMatch = briefText.match(/^(?:-\s*)?(?:决策理由|理由|Rationale)\s*[:：]\s*(.+)$/mi);
+  const costMatch = briefText.match(/^(?:-\s*)?(?:成本|回滚方案|风险|Cost|Risk)\s*[:：]\s*(.+)$/mi);
+
+  const optionsMatch = briefText.match(/(?:可选方案|方案|Options)\s*[:：]\s*(.+)?/i);
+  const options: string[] = [];
+  if (optionsMatch) {
+    const inline = optionsMatch[1]?.trim();
+    if (inline && !inline.startsWith('\n')) {
+      options.push(inline);
+    } else {
+      const rest = briefText.slice((optionsMatch.index ?? 0) + optionsMatch[0].length);
+      const nextSectionMatch = rest.match(/\n(?:-\s*)?(?:推荐方案|选择|Chosen|决策理由|理由|Rationale|当前问题|问题|Problem|$)/i);
+      const block = nextSectionMatch ? rest.slice(0, nextSectionMatch.index) : rest;
+      const lines = block.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
+          options.push(trimmed.replace(/^[-*]\s*/, '').trim());
+        }
+      }
+    }
+  }
+
+  const problem = problemMatch ? problemMatch[1].trim() : (targetMatch ? targetMatch[1].trim() : '');
+  const chosen = chosenMatch ? chosenMatch[1].trim() : (targetMatch ? targetMatch[1].trim() : '');
+  const rationale = rationaleMatch ? rationaleMatch[1].trim() : (costMatch ? costMatch[1].trim() : '');
+
+  return {
+    problem,
+    options: options.length > 0 ? options : (chosen ? [chosen] : []),
+    chosen,
+    rationale: rationale || '保持 backlog 声明的全部验收条件，且无额外依赖风险',
+  };
+}
+
 export function parseSpecMarkdownDocument(markdown: string, options: ParseSpecOptions | Date = {}): StructuredSpecDocument {
   const now = options instanceof Date ? options : options.now ?? new Date();
   const taskId = options instanceof Date ? undefined : options.taskId;
@@ -272,7 +327,7 @@ export function parseSpecMarkdownDocument(markdown: string, options: ParseSpecOp
     functional_requirements: parseChecklistItems(markdown, 'FR'),
     non_functional_requirements: parseChecklistItems(markdown, 'NFR'),
     acceptance_criteria: parseChecklistItems(markdown, 'AC'),
-    decision_brief: extractSection(markdown, /^###\s+Decision Brief\s*$/m),
+    decision_brief: parseDecisionBrief(markdown),
   };
 }
 
@@ -364,9 +419,16 @@ export function normalizeSpecDocument(doc: unknown, now = new Date()): Structure
     functional_requirements: asSpecItems(doc.functional_requirements),
     non_functional_requirements: asSpecItems(doc.non_functional_requirements),
     acceptance_criteria: asSpecItems(doc.acceptance_criteria),
-    decision_brief: typeof doc.decision_brief === 'string'
-      ? doc.decision_brief
-      : extractSection(markdown, /^###\s+Decision Brief\s*$/m),
+    decision_brief: isObject(doc.decision_brief)
+      ? {
+          problem: typeof doc.decision_brief.problem === 'string' ? doc.decision_brief.problem : '',
+          options: asStringArray(doc.decision_brief.options),
+          chosen: typeof doc.decision_brief.chosen === 'string' ? doc.decision_brief.chosen : '',
+          rationale: typeof doc.decision_brief.rationale === 'string' ? doc.decision_brief.rationale : '',
+        }
+      : typeof doc.decision_brief === 'string' && doc.decision_brief.trim().length > 0
+        ? (parseDecisionBrief(doc.decision_brief) || parseDecisionBrief(markdown))
+        : (parseDecisionBrief(doc.major_change_gate && isObject(doc.major_change_gate) && typeof doc.major_change_gate.decision_brief_markdown === 'string' ? doc.major_change_gate.decision_brief_markdown : '') || parseDecisionBrief(markdown)),
   };
 }
 
@@ -452,6 +514,20 @@ export function validatePlanDocument(doc: unknown): StructuredValidationResult {
   return { ok: errors.length === 0, errors };
 }
 
+export function validateDecisionBriefStructure(brief: string): string[] {
+  const errors: string[] = [];
+  const hasProblem = /(?:当前问题|问题|Problem)\s*[:：]/i.test(brief);
+  const hasOptions = /(?:可选方案|方案|Options)\s*[:：]/i.test(brief);
+  const hasChosen = /(?:推荐方案|选择|Chosen|Chosen option)\s*[:：]/i.test(brief);
+  const hasRationale = /(?:决策理由|理由|Rationale)\s*[:：]/i.test(brief);
+
+  if (!hasProblem) errors.push('当前问题 (Problem)');
+  if (!hasOptions) errors.push('可选方案 (Options)');
+  if (!hasChosen) errors.push('推荐方案 (Chosen)');
+  if (!hasRationale) errors.push('决策理由 (Rationale)');
+  return errors;
+}
+
 export function validateSpecDocument(doc: unknown): StructuredValidationResult {
   const errors = validateBase(doc, 'spec');
   if (isObject(doc)) {
@@ -471,6 +547,18 @@ export function validateSpecDocument(doc: unknown): StructuredValidationResult {
     if ('ui_gate' in doc && isObject(doc.ui_gate)) {
       if (!['required', 'exempt', 'unknown'].includes(String(doc.ui_gate.state))) {
         errors.push('spec.json ui_gate.state 必须是 required/exempt/unknown');
+      }
+    }
+    if ('decision_brief' in doc && doc.decision_brief) {
+      if (typeof doc.decision_brief === 'string') {
+        // Legacy string format: no type errors
+      } else if (!isObject(doc.decision_brief)) {
+        errors.push('spec.json decision_brief 必须是一个对象或字符串');
+      } else {
+        if (typeof doc.decision_brief.problem !== 'string') errors.push('spec.json decision_brief.problem 必须是字符串');
+        if (!Array.isArray(doc.decision_brief.options)) errors.push('spec.json decision_brief.options 必须是数组');
+        if (typeof doc.decision_brief.chosen !== 'string') errors.push('spec.json decision_brief.chosen 必须是字符串');
+        if (typeof doc.decision_brief.rationale !== 'string') errors.push('spec.json decision_brief.rationale 必须是字符串');
       }
     }
   }

@@ -115,9 +115,26 @@ export function specHasMajorDecisionConfirmation(specContent: string): boolean {
   return requiresConfirmation && hasUserConfirmation;
 }
 
-export function structuredMajorGateConfirmation(gate: StructuredMajorChangeGate | undefined): boolean | null {
+export function structuredMajorGateConfirmation(
+  gate: StructuredMajorChangeGate | undefined,
+  decisionBrief?: any
+): boolean | null {
   if (!gate) return null;
-  return gate.required && isMeaningfulUserConfirmation(gate.user_confirmed) && gate.decision_brief_markdown.trim().length > 0;
+  if (!gate.required) return false;
+
+  const hasUserConfirmed = isMeaningfulUserConfirmation(gate.user_confirmed);
+  const hasDecisionBriefText = gate.decision_brief_markdown.trim().length > 0;
+
+  let structuredValid = true;
+  if (decisionBrief && typeof decisionBrief === 'object') {
+    const hasProblem = typeof decisionBrief.problem === 'string' && decisionBrief.problem.trim().length > 0;
+    const hasOptions = Array.isArray(decisionBrief.options) && decisionBrief.options.length > 0;
+    const hasChosen = typeof decisionBrief.chosen === 'string' && decisionBrief.chosen.trim().length > 0;
+    const hasRationale = typeof decisionBrief.rationale === 'string' && decisionBrief.rationale.trim().length > 0;
+    structuredValid = hasProblem && hasOptions && hasChosen && hasRationale;
+  }
+
+  return hasUserConfirmed && hasDecisionBriefText && structuredValid;
 }
 
 export function collectMajorDecisionSignals(cwd: string): MajorDecisionSignal[] {
@@ -173,7 +190,7 @@ export async function resolveMajorChangeGateStatus(
   }
 
   const structuredSpec = await readActiveStructuredSpecDocument(docpathDir, taskId);
-  const structuredConfirmed = structuredMajorGateConfirmation(structuredSpec?.major_change_gate);
+  const structuredConfirmed = structuredMajorGateConfirmation(structuredSpec?.major_change_gate, structuredSpec?.decision_brief);
   const specContent = structuredConfirmed === null ? await readActiveTaskFile(docpathDir, taskId, 'spec.md') : '';
   const confirmed = structuredConfirmed ?? specHasMajorDecisionConfirmation(specContent);
   return {

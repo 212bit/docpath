@@ -299,5 +299,6 @@ export async function planCommand(options: PlanOptions): Promise<void> {
 
   await transitionWorkflow(cwd, 'plan.ready', { currentStep: '计划已生成，下一步: docpath go' });
   console.log('\n✅ 状态已更新为 planning');
+  console.log('💡 提示：本任务涉及架构决策吗？如果涉及，请记得在 spec.md 中记录完整的 Decision Brief。');
   await emitNextHint(cwd);
 }

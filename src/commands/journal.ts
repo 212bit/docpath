@@ -125,6 +125,16 @@ interface AdrCandidate {
  * 「### Decision Brief」段落。两者都不存在则返回 null。
  */
 function resolveDecisionBrief(context: JournalContext): string | null {
+  const structuredObj = context.structuredSpec?.decision_brief;
+  if (structuredObj && typeof structuredObj === 'object' && 'problem' in structuredObj) {
+    return [
+      `- 当前问题: ${structuredObj.problem}`,
+      `- 可选方案:`,
+      ...(structuredObj.options || []).map(o => `  - ${o}`),
+      `- 推荐方案: ${structuredObj.chosen}`,
+      `- 决策理由: ${structuredObj.rationale}`,
+    ].join('\n');
+  }
   const structured = context.structuredSpec?.major_change_gate?.decision_brief_markdown?.trim();
   if (structured) return structured;
   const md = context.spec || '';
