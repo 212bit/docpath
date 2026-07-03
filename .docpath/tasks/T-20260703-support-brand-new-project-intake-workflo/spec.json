@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-03T14:19:38.589Z",
+    "updated_at": "2026-07-03T14:19:38.589Z",
+    "content_sha256": "cd366d82e18fcbbb8085a711678fe275f7d995e848d65873e95386b72ce6b0bd"
+  },
+  "task_id": "T-20260703-support-brand-new-project-intake-workflo",
+  "backlog_id": "R-242",
+  "title": "T-20260703-support-brand-new-project-intake-workflo - Support Brand-New Project Intake Workflow From Source Documents",
+  "generated_at": "2026-07-03T14:19:38.589Z",
+  "scope": {
+    "included": [
+      "CLI workflow design and implementation for project-intake MVP.",
+      "Artifact schema or file layout for project-intake evidence.",
+      "Routing updates for `next/status/check` where needed.",
+      "Readiness gates that distinguish raw, analyzed, confirmed, planned, and decomposed states.",
+      "Tests covering project-intake and backlog compatibility."
+    ],
+    "excluded": [
+      "Native binary PPT/PDF parsing.",
+      "Product UI implementation.",
+      "Automatic external LLM calls.",
+      "Replacing current backlog, quick, or standard task flows.",
+      "Auto-promoting generated backlog items without user confirmation."
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "API / 数据契约",
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "范围扩大",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "User explicitly requested: “继续推进，同意promote 成active task 然后进入spec/plan”.",
+    "decision_brief_markdown": "- 当前问题: DocPath lacks a strong path for brand-new projects that start from raw source documents instead of scoped backlog items.\n- 目标: Create an upstream project-intake workflow that turns raw project materials into confirmed project artifacts and then backlog items.\n- 背景: R-242 was captured, analyzed, confirmed, and explicitly approved for promotion by the user on 2026-07-03.\n- 可选方案:\n  - 方案 A: Keep using backlog for everything.\n  - 方案 B: Extend backlog with a project profile.\n  - 方案 C: Add a distinct project-intake workflow that can later generate backlog items.\n- 推荐方案: 方案 C.\n- 决策理由: Brand-new project discovery has different semantics from incremental backlog work. A separate workflow keeps granularity clear, avoids breaking existing backlog behavior, and gives agents a safer route for analysis before implementation.\n- 不做什么: Do not implement binary PPT/PDF parsing, product UI, external LLM calls, or automatic promotion.\n- 成本: Medium to high; this touches workflow state, routing, artifact conventions, CLI commands, and tests.\n- 风险: Misclassification as quick, artifact sprawl, compatibility regressions in backlog flows, and unclear conversion gates.\n- 回滚方案: Keep existing backlog behavior untouched; disable or remove project-intake routes without changing backlog semantics.\n- 用户确认: User explicitly requested: “继续推进，同意promote 成active task 然后进入spec/plan”."
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Provide a project-intake capture route for raw source material.",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Store project-intake artifacts separately enough that they are not confused with normal small backlog items.",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "Support at least text/markdown inputs in the MVP. Binary PPT/PDF ingestion is out of MVP unless already converted to text.",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "Generate or guide creation of structured analysis sections: requirements, product, UI/UX, technical, risks, and open questions.",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "Generate or guide creation of a project brief with goals, actors, scope, non-goals, assumptions, dependencies, risks, and acceptance candidates.",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "Support later creation of PRD/spec and architecture brief evidence from the intake output.",
+      "done": false
+    },
+    {
+      "id": "FR-7",
+      "text": "Support conversion from confirmed project-intake output into milestone plan and/or normal backlog items.",
+      "done": false
+    },
+    {
+      "id": "FR-8",
+      "text": "Require explicit user confirmation before promotion into implementation or generated backlog items.",
+      "done": false
+    },
+    {
+      "id": "FR-9",
+      "text": "Update agent routing so new-project requests do not default to quick or underspecified backlog flows.",
+      "done": false
+    },
+    {
+      "id": "FR-10",
+      "text": "Preserve existing backlog commands and behavior for incremental tasks.",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "Deterministic CLI state changes must not depend on network or hidden LLM execution.",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "Generated artifacts must be auditable through existing DocPath summaries and canonical files.",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "Existing quick/backlog/spec/plan tests must continue to pass.",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "The workflow must be resumable through `docpath next --agent`.",
+      "done": false
+    },
+    {
+      "id": "NFR-5",
+      "text": "Errors must identify missing readiness evidence and next corrective commands.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "A standard-level project-intake spec and plan exist for `R-242`.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "The plan includes discovery, design, implementation, tests, and closeout steps.",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "The future implementation defines project-intake stages, artifacts, readiness gates, and CLI routes.",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "Existing backlog and quick workflows remain compatible.",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "The workflow blocks implementation/decomposition until explicit user confirmation.",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "Tests cover routing, readiness gates, artifact generation, and backlog compatibility.",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "DocPath lacks a strong path for brand-new projects that start from raw source documents instead of scoped backlog items.",
+    "options": [
+      "- 方案 A: Keep using backlog for everything."
+    ],
+    "chosen": "方案 C.",
+    "rationale": "Brand-new project discovery has different semantics from incremental backlog work. A separate workflow keeps granularity clear, avoids breaking existing backlog behavior, and gives agents a safer route for analysis before implementation."
+  }
+}
