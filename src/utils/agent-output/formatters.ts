@@ -738,8 +738,14 @@ export function inferNextAction(
         required_context = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md'];
         exit_criteria = 'plan.md 已生成';
       } else if (hasSpec && hasIncompleteSpec) {
-        next_action = '当前 spec 仍是骨架内容，请先补全需求背景、验收标准和范围边界';
-        recommended_command = 'docpath brainstorm --dry-run';
+        // 感知 backlog origin：如果任务源自 promote，推荐 --from-backlog 模式
+        if (state?.backlog_id) {
+          next_action = `当前 spec 来自 backlog promote，请基于已有证据深化需求（而非从零澄清）`;
+          recommended_command = `docpath brainstorm --from-backlog ${state.backlog_id}`;
+        } else {
+          next_action = '当前 spec 仍是骨架内容，请先补全需求背景、验收标准和范围边界';
+          recommended_command = 'docpath brainstorm --dry-run';
+        }
         required_context = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md', ...globalRules];
         must_update = ['.docpath/tasks/current/spec.md'];
         exit_criteria = 'spec.md 不再包含“待补充”，并明确需求、范围和验收';

@@ -28,7 +28,8 @@ function registerBrainstormCommand(cli: CAC, name: string, description: string):
     .option('--file <path>', '需求文档路径（等价于位置参数 [file]）')
     .option('--dry-run', '只预览本地 spec 草稿，不写文件或状态')
     .option('--one-shot', '单次 prompt 模式：从 input 生成本地草稿，不进入交互循环')
-    .action(async (file: string | undefined, options: { cwd?: string; input?: string; file?: string; 'dry-run'?: boolean; dryRun?: boolean; oneShot?: boolean }) => {
+    .option('--from-backlog <id>', '从 backlog 条目深化：加载已有 evidence 作为已知上下文（可与 --input 组合补充新信息）')
+    .action(async (file: string | undefined, options: { cwd?: string; input?: string; file?: string; 'dry-run'?: boolean; dryRun?: boolean; oneShot?: boolean; fromBacklog?: string }) => {
       if (name === 'brainstor') warnDeprecatedCommand('brainstor', 'brainstorm');
       await brainstormCommand({
         cwd: options.cwd || process.cwd(),
@@ -36,6 +37,7 @@ function registerBrainstormCommand(cli: CAC, name: string, description: string):
         file: file || options.file,
         dryRun: options['dry-run'] || options.dryRun,
         noInteractive: options['oneShot'],
+        fromBacklog: options.fromBacklog,
       });
     });
 }

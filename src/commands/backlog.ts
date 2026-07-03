@@ -403,8 +403,92 @@ function generateUniqueTaskId(docpathDir: string, title: string): string {
   throw new Error(`docpath backlog promote: 无法为标题生成唯一 task_id: ${title}`);
 }
 
+/**
+ * 从 backlog body 中按 ## 标题拆出各段内容。
+ * 支持 "## 背景" / "## 验收" 等常见段落名；未匹配的正文归入 background。
+ */
+function parseBacklogBody(body: string): { background: string; acceptance: string } {
+  const trimmed = body.trim();
+  if (!trimmed) return { background: '', acceptance: '' };
+
+  const sectionPattern = /^##\s+(.+)$/gm;
+  let match: RegExpExecArray | null;
+  const matches: Array<{ heading: string; start: number; end: number }> = [];
+
+  while ((match = sectionPattern.exec(trimmed)) !== null) {
+    matches.push({ heading: match[1].trim(), start: match.index, end: match.index + match[0].length });
+  }
+
+  if (matches.length === 0) {
+    return { background: trimmed, acceptance: '' };
+  }
+
+  // 第一个 ## 之前的内容作为前言（归入 background）
+  const preamble = trimmed.slice(0, matches[0].start).trim();
+  const backgroundParts: string[] = [];
+  const acceptanceParts: string[] = [];
+
+  if (preamble) backgroundParts.push(preamble);
+
+  for (let i = 0; i < matches.length; i++) {
+    const contentStart = matches[i].end;
+    const contentEnd = i + 1 < matches.length ? matches[i + 1].start : trimmed.length;
+    const content = trimmed.slice(contentStart, contentEnd).trim();
+    const heading = matches[i].heading;
+
+    if (/验收|acceptance|done\s*条件/i.test(heading)) {
+      acceptanceParts.push(content);
+    } else {
+      backgroundParts.push(content);
+    }
+  }
+
+  return {
+    background: backgroundParts.join('\n\n'),
+    acceptance: acceptanceParts.join('\n'),
+  };
+}
+
+/**
+ * 汇总 backlog evidence 字段为可读段落。
+ * 只输出有内容的证据，避免空段占位。
+ */
+function renderEvidenceSummary(evidence: BacklogEvidence): string {
+  const parts: string[] = [];
+  if (evidence.brainstorm?.trim()) {
+    parts.push('### 需求澄清历史 (brainstorm)', '', evidence.brainstorm.trim(), '');
+  }
+  if (evidence.analysis?.trim()) {
+    parts.push('### 深度分析摘要 (analysis)', '', evidence.analysis.trim(), '');
+  }
+  if (parts.length === 0) return '';
+  return ['## 1.1 已有证据', '', ...parts].join('\n');
+}
+
 function renderPromotedSpec(item: BacklogItem, taskId: string): string {
-  return [
+  const parsed = parseBacklogBody(item.body);
+  const backgroundSection = parsed.background || '- 待补充';
+  const evidenceSection = renderEvidenceSummary(item.evidence);
+
+  // 验收标准：优先从 body 解析出的 acceptance，否则用默认骨架
+  const acceptanceLines: string[] = [];
+  if (parsed.acceptance) {
+    // 将 body 中的验收内容转为 AC 条目
+    const acItems = parsed.acceptance
+      .split('\n')
+      .filter(l => l.trim())
+      .map((line, i) => `- [ ] AC-${i + 1}: ${line.replace(/^\s*(\d+\.\s*|[-*]\s*)+/, '').trim()}`);
+    if (acItems.length > 0) acceptanceLines.push(...acItems);
+  }
+  // 始终保留关联 AC
+  const acStart = acceptanceLines.length + 1;
+  acceptanceLines.push(`- [ ] AC-${acStart}: 生成的 spec 可直接进入 \`docpath plan\``);
+  acceptanceLines.push(`- [ ] AC-${acStart + 1}: backlog 条目 ${item.id} 与任务 ${taskId} 建立双向关联`);
+
+  // Decision Brief 预填：如果 evidence.decision_brief 有内容则注入
+  const decisionBriefContent = item.evidence.decision_brief?.trim();
+
+  const lines: string[] = [
     `# ${taskId} - ${item.title}`,
     '',
     `> backlog_id: ${item.id}`,
@@ -412,7 +496,14 @@ function renderPromotedSpec(item: BacklogItem, taskId: string): string {
     '',
     '## 1. 背景与动机',
     '',
-    item.body.trim() || '- 待补充',
+    backgroundSection,
+  ];
+
+  if (evidenceSection) {
+    lines.push('', evidenceSection);
+  }
+
+  lines.push(
     '',
     '## 2. 需求清单',
     '',
@@ -438,17 +529,26 @@ function renderPromotedSpec(item: BacklogItem, taskId: string): string {
     '| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |',
     '',
     ...renderMajorDecisionGate(item),
+  );
+
+  // 如果 decision_brief 有预填内容，在 Decision Brief 段后追加
+  if (decisionBriefContent) {
+    lines.push('', '### 已有 Decision Brief (来自 backlog evidence)', '', decisionBriefContent);
+  }
+
+  lines.push(
     '',
     '## 5. 验收标准',
     '',
-    '- [ ] AC-1: 生成的 spec 可直接进入 `docpath plan`',
-    `- [ ] AC-2: backlog 条目 ${item.id} 与任务 ${taskId} 建立双向关联`,
+    ...acceptanceLines,
     '',
     '---',
     '',
     '*此文件由 `docpath backlog promote` 生成。*',
     '',
-  ].join('\n');
+  );
+
+  return lines.join('\n');
 }
 
 function backlogSearchText(item: BacklogItem): string {

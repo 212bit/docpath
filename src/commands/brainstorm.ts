@@ -19,6 +19,7 @@ import { nextCommand } from './runtime.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readRequirementFile } from '../utils/input.js';
+import { readBacklogItem, type BacklogItem } from '../engine/backlog.js';
 
 interface BrainstormOptions {
   /** 项目根目录 */
@@ -31,6 +32,8 @@ interface BrainstormOptions {
   dryRun?: boolean;
   /** 单次模式：不进入交互循环，直接从 input 生成 spec */
   noInteractive?: boolean;
+  /** 从 backlog 条目深化：加载已有 evidence 作为已知上下文 */
+  fromBacklog?: string;
 }
 
 /**
@@ -88,9 +91,35 @@ async function readBrainstormContext(cwd: string, docpathDir: string): Promise<{
   return { projectContext, existingSpec };
 }
 
-function buildBrainstormSystemPrompt(projectContext: string, existingSpec: string): string {
+function buildBrainstormSystemPrompt(projectContext: string, existingSpec: string, backlogItem?: BacklogItem | null): string {
+  if (backlogItem) {
+    return SOCRATIC_SYSTEM_PROMPT + projectContext +
+      (existingSpec ? `\n\n已有规约（来自 backlog promote）：\n${existingSpec}` : '') +
+      `\n\n## 已知上下文（来自 backlog ${backlogItem.id}）\n` +
+      buildBacklogEvidenceContext(backlogItem);
+  }
   return SOCRATIC_SYSTEM_PROMPT + projectContext +
     (existingSpec ? `\n\n已有规约：\n${existingSpec}` : '');
+}
+
+/**
+ * 将 backlog evidence 字段汇总为可读上下文。
+ */
+function buildBacklogEvidenceContext(item: BacklogItem): string {
+  const parts: string[] = [];
+  if (item.body?.trim()) {
+    parts.push(`### 需求背景 (body)\n${item.body.trim()}`);
+  }
+  if (item.evidence.brainstorm?.trim()) {
+    parts.push(`### 需求澄清历史 (brainstorm)\n${item.evidence.brainstorm.trim()}`);
+  }
+  if (item.evidence.analysis?.trim()) {
+    parts.push(`### 深度分析摘要 (analysis)\n${item.evidence.analysis.trim()}`);
+  }
+  if (item.evidence.decision_brief?.trim()) {
+    parts.push(`### 已确认决策 (decision_brief)\n${item.evidence.decision_brief.trim()}`);
+  }
+  return parts.length > 0 ? parts.join('\n\n') : '（backlog 无额外证据）';
 }
 
 function firstMeaningfulLine(input: string): string {
@@ -229,17 +258,40 @@ function buildBrainstormDraft(userMsg: string): string {
   ].join('\n');
 }
 
-function emitBrainstormPrompt(systemPrompt: string, userMsg: string, existingSpec: string): void {
+function emitBrainstormPrompt(systemPrompt: string, userMsg: string, existingSpec: string, backlogItem?: BacklogItem | null): void {
+  const isFromBacklog = !!backlogItem;
   emitPrompt({
     task: 'brainstorm',
     system: systemPrompt,
     context: {
       '用户需求': userMsg,
+      ...(backlogItem ? { '来源 backlog': `${backlogItem.id} — ${backlogItem.title}` } : {}),
       '现有spec': existingSpec
-        ? `已有 spec.md（可能不完整）：\n\`\`\`markdown\n${existingSpec}\n\`\`\`\n请在此基础上完善。`
-        : '这是全新需求，无现有 spec。',
+        ? `已有 Spec.md（${isFromBacklog ? '来自 backlog promote，请在已有基础上深化' : '可能不完整'}）：\n\`\`\`markdown\n${existingSpec}\n\`\`\`\n${isFromBacklog ? '请基于已有上下文继续深化，无需重复澄清已记录的内容。' : '请在此基础上完善。'}`
+        : isFromBacklog
+          ? `这是从 backlog promote 生成的任务。请先阅读上方已知上下文，然后针对模糊点深化。`
+          : '这是全新需求，无现有 spec。',
     },
-    instructions: [
+    instructions: isFromBacklog ? [
+      '本任务源自 backlog promote，已有需求背景和澄清历史。',
+      '',
+      '**执行方式**：',
+      '1. 阅读已知上下文，识别仍模糊或缺失的部分',
+      '2. 只针对未澄清的点提问，不要重复已知信息',
+      '3. 需求清晰后，使用 `docpath write-spec` 更新 spec.md',
+      '',
+      '**Spec 格式要求**：',
+      '```markdown',
+      '# T-DRAFT - 项目标题',
+      '## 1. 背景与动机',
+      '## 2. 需求清单',
+      '### 功能需求',
+      '### 非功能需求',
+      '## 3. 范围界定',
+      '## 4. 关键决策',
+      '## 5. 验收标准',
+      '```',
+    ] : [
       '请通过苏格拉底式提问逐步澄清需求，最终输出完整的 spec.md。',
       '',
       '**执行方式**：',
@@ -266,7 +318,9 @@ function emitBrainstormPrompt(systemPrompt: string, userMsg: string, existingSpe
       '## 5. 验收标准',
       '```',
     ],
-    output_format: '澄清问题 + 默认假设 + spec.md Markdown 草稿',
+    output_format: isFromBacklog
+      ? '深化后的 spec.md Markdown 草稿'
+      : '澄清问题 + 默认假设 + spec.md Markdown 草稿',
   });
 }
 
@@ -280,11 +334,28 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
   const { cwd, dryRun } = options;
   const docpathDir = await ensureDocpathDir(cwd);
 
+  // 解析 --from-backlog 模式
+  let backlogItem: BacklogItem | null = null;
+  if (options.fromBacklog) {
+    backlogItem = await readBacklogItem(cwd, options.fromBacklog.trim());
+    if (!backlogItem) {
+      console.error(`❌  未找到 backlog 条目: ${options.fromBacklog}`);
+      process.exit(1);
+    }
+    if (backlogItem.status === 'dropped') {
+      console.warn(`⚠️  注意: backlog 条目 ${backlogItem.id} 状态为 dropped，已从归档中复活用于深化。`);
+    }
+  }
+
   // 解析需求来源：--input 文本 > [file]/--file 文件。
   // fail-loud：指定了文件就必须读到内容，否则 readRequirementFile 抛错，绝不静默回退空需求。
   const userMsg = await resolveBrainstormInput(options);
 
-  console.log('\n🧠  需求拷问模式启动...\n');
+  if (backlogItem) {
+    console.log(`\n🧠  需求深化模式 — 基于 backlog ${backlogItem.id} 继续深化...\n`);
+  } else {
+    console.log('\n🧠  需求拷问模式启动...\n');
+  }
 
   // 2. 读取现有 spec（延迟到 prompt 构建时）
 
@@ -292,7 +363,7 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
   const { projectContext, existingSpec } = await readBrainstormContext(cwd, docpathDir);
 
   // 添加系统 Prompt
-  const systemPrompt = buildBrainstormSystemPrompt(projectContext, existingSpec);
+  const systemPrompt = buildBrainstormSystemPrompt(projectContext, existingSpec, backlogItem);
 
   if (dryRun) {
     console.log('📝  [dry-run] 需求头脑风暴预览：');
@@ -302,6 +373,11 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
       console.log('## 现有 Spec 参考');
       console.log('');
       console.log(existingSpec);
+    }
+    if (backlogItem) {
+      console.log('## Backlog 证据上下文');
+      console.log('');
+      console.log(buildBacklogEvidenceContext(backlogItem));
     }
     console.log('---');
     return;
@@ -314,9 +390,9 @@ export async function brainstormCommand(options: BrainstormOptions): Promise<voi
   // 3.5 单次模式：不进入交互循环，直接从 input 生成 spec
   // [Agent Mode] 输出结构化 prompt，由宿主 Agent 执行推理（userMsg 已在上方解析）
 
-  emitBrainstormPrompt(systemPrompt, userMsg, existingSpec);
+  emitBrainstormPrompt(systemPrompt, userMsg, existingSpec, backlogItem);
 
-  await transitionWorkflow(cwd, 'task.created', { currentStep: '需求拷问中，澄清后写入 spec' });
+  await transitionWorkflow(cwd, 'task.created', { currentStep: backlogItem ? '需求深化中，基于 backlog 证据继续澄清' : '需求拷问中，澄清后写入 spec' });
   console.log('\n✅ 状态已更新为 drafting');
   await nextCommand({ cwd });
 }

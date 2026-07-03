@@ -16,6 +16,7 @@ import { readCurrentState } from '../utils/workspace.js';
 import { readActiveAnalysisSummary, writeActiveTaskFile } from '../utils/task-files.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
+import { readBacklogItem } from '../engine/backlog.js';
 
 interface PlanOptions {
   cwd: string;
@@ -26,6 +27,14 @@ interface PlanContext {
   docpathDir: string;
   spec: string;
   analysis: string;
+  backlogEvidence: BacklogEvidenceContext | null;
+}
+
+interface BacklogEvidenceContext {
+  backlogId: string;
+  brainstorm: string | null;
+  analysis: string | null;
+  decisionBrief: string | null;
 }
 
 interface SpecCoverageIds {
@@ -203,11 +212,30 @@ async function loadPlanContext(cwd: string): Promise<PlanContext> {
   }
 
   const state = await readCurrentState(docpathDir);
+  const backlogEvidence = await loadBacklogEvidence(cwd, state?.backlog_id);
   return {
     docpathDir,
     spec: await readTaskFile(cwd, 'spec.md'),
     analysis: await readActiveAnalysisSummary(docpathDir, state?.task_id),
+    backlogEvidence,
   };
+}
+
+/**
+ * 从 backlog item 加载 evidence 字段，供 plan prompt 注入。
+ * 如果 backlog_id 缺失或读取失败则返回 null。
+ */
+async function loadBacklogEvidence(cwd: string, backlogId: string | null | undefined): Promise<BacklogEvidenceContext | null> {
+  if (!backlogId) return null;
+  try {
+    const item = await readBacklogItem(cwd, backlogId);
+    if (!item) return null;
+    const { brainstorm, analysis, decision_brief } = item.evidence;
+    if (!brainstorm?.trim() && !analysis?.trim() && !decision_brief?.trim()) return null;
+    return { backlogId, brainstorm, analysis, decisionBrief: decision_brief };
+  } catch {
+    return null;
+  }
 }
 
 function printDryRun(spec: string): void {
@@ -216,16 +244,36 @@ function printDryRun(spec: string): void {
   console.log('---');
 }
 
-function emitPlanPrompt(spec: string, analysis = ''): void {
+function emitPlanPrompt(spec: string, analysis = '', backlogEvidence: BacklogEvidenceContext | null = null): void {
+  const context: Record<string, string> = {
+    'Spec.md 内容': spec,
+  };
+  if (analysis?.trim()) {
+    context['predev_analysis'] = analysis;
+  }
+  if (backlogEvidence) {
+    if (backlogEvidence.brainstorm?.trim()) {
+      context['需求澄清历史 (brainstorm evidence)'] = backlogEvidence.brainstorm.trim();
+    }
+    if (backlogEvidence.analysis?.trim()) {
+      context['深度分析摘要 (analysis evidence)'] = backlogEvidence.analysis.trim();
+    }
+    if (backlogEvidence.decisionBrief?.trim()) {
+      context['已确认决策 (decision_brief)'] = backlogEvidence.decisionBrief.trim();
+    }
+  }
+
   emitPrompt({
     task: 'plan',
     system: PLAN_SYSTEM_PROMPT,
-    context: {
-      'Spec.md 内容': spec,
-      ...(analysis.trim() ? { predev_analysis: analysis } : {}),
-    },
+    context,
     instructions: [
       '请根据 spec.md 生成执行计划，写入 plan.md。',
+      ...(backlogEvidence ? [
+        '',
+        '**注意**：本任务源自 backlog，上方已注入需求澄清历史和已确认决策。',
+        '请基于这些已有上下文设计执行计划，无需重复澄清。',
+      ] : []),
       '',
       '**执行方式**：',
       '1. 分析 spec 中的功能需求、约束和验收条件',
@@ -280,13 +328,13 @@ async function readCanonicalPlan(docpathDir: string, taskId: string): Promise<st
 
 export async function planCommand(options: PlanOptions): Promise<void> {
   const { cwd } = options;
-  const { docpathDir, spec, analysis } = await loadPlanContext(cwd);
+  const { docpathDir, spec, analysis, backlogEvidence } = await loadPlanContext(cwd);
 
   console.log('\n📋  生成执行计划...\n');
 
   if (options.dryRun) {
     printDryRun(spec);
-    emitPlanPrompt(spec, analysis);
+    emitPlanPrompt(spec, analysis, backlogEvidence);
     return;
   }
 
