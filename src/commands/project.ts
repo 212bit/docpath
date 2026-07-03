@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readStdin } from '../utils/stdin.js';
@@ -25,6 +25,8 @@ type ProjectCommandOptions = {
   dryRun?: boolean;
   section?: string;
   confirm?: string;
+  agent?: boolean;
+  json?: boolean;
 };
 
 const SOURCE_TYPES: ProjectIntakeSourceType[] = [
@@ -184,6 +186,76 @@ function backlogPromptPayload(state: ProjectIntakeState): Record<string, unknown
     ],
     recommended_command_template: `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background with project-intake provenance>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/brief.md"`,
   };
+}
+
+function missingAnalysisSections(docpathDir: string, intakeId: string): AnalysisSection[] {
+  return ANALYSIS_SECTIONS.filter((section) => !existsSync(artifactPathForAnalysis(docpathDir, intakeId, section)));
+}
+
+function nextActionForIntake(docpathDir: string, state: ProjectIntakeState): { next_action: string; recommended_command: string; exit_criteria: string } {
+  const missing = missingAnalysisSections(docpathDir, state.id);
+  const paths = projectIntakePaths(docpathDir, state.id);
+  if (state.stage === 'captured' || missing.length > 0) {
+    return {
+      next_action: missing.length === ANALYSIS_SECTIONS.length
+        ? `analyze project intake ${state.id}`
+        : `complete remaining analysis sections: ${missing.join(', ')}`,
+      recommended_command: missing.length === ANALYSIS_SECTIONS.length
+        ? `docpath project analyze ${state.id} --dry-run`
+        : `docpath project analyze ${state.id} --section ${missing[0]} --stdin`,
+      exit_criteria: 'all analysis sections are written',
+    };
+  }
+  if (!existsSync(paths.brief)) {
+    return {
+      next_action: `create project brief for ${state.id}`,
+      recommended_command: `docpath project brief ${state.id} --dry-run`,
+      exit_criteria: 'brief.md is written',
+    };
+  }
+  if (!state.user_confirmed) {
+    return {
+      next_action: `confirm project intake before backlog decomposition: ${state.id}`,
+      recommended_command: `docpath project backlog ${state.id} --dry-run`,
+      exit_criteria: 'user confirmation is recorded before backlog guidance',
+    };
+  }
+  return {
+    next_action: `create reviewed backlog items from ${state.id}`,
+    recommended_command: `docpath backlog add --title "<title>" --evidence-analysis ".docpath/project-intake/${state.id}/backlog.md"`,
+    exit_criteria: 'reviewed backlog items are captured with project-intake provenance',
+  };
+}
+
+function printAgentStatus(docpathDir: string, state: ProjectIntakeState): void {
+  const route = nextActionForIntake(docpathDir, state);
+  const missing = missingAnalysisSections(docpathDir, state.id);
+  console.log(`agent_view: project_status`);
+  console.log(`id: ${state.id}`);
+  console.log(`title: ${JSON.stringify(state.title)}`);
+  console.log(`stage: ${state.stage}`);
+  console.log(`source_count: ${state.sources.length}`);
+  console.log(`artifact_count: ${state.artifacts.length}`);
+  console.log(`user_confirmed: ${state.user_confirmed ? JSON.stringify(state.user_confirmed) : 'null'}`);
+  console.log(`missing_analysis_sections:`);
+  for (const section of missing) console.log(`  - ${section}`);
+  console.log(`next_action: ${JSON.stringify(route.next_action)}`);
+  console.log(`recommended_command: ${JSON.stringify(route.recommended_command)}`);
+  console.log(`exit_criteria: ${JSON.stringify(route.exit_criteria)}`);
+}
+
+async function listIntakeStates(docpathDir: string): Promise<ProjectIntakeState[]> {
+  const root = join(docpathDir, 'project-intake');
+  if (!existsSync(root)) return [];
+  const entries = await readdir(root, { withFileTypes: true });
+  const states: ProjectIntakeState[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const statePath = projectIntakePaths(docpathDir, entry.name).state;
+    if (!existsSync(statePath)) continue;
+    states.push(JSON.parse(await readFile(statePath, 'utf-8')) as ProjectIntakeState);
+  }
+  return states.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
 }
 
 async function generateIntakeId(docpathDir: string, title: string): Promise<string> {
@@ -414,6 +486,41 @@ async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
   console.log('  exit_criteria: reviewed backlog items are captured with project-intake provenance');
 }
 
+async function projectStatus(options: ProjectCommandOptions): Promise<void> {
+  const docpathDir = await resolveDocpathDir(options.cwd);
+  if (!options.id?.trim()) {
+    const states = await listIntakeStates(docpathDir);
+    if (options.json) {
+      console.log(JSON.stringify({ intakes: states }, null, 2));
+      return;
+    }
+    console.log(`count: ${states.length}`);
+    console.log('items:');
+    for (const state of states) {
+      console.log(`  - id: ${state.id}`);
+      console.log(`    title: ${JSON.stringify(state.title)}`);
+      console.log(`    stage: ${state.stage}`);
+    }
+    return;
+  }
+
+  const state = await readIntakeState(docpathDir, options.id.trim());
+  if (options.json) {
+    console.log(JSON.stringify({ intake: state, route: nextActionForIntake(docpathDir, state) }, null, 2));
+    return;
+  }
+  if (options.agent) {
+    printAgentStatus(docpathDir, state);
+    return;
+  }
+  const route = nextActionForIntake(docpathDir, state);
+  console.log(`Project intake: ${state.id}`);
+  console.log(`  title: ${state.title}`);
+  console.log(`  stage: ${state.stage}`);
+  console.log(`  sources: ${state.sources.length}`);
+  console.log(`  next: ${route.recommended_command}`);
+}
+
 export async function projectCommand(options: ProjectCommandOptions): Promise<void> {
   const action = options.action || 'status';
   if (action === 'capture') {
@@ -432,5 +539,9 @@ export async function projectCommand(options: ProjectCommandOptions): Promise<vo
     await projectBacklog(options);
     return;
   }
-  throw new Error(`docpath project: unsupported action ${action}（允许: capture|analyze|brief|backlog）`);
+  if (action === 'status') {
+    await projectStatus(options);
+    return;
+  }
+  throw new Error(`docpath project: unsupported action ${action}（允许: capture|analyze|brief|backlog|status）`);
 }

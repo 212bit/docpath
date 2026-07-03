@@ -13,6 +13,8 @@ export function registerProjectCommands(cli: CAC): void {
     .option('--dry-run', 'analyze/brief: 只输出 prompt payload，不写文件')
     .option('--section <section>', 'analyze: requirements|product|ui|technical|risks|open-questions')
     .option('--confirm <text>', 'backlog: 用户确认依据，允许生成 backlog decomposition guidance')
+    .option('--agent', 'status: 输出 agent-readable 状态')
+    .option('--json', 'status: 输出 JSON')
     .action(async (action: string | undefined, id: string | undefined, options: {
       cwd?: string;
       title?: string;
@@ -23,6 +25,8 @@ export function registerProjectCommands(cli: CAC): void {
       'dry-run'?: boolean;
       section?: string;
       confirm?: string;
+      agent?: boolean;
+      json?: boolean;
       sourceRef?: string;
       'source-ref'?: string;
       sourceType?: string;
@@ -41,6 +45,8 @@ export function registerProjectCommands(cli: CAC): void {
         dryRun: !!(options.dryRun || options['dry-run']),
         section: options.section,
         confirm: options.confirm,
+        agent: !!options.agent,
+        json: !!options.json,
       });
     });
 }

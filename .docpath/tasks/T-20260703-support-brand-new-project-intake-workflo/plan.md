@@ -37,7 +37,7 @@
 - **依赖**: S5
 
 ### S7: Integrate Routing With Next, Status, Check, And Closeout
-- [ ] S7: Integrate Routing With Next, Status, Check, And Closeout
+- [x] S7: Integrate Routing With Next, Status, Check, And Closeout
 - **描述**: Update `docpath next --agent`, `status --agent`, `check`, and closeout guidance so project-intake states resume correctly and do not emit quick-task closeout hints.
 - **验收条件**: Project-intake states produce coherent next actions; standard backlog and quick tasks keep their existing route behavior.
 - **依赖**: S6
@@ -66,7 +66,7 @@
 - [x] S3
 - [x] S4
 - [x] S5
-- [ ] S6
+- [x] S6
 - [ ] S7
 - [ ] S8
 - [ ] S9

@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-03T14:34:58.420Z",
-    "updated_at": "2026-07-03T14:34:58.420Z",
-    "content_sha256": "b702aa38634927536fdbcada5b5f41791bec891a4ecfddabe858543abddb23fa"
+    "created_at": "2026-07-03T14:37:49.574Z",
+    "updated_at": "2026-07-03T14:37:49.574Z",
+    "content_sha256": "a65e0e4cc3585265fb4f6d1c0ff8fd920157b5bcc35dd9f28fd1782337df0239"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-03T14:34:58.420Z",
+  "generated_at": "2026-07-03T14:37:49.574Z",
   "steps": [
     {
       "id": "S1",
@@ -64,7 +64,7 @@
       "description": "Update `docpath next --agent`, `status --agent`, `check`, and closeout guidance so project-intake states resume correctly and do not emit quick-task closeout hints.",
       "acceptance": "Project-intake states produce coherent next actions; standard backlog and quick tasks keep their existing route behavior.",
       "dependencies": "S6",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S8",

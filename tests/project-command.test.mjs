@@ -170,4 +170,27 @@ describe('project intake commands', () => {
     assert.match(guidance, new RegExp(`project-intake/${intakeId}/brief\\.md`));
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('project status reports agent-readable next actions by intake stage', () => {
+    const cwd = mkWorkspace();
+    const capture = run('project capture --title "Routed Intake" --content "source"', cwd);
+    const intakeId = capture.match(/project intake 已创建: (P-\d{8}-routed-intake)/)?.[1];
+
+    const captured = run(`project status ${intakeId} --agent`, cwd);
+    assert.match(captured, /agent_view: project_status/);
+    assert.match(captured, /recommended_command: "docpath project analyze .* --dry-run"/);
+
+    for (const section of ['requirements', 'product', 'ui', 'technical', 'risks', 'open-questions']) {
+      run(`project analyze ${intakeId} --section ${section} --stdin`, cwd, `## ${section}\n`);
+    }
+    run(`project brief ${intakeId} --stdin`, cwd, '# Project Brief\n');
+
+    const briefed = run(`project status ${intakeId} --agent`, cwd);
+    assert.match(briefed, /recommended_command: "docpath project backlog .* --dry-run"/);
+
+    run(`project backlog ${intakeId} --confirm "confirmed"`, cwd);
+    const confirmed = run(`project status ${intakeId} --agent`, cwd);
+    assert.match(confirmed, /recommended_command: "docpath backlog add --title/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
