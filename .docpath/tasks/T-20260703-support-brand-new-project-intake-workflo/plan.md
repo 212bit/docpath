@@ -13,7 +13,7 @@
 - **依赖**: S1
 
 ### S3: Define CLI Command Contract
-- [ ] S3: Define CLI Command Contract
+- [x] S3: Define CLI Command Contract
 - **描述**: Decide and document the CLI surface for project-intake MVP, preferring a distinct project namespace unless implementation evidence shows a profile extension is safer.
 - **验收条件**: Command contracts cover capture, analyze/brief generation guidance, plan, and backlog conversion, including inputs, outputs, errors, and no-network behavior.
 - **依赖**: S2
@@ -62,7 +62,7 @@
 
 ## Checklist
 - [x] S1
-- [ ] S2
+- [x] S2
 - [ ] S3
 - [ ] S4
 - [ ] S5

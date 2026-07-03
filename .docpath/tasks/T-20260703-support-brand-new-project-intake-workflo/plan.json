@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-03T14:25:15.448Z",
-    "updated_at": "2026-07-03T14:25:15.448Z",
-    "content_sha256": "69372d9ecb9ffb0343d5c64329a53f460ac0c474963e49e2bcd8b961145eb841"
+    "created_at": "2026-07-03T14:26:56.449Z",
+    "updated_at": "2026-07-03T14:26:56.449Z",
+    "content_sha256": "9b5b4f64000b3e27c9cf6e2347b5a3dfbdf816b640c3050adeaeb59561a04a60"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-03T14:25:15.448Z",
+  "generated_at": "2026-07-03T14:26:56.449Z",
   "steps": [
     {
       "id": "S1",
@@ -32,7 +32,7 @@
       "description": "Decide and document the CLI surface for project-intake MVP, preferring a distinct project namespace unless implementation evidence shows a profile extension is safer.",
       "acceptance": "Command contracts cover capture, analyze/brief generation guidance, plan, and backlog conversion, including inputs, outputs, errors, and no-network behavior.",
       "dependencies": "S2",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S4",

@@ -35,6 +35,14 @@ export type ProjectIntakeArtifactKind =
   | 'plan'
   | 'backlog';
 
+export type ProjectIntakeCommandAction =
+  | 'capture'
+  | 'analyze'
+  | 'brief'
+  | 'plan'
+  | 'backlog'
+  | 'status';
+
 export interface ProjectIntakeSource {
   id: string;
   title: string;
@@ -100,4 +108,3 @@ export function projectIntakePaths(docpathDir: string, intakeId: string): Projec
 export function projectIntakeRelativePaths(intakeId: string): ProjectIntakePaths {
   return projectIntakePaths(`.docpath`, intakeId);
 }
-
