@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-03T14:23:05.285Z",
-    "updated_at": "2026-07-03T14:23:05.285Z",
-    "content_sha256": "a37de4ad0ac975a39dd471b847d85827f127d63d48438c0459bf714f297cc483"
+    "created_at": "2026-07-03T14:25:15.448Z",
+    "updated_at": "2026-07-03T14:25:15.448Z",
+    "content_sha256": "69372d9ecb9ffb0343d5c64329a53f460ac0c474963e49e2bcd8b961145eb841"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-03T14:23:05.285Z",
+  "generated_at": "2026-07-03T14:25:15.448Z",
   "steps": [
     {
       "id": "S1",
@@ -24,7 +24,7 @@
       "description": "Define the MVP state model for project intake, including source capture, analysis, brief, spec/architecture evidence, plan, confirmed decomposition, and blocked states.",
       "acceptance": "A concrete schema/file layout decision exists, including where project-intake artifacts live and how source provenance is represented.",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S3",

@@ -7,7 +7,7 @@
 - **依赖**: 无
 
 ### S2: Define Project-Intake State And Artifact Model
-- [ ] S2: Define Project-Intake State And Artifact Model
+- [x] S2: Define Project-Intake State And Artifact Model
 - **描述**: Define the MVP state model for project intake, including source capture, analysis, brief, spec/architecture evidence, plan, confirmed decomposition, and blocked states.
 - **验收条件**: A concrete schema/file layout decision exists, including where project-intake artifacts live and how source provenance is represented.
 - **依赖**: S1
@@ -61,7 +61,7 @@
 - **依赖**: S8, S9
 
 ## Checklist
-- [ ] S1
+- [x] S1
 - [ ] S2
 - [ ] S3
 - [ ] S4
