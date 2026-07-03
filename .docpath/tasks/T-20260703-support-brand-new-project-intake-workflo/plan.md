@@ -43,7 +43,7 @@
 - **依赖**: S6
 
 ### S8: Add Compatibility And Regression Tests
-- [ ] S8: Add Compatibility And Regression Tests
+- [x] S8: Add Compatibility And Regression Tests
 - **描述**: Add tests for project-intake capture, readiness gates, artifact generation, confirmation behavior, backlog conversion, and existing backlog/quick compatibility.
 - **验收条件**: Tests fail before implementation where appropriate and pass after implementation; existing backlog and quick test coverage remains green.
 - **依赖**: S4, S5, S6, S7
@@ -67,7 +67,7 @@
 - [x] S4
 - [x] S5
 - [x] S6
-- [ ] S7
+- [x] S7
 - [ ] S8
 - [ ] S9
 - [ ] S10

@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-03T14:37:49.574Z",
-    "updated_at": "2026-07-03T14:37:49.574Z",
-    "content_sha256": "a65e0e4cc3585265fb4f6d1c0ff8fd920157b5bcc35dd9f28fd1782337df0239"
+    "created_at": "2026-07-03T14:38:25.187Z",
+    "updated_at": "2026-07-03T14:38:25.187Z",
+    "content_sha256": "180029fa0ea2222c5fd07a76bc05db899b4bebfe7d15bd0868c42c05078ae7c0"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-03T14:37:49.574Z",
+  "generated_at": "2026-07-03T14:38:25.187Z",
   "steps": [
     {
       "id": "S1",
@@ -72,7 +72,7 @@
       "description": "Add tests for project-intake capture, readiness gates, artifact generation, confirmation behavior, backlog conversion, and existing backlog/quick compatibility.",
       "acceptance": "Tests fail before implementation where appropriate and pass after implementation; existing backlog and quick test coverage remains green.",
       "dependencies": "S4, S5, S6, S7",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S9",
