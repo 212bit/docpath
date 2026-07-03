@@ -49,7 +49,7 @@
 - **依赖**: S4, S5, S6, S7
 
 ### S9: Update Agent Protocol And Documentation
-- [ ] S9: Update Agent Protocol And Documentation
+- [x] S9: Update Agent Protocol And Documentation
 - **描述**: Update agent-facing instructions and docs to explain when to use project-intake versus backlog, quick, analyze, spec, and plan flows.
 - **验收条件**: Documentation clearly covers new-project inputs such as PPT-derived text, API docs, introductory docs, meeting notes, and single requirements documents.
 - **依赖**: S7
@@ -68,7 +68,7 @@
 - [x] S5
 - [x] S6
 - [x] S7
-- [ ] S8
+- [x] S8
 - [ ] S9
 - [ ] S10
 

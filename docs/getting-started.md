@@ -127,6 +127,19 @@ docpath backlog accept R-001
 docpath backlog promote R-001
 ```
 
+## 4.1 全新项目导入
+
+当用户只有 PPT 提取文本、接口文档、介绍文档、会议纪要或单份粗需求文档时，不要先拆成 backlog。先创建 project intake：
+
+```bash
+docpath project capture --title "New CRM" --file requirements.md --source-type requirements
+docpath project analyze P-YYYYMMDD-new-crm --dry-run
+docpath project brief P-YYYYMMDD-new-crm --dry-run
+docpath project backlog P-YYYYMMDD-new-crm --confirm "用户确认进入 backlog 拆分"
+```
+
+project intake 会把原始材料保存在 `.docpath/project-intake/<id>/`，先形成 analysis 和 brief，再经用户确认生成 backlog guidance。确认前不要自动创建可执行 backlog 项。
+
 ## 5. 写规格和计划
 
 复杂任务 promote 成当前任务后，可以写入持久化 analysis。非 dry-run `analyze` 和 `write-analysis` 需要活跃任务，避免把新需求写回上一轮归档任务：

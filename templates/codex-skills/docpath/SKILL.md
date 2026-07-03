@@ -120,6 +120,10 @@ Deliverables do not replace `spec`, `plan`, `analysis`, `check`, `review`, or `j
 ## Boundaries
 
 - Do not bypass `spec -> plan -> go -> check -> review -> journal` for standard implementation tasks.
+- For brand-new projects that start from PPT-derived text, API docs,
+  introductory docs, meeting notes, or a single rough requirements document, use
+  `docpath project capture` and project-intake analysis/brief/backlog guidance
+  before creating executable backlog items.
 - For tiny low-risk edits, `docpath quick "<title>"` is the explicit fast-track:
   it creates lightweight task evidence, keeps check required, skips full review
   by quick profile, and fails loud when scope should upgrade to standard.
