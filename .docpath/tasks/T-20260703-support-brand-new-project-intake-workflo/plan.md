@@ -55,7 +55,7 @@
 - **依赖**: S7
 
 ### S10: Run Quality Gates And Prepare Closeout
-- [ ] S10: Run Quality Gates And Prepare Closeout
+- [x] S10: Run Quality Gates And Prepare Closeout
 - **描述**: Run the relevant test suite and `docpath check`, then summarize changed artifacts, known limitations, and follow-up work.
 - **验收条件**: Quality gates pass or any residual failures are explicitly documented with owner and reason.
 - **依赖**: S8, S9
@@ -69,7 +69,7 @@
 - [x] S6
 - [x] S7
 - [x] S8
-- [ ] S9
+- [x] S9
 - [ ] S10
 
 ## 依赖关系图

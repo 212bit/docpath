@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-03T14:40:37.617Z",
-    "updated_at": "2026-07-03T14:40:37.617Z",
-    "content_sha256": "7fae2e9dbeb882412e1dd4a31e4ccdc6183a15bd4985d79255c166a3e1996b36"
+    "created_at": "2026-07-03T14:47:36.878Z",
+    "updated_at": "2026-07-03T14:47:36.878Z",
+    "content_sha256": "a3ba711401566f5140e6515d82621e81ba839f520570b1251eab1b89c6ec47e5"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-03T14:40:37.617Z",
+  "generated_at": "2026-07-03T14:47:36.878Z",
   "steps": [
     {
       "id": "S1",
@@ -88,7 +88,7 @@
       "description": "Run the relevant test suite and `docpath check`, then summarize changed artifacts, known limitations, and follow-up work.",
       "acceptance": "Quality gates pass or any residual failures are explicitly documented with owner and reason.",
       "dependencies": "S8, S9",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

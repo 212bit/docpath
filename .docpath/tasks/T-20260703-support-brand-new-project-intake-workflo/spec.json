@@ -3,14 +3,14 @@
   "kind": "spec",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-03T14:19:38.589Z",
-    "updated_at": "2026-07-03T14:19:38.589Z",
-    "content_sha256": "cd366d82e18fcbbb8085a711678fe275f7d995e848d65873e95386b72ce6b0bd"
+    "created_at": "2026-07-03T15:19:46.225Z",
+    "updated_at": "2026-07-03T15:19:46.225Z",
+    "content_sha256": "068eae0e04b1c71c26ffd03d8c00caa74c9e77e302723c497c62c68374368f6c"
   },
   "task_id": "T-20260703-support-brand-new-project-intake-workflo",
   "backlog_id": "R-242",
   "title": "T-20260703-support-brand-new-project-intake-workflo - Support Brand-New Project Intake Workflow From Source Documents",
-  "generated_at": "2026-07-03T14:19:38.589Z",
+  "generated_at": "2026-07-03T15:19:46.225Z",
   "scope": {
     "included": [
       "CLI workflow design and implementation for project-intake MVP.",
