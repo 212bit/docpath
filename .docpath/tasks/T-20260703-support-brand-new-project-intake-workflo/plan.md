@@ -25,7 +25,7 @@
 - **依赖**: S2, S3
 
 ### S5: Implement Analysis And Brief Guidance
-- [ ] S5: Implement Analysis And Brief Guidance
+- [x] S5: Implement Analysis And Brief Guidance
 - **描述**: Add deterministic routing and prompt-payload generation for requirements, product, UI/UX, technical, risks, and open-questions analysis, plus project brief writing.
 - **验收条件**: CLI can guide or persist project-intake analysis/brief artifacts without hidden LLM execution and with clear missing-evidence errors.
 - **依赖**: S4
@@ -64,7 +64,7 @@
 - [x] S1
 - [x] S2
 - [x] S3
-- [ ] S4
+- [x] S4
 - [ ] S5
 - [ ] S6
 - [ ] S7

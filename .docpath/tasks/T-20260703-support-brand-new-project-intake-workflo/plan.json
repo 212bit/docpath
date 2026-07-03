@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-03T14:30:14.778Z",
-    "updated_at": "2026-07-03T14:30:14.778Z",
-    "content_sha256": "7a3acd6c1c1c1d57874dc758341ffc3a56a8102318adf7ec299aa402a5702f39"
+    "created_at": "2026-07-03T14:32:47.220Z",
+    "updated_at": "2026-07-03T14:32:47.220Z",
+    "content_sha256": "e235d46c3cd7245b17756b7f91853546c9be002c36056b010d70d308bca5d186"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-03T14:30:14.778Z",
+  "generated_at": "2026-07-03T14:32:47.220Z",
   "steps": [
     {
       "id": "S1",
@@ -48,7 +48,7 @@
       "description": "Add deterministic routing and prompt-payload generation for requirements, product, UI/UX, technical, risks, and open-questions analysis, plus project brief writing.",
       "acceptance": "CLI can guide or persist project-intake analysis/brief artifacts without hidden LLM execution and with clear missing-evidence errors.",
       "dependencies": "S4",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S6",

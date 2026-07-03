@@ -94,5 +94,51 @@ describe('project intake commands', () => {
     assert.match(invalidType.out, /--source-type 参数非法/);
     rmSync(cwd, { recursive: true, force: true });
   });
-});
 
+  it('project analyze emits dry-run payload and persists analysis sections', () => {
+    const cwd = mkWorkspace();
+    const capture = run('project capture --title "New Platform" --content "meeting notes" --source-type meeting-notes', cwd);
+    const intakeId = capture.match(/project intake 已创建: (P-\d{8}-new-platform)/)?.[1];
+
+    const dryRun = JSON.parse(run(`project analyze ${intakeId} --dry-run`, cwd));
+    assert.equal(dryRun.task, 'project-intake-analysis');
+    assert.equal(dryRun.intake_id, intakeId);
+    assert.deepEqual(Object.keys(dryRun.sections), ['requirements', 'product', 'ui', 'technical', 'risks', 'open-questions']);
+
+    const out = run(`project analyze ${intakeId} --section requirements --stdin`, cwd, '## Requirements\n\n- goal\n');
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
+
+    assert.match(out, /project analysis 已写入/);
+    assert.equal(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'analysis', 'requirements.md'), 'utf-8'), '## Requirements\n\n- goal\n');
+    assert.equal(state.stage, 'captured');
+    assert.equal(state.artifacts[0].kind, 'analysis');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('project brief requires complete analysis and then writes brief evidence', () => {
+    const cwd = mkWorkspace();
+    const capture = run('project capture --title "Briefable Project" --content "source"', cwd);
+    const intakeId = capture.match(/project intake 已创建: (P-\d{8}-briefable-project)/)?.[1];
+
+    const blocked = runResult(`project brief ${intakeId} --stdin`, cwd);
+    assert.notEqual(blocked.code, 0);
+    assert.match(blocked.out, /missing analysis sections/);
+
+    for (const section of ['requirements', 'product', 'ui', 'technical', 'risks', 'open-questions']) {
+      run(`project analyze ${intakeId} --section ${section} --stdin`, cwd, `## ${section}\n`);
+    }
+
+    const dryRun = JSON.parse(run(`project brief ${intakeId} --dry-run`, cwd));
+    assert.equal(dryRun.task, 'project-intake-brief');
+    assert.equal(dryRun.recommended_write, `docpath project brief ${intakeId} --stdin`);
+
+    const out = run(`project brief ${intakeId} --stdin`, cwd, '# Project Brief\n');
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
+
+    assert.match(out, /project brief 已写入/);
+    assert.equal(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'brief.md'), 'utf-8'), '# Project Brief\n');
+    assert.equal(state.stage, 'briefed');
+    assert.ok(state.artifacts.some((artifact) => artifact.kind === 'brief'));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+});
