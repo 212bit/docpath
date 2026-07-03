@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-03T14:32:47.220Z",
-    "updated_at": "2026-07-03T14:32:47.220Z",
-    "content_sha256": "e235d46c3cd7245b17756b7f91853546c9be002c36056b010d70d308bca5d186"
+    "created_at": "2026-07-03T14:34:58.420Z",
+    "updated_at": "2026-07-03T14:34:58.420Z",
+    "content_sha256": "b702aa38634927536fdbcada5b5f41791bec891a4ecfddabe858543abddb23fa"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-03T14:32:47.220Z",
+  "generated_at": "2026-07-03T14:34:58.420Z",
   "steps": [
     {
       "id": "S1",
@@ -56,7 +56,7 @@
       "description": "Add gates that prevent implementation, milestone planning, or backlog generation until the project-intake output is explicitly confirmed by the user.",
       "acceptance": "Unconfirmed intake cannot generate executable backlog items; confirmed intake can generate or guide normal backlog items with provenance links.",
       "dependencies": "S5",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S7",

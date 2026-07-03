@@ -12,6 +12,7 @@ export function registerProjectCommands(cli: CAC): void {
     .option('--source-type <type>', 'capture: markdown|text|ppt|pdf|api-doc|intro-doc|requirements|meeting-notes|mixed|unknown')
     .option('--dry-run', 'analyze/brief: 只输出 prompt payload，不写文件')
     .option('--section <section>', 'analyze: requirements|product|ui|technical|risks|open-questions')
+    .option('--confirm <text>', 'backlog: 用户确认依据，允许生成 backlog decomposition guidance')
     .action(async (action: string | undefined, id: string | undefined, options: {
       cwd?: string;
       title?: string;
@@ -21,6 +22,7 @@ export function registerProjectCommands(cli: CAC): void {
       dryRun?: boolean;
       'dry-run'?: boolean;
       section?: string;
+      confirm?: string;
       sourceRef?: string;
       'source-ref'?: string;
       sourceType?: string;
@@ -38,6 +40,7 @@ export function registerProjectCommands(cli: CAC): void {
         sourceType: options.sourceType || options['source-type'],
         dryRun: !!(options.dryRun || options['dry-run']),
         section: options.section,
+        confirm: options.confirm,
       });
     });
 }

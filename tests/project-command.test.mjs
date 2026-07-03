@@ -141,4 +141,33 @@ describe('project intake commands', () => {
     assert.ok(state.artifacts.some((artifact) => artifact.kind === 'brief'));
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('project backlog blocks unconfirmed decomposition and writes confirmed guidance', () => {
+    const cwd = mkWorkspace();
+    const capture = run('project capture --title "Backlog Ready" --content "source"', cwd);
+    const intakeId = capture.match(/project intake 已创建: (P-\d{8}-backlog-ready)/)?.[1];
+    for (const section of ['requirements', 'product', 'ui', 'technical', 'risks', 'open-questions']) {
+      run(`project analyze ${intakeId} --section ${section} --stdin`, cwd, `## ${section}\n`);
+    }
+    run(`project brief ${intakeId} --stdin`, cwd, '# Project Brief\n');
+
+    const dryRun = JSON.parse(run(`project backlog ${intakeId} --dry-run`, cwd));
+    assert.equal(dryRun.task, 'project-intake-backlog-decomposition');
+    assert.match(dryRun.recommended_command_template, new RegExp(`project-intake/${intakeId}/brief\\.md`));
+
+    const blocked = runResult(`project backlog ${intakeId}`, cwd);
+    assert.notEqual(blocked.code, 0);
+    assert.match(blocked.out, /requires --confirm <text>/);
+
+    const out = run(`project backlog ${intakeId} --confirm "用户确认拆分 backlog"`, cwd);
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
+    const guidance = readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'backlog.md'), 'utf-8');
+
+    assert.match(out, /project backlog guidance 已写入/);
+    assert.equal(state.stage, 'confirmed');
+    assert.equal(state.user_confirmed, '用户确认拆分 backlog');
+    assert.match(guidance, /docpath backlog add/);
+    assert.match(guidance, new RegExp(`project-intake/${intakeId}/brief\\.md`));
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

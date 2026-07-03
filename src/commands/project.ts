@@ -24,6 +24,7 @@ type ProjectCommandOptions = {
   sourceType?: string;
   dryRun?: boolean;
   section?: string;
+  confirm?: string;
 };
 
 const SOURCE_TYPES: ProjectIntakeSourceType[] = [
@@ -156,6 +157,32 @@ function briefPromptPayload(state: ProjectIntakeState): Record<string, unknown> 
       'blocking decisions',
     ],
     recommended_write: `docpath project brief ${state.id} --stdin`,
+  };
+}
+
+function backlogPromptPayload(state: ProjectIntakeState): Record<string, unknown> {
+  return {
+    task: 'project-intake-backlog-decomposition',
+    dry_run: true,
+    intake_id: state.id,
+    title: state.title,
+    intent: 'Convert confirmed project-intake output into reviewable normal backlog items with provenance links.',
+    provenance: {
+      intake_state: `.docpath/project-intake/${state.id}/intake.json`,
+      brief: `.docpath/project-intake/${state.id}/brief.md`,
+    },
+    required_item_fields: [
+      'title',
+      'priority',
+      'level',
+      'background',
+      'acceptance',
+      'readiness',
+      'evidence-analysis or evidence-spec',
+      'evidence-decision for level 3 items',
+      'user-confirmed for level 3 items',
+    ],
+    recommended_command_template: `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background with project-intake provenance>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/brief.md"`,
   };
 }
 
@@ -334,6 +361,59 @@ async function projectBrief(options: ProjectCommandOptions): Promise<void> {
   console.log('  exit_criteria: project plan evidence is written');
 }
 
+async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
+  if (!options.id?.trim()) throw new Error('docpath project backlog requires <intake-id>');
+  const docpathDir = await resolveDocpathDir(options.cwd);
+  const state = await readIntakeState(docpathDir, options.id.trim());
+  const paths = projectIntakePaths(docpathDir, state.id);
+
+  if (!existsSync(paths.brief)) {
+    throw new Error(`docpath project backlog: missing project brief for ${state.id}`);
+  }
+
+  if (options.dryRun) {
+    console.log(JSON.stringify(backlogPromptPayload(state), null, 2));
+    return;
+  }
+
+  const confirmation = options.confirm?.trim() || state.user_confirmed;
+  if (!confirmation) {
+    throw new Error(`docpath project backlog: ${state.id} requires --confirm <text> before backlog decomposition`);
+  }
+
+  const guidance = [
+    `# Backlog Decomposition Guidance: ${state.title}`,
+    '',
+    `> intake_id: ${state.id}`,
+    `> confirmed: ${confirmation}`,
+    `> project_brief: .docpath/project-intake/${state.id}/brief.md`,
+    '',
+    'Use this guidance to create normal backlog items with explicit provenance.',
+    '',
+    '```bash',
+    `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background; provenance: .docpath/project-intake/${state.id}/brief.md>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/brief.md"`,
+    '```',
+    '',
+  ].join('\n');
+  await writeFile(paths.backlog, guidance, 'utf-8');
+
+  const relativePath = relativeDocpathPath(paths.backlog, docpathDir);
+  await writeIntakeState(docpathDir, {
+    ...upsertArtifact(state, 'backlog', relativePath),
+    stage: 'confirmed',
+    user_confirmed: confirmation,
+  });
+
+  console.log(`✅  project backlog guidance 已写入: ${state.id}`);
+  console.log(`   path: ${relativePath}`);
+  console.log('   status: confirmed');
+  console.log('');
+  console.log('next_hint:');
+  console.log(`  next_action: create reviewed backlog items from ${state.id}`);
+  console.log(`  recommended_command: docpath backlog add --title "<title>" --evidence-analysis "${relativePath}"`);
+  console.log('  exit_criteria: reviewed backlog items are captured with project-intake provenance');
+}
+
 export async function projectCommand(options: ProjectCommandOptions): Promise<void> {
   const action = options.action || 'status';
   if (action === 'capture') {
@@ -348,5 +428,9 @@ export async function projectCommand(options: ProjectCommandOptions): Promise<vo
     await projectBrief(options);
     return;
   }
-  throw new Error(`docpath project: unsupported action ${action}（允许: capture|analyze|brief）`);
+  if (action === 'backlog') {
+    await projectBacklog(options);
+    return;
+  }
+  throw new Error(`docpath project: unsupported action ${action}（允许: capture|analyze|brief|backlog）`);
 }

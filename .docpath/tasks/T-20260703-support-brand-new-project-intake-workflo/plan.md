@@ -31,7 +31,7 @@
 - **依赖**: S4
 
 ### S6: Implement Confirmation And Decomposition Gates
-- [ ] S6: Implement Confirmation And Decomposition Gates
+- [x] S6: Implement Confirmation And Decomposition Gates
 - **描述**: Add gates that prevent implementation, milestone planning, or backlog generation until the project-intake output is explicitly confirmed by the user.
 - **验收条件**: Unconfirmed intake cannot generate executable backlog items; confirmed intake can generate or guide normal backlog items with provenance links.
 - **依赖**: S5
@@ -65,7 +65,7 @@
 - [x] S2
 - [x] S3
 - [x] S4
-- [ ] S5
+- [x] S5
 - [ ] S6
 - [ ] S7
 - [ ] S8
