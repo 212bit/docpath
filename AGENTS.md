@@ -76,6 +76,8 @@ tail range that answers the question.
 ## Project Context
 
 - `.docpath/backlog/` holds candidate work before it becomes an active task.
+- `.docpath/project-intake/` holds brand-new project intake packages created
+  from raw source materials before they become backlog/spec/plan work.
 - `.docpath/tasks/` holds task artifacts: spec, plan, review, journal, and
   structured JSON mirrors.
 - `.docpath/workspace/` holds runtime state, evidence, and rendered views.
@@ -99,6 +101,11 @@ docpath agent handoff
 Rules:
 
 - Run `docpath agent enter` before code or protocol edits in an executable task.
+- Use `docpath project capture` when the user has a brand-new project that
+  starts from PPT-derived text, API docs, introductory docs, meeting notes, or a
+  single rough requirements document. Do not force these raw materials into
+  backlog. Use `docpath project analyze`, `project brief`, and confirmed
+  `project backlog` guidance before creating executable backlog items.
 - Use `docpath quick "<title>"` for tiny low-risk edits. It creates a lightweight
   task, requires check on closeout, and skips full review by quick profile.
   Escalate to the standard lifecycle when scope touches architecture, protocol,

@@ -864,6 +864,8 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
     taskId,
     taskTitle: item.title,
     backlogId: item.id,
+    level: item.level,
+    workflowProfile: 'standard',
     currentStep: `backlog promote ${item.id} 完成，下一步: docpath plan`,
   });
 

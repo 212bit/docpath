@@ -639,8 +639,67 @@ created_at: 2026-05-31
 
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
     assert.equal(state.phase, 'drafting');
+    assert.equal(state.workflow_profile, 'standard');
+    assert.equal(state.level, 2);
     assert.equal(state.task_title, 'Alpha Promote');
     assert.match(state.task_id, /^T-\d{8}-alpha-promote$/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog promote does not inherit quick profile from a completed previous task', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-002-project-intake.md'), `---
+id: R-002
+title: Project Intake Workflow
+status: accepted
+priority: P1
+level: 3
+source: test
+readiness: confirmed
+evidence:
+  brainstorm: null
+  analysis: analysis/project-intake.md
+  spec: null
+  decision_brief: decisions/project-intake.md
+  user_confirmed: 用户确认推进
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+Brand-new project intake is workflow-level work and must not use quick gates.
+
+## 验收
+
+Promoted task routes through standard spec/plan lifecycle.
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 1,
+      workflow_profile: 'quick',
+      task_id: 'T-20260531-quick-fix-typo',
+      task_title: 'Fix typo',
+      phase: 'completed',
+      gate: 'review_skipped',
+      current_step: 'quick task completed',
+      started_at: '2026-05-31T00:00:00.000Z',
+      updated_at: '2026-05-31T00:00:00.000Z',
+    }, null, 2));
+
+    const out = run('backlog promote R-002', cwd);
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    const next = parse(run('next --agent', cwd));
+
+    assert.match(out, /已 promote backlog 条目: R-002/);
+    assert.equal(state.phase, 'drafting');
+    assert.equal(state.workflow_profile, 'standard');
+    assert.equal(state.level, 3);
+    assert.equal(next.workflow_profile, 'standard');
+    assert.equal(next.recommended_command, 'docpath plan');
+    assert.doesNotMatch(next.next_action, /quick/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

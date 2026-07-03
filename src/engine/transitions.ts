@@ -9,6 +9,7 @@ import { readCurrentState, writeCurrentState, type CurrentState } from '../utils
 import { resolveDocpathDir } from '../utils/file.js';
 import { withLock } from '../utils/lock.js';
 import { normalizeWorkflowSnapshot, type GateStatus, type WorkflowPhase } from './state-machine.js';
+import { normalizeWorkflowProfile, type WorkflowProfile } from './workflow-profile.js';
 
 export type WorkflowEvent =
   | 'task.created'
@@ -27,6 +28,8 @@ export interface TransitionPayload {
   taskId?: string;
   taskTitle?: string;
   backlogId?: string | null;
+  level?: number;
+  workflowProfile?: WorkflowProfile;
 }
 
 interface TransitionTarget {
@@ -155,8 +158,25 @@ export async function transitionWorkflow(
       throw new Error(`[docpath] Invalid transition target for ${event}: phase=${target.phase}, gate=${targetGate}`);
     }
 
+    const createsDifferentTask = event === 'task.created'
+      && typeof payload.taskId === 'string'
+      && payload.taskId.trim().length > 0
+      && payload.taskId !== previous.task_id;
+    const nextProfile = payload.workflowProfile
+      ? normalizeWorkflowProfile(payload.workflowProfile)
+      : createsDifferentTask
+        ? 'standard'
+        : previous.workflow_profile;
+    const nextLevel = typeof payload.level === 'number'
+      ? payload.level
+      : createsDifferentTask
+        ? 1
+        : previous.level;
+
     const next: CurrentState = {
       ...previous,
+      level: nextLevel,
+      workflow_profile: nextProfile,
       state: snapshot.state,
       phase: snapshot.phase,
       gate: snapshot.gate,
