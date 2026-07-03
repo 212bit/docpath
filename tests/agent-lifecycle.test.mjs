@@ -268,6 +268,26 @@ describe('docpath agent lifecycle', () => {
     fs.rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('agent done recovers check gate when completed plan was reset to planning', () => {
+    const cwd = mkExecWorkspace();
+    const workspace = path.join(cwd, '.docpath', 'workspace');
+    const statePath = path.join(workspace, 'state.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    state.phase = 'planning';
+    state.gate = 'none';
+    state.state = 'planning_done';
+    state.current_step = 'plan 已写入，下一步: docpath go';
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+
+    const out = run('agent done', cwd);
+    const nextState = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+
+    assert.doesNotMatch(out, /Illegal workflow transition/);
+    assert.equal(nextState.phase, 'completed');
+    assert.equal(nextState.gate, 'review_pass');
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('agent done --skip-tests fails loudly when reason is missing', () => {
     const cwd = mkExecWorkspace();
     const out = run('agent done --skip-tests', cwd);

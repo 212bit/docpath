@@ -68,7 +68,7 @@ const EVENT_TARGETS: Record<WorkflowEvent, TransitionTarget> = {
   // requiredGate 进一步约束 previous.gate：phase 级 from 拦不住「check_fail 仍进 review」，
   // 故评审/归档事件显式声明可接受的前置门禁，未通过检查者在 FSM 层即被拒。
   'step.completed': { phase: 'executing', gate: 'none', from: ['executing', 'checking'] },
-  'check.passed': { phase: 'checking', gate: 'check_pass', from: ['executing', 'checking', 'completed'] },
+  'check.passed': { phase: 'checking', gate: 'check_pass', from: ['planning', 'executing', 'checking', 'completed'] },
   'check.failed': { phase: 'checking', gate: 'check_fail', from: ['executing', 'checking', 'reviewing', 'completed'] },
   // 评审前置：检查必须已通过（check_pass），或在评审内重入（review_pass/review_fail）。
   'review.passed': { phase: 'reviewing', gate: 'review_pass', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },

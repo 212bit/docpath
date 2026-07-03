@@ -10,6 +10,7 @@ import { writeBreadcrumb } from '../../engine/breadcrumb.js';
 import { writeLastCheckEvidence as writeLastCheckEvidenceFiles, type CheckEvidenceItem } from '../../utils/workspace-evidence.js';
 import { CHECK_HISTORY_MAX_ENTRIES } from '../../utils/workspace-cleanup.js';
 import { groupCheckResults, formatFailedOutput } from './formatters.js';
+import { resolveEffectivePlanTasks } from '../../utils/plan-sync.js';
 
 export function runGitOptional(cwd: string, args: string[]): string | null {
   try {
@@ -87,8 +88,11 @@ export async function updateCheckWorkflowState(cwd: string, allPassed: boolean, 
   );
   if (alreadyPastCheck) return;
   const phase = workflowState?.phase || 'idle';
+  const planningDone = allPassed && phase === 'planning'
+    ? await hasCompletedPlan(cwd)
+    : false;
   const eventAllowed = allPassed
-    ? ['executing', 'checking', 'completed'].includes(phase)
+    ? ['executing', 'checking', 'completed'].includes(phase) || planningDone
     : ['executing', 'checking', 'reviewing', 'completed'].includes(phase);
   if (!eventAllowed) return;
 
@@ -97,6 +101,11 @@ export async function updateCheckWorkflowState(cwd: string, allPassed: boolean, 
       ? `质量检查通过 (${results.length} 项)，下一步: docpath review`
       : `质量检查失败: ${results.filter(result => !result.passed).map(result => result.name).join(', ')}`,
   });
+}
+
+async function hasCompletedPlan(cwd: string): Promise<boolean> {
+  const tasks = await resolveEffectivePlanTasks(cwd);
+  return tasks.length > 0 && tasks.every((task) => task.done);
 }
 
 export async function writeLastCheckEvidence(cwd: string, results: CheckResult[], allPassed: boolean): Promise<void> {
