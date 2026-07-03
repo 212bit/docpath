@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-03T14:26:56.449Z",
-    "updated_at": "2026-07-03T14:26:56.449Z",
-    "content_sha256": "9b5b4f64000b3e27c9cf6e2347b5a3dfbdf816b640c3050adeaeb59561a04a60"
+    "created_at": "2026-07-03T14:30:14.778Z",
+    "updated_at": "2026-07-03T14:30:14.778Z",
+    "content_sha256": "7a3acd6c1c1c1d57874dc758341ffc3a56a8102318adf7ec299aa402a5702f39"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-03T14:26:56.449Z",
+  "generated_at": "2026-07-03T14:30:14.778Z",
   "steps": [
     {
       "id": "S1",
@@ -40,7 +40,7 @@
       "description": "Add the capture route for text/markdown source materials and source references. Store source inventory and initial metadata in the chosen artifact model.",
       "acceptance": "Users can create a project-intake item from content or files; CLI output reports canonical artifact paths and next action.",
       "dependencies": "S2, S3",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S5",

@@ -19,7 +19,7 @@
 - **依赖**: S2
 
 ### S4: Implement Project-Intake Capture
-- [ ] S4: Implement Project-Intake Capture
+- [x] S4: Implement Project-Intake Capture
 - **描述**: Add the capture route for text/markdown source materials and source references. Store source inventory and initial metadata in the chosen artifact model.
 - **验收条件**: Users can create a project-intake item from content or files; CLI output reports canonical artifact paths and next action.
 - **依赖**: S2, S3
@@ -63,7 +63,7 @@
 ## Checklist
 - [x] S1
 - [x] S2
-- [ ] S3
+- [x] S3
 - [ ] S4
 - [ ] S5
 - [ ] S6
