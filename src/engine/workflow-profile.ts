@@ -60,6 +60,62 @@ export function gatePolicyForProfile(profile: unknown): GatePolicy {
   return PROFILE_POLICIES[normalizeWorkflowProfile(profile)];
 }
 
+export interface WorkflowProfileResolutionInput {
+  profile?: unknown;
+  level?: number | null;
+  requiresSpec?: boolean;
+  requiresPlan?: boolean;
+  majorChangeRequired?: boolean;
+  majorChangeTypes?: string[];
+  uiGateRequired?: boolean;
+  quickScopeExceededReasons?: string[];
+}
+
+export interface WorkflowProfileResolution {
+  storedProfile: WorkflowProfile;
+  effectiveProfile: WorkflowProfile;
+  upgraded: boolean;
+  reasons: string[];
+}
+
+export function resolveEffectiveWorkflowProfile(input: WorkflowProfileResolutionInput): WorkflowProfileResolution {
+  const storedProfile = normalizeWorkflowProfile(input.profile);
+  const reasons: string[] = [];
+  const level = typeof input.level === 'number' && Number.isFinite(input.level)
+    ? Math.floor(input.level)
+    : 0;
+
+  if (level >= 2) {
+    reasons.push(`任务复杂度级别为 L${level}（quick/instant 限制在 L0/L1）`);
+  }
+  if (input.requiresSpec) {
+    reasons.push('任务需要 spec 门禁');
+  }
+  if (input.requiresPlan) {
+    reasons.push('任务需要 plan 门禁');
+  }
+  if (input.majorChangeRequired) {
+    const types = input.majorChangeTypes?.filter(Boolean) || [];
+    reasons.push(types.length > 0
+      ? `任务包含重大变更门禁: ${types.join(', ')}`
+      : '任务需求规格（spec.md）要求重大变更确认门禁');
+  }
+  if (input.uiGateRequired) {
+    reasons.push('任务需求规格（spec.md）要求 UI 设计门禁');
+  }
+  for (const reason of input.quickScopeExceededReasons || []) {
+    if (reason.trim()) reasons.push(`代码变更超出 quick 限制: ${reason.trim()}`);
+  }
+
+  const shouldUpgrade = (storedProfile === 'quick' || storedProfile === 'instant') && reasons.length > 0;
+  return {
+    storedProfile,
+    effectiveProfile: shouldUpgrade ? 'standard' : storedProfile,
+    upgraded: shouldUpgrade,
+    reasons,
+  };
+}
+
 export function isQuickProfile(profile: unknown): boolean {
   return normalizeWorkflowProfile(profile) === 'quick';
 }

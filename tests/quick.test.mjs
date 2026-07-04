@@ -97,6 +97,42 @@ describe('docpath quick', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('reports effective standard profile for a quick task raised to level 2', () => {
+    const cwd = mkWorkspace();
+    run(`quick "Investigate workflow behavior" --cwd ${cwd}`, cwd);
+    const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+    const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    writeFileSync(statePath, JSON.stringify({ ...state, level: 2 }, null, 2));
+
+    const next = nextAgent(cwd);
+
+    assert.equal(next.workflow_profile, 'standard');
+    assert.equal(next.stored_workflow_profile, 'quick');
+    assert.match(next.workflow_profile_upgrade_reasons.join('\n'), /任务复杂度级别为 L2/);
+    assert.equal(next.gate_policy.requires_review, true);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('reports effective standard profile when quick spec requires major change gate', () => {
+    const cwd = mkWorkspace();
+    run(`quick "Change agent workflow" --cwd ${cwd}`, cwd);
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    const specPath = join(cwd, '.docpath', 'tasks', state.task_id, 'spec.md');
+    let specContent = readFileSync(specPath, 'utf-8');
+    specContent = specContent.replace('- [ ] 是，需要用户确认', '- [x] 是，需要用户确认');
+    specContent = specContent.replace('- [x] 否', '- [ ] 否');
+    specContent = specContent.replace('- [ ] 工作流 / Agent 行为', '- [x] 工作流 / Agent 行为');
+    runWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, specContent);
+
+    const status = parse(run(`status --cwd ${cwd} --agent`, cwd));
+
+    assert.equal(status.workflow_profile, 'standard');
+    assert.equal(status.stored_workflow_profile, 'quick');
+    assert.match(status.workflow_profile_upgrade_reasons.join('\n'), /工作流 \/ Agent 行为/);
+    assert.equal(status.gate_policy.requires_spec, true);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('done completes a quick task without requiring full review', () => {
     const cwd = mkWorkspace();
     run(`quick "Fix typo" --cwd ${cwd}`, cwd);
@@ -263,4 +299,3 @@ describe('docpath quick', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 });
-

@@ -11,7 +11,7 @@
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
+import { readCurrentState, resolveBoundTaskId, writeCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -19,13 +19,14 @@ import { parsePlanSteps, type PlanStep } from '../utils/doc-parser.js';
 import { markPlanStep, type PlanStepStatus } from '../utils/plan-sync.js';
 import { runCommand } from './runtime.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
-import { readActiveTaskFile } from '../utils/task-files.js';
+import { readActiveStructuredSpecDocument, readActiveTaskFile } from '../utils/task-files.js';
 import { acquireExecutionLease, releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
 import { exitWithError } from '../utils/error-helpers.js';
 import { assertWorktreeContract } from './worktree.js';
+import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 
 interface GoOptions {
   cwd: string;
@@ -212,7 +213,7 @@ export async function goCommand(options: GoOptions): Promise<void> {
   const session = resolveSessionContext(options.session);
   const { docpathDir, specPath } = await resolveGoContext(cwd);
   const extraFields = await readSpecFields(specPath);
-  const current = await readCurrentState(cwd);
+  let current = await readCurrentState(cwd);
   const tasks = await readPlanSteps(docpathDir, current?.task_id);
   const target = selectTargetStep(tasks, step, status, current?.current_step);
   if (!target) {
@@ -243,6 +244,27 @@ export async function goCommand(options: GoOptions): Promise<void> {
     console.error('    请先创建任务：`docpath brainstorm` / `docpath refine` / `docpath write-spec`，');
     console.error('    确保 .docpath/tasks/current/spec.md 存在且首行为 `# T-<date>-<slug> - <标题>`，再运行 `docpath plan` 与 `docpath go`。');
     process.exit(1);
+  }
+  if (!status && current) {
+    const structuredSpec = await readActiveStructuredSpecDocument(docpathDir, resolvedTaskId);
+    const profileResolution = resolveEffectiveWorkflowProfile({
+      profile: current.workflow_profile,
+      level: current.level,
+      majorChangeRequired: structuredSpec?.major_change_gate?.required,
+      majorChangeTypes: structuredSpec?.major_change_gate?.types,
+      uiGateRequired: structuredSpec?.ui_gate?.state === 'required',
+    });
+    if (profileResolution.upgraded) {
+      console.log(`⚠️  已自动将工作流 Profile 从 "${profileResolution.storedProfile}" 升级为 "${profileResolution.effectiveProfile}"`);
+      profileResolution.reasons.forEach((reason) => console.log(`   - ${reason}`));
+      current = {
+        ...current,
+        workflow_profile: profileResolution.effectiveProfile,
+        level: Math.max(current.level, 2),
+        updated_at: new Date().toISOString(),
+      };
+      await writeCurrentState(cwd, current);
+    }
   }
   await assertMajorChangeGateReady(cwd, docpathDir, resolvedTaskId, 'go');
   if (!status) {

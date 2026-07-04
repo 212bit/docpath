@@ -14,8 +14,8 @@ import { getDocpathPackageVersion } from '../utils/package-info.js';
 import { handleStalePendingDoneWarning, readPendingDone } from '../utils/pending-done.js';
 import { readCurrentState, type CurrentState } from '../utils/workspace.js';
 import { parsePlanSteps } from '../utils/doc-parser.js';
-import { readActiveTaskFile } from '../utils/task-files.js';
-import { gatePolicyForProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
+import { readActiveStructuredSpecDocument, readActiveTaskFile } from '../utils/task-files.js';
+import { gatePolicyForProfile, resolveEffectiveWorkflowProfile, type WorkflowProfileResolution } from '../engine/workflow-profile.js';
 
 interface StatusOptions {
   cwd: string;
@@ -36,17 +36,22 @@ function printMissingStateHint(): void {
   console.log('  其中 current.md 只是由 state.json 重建的渲染产物，二者应保持同步\n');
 }
 
-function printStateSummary(current: CurrentState, currentPath: string): void {
+function printStateSummary(current: CurrentState, currentPath: string, profileResolution: WorkflowProfileResolution): void {
   const level = String(current.level ?? '?');
   const state = current.state || '?';
   const task = current.task_title || '(无活跃任务)';
   const phase = current.phase || '?';
   const gate = current.gate || 'none';
-  const profile = normalizeWorkflowProfile(current.workflow_profile);
+  const profile = profileResolution.effectiveProfile;
   const policy = gatePolicyForProfile(profile);
 
   console.log(`  级别:  Level ${level} — ${LEVEL_NAMES[level] || '未知'}`);
   console.log(`  Profile:  ${profile}`);
+  if (profileResolution.upgraded) {
+    console.log(`  Stored profile:  ${profileResolution.storedProfile}`);
+    console.log('  Profile upgrade reasons:');
+    for (const reason of profileResolution.reasons) console.log(`    - ${reason}`);
+  }
   console.log(`  Gate policy:  spec=${policy.requiresSpec}, plan=${policy.requiresPlan}, check=${policy.requiresCheck}, review=${policy.requiresReview}, journal=${policy.journalMode}`);
   console.log(`  状态:  ${state}`);
   console.log(`  阶段:  ${phase}`);
@@ -182,7 +187,22 @@ export async function statusCommand(options: StatusOptions): Promise<void> {
 
   console.log('\n📊  DocPath 工作流状态\n');
 
-  printStateSummary(current, currentPath);
+  const docpathDir = await resolveDocpathDir(cwd);
+  let structuredSpec: Awaited<ReturnType<typeof readActiveStructuredSpecDocument>> = null;
+  try {
+    structuredSpec = await readActiveStructuredSpecDocument(docpathDir, current.task_id || undefined);
+  } catch {
+    structuredSpec = null;
+  }
+  const profileResolution = resolveEffectiveWorkflowProfile({
+    profile: current.workflow_profile,
+    level: current.level,
+    majorChangeRequired: structuredSpec?.major_change_gate?.required,
+    majorChangeTypes: structuredSpec?.major_change_gate?.types,
+    uiGateRequired: structuredSpec?.ui_gate?.state === 'required',
+  });
+
+  printStateSummary(current, currentPath, profileResolution);
   await printPendingDoneWarning(cwd, current);
   await printBreadcrumbProgress(breadcrumbPath);
   printPhaseHint(current.phase);

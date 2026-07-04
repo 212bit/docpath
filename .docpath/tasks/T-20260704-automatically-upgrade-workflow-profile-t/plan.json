@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-04T14:06:08.365Z",
+    "updated_at": "2026-07-04T14:06:08.365Z",
+    "content_sha256": "167486a594749b5802ca6c8d03fc1039135d8b1356042d40879669f2c2ae7432"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-04T14:06:08.365Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Automatically upgrade workflow profile to standard for high level tasks or spec requirements",
+      "description": "根据 spec 明确 FR-1: Automatically upgrade workflow profile to standard for high level tasks or spec requirements 的实现边界和验收口径。",
+      "acceptance": "AC-1: When a backlog item or task is level 2/3, requires a spec, or includes major-change categories such as workflow/agent behavior, architecture/module boundaries, API/data contracts, permissions, or long-term maintenance cost, DocPath resolves the workflow profile to standard. Existing quick/low-risk level 0/1 flows remain unchanged unless one of those indicators is present. Routing, status, plan/go/check behavior, and user-facing hints explain the upgrade reason. Tests cover quick compatibility, level-based upgrade, spec-required upgrade, and major-change upgrade. Because this changes workflow/agent behavior, implementation must include a Decision Brief and explicit user confirmation before go.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Automatically upgrade workflow profile to standard for high level tasks or spec requirements",
+      "description": "在现有架构内完成 FR-1: Automatically upgrade workflow profile to standard for high level tasks or spec requirements 的代码与文档更新。",
+      "acceptance": "FR-1 Automatically upgrade workflow profile to standard for high level tasks or spec requirements 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: When a backlog item or task is level 2/3, requires a spec, or includes major-change categories such as workflow/agent behavior, architecture/module boundaries, API/data contracts, permissions, or long-term maintenance cost, DocPath resolves the workflow profile to standard. Existing quick/low-risk level 0/1 flows remain unchanged unless one of those indicators is present. Routing, status, plan/go/check behavior, and user-facing hints explain the upgrade reason. Tests cover quick compatibility, level-based upgrade, spec-required upgrade, and major-change upgrade. Because this changes workflow/agent behavior, implementation must include a Decision Brief and explicit user confirmation before go.；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-234 与任务 T-20260704-automatically-upgrade-workflow-profile-t 建立双向关联",
+      "acceptance": "AC-1: When a backlog item or task is level 2/3, requires a spec, or includes major-change categories such as workflow/agent behavior, architecture/module boundaries, API/data contracts, permissions, or long-term maintenance cost, DocPath resolves the workflow profile to standard. Existing quick/low-risk level 0/1 flows remain unchanged unless one of those indicators is present. Routing, status, plan/go/check behavior, and user-facing hints explain the upgrade reason. Tests cover quick compatibility, level-based upgrade, spec-required upgrade, and major-change upgrade. Because this changes workflow/agent behavior, implementation must include a Decision Brief and explicit user confirmation before go.；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-234 与任务 T-20260704-automatically-upgrade-workflow-profile-t 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

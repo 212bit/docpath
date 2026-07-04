@@ -412,7 +412,8 @@ async function handleAgentDone(options: AgentOptions): Promise<void> {
   }
 
   await runAgentCheckGate(options, stateAtStart);
-  await runAgentReviewGate(options, stateAtStart);
+  const stateAfterCheck = await readCurrentState(cwd);
+  await runAgentReviewGate(options, stateAfterCheck);
   if (finalStatus === 'done') {
     await completeFinalPlanStepIfNeeded(options, taskId, finalPlanStep);
   }

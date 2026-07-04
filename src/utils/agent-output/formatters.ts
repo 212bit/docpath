@@ -4,7 +4,7 @@ import { join } from 'path';
 import { readCurrentState, readOptionalFile } from '../workspace.js';
 import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../../engine/breadcrumb.js';
 import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from '../plan-sync.js';
-import { canonicalTaskDir, currentTaskDir, detectActiveTaskIdentityDrift, readActiveTaskFile, type TaskIdentityDrift } from '../task-files.js';
+import { canonicalTaskDir, currentTaskDir, detectActiveTaskIdentityDrift, readActiveStructuredSpecDocument, readActiveTaskFile, type TaskIdentityDrift } from '../task-files.js';
 import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift, type StructuredMarkdownHashDrift, type StructuredTaskMarkdownFile } from '../structured-docs.js';
 import { listBacklogItems, type BacklogItem } from '../../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from '../pending-done.js';
@@ -15,6 +15,7 @@ import { readGitCloseoutSummary, type GitCloseoutSummary } from '../git-closeout
 import { resolveMajorChangeGateStatus, type MajorChangeGateStatus } from '../major-change.js';
 import { readLastCheckMarkdown } from '../workspace-evidence.js';
 import { isQuickProfile } from '../../engine/workflow-profile.js';
+import type { StructuredSpecDocument } from '../structured-docs.js';
 import { detectDirtyWorktree, type DirtyWorktreeReport } from '../git-dirty-guard.js';
 export interface AgentOutput {
   agent_view: 'status' | 'next';
@@ -122,6 +123,7 @@ export type AgentOutputContext = {
   gitCloseout: GitCloseoutSummary | null;
   dirtyWorktree: DirtyWorktreeReport;
   majorChangeGate: MajorChangeGateStatus;
+  structuredSpec: StructuredSpecDocument | null;
   contextIndex: HybridContextIndexSummary | null;
   contextIndexTrunk: HybridContextIndexEntry[] | null;
   contextIndexLeaves: HybridContextIndexEntry[] | null;
@@ -893,6 +895,12 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
     : null;
   const dirtyWorktree = detectDirtyWorktree(cwd);
   const majorChangeGate = await resolveMajorChangeGateStatus(cwd, docpathDir, state?.task_id || undefined);
+  let structuredSpec: StructuredSpecDocument | null = null;
+  try {
+    structuredSpec = await readActiveStructuredSpecDocument(docpathDir, state?.task_id || undefined);
+  } catch {
+    structuredSpec = null;
+  }
   const contextIndex = await readHybridContextIndexSummary(cwd);
   const contextIndexTrunk = await readHybridContextIndexTrunk(cwd);
   const contextIndexLeaves = await readHybridContextIndexLeaves(cwd);
@@ -918,6 +926,7 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
     gitCloseout,
     dirtyWorktree,
     majorChangeGate,
+    structuredSpec,
     contextIndex,
     contextIndexTrunk,
     contextIndexLeaves,

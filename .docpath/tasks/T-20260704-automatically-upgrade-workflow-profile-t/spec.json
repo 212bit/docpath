@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-04T13:52:16.803Z",
+    "updated_at": "2026-07-04T13:52:16.803Z",
+    "content_sha256": "67e49ab5a535710818112eca9220b0067cfb53a28d1a9cd600835c2a7db54cf4"
+  },
+  "task_id": "T-20260704-automatically-upgrade-workflow-profile-t",
+  "backlog_id": "R-234",
+  "title": "T-20260704-automatically-upgrade-workflow-profile-t - Automatically upgrade workflow profile to standard for high level tasks or spec requirements",
+  "generated_at": "2026-07-04T13:52:16.803Z",
+  "scope": {
+    "included": [
+      "Automatically upgrade workflow profile to standard for high level tasks or spec requirements"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "API / 数据契约",
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界",
+      "范围扩大"
+    ],
+    "user_confirmed": "User replied \"继续\" on 2026-07-04 after being shown the Decision Brief direction and pre-go confirmation requirement.",
+    "decision_brief_markdown": "- 当前问题: DocPath can retain a lighter workflow profile for high-level tasks, spec-required work, or major workflow/architecture changes, which can bypass standard gates that should apply.\n- 目标: Resolve those cases to the `standard` workflow profile deterministically while preserving existing quick and low-risk behavior.\n- 背景: 来自 backlog R-234; user confirmed continuing with this workflow/agent behavior change on 2026-07-04.\n- 可选方案:\n  - 方案 A: Keep profile selection unchanged and rely on agents to notice risky scope.\n  - 方案 B: Add deterministic profile upgrade rules for level, spec-required, and major-change signals.\n- 推荐方案: 方案 B\n- 决策理由: Deterministic upgrade rules make gates predictable, auditable, and testable without weakening quick compatibility.\n- 不做什么: Do not remove quick workflow, force all tasks to standard, or introduce external/LLM-dependent classification.\n- 成本: Medium; touches workflow profile resolution, routing/status hints, go/check behavior, and tests.\n- 风险: Over-upgrading low-risk work or missing a major-change signal; tests and explicit reason strings should constrain both.\n- 回滚方案: Revert the profile resolution rule changes and keep existing explicit profile behavior.\n- 用户确认: User replied \"继续\" on 2026-07-04 after being shown the Decision Brief direction and pre-go confirmation requirement."
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Automatically upgrade workflow profile to standard for high level tasks or spec requirements",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "When a backlog item or task is level 2/3, requires a spec, or includes major-change categories such as workflow/agent behavior, architecture/module boundaries, API/data contracts, permissions, or long-term maintenance cost, DocPath resolves the workflow profile to standard. Existing quick/low-risk level 0/1 flows remain unchanged unless one of those indicators is present. Routing, status, plan/go/check behavior, and user-facing hints explain the upgrade reason. Tests cover quick compatibility, level-based upgrade, spec-required upgrade, and major-change upgrade. Because this changes workflow/agent behavior, implementation must include a Decision Brief and explicit user confirmation before go.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-234 与任务 T-20260704-automatically-upgrade-workflow-profile-t 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "DocPath can retain a lighter workflow profile for high-level tasks, spec-required work, or major workflow/architecture changes, which can bypass standard gates that should apply.",
+    "options": [
+      "- 方案 A: Keep profile selection unchanged and rely on agents to notice risky scope."
+    ],
+    "chosen": "方案 B",
+    "rationale": "Deterministic upgrade rules make gates predictable, auditable, and testable without weakening quick compatibility."
+  }
+}

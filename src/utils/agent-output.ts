@@ -1,7 +1,7 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
-import { gatePolicyForProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
+import { gatePolicyForProfile, resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 import { selectCurrentFocus, summarizeDrift, loadAgentOutputContext, inferRouteFromContext, generateQuickFix } from './agent-output/formatters.js';
 export type { AgentOutput } from './agent-output/formatters.js';
 
@@ -43,6 +43,18 @@ export async function generateAgentOutput(
   const hasIdentityDrift = context.identityDrifts.length > 0;
   const installHealthPassed = context.installHealth?.passed === true;
   const currentFocus = selectCurrentFocus(context.state?.phase || '', context.state?.gate || '', context);
+  const profileResolution = resolveEffectiveWorkflowProfile({
+    profile: context.state?.workflow_profile,
+    level: context.state?.level,
+    requiresSpec: context.structuredSpec ? context.structuredSpec.major_change_gate?.required || context.structuredSpec.ui_gate?.state === 'required' : false,
+    requiresPlan: false,
+    majorChangeRequired: context.structuredSpec?.major_change_gate?.required,
+    majorChangeTypes: context.structuredSpec?.major_change_gate?.types,
+    uiGateRequired: context.structuredSpec?.ui_gate?.state === 'required',
+    quickScopeExceededReasons: context.majorChangeGate.signals.length > 0 && !context.majorChangeGate.confirmed
+      ? context.majorChangeGate.signals.map((signal) => `${signal.label}: ${signal.detail}`)
+      : [],
+  });
 
   const routeFields = view === 'status'
     ? {
@@ -73,9 +85,13 @@ export async function generateAgentOutput(
     agent_view: view,
     state: context.state?.state || 'unknown',
     ...(context.state?.level !== undefined && context.state?.level !== null ? { level: context.state.level } : {}),
-    workflow_profile: normalizeWorkflowProfile(context.state?.workflow_profile),
+    workflow_profile: profileResolution.effectiveProfile,
+    ...(profileResolution.upgraded ? {
+      stored_workflow_profile: profileResolution.storedProfile,
+      workflow_profile_upgrade_reasons: profileResolution.reasons,
+    } : {}),
     gate_policy: (() => {
-      const policy = gatePolicyForProfile(context.state?.workflow_profile);
+      const policy = gatePolicyForProfile(profileResolution.effectiveProfile);
       return {
         requires_spec: policy.requiresSpec,
         requires_plan: policy.requiresPlan,
@@ -177,4 +193,3 @@ export async function generateAgentOutput(
 
   return stringify(output, { indent: 2 });
 }
-

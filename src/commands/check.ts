@@ -18,6 +18,7 @@ import { logger } from '../utils/logger.js';
 import { evaluateQuickScope } from '../engine/quick-guard.js';
 import { readActiveStructuredSpecDocument } from '../utils/task-files.js';
 import { writeCurrentState } from '../utils/workspace.js';
+import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 
 function normalizeHarnessOptions(options: CheckOptions): void {
   if (options.onlyHarness) {
@@ -48,45 +49,31 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
   let current = await readCurrentState(cwd);
 
-  // Automatically upgrade workflow profile to standard if needed
   if (current && current.task_id && (current.workflow_profile === 'quick' || current.workflow_profile === 'instant')) {
-    const upgradeReasons: string[] = [];
-
-    // 1. Check complexity level
-    if (current.level >= 2) {
-      upgradeReasons.push(`任务复杂度级别为 L${current.level}（quick/instant 限制在 L0/L1）`);
-    }
-
-    // 2. Check spec requirements
+    let spec: Awaited<ReturnType<typeof readActiveStructuredSpecDocument>> = null;
     try {
-      const spec = await readActiveStructuredSpecDocument(docpathDir, current.task_id);
-      if (spec) {
-        if (spec.major_change_gate?.required) {
-          upgradeReasons.push('任务需求规格（spec.md）要求重大变更确认门禁');
-        }
-        if (spec.ui_gate?.state === 'required') {
-          upgradeReasons.push('任务需求规格（spec.md）要求 UI 设计门禁');
-        }
-      }
+      spec = await readActiveStructuredSpecDocument(docpathDir, current.task_id);
     } catch {
-      // Ignore errors reading spec document during initial check
+      // Ignore errors reading spec document during initial check.
     }
 
-    // 3. Check Git scope
     const scopeVerdict = evaluateQuickScope(cwd);
-    if (!scopeVerdict.allowed) {
-      scopeVerdict.reasons.forEach((reason) => {
-        upgradeReasons.push(`代码变更超出 quick 限制: ${reason}`);
-      });
-    }
+    const resolution = resolveEffectiveWorkflowProfile({
+      profile: current.workflow_profile,
+      level: current.level,
+      majorChangeRequired: spec?.major_change_gate?.required,
+      majorChangeTypes: spec?.major_change_gate?.types,
+      uiGateRequired: spec?.ui_gate?.state === 'required',
+      quickScopeExceededReasons: scopeVerdict.allowed ? [] : scopeVerdict.reasons,
+    });
 
-    if (upgradeReasons.length > 0) {
-      logger.warn(`⚠️  检测到高等级属性、需求规格或超限变更，已自动将工作流 Profile 从 "${current.workflow_profile}" 升级为 "standard"`);
-      upgradeReasons.forEach((reason) => logger.log(`   - ${reason}`));
+    if (resolution.upgraded) {
+      logger.warn(`⚠️  检测到高等级属性、需求规格或超限变更，已自动将工作流 Profile 从 "${resolution.storedProfile}" 升级为 "${resolution.effectiveProfile}"`);
+      resolution.reasons.forEach((reason) => logger.log(`   - ${reason}`));
 
       current = {
         ...current,
-        workflow_profile: 'standard',
+        workflow_profile: resolution.effectiveProfile,
         level: Math.max(current.level, 2) as any,
         updated_at: new Date().toISOString(),
       };
