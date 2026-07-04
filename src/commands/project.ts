@@ -4,6 +4,7 @@ import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readStdin } from '../utils/stdin.js';
+import { withLock } from '../utils/lock.js';
 import {
   PROJECT_INTAKE_SCHEMA_VERSION,
   projectIntakePaths,
@@ -99,6 +100,19 @@ async function readIntakeState(docpathDir: string, intakeId: string): Promise<Pr
 async function writeIntakeState(docpathDir: string, state: ProjectIntakeState): Promise<void> {
   const paths = projectIntakePaths(docpathDir, state.id);
   await writeFile(paths.state, JSON.stringify({ ...state, updated_at: new Date().toISOString() }, null, 2), 'utf-8');
+}
+
+async function atomicUpdateIntakeState(
+  docpathDir: string,
+  intakeId: string,
+  updater: (state: ProjectIntakeState) => Promise<ProjectIntakeState> | ProjectIntakeState
+): Promise<void> {
+  const lockPath = join(docpathDir, 'project-intake', `${intakeId}.lock`);
+  await withLock(lockPath, async () => {
+    const state = await readIntakeState(docpathDir, intakeId);
+    const updated = await updater(state);
+    await writeIntakeState(docpathDir, updated);
+  });
 }
 
 function artifactPathForAnalysis(docpathDir: string, intakeId: string, section: AnalysisSection): string {
@@ -357,11 +371,14 @@ async function projectCapture(options: ProjectCommandOptions): Promise<void> {
 async function projectAnalyze(options: ProjectCommandOptions): Promise<void> {
   if (!options.id?.trim()) throw new Error('docpath project analyze requires <intake-id>');
   const docpathDir = await resolveDocpathDir(options.cwd);
-  const state = await readIntakeState(docpathDir, options.id.trim());
-  if (state.sources.length === 0) throw new Error(`docpath project analyze: intake ${state.id} has no sources`);
+  const intakeId = options.id.trim();
+
+  // Read-only check before acquiring lock
+  const stateCheck = await readIntakeState(docpathDir, intakeId);
+  if (stateCheck.sources.length === 0) throw new Error(`docpath project analyze: intake ${stateCheck.id} has no sources`);
 
   if (options.dryRun) {
-    console.log(JSON.stringify(analysisPromptPayload(state), null, 2));
+    console.log(JSON.stringify(analysisPromptPayload(stateCheck), null, 2));
     return;
   }
 
@@ -369,31 +386,36 @@ async function projectAnalyze(options: ProjectCommandOptions): Promise<void> {
   const content = await readStdin();
   if (!content.trim()) throw new Error('docpath project analyze requires analysis markdown on stdin');
 
-  const target = artifactPathForAnalysis(docpathDir, state.id, section);
-  await mkdir(projectIntakePaths(docpathDir, state.id).analysisDir, { recursive: true });
-  await writeFile(target, content, 'utf-8');
+  // Atomic RMW operation
+  let relativePath: string;
+  let writtenSections: readonly AnalysisSection[];
+  await atomicUpdateIntakeState(docpathDir, intakeId, async (state) => {
+    const target = artifactPathForAnalysis(docpathDir, state.id, section);
+    await mkdir(projectIntakePaths(docpathDir, state.id).analysisDir, { recursive: true });
+    await writeFile(target, content, 'utf-8');
 
-  const relativePath = relativeDocpathPath(target, docpathDir);
-  const nextState = upsertArtifact(state, 'analysis', relativePath);
-  const writtenSections = ANALYSIS_SECTIONS.filter((candidate) => existsSync(artifactPathForAnalysis(docpathDir, state.id, candidate)));
-  await writeIntakeState(docpathDir, {
-    ...nextState,
-    stage: writtenSections.length === ANALYSIS_SECTIONS.length ? 'analyzed' : nextState.stage,
+    relativePath = relativeDocpathPath(target, docpathDir);
+    const nextState = upsertArtifact(state, 'analysis', relativePath);
+    writtenSections = ANALYSIS_SECTIONS.filter((candidate) => existsSync(artifactPathForAnalysis(docpathDir, state.id, candidate)));
+    return {
+      ...nextState,
+      stage: writtenSections.length === ANALYSIS_SECTIONS.length ? 'analyzed' : nextState.stage,
+    };
   });
 
-  console.log(`✅  project analysis 已写入: ${state.id}`);
+  console.log(`✅  project analysis 已写入: ${intakeId}`);
   console.log(`   section: ${section}`);
-  console.log(`   path: ${relativePath}`);
+  console.log(`   path: ${relativePath!}`);
   console.log('');
   console.log('next_hint:');
-  if (writtenSections.length === ANALYSIS_SECTIONS.length) {
-    console.log(`  next_action: create project brief for ${state.id}`);
-    console.log(`  recommended_command: docpath project brief ${state.id} --dry-run`);
+  if (writtenSections!.length === ANALYSIS_SECTIONS.length) {
+    console.log(`  next_action: create project brief for ${intakeId}`);
+    console.log(`  recommended_command: docpath project brief ${intakeId} --dry-run`);
     console.log('  exit_criteria: brief.md is written');
   } else {
-    const missing = ANALYSIS_SECTIONS.filter((candidate) => !writtenSections.includes(candidate));
+    const missing = ANALYSIS_SECTIONS.filter((candidate) => !writtenSections!.includes(candidate));
     console.log(`  next_action: complete remaining analysis sections: ${missing.join(', ')}`);
-    console.log(`  recommended_command: docpath project analyze ${state.id} --section ${missing[0]} --stdin`);
+    console.log(`  recommended_command: docpath project analyze ${intakeId} --section ${missing[0]} --stdin`);
     console.log('  exit_criteria: all analysis sections are written');
   }
 }
@@ -401,14 +423,17 @@ async function projectAnalyze(options: ProjectCommandOptions): Promise<void> {
 async function projectBrief(options: ProjectCommandOptions): Promise<void> {
   if (!options.id?.trim()) throw new Error('docpath project brief requires <intake-id>');
   const docpathDir = await resolveDocpathDir(options.cwd);
-  const state = await readIntakeState(docpathDir, options.id.trim());
+  const intakeId = options.id.trim();
+
+  // Read-only check before acquiring lock
+  const stateCheck = await readIntakeState(docpathDir, intakeId);
 
   if (options.dryRun) {
-    console.log(JSON.stringify(briefPromptPayload(state), null, 2));
+    console.log(JSON.stringify(briefPromptPayload(stateCheck), null, 2));
     return;
   }
 
-  const missingSections = ANALYSIS_SECTIONS.filter((section) => !existsSync(artifactPathForAnalysis(docpathDir, state.id, section)));
+  const missingSections = ANALYSIS_SECTIONS.filter((section) => !existsSync(artifactPathForAnalysis(docpathDir, intakeId, section)));
   if (missingSections.length > 0) {
     throw new Error(`docpath project brief: missing analysis sections: ${missingSections.join(', ')}`);
   }
@@ -416,73 +441,85 @@ async function projectBrief(options: ProjectCommandOptions): Promise<void> {
   const content = await readStdin();
   if (!content.trim()) throw new Error('docpath project brief requires brief markdown on stdin');
 
-  const paths = projectIntakePaths(docpathDir, state.id);
-  await writeFile(paths.brief, content, 'utf-8');
-  const relativePath = relativeDocpathPath(paths.brief, docpathDir);
-  await writeIntakeState(docpathDir, {
-    ...upsertArtifact(state, 'brief', relativePath),
-    stage: 'briefed',
+  // Atomic RMW operation
+  let relativePath: string;
+  await atomicUpdateIntakeState(docpathDir, intakeId, async (state) => {
+    const paths = projectIntakePaths(docpathDir, state.id);
+    await writeFile(paths.brief, content, 'utf-8');
+    relativePath = relativeDocpathPath(paths.brief, docpathDir);
+    return {
+      ...upsertArtifact(state, 'brief', relativePath),
+      stage: 'briefed',
+    };
   });
 
-  console.log(`✅  project brief 已写入: ${state.id}`);
-  console.log(`   path: ${relativePath}`);
+  console.log(`✅  project brief 已写入: ${intakeId}`);
+  console.log(`   path: ${relativePath!}`);
   console.log('');
   console.log('next_hint:');
-  console.log(`  next_action: plan project intake ${state.id}`);
-  console.log(`  recommended_command: docpath project plan ${state.id} --dry-run`);
+  console.log(`  next_action: plan project intake ${intakeId}`);
+  console.log(`  recommended_command: docpath project plan ${intakeId} --dry-run`);
   console.log('  exit_criteria: project plan evidence is written');
 }
 
 async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
   if (!options.id?.trim()) throw new Error('docpath project backlog requires <intake-id>');
   const docpathDir = await resolveDocpathDir(options.cwd);
-  const state = await readIntakeState(docpathDir, options.id.trim());
-  const paths = projectIntakePaths(docpathDir, state.id);
+  const intakeId = options.id.trim();
+
+  // Read-only check before acquiring lock
+  const stateCheck = await readIntakeState(docpathDir, intakeId);
+  const paths = projectIntakePaths(docpathDir, stateCheck.id);
 
   if (!existsSync(paths.brief)) {
-    throw new Error(`docpath project backlog: missing project brief for ${state.id}`);
+    throw new Error(`docpath project backlog: missing project brief for ${stateCheck.id}`);
   }
 
   if (options.dryRun) {
-    console.log(JSON.stringify(backlogPromptPayload(state), null, 2));
+    console.log(JSON.stringify(backlogPromptPayload(stateCheck), null, 2));
     return;
   }
 
-  const confirmation = options.confirm?.trim() || state.user_confirmed;
+  const confirmation = options.confirm?.trim() || stateCheck.user_confirmed;
   if (!confirmation) {
-    throw new Error(`docpath project backlog: ${state.id} requires --confirm <text> before backlog decomposition`);
+    throw new Error(`docpath project backlog: ${stateCheck.id} requires --confirm <text> before backlog decomposition`);
   }
 
-  const guidance = [
-    `# Backlog Decomposition Guidance: ${state.title}`,
-    '',
-    `> intake_id: ${state.id}`,
-    `> confirmed: ${confirmation}`,
-    `> project_brief: .docpath/project-intake/${state.id}/brief.md`,
-    '',
-    'Use this guidance to create normal backlog items with explicit provenance.',
-    '',
-    '```bash',
-    `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background; provenance: .docpath/project-intake/${state.id}/brief.md>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/brief.md"`,
-    '```',
-    '',
-  ].join('\n');
-  await writeFile(paths.backlog, guidance, 'utf-8');
+  // Atomic RMW operation
+  let relativePath: string;
+  await atomicUpdateIntakeState(docpathDir, intakeId, async (state) => {
+    const guidance = [
+      `# Backlog Decomposition Guidance: ${state.title}`,
+      '',
+      `> intake_id: ${state.id}`,
+      `> confirmed: ${confirmation}`,
+      `> project_brief: .docpath/project-intake/${state.id}/brief.md`,
+      '',
+      'Use this guidance to create normal backlog items with explicit provenance.',
+      '',
+      '```bash',
+      `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background; provenance: .docpath/project-intake/${state.id}/brief.md>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/brief.md"`,
+      '```',
+      '',
+    ].join('\n');
+    const paths = projectIntakePaths(docpathDir, state.id);
+    await writeFile(paths.backlog, guidance, 'utf-8');
 
-  const relativePath = relativeDocpathPath(paths.backlog, docpathDir);
-  await writeIntakeState(docpathDir, {
-    ...upsertArtifact(state, 'backlog', relativePath),
-    stage: 'confirmed',
-    user_confirmed: confirmation,
+    relativePath = relativeDocpathPath(paths.backlog, docpathDir);
+    return {
+      ...upsertArtifact(state, 'backlog', relativePath),
+      stage: 'confirmed',
+      user_confirmed: confirmation,
+    };
   });
 
-  console.log(`✅  project backlog guidance 已写入: ${state.id}`);
-  console.log(`   path: ${relativePath}`);
+  console.log(`✅  project backlog guidance 已写入: ${intakeId}`);
+  console.log(`   path: ${relativePath!}`);
   console.log('   status: confirmed');
   console.log('');
   console.log('next_hint:');
-  console.log(`  next_action: create reviewed backlog items from ${state.id}`);
-  console.log(`  recommended_command: docpath backlog add --title "<title>" --evidence-analysis "${relativePath}"`);
+  console.log(`  next_action: create reviewed backlog items from ${intakeId}`);
+  console.log(`  recommended_command: docpath backlog add --title "<title>" --evidence-analysis "${relativePath!}"`);
   console.log('  exit_criteria: reviewed backlog items are captured with project-intake provenance');
 }
 
