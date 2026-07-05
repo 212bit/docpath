@@ -37,13 +37,13 @@
 - **依赖**: S5
 
 ### S7: 实现 FR-6 Add regression tests for each defect class and for the intended closeout path.
-- [ ] S7: 实现 FR-6 Add regression tests for each defect class and for the intended closeout path.
+- [x] S7: 实现 FR-6 Add regression tests for each defect class and for the intended closeout path.
 - **描述**: 在现有架构内完成 FR-6: Add regression tests for each defect class and for the intended closeout path.。
 - **验收条件**: FR-6 已实现，并保持现有工作流兼容。
 - **依赖**: S6
 
 ### S8: 验证验收标准
-- [ ] S8: 验证验收标准
+- [x] S8: 验证验收标准
 - **描述**: 验证 spec 中声明的验收标准：AC-1: A dirty pre-commit worktree with task changes has a valid `docpath check` / `docpath changes --agent` path and no longer requires an impossible `agent enter` transition.；AC-2: A pre-task or intake/review context can run the appropriate check gate, or receives a precise command-specific explanation that does not deadlock the workflow.；AC-3: `docpath review` can review cumulative task changes after intermediate commits; tests cover the clean-working-tree-after-commit case.；AC-4: `docpath backlog promote` refuses, merges, or backs up when an existing user-authored spec would be overwritten; tests cover the data-loss scenario.；AC-5: `docpath changes --agent` identifies canonical evidence paths versus `current` alias paths and recommends staging canonical artifacts by default.；AC-6: `journal` / `learn` filters reject seed-spec boilerplate, placeholder option text, and mechanical implementation details; tests cover the examples reported by the user.；AC-7: Existing quick/standard happy-path tests continue to pass.；AC-8: The task completes with `docpath check`, `docpath review`, and journal evidence without manual state-file edits.
 - **验收条件**: AC-1: A dirty pre-commit worktree with task changes has a valid `docpath check` / `docpath changes --agent` path and no longer requires an impossible `agent enter` transition.；AC-2: A pre-task or intake/review context can run the appropriate check gate, or receives a precise command-specific explanation that does not deadlock the workflow.；AC-3: `docpath review` can review cumulative task changes after intermediate commits; tests cover the clean-working-tree-after-commit case.；AC-4: `docpath backlog promote` refuses, merges, or backs up when an existing user-authored spec would be overwritten; tests cover the data-loss scenario.；AC-5: `docpath changes --agent` identifies canonical evidence paths versus `current` alias paths and recommends staging canonical artifacts by default.；AC-6: `journal` / `learn` filters reject seed-spec boilerplate, placeholder option text, and mechanical implementation details; tests cover the examples reported by the user.；AC-7: Existing quick/standard happy-path tests continue to pass.；AC-8: The task completes with `docpath check`, `docpath review`, and journal evidence without manual state-file edits.
 - **依赖**: S7
@@ -54,8 +54,8 @@
 - [x] S3
 - [x] S4
 - [x] S5
-- [ ] S6
-- [ ] S7
+- [x] S6
+- [x] S7
 - [ ] S8
 
 ## 依赖关系图

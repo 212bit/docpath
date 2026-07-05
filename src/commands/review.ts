@@ -95,7 +95,7 @@ function taskCommitFiles(cwd: string, startedAt?: string): string[] {
   return parseNameList(runGit(cwd, ['log', '--name-only', '--format=', `--since=${startedAt}`, 'HEAD']));
 }
 
-function collectTaskChangedFiles(cwd: string, current: Awaited<ReturnType<typeof readCurrentState>>): string[] {
+function collectTaskChangedFiles(cwd: string, current?: Awaited<ReturnType<typeof readCurrentState>>): string[] {
   try {
     return [...new Set([...taskCommitFiles(cwd, current?.started_at), ...collectStatusChangedFiles(cwd)])].filter(isReviewableFile);
   } catch {
