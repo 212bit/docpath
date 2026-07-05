@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-05T12:54:02.478Z",
-    "updated_at": "2026-07-05T12:54:02.478Z",
-    "content_sha256": "3d6e1c80b41742b45aad7efdf2fdb6f91e0b6d7a15dfec13fc39a80d674ab466"
+    "created_at": "2026-07-05T13:00:51.497Z",
+    "updated_at": "2026-07-05T13:00:51.497Z",
+    "content_sha256": "f8a2de59620dc42c2232564e1581576e2430c43b0e6b54cc17674f7f2f645a2a"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-05T12:54:02.478Z",
+  "generated_at": "2026-07-05T13:00:51.497Z",
   "steps": [
     {
       "id": "S1",
@@ -24,7 +24,7 @@
       "description": "在 check 或 project 状态路径中识别项目级 standards package 是否缺失、是否仍为 draft/prototype/inferred 状态，并在开发前给出失败或警告。",
       "acceptance": "测试覆盖缺少必需文档、草稿标记、正常通过三种情形；不影响无 project-intake 的普通任务。",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S3",

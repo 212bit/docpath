@@ -578,6 +578,119 @@ export async function checkRuleTruthSources(docpathDir: string): Promise<CheckRe
   return results;
 }
 
+function shouldCheckProjectStandards(cwd: string, docpathDir: string): boolean {
+  return [
+    join(docpathDir, 'project-intake'),
+    join(cwd, 'docs', 'requirements.md'),
+    join(cwd, 'requirements.md'),
+  ].some((path) => existsSync(path));
+}
+
+function firstExistingPath(paths: string[]): string | undefined {
+  return paths.find((path) => existsSync(path));
+}
+
+function normalizeDisplayPath(cwd: string, fullPath: string): string {
+  return fullPath.startsWith(`${cwd}/`) ? fullPath.slice(cwd.length + 1) : fullPath;
+}
+
+function standardsArtifactCandidates(cwd: string, docpathDir: string): Record<string, string[]> {
+  return {
+    'requirements.md': [
+      join(cwd, 'docs', 'requirements.md'),
+      join(cwd, 'requirements.md'),
+      join(docpathDir, 'requirements.md'),
+    ],
+    'architecture.md': [
+      join(docpathDir, 'rules', 'architecture.md'),
+      join(cwd, 'docs', 'architecture.md'),
+      join(cwd, 'architecture.md'),
+      join(docpathDir, 'project-architecture.md'),
+    ],
+    'development-checklist.md': [
+      join(cwd, 'docs', 'development-checklist.md'),
+      join(cwd, 'development-checklist.md'),
+      join(docpathDir, 'rules', 'development-checklist.md'),
+    ],
+  };
+}
+
+function draftSignals(content: string): string[] {
+  const head = content.split('\n').slice(0, 120).join('\n');
+  const signals: Array<[RegExp, string]> = [
+    [/雏形|草稿|讨论稿|待重写|待补.*重写|prototype|draft|inferred/i, 'contains draft/prototype/inferred marker'],
+    [/实际为.*但|误将|误判|不准确/i, 'contains stale-domain correction marker'],
+  ];
+  return signals
+    .filter(([pattern]) => pattern.test(head))
+    .map(([, label]) => label);
+}
+
+function artifactSpecificIssues(name: string, content: string): string[] {
+  const issues: string[] = [];
+  if (name === 'requirements.md' && !/已拍板|拍板状态|approved|approval|confirmed|user_confirmed/i.test(content)) {
+    issues.push('requirements approval status not found');
+  }
+  if (name === 'architecture.md' && !/ADR|架构决策|模块|module|依赖|dependency/i.test(content)) {
+    issues.push('architecture decision/module boundary content not found');
+  }
+  if (name === 'development-checklist.md' && !/- \[[ xX]\]|checklist|检查清单|门禁/i.test(content)) {
+    issues.push('development checklist items not found');
+  }
+  return issues;
+}
+
+export async function checkProjectStandardsPackage(cwd: string, docpathDir: string): Promise<CheckResult[]> {
+  if (!shouldCheckProjectStandards(cwd, docpathDir)) return [];
+
+  const candidates = standardsArtifactCandidates(cwd, docpathDir);
+  const missing: string[] = [];
+  const weak: string[] = [];
+  const found: string[] = [];
+
+  for (const [name, paths] of Object.entries(candidates)) {
+    const path = firstExistingPath(paths);
+    if (!path) {
+      missing.push(`${name} (${paths.map((candidate) => normalizeDisplayPath(cwd, candidate)).join(' | ')})`);
+      continue;
+    }
+
+    found.push(`${name}: ${normalizeDisplayPath(cwd, path)}`);
+    const content = await readFile(path, 'utf-8').catch(() => '');
+    const issues = [
+      ...draftSignals(content),
+      ...artifactSpecificIssues(name, content),
+    ];
+    if (issues.length > 0) {
+      weak.push(`${name}: ${normalizeDisplayPath(cwd, path)} — ${Array.from(new Set(issues)).join('; ')}`);
+    }
+  }
+
+  const passed = missing.length === 0 && weak.length === 0;
+  return [{
+    name: 'Project standards package gate',
+    passed,
+    output: passed
+      ? [
+          'Required project standards are present and frozen:',
+          ...found.map((item) => `  - ${item}`),
+          'Optional artifacts remain complexity-based: open-questions.md, decisions/*.md, style.md.',
+          'No phase-backlog.md document is required; backlog quality belongs to structured backlog items.',
+        ].join('\n')
+      : [
+          'Project-intake development requires a frozen minimal standards package.',
+          missing.length ? 'Missing required artifacts:' : '',
+          ...missing.map((item) => `  - ${item}`),
+          weak.length ? 'Artifacts that still look draft/unapproved:' : '',
+          ...weak.map((item) => `  - ${item}`),
+          'Required minimum: requirements.md, architecture.md, development-checklist.md.',
+          'Optional by complexity only: open-questions.md, decisions/*.md, style.md.',
+          'Do not proceed from inferred architecture or draft standards.',
+        ].filter(Boolean).join('\n'),
+    category: 'analysis',
+  }];
+}
+
 export async function checkContextHealth(cwd: string, docpathDir: string): Promise<CheckResult[]> {
   const workflowState = await readCurrentState(cwd);
   if ((workflowState?.level || 0) < 2) return [];
@@ -585,6 +698,7 @@ export async function checkContextHealth(cwd: string, docpathDir: string): Promi
     ...await checkCurrentTaskContextFiles(cwd, docpathDir),
     ...await checkContextIndexHealth(docpathDir, workflowState?.task_id),
     ...await checkRuleTruthSources(docpathDir),
+    ...await checkProjectStandardsPackage(cwd, docpathDir),
   ];
 }
 
