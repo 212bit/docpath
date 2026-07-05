@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readStdin } from '../utils/stdin.js';
@@ -133,7 +133,9 @@ async function readIntakeState(docpathDir: string, intakeId: string): Promise<Pr
 
 async function writeIntakeState(docpathDir: string, state: ProjectIntakeState): Promise<void> {
   const paths = projectIntakePaths(docpathDir, state.id);
-  await writeFile(paths.state, JSON.stringify({ ...state, updated_at: new Date().toISOString() }, null, 2), 'utf-8');
+  const tmpPath = `${paths.state}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+  await writeFile(tmpPath, JSON.stringify({ ...state, updated_at: new Date().toISOString() }, null, 2), 'utf-8');
+  await rename(tmpPath, paths.state);
 }
 
 async function atomicUpdateIntakeState(
@@ -151,6 +153,14 @@ async function atomicUpdateIntakeState(
 
 function artifactPathForAnalysis(docpathDir: string, intakeId: string, section: AnalysisSection): string {
   return join(projectIntakePaths(docpathDir, intakeId).analysisDir, `${section}.md`);
+}
+
+function existingAnalysisArtifactRefs(docpathDir: string, intakeId: string): ProjectIntakeState['artifacts'] {
+  const now = new Date().toISOString();
+  return ANALYSIS_SECTIONS
+    .map((section) => artifactPathForAnalysis(docpathDir, intakeId, section))
+    .filter((path) => existsSync(path))
+    .map((path) => ({ kind: 'analysis' as const, path: relativeDocpathPath(path, docpathDir), updated_at: now }));
 }
 
 function upsertArtifact(state: ProjectIntakeState, kind: ProjectIntakeState['artifacts'][number]['kind'], path: string): ProjectIntakeState {
@@ -444,7 +454,7 @@ async function projectCapture(options: ProjectCommandOptions): Promise<void> {
     backlog_items: [],
   };
 
-  await writeFile(paths.state, JSON.stringify(state, null, 2), 'utf-8');
+  await writeIntakeState(docpathDir, state);
 
   console.log(`✅  project intake 已创建: ${intakeId}`);
   console.log(`   title: ${title}`);
@@ -485,11 +495,16 @@ async function projectAnalyze(options: ProjectCommandOptions): Promise<void> {
     await writeFile(target, content, 'utf-8');
 
     relativePath = relativeDocpathPath(target, docpathDir);
-    const nextState = upsertArtifact(state, 'analysis', relativePath);
     writtenSections = ANALYSIS_SECTIONS.filter((candidate) => existsSync(artifactPathForAnalysis(docpathDir, state.id, candidate)));
+    const artifacts = [
+      ...state.artifacts.filter((artifact) => artifact.kind !== 'analysis'),
+      ...existingAnalysisArtifactRefs(docpathDir, state.id),
+    ];
     return {
-      ...nextState,
-      stage: writtenSections.length === ANALYSIS_SECTIONS.length ? 'analyzed' : nextState.stage,
+      ...state,
+      artifacts,
+      updated_at: new Date().toISOString(),
+      stage: writtenSections.length === ANALYSIS_SECTIONS.length ? 'analyzed' : state.stage,
     };
   });
 
