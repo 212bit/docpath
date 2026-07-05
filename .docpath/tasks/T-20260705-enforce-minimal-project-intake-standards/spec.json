@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-05T12:51:57.288Z",
+    "updated_at": "2026-07-05T12:51:57.288Z",
+    "content_sha256": "e3a458234a90041230edc97e9bc70bf97987f888169ba94becab5303d1e31f93"
+  },
+  "task_id": "T-20260705-enforce-minimal-project-intake-standards",
+  "backlog_id": "R-247",
+  "title": "T-20260705-enforce-minimal-project-intake-standards - Enforce minimal project-intake standards package",
+  "generated_at": "2026-07-05T12:51:57.288Z",
+  "scope": {
+    "included": [
+      "Enforce minimal project-intake standards package"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "API / 数据契约",
+      "架构 / 模块边界",
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "User confirmed minimal 3+optional structure in chat on 2026-07-05",
+    "decision_brief_markdown": "- 当前问题: ## 背景\n- 目标: Enforce minimal project-intake standards package\n- 背景: 来自 backlog R-247，Decision Brief 证据: conversation: user confirmed 3+optional structure and no phase-backlog.md\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: User confirmed minimal 3+optional structure in chat on 2026-07-05\n\n### 已有 Decision Brief (来自 backlog evidence)\n\nconversation: user confirmed 3+optional structure and no phase-backlog.md"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Enforce minimal project-intake standards package",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "Project-intake dry-run payload documents the minimal required standards package and optional artifacts without requiring phase-backlog.md; backlog guidance references structured backlog quality instead of a markdown phase backlog; check or project status surfaces missing/draft required standards before development; tests cover the new contract.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-247 与任务 T-20260705-enforce-minimal-project-intake-standards 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "## 背景",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

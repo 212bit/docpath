@@ -115,7 +115,10 @@ describe('project intake commands', () => {
     ]);
     assert.match(dryRun.sections['open-questions'].join('\n'), /gap index/);
     assert.match(dryRun.required_outputs.join('\n'), /stakeholder question list/);
+    assert.deepEqual(dryRun.standards_package.required, ['requirements.md', 'architecture.md', 'development-checklist.md']);
+    assert.deepEqual(dryRun.standards_package.optional, ['open-questions.md', 'decisions/*.md', 'style.md']);
     assert.match(dryRun.rules.join('\n'), /blocking, can-mock, or later/);
+    assert.match(dryRun.rules.join('\n'), /not a required phase-backlog\.md/);
 
     const out = run(`project analyze ${intakeId} --section requirements --stdin`, cwd, '## Requirements\n\n- goal\n');
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
@@ -144,6 +147,8 @@ describe('project intake commands', () => {
     assert.equal(dryRun.task, 'project-intake-brief');
     assert.equal(dryRun.recommended_write, `docpath project brief ${intakeId} --stdin`);
     assert.match(dryRun.required_content.join('\n'), /approval gate/);
+    assert.deepEqual(dryRun.standards_package.required, ['requirements.md', 'architecture.md', 'development-checklist.md']);
+    assert.match(dryRun.standards_package.backlog_policy, /No phase-backlog\.md is required/);
 
     const out = run(`project brief ${intakeId} --stdin`, cwd, '# Project Brief\n');
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
@@ -169,6 +174,8 @@ describe('project intake commands', () => {
     assert.equal(dryRun.task, 'project-intake-backlog-decomposition');
     assert.match(dryRun.intent, /After explicit approval/);
     assert.match(dryRun.guardrails.join('\n'), /does not auto-create executable backlog items/);
+    assert.match(dryRun.guardrails.join('\n'), /Do not require or generate phase-backlog\.md/);
+    assert.match(dryRun.structured_backlog_quality.join('\n'), /markdown phase backlog files are optional draft views only/);
     assert.match(dryRun.recommended_command_template, new RegExp(`project-intake/${intakeId}/brief\\.md`));
 
     const blocked = runResult(`project backlog ${intakeId}`, cwd);
@@ -185,6 +192,8 @@ describe('project intake commands', () => {
     assert.match(guidance, /docpath backlog add/);
     assert.match(guidance, /Requirements-shaping guardrails/);
     assert.match(guidance, /Do not create executable backlog from unapproved intake materials/);
+    assert.match(guidance, /Do not require or maintain phase-backlog\.md/);
+    assert.match(guidance, /requirements\.md, architecture\.md, and development-checklist\.md/);
     assert.match(guidance, new RegExp(`project-intake/${intakeId}/brief\\.md`));
     rmSync(cwd, { recursive: true, force: true });
   });

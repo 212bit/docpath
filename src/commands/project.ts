@@ -71,7 +71,21 @@ const REQUIREMENTS_SHAPING_OUTPUTS = [
   'stakeholder question list grouped by audience',
   'decision cards for assumptions that require explicit approval',
   'approved requirements brief with scope, non-goals, acceptance candidates, and approval gate',
-  'backlog decomposition guidance after confirmation only',
+  'minimal standards package: requirements.md, architecture.md, and development-checklist.md',
+  'optional standards artifacts only when complexity requires them: open-questions.md, decisions/*.md, and style.md',
+  'structured backlog quality guidance after confirmation only; do not require a phase-backlog.md document',
+] as const;
+
+const PROJECT_STANDARDS_REQUIRED = [
+  'requirements.md',
+  'architecture.md',
+  'development-checklist.md',
+] as const;
+
+const PROJECT_STANDARDS_OPTIONAL = [
+  'open-questions.md',
+  'decisions/*.md',
+  'style.md',
 ] as const;
 
 function slugify(value: string): string {
@@ -177,11 +191,25 @@ function analysisPromptPayload(state: ProjectIntakeState): Record<string, unknow
       ],
     },
     required_outputs: REQUIREMENTS_SHAPING_OUTPUTS,
+    standards_package: {
+      required: PROJECT_STANDARDS_REQUIRED,
+      optional: PROJECT_STANDARDS_OPTIONAL,
+      rules: [
+        'requirements.md is the approved requirements source of truth: goals, scope, workflows, business rules, non-goals, acceptance criteria, and approval status.',
+        'architecture.md is the hard development contract: module boundaries, dependency direction, ADRs, forbidden crossings, and assumptions that are not yet approved.',
+        'development-checklist.md is the pre-development gate that agents must satisfy before implementation.',
+        'open-questions.md is optional; keep questions inside requirements.md unless the gap list needs owner/status tracking.',
+        'decisions/*.md is optional for significant decisions; architecture decisions must also be summarized into architecture.md ADRs.',
+        'style.md is optional when team-wide standards already exist; if present, keep only project-specific differences and avoid generic boilerplate.',
+      ],
+    },
     rules: [
       'Separate verified facts, assumptions, gaps, and proposed decisions.',
       'Do not convert intake output into normal backlog before explicit user confirmation.',
       'Mark each gap as blocking, can-mock, or later.',
       'Decision cards must include problem, options, recommendation, risk, non-goals, owner, and approval effect.',
+      'Do not treat inferred architecture, draft standards, or prototype notes as approved development rules.',
+      'Backlog is structured data quality, not a required phase-backlog.md document.',
     ],
     recommended_writes: ANALYSIS_SECTIONS.map((section) => `docpath project analyze ${state.id} --section ${section} --stdin`),
   };
@@ -210,7 +238,14 @@ function briefPromptPayload(state: ProjectIntakeState): Record<string, unknown> 
       'acceptance candidates',
       'blocking decisions',
       'approval gate and approval owner',
+      'standards package status: requirements.md, architecture.md, development-checklist.md',
+      'optional artifact decision: open-questions.md, decisions/*.md, style.md when needed',
     ],
+    standards_package: {
+      required: PROJECT_STANDARDS_REQUIRED,
+      optional: PROJECT_STANDARDS_OPTIONAL,
+      backlog_policy: 'No phase-backlog.md is required; create structured backlog items only after approval, preserving provenance and acceptance criteria.',
+    },
     recommended_write: `docpath project brief ${state.id} --stdin`,
   };
 }
@@ -227,6 +262,8 @@ function backlogPromptPayload(state: ProjectIntakeState): Record<string, unknown
       'This command emits guidance only; it does not auto-create executable backlog items.',
       'Do not run non-dry-run without explicit user confirmation that requirements are approved for backlog decomposition.',
       'Each future backlog item must preserve project-intake provenance and its own acceptance criteria.',
+      'Do not require or generate phase-backlog.md as a durable source of truth.',
+      'Before development, the project must have approved requirements.md, architecture.md, and development-checklist.md or equivalent paths linked from the backlog evidence.',
     ],
     provenance: {
       intake_state: `.docpath/project-intake/${state.id}/intake.json`,
@@ -239,9 +276,17 @@ function backlogPromptPayload(state: ProjectIntakeState): Record<string, unknown
       'background',
       'acceptance',
       'readiness',
+      'dependencies',
+      'decision_refs when architecture/API/data/permission/UI/workflow changes are involved',
       'evidence-analysis or evidence-spec',
       'evidence-decision for level 3 items',
       'user-confirmed for level 3 items',
+    ],
+    structured_backlog_quality: [
+      'Backlog items are the task queue source of truth; markdown phase backlog files are optional draft views only.',
+      'Every backlog item must link to approved requirements or intake brief evidence.',
+      'Level 3 items must link to a decision reference and explicit user confirmation.',
+      'Items that depend on unresolved gaps must mark the dependency as blocking, can-mock, or later.',
     ],
     recommended_command_template: `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background with project-intake provenance>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/brief.md"`,
   };
@@ -544,8 +589,11 @@ async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
       '',
       'Requirements-shaping guardrails:',
       '- Do not create executable backlog from unapproved intake materials.',
+      '- Do not require or maintain phase-backlog.md as a durable source of truth; backlog quality is enforced on structured backlog items.',
       '- Keep each backlog item tied to this intake provenance and its own acceptance criteria.',
       '- Preserve unresolved gaps as blocking/can-mock/later dependencies in the backlog item background.',
+      '- Before implementation, ensure approved requirements.md, architecture.md, and development-checklist.md exist or are linked as equivalent standards evidence.',
+      '- Use open-questions.md, decisions/*.md, and style.md only when project complexity requires separate artifacts.',
       '',
       '```bash',
       `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background; provenance: .docpath/project-intake/${state.id}/brief.md>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/brief.md"`,
