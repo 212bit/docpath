@@ -201,6 +201,23 @@ function isVagueLesson(candidate: CandidateBlock): boolean {
   return /^(待补充|暂无|无|none|n\/a)$/i.test(description);
 }
 
+function isSeedBoilerplateLesson(candidate: CandidateBlock): boolean {
+  const text = [candidate.title, candidate.key, candidate.description]
+    .join(' ')
+    .replace(/[✅⚠️📋🏗️]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return [
+    /方案\s*A\s*[/／]\s*方案\s*A/iu,
+    /方案\s*A\s*[:：]?\s*方案\s*A/iu,
+    /backlog promote seed spec/i,
+    /spec\.json\s*渲染/i,
+    /JSON\s*\/\s*Markdown/i,
+    /保留 backlog 作为来源/u,
+    /便于后续 plan\/go 接续/u,
+  ].some((pattern) => pattern.test(text));
+}
+
 function candidateToPattern(candidate: CandidateBlock): Pattern | undefined {
   const typeValue = candidate.type;
   const targetValue = candidate.target;
@@ -249,9 +266,10 @@ function classifyCandidate(candidate: CandidateBlock, seen: Set<string>): Candid
   if (isOrphanCandidate(candidate)) reasons.push('task_id 缺失/unknown 的孤儿候选（状态漂移产物）');
   if (isLowValueWorkflowLesson(candidate)) reasons.push('低信息密度的任务完成统计');
   if (isVagueLesson(candidate)) reasons.push('经验描述过短或占位');
+  if (isSeedBoilerplateLesson(candidate)) reasons.push('seed spec 或占位方案噪音');
   if (!candidate.key || candidate.key === candidate.title) reasons.push('缺少稳定 key');
 
-  if (duplicate || isOrphanCandidate(candidate) || isVagueLesson(candidate) || !candidate.key || candidate.key === candidate.title) {
+  if (duplicate || isOrphanCandidate(candidate) || isVagueLesson(candidate) || isSeedBoilerplateLesson(candidate) || !candidate.key || candidate.key === candidate.title) {
     return { block: candidate, action: 'skip', reasons };
   }
 

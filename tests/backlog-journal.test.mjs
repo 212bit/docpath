@@ -225,6 +225,33 @@ Alpha
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('journal does not extract seed spec key-decision rows as ADRs', () => {
+    const cwd = mkWorkspace({ breadcrumbContext: '质量检查通过 (14 项)' });
+    const seedSpec = [
+      '# T-20260531-alpha-promote - Alpha Promote',
+      '',
+      '## 4. 关键决策',
+      '',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | spec.json 渲染 | JSON / Markdown | JSON | 机器真源重建视图 |',
+      '| 2 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |',
+      '',
+      '## 5. 验收标准',
+      '',
+      '- [ ] AC-1: test',
+      '',
+    ].join('\n');
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), seedSpec);
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-20260531-alpha-promote', 'spec.md'), seedSpec);
+
+    const out = run('journal --optional-archive skip', cwd);
+
+    assert.match(out, /未发现可复用 ADR，跳过 decisions\.md 写入/);
+    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'decisions.md')), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('journal runs decisions gc after writing archive decisions', () => {
     const cwd = mkWorkspace();
     const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');

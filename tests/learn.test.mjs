@@ -236,6 +236,34 @@ describe('journal to learn loop', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('learn skips seed spec placeholder lesson candidates', () => {
+    const cwd = mkWorkspace();
+    const dp = join(cwd, '.docpath');
+    writeFileSync(join(dp, 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## seed placeholder',
+      '',
+      '- task_id: T-LEARN',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: option-a-placeholder',
+      '',
+      '### Lesson',
+      '',
+      '方案 A / 方案 A。backlog promote seed spec 保留 backlog 作为来源，便于后续 plan/go 接续。',
+      '',
+    ].join('\n'));
+
+    const output = execSync(`node ${BIN} learn --cwd ${cwd} --dry-run`, { cwd, encoding: 'utf-8', timeout: 20000 });
+
+    assert.match(output, /候选分类: 保留 0 \/ 归档 0 \/ 跳过 1/);
+    assert.match(output, /seed spec 或占位方案噪音/);
+    assert.match(output, /未发现可沉淀到长期 rules 的规则模式/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('learn --from-journal --dry-run can preview direct journal extraction without writing files', () => {
     const cwd = mkWorkspace();
     const dp = join(cwd, '.docpath');

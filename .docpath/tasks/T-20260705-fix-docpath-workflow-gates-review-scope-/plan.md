@@ -31,7 +31,7 @@
 - **依赖**: S4
 
 ### S6: 实现 FR-5 Add journal/learn quality gates so seed boilerplate, placeholder options, and mechanical implementation details are not persisted as ADRs or reusable lessons.
-- [ ] S6: 实现 FR-5 Add journal/learn quality gates so seed boilerplate, placeholder options, and mechanical implementation details are not persisted as ADRs or reusable lessons.
+- [x] S6: 实现 FR-5 Add journal/learn quality gates so seed boilerplate, placeholder options, and mechanical implementation details are not persisted as ADRs or reusable lessons.
 - **描述**: 在现有架构内完成 FR-5: Add journal/learn quality gates so seed boilerplate, placeholder options, and mechanical implementation details are not persisted as ADRs or reusable lessons.。
 - **验收条件**: FR-5 已实现，并保持现有工作流兼容。
 - **依赖**: S5
@@ -53,7 +53,7 @@
 - [x] S2
 - [x] S3
 - [x] S4
-- [ ] S5
+- [x] S5
 - [ ] S6
 - [ ] S7
 - [ ] S8

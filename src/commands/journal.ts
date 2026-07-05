@@ -200,6 +200,24 @@ function extractAdrFromKeyDecisionsTable(specMarkdown: string): AdrCandidate[] {
   return candidates;
 }
 
+function isLowSignalAdrCandidate(candidate: AdrCandidate): boolean {
+  const normalized = [candidate.title, candidate.decision, candidate.context]
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!normalized) return true;
+  return [
+    /spec\.json\s*渲染/i,
+    /backlog promote seed spec/i,
+    /JSON\s*\/\s*Markdown/i,
+    /保留 backlog 作为来源/u,
+    /机器真源重建视图/u,
+    /便于后续 plan\/go 接续/u,
+    /^方案\s*[A-Z]$/iu,
+    /方案\s*A\s*[:：]?\s*方案\s*A/iu,
+  ].some((pattern) => pattern.test(normalized));
+}
+
 export async function journalCommand(options: JournalOptions): Promise<void> {
   const { cwd } = options;
   const docpathDir = await resolveDocpathDir(cwd);
@@ -589,7 +607,7 @@ function collectAdrCandidates(context: JournalContext, summary: TaskSummary): Ad
   const seen = new Set<string>();
   const push = (c: AdrCandidate): void => {
     const key = c.title.toLowerCase();
-    if (!c.title || seen.has(key)) return;
+    if (!c.title || seen.has(key) || isLowSignalAdrCandidate(c)) return;
     seen.add(key);
     candidates.push(c);
   };
