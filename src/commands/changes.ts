@@ -65,6 +65,11 @@ function renderAgentYaml(report: ChangesReport): string {
     lines.push(`  note: ${report.worktree_isolation.note === null ? 'null' : yamlString(report.worktree_isolation.note)}`);
   }
 
+  lines.push('artifact_policy:');
+  lines.push(`  canonical_default: ${report.artifact_policy.canonical_default}`);
+  lines.push(`  canonical_pattern: ${yamlString(report.artifact_policy.canonical_pattern)}`);
+  lines.push(`  current_alias_policy: ${yamlString(report.artifact_policy.current_alias_policy)}`);
+
   // ignored_evidence: agent 模式下只保留计数和 add_command，移除文件列表
   lines.push('ignored_evidence:');
   lines.push(`  check: ${yamlString(report.ignored_evidence.check)}`);
@@ -155,6 +160,11 @@ function renderHuman(report: ChangesReport): string {
       for (const file of report.worktree_isolation.commit_relevant_files) lines.push(`      - ${file}`);
     }
   }
+
+  lines.push('\n  Artifact policy');
+  lines.push(`    canonical default: ${report.artifact_policy.canonical_default ? 'yes' : 'no'}`);
+  lines.push(`    canonical pattern: ${report.artifact_policy.canonical_pattern}`);
+  lines.push(`    current alias: ${report.artifact_policy.current_alias_policy}`);
 
   if (report.ignored_evidence.check === 'skipped') {
     lines.push('\n  被 gitignore 忽略的 DocPath evidence');

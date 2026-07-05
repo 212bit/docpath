@@ -25,7 +25,7 @@
 - **依赖**: S3
 
 ### S5: 实现 FR-4 Clarify canonical task artifact versus `current` alias behavior in closeout guidance. `docpath changes --agent` and related commit guidance should prefer canonical evidence paths and identify alias files as pointers/views unless they are intentionally required.
-- [ ] S5: 实现 FR-4 Clarify canonical task artifact versus `current` alias behavior in closeout guidance. `docpath changes --agent` and related commit guidance should prefer canonical evidence paths and identify alias files as pointers/views unless they are intentionally required.
+- [x] S5: 实现 FR-4 Clarify canonical task artifact versus `current` alias behavior in closeout guidance. `docpath changes --agent` and related commit guidance should prefer canonical evidence paths and identify alias files as pointers/views unless they are intentionally required.
 - **描述**: 在现有架构内完成 FR-4: Clarify canonical task artifact versus `current` alias behavior in closeout guidance. `docpath changes --agent` and related commit guidance should prefer canonical evidence paths and identify alias files as pointers/views unless they are intentionally required.。
 - **验收条件**: FR-4 已实现，并保持现有工作流兼容。
 - **依赖**: S4
@@ -52,7 +52,7 @@
 - [x] S1
 - [x] S2
 - [x] S3
-- [ ] S4
+- [x] S4
 - [ ] S5
 - [ ] S6
 - [ ] S7

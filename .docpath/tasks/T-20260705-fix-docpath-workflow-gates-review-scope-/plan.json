@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-05T05:36:31.995Z",
-    "updated_at": "2026-07-05T05:36:31.995Z",
-    "content_sha256": "03b9b8bc77ec76ed9656b4c717d96dff8cdf329512fa5e294d446ea2a65bb3a4"
+    "created_at": "2026-07-05T05:38:50.795Z",
+    "updated_at": "2026-07-05T05:38:50.795Z",
+    "content_sha256": "4dc17587e7bd153bbad661234698bbf88aa13c856747214b22d366d9eb273b94"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-05T05:36:31.995Z",
+  "generated_at": "2026-07-05T05:38:50.795Z",
   "steps": [
     {
       "id": "S1",
@@ -48,7 +48,7 @@
       "description": "在现有架构内完成 FR-4: Clarify canonical task artifact versus `current` alias behavior in closeout guidance. `docpath changes --agent` and related commit guidance should prefer canonical evidence paths and identify alias files as pointers/views unless they are intentionally required.。",
       "acceptance": "FR-4 已实现，并保持现有工作流兼容。",
       "dependencies": "S4",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S6",

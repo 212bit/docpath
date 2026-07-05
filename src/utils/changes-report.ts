@@ -46,6 +46,12 @@ export interface WorktreeIsolationReport {
   note: string | null;
 }
 
+export interface ArtifactPolicyReport {
+  canonical_default: boolean;
+  canonical_pattern: string;
+  current_alias_policy: string;
+}
+
 export interface ChangesReport {
   git_root: string;
   branch: string;
@@ -66,6 +72,7 @@ export interface ChangesReport {
   };
   groups: Record<ChangeGroupName, string[]>;
   worktree_isolation: WorktreeIsolationReport;
+  artifact_policy: ArtifactPolicyReport;
   ignored_evidence: IgnoredEvidenceReport;
   untracked_evidence: UntrackedEvidenceReport;
   recommended_stage_command: string | null;
@@ -269,6 +276,14 @@ function buildWorktreeIsolationReport(gitRoot: string, files: ChangedFile[], sin
   };
 }
 
+function buildArtifactPolicyReport(): ArtifactPolicyReport {
+  return {
+    canonical_default: true,
+    canonical_pattern: '.docpath/tasks/<task_id>/*',
+    current_alias_policy: 'tasks/current is a mutable working alias; stage canonical task evidence unless changes --agent explicitly lists current alias files.',
+  };
+}
+
 function buildBlockingReasons(args: {
   files: ChangedFile[];
   since: string | null;
@@ -395,6 +410,7 @@ export async function buildChangesReport(cwd: string, options: ChangesReportOpti
     },
     groups,
     worktree_isolation: worktreeIsolation,
+    artifact_policy: buildArtifactPolicyReport(),
     ignored_evidence: ignoredEvidence,
     untracked_evidence: untrackedEvidence,
     recommended_stage_command: recommendedStageCommand,

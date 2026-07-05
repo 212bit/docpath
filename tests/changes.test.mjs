@@ -151,6 +151,9 @@ describe('changes command', () => {
 
     assert.match(out, /ready_to_commit: true/);
     assert.match(out, /closeout_context: "taskless_intake"/);
+    assert.match(out, /artifact_policy:/);
+    assert.match(out, /canonical_default: true/);
+    assert.match(out, /current_alias_policy: "tasks\/current is a mutable working alias/);
     assert.doesNotMatch(out, /当前没有关联的 DocPath 任务/);
     assert.doesNotMatch(out, /last-check\.md 未显示 PASS/);
     assert.doesNotMatch(out, /review\.md 未显示通过/);
