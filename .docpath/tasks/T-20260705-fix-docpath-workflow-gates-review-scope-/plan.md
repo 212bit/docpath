@@ -19,7 +19,7 @@
 - **依赖**: S2
 
 ### S4: 实现 FR-3 Make `docpath backlog promote` safe when target task specs already exist. It must not silently overwrite hand-written specs; it should merge, warn and abort, or preserve a backup with explicit recovery guidance.
-- [ ] S4: 实现 FR-3 Make `docpath backlog promote` safe when target task specs already exist. It must not silently overwrite hand-written specs; it should merge, warn and abort, or preserve a backup with explicit recovery guidance.
+- [x] S4: 实现 FR-3 Make `docpath backlog promote` safe when target task specs already exist. It must not silently overwrite hand-written specs; it should merge, warn and abort, or preserve a backup with explicit recovery guidance.
 - **描述**: 在现有架构内完成 FR-3: Make `docpath backlog promote` safe when target task specs already exist. It must not silently overwrite hand-written specs; it should merge, warn and abort, or preserve a backup with explicit recovery guidance.。
 - **验收条件**: FR-3 已实现，并保持现有工作流兼容。
 - **依赖**: S3
@@ -51,7 +51,7 @@
 ## Checklist
 - [x] S1
 - [x] S2
-- [ ] S3
+- [x] S3
 - [ ] S4
 - [ ] S5
 - [ ] S6

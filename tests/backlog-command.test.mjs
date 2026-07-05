@@ -610,6 +610,8 @@ created_at: 2026-05-31
 
     const out = run('backlog promote R-001', cwd);
     assert.match(out, /已 promote backlog 条目: R-001/);
+    assert.match(out, /previous_current_backup:/);
+    assert.match(out, /backup_files: plan\.json/);
     assert.match(out, /next_hint:/);
     assert.match(out, /recommended_command: docpath plan/);
 
@@ -631,6 +633,10 @@ created_at: 2026-05-31
     assert.equal(currentSpecJson.task_id, taskId);
     assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.json')), false);
     assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'analysis', 'technical.md')), false);
+    const backupDir = out.match(/previous_current_backup: (.+)$/m)?.[1]?.trim();
+    assert.ok(backupDir, 'promote should report backup dir for previous current alias files');
+    assert.equal(existsSync(join(backupDir, 'plan.json')), true);
+    assert.match(readFileSync(join(backupDir, 'plan.json'), 'utf-8'), /Stale Plan/);
 
     const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8');
     assert.match(item, /status: active/);

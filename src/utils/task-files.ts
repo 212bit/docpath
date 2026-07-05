@@ -1,6 +1,6 @@
 import { existsSync } from 'fs';
 import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'fs/promises';
-import { dirname, join } from 'path';
+import { basename, dirname, join } from 'path';
 import {
   readStructuredSpecDocument,
   readStructuredTaskMarkdown,
@@ -171,6 +171,34 @@ export function resolveActiveTaskDocPath(docpathDir: string, taskId: string | un
 
 export async function clearCurrentTaskAlias(docpathDir: string): Promise<void> {
   await rm(currentTaskDir(docpathDir), { recursive: true, force: true });
+}
+
+export interface CurrentTaskAliasBackup {
+  backupDir: string;
+  files: string[];
+}
+
+function promoteBackupDir(docpathDir: string): string {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return join(docpathDir, 'tasks', 'promote-backups', stamp);
+}
+
+export async function backupCurrentTaskAlias(docpathDir: string): Promise<CurrentTaskAliasBackup | null> {
+  const dir = currentTaskDir(docpathDir);
+  if (!existsSync(dir)) return null;
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = entries
+    .filter((entry) => entry.isFile() && /^(spec|plan)\.(md|json)$/.test(entry.name))
+    .map((entry) => entry.name)
+    .sort();
+  if (files.length === 0) return null;
+
+  const backupDir = promoteBackupDir(docpathDir);
+  await mkdir(backupDir, { recursive: true });
+  for (const file of files) {
+    await copyFile(join(dir, file), join(backupDir, basename(file)));
+  }
+  return { backupDir, files };
 }
 
 export type TaskFileAlias = 'spec.md' | 'plan.md' | 'design-preview.md' | 'visual-acceptance.md' | 'analysis.md' | 'analysis/requirements.md' | 'analysis/product.md' | 'analysis/ui.md' | 'analysis/technical.md' | 'analysis/risks.md' | 'analysis/open-questions.md';

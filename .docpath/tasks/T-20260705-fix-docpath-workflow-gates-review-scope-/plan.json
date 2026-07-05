@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-05T05:33:51.543Z",
-    "updated_at": "2026-07-05T05:33:51.543Z",
-    "content_sha256": "18c1f2d8f2e94a2e13dcdf09a8edbeccc609148047d32ff9d7c5e480bc7a9fc0"
+    "created_at": "2026-07-05T05:36:31.995Z",
+    "updated_at": "2026-07-05T05:36:31.995Z",
+    "content_sha256": "03b9b8bc77ec76ed9656b4c717d96dff8cdf329512fa5e294d446ea2a65bb3a4"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-05T05:33:51.543Z",
+  "generated_at": "2026-07-05T05:36:31.995Z",
   "steps": [
     {
       "id": "S1",
@@ -40,7 +40,7 @@
       "description": "在现有架构内完成 FR-3: Make `docpath backlog promote` safe when target task specs already exist. It must not silently overwrite hand-written specs; it should merge, warn and abort, or preserve a backup with explicit recovery guidance.。",
       "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
       "dependencies": "S3",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S5",

@@ -25,7 +25,7 @@ import {
 import { today, resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
-import { archivedTaskDir, canonicalTaskRelativePath, canonicalTaskDir, clearCurrentTaskAlias, writeActiveTaskFile } from '../utils/task-files.js';
+import { archivedTaskDir, backupCurrentTaskAlias, canonicalTaskRelativePath, canonicalTaskDir, clearCurrentTaskAlias, writeActiveTaskFile } from '../utils/task-files.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertCleanWorktreeForNewTask, detectDirtyWorktree } from '../utils/git-dirty-guard.js';
 import { hasExplicitUiDesignIntent } from '../utils/ui-gate.js';
@@ -850,6 +850,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   const nextStatus = transitionBacklog(item.status, 'active');
   const taskId = generateUniqueTaskId(docpathDir, item.title);
 
+  const aliasBackup = await backupCurrentTaskAlias(docpathDir);
   await clearCurrentTaskAlias(docpathDir);
 
   const specContent = renderPromotedSpec(item, taskId);
@@ -872,6 +873,10 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   console.log(`✅  已 promote backlog 条目: ${item.id}`);
   console.log(`   task_id: ${taskId}`);
   console.log(`   spec: .docpath/${canonicalTaskRelativePath(taskId, 'spec.md')}`);
+  if (aliasBackup) {
+    console.log(`   previous_current_backup: ${aliasBackup.backupDir}`);
+    console.log(`   backup_files: ${aliasBackup.files.join(', ')}`);
+  }
 
   if (inWorktree) {
     const parentRoot = dirtyReport.repoRoot || options.cwd;
