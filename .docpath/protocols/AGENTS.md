@@ -109,6 +109,12 @@ Rules:
   approval gate -> confirmed backlog guidance`. Use `docpath project analyze`,
   `project brief`, and confirmed `project backlog` guidance before creating
   executable backlog items. Unapproved intake output is evidence, not a task.
+  Before development, the minimum frozen standards package is
+  `requirements.md`, `architecture.md`, and `development-checklist.md`.
+  `open-questions.md`, `decisions/*.md`, and `style.md` are optional by
+  complexity. Do not require `phase-backlog.md`; backlog quality belongs to
+  structured backlog items. Do not treat inferred architecture or draft
+  standards as approved development rules.
 - Use `docpath quick "<title>"` for tiny low-risk edits. It creates a lightweight
   task, requires check on closeout, and skips full review by quick profile.
   Escalate to the standard lifecycle when scope touches architecture, protocol,

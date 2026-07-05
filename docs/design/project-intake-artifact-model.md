@@ -20,11 +20,30 @@ Do not use `.docpath/projects/` for this workflow. In DocPath, "projects" alread
     risks.md
     open-questions.md
   brief.md
-  spec.md
-  architecture.md
-  plan.md
   backlog.md
 ```
+
+Project-intake stores upstream evidence, not the whole development truth source.
+After approval, development uses the normal DocPath backlog/spec/plan lifecycle.
+Do not introduce `phase-backlog.md` as a durable requirement. Backlog quality is
+validated on structured backlog items.
+
+Before implementation starts, a project that came through intake must have a
+frozen minimum standards package in project-standard locations:
+
+- `requirements.md`: approved requirements source of truth.
+- `architecture.md`: module boundaries, dependency direction, ADRs, and
+  forbidden crossings.
+- `development-checklist.md`: pre-development gate checklist for agents.
+
+Optional artifacts are created only when complexity requires them:
+
+- `open-questions.md`: when gaps need owner/status tracking outside
+  `requirements.md`.
+- `decisions/*.md`: when significant decisions need standalone history; ADRs
+  must still be summarized in `architecture.md`.
+- `style.md`: when the project has special coding rules beyond team-wide
+  language/framework standards.
 
 ## State Stages
 
@@ -58,6 +77,9 @@ The CLI stores the current MVP outputs in the existing `analysis/*.md`, `brief.m
 - stakeholder questions: grouped by audience such as business owner, technology owner, compliance, platform team, or external system owner.
 - decision cards: problem, options, recommendation, risk, non-goals, owner, and what sections/backlog items the decision unlocks.
 - approval gate: who confirmed, what was approved, what remains provisional, and whether backlog decomposition may start.
+- standards package status: whether `requirements.md`, `architecture.md`, and
+  `development-checklist.md` are frozen, and which optional artifacts are
+  intentionally used.
 
 ## Source Provenance
 
@@ -78,4 +100,8 @@ The MVP supports text/markdown source content and references. Native binary PPT/
 
 The state and path types live in `src/engine/project-intake.ts`. CLI commands should use those helpers instead of constructing paths by hand.
 
-Project-intake artifacts are upstream evidence. They can guide normal backlog items only after explicit user confirmation. The current MVP writes backlog guidance; it does not auto-create executable backlog items.
+Project-intake artifacts are upstream evidence. They can guide normal backlog
+items only after explicit user confirmation. The current MVP writes backlog
+guidance; it does not auto-create executable backlog items. Agents must not
+treat inferred architecture, draft standards, prototype notes, or stale domain
+language as approved development rules.

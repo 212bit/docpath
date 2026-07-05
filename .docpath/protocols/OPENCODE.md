@@ -106,7 +106,12 @@ docpath agent handoff
   `project capture -> project analyze -> gap index/questions/decision cards ->
   project brief with approval gate -> confirmed project backlog guidance`.
   Unapproved intake output is evidence only; do not create executable backlog
-  items from it.
+  items from it. Before development, the minimum frozen standards package is
+  `requirements.md`, `architecture.md`, and `development-checklist.md`.
+  `open-questions.md`, `decisions/*.md`, and `style.md` are optional by
+  complexity. Do not require `phase-backlog.md`; backlog quality belongs to
+  structured backlog items. Do not treat inferred architecture or draft
+  standards as approved development rules.
 - For major architecture, data, workflow, permission, or long-term maintenance
   changes, run brainstorm/refine and record a Decision Brief before coding.
 - Run `docpath check` before claiming completion.

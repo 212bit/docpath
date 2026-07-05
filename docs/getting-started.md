@@ -151,6 +151,16 @@ capture 原始材料
 
 project intake 会把原始材料保存在 `.docpath/project-intake/<id>/`。analysis 必须区分事实、假设、缺口和建议决策；每个缺口应标注 `blocking` / `can-mock` / `later`。brief 必须包含范围、不做什么、验收候选、待拍板决策和拍板人/确认依据。确认前不要自动创建可执行 backlog 项。
 
+进入开发前，项目级需求梳理最小交付包是三件套：
+
+- `requirements.md`：已拍板的需求真源。
+- `architecture.md`：模块边界、依赖方向、ADR、禁止事项。
+- `development-checklist.md`：agent 开工前门禁。
+
+`open-questions.md`、`decisions/*.md`、`style.md` 只在复杂度需要时拆出。不要把
+`phase-backlog.md` 作为必需文档；backlog 是结构化队列质量要求，每条 backlog
+需要保留需求依据、决策依据、验收条件、readiness 和必要的用户确认。
+
 ## 5. 写规格和计划
 
 复杂任务 promote 成当前任务后，可以写入持久化 analysis。非 dry-run `analyze` 和 `write-analysis` 需要活跃任务，避免把新需求写回上一轮归档任务：

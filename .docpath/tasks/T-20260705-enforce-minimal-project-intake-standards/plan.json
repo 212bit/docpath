@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-05T13:00:51.497Z",
-    "updated_at": "2026-07-05T13:00:51.497Z",
-    "content_sha256": "f8a2de59620dc42c2232564e1581576e2430c43b0e6b54cc17674f7f2f645a2a"
+    "created_at": "2026-07-05T13:03:42.532Z",
+    "updated_at": "2026-07-05T13:03:42.532Z",
+    "content_sha256": "de9af63cfefdbdd1d11d2df0c884ef0fd0d4663d07b7f9c4ddd0768b208bf33a"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-05T13:00:51.497Z",
+  "generated_at": "2026-07-05T13:03:42.532Z",
   "steps": [
     {
       "id": "S1",
@@ -32,7 +32,7 @@
       "description": "更新 agent protocols 与设计文档，说明需求梳理完成后必需三件套和可选增强项，backlog 是结构化数据质量要求而非 phase-backlog.md 文件。",
       "acceptance": "文档中明确 agent 不得把推断当作已拍板规范，进入开发前需检查标准冻结状态。",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S4",

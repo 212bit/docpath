@@ -22,6 +22,13 @@ Rationale:
   approval gate -> confirmed backlog guidance`.
 - Unapproved intake output is evidence only. It must not be treated as an
   executable backlog item or implementation plan.
+- The minimum frozen standards package before development is
+  `requirements.md`, `architecture.md`, and `development-checklist.md`.
+  `open-questions.md`, `decisions/*.md`, and `style.md` are optional by
+  complexity. `phase-backlog.md` is not required; backlog quality is enforced on
+  structured backlog items.
+- Agents must not treat inferred architecture, draft standards, prototype notes,
+  or stale domain language as approved development rules.
 
 ## Actions
 
@@ -65,6 +72,8 @@ Outputs:
 
 - dry-run payload covering requirements, product, UI/UX, technical, risks, open questions, gap index, stakeholder questions, and decision-card candidates; or
 - markdown files under `analysis/`.
+- dry-run payload identifies the minimum standards package and optional
+  artifacts so agents can distinguish approved standards from assumptions.
 
 Errors:
 
@@ -87,6 +96,9 @@ Outputs:
 
 - `brief.md`
 - state transition to `briefed` when persisted.
+- brief guidance must summarize standards package status:
+  `requirements.md`, `architecture.md`, `development-checklist.md`, and any
+  optional artifacts intentionally split out.
 
 Errors:
 
@@ -107,6 +119,10 @@ Outputs:
 
 - `backlog.md` guidance with provenance links and backlog item command templates.
 - project intake state transition to `confirmed` after successful confirmation.
+- Guidance must state that `phase-backlog.md` is not a required durable source
+  of truth. Future backlog entries must carry structured acceptance,
+  dependencies, readiness, evidence, decision references, and user confirmation
+  where required.
 
 Errors:
 
