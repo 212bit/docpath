@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { readDocPathConfig } from './config.js';
 
-export type ReviewScope = 'all' | 'staged' | 'last_commit';
+export type ReviewScope = 'all' | 'staged' | 'last_commit' | 'task';
 export type ReviewSkillGateStatus = 'disabled' | 'not_required' | 'required' | 'pass' | 'fail' | 'pass_with_skips';
 export type ReviewSkillStatus = 'pass' | 'fail';
 
@@ -96,6 +96,10 @@ function diffForFile(cwd: string, file: string, scope: ReviewScope): string {
   try {
     if (scope === 'staged') return runGit(cwd, ['diff', '--cached', '--', file]);
     if (scope === 'last_commit') return runGit(cwd, ['diff', 'HEAD~1..HEAD', '--', file]);
+    if (scope === 'task') {
+      const log = runGit(cwd, ['log', '--follow', '--patch', '--format=', '--', file]);
+      if (log.trim()) return log;
+    }
     const unstaged = runGit(cwd, ['diff', '--', file]);
     const staged = runGit(cwd, ['diff', '--cached', '--', file]);
     if (unstaged.trim() || staged.trim()) return `${unstaged}\n${staged}`;

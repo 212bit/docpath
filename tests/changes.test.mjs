@@ -57,6 +57,32 @@ function mkGitWorkspace() {
   return cwd;
 }
 
+function mkTasklessBacklogWorkspace() {
+  const cwd = mkdtempSync(join(tmpdir(), 'dp-changes-taskless-'));
+  git(cwd, 'init');
+  git(cwd, 'config user.email test@example.com');
+  git(cwd, 'config user.name Test');
+
+  mkdirSync(join(cwd, '.docpath', 'workspace'), { recursive: true });
+  mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+  writeFileSync(join(cwd, '.docpath', 'config.yaml'), 'project:\n  name: changes-taskless-test\n');
+  writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+    level: 0,
+    task_id: '',
+    task_title: '',
+    phase: 'idle',
+    gate: 'none',
+    current_step: 'waiting',
+    started_at: '2026-06-01T00:00:00.000Z',
+    updated_at: '2026-06-01T00:00:00.000Z',
+  }, null, 2) + '\n');
+  writeFileSync(join(cwd, 'README.md'), '# test\n');
+
+  git(cwd, 'add .');
+  git(cwd, 'commit -m initial');
+  return cwd;
+}
+
 describe('changes command', () => {
   it('fails loudly outside a git repository', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'dp-changes-nongit-'));
@@ -114,6 +140,20 @@ describe('changes command', () => {
 
     assert.match(out, /ready_to_commit: false/);
     assert.match(out, /last-check\.md 未显示 PASS/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('allows taskless intake closeout for backlog-only evidence changes', () => {
+    const cwd = mkTasklessBacklogWorkspace();
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001.md'), '# R-001\n');
+
+    const out = run('changes --agent', cwd);
+
+    assert.match(out, /ready_to_commit: true/);
+    assert.match(out, /closeout_context: "taskless_intake"/);
+    assert.doesNotMatch(out, /当前没有关联的 DocPath 任务/);
+    assert.doesNotMatch(out, /last-check\.md 未显示 PASS/);
+    assert.doesNotMatch(out, /review\.md 未显示通过/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

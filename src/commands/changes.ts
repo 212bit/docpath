@@ -35,6 +35,7 @@ function renderAgentYaml(report: ChangesReport): string {
   lines.push(`git_root: ${yamlString(report.git_root)}`);
   lines.push(`mode: ${yamlString(report.mode)}`);
   lines.push(`since: ${report.since === null ? 'null' : yamlString(report.since)}`);
+  lines.push(`closeout_context: ${yamlString(report.closeout_context)}`);
   lines.push('current_task:');
   lines.push(`  task_id: ${yamlString(report.current_task.task_id)}`);
   lines.push(`  task_title: ${yamlString(report.current_task.task_title)}`);
@@ -84,6 +85,8 @@ function renderAgentYaml(report: ChangesReport): string {
   lines.push(`recommended_stage_command: ${report.recommended_stage_command === null ? 'null' : yamlString(report.recommended_stage_command)}`);
   lines.push('blocking_reasons:');
   for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
+  lines.push('next_actions:');
+  for (const action of report.next_actions) lines.push(`  - ${yamlString(action)}`);
   lines.push(`suggested_commit_message: ${yamlString(report.suggested_commit_message)}`);
   return `${lines.join('\n')}\n`;
 }
@@ -106,6 +109,11 @@ function renderCompactAgentYaml(report: ChangesReport): string {
     for (const reason of report.blocking_reasons) lines.push(`  - ${yamlString(reason)}`);
   }
 
+  if (report.next_actions.length > 0) {
+    lines.push('next_actions:');
+    for (const action of report.next_actions) lines.push(`  - ${yamlString(action)}`);
+  }
+
   if (report.ignored_evidence.add_command) {
     lines.push(`add_command: ${yamlString(report.ignored_evidence.add_command)}`);
   }
@@ -121,6 +129,7 @@ function renderHuman(report: ChangesReport): string {
   lines.push('\n📦  DocPath 变更收口\n');
   lines.push(`  分支: ${report.branch}`);
   if (report.since) lines.push(`  基线: ${report.since}`);
+  lines.push(`  收口上下文: ${report.closeout_context}`);
   lines.push(`  任务: ${report.current_task.task_id || '-'} ${report.current_task.task_title || ''}`.trimEnd());
   lines.push(`  变更: ${report.counts.total} 个文件（staged ${report.counts.staged}, unstaged ${report.counts.unstaged}, untracked ${report.counts.untracked}）`);
   lines.push(`  提交状态: ${report.ready_to_commit ? '✅ ready' : '⚠️ blocked'}`);
@@ -173,6 +182,11 @@ function renderHuman(report: ChangesReport): string {
   if (report.blocking_reasons.length > 0) {
     lines.push('\n  阻塞原因');
     for (const reason of report.blocking_reasons) lines.push(`    - ${reason}`);
+  }
+
+  if (report.next_actions.length > 0) {
+    lines.push('\n  下一步');
+    for (const action of report.next_actions) lines.push(`    - ${action}`);
   }
 
   if (report.untracked_evidence.files.length > 0) {

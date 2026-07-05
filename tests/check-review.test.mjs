@@ -375,6 +375,36 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('review falls back to task cumulative diff when the worktree is clean after commits', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-task-scope-'));
+    mkExecWorkspace(cwd);
+    markReadyForReview(cwd);
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
+    execSync('git add baseline.ts .docpath/config.json', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+
+    const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+    const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    state.started_at = new Date(Date.now() - 1000).toISOString();
+    writeFileSync(statePath, JSON.stringify(state, null, 2));
+
+    writeFileSync(join(cwd, 'todo.ts'), '// TODO review committed task diff\n');
+    execSync('git add todo.ts', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m feature', { cwd, encoding: 'utf-8' });
+
+    const out = run(`review --cwd ${cwd} --dry-run`, cwd);
+
+    assert.match(out, /自动切换为 task 累积 diff 审查/);
+    assert.match(out, /scope: task/);
+    assert.match(out, /todo\.ts/);
+    assert.match(out, /未处理的 TODO/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('review ignores DocPath workspace runtime session files', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-runtime-session-'));
     mkExecWorkspace(cwd);

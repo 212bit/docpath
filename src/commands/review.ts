@@ -28,7 +28,7 @@ import {
 interface ReviewOptions {
   cwd: string;
   output?: string;
-  scope?: 'staged' | 'last_commit' | 'all' | string;
+  scope?: ReviewScope | string;
   approve?: boolean;
   dryRun?: boolean;
   /** 强制执行，即使不在 agent 会话中 */
@@ -36,6 +36,8 @@ interface ReviewOptions {
   skipSkillReview?: string[];
   skipSkillReviewReason?: string;
 }
+
+type ReviewScope = 'all' | 'staged' | 'last_commit' | 'task';
 
 interface ReviewFinding {
   file: string;
@@ -56,9 +58,9 @@ interface FindingScopeCounts {
   baseline_or_whole_file: { errors: number; warnings: number; infos: number };
 }
 
-function normalizeReviewScope(scope: string): 'all' | 'staged' | 'last_commit' {
-  if (scope === 'all' || scope === 'staged' || scope === 'last_commit') return scope;
-  throw new Error(`docpath review --scope: 参数非法: ${scope}（允许: all|staged|last_commit）`);
+function normalizeReviewScope(scope: string): ReviewScope {
+  if (scope === 'all' || scope === 'staged' || scope === 'last_commit' || scope === 'task') return scope;
+  throw new Error(`docpath review --scope: 参数非法: ${scope}（允许: all|staged|last_commit|task）`);
 }
 
 function parseNameList(output: string): string[] {
@@ -84,13 +86,32 @@ function runGit(cwd: string, args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000 });
 }
 
-function collectChangedFiles(cwd: string, scope = 'all'): string[] {
+function collectStatusChangedFiles(cwd: string): string[] {
+  return parsePorcelainPaths(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
+}
+
+function taskCommitFiles(cwd: string, startedAt?: string): string[] {
+  if (!startedAt?.trim()) return [];
+  return parseNameList(runGit(cwd, ['log', '--name-only', '--format=', `--since=${startedAt}`, 'HEAD']));
+}
+
+function collectTaskChangedFiles(cwd: string, current: Awaited<ReturnType<typeof readCurrentState>>): string[] {
+  try {
+    return [...new Set([...taskCommitFiles(cwd, current?.started_at), ...collectStatusChangedFiles(cwd)])].filter(isReviewableFile);
+  } catch {
+    return [];
+  }
+}
+
+function collectChangedFiles(cwd: string, scope: ReviewScope = 'all', current?: Awaited<ReturnType<typeof readCurrentState>>): string[] {
   try {
     const files = scope === 'staged'
       ? parseNameList(runGit(cwd, ['diff', '--name-only', '--cached']))
       : scope === 'last_commit'
         ? parseNameList(runGit(cwd, ['show', '--name-only', '--format=""', 'HEAD']))
-        : parsePorcelainPaths(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
+        : scope === 'task'
+          ? collectTaskChangedFiles(cwd, current)
+          : collectStatusChangedFiles(cwd);
     return [...new Set(files)].filter(isReviewableFile);
   } catch {
     // 可能没有 git 仓库，或仓库尚无提交。
@@ -165,10 +186,35 @@ function fileLineCount(cwd: string, file: string): number {
   }
 }
 
-function diffForFile(cwd: string, file: string, scope: 'all' | 'staged' | 'last_commit'): string {
+function resolveTaskBaseRef(cwd: string, startedAt?: string): string | null {
+  if (!startedAt?.trim()) return null;
+  try {
+    const commits = parseNameList(runGit(cwd, ['rev-list', '--reverse', `--since=${startedAt}`, 'HEAD']));
+    const first = commits[0];
+    if (!first) return null;
+    try {
+      runGit(cwd, ['rev-parse', '--verify', `${first}^`]);
+      return `${first}^`;
+    } catch {
+      return first;
+    }
+  } catch {
+    return null;
+  }
+}
+
+function diffForFile(cwd: string, file: string, scope: ReviewScope, current?: Awaited<ReturnType<typeof readCurrentState>>): string {
   try {
     if (scope === 'staged') return runGit(cwd, ['diff', '--unified=0', '--cached', '--', file]);
     if (scope === 'last_commit') return runGit(cwd, ['diff', '--unified=0', 'HEAD~1..HEAD', '--', file]);
+    if (scope === 'task') {
+      const baseRef = resolveTaskBaseRef(cwd, current?.started_at);
+      return [
+        baseRef ? runGit(cwd, ['diff', '--unified=0', `${baseRef}..HEAD`, '--', file]) : '',
+        runGit(cwd, ['diff', '--unified=0', '--', file]),
+        runGit(cwd, ['diff', '--unified=0', '--cached', '--', file]),
+      ].join('\n');
+    }
     return [
       runGit(cwd, ['diff', '--unified=0', '--', file]),
       runGit(cwd, ['diff', '--unified=0', '--cached', '--', file]),
@@ -178,10 +224,10 @@ function diffForFile(cwd: string, file: string, scope: 'all' | 'staged' | 'last_
   }
 }
 
-function collectDiffLineRanges(cwd: string, changedFiles: string[], scope: 'all' | 'staged' | 'last_commit'): Map<string, Array<{ start: number; end: number }>> {
+function collectDiffLineRanges(cwd: string, changedFiles: string[], scope: ReviewScope, current?: Awaited<ReturnType<typeof readCurrentState>>): Map<string, Array<{ start: number; end: number }>> {
   const rangesByFile = new Map<string, Array<{ start: number; end: number }>>();
   for (const file of changedFiles) {
-    const ranges = parseChangedLineRanges(diffForFile(cwd, file, scope));
+    const ranges = parseChangedLineRanges(diffForFile(cwd, file, scope, current));
     if (ranges.length === 0) {
       try {
         const status = runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all', '--', file]);
@@ -365,7 +411,17 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const docpathDir = await resolveDocpathDir(opts.cwd);
   console.log('🔍 代码审查开始...');
   const scope = normalizeReviewScope(opts.scope || 'all');
-  const changedFiles = collectChangedFiles(opts.cwd, scope);
+  const current = await readCurrentState(opts.cwd);
+  let effectiveScope = scope;
+  let changedFiles = collectChangedFiles(opts.cwd, scope, current);
+  if (scope === 'all' && changedFiles.length === 0 && current?.task_id) {
+    const taskFiles = collectChangedFiles(opts.cwd, 'task', current);
+    if (taskFiles.length > 0) {
+      effectiveScope = 'task';
+      changedFiles = taskFiles;
+      console.log('ℹ️  当前工作树无变更，自动切换为 task 累积 diff 审查');
+    }
+  }
   if (changedFiles.length === 0) {
     console.log('⚠️  未发现变更文件');
     if (opts.dryRun) console.log('📝  [dry-run] 当前无可审查变更，未写入任何状态或证据文件');
@@ -374,11 +430,10 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   console.log(`📋 审查 ${changedFiles.length} 个文件...`);
   const findings = classifyFindings(
     await analyzeChangedFiles(opts.cwd, changedFiles),
-    collectDiffLineRanges(opts.cwd, changedFiles, scope),
+    collectDiffLineRanges(opts.cwd, changedFiles, effectiveScope, current),
   );
-  console.log(`    scope: ${scope}; finding_scope: mixed`);
+  console.log(`    scope: ${effectiveScope}; finding_scope: mixed`);
   printFindingScopeSummary(countFindingScopes(findings));
-  const current = await readCurrentState(opts.cwd);
   if (!current?.task_id && !opts.force) {
     console.warn('\n⚠️  当前无活跃 agent 会话 (current.md 无 task_id)');
     console.warn('   审查通常应在 agent 流程内执行 (docpath agent done)');
@@ -387,13 +442,13 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const groups = groupFindings(findings);
   printFindings(groups);
   const previousReview = await readReviewEvidence(docpathDir);
-  const { enabled, requirements } = await buildReviewSkillRequirements(opts.cwd, docpathDir, changedFiles, scope);
+  const { enabled, requirements } = await buildReviewSkillRequirements(opts.cwd, docpathDir, changedFiles, effectiveScope);
   const previewGate = evaluateReviewSkillGate({
     enabled,
     requirements,
     skillReviews: previousReview?.skill_reviews,
     skillSkips: previousReview?.skill_review_skips,
-    scope,
+    scope: effectiveScope,
   });
   const requestedSkips = buildRequestedSkips(
     previewGate,
@@ -405,7 +460,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     requirements,
     skillReviews: previousReview?.skill_reviews,
     skillSkips: [...(previousReview?.skill_review_skips || []), ...requestedSkips],
-    scope,
+    scope: effectiveScope,
   });
   if (opts.dryRun) {
     printReviewSkillGate(
@@ -434,7 +489,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     schema_version: 1,
     kind: 'review',
     timestamp: new Date().toISOString(),
-    scope,
+    scope: effectiveScope,
     finding_scope: 'mixed',
     finding_scope_counts,
     files: changedFiles,

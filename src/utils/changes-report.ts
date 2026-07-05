@@ -51,6 +51,7 @@ export interface ChangesReport {
   branch: string;
   mode: 'worktree' | 'since';
   since: string | null;
+  closeout_context: 'task' | 'taskless_intake' | 'blocked';
   current_task: {
     task_id: string;
     task_title: string;
@@ -70,6 +71,7 @@ export interface ChangesReport {
   recommended_stage_command: string | null;
   ready_to_commit: boolean;
   blocking_reasons: string[];
+  next_actions: string[];
   suggested_commit_message: string;
 }
 
@@ -221,6 +223,21 @@ function groupChangedFiles(files: ChangedFile[]): Record<ChangeGroupName, string
   return groups;
 }
 
+function isTasklessIntakeCloseoutFile(path: string): boolean {
+  return path.startsWith('.docpath/backlog/') ||
+    path === '.docpath/backlog' ||
+    path.startsWith('.docpath/project-intake/') ||
+    path === '.docpath/project-intake';
+}
+
+function resolveCloseoutContext(files: ChangedFile[], hasTask: boolean): ChangesReport['closeout_context'] {
+  if (hasTask) return 'task';
+  if (files.length > 0 && files.every((file) => isTasklessIntakeCloseoutFile(file.path))) {
+    return 'taskless_intake';
+  }
+  return 'blocked';
+}
+
 function buildWorktreeIsolationReport(gitRoot: string, files: ChangedFile[], since: string | null): WorktreeIsolationReport {
   const active = !since && isDocpathWorktree(gitRoot);
   if (!active) {
@@ -255,7 +272,7 @@ function buildWorktreeIsolationReport(gitRoot: string, files: ChangedFile[], sin
 function buildBlockingReasons(args: {
   files: ChangedFile[];
   since: string | null;
-  hasTask: boolean;
+  closeoutContext: ChangesReport['closeout_context'];
   lastCheckPass: boolean;
   reviewPass: boolean;
   ignoredEvidence: IgnoredEvidenceReport;
@@ -264,7 +281,12 @@ function buildBlockingReasons(args: {
   const blockingReasons: string[] = [];
   if (args.files.length === 0) blockingReasons.push(args.since ? `相对 ${args.since} 没有变更` : '当前工作树没有可提交变更');
   const evidenceFiles = new Set(args.untrackedEvidence.files);
-  const otherUntracked = !args.since && args.files.some((file) => file.untracked && !evidenceFiles.has(file.path));
+  const otherUntracked = !args.since && args.files.some((file) => {
+    if (!file.untracked) return false;
+    if (evidenceFiles.has(file.path)) return false;
+    if (args.closeoutContext === 'taskless_intake' && isTasklessIntakeCloseoutFile(file.path)) return false;
+    return true;
+  });
   if (!args.since && args.untrackedEvidence.files.length > 0) {
     blockingReasons.push(`当前任务 ${args.untrackedEvidence.files.length} 个证据文件待 stage（见 recommended_stage_command）`);
   }
@@ -272,10 +294,38 @@ function buildBlockingReasons(args: {
   if (!args.since && args.ignoredEvidence.canonical_files.length > 0) {
     blockingReasons.push('存在被 gitignore 忽略的 DocPath canonical evidence，请使用 git add -f 纳入提交');
   }
-  if (!args.hasTask) blockingReasons.push('当前没有关联的 DocPath 任务');
-  if (!args.lastCheckPass) blockingReasons.push('last-check.md 未显示 PASS，请先运行 docpath check');
-  if (!args.reviewPass) blockingReasons.push('review.md 未显示通过，请先运行 docpath review');
+  if (args.closeoutContext === 'blocked') {
+    blockingReasons.push('当前没有关联的 DocPath 任务');
+  }
+  if (args.closeoutContext === 'task') {
+    if (!args.lastCheckPass) blockingReasons.push('last-check.md 未显示 PASS，请先运行 docpath check');
+    if (!args.reviewPass) blockingReasons.push('review.md 未显示通过，请先运行 docpath review');
+  }
   return blockingReasons;
+}
+
+function buildNextActions(args: {
+  blockingReasons: string[];
+  closeoutContext: ChangesReport['closeout_context'];
+  since: string | null;
+  recommendedStageCommand: string | null;
+  lastCheckPass: boolean;
+  reviewPass: boolean;
+}): string[] {
+  const actions: string[] = [];
+  if (args.recommendedStageCommand) actions.push(args.recommendedStageCommand);
+  if (args.closeoutContext === 'task') {
+    if (!args.lastCheckPass) actions.push('docpath check');
+    if (args.lastCheckPass && !args.reviewPass) {
+      actions.push(args.since ? 'docpath review --scope last_commit' : 'docpath review');
+    }
+  }
+  if (args.closeoutContext === 'blocked') {
+    actions.push('docpath quick "<title>"');
+    actions.push('docpath backlog promote <id>');
+  }
+  if (args.blockingReasons.length === 0) actions.push('git add <files> && git commit');
+  return [...new Set(actions)];
 }
 
 function buildRecommendedStageCommand(
@@ -303,14 +353,26 @@ export async function buildChangesReport(cwd: string, options: ChangesReportOpti
   const untrackedEvidence = since
     ? SKIPPED_UNTRACKED_EVIDENCE
     : readUntrackedCanonicalEvidence(gitRoot, current?.task_id);
+  const closeoutContext = resolveCloseoutContext(files, !!current?.task_id);
+  const lastCheckPass = await readLastCheckPass(docpathDir);
+  const reviewPass = await readReviewPass(docpathDir);
+  const recommendedStageCommand = buildRecommendedStageCommand(ignoredEvidence, untrackedEvidence);
   const blockingReasons = buildBlockingReasons({
     files,
     since,
-    hasTask: !!current?.task_id,
-    lastCheckPass: await readLastCheckPass(docpathDir),
-    reviewPass: await readReviewPass(docpathDir),
+    closeoutContext,
+    lastCheckPass,
+    reviewPass,
     ignoredEvidence,
     untrackedEvidence,
+  });
+  const nextActions = buildNextActions({
+    blockingReasons,
+    closeoutContext,
+    since,
+    recommendedStageCommand,
+    lastCheckPass,
+    reviewPass,
   });
 
   const partial: Omit<ChangesReport, 'suggested_commit_message'> = {
@@ -318,6 +380,7 @@ export async function buildChangesReport(cwd: string, options: ChangesReportOpti
     branch: currentBranch(cwd),
     mode: since ? 'since' : 'worktree',
     since,
+    closeout_context: closeoutContext,
     current_task: {
       task_id: current?.task_id || '',
       task_title: current?.task_title || '',
@@ -334,9 +397,10 @@ export async function buildChangesReport(cwd: string, options: ChangesReportOpti
     worktree_isolation: worktreeIsolation,
     ignored_evidence: ignoredEvidence,
     untracked_evidence: untrackedEvidence,
-    recommended_stage_command: buildRecommendedStageCommand(ignoredEvidence, untrackedEvidence),
+    recommended_stage_command: recommendedStageCommand,
     ready_to_commit: blockingReasons.length === 0,
     blocking_reasons: blockingReasons,
+    next_actions: nextActions,
   };
 
   return {
