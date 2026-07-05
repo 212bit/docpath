@@ -2,13 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-05T05:21:59.511Z
+> 扫描时间: 2026-07-05T05:23:05.179Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-244 | Fix DocPath workflow gates, review scope, promote safety, and knowledge extraction quality | proposed | P0 | 3 |  |
+| R-244 | Fix DocPath workflow gates, review scope, promote safety, and knowledge extraction quality | accepted | P0 | 3 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-237 | Elevate /learn priority in status when pending lesson candidates and regression warnings exist | proposed | P2 | 2 |  |
 | R-243 | Fix project brief next_hint after intake brief | proposed | P2 | 1 |  |
