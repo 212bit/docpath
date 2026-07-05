@@ -7,13 +7,13 @@
 - **依赖**: 无
 
 ### S2: 修复 completed 状态路由优先级
-- [ ] S2: 修复 completed 状态路由优先级
+- [x] S2: 修复 completed 状态路由优先级
 - **描述**: 调整 `src/utils/agent-output/formatters.ts` 中 route 推断顺序或 active-step 过滤，让 completed 状态先走 completed closeout/next-work 分支，忽略 stale in-progress step。
 - **验收条件**: completed/review_pass 不再输出 `docpath agent step --step ... --status done`；执行态 in-progress step 仍保留原推荐；相关测试、check、review 通过。
 - **依赖**: S1
 
 ## Checklist
-- [ ] S1
+- [x] S1
 - [ ] S2
 
 ## 依赖关系图

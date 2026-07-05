@@ -420,11 +420,10 @@ export function inferNextAction(
   const lastCheckPassed = /^\*\*结果\*\*:\s*✅\s*PASS\s*$/m.test(lastCheckContent);
   const hasPendingLessonCandidates = lessonSummary.pendingCount > 0;
   const globalRules = ruleDisplayPaths();
-  const isCompleted = currentState === 'completed' || phase === 'completed';
+  const isCompleted = currentState === 'completed';
   const isIdleOrCompleted = currentState === 'idle'
     || isCompleted
-    || phase === 'idle'
-    || phase === 'completed';
+    || phase === 'idle';
 
   if (dirtyWorktree.isGitRepo && dirtyWorktree.dirty && isIdleOrCompleted) {
     const required = ['.docpath/workspace/current.md'];
