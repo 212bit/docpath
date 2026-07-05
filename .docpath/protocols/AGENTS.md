@@ -104,8 +104,11 @@ Rules:
 - Use `docpath project capture` when the user has a brand-new project that
   starts from PPT-derived text, API docs, introductory docs, meeting notes, or a
   single rough requirements document. Do not force these raw materials into
-  backlog. Use `docpath project analyze`, `project brief`, and confirmed
-  `project backlog` guidance before creating executable backlog items.
+  backlog. Treat project intake as a requirements-shaping workflow:
+  `capture -> analyze -> gap index/questions/decision cards -> brief with
+  approval gate -> confirmed backlog guidance`. Use `docpath project analyze`,
+  `project brief`, and confirmed `project backlog` guidance before creating
+  executable backlog items. Unapproved intake output is evidence, not a task.
 - Use `docpath quick "<title>"` for tiny low-risk edits. It creates a lightweight
   task, requires check on closeout, and skips full review by quick profile.
   Escalate to the standard lifecycle when scope touches architecture, protocol,

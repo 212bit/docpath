@@ -1,12 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { exec } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { promisify } from 'node:util';
 
-const execAsync = promisify(exec);
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 
 function mkWorkspace() {
@@ -28,20 +26,26 @@ function mkWorkspace() {
   return cwd;
 }
 
+function run(args, cwd, input) {
+  return execFileSync('node', [BIN, ...args.match(/(?:[^\s"]+|"[^"]*")+/g).map((part) => part.replace(/^"|"$/g, ''))], {
+    cwd,
+    encoding: 'utf-8',
+    timeout: 20000,
+    input,
+  });
+}
+
 describe('project intake lock mechanism', () => {
   it('uses lock files to prevent concurrent RMW conflicts', async () => {
     const cwd = mkWorkspace();
 
     // Create intake
-    const { stdout: capture } = await execAsync(`node ${BIN} project capture --title "Lock Test" --content "source"`, { cwd });
+    const capture = run('project capture --title "Lock Test" --content "source"', cwd);
     const intakeId = capture.match(/project intake 已创建: (P-\d{8}-lock-test)/)?.[1];
     assert.ok(intakeId, 'Should extract intake ID');
 
     // Write one analysis section
-    await execAsync(`node ${BIN} project analyze ${intakeId} --section requirements --stdin`, {
-      cwd,
-      input: '## Requirements\n'
-    });
+    run(`project analyze ${intakeId} --section requirements --stdin`, cwd, '## Requirements\n');
 
     // Verify lock file was created and cleaned up
     const lockPath = join(cwd, '.docpath', 'project-intake', `${intakeId}.lock`);
@@ -58,18 +62,12 @@ describe('project intake lock mechanism', () => {
   it('sequential updates work correctly with locks', async () => {
     const cwd = mkWorkspace();
 
-    const { stdout: capture } = await execAsync(`node ${BIN} project capture --title "Sequential" --content "src"`, { cwd });
+    const capture = run('project capture --title "Sequential" --content "src"', cwd);
     const intakeId = capture.match(/project intake 已创建: (P-\d{8}-sequential)/)?.[1];
 
     // Sequential writes
-    await execAsync(`node ${BIN} project analyze ${intakeId} --section requirements --stdin`, {
-      cwd,
-      input: '## Req\n'
-    });
-    await execAsync(`node ${BIN} project analyze ${intakeId} --section product --stdin`, {
-      cwd,
-      input: '## Prod\n'
-    });
+    run(`project analyze ${intakeId} --section requirements --stdin`, cwd, '## Req\n');
+    run(`project analyze ${intakeId} --section product --stdin`, cwd, '## Prod\n');
 
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
     assert.equal(state.artifacts.length, 2);

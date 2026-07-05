@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-05T05:25:19.041Z",
+    "updated_at": "2026-07-05T05:25:19.041Z",
+    "content_sha256": "73675a9d59da352a9dcaaae7c1b7a06c8fb4a9b30708b5842e69631c2172311b"
+  },
+  "task_id": "T-20260705-fix-docpath-workflow-gates-review-scope-",
+  "backlog_id": "R-244",
+  "title": "T-20260705-fix-docpath-workflow-gates-review-scope- - Fix DocPath workflow gates, review scope, promote safety, and knowledge extraction quality",
+  "generated_at": "2026-07-05T05:25:19.041Z",
+  "scope": {
+    "included": [
+      "Workflow gate semantics for `check`, `agent enter`, `changes`, and commit readiness.",
+      "Review diff-base semantics for task-level review after intermediate commits.",
+      "Safe promote behavior for existing task/spec artifacts.",
+      "Closeout guidance for canonical task files and `current` aliases.",
+      "Journal/learn extraction filters for seed specs, placeholders, and non-reusable mechanical details.",
+      "Automated tests and updated command output expectations."
+    ],
+    "excluded": [
+      "Replacing the DocPath workflow model wholesale.",
+      "Adding a database, remote service, or network-dependent review/learn system.",
+      "Product UI changes.",
+      "Migrating historical task artifacts except where tests need fixtures."
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "架构 / 模块边界",
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界",
+      "长期维护成本增加"
+    ],
+    "user_confirmed": "User replied `同意` on 2026-07-05 after the major-change direction was summarized.",
+    "decision_brief_markdown": "- 当前问题: DocPath treats several lifecycle gates as if there is only one valid execution context: clean worktree, active task, and uncommitted local diffs. Real usage has shaping/promoting work before a task exists, step-level commits during a task, and closeout evidence after changes already exist. Generated seed content can also overwrite or pollute durable artifacts.\n- 目标: Make DocPath lifecycle gates composable across intake, task execution, and closeout while protecting user-authored artifacts and keeping durable knowledge extraction trustworthy.\n- 背景: User reported and confirmed the five defects on 2026-07-05.\n- 可选方案:\n  - 方案 A: Patch each symptom independently.\n  - 方案 B: Define explicit command contexts and evidence ownership rules, then implement targeted fixes in each affected command.\n  - 方案 C: Suspend strict gates when conflicts occur.\n- 推荐方案: 方案 B\n- 决策理由: Explicit contexts make the behavior testable and reduce future contradictions without weakening gates. Option A risks repeated local exceptions. Option C would make DocPath less trustworthy.\n- 不做什么: Do not remove standard gates, bypass review/check, or teach agents to ignore DocPath. The framework itself must provide a valid route.\n- 成本: Medium to high; likely touches workflow state/routing, check/review/change closeout logic, backlog promotion, journal/learn extraction, and tests.\n- 风险: Check could become over-permissive; cumulative review could include unrelated commits if the task base is wrong; promote safety could break existing flows; journal filters could suppress valid lessons if too aggressive.\n- 回滚方案: Revert the task commits. Command-level changes should restore previous behavior without data migration.\n- 用户确认: User replied `同意` on 2026-07-05 after the major-change direction was summarized."
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Resolve the check/agent-enter/dirty-worktree deadlock. `docpath check` must support the valid contexts needed by the workflow, including pre-task/intake review and dirty pre-commit closeout, without requiring an impossible active-task state.",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Make `docpath review` capable of reviewing the task cumulative diff, not only the current working-tree diff. A committed step sequence must still be reviewable before task closeout.",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "Make `docpath backlog promote` safe when target task specs already exist. It must not silently overwrite hand-written specs; it should merge, warn and abort, or preserve a backup with explicit recovery guidance.",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "Clarify canonical task artifact versus `current` alias behavior in closeout guidance. `docpath changes --agent` and related commit guidance should prefer canonical evidence paths and identify alias files as pointers/views unless they are intentionally required.",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "Add journal/learn quality gates so seed boilerplate, placeholder options, and mechanical implementation details are not persisted as ADRs or reusable lessons.",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "Add regression tests for each defect class and for the intended closeout path.",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "Preserve compatibility for normal quick and standard task flows.",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "Keep all behavior deterministic and locally testable; do not introduce external LLM or network dependencies.",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "Error messages and `--agent` output must explain the next valid command when a gate blocks progress.",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "Avoid broad refactors outside the modules that own workflow state, backlog promotion, review/change diff calculation, and journal/learn extraction.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "A dirty pre-commit worktree with task changes has a valid `docpath check` / `docpath changes --agent` path and no longer requires an impossible `agent enter` transition.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "A pre-task or intake/review context can run the appropriate check gate, or receives a precise command-specific explanation that does not deadlock the workflow.",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`docpath review` can review cumulative task changes after intermediate commits; tests cover the clean-working-tree-after-commit case.",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "`docpath backlog promote` refuses, merges, or backs up when an existing user-authored spec would be overwritten; tests cover the data-loss scenario.",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "`docpath changes --agent` identifies canonical evidence paths versus `current` alias paths and recommends staging canonical artifacts by default.",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "`journal` / `learn` filters reject seed-spec boilerplate, placeholder option text, and mechanical implementation details; tests cover the examples reported by the user.",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "Existing quick/standard happy-path tests continue to pass.",
+      "done": false
+    },
+    {
+      "id": "AC-8",
+      "text": "The task completes with `docpath check`, `docpath review`, and journal evidence without manual state-file edits.",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "DocPath treats several lifecycle gates as if there is only one valid execution context: clean worktree, active task, and uncommitted local diffs. Real usage has shaping/promoting work before a task exists, step-level commits during a task, and closeout evidence after changes already exist. Generated seed content can also overwrite or pollute durable artifacts.",
+    "options": [
+      "- 方案 A: Patch each symptom independently."
+    ],
+    "chosen": "方案 B",
+    "rationale": "Explicit contexts make the behavior testable and reduce future contradictions without weakening gates. Option A risks repeated local exceptions. Option C would make DocPath less trustworthy."
+  }
+}

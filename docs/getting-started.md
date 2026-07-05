@@ -138,7 +138,18 @@ docpath project brief P-YYYYMMDD-new-crm --dry-run
 docpath project backlog P-YYYYMMDD-new-crm --confirm "用户确认进入 backlog 拆分"
 ```
 
-project intake 会把原始材料保存在 `.docpath/project-intake/<id>/`，先形成 analysis 和 brief，再经用户确认生成 backlog guidance。确认前不要自动创建可执行 backlog 项。
+project intake 是需求梳理流水线，不是开发任务入口。固定顺序是：
+
+```text
+capture 原始材料
+-> analyze 六域分析
+-> gap index / stakeholder questions / decision cards
+-> brief 需求定稿候选 + 拍板门
+-> confirmed backlog guidance
+-> 手工审阅后创建普通 backlog 条目
+```
+
+project intake 会把原始材料保存在 `.docpath/project-intake/<id>/`。analysis 必须区分事实、假设、缺口和建议决策；每个缺口应标注 `blocking` / `can-mock` / `later`。brief 必须包含范围、不做什么、验收候选、待拍板决策和拍板人/确认依据。确认前不要自动创建可执行 backlog 项。
 
 ## 5. 写规格和计划
 

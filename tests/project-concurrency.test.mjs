@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -32,6 +32,41 @@ function mkWorkspace() {
 
 async function run(args, cwd, input) {
   const argsArray = args.match(/(?:[^\s"]+|"[^"]*")+/g).map((part) => part.replace(/^"|"$/g, ''));
+  if (input !== undefined) {
+    return new Promise((resolve, reject) => {
+      const child = spawn('node', [BIN, ...argsArray], {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      let stdout = '';
+      let stderr = '';
+      const timer = setTimeout(() => {
+        child.kill('SIGTERM');
+        reject(new Error(`Command timed out: node ${BIN} ${argsArray.join(' ')}\n${stderr}`));
+      }, 20000);
+      child.stdout.setEncoding('utf-8');
+      child.stderr.setEncoding('utf-8');
+      child.stdout.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk;
+      });
+      child.on('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+      child.on('close', (code) => {
+        clearTimeout(timer);
+        if (code === 0) {
+          resolve(stdout.trim());
+        } else {
+          reject(new Error(`Command failed (${code}): node ${BIN} ${argsArray.join(' ')}\n${stdout}${stderr}`));
+        }
+      });
+      child.stdin.end(input);
+    });
+  }
   const { stdout } = await execFileAsync('node', [BIN, ...argsArray], {
     cwd,
     encoding: 'utf-8',

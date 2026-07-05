@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-05T10:03:05.392Z",
+    "updated_at": "2026-07-05T10:03:05.392Z",
+    "content_sha256": "3ffee0f4c73105e1faa43eed2ba9de4e6896ab7978a8dc4da40fcfef2711dc1a"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-05T10:03:05.392Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理现有 project-intake 路由与产物模型",
+      "description": "阅读 `src/engine/project-intake.ts`、`src/commands/project.ts`、`src/utils/agent-output.ts`、`docs/design/project-intake-*` 与现有 `tests/project-command.test.mjs`，确认当前 capture/analyze/brief/backlog 的状态、next_hint 与测试覆盖。",
+      "acceptance": "明确最小改动点：哪些输出需要新增需求梳理阶段说明，哪些测试需要覆盖，哪些协议文档需要同步。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "固化需求梳理流程契约与 CLI/Agent 路由",
+      "description": "在 project-intake 相关实现中固化 requirements-shaping 流程：raw materials -> domain analysis -> gap index -> stakeholder questions -> decision cards -> requirements approval -> backlog guidance，并确保未确认前不推荐直接创建 executable backlog。",
+      "acceptance": "`docpath project ...` 或 `docpath next --agent` 的相关输出能给出确定下一步；现有 capture/analyze/brief/backlog 行为保持兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "同步协议和用户文档",
+      "description": "更新 AGENTS/CLAUDE/OPENCODE 协议和 getting-started/project-intake 设计文档，明确需求讨论阶段必须走 intake 流程，每阶段输出物与禁止事项清晰。",
+      "acceptance": "文档中有统一的需求梳理流水线、阶段产物、拍板门和 backlog guidance 边界，不再只描述泛泛 project intake。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "补齐测试与质量门禁",
+      "description": "增加或更新 project intake/next 路由测试，覆盖需求梳理提示、未拍板不生成开发 backlog、backlog guidance 仍需用户确认等行为，并运行相关测试和 DocPath gates。",
+      "acceptance": "相关测试通过；`docpath check` 和 `docpath review` 通过或记录明确非阻塞原因。",
+      "dependencies": "S2, S3",
+      "status": "pending"
+    }
+  ]
+}

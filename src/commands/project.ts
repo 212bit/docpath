@@ -54,6 +54,26 @@ const ANALYSIS_SECTIONS = [
 
 type AnalysisSection = typeof ANALYSIS_SECTIONS[number];
 
+const REQUIREMENTS_SHAPING_FLOW = [
+  'raw-material capture',
+  'domain analysis',
+  'gap index',
+  'stakeholder questions',
+  'decision cards',
+  'requirements approval',
+  'backlog guidance',
+] as const;
+
+const REQUIREMENTS_SHAPING_OUTPUTS = [
+  'source provenance inventory',
+  'six-domain analysis',
+  'gap index with owner, impact, blocking status, and next confirmation route',
+  'stakeholder question list grouped by audience',
+  'decision cards for assumptions that require explicit approval',
+  'approved requirements brief with scope, non-goals, acceptance candidates, and approval gate',
+  'backlog decomposition guidance after confirmation only',
+] as const;
+
 function slugify(value: string): string {
   const ascii = value
     .toLowerCase()
@@ -132,7 +152,8 @@ function analysisPromptPayload(state: ProjectIntakeState): Record<string, unknow
     dry_run: true,
     intake_id: state.id,
     title: state.title,
-    intent: 'Generate structured analysis from captured project source materials. Do not implement product code.',
+    intent: 'Shape raw project materials into confirmed requirements evidence. Do not implement product code or create executable backlog items.',
+    workflow: REQUIREMENTS_SHAPING_FLOW,
     sources: state.sources.map((source) => ({
       id: source.id,
       title: source.title,
@@ -142,13 +163,26 @@ function analysisPromptPayload(state: ProjectIntakeState): Record<string, unknow
       excerpt: source.excerpt,
     })),
     sections: {
-      requirements: ['goals', 'actors', 'jobs-to-be-done', 'scope', 'non-goals', 'assumptions'],
+      requirements: ['goals', 'actors', 'jobs-to-be-done', 'scope', 'non-goals', 'assumptions', 'approval criteria'],
       product: ['user value', 'success metrics', 'core journey', 'business rules', 'rollout/rollback'],
       ui: ['information architecture', 'states', 'accessibility', 'responsive behavior', 'copy'],
       technical: ['modules', 'data/API contracts', 'permissions', 'migrations', 'testing', 'observability'],
       risks: ['product', 'design', 'technical', 'security', 'maintenance'],
-      'open-questions': ['blocking questions', 'non-blocking questions', 'recommended decisions'],
+      'open-questions': [
+        'gap index with owner and blocking status',
+        'stakeholder questions grouped by audience',
+        'decision cards for assumptions needing approval',
+        'blocking questions',
+        'non-blocking questions',
+      ],
     },
+    required_outputs: REQUIREMENTS_SHAPING_OUTPUTS,
+    rules: [
+      'Separate verified facts, assumptions, gaps, and proposed decisions.',
+      'Do not convert intake output into normal backlog before explicit user confirmation.',
+      'Mark each gap as blocking, can-mock, or later.',
+      'Decision cards must include problem, options, recommendation, risk, non-goals, owner, and approval effect.',
+    ],
     recommended_writes: ANALYSIS_SECTIONS.map((section) => `docpath project analyze ${state.id} --section ${section} --stdin`),
   };
 }
@@ -159,7 +193,8 @@ function briefPromptPayload(state: ProjectIntakeState): Record<string, unknown> 
     dry_run: true,
     intake_id: state.id,
     title: state.title,
-    intent: 'Create a project brief from project-intake analysis. Do not create executable backlog items yet.',
+    intent: 'Create a requirements-shaping brief from project-intake analysis. Do not create executable backlog items yet.',
+    workflow: REQUIREMENTS_SHAPING_FLOW,
     required_content: [
       'project goal',
       'target users',
@@ -167,10 +202,14 @@ function briefPromptPayload(state: ProjectIntakeState): Record<string, unknown> 
       'included scope',
       'excluded scope',
       'assumptions',
+      'gap index summary with blocking/can-mock/later status',
+      'stakeholder question summary grouped by owner',
+      'decision cards or links for unresolved assumptions',
       'dependencies',
       'risks',
       'acceptance candidates',
       'blocking decisions',
+      'approval gate and approval owner',
     ],
     recommended_write: `docpath project brief ${state.id} --stdin`,
   };
@@ -182,7 +221,13 @@ function backlogPromptPayload(state: ProjectIntakeState): Record<string, unknown
     dry_run: true,
     intake_id: state.id,
     title: state.title,
-    intent: 'Convert confirmed project-intake output into reviewable normal backlog items with provenance links.',
+    intent: 'After explicit approval, convert requirements-shaping output into reviewable normal backlog item drafts with provenance links.',
+    workflow: REQUIREMENTS_SHAPING_FLOW,
+    guardrails: [
+      'This command emits guidance only; it does not auto-create executable backlog items.',
+      'Do not run non-dry-run without explicit user confirmation that requirements are approved for backlog decomposition.',
+      'Each future backlog item must preserve project-intake provenance and its own acceptance criteria.',
+    ],
     provenance: {
       intake_state: `.docpath/project-intake/${state.id}/intake.json`,
       brief: `.docpath/project-intake/${state.id}/brief.md`,
@@ -212,30 +257,30 @@ function nextActionForIntake(docpathDir: string, state: ProjectIntakeState): { n
   if (state.stage === 'captured' || missing.length > 0) {
     return {
       next_action: missing.length === ANALYSIS_SECTIONS.length
-        ? `analyze project intake ${state.id}`
-        : `complete remaining analysis sections: ${missing.join(', ')}`,
+        ? `shape requirements from captured project materials: ${state.id}`
+        : `complete remaining requirements-shaping analysis sections: ${missing.join(', ')}`,
       recommended_command: missing.length === ANALYSIS_SECTIONS.length
         ? `docpath project analyze ${state.id} --dry-run`
         : `docpath project analyze ${state.id} --section ${missing[0]} --stdin`,
-      exit_criteria: 'all analysis sections are written',
+      exit_criteria: 'all requirements-shaping analysis sections are written, including gaps, stakeholder questions, and decision cards',
     };
   }
   if (!existsSync(paths.brief)) {
     return {
-      next_action: `create project brief for ${state.id}`,
+      next_action: `create requirements brief with approval gate for ${state.id}`,
       recommended_command: `docpath project brief ${state.id} --dry-run`,
-      exit_criteria: 'brief.md is written',
+      exit_criteria: 'brief.md captures scope, gaps, decisions, acceptance candidates, and approval gate',
     };
   }
   if (!state.user_confirmed) {
     return {
-      next_action: `confirm project intake before backlog decomposition: ${state.id}`,
+      next_action: `obtain explicit requirements approval before backlog decomposition: ${state.id}`,
       recommended_command: `docpath project backlog ${state.id} --dry-run`,
       exit_criteria: 'user confirmation is recorded before backlog guidance',
     };
   }
   return {
-    next_action: `create reviewed backlog items from ${state.id}`,
+    next_action: `create reviewed backlog items from approved intake guidance: ${state.id}`,
     recommended_command: `docpath backlog add --title "<title>" --evidence-analysis ".docpath/project-intake/${state.id}/backlog.md"`,
     exit_criteria: 'reviewed backlog items are captured with project-intake provenance',
   };
@@ -363,9 +408,9 @@ async function projectCapture(options: ProjectCommandOptions): Promise<void> {
   if (sources[0]?.original_path && !sources[0]?.content_path) console.log(`   source_ref: ${sources[0].original_path}`);
   console.log('');
   console.log('next_hint:');
-  console.log(`  next_action: analyze project intake ${intakeId}`);
+  console.log(`  next_action: shape requirements from captured project materials ${intakeId}`);
   console.log(`  recommended_command: docpath project analyze ${intakeId} --dry-run`);
-  console.log('  exit_criteria: analysis sections are written under analysis/');
+  console.log('  exit_criteria: requirements-shaping analysis sections are written under analysis/');
 }
 
 async function projectAnalyze(options: ProjectCommandOptions): Promise<void> {
@@ -409,14 +454,14 @@ async function projectAnalyze(options: ProjectCommandOptions): Promise<void> {
   console.log('');
   console.log('next_hint:');
   if (writtenSections!.length === ANALYSIS_SECTIONS.length) {
-    console.log(`  next_action: create project brief for ${intakeId}`);
+    console.log(`  next_action: create requirements brief with approval gate for ${intakeId}`);
     console.log(`  recommended_command: docpath project brief ${intakeId} --dry-run`);
-    console.log('  exit_criteria: brief.md is written');
+    console.log('  exit_criteria: brief.md captures scope, gaps, decisions, acceptance candidates, and approval gate');
   } else {
     const missing = ANALYSIS_SECTIONS.filter((candidate) => !writtenSections!.includes(candidate));
-    console.log(`  next_action: complete remaining analysis sections: ${missing.join(', ')}`);
+    console.log(`  next_action: complete remaining requirements-shaping analysis sections: ${missing.join(', ')}`);
     console.log(`  recommended_command: docpath project analyze ${intakeId} --section ${missing[0]} --stdin`);
-    console.log('  exit_criteria: all analysis sections are written');
+    console.log('  exit_criteria: all requirements-shaping analysis sections are written');
   }
 }
 
@@ -457,9 +502,9 @@ async function projectBrief(options: ProjectCommandOptions): Promise<void> {
   console.log(`   path: ${relativePath!}`);
   console.log('');
   console.log('next_hint:');
-  console.log(`  next_action: plan project intake ${intakeId}`);
-  console.log(`  recommended_command: docpath project plan ${intakeId} --dry-run`);
-  console.log('  exit_criteria: project plan evidence is written');
+  console.log(`  next_action: obtain explicit requirements approval before backlog decomposition ${intakeId}`);
+  console.log(`  recommended_command: docpath project backlog ${intakeId} --dry-run`);
+  console.log('  exit_criteria: user confirmation is recorded before backlog guidance');
 }
 
 async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
@@ -495,7 +540,12 @@ async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
       `> confirmed: ${confirmation}`,
       `> project_brief: .docpath/project-intake/${state.id}/brief.md`,
       '',
-      'Use this guidance to create normal backlog items with explicit provenance.',
+      'Use this guidance to create normal backlog items with explicit provenance after requirements approval.',
+      '',
+      'Requirements-shaping guardrails:',
+      '- Do not create executable backlog from unapproved intake materials.',
+      '- Keep each backlog item tied to this intake provenance and its own acceptance criteria.',
+      '- Preserve unresolved gaps as blocking/can-mock/later dependencies in the backlog item background.',
       '',
       '```bash',
       `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background; provenance: .docpath/project-intake/${state.id}/brief.md>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/brief.md"`,
@@ -518,7 +568,7 @@ async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
   console.log('   status: confirmed');
   console.log('');
   console.log('next_hint:');
-  console.log(`  next_action: create reviewed backlog items from ${intakeId}`);
+  console.log(`  next_action: create reviewed backlog items from approved intake guidance ${intakeId}`);
   console.log(`  recommended_command: docpath backlog add --title "<title>" --evidence-analysis "${relativePath!}"`);
   console.log('  exit_criteria: reviewed backlog items are captured with project-intake provenance');
 }

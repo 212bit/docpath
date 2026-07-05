@@ -104,6 +104,18 @@ describe('project intake commands', () => {
     assert.equal(dryRun.task, 'project-intake-analysis');
     assert.equal(dryRun.intake_id, intakeId);
     assert.deepEqual(Object.keys(dryRun.sections), ['requirements', 'product', 'ui', 'technical', 'risks', 'open-questions']);
+    assert.deepEqual(dryRun.workflow, [
+      'raw-material capture',
+      'domain analysis',
+      'gap index',
+      'stakeholder questions',
+      'decision cards',
+      'requirements approval',
+      'backlog guidance',
+    ]);
+    assert.match(dryRun.sections['open-questions'].join('\n'), /gap index/);
+    assert.match(dryRun.required_outputs.join('\n'), /stakeholder question list/);
+    assert.match(dryRun.rules.join('\n'), /blocking, can-mock, or later/);
 
     const out = run(`project analyze ${intakeId} --section requirements --stdin`, cwd, '## Requirements\n\n- goal\n');
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
@@ -131,11 +143,13 @@ describe('project intake commands', () => {
     const dryRun = JSON.parse(run(`project brief ${intakeId} --dry-run`, cwd));
     assert.equal(dryRun.task, 'project-intake-brief');
     assert.equal(dryRun.recommended_write, `docpath project brief ${intakeId} --stdin`);
+    assert.match(dryRun.required_content.join('\n'), /approval gate/);
 
     const out = run(`project brief ${intakeId} --stdin`, cwd, '# Project Brief\n');
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
 
     assert.match(out, /project brief 已写入/);
+    assert.match(out, new RegExp(`recommended_command: docpath project backlog ${intakeId} --dry-run`));
     assert.equal(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'brief.md'), 'utf-8'), '# Project Brief\n');
     assert.equal(state.stage, 'briefed');
     assert.ok(state.artifacts.some((artifact) => artifact.kind === 'brief'));
@@ -153,6 +167,8 @@ describe('project intake commands', () => {
 
     const dryRun = JSON.parse(run(`project backlog ${intakeId} --dry-run`, cwd));
     assert.equal(dryRun.task, 'project-intake-backlog-decomposition');
+    assert.match(dryRun.intent, /After explicit approval/);
+    assert.match(dryRun.guardrails.join('\n'), /does not auto-create executable backlog items/);
     assert.match(dryRun.recommended_command_template, new RegExp(`project-intake/${intakeId}/brief\\.md`));
 
     const blocked = runResult(`project backlog ${intakeId}`, cwd);
@@ -167,6 +183,8 @@ describe('project intake commands', () => {
     assert.equal(state.stage, 'confirmed');
     assert.equal(state.user_confirmed, '用户确认拆分 backlog');
     assert.match(guidance, /docpath backlog add/);
+    assert.match(guidance, /Requirements-shaping guardrails/);
+    assert.match(guidance, /Do not create executable backlog from unapproved intake materials/);
     assert.match(guidance, new RegExp(`project-intake/${intakeId}/brief\\.md`));
     rmSync(cwd, { recursive: true, force: true });
   });

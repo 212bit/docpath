@@ -17,6 +17,11 @@ Rationale:
 - Prompt-style commands may emit structured prompt payloads, matching existing `analyze --dry-run` and `plan --dry-run` boundaries.
 - Commands must write only under `.docpath/project-intake/<intake-id>/` unless explicitly generating normal backlog items after confirmation.
 - Commands must preserve existing backlog, quick, spec, and plan behavior.
+- Project intake is a requirements-shaping workflow. The required sequence is:
+  `capture -> analyze -> gap index/questions/decision cards -> brief with
+  approval gate -> confirmed backlog guidance`.
+- Unapproved intake output is evidence only. It must not be treated as an
+  executable backlog item or implementation plan.
 
 ## Actions
 
@@ -58,7 +63,7 @@ Inputs:
 
 Outputs:
 
-- dry-run payload covering requirements, product, UI/UX, technical, risks, and open questions; or
+- dry-run payload covering requirements, product, UI/UX, technical, risks, open questions, gap index, stakeholder questions, and decision-card candidates; or
 - markdown files under `analysis/`.
 
 Errors:
@@ -88,29 +93,9 @@ Errors:
 - missing analysis evidence unless `--dry-run`
 - empty brief content
 
-### `docpath project plan`
-
-Purpose: create or guide creation of a milestone/execution plan from confirmed project brief/spec evidence.
-
-Inputs:
-
-- `<intake-id>` required.
-- `--dry-run` optional.
-- `--stdin` optional for persisting already-generated plan content.
-
-Outputs:
-
-- `plan.md`
-- state transition to `planned` when persisted.
-
-Errors:
-
-- missing brief/spec evidence
-- unconfirmed scope when command would imply executable work
-
 ### `docpath project backlog`
 
-Purpose: convert confirmed project-intake output into normal backlog items or emit a backlog-generation preview.
+Purpose: emit backlog decomposition guidance from confirmed project-intake output.
 
 Inputs:
 
@@ -120,14 +105,13 @@ Inputs:
 
 Outputs:
 
-- generated backlog item drafts or persisted backlog items with provenance links.
-- project intake state transition to `decomposed` after successful conversion.
+- `backlog.md` guidance with provenance links and backlog item command templates.
+- project intake state transition to `confirmed` after successful confirmation.
 
 Errors:
 
 - missing user confirmation
-- missing plan/spec evidence
-- generated item does not meet backlog readiness rules
+- missing brief evidence
 
 ### `docpath project status`
 
@@ -145,4 +129,3 @@ Outputs:
 Errors:
 
 - unknown intake id.
-

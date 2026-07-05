@@ -100,6 +100,13 @@ docpath agent handoff
 - Do not default-read `current.md`, `breadcrumb.md`, `plan.md`, or
   `docs-index.json`.
 - Clarify ambiguous product/UI requests before implementation.
+- For brand-new projects or requirement-discussion work that starts from PPT
+  text, API docs, meeting notes, intro docs, or a rough requirements file, use
+  the project-intake requirements-shaping flow before backlog work:
+  `project capture -> project analyze -> gap index/questions/decision cards ->
+  project brief with approval gate -> confirmed project backlog guidance`.
+  Unapproved intake output is evidence only; do not create executable backlog
+  items from it.
 - For major architecture, data, workflow, permission, or long-term maintenance
   changes, run brainstorm/refine and record a Decision Brief before coding.
 - Run `docpath check` before claiming completion.
