@@ -2,13 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-05T10:47:02.546Z
+> 扫描时间: 2026-07-05T10:47:26.579Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-246 | Fix completed next route ignoring stale in-progress plan step | accepted | P0 | 3 |  |
+| R-246 | Fix completed next route ignoring stale in-progress plan step | active | P0 | 3 | T-20260705-fix-completed-next-route-ignoring-stale- |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-237 | Elevate /learn priority in status when pending lesson candidates and regression warnings exist | proposed | P2 | 2 |  |
 | R-243 | Fix project brief next_hint after intake brief | proposed | P2 | 1 |  |

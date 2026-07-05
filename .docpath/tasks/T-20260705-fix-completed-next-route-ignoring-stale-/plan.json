@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-05T10:49:57.970Z",
+    "updated_at": "2026-07-05T10:49:57.970Z",
+    "content_sha256": "e23f53a9012e2dcc5412d54bb9b0bb3bf6beb6ce0fcfb01796dc408b5c49ba86"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-05T10:49:57.970Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "添加 completed stale-step 回归测试",
+      "description": "在 `tests/next.test.mjs` 构造 completed/review_pass + stale in-progress breadcrumb/open plan step 场景，断言 `next --agent` 不推荐 `agent step` 或 `go`，并保留 executing in-progress step 既有行为。",
+      "acceptance": "测试在修复前能复现错误路由，修复后通过。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "修复 completed 状态路由优先级",
+      "description": "调整 `src/utils/agent-output/formatters.ts` 中 route 推断顺序或 active-step 过滤，让 completed 状态先走 completed closeout/next-work 分支，忽略 stale in-progress step。",
+      "acceptance": "completed/review_pass 不再输出 `docpath agent step --step ... --status done`；执行态 in-progress step 仍保留原推荐；相关测试、check、review 通过。",
+      "dependencies": "S1",
+      "status": "pending"
+    }
+  ]
+}

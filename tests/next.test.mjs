@@ -607,6 +607,48 @@ created_at: 2026-05-31
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('does not route completed tasks back to stale in-progress steps', () => {
+    const cwd = mkWorkspace({
+      phase: 'completed',
+      gate: 'review_pass',
+      plan: '# Plan\n\n- [x] S1: done\n- [ ] S4: verification already closed\n',
+      breadcrumb: [
+        '# Breadcrumb',
+        '',
+        '### ✅ S1 [T-NEXT] — 2026-05-29T00:00:00.000Z',
+        '',
+        '---',
+        'taskId: T-NEXT',
+        'step: S1',
+        'status: done',
+        'timestamp: 2026-05-29T00:00:00.000Z',
+        '---',
+        '',
+        '- **状态**: done',
+        '- **上下文**: done before closeout',
+        '',
+        '### 🔄 S4 [T-NEXT] — 2026-05-29T00:00:00.000Z',
+        '',
+        '---',
+        'taskId: T-NEXT',
+        'step: S4',
+        'status: in_progress',
+        'timestamp: 2026-05-29T00:00:00.000Z',
+        '---',
+        '',
+        '- **状态**: in_progress',
+        '- **上下文**: stale verification step after closeout',
+        '',
+      ].join('\n'),
+    });
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
+    assert.doesNotMatch(output.next_action, /S4/);
+    assert.doesNotMatch(output.recommended_command, /agent step|go --step/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('derives progress from section-style plan steps without explicit checklist lines', () => {
     const cwd = mkWorkspace({
       phase: 'executing',

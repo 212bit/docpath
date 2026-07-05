@@ -420,8 +420,9 @@ export function inferNextAction(
   const lastCheckPassed = /^\*\*结果\*\*:\s*✅\s*PASS\s*$/m.test(lastCheckContent);
   const hasPendingLessonCandidates = lessonSummary.pendingCount > 0;
   const globalRules = ruleDisplayPaths();
+  const isCompleted = currentState === 'completed' || phase === 'completed';
   const isIdleOrCompleted = currentState === 'idle'
-    || currentState === 'completed'
+    || isCompleted
     || phase === 'idle'
     || phase === 'completed';
 
@@ -547,7 +548,7 @@ export function inferNextAction(
   }
 
   const activeStep = [...bc.entries].reverse().find(e => e.status === 'in_progress');
-  if (activeStep) {
+  if (!isCompleted && activeStep) {
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'];
     return {
       next_action: `完成进行中的步骤: ${activeStep.step}`,
@@ -559,7 +560,7 @@ export function inferNextAction(
     };
   }
 
-  if (firstOpenTask) {
+  if (!isCompleted && firstOpenTask) {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md', '.docpath/tasks/current/plan.md'];
     return {
       next_action: `执行下一个未完成步骤: ${firstOpenTask.id} ${firstOpenTask.title}`,
@@ -571,7 +572,7 @@ export function inferNextAction(
     };
   }
 
-  if (allPlanDone && !lastCheckPassed && gate !== 'check_pass' && gate !== 'review_pass' && gate !== 'review_skipped') {
+  if (!isCompleted && allPlanDone && !lastCheckPassed && gate !== 'check_pass' && gate !== 'review_pass' && gate !== 'review_skipped') {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'];
     return {
       next_action: '计划已完成，运行质量检查',
@@ -583,7 +584,7 @@ export function inferNextAction(
     };
   }
 
-  if (gate === 'check_pass' && currentState !== 'review_pass') {
+  if (!isCompleted && gate === 'check_pass' && currentState !== 'review_pass') {
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md'];
     return {
       next_action: '质量检查已通过，执行审查',
@@ -595,7 +596,7 @@ export function inferNextAction(
     };
   }
 
-  if (currentState === 'completed' || phase === 'completed') {
+  if (isCompleted) {
     const required = ['.docpath/workspace/current.md'];
     if (gitCloseout?.needs_closeout) {
       return {
