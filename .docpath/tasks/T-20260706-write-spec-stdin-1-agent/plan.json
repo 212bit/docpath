@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-06T14:09:45.791Z",
-    "updated_at": "2026-07-06T14:09:45.791Z",
-    "content_sha256": "9401affd6565618bbc74293b36f8d17be695921ee2dc6516c7dbf19edf204274"
+    "created_at": "2026-07-06T14:24:06.319Z",
+    "updated_at": "2026-07-06T14:24:06.319Z",
+    "content_sha256": "79f1ad68cb34e160a07cf599963378ac4ca33de410ce6df5a89896366596004b"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-06T14:09:45.791Z",
+  "generated_at": "2026-07-06T14:24:06.319Z",
   "steps": [
     {
       "id": "S1",
@@ -32,7 +32,7 @@
       "description": "验证 spec 中声明的验收标准：AC-1: write-spec 在文件写入成功后，若后续状态转换/next 计算失败，不得以退出码 1 结束；应打印明确警告并退出 0（或独立的非致命退出码），保留成功信号。；AC-2: 顶层 catch 对\"成功后继步骤失败\"应区分于\"写入本身失败\"，给出具体错误信息（哪个后续步骤、为什么），而非笼统的\"未预期的错误\"。；AC-3: 回归: 构造一个 transitionWorkflow 会抛错的场景，确认 write-spec 退出码为 0 且 spec.md 已写入、日志含成功 + 警告两段。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-248 与任务 T-20260706-write-spec-stdin-1-agent 建立双向关联",
       "acceptance": "AC-1: write-spec 在文件写入成功后，若后续状态转换/next 计算失败，不得以退出码 1 结束；应打印明确警告并退出 0（或独立的非致命退出码），保留成功信号。；AC-2: 顶层 catch 对\"成功后继步骤失败\"应区分于\"写入本身失败\"，给出具体错误信息（哪个后续步骤、为什么），而非笼统的\"未预期的错误\"。；AC-3: 回归: 构造一个 transitionWorkflow 会抛错的场景，确认 write-spec 退出码为 0 且 spec.md 已写入、日志含成功 + 警告两段。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-248 与任务 T-20260706-write-spec-stdin-1-agent 建立双向关联",
       "dependencies": "S2",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }
