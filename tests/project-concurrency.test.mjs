@@ -103,7 +103,7 @@ describe('project intake concurrency', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('concurrent brief and backlog updates are serialized', async () => {
+  it('backlog is gated by settle evidence after brief writes', async () => {
     const cwd = mkWorkspace();
     const capture = await run('project capture --title "Serial Test" --content "source"', cwd);
     const intakeId = capture.match(/project intake 已创建: (P-\d{8}-serial-test)/)?.[1];
@@ -114,21 +114,21 @@ describe('project intake concurrency', () => {
       await run(`project analyze ${intakeId} --section ${section} --stdin`, cwd, `## ${section}\n`);
     }
 
-    // Concurrent brief write (should succeed)
-    const briefPromise = run(`project brief ${intakeId} --stdin`, cwd, '# Brief\n');
+    await run(`project brief ${intakeId} --stdin`, cwd, '# Brief\n');
 
-    // Small delay to let brief start
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await assert.rejects(
+      run(`project backlog ${intakeId} --confirm "confirmed"`, cwd),
+      /missing project settle evidence/,
+    );
 
-    // Try to write backlog while brief is writing (should block until brief completes)
-    const backlogPromise = run(`project backlog ${intakeId} --confirm "confirmed"`, cwd);
-
-    await Promise.all([briefPromise, backlogPromise]);
+    await run(`project settle ${intakeId} --confirm "confirmed" --stdin`, cwd, '# Settle\n\napproval_state: approved\n');
+    await run(`project backlog ${intakeId}`, cwd);
 
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
     assert.equal(state.stage, 'confirmed');
     assert.equal(state.user_confirmed, 'confirmed');
     assert.ok(existsSync(join(cwd, '.docpath', 'project-intake', intakeId, 'brief.md')));
+    assert.ok(existsSync(join(cwd, '.docpath', 'project-intake', intakeId, 'settle.md')));
     assert.ok(existsSync(join(cwd, '.docpath', 'project-intake', intakeId, 'backlog.md')));
 
     rmSync(cwd, { recursive: true, force: true });
