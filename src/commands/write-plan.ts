@@ -8,8 +8,7 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
-import { transitionWorkflow } from '../engine/transitions.js';
-import { nextCommand } from './runtime.js';
+import { nextCommand, runPostWriteSteps } from './runtime.js';
 import { validatePlanContent } from '../utils/doc-parser.js';
 import { canonicalTaskDir, currentTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState } from '../utils/workspace.js';
@@ -69,8 +68,9 @@ export async function writePlanCommand(options: WritePlanOptions): Promise<void>
 
   console.log(`✅  plan.md 已写入: ${canonicalPath}`);
 
+  // 文件已写入即命令成功，后续状态转换/next 失败不抛出，避免误导退出码（R-248）。
+  // 执行阶段重写计划不触发 plan.ready 回退（R-251）。
   await advanceOrPreservePhase(cwd, current?.phase);
-  await nextCommand({ cwd });
 }
 
 // 执行阶段（executing/checking/reviewing/journaling）重写计划时只更新文件，
@@ -81,10 +81,14 @@ const EXECUTING_PHASES = ['executing', 'checking', 'reviewing', 'journaling'];
 async function advanceOrPreservePhase(cwd: string, phase: string | undefined): Promise<void> {
   if (phase && EXECUTING_PHASES.includes(phase)) {
     console.log(`📌  当前阶段为 ${phase}，仅更新 plan 文件，不回退阶段`);
+    try {
+      await nextCommand({ cwd });
+    } catch (err) {
+      console.error(`⚠️  文件已写入，但后续步骤失败（不影响写入结果）: ${err instanceof Error ? err.message : String(err)}`);
+    }
     return;
   }
-  await transitionWorkflow(cwd, 'plan.ready', { currentStep: 'plan 已写入，下一步: docpath go' });
-  console.log('📌  状态已更新为 planning');
+  await runPostWriteSteps(cwd, 'plan.ready', { currentStep: 'plan 已写入，下一步: docpath go' });
 }
 
 function formatValidationIssue(issue: { message: string; line?: number; section?: string; field?: string }): string {

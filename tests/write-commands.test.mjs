@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import { existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -216,6 +216,77 @@ describe('write commands', () => {
     assert.match(result.out, /spec heading task_id: T-OTHER/);
     assert.equal(readFileSync(specPath, 'utf-8'), '# T-WRITE - Existing Spec\n');
     assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.md')), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('write-spec keeps exit 0 when post-write transition fails (R-248)', () => {
+    // phase=checking 不在 task.created 的 from 列表里 → transitionWorkflow 抛 Illegal transition。
+    // 文件已写入即命令成功，后续步骤失败不应让命令 exit 1 覆盖成功信号。
+    const cwd = mkWorkspace({ phase: 'checking', gate: 'check_pass' });
+    const spec = [
+      '# T-WRITE - 合法 Spec',
+      '',
+      '> backlog_id: R-WRITE',
+      '',
+      '## 1. 背景与动机',
+      '',
+      '补充背景',
+      '',
+      '## 2. 需求清单',
+      '',
+      '### 功能需求',
+      '- [ ] FR-1: 需要结构化校验',
+      '',
+      '### 非功能需求',
+      '- [ ] NFR-1: 保持兼容',
+      '',
+      '## 3. 范围界定',
+      '',
+      '### 包含',
+      '- 写命令校验',
+      '',
+      '### 不包含',
+      '- 模板重写',
+      '',
+      '## 4. 关键决策',
+      '',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | 校验 | 非空 / 结构 | 结构 | fail loud |',
+      '',
+      '## 4.1 重大变更门禁',
+      '',
+      '### 是否涉及重大变更',
+      '- [x] 否',
+      '- [ ] 是，需要用户确认',
+      '',
+      '### 变更类型',
+      '- [ ] 工作流 / Agent 行为',
+      '',
+      '### UI 设计门禁',
+      '- [x] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）',
+      '- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程',
+      '',
+      '### Decision Brief',
+      '- 用户确认: 无',
+      '',
+      '## 5. 验收标准',
+      '',
+      '- [ ] AC-1: 写入成功后即使 transition 失败也 exit 0',
+      '',
+    ].join('\n');
+    const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, spec);
+
+    assert.equal(result.code, 0, 'write-spec must exit 0 when file written even if transition fails');
+    assert.match(result.out, /spec\.md 已写入/);
+    // warning 走 stderr；exit 0 时 runResultWithInput 不合并 stderr，用 spawnSync 合并验证
+    const combined = spawnSync('node', [BIN, 'write-spec', '--cwd', cwd, '--stdin'], {
+      cwd, encoding: 'utf-8', input: spec,
+    });
+    assert.equal(combined.status, 0);
+    const allOut = `${combined.stdout || ''}${combined.stderr || ''}`;
+    assert.match(allOut, /文件已写入，但后续步骤失败/);
+    assert.match(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.md'), 'utf-8'), /合法 Spec/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

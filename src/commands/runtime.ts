@@ -13,6 +13,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { transitionWorkflow } from '../engine/transitions.js';
+import type { WorkflowEvent, TransitionPayload } from '../engine/transitions.js';
 import { detectActiveTaskFileDrift, readActiveTaskFile, syncActiveTaskFiles } from '../utils/task-files.js';
 import { syncCurrentDocument } from '../utils/workspace.js';
 import { writeHybridContextIndex, readHybridContextIndexSummary } from '../utils/context-index.js';
@@ -679,4 +680,27 @@ export async function nextCommand(options: NextOptions): Promise<void> {
   const action = output.match(/^next_action:\s*(.+)$/m)?.[1] || '查看状态';
   console.log(`下一步: ${action}`);
   console.log(`建议命令: ${recommended}`);
+}
+
+/**
+ * 文件写入成功后执行状态转换 + next 路由。
+ *
+ * 文件已落盘 = 命令本质成功，后续步骤（状态转换 / next 计算）失败不应让命令以
+ * 退出码 1 结束并覆盖前面的成功信号（R-248）。这里把后续步骤包进 try-catch，
+ * 失败时打印 ⚠️ 警告 + 具体错误信息，不抛出，让命令保留 exit 0。
+ * 写入本身的失败仍由调用方抛出 / exit 1。
+ */
+export async function runPostWriteSteps(
+  cwd: string,
+  event: WorkflowEvent,
+  eventPayload: TransitionPayload,
+): Promise<void> {
+  try {
+    await transitionWorkflow(cwd, event, eventPayload);
+    await nextCommand({ cwd });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`⚠️  文件已写入，但后续步骤失败（不影响写入结果）: ${msg}`);
+    console.error('   运行 DOCPATH_DEBUG=1 docpath ... 查看详细堆栈，或 docpath next --agent 查看当前路由');
+  }
 }

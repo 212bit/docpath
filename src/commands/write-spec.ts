@@ -8,8 +8,7 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
-import { transitionWorkflow } from '../engine/transitions.js';
-import { nextCommand } from './runtime.js';
+import { runPostWriteSteps } from './runtime.js';
 import { validateSpecContent } from '../utils/doc-parser.js';
 import { writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState } from '../utils/workspace.js';
@@ -73,10 +72,9 @@ export async function writeSpecCommand(options: WriteSpecOptions): Promise<void>
 
   console.log(`✅  spec.md 已写入: ${canonicalPath}`);
 
-  // 更新状态为 drafting → planning（brainstorm 完成）
-  await transitionWorkflow(cwd, 'task.created', { currentStep: 'spec 已写入，下一步: docpath plan' });
-  console.log('📌  状态已更新为 drafting (spec-written)');
-  await nextCommand({ cwd });
+  // 更新状态为 drafting → planning（brainstorm 完成）。
+  // 文件已写入即命令成功，后续状态转换/next 失败不抛出，避免误导退出码（R-248）。
+  await runPostWriteSteps(cwd, 'task.created', { currentStep: 'spec 已写入，下一步: docpath plan' });
 }
 
 function formatValidationIssue(issue: { message: string; line?: number; section?: string; field?: string }): string {

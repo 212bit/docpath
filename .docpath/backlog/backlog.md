@@ -2,13 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-06T11:18:01.536Z
+> 扫描时间: 2026-07-06T12:22:57.030Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-248 | write-spec --stdin 成功写入后误报未预期错误，退出码 1 误导 agent | proposed | P1 | 1 |  |
+| R-248 | write-spec --stdin 成功写入后误报未预期错误，退出码 1 误导 agent | active | P1 | 1 | T-20260706-write-spec-stdin-1-agent |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-237 | Elevate /learn priority in status when pending lesson candidates and regression warnings exist | proposed | P2 | 2 |  |
 | R-243 | Fix project brief next_hint after intake brief | proposed | P2 | 1 |  |

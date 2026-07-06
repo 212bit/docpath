@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-06T12:22:56.997Z",
+    "updated_at": "2026-07-06T12:22:56.997Z",
+    "content_sha256": "ecddab7e21f8416b4d0818fda8d54cca7d597f36687199e4a5f7c1b012e06aa1"
+  },
+  "task_id": "T-20260706-write-spec-stdin-1-agent",
+  "backlog_id": "R-248",
+  "title": "T-20260706-write-spec-stdin-1-agent - write-spec --stdin 成功写入后误报未预期错误，退出码 1 误导 agent",
+  "generated_at": "2026-07-06T12:22:56.997Z",
+  "scope": {
+    "included": [
+      "write-spec --stdin 成功写入后误报未预期错误，退出码 1 误导 agent"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: ## 背景\n- 目标: write-spec --stdin 成功写入后误报未预期错误，退出码 1 误导 agent\n- 背景: 来自 backlog R-248\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "write-spec --stdin 成功写入后误报未预期错误，退出码 1 误导 agent",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "write-spec 在文件写入成功后，若后续状态转换/next 计算失败，不得以退出码 1 结束；应打印明确警告并退出 0（或独立的非致命退出码），保留成功信号。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "顶层 catch 对\"成功后继步骤失败\"应区分于\"写入本身失败\"，给出具体错误信息（哪个后续步骤、为什么），而非笼统的\"未预期的错误\"。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "回归: 构造一个 transitionWorkflow 会抛错的场景，确认 write-spec 退出码为 0 且 spec.md 已写入、日志含成功 + 警告两段。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-248 与任务 T-20260706-write-spec-stdin-1-agent 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "## 背景",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
