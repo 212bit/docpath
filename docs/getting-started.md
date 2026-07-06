@@ -135,7 +135,8 @@ docpath backlog promote R-001
 docpath project capture --title "New CRM" --file requirements.md --source-type requirements
 docpath project analyze P-YYYYMMDD-new-crm --dry-run
 docpath project brief P-YYYYMMDD-new-crm --dry-run
-docpath project backlog P-YYYYMMDD-new-crm --confirm "用户确认进入 backlog 拆分"
+docpath project settle P-YYYYMMDD-new-crm --dry-run
+docpath project backlog P-YYYYMMDD-new-crm --dry-run
 ```
 
 project intake 是需求梳理流水线，不是开发任务入口。固定顺序是：
@@ -145,21 +146,22 @@ capture 原始材料
 -> analyze 六域分析
 -> gap index / stakeholder questions / decision cards
 -> brief 需求定稿候选 + 拍板门
--> confirmed backlog guidance
+-> settle 需求真源 + 架构真源 + 阶段范围 + 拍板状态
+-> backlog guidance
 -> 手工审阅后创建普通 backlog 条目
 ```
 
-project intake 会把原始材料保存在 `.docpath/project-intake/<id>/`。analysis 必须区分事实、假设、缺口和建议决策；每个缺口应标注 `blocking` / `can-mock` / `later`。brief 必须包含范围、不做什么、验收候选、待拍板决策和拍板人/确认依据。确认前不要自动创建可执行 backlog 项。
+project intake 会把原始材料保存在 `.docpath/project-intake/<id>/`。analysis 必须区分事实、假设、缺口和建议决策；每个缺口应标注 `blocking` / `can-mock` / `later`。brief 必须包含范围、不做什么、验收候选、待拍板决策和拍板人/确认依据。settle 必须记录已拍板 requirements、architecture、phase scope、gap 状态和 backlog eligibility。确认前不要自动创建可执行 backlog 项。
 
-进入开发前，项目级需求梳理最小交付包是三件套：
+进入开发前，项目级需求梳理最小交付包是两件套：
 
 - `requirements.md`：已拍板的需求真源。
 - `architecture.md`：模块边界、依赖方向、ADR、禁止事项。
-- `development-checklist.md`：agent 开工前门禁。
 
 `open-questions.md`、`decisions/*.md`、`style.md` 只在复杂度需要时拆出。不要把
-`phase-backlog.md` 作为必需文档；backlog 是结构化队列质量要求，每条 backlog
-需要保留需求依据、决策依据、验收条件、readiness 和必要的用户确认。
+`phase-backlog.md`、`development-checklist.md` 或 `development-handoff.md` 作为必需文档；
+backlog 是结构化队列质量要求，每条 backlog 需要保留需求依据、决策依据、
+验收条件、readiness 和必要的用户确认；开工门禁由 DocPath gate 执行。
 
 ## 5. 写规格和计划
 

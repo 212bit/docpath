@@ -26,6 +26,8 @@ type ProjectCommandOptions = {
   dryRun?: boolean;
   section?: string;
   confirm?: string;
+  approvalState?: string;
+  phase?: string;
   agent?: boolean;
   json?: boolean;
 };
@@ -60,7 +62,7 @@ const REQUIREMENTS_SHAPING_FLOW = [
   'gap index',
   'stakeholder questions',
   'decision cards',
-  'requirements approval',
+  'settle requirements, architecture, phase scope, and approval',
   'backlog guidance',
 ] as const;
 
@@ -71,7 +73,8 @@ const REQUIREMENTS_SHAPING_OUTPUTS = [
   'stakeholder question list grouped by audience',
   'decision cards for assumptions that require explicit approval',
   'approved requirements brief with scope, non-goals, acceptance candidates, and approval gate',
-  'minimal standards package: requirements.md, architecture.md, and development-checklist.md',
+  'settle evidence that freezes requirements.md, architecture.md, phase development scope, gap statuses, and approval state',
+  'minimal standards package: requirements.md and architecture.md',
   'optional standards artifacts only when complexity requires them: open-questions.md, decisions/*.md, and style.md',
   'structured backlog quality guidance after confirmation only; do not require a phase-backlog.md document',
 ] as const;
@@ -79,7 +82,6 @@ const REQUIREMENTS_SHAPING_OUTPUTS = [
 const PROJECT_STANDARDS_REQUIRED = [
   'requirements.md',
   'architecture.md',
-  'development-checklist.md',
 ] as const;
 
 const PROJECT_STANDARDS_OPTIONAL = [
@@ -121,6 +123,12 @@ function normalizeAnalysisSection(value: string | undefined): AnalysisSection {
   }
   if ((ANALYSIS_SECTIONS as readonly string[]).includes(value)) return value as AnalysisSection;
   throw new Error(`docpath project analyze: --section 参数非法: ${value}（允许: ${ANALYSIS_SECTIONS.join('|')}）`);
+}
+
+function normalizeApprovalState(value: string | undefined): 'approved' | 'partial' | 'blocked' {
+  if (!value) return 'approved';
+  if (value === 'approved' || value === 'partial' || value === 'blocked') return value;
+  throw new Error('docpath project settle: --approval-state 参数非法: approved|partial|blocked');
 }
 
 async function readIntakeState(docpathDir: string, intakeId: string): Promise<ProjectIntakeState> {
@@ -207,10 +215,10 @@ function analysisPromptPayload(state: ProjectIntakeState): Record<string, unknow
       rules: [
         'requirements.md is the approved requirements source of truth: goals, scope, workflows, business rules, non-goals, acceptance criteria, and approval status.',
         'architecture.md is the hard development contract: module boundaries, dependency direction, ADRs, forbidden crossings, and assumptions that are not yet approved.',
-        'development-checklist.md is the pre-development gate that agents must satisfy before implementation.',
         'open-questions.md is optional; keep questions inside requirements.md unless the gap list needs owner/status tracking.',
         'decisions/*.md is optional for significant decisions; architecture decisions must also be summarized into architecture.md ADRs.',
         'style.md is optional when team-wide standards already exist; if present, keep only project-specific differences and avoid generic boilerplate.',
+        'Do not create checklist or handoff documents as required standards; gates belong in DocPath checks and durable facts belong in requirements.md or architecture.md.',
       ],
     },
     rules: [
@@ -248,7 +256,7 @@ function briefPromptPayload(state: ProjectIntakeState): Record<string, unknown> 
       'acceptance candidates',
       'blocking decisions',
       'approval gate and approval owner',
-      'standards package status: requirements.md, architecture.md, development-checklist.md',
+      'standards package status: requirements.md and architecture.md',
       'optional artifact decision: open-questions.md, decisions/*.md, style.md when needed',
     ],
     standards_package: {
@@ -257,6 +265,46 @@ function briefPromptPayload(state: ProjectIntakeState): Record<string, unknown> 
       backlog_policy: 'No phase-backlog.md is required; create structured backlog items only after approval, preserving provenance and acceptance criteria.',
     },
     recommended_write: `docpath project brief ${state.id} --stdin`,
+  };
+}
+
+function settlePromptPayload(state: ProjectIntakeState, phase = 'phase-1'): Record<string, unknown> {
+  return {
+    task: 'project-intake-settle',
+    dry_run: true,
+    intake_id: state.id,
+    title: state.title,
+    intent: 'Close requirements discussion into development truth sources before backlog decomposition.',
+    workflow: [
+      'capture raw materials',
+      'analyze facts, assumptions, gaps, questions, decisions, risks, and architecture impact',
+      'brief requirements discussion',
+      'settle requirements, architecture, phase scope, gap states, and approval',
+      'then decompose structured backlog items',
+    ],
+    required_inputs: [
+      `.docpath/project-intake/${state.id}/brief.md`,
+      'approved or updated docs/requirements.md',
+      'frozen or updated .docpath/rules/architecture.md',
+      `docs/${phase}-development-scope.md when phased delivery is used`,
+    ],
+    required_settle_content: [
+      'requirements source path and approval status',
+      'architecture source path and ADR/pending update summary',
+      'phase development scope path and scope anchors',
+      'gap table with each item marked blocking, can-mock, or later',
+      'decision summary with user-confirmed outcomes',
+      'approval_state: approved, partial, or blocked',
+      'backlog eligibility statement: what scope may be decomposed now',
+    ],
+    gate_rules: [
+      'blocking gaps prevent backlog decomposition.',
+      'can-mock gaps must include mock boundary and cutover prerequisite.',
+      'architecture-impacting decisions must be reflected in architecture ADRs or explicit pending items.',
+      'Do not create checklist, handoff, or phase-backlog draft documents as required artifacts.',
+      'The phase development scope is a backlog input, not the backlog queue.',
+    ],
+    recommended_write: `docpath project settle ${state.id} --confirm "<who approved what>" --approval-state approved --phase ${phase} --stdin`,
   };
 }
 
@@ -273,11 +321,12 @@ function backlogPromptPayload(state: ProjectIntakeState): Record<string, unknown
       'Do not run non-dry-run without explicit user confirmation that requirements are approved for backlog decomposition.',
       'Each future backlog item must preserve project-intake provenance and its own acceptance criteria.',
       'Do not require or generate phase-backlog.md as a durable source of truth.',
-      'Before development, the project must have approved requirements.md, architecture.md, and development-checklist.md or equivalent paths linked from the backlog evidence.',
+      'Before development, the project must have approved requirements.md, architecture.md, and phase development scope anchors or equivalent paths linked from the backlog evidence.',
     ],
     provenance: {
       intake_state: `.docpath/project-intake/${state.id}/intake.json`,
       brief: `.docpath/project-intake/${state.id}/brief.md`,
+      settle: `.docpath/project-intake/${state.id}/settle.md`,
     },
     required_item_fields: [
       'title',
@@ -294,11 +343,11 @@ function backlogPromptPayload(state: ProjectIntakeState): Record<string, unknown
     ],
     structured_backlog_quality: [
       'Backlog items are the task queue source of truth; markdown phase backlog files are optional draft views only.',
-      'Every backlog item must link to approved requirements or intake brief evidence.',
+      'Every backlog item must link to approved requirements, phase scope, and settle evidence.',
       'Level 3 items must link to a decision reference and explicit user confirmation.',
       'Items that depend on unresolved gaps must mark the dependency as blocking, can-mock, or later.',
     ],
-    recommended_command_template: `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background with project-intake provenance>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/brief.md"`,
+    recommended_command_template: `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background with scope refs; provenance: .docpath/project-intake/${state.id}/settle.md>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/settle.md"`,
   };
 }
 
@@ -327,11 +376,18 @@ function nextActionForIntake(docpathDir: string, state: ProjectIntakeState): { n
       exit_criteria: 'brief.md captures scope, gaps, decisions, acceptance candidates, and approval gate',
     };
   }
+  if (!existsSync(paths.settle)) {
+    return {
+      next_action: `settle requirements, architecture, phase scope, and approval for ${state.id}`,
+      recommended_command: `docpath project settle ${state.id} --dry-run`,
+      exit_criteria: 'settle.md records approved requirements, architecture, phase scope, gap states, and backlog eligibility',
+    };
+  }
   if (!state.user_confirmed) {
     return {
-      next_action: `obtain explicit requirements approval before backlog decomposition: ${state.id}`,
-      recommended_command: `docpath project backlog ${state.id} --dry-run`,
-      exit_criteria: 'user confirmation is recorded before backlog guidance',
+      next_action: `record settle confirmation before backlog decomposition: ${state.id}`,
+      recommended_command: `docpath project settle ${state.id} --dry-run`,
+      exit_criteria: 'settle confirmation is recorded before backlog guidance',
     };
   }
   return {
@@ -351,6 +407,7 @@ function printAgentStatus(docpathDir: string, state: ProjectIntakeState): void {
   console.log(`source_count: ${state.sources.length}`);
   console.log(`artifact_count: ${state.artifacts.length}`);
   console.log(`user_confirmed: ${state.user_confirmed ? JSON.stringify(state.user_confirmed) : 'null'}`);
+  console.log(`approval_state: ${state.approval_state || 'null'}`);
   console.log(`missing_analysis_sections:`);
   for (const section of missing) console.log(`  - ${section}`);
   console.log(`next_action: ${JSON.stringify(route.next_action)}`);
@@ -562,9 +619,64 @@ async function projectBrief(options: ProjectCommandOptions): Promise<void> {
   console.log(`   path: ${relativePath!}`);
   console.log('');
   console.log('next_hint:');
-  console.log(`  next_action: obtain explicit requirements approval before backlog decomposition ${intakeId}`);
-  console.log(`  recommended_command: docpath project backlog ${intakeId} --dry-run`);
-  console.log('  exit_criteria: user confirmation is recorded before backlog guidance');
+  console.log(`  next_action: settle requirements, architecture, phase scope, and approval ${intakeId}`);
+  console.log(`  recommended_command: docpath project settle ${intakeId} --dry-run`);
+  console.log('  exit_criteria: settle.md records approved truth sources, gap states, and backlog eligibility');
+}
+
+async function projectSettle(options: ProjectCommandOptions): Promise<void> {
+  if (!options.id?.trim()) throw new Error('docpath project settle requires <intake-id>');
+  const docpathDir = await resolveDocpathDir(options.cwd);
+  const intakeId = options.id.trim();
+  const stateCheck = await readIntakeState(docpathDir, intakeId);
+  const paths = projectIntakePaths(docpathDir, stateCheck.id);
+  const phase = options.phase?.trim() || 'phase-1';
+
+  if (!existsSync(paths.brief)) {
+    throw new Error(`docpath project settle: missing project brief for ${stateCheck.id}`);
+  }
+
+  if (options.dryRun) {
+    console.log(JSON.stringify(settlePromptPayload(stateCheck, phase), null, 2));
+    return;
+  }
+
+  const confirmation = options.confirm?.trim();
+  if (!confirmation) {
+    throw new Error(`docpath project settle: ${stateCheck.id} requires --confirm <text>`);
+  }
+  const approvalState = normalizeApprovalState(options.approvalState);
+  const content = await readStdin();
+  if (!content.trim()) throw new Error('docpath project settle requires settle markdown on stdin');
+
+  let relativePath: string;
+  await atomicUpdateIntakeState(docpathDir, intakeId, async (state) => {
+    const paths = projectIntakePaths(docpathDir, state.id);
+    await writeFile(paths.settle, content, 'utf-8');
+    relativePath = relativeDocpathPath(paths.settle, docpathDir);
+    return {
+      ...upsertArtifact(state, 'settle', relativePath),
+      stage: approvalState === 'blocked' ? 'blocked' : 'settled',
+      approval_state: approvalState,
+      user_confirmed: confirmation,
+      blocked_reason: approvalState === 'blocked' ? confirmation : null,
+    };
+  });
+
+  console.log(`✅  project settle 已写入: ${intakeId}`);
+  console.log(`   path: ${relativePath!}`);
+  console.log(`   approval_state: ${approvalState}`);
+  console.log('');
+  console.log('next_hint:');
+  if (approvalState === 'blocked') {
+    console.log(`  next_action: resolve blocking gaps before backlog decomposition ${intakeId}`);
+    console.log(`  recommended_command: docpath project settle ${intakeId} --dry-run`);
+    console.log('  exit_criteria: blocking gaps are resolved or reclassified');
+  } else {
+    console.log(`  next_action: create backlog guidance from settled project scope ${intakeId}`);
+    console.log(`  recommended_command: docpath project backlog ${intakeId} --dry-run`);
+    console.log('  exit_criteria: backlog guidance references settle evidence and phase scope anchors');
+  }
 }
 
 async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
@@ -579,6 +691,12 @@ async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
   if (!existsSync(paths.brief)) {
     throw new Error(`docpath project backlog: missing project brief for ${stateCheck.id}`);
   }
+  if (!existsSync(paths.settle)) {
+    throw new Error(`docpath project backlog: missing project settle evidence for ${stateCheck.id}; run docpath project settle ${stateCheck.id} --dry-run`);
+  }
+  if (stateCheck.approval_state === 'blocked') {
+    throw new Error(`docpath project backlog: ${stateCheck.id} is blocked and cannot be decomposed`);
+  }
 
   if (options.dryRun) {
     console.log(JSON.stringify(backlogPromptPayload(stateCheck), null, 2));
@@ -586,9 +704,7 @@ async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
   }
 
   const confirmation = options.confirm?.trim() || stateCheck.user_confirmed;
-  if (!confirmation) {
-    throw new Error(`docpath project backlog: ${stateCheck.id} requires --confirm <text> before backlog decomposition`);
-  }
+  if (!confirmation) throw new Error(`docpath project backlog: ${stateCheck.id} requires settled user confirmation before backlog decomposition`);
 
   // Atomic RMW operation
   let relativePath: string;
@@ -599,19 +715,20 @@ async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
       `> intake_id: ${state.id}`,
       `> confirmed: ${confirmation}`,
       `> project_brief: .docpath/project-intake/${state.id}/brief.md`,
+      `> project_settle: .docpath/project-intake/${state.id}/settle.md`,
       '',
-      'Use this guidance to create normal backlog items with explicit provenance after requirements approval.',
+      'Use this guidance to create normal backlog items with explicit provenance after requirements settle.',
       '',
       'Requirements-shaping guardrails:',
       '- Do not create executable backlog from unapproved intake materials.',
       '- Do not require or maintain phase-backlog.md as a durable source of truth; backlog quality is enforced on structured backlog items.',
-      '- Keep each backlog item tied to this intake provenance and its own acceptance criteria.',
+      '- Keep each backlog item tied to settle evidence, phase scope anchors, and its own acceptance criteria.',
       '- Preserve unresolved gaps as blocking/can-mock/later dependencies in the backlog item background.',
-      '- Before implementation, ensure approved requirements.md, architecture.md, and development-checklist.md exist or are linked as equivalent standards evidence.',
+      '- Before implementation, ensure approved requirements.md, architecture.md, and phase development scope anchors exist or are linked as equivalent standards evidence.',
       '- Use open-questions.md, decisions/*.md, and style.md only when project complexity requires separate artifacts.',
       '',
       '```bash',
-      `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background; provenance: .docpath/project-intake/${state.id}/brief.md>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/brief.md"`,
+      `docpath backlog add --title "<title>" --priority P1 --level 2 --background "<background with scope refs; provenance: .docpath/project-intake/${state.id}/settle.md>" --acceptance "<acceptance>" --readiness analyzed --evidence-analysis ".docpath/project-intake/${state.id}/settle.md"`,
       '```',
       '',
     ].join('\n');
@@ -685,6 +802,10 @@ export async function projectCommand(options: ProjectCommandOptions): Promise<vo
     await projectBrief(options);
     return;
   }
+  if (action === 'settle') {
+    await projectSettle(options);
+    return;
+  }
   if (action === 'backlog') {
     await projectBacklog(options);
     return;
@@ -693,5 +814,5 @@ export async function projectCommand(options: ProjectCommandOptions): Promise<vo
     await projectStatus(options);
     return;
   }
-  throw new Error(`docpath project: unsupported action ${action}（允许: capture|analyze|brief|backlog|status）`);
+  throw new Error(`docpath project: unsupported action ${action}（允许: capture|analyze|brief|settle|backlog|status）`);
 }

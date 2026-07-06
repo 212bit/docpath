@@ -7,6 +7,7 @@ export type ProjectIntakeStage =
   | 'captured'
   | 'analyzed'
   | 'briefed'
+  | 'settled'
   | 'specified'
   | 'architected'
   | 'planned'
@@ -30,6 +31,7 @@ export type ProjectIntakeArtifactKind =
   | 'source'
   | 'analysis'
   | 'brief'
+  | 'settle'
   | 'spec'
   | 'architecture'
   | 'plan'
@@ -39,6 +41,7 @@ export type ProjectIntakeCommandAction =
   | 'capture'
   | 'analyze'
   | 'brief'
+  | 'settle'
   | 'plan'
   | 'backlog'
   | 'status';
@@ -70,6 +73,7 @@ export interface ProjectIntakeState {
   sources: ProjectIntakeSource[];
   artifacts: ProjectIntakeArtifactRef[];
   user_confirmed: string | null;
+  approval_state?: 'approved' | 'partial' | 'blocked';
   blocked_reason: string | null;
   backlog_items: string[];
 }
@@ -80,6 +84,7 @@ export interface ProjectIntakePaths {
   sourcesDir: string;
   analysisDir: string;
   brief: string;
+  settle: string;
   spec: string;
   architecture: string;
   plan: string;
@@ -98,6 +103,7 @@ export function projectIntakePaths(docpathDir: string, intakeId: string): Projec
     sourcesDir: join(root, 'sources'),
     analysisDir: join(root, 'analysis'),
     brief: join(root, 'brief.md'),
+    settle: join(root, 'settle.md'),
     spec: join(root, 'spec.md'),
     architecture: join(root, 'architecture.md'),
     plan: join(root, 'plan.md'),

@@ -110,12 +110,12 @@ describe('project intake commands', () => {
       'gap index',
       'stakeholder questions',
       'decision cards',
-      'requirements approval',
+      'settle requirements, architecture, phase scope, and approval',
       'backlog guidance',
     ]);
     assert.match(dryRun.sections['open-questions'].join('\n'), /gap index/);
     assert.match(dryRun.required_outputs.join('\n'), /stakeholder question list/);
-    assert.deepEqual(dryRun.standards_package.required, ['requirements.md', 'architecture.md', 'development-checklist.md']);
+    assert.deepEqual(dryRun.standards_package.required, ['requirements.md', 'architecture.md']);
     assert.deepEqual(dryRun.standards_package.optional, ['open-questions.md', 'decisions/*.md', 'style.md']);
     assert.match(dryRun.rules.join('\n'), /blocking, can-mock, or later/);
     assert.match(dryRun.rules.join('\n'), /not a required phase-backlog\.md/);
@@ -147,17 +147,49 @@ describe('project intake commands', () => {
     assert.equal(dryRun.task, 'project-intake-brief');
     assert.equal(dryRun.recommended_write, `docpath project brief ${intakeId} --stdin`);
     assert.match(dryRun.required_content.join('\n'), /approval gate/);
-    assert.deepEqual(dryRun.standards_package.required, ['requirements.md', 'architecture.md', 'development-checklist.md']);
+    assert.deepEqual(dryRun.standards_package.required, ['requirements.md', 'architecture.md']);
     assert.match(dryRun.standards_package.backlog_policy, /No phase-backlog\.md is required/);
 
     const out = run(`project brief ${intakeId} --stdin`, cwd, '# Project Brief\n');
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
 
     assert.match(out, /project brief 已写入/);
-    assert.match(out, new RegExp(`recommended_command: docpath project backlog ${intakeId} --dry-run`));
+    assert.match(out, new RegExp(`recommended_command: docpath project settle ${intakeId} --dry-run`));
     assert.equal(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'brief.md'), 'utf-8'), '# Project Brief\n');
     assert.equal(state.stage, 'briefed');
     assert.ok(state.artifacts.some((artifact) => artifact.kind === 'brief'));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('project settle records approval and gates backlog decomposition', () => {
+    const cwd = mkWorkspace();
+    const capture = run('project capture --title "Settled Project" --content "source"', cwd);
+    const intakeId = capture.match(/project intake 已创建: (P-\d{8}-settled-project)/)?.[1];
+    for (const section of ['requirements', 'product', 'ui', 'technical', 'risks', 'open-questions']) {
+      run(`project analyze ${intakeId} --section ${section} --stdin`, cwd, `## ${section}\n`);
+    }
+    run(`project brief ${intakeId} --stdin`, cwd, '# Project Brief\n');
+
+    const dryRun = JSON.parse(run(`project settle ${intakeId} --dry-run`, cwd));
+    assert.equal(dryRun.task, 'project-intake-settle');
+    assert.match(dryRun.required_settle_content.join('\n'), /phase development scope/);
+    assert.match(dryRun.gate_rules.join('\n'), /blocking gaps prevent backlog decomposition/);
+
+    const missingConfirm = runResult(`project settle ${intakeId}`, cwd);
+    assert.notEqual(missingConfirm.code, 0);
+    assert.match(missingConfirm.out, /requires --confirm <text>/);
+
+    const out = run(`project settle ${intakeId} --confirm "用户确认 Phase 1 范围" --approval-state partial --phase phase-1 --stdin`, cwd, '# Settle\n\napproval_state: partial\n');
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
+
+    assert.match(out, /project settle 已写入/);
+    assert.match(out, /approval_state: partial/);
+    assert.match(out, new RegExp(`recommended_command: docpath project backlog ${intakeId} --dry-run`));
+    assert.equal(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'settle.md'), 'utf-8'), '# Settle\n\napproval_state: partial\n');
+    assert.equal(state.stage, 'settled');
+    assert.equal(state.approval_state, 'partial');
+    assert.equal(state.user_confirmed, '用户确认 Phase 1 范围');
+    assert.ok(state.artifacts.some((artifact) => artifact.kind === 'settle'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -170,19 +202,21 @@ describe('project intake commands', () => {
     }
     run(`project brief ${intakeId} --stdin`, cwd, '# Project Brief\n');
 
+    const missingSettle = runResult(`project backlog ${intakeId} --dry-run`, cwd);
+    assert.notEqual(missingSettle.code, 0);
+    assert.match(missingSettle.out, /missing project settle evidence/);
+
+    run(`project settle ${intakeId} --confirm "用户确认拆分 backlog" --stdin`, cwd, '# Settle\n\napproval_state: approved\n');
+
     const dryRun = JSON.parse(run(`project backlog ${intakeId} --dry-run`, cwd));
     assert.equal(dryRun.task, 'project-intake-backlog-decomposition');
     assert.match(dryRun.intent, /After explicit approval/);
     assert.match(dryRun.guardrails.join('\n'), /does not auto-create executable backlog items/);
     assert.match(dryRun.guardrails.join('\n'), /Do not require or generate phase-backlog\.md/);
     assert.match(dryRun.structured_backlog_quality.join('\n'), /markdown phase backlog files are optional draft views only/);
-    assert.match(dryRun.recommended_command_template, new RegExp(`project-intake/${intakeId}/brief\\.md`));
+    assert.match(dryRun.recommended_command_template, new RegExp(`project-intake/${intakeId}/settle\\.md`));
 
-    const blocked = runResult(`project backlog ${intakeId}`, cwd);
-    assert.notEqual(blocked.code, 0);
-    assert.match(blocked.out, /requires --confirm <text>/);
-
-    const out = run(`project backlog ${intakeId} --confirm "用户确认拆分 backlog"`, cwd);
+    const out = run(`project backlog ${intakeId}`, cwd);
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'intake.json'), 'utf-8'));
     const guidance = readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'backlog.md'), 'utf-8');
 
@@ -193,8 +227,8 @@ describe('project intake commands', () => {
     assert.match(guidance, /Requirements-shaping guardrails/);
     assert.match(guidance, /Do not create executable backlog from unapproved intake materials/);
     assert.match(guidance, /Do not require or maintain phase-backlog\.md/);
-    assert.match(guidance, /requirements\.md, architecture\.md, and development-checklist\.md/);
-    assert.match(guidance, new RegExp(`project-intake/${intakeId}/brief\\.md`));
+    assert.match(guidance, /requirements\.md, architecture\.md, and phase development scope anchors/);
+    assert.match(guidance, new RegExp(`project-intake/${intakeId}/settle\\.md`));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -213,9 +247,14 @@ describe('project intake commands', () => {
     run(`project brief ${intakeId} --stdin`, cwd, '# Project Brief\n');
 
     const briefed = run(`project status ${intakeId} --agent`, cwd);
-    assert.match(briefed, /recommended_command: "docpath project backlog .* --dry-run"/);
+    assert.match(briefed, /recommended_command: "docpath project settle .* --dry-run"/);
 
-    run(`project backlog ${intakeId} --confirm "confirmed"`, cwd);
+    run(`project settle ${intakeId} --confirm "confirmed" --stdin`, cwd, '# Settle\n');
+    const settled = run(`project status ${intakeId} --agent`, cwd);
+    assert.match(settled, /approval_state: approved/);
+    assert.match(settled, /recommended_command: "docpath backlog add --title/);
+
+    run(`project backlog ${intakeId}`, cwd);
     const confirmed = run(`project status ${intakeId} --agent`, cwd);
     assert.match(confirmed, /recommended_command: "docpath backlog add --title/);
     rmSync(cwd, { recursive: true, force: true });

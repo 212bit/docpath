@@ -454,6 +454,23 @@ export function inferNextAction(
     .filter((item) => item.status === 'proposed')
     .sort(compareBacklogPriority)[0];
 
+  if (!isCompleted && phase === 'reviewing' && (gate === 'review_pass' || gate === 'review_skipped')) {
+    const reviewSkipped = gate === 'review_skipped';
+    const required = reviewSkipped
+      ? ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md']
+      : ['.docpath/workspace/current.md', '.docpath/workspace/review.md', '.docpath/workspace/last-check.md'];
+    return {
+      next_action: reviewSkipped
+        ? '审查已按工作流策略跳过，执行知识归档'
+        : '审查已通过，执行知识归档',
+      recommended_command: 'docpath journal',
+      required_context: required,
+      required_files: required,
+      must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/workspace/decisions.md'],
+      exit_criteria: '任务归档完成并进入 completed',
+    };
+  }
+
   if (drift.planDoneWithoutBreadcrumb.length > 0 || drift.breadcrumbDoneWithoutPlan.length > 0) {
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'];
     const detail = [
@@ -571,7 +588,7 @@ export function inferNextAction(
     };
   }
 
-  if (!isCompleted && allPlanDone && !lastCheckPassed && gate !== 'check_pass' && gate !== 'review_pass' && gate !== 'review_skipped') {
+  if (!isCompleted && allPlanDone && !lastCheckPassed && gate !== 'check_pass') {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'];
     return {
       next_action: '计划已完成，运行质量检查',
@@ -583,7 +600,7 @@ export function inferNextAction(
     };
   }
 
-  if (!isCompleted && gate === 'check_pass' && currentState !== 'review_pass') {
+  if (!isCompleted && gate === 'check_pass') {
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md'];
     return {
       next_action: '质量检查已通过，执行审查',
@@ -675,23 +692,6 @@ export function inferNextAction(
       required_files: required,
       must_update: [],
       exit_criteria: '已捕获 raw backlog 条目，或已完成 analyze/refine 后创建成熟 backlog',
-    };
-  }
-
-  if (gate === 'review_pass' || gate === 'review_skipped' || currentState === 'review_pass' || currentState === 'review_skipped') {
-    const reviewSkipped = gate === 'review_skipped' || currentState === 'review_skipped';
-    const required = reviewSkipped
-      ? ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md']
-      : ['.docpath/workspace/current.md', '.docpath/workspace/review.md', '.docpath/workspace/last-check.md'];
-    return {
-      next_action: reviewSkipped
-        ? '审查已按工作流策略跳过，执行知识归档'
-        : '审查已通过，执行知识归档',
-      recommended_command: 'docpath journal',
-      required_context: required,
-      required_files: required,
-      must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/workspace/decisions.md'],
-      exit_criteria: '任务归档完成并进入 completed',
     };
   }
 

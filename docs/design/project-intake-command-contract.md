@@ -19,14 +19,20 @@ Rationale:
 - Commands must preserve existing backlog, quick, spec, and plan behavior.
 - Project intake is a requirements-shaping workflow. The required sequence is:
   `capture -> analyze -> gap index/questions/decision cards -> brief with
-  approval gate -> confirmed backlog guidance`.
+  approval gate -> settle requirements/architecture/phase scope/approval ->
+  backlog guidance`.
 - Unapproved intake output is evidence only. It must not be treated as an
   executable backlog item or implementation plan.
-- The minimum frozen standards package before development is
-  `requirements.md`, `architecture.md`, and `development-checklist.md`.
+- The minimum frozen standards package before development is `requirements.md`
+  and `architecture.md`.
   `open-questions.md`, `decisions/*.md`, and `style.md` are optional by
   complexity. `phase-backlog.md` is not required; backlog quality is enforced on
-  structured backlog items.
+  structured backlog items. Standalone checklist/handoff documents are not
+  required standards; gates belong in DocPath checks.
+- For phased delivery, settled intake should produce a phase development scope
+  baseline such as `docs/phase-1-development-scope.md`. This document records
+  approved phase scope and backlog split anchors; it is not a backlog queue and
+  must not carry execution status.
 - Agents must not treat inferred architecture, draft standards, prototype notes,
   or stale domain language as approved development rules.
 
@@ -97,13 +103,47 @@ Outputs:
 - `brief.md`
 - state transition to `briefed` when persisted.
 - brief guidance must summarize standards package status:
-  `requirements.md`, `architecture.md`, `development-checklist.md`, and any
-  optional artifacts intentionally split out.
+  `requirements.md`, `architecture.md`, and any optional artifacts
+  intentionally split out.
+- next hint points to `docpath project settle <intake-id> --dry-run`.
 
 Errors:
 
 - missing analysis evidence unless `--dry-run`
 - empty brief content
+
+### `docpath project settle`
+
+Purpose: close requirements discussion after analysis and produce development
+truth sources.
+
+Inputs:
+
+- `<intake-id>` required.
+- `--dry-run` optional.
+- `--confirm <text>` required for non-dry-run settle.
+- `--approval-state <approved|partial|blocked>` optional; defaults to
+  `approved`.
+- `--phase <name>` optional; defaults to the first approved phase when present.
+
+Expected outputs:
+
+- approved `docs/requirements.md` or equivalent path.
+- frozen `.docpath/rules/architecture.md` or equivalent path.
+- phase development scope baseline, for example
+  `docs/phase-1-development-scope.md`, when delivery is phased.
+- settle evidence under `.docpath/project-intake/<intake-id>/settle.md`.
+- intake approval state: `approved`, `partial`, or `blocked`.
+- state transition to `settled` when approved/partial, or `blocked` when
+  approval state is blocked.
+
+Gate rules:
+
+- unresolved gaps must be classified as `blocking`, `can-mock`, or `later`.
+- `blocking` gaps prevent backlog decomposition.
+- architecture-impacting decisions must update architecture ADRs or explicit
+  architecture pending items.
+- backlog guidance can proceed only for approved or partial-approved scope.
 
 ### `docpath project backlog`
 
@@ -113,7 +153,8 @@ Inputs:
 
 - `<intake-id>` required.
 - `--dry-run` optional.
-- `--confirm <text>` required for non-dry-run conversion unless already confirmed.
+- `--confirm <text>` optional after settle; when omitted, the settle
+  confirmation is reused.
 
 Outputs:
 
@@ -126,8 +167,10 @@ Outputs:
 
 Errors:
 
-- missing user confirmation
 - missing brief evidence
+- missing settle evidence
+- blocked approval state
+- missing user confirmation in settle evidence
 
 ### `docpath project status`
 

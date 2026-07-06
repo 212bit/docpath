@@ -818,6 +818,37 @@ created_at: 2026-05-31
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('routes review_pass into journal even when breadcrumb has a stale in-progress step', () => {
+    const cwd = mkWorkspace({
+      phase: 'reviewing',
+      gate: 'review_pass',
+      lastCheck: '# Last Check Evidence\n\n**结果**: ✅ PASS\n',
+      plan: '# Plan\n\n- [x] S1: implementation\n- [ ] S4: verification\n',
+      breadcrumb: [
+        '# Breadcrumb',
+        '',
+        '### 🔄 S4 [T-NEXT] — 2026-05-29T00:00:00.000Z',
+        '',
+        '---',
+        'taskId: T-NEXT',
+        'step: S4',
+        'status: in_progress',
+        'timestamp: 2026-05-29T00:00:00.000Z',
+        '---',
+        '',
+        '- **状态**: in_progress',
+        '- **上下文**: stale verification step after review',
+        '',
+      ].join('\n'),
+    });
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath journal');
+    assert.match(output.next_action, /知识归档/);
+    assert.doesNotMatch(output.next_action, /S4/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('routes plan/breadcrumb drift into check', () => {
     const cwd = mkWorkspace({
       phase: 'executing',

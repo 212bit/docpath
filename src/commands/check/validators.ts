@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { checkCommandEnv, runCheck, DEFAULT_CHECK_TIMEOUT_MS } from './runners.js';
 import { readCurrentState, syncCurrentDocument, parsePlanTasks } from '../../utils/workspace.js';
@@ -579,8 +579,20 @@ export async function checkRuleTruthSources(docpathDir: string): Promise<CheckRe
 }
 
 function shouldCheckProjectStandards(cwd: string, docpathDir: string): boolean {
+  const intakeDir = join(docpathDir, 'project-intake');
+  const hasIntakePackage = (() => {
+    if (!existsSync(intakeDir)) return false;
+    try {
+      return readdirSync(intakeDir, { withFileTypes: true })
+        .some((entry) => entry.isDirectory() && existsSync(join(intakeDir, entry.name, 'intake.json')));
+    } catch {
+      return false;
+    }
+  })();
+
+  if (hasIntakePackage) return true;
+
   return [
-    join(docpathDir, 'project-intake'),
     join(cwd, 'docs', 'requirements.md'),
     join(cwd, 'requirements.md'),
   ].some((path) => existsSync(path));
@@ -607,11 +619,6 @@ function standardsArtifactCandidates(cwd: string, docpathDir: string): Record<st
       join(cwd, 'architecture.md'),
       join(docpathDir, 'project-architecture.md'),
     ],
-    'development-checklist.md': [
-      join(cwd, 'docs', 'development-checklist.md'),
-      join(cwd, 'development-checklist.md'),
-      join(docpathDir, 'rules', 'development-checklist.md'),
-    ],
   };
 }
 
@@ -633,9 +640,6 @@ function artifactSpecificIssues(name: string, content: string): string[] {
   }
   if (name === 'architecture.md' && !/ADR|架构决策|模块|module|依赖|dependency/i.test(content)) {
     issues.push('architecture decision/module boundary content not found');
-  }
-  if (name === 'development-checklist.md' && !/- \[[ xX]\]|checklist|检查清单|门禁/i.test(content)) {
-    issues.push('development checklist items not found');
   }
   return issues;
 }
@@ -683,8 +687,9 @@ export async function checkProjectStandardsPackage(cwd: string, docpathDir: stri
           ...missing.map((item) => `  - ${item}`),
           weak.length ? 'Artifacts that still look draft/unapproved:' : '',
           ...weak.map((item) => `  - ${item}`),
-          'Required minimum: requirements.md, architecture.md, development-checklist.md.',
+          'Required minimum: requirements.md and architecture.md.',
           'Optional by complexity only: open-questions.md, decisions/*.md, style.md.',
+          'Do not rely on standalone checklist/handoff documents for gates; machine-enforced gates belong in DocPath checks.',
           'Do not proceed from inferred architecture or draft standards.',
         ].filter(Boolean).join('\n'),
     category: 'analysis',

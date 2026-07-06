@@ -10,3 +10,10 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260705-enforce-minimal-project-intake-standards","step":"review","status":"blocked","context":"代码审查: 0 错误, 4 警告, 0 提示","timestamp":"2026-07-05T13:29:54.506Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260705-enforce-minimal-project-intake-standards","step":"review","status":"done","context":"代码审查: 0 错误, 4 警告, 0 提示","timestamp":"2026-07-05T13:34:33.722Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260705-enforce-minimal-project-intake-standards","step":"journal","status":"done","context":"知识归档完成 (3/4 步)","timestamp":"2026-07-05T13:37:58.920Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260705-enforce-minimal-project-intake-standards","step":"review","status":"blocked","context":"代码审查: 0 错误, 12 警告, 4 提示","timestamp":"2026-07-05T16:30:53.397Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260705-enforce-minimal-project-intake-standards","step":"review","status":"done","context":"代码审查: 0 错误, 12 警告, 4 提示","timestamp":"2026-07-05T16:32:52.541Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260705-enforce-minimal-project-intake-standards","step":"review","status":"blocked","context":"代码审查: 0 错误, 14 警告, 4 提示","timestamp":"2026-07-05T17:57:56.924Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260705-enforce-minimal-project-intake-standards","step":"review","status":"blocked","context":"代码审查: 0 错误, 14 警告, 4 提示","timestamp":"2026-07-05T17:58:46.804Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260705-enforce-minimal-project-intake-standards","step":"review","status":"done","context":"代码审查: 0 错误, 14 警告, 4 提示","timestamp":"2026-07-05T17:59:46.070Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260705-enforce-minimal-project-intake-standards","step":"review","status":"blocked","context":"代码审查: 0 错误, 16 警告, 4 提示","timestamp":"2026-07-05T18:05:45.764Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260705-enforce-minimal-project-intake-standards","step":"review","status":"done","context":"代码审查: 0 错误, 16 警告, 4 提示","timestamp":"2026-07-05T18:07:14.836Z"}

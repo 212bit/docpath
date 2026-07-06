@@ -242,7 +242,7 @@ describe('check and review commands', () => {
       assert.match(result.out, /Project standards package gate/);
       assert.match(result.out, /Missing required artifacts/);
       assert.match(result.out, /architecture\.md/);
-      assert.match(result.out, /development-checklist\.md/);
+      assert.doesNotMatch(result.out, /development-checklist\.md/);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
@@ -256,7 +256,6 @@ describe('check and review commands', () => {
       mkdirSync(join(cwd, '.docpath', 'rules'), { recursive: true });
       writeFileSync(join(cwd, 'docs', 'requirements.md'), '# Requirements\n\n拍板状态: 已拍板\n');
       writeFileSync(join(cwd, '.docpath', 'rules', 'architecture.md'), '# Architecture\n\n> 雏形讨论稿\n\n模块与依赖待重写。\n');
-      writeFileSync(join(cwd, 'docs', 'development-checklist.md'), '# Checklist\n\n- [ ] 开发前确认需求、架构和门禁。\n');
 
       const result = runResult('check --skip-tests --skip-lint --fix-drift current', cwd);
 
@@ -276,7 +275,6 @@ describe('check and review commands', () => {
       mkdirSync(join(cwd, '.docpath', 'rules'), { recursive: true });
       writeFileSync(join(cwd, 'docs', 'requirements.md'), '# Requirements\n\n拍板状态: 已拍板\n\n目标、范围、验收标准已确认。\n');
       writeFileSync(join(cwd, '.docpath', 'rules', 'architecture.md'), '# Architecture\n\n## ADR-001\n\n模块边界和依赖方向已确认。\n');
-      writeFileSync(join(cwd, 'docs', 'development-checklist.md'), '# Checklist\n\n- [ ] 开发前确认 requirements.md 已拍板。\n- [ ] 开发前确认 architecture.md 已冻结。\n');
 
       const result = runResult('check --skip-tests --skip-lint --fix-drift current', cwd);
 
