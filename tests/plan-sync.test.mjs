@@ -66,6 +66,44 @@ describe('plan/breadcrumb sync', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('marks ALL checklist lines for a step id, including bottom Checklist section (R-253)', () => {
+    const cwd = mkWorkspace({
+      plan: [
+        '## 执行计划',
+        '',
+        '### S1: Implement sync',
+        '- [ ] S1: Implement sync',
+        '- **描述**: do sync',
+        '- **验收条件**: sync works',
+        '- **依赖**: 无',
+        '',
+        '### S2: Next step',
+        '- [ ] S2: Next step',
+        '- **描述**: next',
+        '- **验收条件**: next works',
+        '- **依赖**: S1',
+        '',
+        '## Checklist',
+        '- [ ] S1',
+        '- [ ] S2',
+        '',
+      ].join('\n'),
+    });
+    run(`agent step --cwd ${cwd} --step S1 --status done`, cwd);
+
+    const plan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
+    // section 内 checklist 更新
+    assert.match(plan, /### S1: Implement sync\n- \[x\] S1: Implement sync/);
+    // 底部 ## Checklist 同 id 行也必须更新（R-253 核心断言）
+    const bottomChecklist = plan.split('## Checklist')[1];
+    assert.ok(bottomChecklist, 'bottom Checklist section should exist');
+    assert.match(bottomChecklist, /- \[x\] S1/);
+    // S2 不受影响
+    assert.match(bottomChecklist, /- \[ \] S2/);
+    assert.match(plan, /- \[ \] S2: Next step/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('adds a checklist line for section-style plan steps when an agent step is done', () => {
     const cwd = mkWorkspace({
       plan: [

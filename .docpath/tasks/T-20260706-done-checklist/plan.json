@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-06T15:09:23.994Z",
+    "updated_at": "2026-07-06T15:09:23.994Z",
+    "content_sha256": "d8a1b1916cf7e7b1fb50b44f56d78727bf1abc1b943dccc46d729793b3cf631f"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-06T15:09:23.994Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 步骤主条目 done 后底部 checklist 未同步勾选",
+      "description": "根据 spec 明确 FR-1: 步骤主条目 done 后底部 checklist 未同步勾选 的实现边界和验收口径。",
+      "acceptance": "AC-1: `markPlanStep` 更新 plan.md 时，同步更新**所有**匹配该 step id 的 checklist 行（section 内 + 底部 `## Checklist`），而非只第一处。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 步骤主条目 done 后底部 checklist 未同步勾选",
+      "description": "在现有架构内完成 FR-1: 步骤主条目 done 后底部 checklist 未同步勾选 的代码与文档更新。",
+      "acceptance": "FR-1 步骤主条目 done 后底部 checklist 未同步勾选 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: `markPlanStep` 更新 plan.md 时，同步更新**所有**匹配该 step id 的 checklist 行（section 内 + 底部 `## Checklist`），而非只第一处。；AC-2: 回归: agent step --status done 后，plan.md 的 section 内 checklist 与底部 Checklist 同 id 行均变为 [x]。；AC-3: 回归: parsePlanSteps 对同 id 多 checklist 行不丢失（用于 drift 检测）。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-253 与任务 T-20260706-done-checklist 建立双向关联",
+      "acceptance": "AC-1: `markPlanStep` 更新 plan.md 时，同步更新**所有**匹配该 step id 的 checklist 行（section 内 + 底部 `## Checklist`），而非只第一处。；AC-2: 回归: agent step --status done 后，plan.md 的 section 内 checklist 与底部 Checklist 同 id 行均变为 [x]。；AC-3: 回归: parsePlanSteps 对同 id 多 checklist 行不丢失（用于 drift 检测）。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-253 与任务 T-20260706-done-checklist 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

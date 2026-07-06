@@ -2,13 +2,12 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-06T14:39:49.005Z
+> 扫描时间: 2026-07-06T15:12:52.233Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-253 | 步骤主条目 done 后底部 checklist 未同步勾选 | proposed | P1 | 1 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-237 | Elevate /learn priority in status when pending lesson candidates and regression warnings exist | proposed | P2 | 2 |  |
 | R-243 | Fix project brief next_hint after intake brief | proposed | P2 | 1 |  |

@@ -94,9 +94,21 @@ export async function markPlanStep(cwd: string, step: string, status: PlanStepSt
 
     let next = content;
     const mark = markerForStatus(status);
-    if (target.lineText && target.checklistIndex >= 0) {
-      next = `${content.slice(0, target.checklistIndex)}${target.lineText.replace(/^- \[[ xX~!]\]/, `- [${mark}]`)}${content.slice(target.checklistIndex + target.lineText.length)}`;
+    // 全局替换 plan.md 里所有匹配该 step id 的 checklist 行 marker（R-253）。
+    // plan.md 通常有两份 checklist：每个 `### S1:` section 内的行 + 底部 `## Checklist` 汇总行。
+    // 此前只替换第一处（target.checklistIndex），导致 section 内更新了、底部仍是旧状态，
+    // agent 被迫 apply_patch 手编 plan.md，触发 sha256 / current-canonical 漂移。
+    const escapedId = target.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const checklistLineRegex = new RegExp(
+      `^(\\s*- \\[)[ xX~!](\\]\\s*(?:\\*\\*)?${escapedId}(?:\\*\\*)?(?:\\s*[:：].*)?$)`,
+      'gm',
+    );
+    const replaced = content.replace(checklistLineRegex, (_, prefix, suffix) => `${prefix}${mark}${suffix}`);
+
+    if (replaced !== content) {
+      next = replaced;
     } else if (target.sectionIndex >= 0) {
+      // 无任何 checklist 行时，在 section 标题后插入一行。
       const line = `- [${mark}] ${target.id}: ${target.name}\n`;
       const insertAt = content.indexOf('\n', target.sectionIndex);
       next = `${content.slice(0, insertAt + 1)}${line}${content.slice(insertAt + 1)}`;
