@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-06T10:30:11.534Z",
+    "updated_at": "2026-07-06T10:30:11.534Z",
+    "content_sha256": "041c9de842c7ed4325659f17fcd802381a9983e68e8e95c65e6765120c9f423e"
+  },
+  "task_id": "T-20260706-write-plan-planning-plan-md-plan-json",
+  "backlog_id": "R-251",
+  "title": "T-20260706-write-plan-planning-plan-md-plan-json - write-plan 成功后阶段被置回 planning，plan.md/plan.json 哈希反复不一致",
+  "generated_at": "2026-07-06T10:30:11.534Z",
+  "scope": {
+    "included": [
+      "write-plan 成功后阶段被置回 planning，plan.md/plan.json 哈希反复不一致"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界"
+    ],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: ## 背景\n- 目标: write-plan 成功后阶段被置回 planning，plan.md/plan.json 哈希反复不一致\n- 背景: 来自 backlog R-251\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "write-plan 成功后阶段被置回 planning，plan.md/plan.json 哈希反复不一致",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "A: write-plan 在 phase=executing/checking 时不得回退到 planning；仅更新 plan.md/plan.json，保留当前 phase。回归: executing 阶段跑 write-plan，确认 phase 不变。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "A 备选: 提供 `docpath write-plan --no-transition` 仅写文件不动状态机。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "B1/B2: 修 A 后验证 sha256 与 current/canonical 漂移告警消失；额外建议 check 检测到 sha256 漂移时给出 `--fix-drift` 重算 plan.json 的修复提示。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "B3: 确认 step done / write-plan 同步写 breadcrumb，消除 plan/breadcrumb 漂移。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "backlog 条目 R-251 与任务 T-20260706-write-plan-planning-plan-md-plan-json 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "## 背景",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

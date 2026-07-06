@@ -69,9 +69,22 @@ export async function writePlanCommand(options: WritePlanOptions): Promise<void>
 
   console.log(`✅  plan.md 已写入: ${canonicalPath}`);
 
+  await advanceOrPreservePhase(cwd, current?.phase);
+  await nextCommand({ cwd });
+}
+
+// 执行阶段（executing/checking/reviewing/journaling）重写计划时只更新文件，
+// 不触发 plan.ready 回退——否则丢失执行态，迫使 agent 绕过 write-plan 手编
+// plan.md，进而触发 sha256 / current-canonical / plan-breadcrumb 漂移（R-251）。
+const EXECUTING_PHASES = ['executing', 'checking', 'reviewing', 'journaling'];
+
+async function advanceOrPreservePhase(cwd: string, phase: string | undefined): Promise<void> {
+  if (phase && EXECUTING_PHASES.includes(phase)) {
+    console.log(`📌  当前阶段为 ${phase}，仅更新 plan 文件，不回退阶段`);
+    return;
+  }
   await transitionWorkflow(cwd, 'plan.ready', { currentStep: 'plan 已写入，下一步: docpath go' });
   console.log('📌  状态已更新为 planning');
-  await nextCommand({ cwd });
 }
 
 function formatValidationIssue(issue: { message: string; line?: number; section?: string; field?: string }): string {

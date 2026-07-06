@@ -313,6 +313,31 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('write-plan in executing phase keeps phase, does not regress to planning (R-251)', () => {
+    const cwd = mkWorkspace({ phase: 'executing', gate: 'none' });
+    const content = [
+      '## 执行计划',
+      '',
+      '### S1: revised step',
+      '- **描述**: 执行中重写计划',
+      '- **验收条件**: phase 保持 executing',
+      '- **依赖**: 无',
+      '',
+    ].join('\n');
+    const output = runWithInput(`write-plan --cwd ${cwd} --stdin`, cwd, content);
+
+    assert.match(output, /plan\.md 已写入/);
+    assert.match(output, /当前阶段为 executing，仅更新 plan 文件，不回退阶段/);
+    const plan = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.md'), 'utf-8');
+    assert.match(plan, /S1: revised step/);
+    const planJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.json'), 'utf-8'));
+    assert.equal(planJson.steps[0].id, 'S1');
+
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.phase, 'executing', 'phase must not regress to planning');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('plan syncs canonical plan into tasks/current so go can continue immediately', () => {
     const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
     const canonicalDir = join(cwd, '.docpath', 'tasks', 'T-WRITE');

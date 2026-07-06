@@ -2,7 +2,7 @@
 
 > 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。
 
-> 扫描时间: 2026-07-05T17:57:44.428Z
+> 扫描时间: 2026-07-06T11:02:14.284Z
 
 ## 文档列表
 
@@ -22,6 +22,12 @@
 | backlog/R-230.md | runbook | project | 2 | false | false | false | 423 |  | R-230 | DocPath Dashboard 当前使用深色 Obsidian 主题，需要改造为温暖色调设计系统，体现品牌差异化。涉及 7 个页面（Overview/Workboard/Gates/Events/Backlog/Worktrees）的视觉重设计，采用 warm cream 背景、terracotta 强调色、serif 标题字体。保持 CLI 优先理念， | 2026-06-23T05:10:00.743Z | 1.3KB |
 | backlog/R-237.md | runbook | project | 2 | false | false | false | 112 |  | R-237 | - 待补充 | 2026-06-29T14:24:33.626Z | 417B |
 | backlog/R-243.md | runbook | project | 2 | false | false | false | 256 |  | R-243 | Known DocPath self issue recorded by user: docpath project brief emits next_hint recommending nonexistent command 'docpath project plan'. The project command currently supports onl | 2026-07-04T12:55:28.089Z | 1011B |
+| backlog/R-248.md | runbook | project | 2 | false | false | false | 750 |  | R-248 | [来源: codex session 挖掘 @ evoucher 2026-07] 执行 `docpath write-spec --stdin < spec.md` 时，CLI 输出先打印 `✅ spec.md 已写入: .../spec.md`，紧接着打印 `❌ 未预期的错误`，退出码 1。文件实际已正确写入，但非零退出码让 codex agent 误判 | 2026-07-06T10:02:15.628Z | 2.0KB |
+| backlog/R-249.md | runbook | project | 2 | false | false | false | 773 |  | R-249 | [来源: codex session 挖掘 @ evoucher 2026-07] 原始描述：`docpath go --step` 与 `docpath backlog promote` 在 worktree 有未提交变更时一律拒绝，未区分 DocPath 自身产物与业务代码变更，导致 agent 每完成一步想推进时被拦。证据: session 行 732 | 2026-07-06T10:00:24.101Z | 2.2KB |
+| backlog/R-250.md | runbook | project | 2 | false | false | false | 253 |  | R-250 | [来源: codex session 挖掘 @ evoucher 2026-07] docpath check 在该会话中 8 次输出 docs-index 可能陈旧，但 check 本身不重建 docs-index，agent 不知道该跑哪个命令修复，只能忽略，告警失去可操作性。证据: session 行 1193、1578、1918 等。期望: chec | 2026-07-06T09:49:21.341Z | 747B |
+| backlog/R-251.md | runbook | project | 2 | false | false | false | 1168 |  | R-251 | [来源: codex session 挖掘 @ evoucher 2026-07] 一个会话内出现四类漂移反复告警 + agent 大量手动抢救： | 2026-07-06T10:30:11.541Z | 3.5KB |
+| backlog/R-252.md | runbook | project | 2 | false | false | false | 234 |  | R-252 | [来源: codex session 挖掘 @ evoucher 2026-07] docpath review --scope all 输出 检测到 spec.md 与 spec.json 机器真理源不同步，但仅作提示，agent 需自行判断以哪个为准、如何同步。期望: 提供类似 check --fix-drift 的 review --fix-drift | 2026-07-06T09:49:21.649Z | 714B |
+| backlog/R-253.md | runbook | project | 2 | false | false | false | 304 |  | R-253 | [来源: codex session 挖掘 @ evoucher 2026-07] 多次出现 agent 手动修正: DocPath 把 S1 主条目标成完成但底部 checklist 没同步勾选、DocPath 已把 S4 小节标成完成但底部 Checklist 还没、DocPath 已把 S1/S2/S3 小节都勾上了但底部 Checklist 里 S3 | 2026-07-06T09:49:21.789Z | 883B |
 | backlog/analysis/R-230-open-questions.md | runbook | project | 2 | false | false | false | 2239 |  | DocPath UI Design - Open Questions | - **背景**：当前 Dashboard 使用深色 Obsidian 主题，改造后计划使用温暖浅色 | 2026-06-21T17:43:53.174Z | 5.6KB |
 | backlog/analysis/R-230-product.md | runbook | project | 2 | false | false | false | 1453 |  | DocPath UI Design - Product Analysis | - **效率提升**：通过可视化仪表盘，2 秒内定位需要人工介入的阻塞点，而非逐个项目运行 `docpath status` | 2026-06-21T17:43:53.162Z | 3.6KB |
 | backlog/analysis/R-230-requirements.md | runbook | project | 2 | false | false | false | 1432 |  | DocPath UI Design - Requirements Analysis | DocPath 是一个渐进式文档驱动工作流 CLI 工具，专为大模型 Agent 和人类开发者设计。当前已有基础 Dashboard UI，使用 React + Tailwind CSS 4 + Vite 构建。 | 2026-06-21T17:43:53.158Z | 3.4KB |
@@ -80,7 +86,7 @@
 | backlog/archived/R-245.md | runbook | project | 2 | false | false | false | 527 |  | R-245 | 用户在 evoucher 需求讨论中发现 agent 仍会自由发挥。需要把需求梳理固化为 DocPath 正式 project-intake 工作流：原始材料捕获 -> 固定域分析 -> 缺口索引 -> 按对象澄清问题 -> 决策卡 -> 需求定稿 -> 拍板门 -> backlog guidance/种子。用户已确认方案 B：做成 DocPath 正式 i | 2026-07-05T10:40:02.602Z | 1.4KB |
 | backlog/archived/R-246.md | runbook | project | 2 | false | false | false | 342 |  | R-246 | After T-20260705-docpath-intake completed, docpath next --agent still recommended docpath agent step --step S4 --status done despite phase=completed/gate=review_pass. The transitio | 2026-07-05T11:06:29.578Z | 1.3KB |
 | backlog/archived/R-247.md | runbook | project | 2 | false | false | false | 354 |  | R-247 | User confirmed DocPath should solidify requirements shaping around a minimal required package: requirements.md, architecture.md, development-checklist.md; optional open-questions,  | 2026-07-05T13:37:58.911Z | 1.4KB |
-| backlog/backlog.md | runbook | project | 2 | false | false | false | 257 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-05T13:37:58.918Z | 875B |
+| backlog/backlog.md | runbook | project | 2 | false | false | false | 495 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-06T10:30:11.564Z | 1.5KB |
 | commands/docpath-agent-done.md | reference | project | 3 | false | false | false | 280 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-07-03T17:07:44.598Z | 1.1KB |
 | commands/docpath-agent-enter.md | reference | project | 3 | false | false | false | 315 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-07-03T17:07:44.598Z | 1.2KB |
 | commands/docpath-agent-handoff.md | reference | project | 3 | false | false | false | 277 |  | /docpath-agent-handoff | Persist a compact handoff package for the next Claude Code session. | 2026-07-03T17:07:44.598Z | 1.1KB |
@@ -120,7 +126,7 @@
 | commands/docpath-write-journal.md | reference | project | 3 | false | false | false | 198 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task through the CLI. | 2026-07-03T17:07:44.605Z | 792B |
 | commands/docpath-write-plan.md | reference | project | 3 | false | false | false | 216 |  | /docpath-write-plan | Artifact sink: write an execution plan already generated by the current agent | 2026-07-03T17:07:44.605Z | 862B |
 | commands/docpath-write-spec.md | reference | project | 3 | false | false | false | 215 |  | /docpath-write-spec | Artifact sink: write spec content already generated by the current agent session | 2026-07-03T17:07:44.605Z | 859B |
-| docs.md | index | project | 2 | false | false | false | 56321 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-05T17:09:27.105Z | 187.3KB |
+| docs.md | index | project | 2 | false | false | false | 56321 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-05T17:57:44.430Z | 187.3KB |
 | harness.md | index | project | 2 | false | false | false | 252 |  | DocPath Harness Rules | - [ ] 读取 current.md 确认当前状态 | 2026-05-28T12:29:00.329Z | 786B |
 | protocols/AGENTS.md | index | project | 2 | false | false | false | 2512 |  | DocPath Agent Protocol | 1. Run `docpath next --agent` to read the `agent_view: next` route and the | 2026-07-05T17:54:10.480Z | 9.8KB |
 | protocols/CLAUDE.md | index | project | 2 | false | false | false | 1841 |  | DocPath Claude Code Protocol | 1. Run `/docpath-next` or `docpath next --agent` for the `agent_view: next` | 2026-07-05T17:54:33.917Z | 7.2KB |
@@ -144,8 +150,12 @@
 | tasks/T-20260705-fix-completed-next-route-ignoring-stale-/spec.md | runbook | task | 1 | false | false | false | 1205 | T-20260705-fix-completed-next-route-ignoring-stale- | T-20260705-fix-completed-next-route-ignoring-stale- - Fix completed next route ignoring stale in-progress plan step | After T-20260705-docpath-intake completed, docpath next --agent still recommended docpath agent step --step S4 --status done despite phase=completed/gate=review_pass. The transitio | 2026-07-05T10:47:26.553Z | 3.5KB |
 | tasks/T-20260705-fix-docpath-workflow-gates-review-scope-/plan.md | runbook | task | 1 | false | false | false | 2291 | T-20260705-fix-docpath-workflow-gates-review-scope- | plan | - [x] S1: 梳理 Resolve the check/agent-enter/dirty-worktree deadlock. `docpath check` must support the valid contexts needed by the workflow, including pre-task/intake review and dir | 2026-07-05T05:44:45.378Z | 8.2KB |
 | tasks/T-20260705-fix-docpath-workflow-gates-review-scope-/spec.md | runbook | task | 1 | false | false | false | 2254 | T-20260705-fix-docpath-workflow-gates-review-scope- | T-20260705-fix-docpath-workflow-gates-review-scope- - Fix DocPath workflow gates, review scope, promote safety, and knowledge extraction quality | On 2026-07-05 the user confirmed five concrete DocPath defects exposed by real usage: | 2026-07-05T05:25:19.032Z | 8.0KB |
-| tasks/current/plan.md | runbook | task | 1 | true | false | false | 675 | T-20260705-enforce-minimal-project-intake-standards | plan | - [x] S1: 固化 project-intake 交付包契约 | 2026-07-05T13:03:42.531Z | 1.7KB |
-| tasks/current/spec.md | runbook | task | 1 | true | false | false | 1191 | T-20260705-enforce-minimal-project-intake-standards | T-20260705-enforce-minimal-project-intake-standards - Enforce minimal project-intake standards package | User confirmed DocPath should solidify requirements shaping around a minimal required package: requirements.md, architecture.md, development-checklist.md; optional open-questions,  | 2026-07-05T12:51:57.289Z | 3.4KB |
+| tasks/T-20260706-quick-fix-project-intake-settle-concurrency-test/quick.md | runbook | task | 1 | false | false | false | 132 | T-20260706-quick-fix-project-intake-settle-concurrency-test | Quick Task: T-20260706-quick-fix-project-intake-settle-concurrency-test | - title: Fix project intake settle concurrency test | 2026-07-06T02:15:32.281Z | 527B |
+| tasks/T-20260706-quick-fix-project-intake-settle-concurrency-test/spec.md | runbook | task | 1 | false | false | false | 581 | T-20260706-quick-fix-project-intake-settle-concurrency-test | T-20260706-quick-fix-project-intake-settle-concurrency-test - Fix project intake settle concurrency test | Quick task intent record. This task is intentionally lightweight and uses proportional gates. | 2026-07-06T02:15:32.274Z | 1.7KB |
+| tasks/T-20260706-write-plan-planning-plan-md-plan-json/plan.md | runbook | task | 1 | false | false | false | 1003 | T-20260706-write-plan-planning-plan-md-plan-json | plan | - [x] S1: 梳理 write-plan 成功后阶段被置回 planning，plan.md/plan.json 哈希反复不一致 | 2026-07-06T10:59:19.550Z | 2.8KB |
+| tasks/T-20260706-write-plan-planning-plan-md-plan-json/spec.md | runbook | task | 1 | false | false | false | 2028 | T-20260706-write-plan-planning-plan-md-plan-json | T-20260706-write-plan-planning-plan-md-plan-json - write-plan 成功后阶段被置回 planning，plan.md/plan.json 哈希反复不一致 | [来源: codex session 挖掘 @ evoucher 2026-07] 一个会话内出现四类漂移反复告警 + agent 大量手动抢救： | 2026-07-06T10:30:11.534Z | 5.6KB |
+| tasks/current/plan.md | runbook | task | 1 | true | false | false | 1003 | T-20260706-write-plan-planning-plan-md-plan-json | plan | - [x] S1: 梳理 write-plan 成功后阶段被置回 planning，plan.md/plan.json 哈希反复不一致 | 2026-07-06T10:59:19.550Z | 2.8KB |
+| tasks/current/spec.md | runbook | task | 1 | true | false | false | 2028 | T-20260706-write-plan-planning-plan-md-plan-json | T-20260706-write-plan-planning-plan-md-plan-json - write-plan 成功后阶段被置回 planning，plan.md/plan.json 哈希反复不一致 | [来源: codex session 挖掘 @ evoucher 2026-07] 一个会话内出现四类漂移反复告警 + agent 大量手动抢救： | 2026-07-06T10:30:11.534Z | 5.6KB |
 | tasks/done/T-20260528-agent-integration/plan.md | runbook | task | 3 | false | true | false | 929 | T-20260528-agent-integration | 执行计划 | ``` | 2026-05-28T14:53:27.931Z | 2.6KB |
 | tasks/done/T-20260528-agent-integration/spec.md | runbook | task | 3 | false | true | false | 847 | T-20260528-agent-integration | 规约: Agent Integration (Phase 1+2) | DocPath 需要面向 AI Agent 的接口层，使其能被 Claude Code / OpenCode 等工具原生使用。 | 2026-05-28T14:37:39.406Z | 2.4KB |
 | tasks/done/T-20260528-harness-lite/plan.md | runbook | task | 3 | false | true | false | 838 | T-20260528-harness-lite | Plan: Harness Lite Phase 1 | **目标**: 让 `docpath check` 能发现并运行 typecheck 相关脚本 | 2026-05-29T05:13:03.422Z | 2.5KB |
@@ -571,20 +581,21 @@
 | tasks/promote-backups/2026-07-05T10-47-26-542Z/spec.md | runbook | project | 2 | false | false | false | 1428 |  | T-20260705-docpath-intake - 固化需求梳理流程为正式 DocPath intake 工作流 | 用户在 evoucher 需求讨论中发现 agent 仍会自由发挥。需要把需求梳理固化为 DocPath 正式 project-intake 工作流：原始材料捕获 -> 固定域分析 -> 缺口索引 -> 按对象澄清问题 -> 决策卡 -> 需求定稿 -> 拍板门 -> backlog guidance/种子。用户已确认方案 B：做成 DocPath 正式 i | 2026-07-05T10:47:26.548Z | 3.6KB |
 | tasks/promote-backups/2026-07-05T12-51-57-276Z/plan.md | runbook | project | 2 | false | false | false | 346 |  | plan | - [x] S1: 添加 completed stale-step 回归测试 | 2026-07-05T12:51:57.279Z | 1021B |
 | tasks/promote-backups/2026-07-05T12-51-57-276Z/spec.md | runbook | project | 2 | false | false | false | 1205 |  | T-20260705-fix-completed-next-route-ignoring-stale- - Fix completed next route ignoring stale in-progress plan step | After T-20260705-docpath-intake completed, docpath next --agent still recommended docpath agent step --step S4 --status done despite phase=completed/gate=review_pass. The transitio | 2026-07-05T12:51:57.279Z | 3.5KB |
+| tasks/promote-backups/2026-07-06T10-30-11-528Z/spec.md | runbook | project | 2 | false | false | false | 581 |  | T-20260706-quick-fix-project-intake-settle-concurrency-test - Fix project intake settle concurrency test | Quick task intent record. This task is intentionally lightweight and uses proportional gates. | 2026-07-06T10:30:11.530Z | 1.7KB |
 | workflows/bugfix.md | index | project | 2 | false | false | false | 160 |  | Workflow: Bug Fix | - 收集错误信息 (日志、截图、复现步骤) | 2026-07-03T17:07:44.593Z | 463B |
 | workflows/debug.md | index | project | 2 | false | false | false | 145 |  | Workflow: Debug | - 收集症状 (日志、指标、复现步骤) | 2026-07-03T17:07:44.593Z | 416B |
 | workflows/feature.md | index | project | 2 | false | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-07-03T17:07:44.593Z | 753B |
 | workflows/refactor.md | index | project | 2 | false | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-07-03T17:07:44.594Z | 424B |
 | workflows/research.md | index | project | 2 | false | false | false | 146 |  | Workflow: Research | - 明确调研目标 | 2026-07-03T17:07:44.594Z | 409B |
-| workspace/breadcrumb.md | index | project | 0 | false | false | false | 1400 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-05T16:32:52.546Z | 4.8KB |
-| workspace/current.md | index | project | 0 | true | false | false | 389 |  | 📍 当前工作流状态 | ```yaml | 2026-07-05T17:10:02.604Z | 1.2KB |
+| workspace/breadcrumb.md | index | project | 0 | false | false | false | 842 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-06T11:02:02.375Z | 2.7KB |
+| workspace/current.md | index | project | 0 | true | false | false | 462 |  | 📍 当前工作流状态 | ```yaml | 2026-07-06T11:02:02.376Z | 1.4KB |
 | workspace/decisions-2026-05.md | index | project | 0 | false | false | false | 16136 |  | 决策日志归档 — 2026-05 | --- | 2026-06-16T11:00:07.138Z | 46.7KB |
-| workspace/decisions-2026-06.md | index | project | 0 | false | false | false | 84832 |  | 决策日志归档 — 2026-06 | --- | 2026-07-05T16:34:13.253Z | 240.5KB |
-| workspace/decisions.md | log | project | 3 | false | true | false | 10714 |  | 决策日志 — DocPath ADR | --- | 2026-07-05T16:34:13.255Z | 31.4KB |
+| workspace/decisions-2026-06.md | index | project | 0 | false | false | false | 85559 |  | 决策日志归档 — 2026-06 | --- | 2026-07-05T18:07:27.698Z | 242.6KB |
+| workspace/decisions.md | log | project | 3 | false | true | false | 10415 |  | 决策日志 — DocPath ADR | --- | 2026-07-06T02:18:47.166Z | 30.5KB |
 | workspace/journal.md | index | project | 0 | false | false | false | 120 |  | 📖 工作日志 | - 新增 write-design 命令 | 2026-06-10T04:44:31.299Z | 361B |
-| workspace/last-check.md | index | project | 0 | true | false | false | 164 |  | Last Check Evidence | **时间**: 2026-07-05T17:10:02.598Z | 2026-07-05T17:10:02.601Z | 490B |
-| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 1098 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-05T13:37:58.927Z | 3.5KB |
-| workspace/review.md | index | project | 0 | true | false | false | 715 |  | Code Review Report | **时间**: 2026-07-05T17:09:58.836Z | 2026-07-05T17:09:58.838Z | 2.4KB |
+| workspace/last-check.md | index | project | 0 | true | false | false | 162 |  | Last Check Evidence | **时间**: 2026-07-06T11:02:02.368Z | 2026-07-06T11:02:02.370Z | 495B |
+| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 1228 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-06T02:18:47.165Z | 4.0KB |
+| workspace/review.md | index | project | 0 | true | false | false | 866 |  | Code Review Report | **时间**: 2026-07-05T18:07:14.845Z | 2026-07-05T18:07:14.846Z | 2.9KB |
 
 ## 用途说明
 
