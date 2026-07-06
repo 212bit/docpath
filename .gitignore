@@ -20,3 +20,4 @@
 # DocPath worktrees
 /.worktrees/
 .docpath/bin/docpath
+.docpath/tasks/promote-backups/
