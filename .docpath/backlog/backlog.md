@@ -2,18 +2,18 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-06T14:29:43.614Z
+> 扫描时间: 2026-07-06T14:39:49.005Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
+| R-253 | 步骤主条目 done 后底部 checklist 未同步勾选 | proposed | P1 | 1 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-237 | Elevate /learn priority in status when pending lesson candidates and regression warnings exist | proposed | P2 | 2 |  |
 | R-243 | Fix project brief next_hint after intake brief | proposed | P2 | 1 |  |
 | R-250 | check 频繁报 docs-index 陈旧告警但无自愈/重建路径 | proposed | P2 | 1 |  |
 | R-252 | review 检测到 spec.md/spec.json 不同步但仅提示不修复 | proposed | P2 | 1 |  |
-| R-253 | 步骤主条目 done 后底部 checklist 未同步勾选 | proposed | P2 | 1 |  |
 | R-254 | review --skip-skill-review 重复传参 crash: item.split is not a function | proposed | P2 | 1 |  |
 | R-255 | review-skill file set mismatch 阻塞正常代码（0 错误仍被卡） | proposed | P2 | 1 |  |
 | R-249 | go/promote 的 dirty worktree 拒绝未区分 DocPath 自身产物，频繁误拦 | proposed | P3 | 1 |  |
