@@ -142,6 +142,251 @@ describe('next --agent routing', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('routes completed pending lessons ahead of proposed raw backlog shaping', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-900.md'), `---
+id: R-900
+title: Raw proposed item
+status: proposed
+priority: P0
+level: 2
+source: test
+readiness: raw
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-06-29
+---
+
+## 背景
+
+- 待补充
+
+## 验收
+
+- 待补充
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## T-LESSON — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LESSON',
+      '- key: T-LESSON-workflow',
+      '',
+      '### Lesson',
+      '',
+      '推荐固化经验。',
+      '',
+    ].join('\n'));
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath learn --dry-run');
+    assert.match(output.next_action, /待固化 lesson 候选/);
+    assert.ok(!String(output.recommended_command || '').includes('brainstorm'));
+    assert.ok(!String(output.recommended_command || '').includes('backlog accept'));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('keeps learn elevated when install health fails alongside pending lessons and proposed backlog', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-900.md'), `---
+id: R-900
+title: Raw proposed item
+status: proposed
+priority: P0
+level: 2
+source: test
+readiness: raw
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-06-29
+---
+
+## 背景
+
+- 待补充
+
+## 验收
+
+- 待补充
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## T-LESSON — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LESSON',
+      '- key: T-LESSON-workflow',
+      '',
+      '### Lesson',
+      '',
+      '推荐固化经验。',
+      '',
+    ].join('\n'));
+    // Missing install assets force install_health.passed=false in doctor report.
+    writeFileSync(join(cwd, '.docpath', '.install-meta.json'), JSON.stringify({
+      target: 'universal',
+      installed_at: '2026-06-01T00:00:00.000Z',
+      asset_hashes: {},
+    }, null, 2));
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath learn --dry-run');
+    assert.match(output.next_action, /待固化 lesson 候选/);
+    assert.equal(output.install_health.passed, false);
+    assert.match(output.next_action, /install\/health|regression 告警/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('still promotes accepted executable backlog before pending lessons', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-901.md'), `---
+id: R-901
+title: Accepted ready item
+status: accepted
+priority: P1
+level: 2
+source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-06-29
+---
+
+## 背景
+
+Accepted executable backlog.
+
+## 验收
+
+Promote ready.
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## T-LESSON — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LESSON',
+      '- key: T-LESSON-workflow',
+      '',
+      '### Lesson',
+      '',
+      '推荐固化经验。',
+      '',
+    ].join('\n'));
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath backlog promote R-901');
+    assert.match(output.next_action, /R-901/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('does not force learn for low-value lessons when proposed backlog exists', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-900.md'), `---
+id: R-900
+title: Raw proposed item
+status: proposed
+priority: P2
+level: 1
+source: test
+readiness: shaped
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-06-29
+---
+
+## 背景
+
+Shaped proposed item.
+
+## 验收
+
+Accept after review.
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## T-LOW — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LOW',
+      '- key: T-LOW-workflow',
+      '',
+      '### Lesson',
+      '',
+      '✅ 推荐保留本次任务的执行经验：完成 4/4 步，阻塞 0 步。',
+      '',
+    ].join('\n'));
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.lesson_summary.pending_count, 0);
+    assert.notEqual(output.recommended_command, 'docpath learn --dry-run');
+    assert.match(output.recommended_command, /backlog accept R-900|brainstorm/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('routes completed dirty worktree before pending lessons', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## T-LESSON — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-LESSON',
+      '- key: T-LESSON-workflow',
+      '',
+      '### Lesson',
+      '',
+      '推荐固化经验。',
+      '',
+    ].join('\n'));
+    writeFileSync(join(cwd, 'README.md'), '# initial\n');
+    initGitRepo(cwd);
+    writeFileSync(join(cwd, 'README.md'), '# dirty\n');
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath changes --agent');
+    assert.match(output.next_action, /git closeout|未提交变更/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('keeps clean completed git worktrees on the normal completed route', () => {
     const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
     writeFileSync(join(cwd, 'README.md'), '# clean\n');
