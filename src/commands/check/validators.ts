@@ -6,6 +6,7 @@ import { readCurrentState, syncCurrentDocument, parsePlanTasks } from '../../uti
 import { validatePlanContent, validateSpecContent } from '../../utils/doc-parser.js';
 import { detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatTaskIdentityDrift, readActiveTaskFile, syncActiveTaskFiles } from '../../utils/task-files.js';
 import { validateDeliverables } from '../../utils/deliverables.js';
+import { validateLifecycleDeliverables } from '../../utils/lifecycle.js';
 import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, shouldAdviseUiDesignOptIn } from '../../utils/ui-gate.js';
 import { resolveMajorChangeGateStatus } from '../../utils/major-change.js';
 import { detectPlanBreadcrumbDrift } from '../../utils/plan-sync.js';
@@ -416,16 +417,42 @@ export async function checkPlanBreadcrumbDrift(cwd: string): Promise<CheckResult
 
 export async function checkDeliverablesIndex(cwd: string): Promise<CheckResult[]> {
   const issues = await validateDeliverables(cwd);
-  if (issues.length === 0) return [];
-  return [{
-    name: 'Deliverables 必填章节校验',
-    passed: false,
-    output: [
-      '以下 deliverables 缺少必填章节:',
-      ...issues.map((issue) => `  - ${issue.path} (${issue.template}): ${issue.missing_sections.join(', ')}`),
-    ].join('\n'),
-    category: 'plan',
-  }];
+  const lifecycleIssues = await validateLifecycleDeliverables(cwd);
+  const lifecycleErrors = lifecycleIssues.filter((issue) => issue.severity === 'error');
+  const lifecycleWarnings = lifecycleIssues.filter((issue) => issue.severity === 'warning');
+  const results: CheckResult[] = [];
+  if (issues.length > 0) {
+    results.push({
+      name: 'Deliverables 必填章节校验',
+      passed: false,
+      output: [
+        '以下 deliverables 缺少必填章节:',
+        ...issues.map((issue) => `  - ${issue.path} (${issue.template}): ${issue.missing_sections.join(', ')}`),
+      ].join('\n'),
+      category: 'plan',
+    });
+  }
+  if (lifecycleErrors.length > 0) {
+    results.push({
+      name: 'Lifecycle deliverables 校验',
+      passed: false,
+      output: [
+        '以下 lifecycle deliverables 缺失或不完整:',
+        ...lifecycleErrors.map((issue) => `  - ${issue.path} (${issue.stage_id}): ${issue.message}`),
+      ].join('\n'),
+      category: 'plan',
+    });
+  }
+  if (lifecycleWarnings.length > 0) {
+    results.push(warningResult(
+      'Lifecycle sources 声明提醒',
+      [
+        '以下 regulated lifecycle 阶段尚未声明 sources（默认不阻断）:',
+        ...lifecycleWarnings.map((issue) => `  - ${issue.path} (${issue.stage_id}): ${issue.message}`),
+      ].join('\n'),
+    ));
+  }
+  return results;
 }
 
 export async function checkContextIndexHealth(docpathDir: string, currentTaskId: string | undefined): Promise<CheckResult[]> {
