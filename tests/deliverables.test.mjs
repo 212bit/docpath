@@ -170,8 +170,8 @@ describe('deliverables templates', () => {
     const generate = run('trace matrix generate', cwd);
     assert.equal(generate.code, 0);
     const matrix = readFileSync(join(cwd, 'docs', 'deliverables', 'trace-matrix.md'), 'utf-8');
-    assert.match(matrix, /US-001 .*REQ-SIGNING .*R-007 .*T-signing .*DD-Signing .*src\/commands\/signing\.ts .*tests\/signing\.test\.mjs/);
-    assert.match(matrix, /US-002 .*REQ-RECEIPT .*R-005 .*T-receipt .*DD-Receipt .*src\/commands\/receipt\.ts .*tests\/receipt\.test\.mjs/);
+    assert.match(matrix, /US-001.*REQ-SIGNING.*R-007.*T-signing.*DD-Signing.*src\/commands\/signing\.ts.*tests\/signing\.test\.mjs/);
+    assert.match(matrix, /US-002.*REQ-RECEIPT.*R-005.*T-receipt.*DD-Receipt.*src\/commands\/receipt\.ts.*tests\/receipt\.test\.mjs/);
 
     rmSync(cwd, { recursive: true, force: true });
   });

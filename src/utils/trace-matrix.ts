@@ -265,8 +265,8 @@ export function renderTraceMatrixMarkdown(entries: TraceMatrixEntry[]): string {
   ];
 
   for (const e of entries) {
-    const codeStr = e.code.length > 0 ? e.code.map(f => `\`${basename(f)}\``).join('<br>') : '-';
-    const testStr = e.test.length > 0 ? e.test.map(f => `\`${basename(f)}\``).join('<br>') : '-';
+    const codeStr = e.code.length > 0 ? e.code.map(f => `\`${f}\``).join('<br>') : '-';
+    const testStr = e.test.length > 0 ? e.test.map(f => `\`${f}\``).join('<br>') : '-';
 
     lines.push(
       `| ${e.story || '-'} | ${e.requirement || '-'} | ${e.analysis || '-'} | ${e.scope || '-'} | **${e.backlogId}** ${e.title} | ${e.task || '-'} | ${e.design || '-'} | ${codeStr} | ${testStr} | \`${e.status}\` |`
