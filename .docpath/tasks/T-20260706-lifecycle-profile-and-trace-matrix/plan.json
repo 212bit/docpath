@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-06T15:10:39.627Z",
+    "updated_at": "2026-07-06T15:10:39.627Z",
+    "content_sha256": "5de26aacf08e25bd18a950bfa349d1cfb82f58e56def0a5853b23cc54c6d73b9"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-06T15:10:39.627Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Lifecycle profile and trace matrix",
+      "description": "根据 spec 明确 FR-1: Lifecycle profile and trace matrix 的实现边界和验收口径。",
+      "acceptance": "AC-1: docpath deliverables init/status/generate/check supports lifecycle profiles while preserving legacy deliverables list/render/check behavior. docpath trace matrix status/generate/check works without affecting trace show/session/health/anomaly. Lifecycle config is stored in .docpath/lifecycle.yaml and registry in .docpath/lifecycle-registry.json. Regulated profile sources are non-interactive optional declarations with warnings rather than default hard failures. Build and targeted command checks pass.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Lifecycle profile and trace matrix",
+      "description": "在现有架构内完成 FR-1: Lifecycle profile and trace matrix 的代码与文档更新。",
+      "acceptance": "FR-1 Lifecycle profile and trace matrix 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: docpath deliverables init/status/generate/check supports lifecycle profiles while preserving legacy deliverables list/render/check behavior. docpath trace matrix status/generate/check works without affecting trace show/session/health/anomaly. Lifecycle config is stored in .docpath/lifecycle.yaml and registry in .docpath/lifecycle-registry.json. Regulated profile sources are non-interactive optional declarations with warnings rather than default hard failures. Build and targeted command checks pass.；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-248 与任务 T-20260706-lifecycle-profile-and-trace-matrix 建立双向关联",
+      "acceptance": "AC-1: docpath deliverables init/status/generate/check supports lifecycle profiles while preserving legacy deliverables list/render/check behavior. docpath trace matrix status/generate/check works without affecting trace show/session/health/anomaly. Lifecycle config is stored in .docpath/lifecycle.yaml and registry in .docpath/lifecycle-registry.json. Regulated profile sources are non-interactive optional declarations with warnings rather than default hard failures. Build and targeted command checks pass.；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-248 与任务 T-20260706-lifecycle-profile-and-trace-matrix 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

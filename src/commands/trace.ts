@@ -12,10 +12,16 @@ import {
   detectAnomalies,
   groupBySession,
 } from '../utils/trace-analyzer.js';
+import {
+  checkTraceMatrix,
+  generateTraceMatrix,
+  getTraceMatrixStatus,
+} from '../utils/trace-matrix.js';
 
 interface TraceOptions {
   cwd: string;
-  action?: 'show' | 'session' | 'health' | 'anomaly' | 'clear' | 'enable' | 'disable';
+  action?: 'show' | 'session' | 'health' | 'anomaly' | 'clear' | 'enable' | 'disable' | 'matrix';
+  matrixAction?: 'status' | 'generate' | 'check';
   session?: string;
   limit?: number;
   json?: boolean;
@@ -37,6 +43,38 @@ export async function traceCommand(opts: TraceOptions): Promise<void> {
   if (!existsSync(docpathDir)) {
     console.error('❌ 未找到 .docpath/ 目录。请先运行 `docpath init`');
     process.exit(1);
+  }
+
+  if (action === 'matrix') {
+    const { readLifecycleConfig } = await import('../utils/lifecycle.js');
+    const lifecycleConfig = await readLifecycleConfig(cwd);
+    if (!lifecycleConfig) {
+      console.error('❌ Trace matrix requires lifecycle profile. Run `docpath deliverables init --profile <profile>` first.');
+      process.exit(1);
+    }
+
+    const matrixAction = opts.matrixAction || 'status';
+    const report = matrixAction === 'generate'
+      ? await generateTraceMatrix(cwd)
+      : matrixAction === 'check'
+        ? await checkTraceMatrix(cwd)
+        : await getTraceMatrixStatus(cwd);
+    if (opts.json) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+    if (matrixAction === 'generate') {
+      console.log(`✅ trace matrix generated: ${report.output_path}`);
+    } else if (matrixAction === 'check' && report.gaps.length > 0) {
+      console.log(JSON.stringify({ passed: false, gaps: report.gaps }, null, 2));
+      throw new Error(`trace matrix check failed: ${report.gaps.length} gap(s)`);
+    } else {
+      console.log(`📊 Trace matrix: ${report.entries.length} entries, ${report.gaps.length} gaps`);
+      if (report.gaps.length > 0) {
+        for (const gap of report.gaps) console.log(`  - ${gap}`);
+      }
+    }
+    return;
   }
 
   if (action === 'clear') {

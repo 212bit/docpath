@@ -1,7 +1,7 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -94,6 +94,94 @@ describe('deliverables templates', () => {
     assert.equal(docpathCheck.code, 1);
     assert.match(docpathCheck.out, /Deliverables 必填章节校验/);
     assert.match(docpathCheck.out, /deliverables\/qa\/qa-report\.md/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('initializes lifecycle profiles and generates stage artifacts', () => {
+    const cwd = mkWorkspace();
+
+    const init = run('deliverables init --profile regulated', cwd);
+    assert.equal(init.code, 0);
+    assert.match(init.out, /lifecycle profile initialized: regulated/);
+    assert.ok(existsSync(join(cwd, '.docpath', 'lifecycle.yaml')));
+    assert.ok(existsSync(join(cwd, '.docpath', 'lifecycle-registry.json')));
+
+    const status = run('deliverables status', cwd);
+    assert.equal(status.code, 0);
+    assert.match(status.out, /user_stories/);
+    assert.match(status.out, /sources not declared/);
+
+    const generated = run('deliverables generate user-stories', cwd);
+    assert.equal(generated.code, 0);
+    assert.ok(existsSync(join(cwd, 'docs', 'deliverables', '01-user-stories.md')));
+
+    const check = run('deliverables check', cwd);
+    assert.equal(check.code, 1);
+    assert.match(check.out, /lifecycle_issues/);
+    assert.match(check.out, /user_requirements/);
+    assert.match(check.out, /warnings/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('generates and checks a trace matrix from lifecycle artifacts', () => {
+    const cwd = mkWorkspace();
+    assert.equal(run('deliverables init --profile regulated', cwd).code, 0);
+    assert.equal(run('deliverables generate user-stories', cwd).code, 0);
+    writeFileSync(join(cwd, 'docs', 'deliverables', '01-user-stories.md'), [
+      '# User Stories',
+      '',
+      '- US-001 Signing flow maps to REQ-SIGNING, RA-Signing, S3, R-007, T-signing, DD-Signing.',
+      '- Code: src/commands/signing.ts',
+      '- Test: tests/signing.test.mjs',
+      '',
+    ].join('\n'));
+
+    const status = run('trace matrix status', cwd);
+    assert.equal(status.code, 0);
+    assert.match(status.out, /Trace matrix: 1 entries, 0 gaps/);
+
+    const generate = run('trace matrix generate', cwd);
+    assert.equal(generate.code, 0);
+    assert.match(generate.out, /trace matrix generated/);
+    const matrix = readFileSync(join(cwd, 'docs', 'deliverables', 'trace-matrix.md'), 'utf-8');
+    assert.match(matrix, /US-001/);
+    assert.match(matrix, /REQ-SIGNING/);
+
+    const check = run('trace matrix check', cwd);
+    assert.equal(check.code, 0);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('keeps trace matrix references scoped to each story row', () => {
+    const cwd = mkWorkspace();
+    assert.equal(run('deliverables init --profile regulated', cwd).code, 0);
+    assert.equal(run('deliverables generate user-stories', cwd).code, 0);
+    writeFileSync(join(cwd, 'docs', 'deliverables', '01-user-stories.md'), [
+      '# User Stories',
+      '',
+      '- US-001 Signing flow maps to REQ-SIGNING, RA-Signing, S3, R-007, T-signing, DD-Signing, src/commands/signing.ts, tests/signing.test.mjs.',
+      '- US-002 Receipt flow maps to REQ-RECEIPT, RA-Receipt, S6, R-005, T-receipt, DD-Receipt, src/commands/receipt.ts, tests/receipt.test.mjs.',
+      '',
+    ].join('\n'));
+
+    const generate = run('trace matrix generate', cwd);
+    assert.equal(generate.code, 0);
+    const matrix = readFileSync(join(cwd, 'docs', 'deliverables', 'trace-matrix.md'), 'utf-8');
+    assert.match(matrix, /US-001 .*REQ-SIGNING .*R-007 .*T-signing .*DD-Signing .*src\/commands\/signing\.ts .*tests\/signing\.test\.mjs/);
+    assert.match(matrix, /US-002 .*REQ-RECEIPT .*R-005 .*T-receipt .*DD-Receipt .*src\/commands\/receipt\.ts .*tests\/receipt\.test\.mjs/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('fails loud when generating trace matrix without lifecycle config', () => {
+    const cwd = mkWorkspace();
+    const result = run('trace matrix generate', cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /Trace matrix requires lifecycle profile/);
 
     rmSync(cwd, { recursive: true, force: true });
   });
