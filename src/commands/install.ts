@@ -13,9 +13,6 @@
 
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { readFile, readdir, mkdir, copyFile, chmod, stat } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { exists, writeFileSafe } from '../utils/file.js';
 import { getDocpathPackageVersion } from '../utils/package-info.js';
 import {
@@ -549,53 +546,8 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
   await installDocpathTemplates(context);
   await installAgentSpecificFiles(context);
   await installGitHooks(context);
-  await installMergeDriver(context);
   await writeInstallMetadata(context);
   printInstallSummary(target);
-}
-
-async function installMergeDriver(context: InstallContext): Promise<void> {
-  const { targetDir } = context;
-  try {
-    const gitDir = join(targetDir, '.git');
-    if (!existsSync(gitDir)) return;
-
-    console.log('🔗  配置 Git Merge Driver...');
-
-    const execFileAsync = promisify(execFile);
-    await execFileAsync('git', ['config', 'merge.docpath-markdown.name', 'DocPath Smart Markdown Merge Driver'], { cwd: targetDir });
-    await execFileAsync('git', ['config', 'merge.docpath-markdown.driver', 'docpath merge-driver --ancestor %O --current %A --other %B --path %P'], { cwd: targetDir });
-
-    const attributesRelativePath = (await execFileAsync('git', ['rev-parse', '--git-path', 'info/attributes'], { cwd: targetDir })).stdout.trim();
-    const attributesPath = join(targetDir, attributesRelativePath);
-
-    const attrLines = [
-      '.docpath/backlog/backlog.md merge=docpath-markdown',
-      '.docpath/rules/*.md merge=docpath-markdown',
-    ];
-
-    let content = '';
-    if (existsSync(attributesPath)) {
-      content = await readFile(attributesPath, 'utf-8');
-    }
-
-    const lines = content.split('\n').map((l) => l.trim()).filter(Boolean);
-    let updated = false;
-    for (const line of attrLines) {
-      if (!lines.includes(line)) {
-        lines.push(line);
-        updated = true;
-      }
-    }
-
-    if (updated || !existsSync(attributesPath)) {
-      await mkdir(resolve(attributesPath, '..'), { recursive: true });
-      await writeFileSafe(attributesPath, lines.join('\n') + '\n');
-      console.log('   ✅ .git/info/attributes 已更新');
-    }
-  } catch (error) {
-    console.warn(`⚠️  配置 Git Merge Driver 失败 (非致命): ${error instanceof Error ? error.message : String(error)}`);
-  }
 }
 
 // ─── 内部工具 ───
