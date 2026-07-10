@@ -104,8 +104,19 @@ Rules:
 - Use `docpath project capture` when the user has a brand-new project that
   starts from PPT-derived text, API docs, introductory docs, meeting notes, or a
   single rough requirements document. Do not force these raw materials into
-  backlog. Use `docpath project analyze`, `project brief`, and confirmed
-  `project backlog` guidance before creating executable backlog items.
+  backlog. Treat project intake as a requirements-shaping workflow:
+  `capture -> analyze -> gap index/questions/decision cards -> brief with
+  approval gate -> settle requirements/architecture/phase scope/approval ->
+  backlog guidance`. Use `docpath project analyze`, `project brief`,
+  `project settle`, and confirmed `project backlog` guidance before creating
+  executable backlog items. Unapproved intake output is evidence, not a task.
+  Before development, the minimum frozen standards package is
+  `requirements.md` and `architecture.md`.
+  `open-questions.md`, `decisions/*.md`, and `style.md` are optional by
+  complexity. Do not require `phase-backlog.md`, checklist, or handoff docs;
+  backlog quality belongs to structured backlog items and gates belong in
+  DocPath checks. Do not treat inferred architecture or draft standards as
+  approved development rules.
 - Use `docpath quick "<title>"` for tiny low-risk edits. It creates a lightweight
   task, requires check on closeout, and skips full review by quick profile.
   Escalate to the standard lifecycle when scope touches architecture, protocol,

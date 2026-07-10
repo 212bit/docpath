@@ -127,20 +127,6 @@ Workflow:
   views.
 - Product/UI work must clarify target user, entry point, data scope, and
   interaction model before implementation.
-- Brand-new projects or requirement-discussion work that starts from PPT text,
-  API docs, meeting notes, intro docs, or a rough requirements file must use the
-  project-intake requirements-shaping flow before backlog work:
-  `project capture -> project analyze -> gap index/questions/decision cards ->
-  project brief with approval gate -> project settle requirements/architecture/phase scope/approval ->
-  project backlog guidance`.
-  Do not create executable backlog items from unapproved intake materials.
-  Before development, the minimum frozen standards package is
-  `requirements.md` and `architecture.md`.
-  `open-questions.md`, `decisions/*.md`, and `style.md` are optional by
-  complexity. Do not require `phase-backlog.md`, checklist, or handoff docs;
-  backlog quality belongs to structured backlog items and gates belong in
-  DocPath checks. Do not treat inferred architecture or draft standards as
-  approved development rules.
 - Major changes to architecture, data contracts, UI information architecture,
   workflow behavior, permission boundaries, task scope, existing capabilities,
   or long-term maintenance cost require brainstorm/refine plus a Decision Brief
