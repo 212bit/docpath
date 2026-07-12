@@ -17,6 +17,7 @@ import { readLastCheckMarkdown } from '../workspace-evidence.js';
 import { isQuickProfile } from '../../engine/workflow-profile.js';
 import type { StructuredSpecDocument } from '../structured-docs.js';
 import { detectDirtyWorktree, type DirtyWorktreeReport } from '../git-dirty-guard.js';
+import { classifyCandidateBlocks, lessonCandidateKey, parseCandidateBlocks } from '../lesson-candidates.js';
 export interface AgentOutput {
   agent_view: 'status' | 'next';
   state: string;
@@ -402,13 +403,9 @@ export function summarizeUnlearnedLessonCandidates(
   styleContent: string,
   architectureContent: string,
 ): { pendingCount: number; pendingKeys: string[] } {
-  const actionableContent = candidatesContent
-    .split(/^##\s+/m)
-    .filter((block) => block.trim())
-    .filter((block) => !isLowValueWorkflowLessonBlock(block))
-    .map((block) => `## ${block}`)
-    .join('\n');
-  const keys = candidateLessonKeys(actionableContent);
+  const keys = classifyCandidateBlocks(parseCandidateBlocks(candidatesContent))
+    .filter((classification) => classification.action === 'keep')
+    .map((classification) => lessonCandidateKey(classification.block));
   if (keys.length === 0) return { pendingCount: 0, pendingKeys: [] };
   const learned = new Set([
     ...extractExistingLessonMetaKeys(styleContent),

@@ -133,7 +133,7 @@ describe('next --agent routing', () => {
       '',
       '### Lesson',
       '',
-      '推荐固化经验。',
+      '当 docpath next 检测 lesson 候选时，必须只推荐 learn 处理可沉淀规则，避免低质量或跳过候选阻塞 backlog 路由。',
       '',
     ].join('\n'));
 
@@ -169,6 +169,32 @@ describe('next --agent routing', () => {
     assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
     assert.equal(output.lesson_summary.pending_count, 0);
     assert.equal(output.lesson_summary.pending_keys, undefined);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('does not route completed state into learn when all lesson candidates are skipped', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
+      '# Lesson Candidates',
+      '',
+      '## seed placeholder',
+      '',
+      '- task_id: T-OLD',
+      '- type: best-practice',
+      '- target: style',
+      '- source: journal',
+      '- key: option-a-placeholder',
+      '',
+      '### Lesson',
+      '',
+      '方案 A / 方案 A。backlog promote seed spec 保留 backlog 作为来源，便于后续 plan/go 接续。',
+      '',
+    ].join('\n'));
+
+    const output = nextAgent(cwd);
+
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
+    assert.equal(output.lesson_summary.pending_count, 0);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -213,7 +239,7 @@ created_at: 2026-06-29
       '',
       '### Lesson',
       '',
-      '推荐固化经验。',
+      '当 docpath next 检测 lesson 候选时，必须只推荐 learn 处理可沉淀规则，避免低质量或跳过候选阻塞 backlog 路由。',
       '',
     ].join('\n'));
 
@@ -267,7 +293,7 @@ created_at: 2026-06-29
       '',
       '### Lesson',
       '',
-      '推荐固化经验。',
+      '当 docpath next 检测 lesson 候选时，必须只推荐 learn 处理可沉淀规则，避免低质量或跳过候选阻塞 backlog 路由。',
       '',
     ].join('\n'));
     // Missing install assets force install_health.passed=false in doctor report.
@@ -505,11 +531,14 @@ Ignored backlog
     writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
       '# Lesson Candidates',
       '',
+      '## T-IDLE — 2026-06-01T00:00:00.000Z',
+      '',
+      '- task_id: T-IDLE',
       '- key: idle-lesson',
       '',
       '### Lesson',
       '',
-      '推荐固化经验。',
+      '当 docpath next 检测 idle lesson 候选时，必须先推荐 learn 处理可沉淀规则，避免新 backlog 捕获覆盖待固化规则。',
       '',
     ].join('\n'));
 
