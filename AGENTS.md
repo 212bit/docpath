@@ -129,6 +129,21 @@ Rules:
   recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by
   default.
 
+## Git Convention
+
+- **Auto-commit after verification**: Once implementation is verified (build ✅,
+  tests ✅, diagnostics clean), commit automatically. Do not wait for user
+  permission.
+- **Atomic by logical unit**: One commit per coherent change. If a change spans
+  multiple independent concerns (e.g., fix + refactor in different modules),
+  split into separate commits.
+- **Stage only source + test files**: Do not stage `.docpath/workspace/` or
+  `.docpath/backlog/` runtime state files unless the intent is to version them.
+- **Write descriptive commit messages**: Summarize what and why in the title
+  (≤72 chars). Use the body for bullet-point details when there are multiple
+  sub-changes.
+- **Do not push**: Commits are local. Pushing requires explicit user request.
+
 ## Required Gates
 
 1. Do not skip `docpath next --agent` at start/resume or when state is
