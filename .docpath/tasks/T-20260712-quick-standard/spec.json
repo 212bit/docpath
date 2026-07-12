@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-12T04:59:02.536Z",
+    "updated_at": "2026-07-12T04:59:02.536Z",
+    "content_sha256": "6e794ac76a225cdaf821181ebbd3fee223a43b601381483f8ed4a716d645f938"
+  },
+  "task_id": "T-20260712-quick-standard",
+  "backlog_id": "R-258",
+  "title": "T-20260712-quick-standard - Quick→Standard 自动升级衔接",
+  "generated_at": "2026-07-12T04:59:02.536Z",
+  "scope": {
+    "included": [
+      "修改 `src/commands/check.ts` 的 upgrade 分支",
+      "调用 `renderStandardSpec()` 函数生成标准 spec 模板",
+      "保留原 title、FR 需求摘要作为上下文"
+    ],
+    "excluded": [
+      "自动生成 plan（plan 仍由用户通过 `docpath plan` 生成）",
+      "修改 task ID 格式",
+      "修改 state machine 的状态转移逻辑"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": ""
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "upgrade 时自动检测 spec.md 是否为 quick 风格（> workflow_profile: quick）",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "替换为 standard spec 模板，保留原 title 和需求摘要",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "输出清晰指引：\"spec 模板已升级至 standard 格式，请填写 Decision Brief 和验收标准\"",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "不破坏现有 spec.json 的结构（重新 write-spec 同步）",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "仅替换 spec.md，不动 plan.md（quick 无 plan，升级后让用户自己 plan）",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "不改变 task ID（向后兼容）",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "quick 任务升级为 standard 后，spec.md 包含 workflow_profile: standard 头部",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "spec.md 包含完整的 standard 章节（背景、需求、范围界定、关键决策、重大变更门禁、验收标准）",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "原 task title 保留在 spec 中",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "现有 test 全部通过",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

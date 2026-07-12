@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-12T05:03:16.271Z",
+    "updated_at": "2026-07-12T05:03:16.271Z",
+    "content_sha256": "c421db1f4e790639aca1c2984929f08dd77477ecf58a4b022d03c0e7c19a55b0"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-12T05:03:16.271Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 upgrade 时自动检测 spec.md 是否为 quick 风格（> workflow_profile: quick）",
+      "description": "根据 spec 明确 FR-1: upgrade 时自动检测 spec.md 是否为 quick 风格（> workflow_profile: quick） 的实现边界和验收口径。",
+      "acceptance": "AC-1: quick 任务升级为 standard 后，spec.md 包含 workflow_profile: standard 头部",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 upgrade 时自动检测 spec.md 是否为 quick 风格（> workflow_profile: quick）",
+      "description": "在现有架构内完成 FR-1: upgrade 时自动检测 spec.md 是否为 quick 风格（> workflow_profile: quick） 的代码与文档更新。",
+      "acceptance": "FR-1 upgrade 时自动检测 spec.md 是否为 quick 风格（> workflow_profile: quick） 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 替换为 standard spec 模板，保留原 title 和需求摘要",
+      "description": "在现有架构内完成 FR-2: 替换为 standard spec 模板，保留原 title 和需求摘要。",
+      "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 FR-3 输出清晰指引：\"spec 模板已升级至 standard 格式，请填写 Decision Brief 和验收标准\"",
+      "description": "在现有架构内完成 FR-3: 输出清晰指引：\"spec 模板已升级至 standard 格式，请填写 Decision Brief 和验收标准\"。",
+      "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "实现 FR-4 不破坏现有 spec.json 的结构（重新 write-spec 同步）",
+      "description": "在现有架构内完成 FR-4: 不破坏现有 spec.json 的结构（重新 write-spec 同步）。",
+      "acceptance": "FR-4 已实现，并保持现有工作流兼容。",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: quick 任务升级为 standard 后，spec.md 包含 workflow_profile: standard 头部；AC-2: spec.md 包含完整的 standard 章节（背景、需求、范围界定、关键决策、重大变更门禁、验收标准）；AC-3: 原 task title 保留在 spec 中；AC-4: 现有 test 全部通过",
+      "acceptance": "AC-1: quick 任务升级为 standard 后，spec.md 包含 workflow_profile: standard 头部；AC-2: spec.md 包含完整的 standard 章节（背景、需求、范围界定、关键决策、重大变更门禁、验收标准）；AC-3: 原 task title 保留在 spec 中；AC-4: 现有 test 全部通过",
+      "dependencies": "S5",
+      "status": "done"
+    }
+  ]
+}

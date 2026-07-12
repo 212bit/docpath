@@ -1,0 +1,10 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260712-quick-standard","step":"S1","status":"in_progress","context":"开始执行: 梳理 upgrade 时自动检测 spec.md 是否为 quick 风格（> workflow_profile: quick）","timestamp":"2026-07-12T05:03:09.518Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260712-quick-standard","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-07-12T05:03:14.613Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260712-quick-standard","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-07-12T05:03:14.909Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260712-quick-standard","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-07-12T05:03:15.212Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260712-quick-standard","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-07-12T05:03:15.635Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260712-quick-standard","step":"S5","status":"done","context":"agent-step: S5","timestamp":"2026-07-12T05:03:15.948Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260712-quick-standard","step":"S6","status":"done","context":"agent-step: S6","timestamp":"2026-07-12T05:03:16.267Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260712-quick-standard","step":"check","status":"done","context":"质量检查通过 (1 项)","timestamp":"2026-07-12T05:03:20.866Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260712-quick-standard","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-07-12T05:03:21.082Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260712-quick-standard","step":"journal","status":"done","context":"知识归档完成 (6/6 步)","timestamp":"2026-07-12T05:03:24.907Z"}
