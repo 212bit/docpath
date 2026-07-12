@@ -124,26 +124,21 @@ Rules:
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath agent done` before claiming a task is complete.
 - Run `docpath agent handoff` when another session may resume the task.
-- Before any local `git commit`, run `docpath changes --agent`. Treat it as a
-  read-only closeout report; only force-add exact canonical evidence paths it
-  recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by
-  default.
-
 ## Git Convention
 
-- **Auto-commit after verification**: Once implementation is verified (build ✅,
-  tests ✅, diagnostics clean), commit automatically. Do not wait for user
-  permission.
-- **Atomic by logical unit**: One commit per coherent change. If a change spans
-  multiple independent concerns (e.g., fix + refactor in different modules),
-  split into separate commits.
+- **Auto-commit after `agent done`**: Once `docpath agent done` completes and
+  all gates pass (check, review, journal), commit automatically. Do not commit
+  mid-task on intermediate verification passes.
+- **Run `docpath changes --agent` before each commit**: Treat it as the commit
+  readiness report. Use its closeout summary as the commit message title;
+  append sub-change bullet points in the body.
 - **Stage all modified tracked files**: Include both source/test files and any
   tracked `.docpath/` files (backlog, rules, AGENTS.md) that changed during the
   work. The `.gitignore` already excludes pure runtime state (workspace/,
   tasks/current/) — there's no risk of staging transient data.
-- **Write descriptive commit messages**: Summarize what and why in the title
-  (≤72 chars). Use the body for bullet-point details when there are multiple
-  sub-changes.
+- **Atomic by logical unit**: One commit per coherent change. If a change spans
+  multiple independent concerns (e.g., fix + refactor in different modules),
+  split into separate commits.
 - **Do not push**: Commits are local. Pushing requires explicit user request.
 
 ## Required Gates
