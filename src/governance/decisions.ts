@@ -5,7 +5,7 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile, appendFile } from 'fs/promises';
+import { readFile, writeFile, appendFile, stat } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
@@ -315,6 +315,82 @@ function renderDecisionDocument(header: string, blocks: DecisionBlock[]): string
   return header.trimEnd() + '\n\n' + blocks.map((block) => block.raw.trimEnd()).join('\n\n') + (blocks.length > 0 ? '\n\n' : '');
 }
 
+function getISOWeek(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+function makeWeeklyHeader(weekKey: string): string {
+  return [
+    `# 决策日志归档 — ${weekKey}`,
+    '',
+    '> 每周 ADR 归档，由 `docpath gc-decisions` 从月度归档按周拆分。',
+    '',
+    '---',
+    '',
+  ].join('\n');
+}
+
+const MAX_ARCHIVE_KB = 200;
+
+/**
+ * 如果月度归档文件过大 (>200KB)，按 ISO 周拆分为 weekly 文件，
+ * 并将原文件替换为索引。
+ */
+export async function splitArchiveIfBloated(workspaceDir: string, archivePath: string): Promise<void> {
+  let fileStats;
+  try {
+    fileStats = await stat(archivePath);
+  } catch {
+    return;
+  }
+  const sizeKb = fileStats.size / 1024;
+  if (sizeKb <= MAX_ARCHIVE_KB) return;
+
+  const content = await readFile(archivePath, 'utf-8');
+  const { header, blocks } = splitDecisionDocument(content);
+  if (blocks.length === 0) return;
+
+  const byWeek = new Map<string, DecisionBlock[]>();
+  for (const block of blocks) {
+    const date = block.createdAt;
+    if (!date) continue;
+    const week = getISOWeek(date);
+    const weekKey = `${date.getFullYear()}-W${String(week).padStart(2, '0')}`;
+    byWeek.set(weekKey, [...(byWeek.get(weekKey) || []), block]);
+  }
+
+  for (const [weekKey, weekBlocks] of byWeek.entries()) {
+    const weekPath = join(workspaceDir, `decisions-${weekKey}.md`);
+    const weekContent = renderDecisionDocument(makeWeeklyHeader(weekKey), weekBlocks);
+    await writeFile(weekPath, weekContent, 'utf-8');
+  }
+
+  const monthLabel = header.match(/# 决策日志归档 — (.+)/)?.[1]
+    || archivePath.replace('.md', '').replace(/^.*decisions-/, '');
+  const indexLines = [
+    `# 决策日志归档 — ${monthLabel}`,
+    '',
+    `> 该归档已按周拆分（原文件 >${MAX_ARCHIVE_KB}KB，${blocks.length} 条 ADR）。`,
+    '> 各周文件可直接查阅，或使用 `docpath reveal` / `docpath context` 检索。',
+    '',
+    '---',
+    '',
+    '## 周文件索引',
+    '',
+    ...Array.from(byWeek.keys()).map(w => `- [decisions-${w}.md](decisions-${w}.md)`),
+    '',
+    `> 原始大小: ${Math.round(sizeKb)}KB · ADR 数: ${blocks.length} · 周文件: ${byWeek.size} 个`,
+    '',
+  ].join('\n');
+  await writeFile(archivePath, indexLines, 'utf-8');
+
+  console.log(`📦  月度归档已按周拆分: ${monthLabel} → ${byWeek.size} 个周文件 (原 ${Math.round(sizeKb)}KB)`);
+}
+
 function cutoffTime(now: Date, retentionDays: number): number {
   return now.getTime() - retentionDays * 24 * 60 * 60 * 1000;
 }
@@ -363,8 +439,8 @@ export async function appendDecision(
   const records = await readDecisionJsonl(workspaceDir);
   const recordCount = records?.length || 0;
 
-  if (sizeKb > 80 || recordCount > 800) {
-    console.warn(`⚠️  decisions.md 即将超限 (${Math.round(sizeKb)}KB, ${recordCount} 条)，建议运行 docpath journal 触发 gc`);
+  if (sizeKb > 90 || recordCount > 900) {
+    console.warn(`⚠️  decisions.md 即将超限 (${Math.round(sizeKb)}KB, ${recordCount} 条)，建议运行 docpath gc-decisions`);
   }
 
   const now = new Date();
@@ -462,6 +538,7 @@ export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {})
     const archivePath = join(workspaceDir, `decisions-${month}.md`);
     const changed = await appendArchiveBlocks(archivePath, month, monthBlocks);
     if (changed) archiveFiles.push(archivePath);
+    await splitArchiveIfBloated(workspaceDir, archivePath);
   }
 
   if (archivableRecords.length > 0) {

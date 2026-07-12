@@ -10,12 +10,12 @@ import { readFile, writeFile, rename, readdir, stat } from 'fs/promises';
 import { join } from 'path';
 import { readCurrentState, readWorkspaceMeta, parsePlanTasks, type CurrentState } from '../utils/workspace.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
-import { emitPrompt } from '../utils/agent-prompt.js';
+
 import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { evaluateCompletionPolicy } from '../engine/policy.js';
 import { isQuickProfile } from '../engine/workflow-profile.js';
-import { appendDecision, gcDecisions } from '../governance/decisions.js';
+import { appendDecision, gcDecisions, splitArchiveIfBloated } from '../governance/decisions.js';
 import { listBacklogItems, transitionBacklog, writeBacklogItem } from '../engine/backlog.js';
 import {
   archivedTaskDir,
@@ -227,33 +227,37 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
     process.exit(1);
   }
 
-  console.log('\n📚  知识归档...\n');
+  if (!options.quietPrompt) {
+    console.log('\n📚  知识归档...\n');
+  }
 
   await assertJournalGate(cwd);
 
   const context = await loadJournalContext(cwd, docpathDir);
   const summary = await buildTaskSummary(context);
 
-  console.log(`📌  任务: ${summary.taskId}`);
-  console.log(`📊  步骤: ${summary.completedSteps}/${summary.totalSteps} 完成, ${summary.blockedSteps} 阻塞`);
-  console.log(`⏱️  耗时: ${summary.duration}\n`);
+  if (!options.quietPrompt) {
+    console.log(`📌  任务: ${summary.taskId}`);
+    console.log(`📊  步骤: ${summary.completedSteps}/${summary.totalSteps} 完成, ${summary.blockedSteps} 阻塞`);
+    console.log(`⏱️  耗时: ${summary.duration}\n`);
+  }
 
   if (options.quietPrompt) {
-    console.log('📝  journal prompt 已收敛（自动 closeout）；任务 evidence、lesson candidates 与 backlog 状态仍会写入。');
-    console.log('    如需手动生成完整知识记录，可单独运行: docpath journal\n');
+    console.log(`📝  知识自动归档: ${summary.completedSteps}/${summary.totalSteps} 步完成`);
   } else {
-    emitJournalPrompt(context, summary);
-    console.log('📌 完成后运行: docpath write-journal\n');
+    console.log('\n📋  知识记录待写入 spec.md');
+    console.log('    journal 在 docpath agent done 流程中会自动完成知识提取与写入。');
+    console.log('    如需手动操作，运行: docpath write-journal\n');
   }
 
   const archiveMode = options.archiveMode || 'skip';
-  const archive = await archiveCurrentTask(docpathDir, context.taskId, context.taskDir, archiveMode);
+  const archive = await archiveCurrentTask(docpathDir, context.taskId, context.taskDir, archiveMode, !!options.quietPrompt);
   if (archiveMode === 'dry-run') {
     printJournalDryRunComplete();
     return;
   }
 
-  await finalizeJournal(cwd, context, archive, summary, !!options.skipDecisionGc);
+  await finalizeJournal(cwd, context, archive, summary, !!options.skipDecisionGc, !!options.quietPrompt);
 }
 
 async function assertJournalGate(cwd: string): Promise<void> {
@@ -309,40 +313,6 @@ async function buildTaskSummary(context: JournalContext): Promise<TaskSummary> {
   };
 }
 
-function emitJournalPrompt(context: JournalContext, summary: TaskSummary): void {
-  emitPrompt({
-    task: 'journal',
-    system: '你是知识管理专家。请从以下开发任务中提炼结构化知识记录。',
-    context: {
-      '原始规约': context.spec.slice(0, 3000),
-      '执行计划': context.plan.slice(0, 2000),
-      '面包屑历史': context.breadcrumb.entries
-        .filter(e => e.taskId === context.taskId)
-        .map(e => `- [${e.status}] ${e.step}: ${e.context}`)
-        .join('\n'),
-      '任务统计': `总步数: ${summary.totalSteps}, 完成: ${summary.completedSteps}, 阻塞: ${summary.blockedSteps}`,
-    },
-    instructions: [
-      '请输出知识记录：',
-      '',
-      '### 📝 任务摘要',
-      '(一句话)',
-      '',
-      '### 🏗️ 架构决策',
-      '- 决策1: 原因',
-      '',
-      '### 💡 经验教训',
-      '- 教训1',
-      '',
-      '### 🔮 后续改进',
-      '- 改进1',
-      '',
-      '完成后写入 spec.md: docpath write-journal',
-    ],
-    output_format: 'knowledge record (markdown)',
-  });
-}
-
 function printJournalDryRunComplete(): void {
   console.log('🔍  [dry-run] 不写入状态、breadcrumb 或决策日志');
   console.log('─── 完成 ───');
@@ -355,6 +325,7 @@ async function finalizeJournal(
   archive: ArchiveResult,
   summary: TaskSummary,
   skipDecisionGc: boolean,
+  quiet: boolean = false,
 ): Promise<void> {
   if (context.current?.gate === 'check_pass' && isQuickProfile(context.current.workflow_profile)) {
     await transitionWorkflow(cwd, 'review.skipped', {
@@ -373,8 +344,10 @@ async function finalizeJournal(
   await updateWorkspaceMeta(context.docpathDir, context.meta);
   await writeJournalDecisions(cwd, archive.taskDirName, summary, context);
   await gcJournalDecisions(cwd, skipDecisionGc);
-  console.log('─── 完成 ───');
-  console.log('所有步骤已归档。运行 `docpath init` 开始新任务。');
+  if (!quiet) {
+    console.log('─── 完成 ───');
+    console.log('所有步骤已归档。运行 `docpath init` 开始新任务。');
+  }
   await emitNextHint(cwd);
 }
 
@@ -383,16 +356,19 @@ async function archiveCurrentTask(
   taskId: string,
   currentTaskDir: string,
   archiveMode: NonNullable<JournalOptions['archiveMode']>,
+  quiet: boolean = false,
 ): Promise<ArchiveResult> {
   const doneDir = join(docpathDir, 'tasks', 'done');
   const archiveDir = archivedTaskDir(docpathDir, taskId || 'unknown');
   if (archiveMode === 'skip') {
-    const canonicalPath = `.docpath/tasks/${taskId || 'unknown'}/`;
-    console.log('⏭️  物理任务目录归档已延后（journal 默认行为，对齐 agent done）');
-    console.log(`   这不是完成失败；逻辑完成与 journal 收尾仍会继续执行。`);
-    console.log(`   canonical evidence 保留在 ${canonicalPath}，用于 docpath changes --agent / git closeout。`);
-    console.log('   closeout 后可运行 docpath gc --force，将非活跃 canonical 任务目录移动到 .docpath/tasks/done/。');
-    console.log('   如需 journal 同次归档（老行为），使用 --optional-archive=always。');
+    if (!quiet) {
+      const canonicalPath = `.docpath/tasks/${taskId || 'unknown'}/`;
+      console.log('⏭️  物理任务目录归档已延后（journal 默认行为，对齐 agent done）');
+      console.log(`   这不是完成失败；逻辑完成与 journal 收尾仍会继续执行。`);
+      console.log(`   canonical evidence 保留在 ${canonicalPath}，用于 docpath changes --agent / git closeout。`);
+      console.log('   closeout 后可运行 docpath gc --force，将非活跃 canonical 任务目录移动到 .docpath/tasks/done/。');
+      console.log('   如需 journal 同次归档（老行为），使用 --optional-archive=always。');
+    }
   } else {
     if (archiveMode === 'dry-run') console.log(`🔍  [dry-run] 将归档: ${currentTaskDir} → ${archiveDir}`);
     try {
@@ -674,16 +650,10 @@ async function gcJournalDecisions(cwd: string, skipDecisionGc: boolean): Promise
       }
     }
 
-    // Also check monthly archives for bloat
     const files = await readdir(workspaceDir);
     for (const file of files) {
       if (/^decisions-\d{4}-\d{2}\.md$/.test(file)) {
-        const archivePath = join(workspaceDir, file);
-        const fileStats = await stat(archivePath);
-        const sizeKb = fileStats.size / 1024;
-        if (sizeKb > 200) {
-          console.log(`⚠️  月度归档 ${file} 超过 200KB (${Math.round(sizeKb)}KB)，建议拆分或压缩`);
-        }
+        await splitArchiveIfBloated(workspaceDir, join(workspaceDir, file));
       }
     }
 
