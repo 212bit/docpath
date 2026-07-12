@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-12T14:35:58.035Z",
+    "updated_at": "2026-07-12T14:35:58.035Z",
+    "content_sha256": "c946b392080d12f83207f25d653324c1f1a8dce5ca751b48d1a5efa7262d9ccf"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-12T14:35:58.035Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 拆分 `src/commands/trace.ts` 中 `traceCommand` 的 matrix 分支和普通 trace 分支，使主函数只负责高层路由。",
+      "description": "根据 spec 明确 FR-1: 拆分 `src/commands/trace.ts` 中 `traceCommand` 的 matrix 分支和普通 trace 分支，使主函数只负责高层路由。 的实现边界和验收口径。",
+      "acceptance": "AC-1: `traceCommand` 主体明显缩短，matrix 处理逻辑由独立 helper 承担，trace 行为测试保持通过。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 拆分 `src/commands/trace.ts` 中 `traceCommand` 的 matrix 分支和普通 trace 分支，使主函数只负责高层路由。",
+      "description": "在现有架构内完成 FR-1: 拆分 `src/commands/trace.ts` 中 `traceCommand` 的 matrix 分支和普通 trace 分支，使主函数只负责高层路由。 的代码与文档更新。",
+      "acceptance": "FR-1 拆分 `src/commands/trace.ts` 中 `traceCommand` 的 matrix 分支和普通 trace 分支，使主函数只负责高层路由。 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 拆分 `src/commands/write-spec.ts` 中 `writeSpecCommand` 的输入读取、任务身份解析、写入目标解析和 post-write payload 构造。",
+      "description": "在现有架构内完成 FR-2: 拆分 `src/commands/write-spec.ts` 中 `writeSpecCommand` 的输入读取、任务身份解析、写入目标解析和 post-write payload 构造。。",
+      "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 FR-3 收紧状态兼容层：命令绑定任务身份时优先使用 `state.json` 和 spec H1，避免把 `current.md` 作为默认决策路径；保留 legacy migration fallback。",
+      "description": "在现有架构内完成 FR-3: 收紧状态兼容层：命令绑定任务身份时优先使用 `state.json` 和 spec H1，避免把 `current.md` 作为默认决策路径；保留 legacy migration fallback。。",
+      "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "实现 FR-4 增加或调整测试覆盖拆分后的行为，尤其是无 `task_id` 写 spec 绑定任务、legacy current.md 迁移、trace matrix 分支输出。",
+      "description": "在现有架构内完成 FR-4: 增加或调整测试覆盖拆分后的行为，尤其是无 `task_id` 写 spec 绑定任务、legacy current.md 迁移、trace matrix 分支输出。。",
+      "acceptance": "FR-4 已实现，并保持现有工作流兼容。",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: `traceCommand` 主体明显缩短，matrix 处理逻辑由独立 helper 承担，trace 行为测试保持通过。；AC-2: `writeSpecCommand` 主体明显缩短，输入读取、任务身份解析、写入目标解析和 post-write payload 由 helper 承担。；AC-3: 状态兼容层保留 legacy current.md 迁移，但新任务身份解析测试证明无 `task_id` 时从 spec H1 绑定，且 state 优先路径不依赖 current.md。；AC-4: `pnpm run typecheck`、目标测试、`pnpm test`、`docpath check` 和 `docpath review` 通过。",
+      "acceptance": "AC-1: `traceCommand` 主体明显缩短，matrix 处理逻辑由独立 helper 承担，trace 行为测试保持通过。；AC-2: `writeSpecCommand` 主体明显缩短，输入读取、任务身份解析、写入目标解析和 post-write payload 由 helper 承担。；AC-3: 状态兼容层保留 legacy current.md 迁移，但新任务身份解析测试证明无 `task_id` 时从 spec H1 绑定，且 state 优先路径不依赖 current.md。；AC-4: `pnpm run typecheck`、目标测试、`pnpm test`、`docpath check` 和 `docpath review` 通过。",
+      "dependencies": "S5",
+      "status": "done"
+    }
+  ]
+}

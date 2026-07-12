@@ -168,6 +168,37 @@ describe('docpath runtime lifecycle', () => {
     fs.rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('status migrates legacy current.md only when state.json is missing', () => {
+    const cwd = mkExecWorkspace();
+    const workspace = path.join(cwd, '.docpath', 'workspace');
+    fs.rmSync(path.join(workspace, 'state.json'), { force: true });
+    fs.writeFileSync(path.join(workspace, 'current.md'), [
+      '# Legacy Current',
+      '',
+      '```yaml',
+      'level: 2',
+      'workflow_profile: standard',
+      'state: executing',
+      'task_id: T-LEGACY',
+      'task_title: Legacy Migration',
+      'phase: executing',
+      'gate: none',
+      'current_step: S1',
+      'started_at: 2026-06-01T00:00:00.000Z',
+      'updated_at: 2026-06-01T00:00:00.000Z',
+      '```',
+      '',
+    ].join('\n'));
+
+    const out = run('status --agent', cwd);
+    const state = JSON.parse(fs.readFileSync(path.join(workspace, 'state.json'), 'utf-8'));
+
+    assert.match(out, /task_id: T-LEGACY/);
+    assert.equal(state.task_id, 'T-LEGACY');
+    assert.equal(state.phase, 'executing');
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('discover finds context files', () => {
     const out = run('discover', tmpDir);
     assert.match(out, /Discovery|state\.json|current\.md/i, `got: ${out.slice(0, 100)}`);

@@ -141,6 +141,9 @@ describe('deliverables templates', () => {
     const status = run('trace matrix status', cwd);
     assert.equal(status.code, 0);
     assert.match(status.out, /Trace matrix: 1 entries, 0 gaps/);
+    const statusJson = run('trace matrix status --json', cwd);
+    assert.equal(statusJson.code, 0);
+    assert.match(statusJson.out, /"entries"/);
 
     const generate = run('trace matrix generate', cwd);
     assert.equal(generate.code, 0);

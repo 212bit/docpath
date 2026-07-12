@@ -25,20 +25,24 @@ interface WriteSpecOptions {
   stdin?: boolean;
 }
 
-export async function writeSpecCommand(options: WriteSpecOptions): Promise<void> {
-  const { cwd, content } = options;
-  const docpathDir = await resolveDocpathDir(cwd);
+interface SpecTaskIdentity {
+  taskId: string;
+  taskTitle: string;
+}
 
+async function assertDocpathWorkspace(cwd: string): Promise<string> {
+  const docpathDir = await resolveDocpathDir(cwd);
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
     process.exit(1);
   }
+  return docpathDir;
+}
 
-  // 读取内容：优先参数，否则 stdin
-  let specContent = content || '';
+async function readSpecContent(options: WriteSpecOptions): Promise<string> {
+  let specContent = options.content || '';
 
   if (!specContent && options.stdin !== false) {
-    // 从 stdin 读取
     specContent = await readStdin();
   }
 
@@ -49,32 +53,62 @@ export async function writeSpecCommand(options: WriteSpecOptions): Promise<void>
     process.exit(1);
   }
 
+  return specContent;
+}
+
+async function validateSpecOrExit(cwd: string, docpathDir: string, specContent: string): Promise<void> {
   const validation = validateSpecContent(specContent);
-  if (!validation.ok) {
-    const current = await readCurrentState(cwd);
-    const taskId = current?.task_id || 'current';
-    const canonicalPath = join(canonicalTaskDir(docpathDir, taskId), 'spec.md');
-    const currentPath = join(currentTaskDir(docpathDir), 'spec.md');
-    console.error('❌  spec.md 结构校验失败：');
-    console.error(`   实际目标: ${canonicalPath}`);
-    console.error(`   current 视图: ${currentPath}`);
-    for (const issue of validation.issues) {
-      console.error(`   - ${formatValidationIssue(issue)}`);
-    }
-    process.exit(1);
-  }
+  if (validation.ok) return;
 
   const current = await readCurrentState(cwd);
+  const taskId = current?.task_id || taskIdFromMarkdown(specContent) || 'current';
+  const canonicalPath = join(canonicalTaskDir(docpathDir, taskId), 'spec.md');
+  const currentPath = join(currentTaskDir(docpathDir), 'spec.md');
+  console.error('❌  spec.md 结构校验失败：');
+  console.error(`   实际目标: ${canonicalPath}`);
+  console.error(`   current 视图: ${currentPath}`);
+  for (const issue of validation.issues) {
+    console.error(`   - ${formatValidationIssue(issue)}`);
+  }
+  process.exit(1);
+}
+
+function titleFromSpecHeading(specContent: string): string {
+  return specContent.match(/^#\s+T-\S+\s+-\s+(.+)$/m)?.[1]?.trim() || '';
+}
+
+function resolveSpecTaskIdentity(
+  current: Awaited<ReturnType<typeof readCurrentState>>,
+  specContent: string,
+): SpecTaskIdentity {
   const taskId = current?.task_id?.trim() || taskIdFromMarkdown(specContent) || '';
   if (!taskId) {
     console.error('❌  无法从 spec 首行解析 task_id。请使用 `# T-<date>-<slug> - <title>` 作为标题。');
     process.exit(1);
   }
 
-  if (!current || current.phase === 'idle' || current.phase === 'completed') {
+  return {
+    taskId,
+    taskTitle: current?.task_title?.trim() || titleFromSpecHeading(specContent),
+  };
+}
+
+function shouldRequireCleanWorktreeForSpecWrite(current: Awaited<ReturnType<typeof readCurrentState>>): boolean {
+  return !current || current.phase === 'idle' || current.phase === 'completed';
+}
+
+export async function writeSpecCommand(options: WriteSpecOptions): Promise<void> {
+  const { cwd } = options;
+  const docpathDir = await assertDocpathWorkspace(cwd);
+  const specContent = await readSpecContent(options);
+  await validateSpecOrExit(cwd, docpathDir, specContent);
+
+  const current = await readCurrentState(cwd);
+  const { taskId, taskTitle } = resolveSpecTaskIdentity(current, specContent);
+
+  if (shouldRequireCleanWorktreeForSpecWrite(current)) {
     assertCleanWorktreeForNewTask(cwd, 'docpath write-spec');
   }
-  const taskTitle = current?.task_title?.trim() || specContent.match(/^#\s+T-\S+\s+-\s+(.+)$/m)?.[1]?.trim() || '';
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'spec.md', specContent);
 
   console.log(`✅  spec.md 已写入: ${canonicalPath}`);

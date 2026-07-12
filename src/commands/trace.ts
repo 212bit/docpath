@@ -33,207 +33,261 @@ function progressBar(ratio: number, width: number = 20): string {
   return '█'.repeat(filled) + '░'.repeat(empty);
 }
 
-export async function traceCommand(opts: TraceOptions): Promise<void> {
-  const cwd = opts.cwd;
-  const action = opts.action || 'show';
-  const limit = opts.limit || 50;
-  const session = typeof opts.session === 'string' ? opts.session : undefined;
-
+async function assertDocpathWorkspace(cwd: string): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
   if (!existsSync(docpathDir)) {
     console.error('❌ 未找到 .docpath/ 目录。请先运行 `docpath init`');
     process.exit(1);
   }
+}
 
-  if (action === 'matrix') {
-    const { readLifecycleConfig } = await import('../utils/lifecycle.js');
-    const lifecycleConfig = await readLifecycleConfig(cwd);
-    if (!lifecycleConfig) {
-      console.error('❌ Trace matrix requires lifecycle profile. Run `docpath deliverables init --profile <profile>` first.');
-      process.exit(1);
-    }
+async function handleTraceMatrix(cwd: string, matrixAction: TraceOptions['matrixAction'], json?: boolean): Promise<void> {
+  const { readLifecycleConfig } = await import('../utils/lifecycle.js');
+  const lifecycleConfig = await readLifecycleConfig(cwd);
+  if (!lifecycleConfig) {
+    console.error('❌ Trace matrix requires lifecycle profile. Run `docpath deliverables init --profile <profile>` first.');
+    process.exit(1);
+  }
 
-    const matrixAction = opts.matrixAction || 'status';
-    if (matrixAction === 'generate') {
-      const report = await generateTraceMatrix(cwd);
-      if (opts.json) {
-        console.log(JSON.stringify(report, null, 2));
-        return;
-      }
-      console.log(`✅ trace matrix generated: ${report.output_path}`);
-    } else if (matrixAction === 'check') {
-      const report = await checkTraceMatrix(cwd);
-      if (opts.json) {
-        console.log(JSON.stringify(report, null, 2));
-        return;
-      }
-      if (report.gaps.length > 0) {
-        console.log(JSON.stringify({ passed: false, gaps: report.gaps }, null, 2));
-        throw new Error(`trace matrix check failed: ${report.gaps.length} gap(s)`);
-      } else {
-        console.log('✅ trace matrix check passed (0 gaps)');
-      }
-    } else {
-      const report = await getTraceMatrixStatus(cwd);
-      if (opts.json) {
-        console.log(JSON.stringify(report, null, 2));
-        return;
-      }
-      console.log(`📊 Trace matrix: ${report.entries.length} entries, ${report.gaps.length} gaps`);
-      if (report.gaps.length > 0) {
-        for (const gap of report.gaps) console.log(`  - ${gap}`);
-      }
+  const action = matrixAction || 'status';
+  if (action === 'generate') {
+    const report = await generateTraceMatrix(cwd);
+    if (json) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
     }
+    console.log(`✅ trace matrix generated: ${report.output_path}`);
     return;
   }
 
+  if (action === 'check') {
+    const report = await checkTraceMatrix(cwd);
+    if (json) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+    if (report.gaps.length > 0) {
+      console.log(JSON.stringify({ passed: false, gaps: report.gaps }, null, 2));
+      throw new Error(`trace matrix check failed: ${report.gaps.length} gap(s)`);
+    }
+    console.log('✅ trace matrix check passed (0 gaps)');
+    return;
+  }
+
+  const report = await getTraceMatrixStatus(cwd);
+  if (json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+  console.log(`📊 Trace matrix: ${report.entries.length} entries, ${report.gaps.length} gaps`);
+  if (report.gaps.length > 0) {
+    for (const gap of report.gaps) console.log(`  - ${gap}`);
+  }
+}
+
+async function handleTraceConfigAction(cwd: string, action: 'clear' | 'enable' | 'disable'): Promise<void> {
   if (action === 'clear') {
     await clearTrace(cwd);
     console.log('🗑️ 追踪日志已清空。');
     return;
   }
 
+  const { configCommand } = await import('./config.js');
   if (action === 'enable') {
-    const { configCommand } = await import('./config.js');
     await configCommand({ cwd, set: 'trace', value: 'true' });
     console.log('🚀 项目级 CLI 调用追踪已开启 (配置 trace: true)。\n此后 Agent 调用均会自动记录。可以使用 DOCPATH_TRACE=1 临时强制启用。');
     return;
   }
 
-  if (action === 'disable') {
-    const { configCommand } = await import('./config.js');
-    await configCommand({ cwd, set: 'trace', value: 'false' });
-    console.log('🛑 项目级 CLI 调用追踪已关闭 (配置 trace: false)。');
+  await configCommand({ cwd, set: 'trace', value: 'false' });
+  console.log('🛑 项目级 CLI 调用追踪已关闭 (配置 trace: false)。');
+}
+
+async function printEmptyTraceMessage(cwd: string, json?: boolean): Promise<void> {
+  if (json) {
+    console.log(JSON.stringify([], null, 2));
+    return;
+  }
+
+  const { isTraceEnabledSync } = await import('../utils/trace.js');
+  const enabled = isTraceEnabledSync(cwd);
+  if (enabled) {
+    console.log('💡 追踪已在配置中开启，但目前暂无其他命令的调用记录。\n请试着运行一些其他命令（例如 `docpath status` 或 `docpath next`），系统将自动采集并生成分析数据！');
+  } else {
+    console.log('💡 追踪目前未开启。您可以运行 `docpath trace enable` 开启项目级追踪，或使用 `DOCPATH_TRACE=1` 环境变量临时强制记录。');
+  }
+}
+
+async function printJsonTraceReport(
+  cwd: string,
+  action: TraceOptions['action'],
+  entries: TraceEntry[],
+  limit: number,
+  session?: string,
+): Promise<void> {
+  if (action === 'show') {
+    console.log(JSON.stringify(entries.slice(-limit), null, 2));
+  } else if (action === 'session') {
+    const groups = groupBySession(entries);
+    const targetSession = session || Object.keys(groups).pop() || '';
+    const sessionEntries = groups[targetSession] || [];
+    console.log(JSON.stringify(analyzeSession(targetSession, sessionEntries), null, 2));
+  } else if (action === 'health') {
+    console.log(JSON.stringify(buildHealthReport(entries), null, 2));
+  } else if (action === 'anomaly') {
+    console.log(JSON.stringify(await detectAnomalies(entries, cwd), null, 2));
+  }
+}
+
+function printTraceShow(entries: TraceEntry[], limit: number): void {
+  console.log(`📋 最近调用流水（显示最近 ${limit} 条，共 ${entries.length} 条）\n`);
+  const slice = entries.slice(-limit);
+  for (const e of slice) {
+    const tsStr = new Date(e.ts).toLocaleTimeString('zh-CN', { hour12: false });
+    const statusLabel = `[${e.phase}/${e.gate}]`.padEnd(20);
+    const cmdStr = `${e.cmd} ${e.args.join(' ')}`.slice(0, 50);
+    const isFailed = e.exitCode !== 0;
+    const statusIndicator = isFailed ? '⚠️ FAILED' : 'exit:0';
+    const indicatorColor = isFailed ? '\x1b[31m' : '\x1b[32m';
+    const resetColor = '\x1b[0m';
+    console.log(
+      `  ${tsStr}  ${statusLabel}  ${cmdStr.padEnd(50)} → ${indicatorColor}${statusIndicator}${resetColor}  ${e.durationMs}ms`
+    );
+  }
+}
+
+function printTraceSession(entries: TraceEntry[], session?: string): void {
+  const groups = groupBySession(entries);
+  const targetSession = session || Object.keys(groups).pop() || '';
+  const sessionEntries = groups[targetSession] || [];
+  if (sessionEntries.length === 0) {
+    console.log(`❌ 未找到 Session ID 为 "${targetSession}" 的记录。`);
+    return;
+  }
+
+  const report = analyzeSession(targetSession, sessionEntries);
+
+  console.log(`📊 Session 分析: ${report.sessionId}`);
+  console.log(`   Agent: ${report.agent} | 时长: ${report.durationMinutes} 分钟 | 命令数: ${report.totalCommands} | 失败: ${report.failedCommands}`);
+  console.log(`   访问的阶段: ${report.phasesVisited.join(' → ')}`);
+
+  const scoreColor = report.complianceScore >= 80 ? '\x1b[32m' : report.complianceScore >= 60 ? '\x1b[33m' : '\x1b[31m';
+  console.log(`\n   协议合规得分: ${scoreColor}${report.complianceScore}/100\x1b[0m`);
+  
+  if (report.deductions.length > 0) {
+    console.log(`   ┌ 扣分项 ──────────────────────────────────────────────┐`);
+    for (const d of report.deductions) {
+      console.log(`   │  ${d.reason.padEnd(46)} -${d.score.toString().padEnd(2)} │`);
+    }
+    console.log(`   └──────────────────────────────────────────────────────┘`);
+  } else {
+    console.log('   ✅ 完美遵守协议，无扣分项！');
+  }
+
+  console.log(`\n   热点命令:`);
+  for (const h of report.commandHotspots.slice(0, 5)) {
+    console.log(`   ${h.cmd.padEnd(24)} ${progressBar(h.percentage / 100, 10)} ${h.count}次 (${h.percentage}%)`);
+  }
+
+  console.log(`\n   耗时分布:`);
+  console.log(`   ${'命令'.padEnd(16)} ${'avg'.padStart(6)} ${'p95'.padStart(6)} ${'max'.padStart(6)}`);
+  for (const l of report.latencyStats.slice(0, 5)) {
+    console.log(`   ${l.cmd.padEnd(16)} ${(l.avg + 'ms').padStart(6)} ${(l.p95 + 'ms').padStart(6)} ${(l.max + 'ms').padStart(6)}`);
+  }
+}
+
+function printTraceHealth(entries: TraceEntry[]): void {
+  const report = buildHealthReport(entries);
+  console.log(`🏥 DocPath 工作流健康报告`);
+  console.log(`   数据范围: 最近历史 | ${report.totalCommands} 条调用 | ${report.totalSessions} 个 session\n`);
+
+  console.log(`   ┌ 健康指标 ────────────────────────────────────────────┐`);
+  console.log(`   │  会话通过率  ${(report.successRate + '%').padEnd(8)} (未发生严重失败的命令比例)      │`);
+  console.log(`   │  门禁通过率  ${(report.firstTimePassRate + '%').padEnd(8)} (check 命令首次通过率)           │`);
+  console.log(`   │  平均会话长  ${(report.avgSessionMinutes + ' 分钟').padEnd(10)}                             │`);
+  console.log(`   └──────────────────────────────────────────────────────┘`);
+
+  console.log(`\n   ┌ 阶段耗时热力图（平均分钟） ──────────────────────────┐`);
+  for (const p of report.phaseDurationPercentage.slice(0, 5)) {
+    console.log(`   │  ${p.phase.padEnd(12)} ${progressBar(p.percentage / 100, 12)} ${p.minutes.toString().padStart(5)}m (${p.percentage}%)      │`);
+  }
+  console.log(`   └──────────────────────────────────────────────────────┘`);
+
+  if (report.failureClusters.length > 0) {
+    console.log(`\n   ┌ 失败前命令序列聚类（根因分析） ──────────────────────┐`);
+    for (const f of report.failureClusters.slice(0, 3)) {
+      console.log(`   │  序列: ${f.pattern.padEnd(45)} │`);
+      console.log(`   │  占比: ${f.count} 次 (${f.percentage}%) | ${f.deduction.padEnd(26)} │`);
+      console.log(`   │                                                      │`);
+    }
+    console.log(`   └──────────────────────────────────────────────────────┘`);
+  }
+}
+
+async function printTraceAnomalies(cwd: string, entries: TraceEntry[]): Promise<void> {
+  const anomalies = await detectAnomalies(entries, cwd);
+  console.log(`🚨 DocPath 异常检测报告`);
+  console.log(`   共发现 ${anomalies.length} 个异常模式\n`);
+
+  if (anomalies.length === 0) {
+    console.log('   ✅ 未发现明显反模式或环境异常，环境与 Agent 表现良好！');
+    return;
+  }
+
+  for (const a of anomalies) {
+    const color = a.severity === 'HIGH' ? '\x1b[31m' : a.severity === 'MEDIUM' ? '\x1b[33m' : '\x1b[34m';
+    console.log(`   [${color}${a.severity}\x1b[0m] ${a.message}`);
+    console.log(`            证据: ${a.evidence}`);
+    console.log(`            建议: ${a.recommendation}\n`);
+  }
+}
+
+async function printHumanTraceReport(
+  cwd: string,
+  action: TraceOptions['action'],
+  entries: TraceEntry[],
+  limit: number,
+  session?: string,
+): Promise<void> {
+  if (action === 'show') {
+    printTraceShow(entries, limit);
+  } else if (action === 'session') {
+    printTraceSession(entries, session);
+  } else if (action === 'health') {
+    printTraceHealth(entries);
+  } else if (action === 'anomaly') {
+    await printTraceAnomalies(cwd, entries);
+  }
+}
+
+export async function traceCommand(opts: TraceOptions): Promise<void> {
+  const cwd = opts.cwd;
+  const action = opts.action || 'show';
+  const limit = opts.limit || 50;
+  const session = typeof opts.session === 'string' ? opts.session : undefined;
+
+  await assertDocpathWorkspace(cwd);
+
+  if (action === 'matrix') {
+    await handleTraceMatrix(cwd, opts.matrixAction, opts.json);
+    return;
+  }
+
+  if (action === 'clear' || action === 'enable' || action === 'disable') {
+    await handleTraceConfigAction(cwd, action);
     return;
   }
 
   const entries = await readTraceEntries(cwd);
   if (entries.length === 0) {
-    if (opts.json) {
-      console.log(JSON.stringify([], null, 2));
-    } else {
-      const { isTraceEnabledSync } = await import('../utils/trace.js');
-      const enabled = isTraceEnabledSync(cwd);
-      if (enabled) {
-        console.log('💡 追踪已在配置中开启，但目前暂无其他命令的调用记录。\n请试着运行一些其他命令（例如 `docpath status` 或 `docpath next`），系统将自动采集并生成分析数据！');
-      } else {
-        console.log('💡 追踪目前未开启。您可以运行 `docpath trace enable` 开启项目级追踪，或使用 `DOCPATH_TRACE=1` 环境变量临时强制记录。');
-      }
-    }
+    await printEmptyTraceMessage(cwd, opts.json);
     return;
   }
 
   if (opts.json) {
-    if (action === 'show') {
-      console.log(JSON.stringify(entries.slice(-limit), null, 2));
-    } else if (action === 'session') {
-      const groups = groupBySession(entries);
-      const targetSession = session || Object.keys(groups).pop() || '';
-      const sessionEntries = groups[targetSession] || [];
-      console.log(JSON.stringify(analyzeSession(targetSession, sessionEntries), null, 2));
-    } else if (action === 'health') {
-      console.log(JSON.stringify(buildHealthReport(entries), null, 2));
-    } else if (action === 'anomaly') {
-      console.log(JSON.stringify(await detectAnomalies(entries, cwd), null, 2));
-    }
+    await printJsonTraceReport(cwd, action, entries, limit, session);
     return;
   }
 
-  // 终端美化输出
-  if (action === 'show') {
-    console.log(`📋 最近调用流水（显示最近 ${limit} 条，共 ${entries.length} 条）\n`);
-    const slice = entries.slice(-limit);
-    for (const e of slice) {
-      const tsStr = new Date(e.ts).toLocaleTimeString('zh-CN', { hour12: false });
-      const statusLabel = `[${e.phase}/${e.gate}]`.padEnd(20);
-      const cmdStr = `${e.cmd} ${e.args.join(' ')}`.slice(0, 50);
-      const isFailed = e.exitCode !== 0;
-      const statusIndicator = isFailed ? '⚠️ FAILED' : 'exit:0';
-      const indicatorColor = isFailed ? '\x1b[31m' : '\x1b[32m';
-      const resetColor = '\x1b[0m';
-      console.log(
-        `  ${tsStr}  ${statusLabel}  ${cmdStr.padEnd(50)} → ${indicatorColor}${statusIndicator}${resetColor}  ${e.durationMs}ms`
-      );
-    }
-  } else if (action === 'session') {
-    const groups = groupBySession(entries);
-    const targetSession = session || Object.keys(groups).pop() || '';
-    const sessionEntries = groups[targetSession] || [];
-    if (sessionEntries.length === 0) {
-      console.log(`❌ 未找到 Session ID 为 "${targetSession}" 的记录。`);
-      return;
-    }
-
-    const report = analyzeSession(targetSession, sessionEntries);
-
-    console.log(`📊 Session 分析: ${report.sessionId}`);
-    console.log(`   Agent: ${report.agent} | 时长: ${report.durationMinutes} 分钟 | 命令数: ${report.totalCommands} | 失败: ${report.failedCommands}`);
-    console.log(`   访问的阶段: ${report.phasesVisited.join(' → ')}`);
-
-    const scoreColor = report.complianceScore >= 80 ? '\x1b[32m' : report.complianceScore >= 60 ? '\x1b[33m' : '\x1b[31m';
-    console.log(`\n   协议合规得分: ${scoreColor}${report.complianceScore}/100\x1b[0m`);
-    
-    if (report.deductions.length > 0) {
-      console.log(`   ┌ 扣分项 ──────────────────────────────────────────────┐`);
-      for (const d of report.deductions) {
-        console.log(`   │  ${d.reason.padEnd(46)} -${d.score.toString().padEnd(2)} │`);
-      }
-      console.log(`   └──────────────────────────────────────────────────────┘`);
-    } else {
-      console.log('   ✅ 完美遵守协议，无扣分项！');
-    }
-
-    console.log(`\n   热点命令:`);
-    for (const h of report.commandHotspots.slice(0, 5)) {
-      console.log(`   ${h.cmd.padEnd(24)} ${progressBar(h.percentage / 100, 10)} ${h.count}次 (${h.percentage}%)`);
-    }
-
-    console.log(`\n   耗时分布:`);
-    console.log(`   ${'命令'.padEnd(16)} ${'avg'.padStart(6)} ${'p95'.padStart(6)} ${'max'.padStart(6)}`);
-    for (const l of report.latencyStats.slice(0, 5)) {
-      console.log(`   ${l.cmd.padEnd(16)} ${(l.avg + 'ms').padStart(6)} ${(l.p95 + 'ms').padStart(6)} ${(l.max + 'ms').padStart(6)}`);
-    }
-  } else if (action === 'health') {
-    const report = buildHealthReport(entries);
-    console.log(`🏥 DocPath 工作流健康报告`);
-    console.log(`   数据范围: 最近历史 | ${report.totalCommands} 条调用 | ${report.totalSessions} 个 session\n`);
-
-    console.log(`   ┌ 健康指标 ────────────────────────────────────────────┐`);
-    console.log(`   │  会话通过率  ${(report.successRate + '%').padEnd(8)} (未发生严重失败的命令比例)      │`);
-    console.log(`   │  门禁通过率  ${(report.firstTimePassRate + '%').padEnd(8)} (check 命令首次通过率)           │`);
-    console.log(`   │  平均会话长  ${(report.avgSessionMinutes + ' 分钟').padEnd(10)}                             │`);
-    console.log(`   └──────────────────────────────────────────────────────┘`);
-
-    console.log(`\n   ┌ 阶段耗时热力图（平均分钟） ──────────────────────────┐`);
-    for (const p of report.phaseDurationPercentage.slice(0, 5)) {
-      console.log(`   │  ${p.phase.padEnd(12)} ${progressBar(p.percentage / 100, 12)} ${p.minutes.toString().padStart(5)}m (${p.percentage}%)      │`);
-    }
-    console.log(`   └──────────────────────────────────────────────────────┘`);
-
-    if (report.failureClusters.length > 0) {
-      console.log(`\n   ┌ 失败前命令序列聚类（根因分析） ──────────────────────┐`);
-      for (const f of report.failureClusters.slice(0, 3)) {
-        console.log(`   │  序列: ${f.pattern.padEnd(45)} │`);
-        console.log(`   │  占比: ${f.count} 次 (${f.percentage}%) | ${f.deduction.padEnd(26)} │`);
-        console.log(`   │                                                      │`);
-      }
-      console.log(`   └──────────────────────────────────────────────────────┘`);
-    }
-  } else if (action === 'anomaly') {
-    const anomalies = await detectAnomalies(entries, cwd);
-    console.log(`🚨 DocPath 异常检测报告`);
-    console.log(`   共发现 ${anomalies.length} 个异常模式\n`);
-
-    if (anomalies.length === 0) {
-      console.log('   ✅ 未发现明显反模式或环境异常，环境与 Agent 表现良好！');
-      return;
-    }
-
-    for (const a of anomalies) {
-      const color = a.severity === 'HIGH' ? '\x1b[31m' : a.severity === 'MEDIUM' ? '\x1b[33m' : '\x1b[34m';
-      console.log(`   [${color}${a.severity}\x1b[0m] ${a.message}`);
-      console.log(`            证据: ${a.evidence}`);
-      console.log(`            建议: ${a.recommendation}\n`);
-    }
-  }
+  await printHumanTraceReport(cwd, action, entries, limit, session);
 }
