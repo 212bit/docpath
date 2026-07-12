@@ -126,6 +126,8 @@ describe('docpath agent lifecycle', () => {
     assert.match(out, /agent_context/);
     assert.match(out, /recommended_command:/);
     assert.match(out, /docpath agent enter: 当前 phase=planning 尚未进入执行阶段/);
+    assert.match(out, /docpath go --step <id>/);
+    assert.match(out, /docpath run start --step <id> --note "<reason>"/);
     assert.equal(fs.existsSync(path.join(cwd, '.docpath', 'workspace', 'pending-done.md')), false);
     assert.equal(fs.existsSync(path.join(cwd, '.docpath', 'workspace', 'pending-done.json')), false);
     fs.rmSync(cwd, { recursive: true, force: true });

@@ -117,8 +117,10 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
     console.log(await generateAgentOutput(cwd));
     throw new Error(
       `docpath agent enter: 当前 phase=${phase || 'unknown'} 尚未进入执行阶段。\n` +
-      `    请先运行上方 recommended_command 启动或恢复具体步骤；\n` +
-      `    agent enter 只在 docpath go --step <id> 已启动步骤后使用，避免提前写入 pending-done。`,
+      `    正常路径: 先运行上方 recommended_command，通常是 docpath go --step <id>。\n` +
+      `    恢复路径: 如果代码已经改动且确认属于当前任务，可运行 docpath run start --step <id> --note "<reason>" 记录恢复意图。\n` +
+      `    若 dirty worktree 包含无关文件，先运行 docpath changes --agent 或使用 docpath worktree create <slug>。\n` +
+      `    agent enter 只在具体步骤已进入 executing 后使用，避免提前写入 pending-done。`,
     );
   }
   await touchSession(cwd, {

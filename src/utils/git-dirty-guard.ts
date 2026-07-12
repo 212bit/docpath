@@ -23,6 +23,12 @@ interface CleanWorktreeOptions {
   allowDirtyPath?: (path: string) => boolean;
 }
 
+interface ExecutionStartDirtyOptions {
+  taskId?: string;
+  backlogId?: string | null;
+  step?: string;
+}
+
 function runGit(cwd: string, args: string[]): string {
   return execFileSync('git', args, {
     cwd,
@@ -74,18 +80,51 @@ function formatDirtySummary(report: DirtyWorktreeReport, files: string[]): strin
   return lines.join('\n');
 }
 
-function buildDirtyWorktreeError(command: string, report: DirtyWorktreeReport, files: string[], mode: 'new-task' | 'execution-start'): Error {
+function isCurrentTaskExecutionPath(path: string, options: ExecutionStartDirtyOptions): boolean {
+  const file = normalizeGitPath(path);
+  const taskId = options.taskId?.trim();
+  const backlogId = options.backlogId?.trim();
+
+  if (file.startsWith('.docpath/workspace/')) return true;
+  if (file.startsWith('.docpath/tasks/current/')) return true;
+  if (taskId && file.startsWith(`.docpath/tasks/${taskId}/`)) return true;
+  if (backlogId && file === `.docpath/backlog/${backlogId}.md`) return true;
+  if (backlogId && file === '.docpath/backlog/backlog.md') return true;
+  return false;
+}
+
+function buildDirtyWorktreeError(
+  command: string,
+  report: DirtyWorktreeReport,
+  files: string[],
+  mode: 'new-task' | 'execution-start',
+  options: ExecutionStartDirtyOptions = {},
+): Error {
   const reason = mode === 'new-task'
     ? '当前 Git worktree 存在未提交变更，拒绝在 dirty worktree 上启动新任务。'
-    : '当前 Git worktree 存在非 DocPath 未提交变更，拒绝进入执行步骤。';
-  return new Error([
+    : '当前 Git worktree 存在与当前任务无关或无法确认归属的未提交变更，拒绝进入执行步骤。';
+  const lines = [
     `${command}: ${reason}`,
     formatDirtySummary(report, files),
+  ];
+
+  if (mode === 'execution-start') {
+    const step = options.step?.trim() || '<step>';
+    lines.push(
+      '   正常启动步骤:',
+      `     docpath go --step ${step}`,
+      '   如果这些源码/测试改动已确认属于当前任务，用恢复入口记录意图:',
+      `     docpath run start --step ${step} --note "recover current-task edits before go"`,
+    );
+  }
+
+  lines.push(
     '   先收口当前变更:',
     '     docpath changes --agent',
     '   并行开发请创建隔离 worktree:',
     '     docpath worktree create <slug>',
-  ].join('\n'));
+  );
+  return new Error(lines.join('\n'));
 }
 
 export function detectDirtyWorktree(cwd: string): DirtyWorktreeReport {
@@ -139,8 +178,14 @@ export function assertCleanWorktreeForNewTask(cwd: string, command: string, opti
   throw buildDirtyWorktreeError(command, report, blockedFiles, 'new-task');
 }
 
-export function assertNoNonDocPathChangesForExecutionStart(cwd: string, command: string): void {
+export function assertNoNonDocPathChangesForExecutionStart(
+  cwd: string,
+  command: string,
+  options: ExecutionStartDirtyOptions = {},
+): void {
   const report = detectDirtyWorktree(cwd);
-  if (!report.isGitRepo || report.nonDocPathFiles.length === 0) return;
-  throw buildDirtyWorktreeError(command, report, report.nonDocPathFiles, 'execution-start');
+  if (!report.isGitRepo || !report.dirty) return;
+  const blockedFiles = report.files.filter((file) => !isCurrentTaskExecutionPath(file, options));
+  if (blockedFiles.length === 0) return;
+  throw buildDirtyWorktreeError(command, report, blockedFiles, 'execution-start', options);
 }

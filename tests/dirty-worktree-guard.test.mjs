@@ -234,8 +234,30 @@ describe('dirty worktree guard', () => {
       const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
 
       assert.equal(result.code, 1);
-      assert.match(result.out, /docpath go: 当前 Git worktree 存在非 DocPath 未提交变更/);
+      assert.match(result.out, /docpath go: 当前 Git worktree 存在与当前任务无关或无法确认归属的未提交变更/);
       assert.match(result.out, /src\/app\.ts/);
+      assert.match(result.out, /docpath run start --step S1 --note "recover current-task edits before go"/);
+      assert.equal(state.phase, 'planning');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('go refuses unrelated DocPath task evidence before execution', () => {
+    const cwd = mkBaseWorkspace({ phase: 'planning', state: 'planning_done', taskId: 'T-DIRTY', taskTitle: 'Dirty Guard' });
+    try {
+      writeExecutableTask(cwd);
+      initGitRepo(cwd);
+      mkdirSync(join(cwd, '.docpath', 'tasks', 'T-OTHER'), { recursive: true });
+      writeFileSync(join(cwd, '.docpath', 'tasks', 'T-OTHER', 'spec.md'), '# T-OTHER - Other Task\n');
+
+      const result = runResult(['go', '--step', 'S1'], cwd);
+      const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+
+      assert.equal(result.code, 1);
+      assert.match(result.out, /与当前任务无关或无法确认归属/);
+      assert.match(result.out, /\.docpath\/tasks\/T-OTHER\/spec\.md/);
+      assert.match(result.out, /docpath changes --agent/);
       assert.equal(state.phase, 'planning');
     } finally {
       rmSync(cwd, { recursive: true, force: true });

@@ -245,8 +245,11 @@ export async function goCommand(options: GoOptions): Promise<void> {
     console.error('    确保 .docpath/tasks/current/spec.md 存在且首行为 `# T-<date>-<slug> - <标题>`，再运行 `docpath plan` 与 `docpath go`。');
     process.exit(1);
   }
+  let structuredSpec: Awaited<ReturnType<typeof readActiveStructuredSpecDocument>> = null;
+  if (!status) {
+    structuredSpec = await readActiveStructuredSpecDocument(docpathDir, resolvedTaskId);
+  }
   if (!status && current) {
-    const structuredSpec = await readActiveStructuredSpecDocument(docpathDir, resolvedTaskId);
     const profileResolution = resolveEffectiveWorkflowProfile({
       profile: current.workflow_profile,
       level: current.level,
@@ -268,7 +271,11 @@ export async function goCommand(options: GoOptions): Promise<void> {
   }
   await assertMajorChangeGateReady(cwd, docpathDir, resolvedTaskId, 'go');
   if (!status) {
-    assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go');
+    assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+      taskId: resolvedTaskId,
+      backlogId: current?.backlog_id ?? structuredSpec?.backlog_id,
+      step: target.id,
+    });
   }
   const uiRequirement = !status ? await resolveUiDesignRequirement(cwd) : 'exempt';
   const uiOptInAdvisory = !status && uiRequirement !== 'required'

@@ -81,7 +81,11 @@ function resolveSpecTaskIdentity(
   current: Awaited<ReturnType<typeof readCurrentState>>,
   specContent: string,
 ): SpecTaskIdentity {
-  const taskId = current?.task_id?.trim() || taskIdFromMarkdown(specContent) || '';
+  const declaredTaskId = taskIdFromMarkdown(specContent);
+  const activeStateTaskId = current && !['idle', 'completed'].includes(current.phase)
+    ? current.task_id?.trim()
+    : '';
+  const taskId = activeStateTaskId || declaredTaskId || '';
   if (!taskId) {
     console.error('❌  无法从 spec 首行解析 task_id。请使用 `# T-<date>-<slug> - <title>` 作为标题。');
     process.exit(1);
@@ -89,7 +93,7 @@ function resolveSpecTaskIdentity(
 
   return {
     taskId,
-    taskTitle: current?.task_title?.trim() || titleFromSpecHeading(specContent),
+    taskTitle: activeStateTaskId ? current?.task_title?.trim() || titleFromSpecHeading(specContent) : titleFromSpecHeading(specContent),
   };
 }
 

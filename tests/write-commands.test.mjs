@@ -217,6 +217,55 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('write-spec binds a new task id from the spec heading when previous task is completed', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass', taskId: 'T-OLD-WRITE', taskTitle: 'Old Task' });
+    const spec = [
+      '# T-NEW-COMPLETED - New Completed Write Task',
+      '',
+      '## 1. 背景与动机',
+      '',
+      '完成态旧任务不应劫持新 spec 的 canonical 目录。',
+      '',
+      '## 2. 需求清单',
+      '',
+      '### 功能需求',
+      '- [ ] FR-1: completed 状态下从 spec heading 绑定新任务',
+      '',
+      '### 非功能需求',
+      '- [ ] NFR-1: 保持 canonical/current 同步',
+      '',
+      '## 3. 范围界定',
+      '',
+      '### 包含',
+      '- completed 后启动新任务',
+      '',
+      '### 不包含',
+      '- 复用旧任务目录',
+      '',
+      '## 4. 关键决策',
+      '',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | 身份来源 | old state / spec heading | spec heading | completed 旧状态不是活跃绑定 |',
+      '',
+      '## 5. 验收标准',
+      '',
+      '- [ ] AC-1: state.task_id 被绑定为 T-NEW-COMPLETED',
+      '',
+    ].join('\n');
+
+    const output = runWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, spec);
+
+    assert.match(output, /spec\.md 已写入/);
+    assert.ok(existsSync(join(cwd, '.docpath', 'tasks', 'T-NEW-COMPLETED', 'spec.md')));
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'T-OLD-WRITE', 'spec.md')), false);
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.task_id, 'T-NEW-COMPLETED');
+    assert.equal(state.task_title, 'New Completed Write Task');
+    assert.equal(state.phase, 'drafting');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('write-spec rejects spec content that declares a different task id', () => {
     const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
     const specPath = join(cwd, '.docpath', 'tasks', 'current', 'spec.md');
