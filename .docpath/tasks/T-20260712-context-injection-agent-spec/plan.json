@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-12T04:51:27.957Z",
+    "updated_at": "2026-07-12T04:51:27.957Z",
+    "content_sha256": "225f88a1586e7e4aa8b3f649959fa4b98ecd8bf06307ab6221ce128e38e1aeb2"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-12T04:51:27.957Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 loadAgentOutputContext() 获取 spec 摘要",
+      "description": "根据 spec 明确 FR-1: loadAgentOutputContext() 获取 spec 摘要 的实现边界和验收口径。",
+      "acceptance": "AC-1: docpath next --agent 输出包含 context_injection.spec_summary（当前有活跃 spec 时）",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 loadAgentOutputContext() 获取 spec 摘要",
+      "description": "在现有架构内完成 FR-1: loadAgentOutputContext() 获取 spec 摘要 的代码与文档更新。",
+      "acceptance": "FR-1 loadAgentOutputContext() 获取 spec 摘要 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 loadAgentOutputContext() 获取最近 5 条 decisions",
+      "description": "在现有架构内完成 FR-2: loadAgentOutputContext() 获取最近 5 条 decisions。",
+      "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 FR-3 agent-output YAML 包含 context_injection 区块",
+      "description": "在现有架构内完成 FR-3: agent-output YAML 包含 context_injection 区块。",
+      "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "实现 FR-4 spec 不存在时 spec_summary 为 null",
+      "description": "在现有架构内完成 FR-4: spec 不存在时 spec_summary 为 null。",
+      "acceptance": "FR-4 已实现，并保持现有工作流兼容。",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "实现 FR-5 decisions.jsonl 不存在或为空时 recent_decisions 为 []",
+      "description": "在现有架构内完成 FR-5: decisions.jsonl 不存在或为空时 recent_decisions 为 []。",
+      "acceptance": "FR-5 已实现，并保持现有工作流兼容。",
+      "dependencies": "S5",
+      "status": "done"
+    },
+    {
+      "id": "S7",
+      "name": "实现 FR-6 不影响现有 YAML 字段，向后兼容",
+      "description": "在现有架构内完成 FR-6: 不影响现有 YAML 字段，向后兼容。",
+      "acceptance": "FR-6 已实现，并保持现有工作流兼容。",
+      "dependencies": "S6",
+      "status": "done"
+    },
+    {
+      "id": "S8",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: docpath next --agent 输出包含 context_injection.spec_summary（当前有活跃 spec 时）；AC-2: docpath next --agent 输出包含 context_injection.recent_decisions（有 decisions.jsonl 时）；AC-3: spec 不存在时 spec_summary 为 null；AC-4: decisions.jsonl 为空时 recent_decisions 为 []；AC-5: 现有 YAML 字段完全不变",
+      "acceptance": "AC-1: docpath next --agent 输出包含 context_injection.spec_summary（当前有活跃 spec 时）；AC-2: docpath next --agent 输出包含 context_injection.recent_decisions（有 decisions.jsonl 时）；AC-3: spec 不存在时 spec_summary 为 null；AC-4: decisions.jsonl 为空时 recent_decisions 为 []；AC-5: 现有 YAML 字段完全不变",
+      "dependencies": "S7",
+      "status": "done"
+    }
+  ]
+}

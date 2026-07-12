@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-12T04:50:33.360Z",
+    "updated_at": "2026-07-12T04:50:33.360Z",
+    "content_sha256": "f019e5e2bc075b2ed5881c67e8541d2331fb6f832a37e6f58d3adbc4c04adb38"
+  },
+  "task_id": "T-20260712-context-injection-agent-spec",
+  "backlog_id": "R-256",
+  "title": "T-20260712-context-injection-agent-spec - Context Injection: agent 输出注入 spec 摘要和决策历史",
+  "generated_at": "2026-07-12T04:50:33.360Z",
+  "scope": {
+    "included": [
+      "修改 `src/utils/agent-output/formatters.ts`：AgentOutputContext 新增字段 + loadAgentOutputContext 填充",
+      "修改 `src/utils/agent-output.ts`：YAML 序列化新增 context_injection 区块",
+      "读取 `decisions.jsonl` 的工具逻辑（内联在 formatters.ts 或新建小函数）"
+    ],
+    "excluded": [
+      "decisions.md markdown 解析（直接从 decisions.jsonl 结构化数据读取）",
+      "spec 全文语义摘要（仅取结构化字段：title + 功能需求 checklist）",
+      "修改 spec.json schema",
+      "修改 decisions.jsonl schema"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "用户已确认本会话中的设计方案，同意在 agent-output YAML 中增加 context_injection 区块",
+    "decision_brief_markdown": "- 当前问题: agent-output YAML 缺乏上下文信息，Agent 需要额外读取文件\n- 目标: 在 YAML 中注入 spec 摘要和决策历史，减少 Agent 文件读取\n- 变更内容: 在 agent-output YAML 增加 context_injection 区块（仅新增字段，不修改现有字段）\n- 影响评估: 仅影响 agent-output 的 YAML 序列化，不影响现有工作流状态机、门禁逻辑、文件读写\n- 用户确认: 用户已确认本会话中的设计方案，同意在 agent-output YAML 中增加 context_injection 区块\n\n### UI 设计门禁\n- [x] 本任务不涉及产品 UI 实现"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "loadAgentOutputContext() 获取 spec 摘要",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "loadAgentOutputContext() 获取最近 5 条 decisions",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "agent-output YAML 包含 context_injection 区块",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "spec 不存在时 spec_summary 为 null",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "decisions.jsonl 不存在或为空时 recent_decisions 为 []",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "不影响现有 YAML 字段，向后兼容",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "decisions 读取最多读取 50 行 JSONL，不阻塞主流程",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "spec 摘要只取结构化字段，不全文加载",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "docpath next --agent 输出包含 context_injection.spec_summary（当前有活跃 spec 时）",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "docpath next --agent 输出包含 context_injection.recent_decisions（有 decisions.jsonl 时）",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "spec 不存在时 spec_summary 为 null",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "decisions.jsonl 为空时 recent_decisions 为 []",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "现有 YAML 字段完全不变",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "agent-output YAML 缺乏上下文信息，Agent 需要额外读取文件",
+    "options": [
+      "在 YAML 中注入 spec 摘要和决策历史，减少 Agent 文件读取"
+    ],
+    "chosen": "在 YAML 中注入 spec 摘要和决策历史，减少 Agent 文件读取",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
