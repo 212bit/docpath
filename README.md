@@ -6,7 +6,7 @@ DocPath 是一款专为**大模型 Agent（以及人类开发者）**设计的�
 
 ## 🌟 核心理念与设计原则
 
-*   **文档即状态机 (Document as Finite State Machine)**：任务的每一步进展（如计划生成、步骤认领、门禁校验）都会被实时同步到任务文档和结构化 JSON 状态文件中。
+*   **文档与结构化状态共同驱动 (Document + Structured State as FSM)**：任务的每一步进展（如计划生成、步骤认领、门禁校验）都会同步到任务文档和结构化 JSON/JSONL 状态文件中；JSON/JSONL 是机器真源，Markdown 是人类可读视图或叙事任务文档。
 *   **Agent 友好与 CLI 优先**：支持通过 `--agent` 输出紧凑、高信噪比的 YAML 数据，完美融入 Agent 的观察与决策循环。
 *   **门禁与效率的完美平衡**：
     *   **标准铁轨工作流**：适用于复杂、涉及架构调整的研发，拥有极其严苛的 Spec、Plan、Check 和 Review 门禁序列。
@@ -154,7 +154,7 @@ docpath worktree remove feature-payment
     *   `.docpath/backlog/`：全局需求池，承载 `backlog.md` 等待领任务。
     *   `.docpath/rules/`：全局架构规范和编码准则。
 *   **隔离/运行时资源**（在 worktree 下独立，防止状态冲突）：
-    *   `.docpath/workspace/`：保存当前会话 of `state.json`、`breadcrumb.md` 等运行时快照。
+    *   `.docpath/workspace/`：保存当前会话的 `state.json`、`breadcrumb.jsonl` 等机器真源，以及 `current.md`、`breadcrumb.md` 等人类渲染视图。
     *   `.docpath/tasks/`：每个任务各自的 spec、plan 以及交付物归档。
 *   **Git 提交控制**：
     *   整个 `.docpath/` 在 `.gitignore` 中默认被忽略。

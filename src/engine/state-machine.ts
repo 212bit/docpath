@@ -2,7 +2,11 @@
  * DocPath 状态机引擎
  * 
  * 定义四级复杂度模型的状态、转移规则和验证逻辑。
- * 文档即 FSM — 所有状态由 .docpath/workspace/current.md 驱动。
+ * 文档 + 结构化状态即 FSM。
+ *
+ * 机器状态以 .docpath/workspace/state.json 为真源；current.md 是由
+ * state.json 重建的人类渲染视图。任务 spec/plan 文档仍参与工作流约束，
+ * 但运行时状态迁移不得由手写 Markdown 驱动。
  */
 
 // ─── 类型定义 ───────────────────────────────────────────
@@ -208,7 +212,7 @@ export function normalizeWorkflowSnapshot(input: {
   return null;
 }
 
-/** 状态寄存器 — 持久化在 current.md 中 */
+/** 状态寄存器 — 持久化在 state.json 中，并渲染为 current.md 视图。 */
 export interface StateRegister {
   level: ComplexityLevel;
   state: RuntimeWorkflowState;

@@ -7,7 +7,7 @@ import { tmpdir } from 'os';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 
-function mkWorkspace({ phase = 'drafting', gate = 'none' } = {}) {
+function mkWorkspace({ phase = 'drafting', gate = 'none', taskId = 'T-WRITE', taskTitle = 'Write Commands' } = {}) {
   const cwd = mkdtempSync(join(tmpdir(), 'dp-write-'));
   const dp = join(cwd, '.docpath');
   mkdirSync(join(dp, 'workspace'), { recursive: true });
@@ -15,8 +15,8 @@ function mkWorkspace({ phase = 'drafting', gate = 'none' } = {}) {
   writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: write-test\n');
   writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
     level: 2,
-    task_id: 'T-WRITE',
-    task_title: 'Write Commands',
+    task_id: taskId,
+    task_title: taskTitle,
     phase,
     gate,
     current_step: 'drafting',
@@ -166,6 +166,54 @@ describe('write commands', () => {
     assert.equal(specJson.ui_gate.state, 'exempt');
     assert.equal(specJson.functional_requirements[0].id, 'FR-1');
     assert.ok(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.json')));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('write-spec binds a new task id from the spec heading when state has no task id', () => {
+    const cwd = mkWorkspace({ phase: 'idle', gate: 'none', taskId: '', taskTitle: '' });
+    const spec = [
+      '# T-NEW-WRITE - New Write Task',
+      '',
+      '## 1. 背景与动机',
+      '',
+      '从 spec 标题绑定新任务。',
+      '',
+      '## 2. 需求清单',
+      '',
+      '### 功能需求',
+      '- [ ] FR-1: 无 task_id 状态下写入 spec 后绑定任务身份',
+      '',
+      '### 非功能需求',
+      '- [ ] NFR-1: 保持后续 go/plan 可继续',
+      '',
+      '## 3. 范围界定',
+      '',
+      '### 包含',
+      '- write-spec 任务身份绑定',
+      '',
+      '### 不包含',
+      '- 自动重写已有任务身份',
+      '',
+      '## 4. 关键决策',
+      '',
+      '| # | 决策 | 选项 | 结论 | 理由 |',
+      '|---|------|------|------|------|',
+      '| 1 | 身份来源 | state / spec heading | spec heading | 无绑定任务时需要从 spec 建立 canonical 目录 |',
+      '',
+      '## 5. 验收标准',
+      '',
+      '- [ ] AC-1: state.task_id 被绑定为 T-NEW-WRITE',
+      '',
+    ].join('\n');
+
+    const output = runWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, spec);
+
+    assert.match(output, /spec\.md 已写入/);
+    assert.ok(existsSync(join(cwd, '.docpath', 'tasks', 'T-NEW-WRITE', 'spec.md')));
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.task_id, 'T-NEW-WRITE');
+    assert.equal(state.task_title, 'New Write Task');
+    assert.equal(state.phase, 'drafting');
     rmSync(cwd, { recursive: true, force: true });
   });
 

@@ -15,6 +15,7 @@ import { readCurrentState } from '../utils/workspace.js';
 import { canonicalTaskDir, currentTaskDir } from '../utils/task-files.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 import { readStdin } from '../utils/stdin.js';
+import { taskIdFromMarkdown } from '../utils/structured-docs.js';
 
 interface WriteSpecOptions {
   cwd: string;
@@ -64,17 +65,27 @@ export async function writeSpecCommand(options: WriteSpecOptions): Promise<void>
   }
 
   const current = await readCurrentState(cwd);
-  if (!current?.task_id || current.phase === 'idle' || current.phase === 'completed') {
+  const taskId = current?.task_id?.trim() || taskIdFromMarkdown(specContent) || '';
+  if (!taskId) {
+    console.error('❌  无法从 spec 首行解析 task_id。请使用 `# T-<date>-<slug> - <title>` 作为标题。');
+    process.exit(1);
+  }
+
+  if (!current || current.phase === 'idle' || current.phase === 'completed') {
     assertCleanWorktreeForNewTask(cwd, 'docpath write-spec');
   }
-  const taskId = current?.task_id || 'current';
+  const taskTitle = current?.task_title?.trim() || specContent.match(/^#\s+T-\S+\s+-\s+(.+)$/m)?.[1]?.trim() || '';
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'spec.md', specContent);
 
   console.log(`✅  spec.md 已写入: ${canonicalPath}`);
 
   // 更新状态为 drafting → planning（brainstorm 完成）。
   // 文件已写入即命令成功，后续状态转换/next 失败不抛出，避免误导退出码（R-248）。
-  await runPostWriteSteps(cwd, 'task.created', { currentStep: 'spec 已写入，下一步: docpath plan' });
+  await runPostWriteSteps(cwd, 'task.created', {
+    taskId,
+    taskTitle,
+    currentStep: 'spec 已写入，下一步: docpath plan',
+  });
 }
 
 function formatValidationIssue(issue: { message: string; line?: number; section?: string; field?: string }): string {

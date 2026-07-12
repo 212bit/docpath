@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-12T13:42:31.798Z",
+    "updated_at": "2026-07-12T13:42:31.798Z",
+    "content_sha256": "d735cfe9ccca41414ee8606a2de28304e94b6b1c3d602d40bc286634306d48aa"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-12T13:42:31.798Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 更新 README 和相关源码注释，明确 JSON/JSONL 是机器真源，Markdown 是人类视图或叙事文档。",
+      "description": "根据 spec 明确 FR-1: 更新 README 和相关源码注释，明确 JSON/JSONL 是机器真源，Markdown 是人类视图或叙事文档。 的实现边界和验收口径。",
+      "acceptance": "AC-1: README 和相关源码注释不再把 `.docpath/workspace/current.md` 描述为机器状态真源。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 更新 README 和相关源码注释，明确 JSON/JSONL 是机器真源，Markdown 是人类视图或叙事文档。",
+      "description": "在现有架构内完成 FR-1: 更新 README 和相关源码注释，明确 JSON/JSONL 是机器真源，Markdown 是人类视图或叙事文档。 的代码与文档更新。",
+      "acceptance": "FR-1 更新 README 和相关源码注释，明确 JSON/JSONL 是机器真源，Markdown 是人类视图或叙事文档。 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 增加 workflow state 契约测试，覆盖 `snapshotFromState`、`stateFromPhaseGate` 和非法状态归一化。",
+      "description": "在现有架构内完成 FR-2: 增加 workflow state 契约测试，覆盖 `snapshotFromState`、`stateFromPhaseGate` 和非法状态归一化。。",
+      "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 FR-3 增加关键 `--agent` 输出契约测试，覆盖 `next --agent` 与 `status --agent` 的代表性字段。",
+      "description": "在现有架构内完成 FR-3: 增加关键 `--agent` 输出契约测试，覆盖 `next --agent` 与 `status --agent` 的代表性字段。。",
+      "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: README 和相关源码注释不再把 `.docpath/workspace/current.md` 描述为机器状态真源。；AC-2: 状态契约测试覆盖代表性状态到 phase/gate 映射、phase/gate 到 runtime state 映射和非法状态归一化。；AC-3: Agent 输出契约测试覆盖 `next --agent` 与 `status --agent` 的代表性稳定字段。；AC-4: `pnpm test` 通过。",
+      "acceptance": "AC-1: README 和相关源码注释不再把 `.docpath/workspace/current.md` 描述为机器状态真源。；AC-2: 状态契约测试覆盖代表性状态到 phase/gate 映射、phase/gate 到 runtime state 映射和非法状态归一化。；AC-3: Agent 输出契约测试覆盖 `next --agent` 与 `status --agent` 的代表性稳定字段。；AC-4: `pnpm test` 通过。",
+      "dependencies": "S4",
+      "status": "done"
+    }
+  ]
+}

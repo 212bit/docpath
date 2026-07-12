@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-12T13:36:09.728Z",
+    "updated_at": "2026-07-12T13:36:09.728Z",
+    "content_sha256": "9bf98e9cf9ec6663a05bfc5bd4d0652a7fa4aef5dcd5bf33f2f49b3eceb10a8d"
+  },
+  "task_id": "T-20260712-reliability-contract-optimizations",
+  "backlog_id": null,
+  "title": "T-20260712-reliability-contract-optimizations - High-value reliability optimizations",
+  "generated_at": "2026-07-12T13:36:09.728Z",
+  "scope": {
+    "included": [
+      "README 中与状态真源、`.docpath/` 目录语义相关的表述修正。",
+      "`src/engine/state-machine.ts` 中过时注释修正。",
+      "针对状态映射与 Agent YAML 字段的测试补强。"
+    ],
+    "excluded": [
+      "不重构完整状态机。",
+      "不删除 legacy 状态值或兼容映射。",
+      "不调整命令命名、生命周期门禁、Git staging/commit 逻辑。",
+      "不修改 Dashboard UI 或前端构建链路。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "用户已回复“同意，进行优化”。",
+    "decision_brief_markdown": "- 当前问题: 状态真源和 Agent 输出契约对项目可靠性很关键，但文档/注释有旧表述，部分核心映射缺少集中测试。\n- 目标: 先把当前契约写清楚、测稳，为后续状态模型统一打基础。\n- 背景: 用户已确认推进高价值优化点，优先级为状态模型统一、文档漂移清理、Agent 输出契约测试。\n- 可选方案: A: 直接重构状态机；B: 先补契约测试和文档收敛；C: 只改文档。\n- 推荐方案: B。\n- 不做什么: 不改变运行时状态迁移，不删除旧状态兼容，不新增依赖。\n- 成本: 小范围文档和测试改动，需运行现有测试验证。\n- 风险: 新测试可能暴露当前输出字段波动；通过字段级断言降低脆弱性。\n- 回滚方案: 回退文档修改和新增测试文件，不影响运行时代码。\n- 用户确认: 用户已回复“同意，进行优化”。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "更新 README 和相关源码注释，明确 JSON/JSONL 是机器真源，Markdown 是人类视图或叙事文档。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "增加 workflow state 契约测试，覆盖 `snapshotFromState`、`stateFromPhaseGate` 和非法状态归一化。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "增加关键 `--agent` 输出契约测试，覆盖 `next --agent` 与 `status --agent` 的代表性字段。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不改变现有命令语义、状态迁移语义、Git 行为、Dashboard 行为或运行时依赖。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "新测试应复用现有测试工具和 fixture 风格，避免引入重型 snapshot 或脆弱全文断言。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "README 和相关源码注释不再把 `.docpath/workspace/current.md` 描述为机器状态真源。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "状态契约测试覆盖代表性状态到 phase/gate 映射、phase/gate 到 runtime state 映射和非法状态归一化。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "Agent 输出契约测试覆盖 `next --agent` 与 `status --agent` 的代表性稳定字段。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "`pnpm test` 通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "状态真源和 Agent 输出契约对项目可靠性很关键，但文档/注释有旧表述，部分核心映射缺少集中测试。",
+    "options": [
+      "A: 直接重构状态机；B: 先补契约测试和文档收敛；C: 只改文档。"
+    ],
+    "chosen": "B。",
+    "rationale": "小范围文档和测试改动，需运行现有测试验证。"
+  }
+}

@@ -62,6 +62,36 @@ function sha256(content) {
 }
 
 describe('next --agent routing', () => {
+  it('keeps stable agent contract fields on next and status outputs', () => {
+    const plan = [
+      '## 执行计划',
+      '',
+      '### S1: Contract step',
+      '- [ ] S1: Contract step',
+      '- **描述**: 验证 agent 输出契约',
+      '- **验收条件**: next/status 字段稳定',
+      '- **依赖**: 无',
+      '',
+    ].join('\n');
+    const cwd = mkWorkspace({ phase: 'planning', gate: 'none', plan });
+    const next = nextAgent(cwd);
+    const status = statusAgent(cwd);
+
+    assert.equal(next.agent_view, 'next');
+    assert.equal(status.agent_view, 'status');
+    assert.equal(next.recommended_command, 'docpath go --step S1');
+    assert.equal(status.recommended_command, 'docpath next --agent');
+    assert.ok(Array.isArray(next.context_refs));
+    assert.ok(Array.isArray(status.context_refs));
+    assert.ok(next.context_refs.length > 0);
+    assert.ok(status.context_refs.length > 0);
+    assert.ok(typeof next.next_action === 'string' && next.next_action.length > 0);
+    assert.ok(typeof status.next_action === 'string' && status.next_action.length > 0);
+    assert.ok(next.gate_policy.requires_check);
+    assert.ok(status.gate_policy.requires_review);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('distinguishes status diagnostics from next route output', () => {
     const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
     const status = statusAgent(cwd);

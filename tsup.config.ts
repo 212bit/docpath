@@ -15,6 +15,7 @@ const CLI_ENTRY = [
   'src/index.ts',
   'src/commands/dashboard.ts',
   'src/engine/breadcrumb.ts',
+  'src/engine/state-machine.ts',
   'src/engine/transitions.ts',
   'src/engine/policy.ts',
   'src/engine/backlog.ts',

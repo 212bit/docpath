@@ -54,18 +54,19 @@ export async function traceCommand(opts: TraceOptions): Promise<void> {
     }
 
     const matrixAction = opts.matrixAction || 'status';
-    const report = matrixAction === 'generate'
-      ? await generateTraceMatrix(cwd)
-      : matrixAction === 'check'
-        ? await checkTraceMatrix(cwd)
-        : await getTraceMatrixStatus(cwd);
-    if (opts.json) {
-      console.log(JSON.stringify(report, null, 2));
-      return;
-    }
     if (matrixAction === 'generate') {
+      const report = await generateTraceMatrix(cwd);
+      if (opts.json) {
+        console.log(JSON.stringify(report, null, 2));
+        return;
+      }
       console.log(`✅ trace matrix generated: ${report.output_path}`);
     } else if (matrixAction === 'check') {
+      const report = await checkTraceMatrix(cwd);
+      if (opts.json) {
+        console.log(JSON.stringify(report, null, 2));
+        return;
+      }
       if (report.gaps.length > 0) {
         console.log(JSON.stringify({ passed: false, gaps: report.gaps }, null, 2));
         throw new Error(`trace matrix check failed: ${report.gaps.length} gap(s)`);
@@ -73,6 +74,11 @@ export async function traceCommand(opts: TraceOptions): Promise<void> {
         console.log('✅ trace matrix check passed (0 gaps)');
       }
     } else {
+      const report = await getTraceMatrixStatus(cwd);
+      if (opts.json) {
+        console.log(JSON.stringify(report, null, 2));
+        return;
+      }
       console.log(`📊 Trace matrix: ${report.entries.length} entries, ${report.gaps.length} gaps`);
       if (report.gaps.length > 0) {
         for (const gap of report.gaps) console.log(`  - ${gap}`);
