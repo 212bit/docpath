@@ -137,8 +137,10 @@ Rules:
 - **Atomic by logical unit**: One commit per coherent change. If a change spans
   multiple independent concerns (e.g., fix + refactor in different modules),
   split into separate commits.
-- **Stage only source + test files**: Do not stage `.docpath/workspace/` or
-  `.docpath/backlog/` runtime state files unless the intent is to version them.
+- **Stage all modified tracked files**: Include both source/test files and any
+  tracked `.docpath/` files (backlog, rules, AGENTS.md) that changed during the
+  work. The `.gitignore` already excludes pure runtime state (workspace/,
+  tasks/current/) — there's no risk of staging transient data.
 - **Write descriptive commit messages**: Summarize what and why in the title
   (≤72 chars). Use the body for bullet-point details when there are multiple
   sub-changes.
