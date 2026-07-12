@@ -100,6 +100,16 @@ export async function generateAgentOutput(
         journal_mode: policy.journalMode,
       };
     })(),
+    context_injection: {
+      spec_summary: context.specSummary,
+      recent_decisions: context.recentDecisions.length > 0 ? context.recentDecisions.map((d) => ({
+        id: d.id,
+        task_id: d.taskId,
+        category: d.category,
+        conclusion: d.conclusion,
+        created_at: d.createdAt,
+      })) : [],
+    },
     task_id: context.state?.task_id || '',
     task_title: context.state?.task_title || '',
     ...(context.state?.backlog_id !== undefined ? { backlog_id: context.state.backlog_id } : {}),
