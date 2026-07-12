@@ -8,17 +8,83 @@
  */
 
 import { existsSync } from 'fs';
-import { resolveDocpathDir } from '../utils/file.js';
+import { readFile } from 'fs/promises';
+import { resolveDocpathDir, writeFileSafe } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { reviewCommand } from './review.js';
 import type { CheckOptions, CheckResult } from './check/types.js';
+import { join } from 'path';
 
 import { logger } from '../utils/logger.js';
 import { evaluateQuickScope } from '../engine/quick-guard.js';
-import { readActiveStructuredSpecDocument } from '../utils/task-files.js';
+import { readActiveStructuredSpecDocument, canonicalTaskDir } from '../utils/task-files.js';
 import { writeCurrentState } from '../utils/workspace.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
+
+/**
+ * 为升级后的 standard 任务渲染标准 spec.md。
+ * 保留原 quick 任务的 title 和已有 FR 需求摘要。
+ */
+function renderStandardSpec(taskId: string, title: string, existingRequirements: string[]): string {
+  const reqLines = existingRequirements.length > 0
+    ? existingRequirements.map((r, i) => `- [ ] FR-${i + 1}: ${r}`).join('\n')
+    : '- [ ] FR-1: 待补充';
+
+  return [
+    `# ${taskId} - ${title}`,
+    '',
+    '> workflow_profile: standard',
+    '> source: docpath check (auto-upgraded from quick)',
+    '',
+    '## 1. 背景与动机',
+    '',
+    '<!-- 原 quick 任务已自动升级为 standard 流程，需要补全设计文档。 -->',
+    '',
+    '## 2. 需求清单',
+    '',
+    '### 功能需求',
+    reqLines,
+    '',
+    '### 非功能需求',
+    '- [ ] NFR-1: 待补充',
+    '',
+    '## 3. 范围界定',
+    '',
+    '### 包含',
+    '- 待补充',
+    '',
+    '### 不包含',
+    '- 待补充',
+    '',
+    '## 4. 关键决策',
+    '',
+    '| # | 决策 | 选项 | 结论 | 理由 |',
+    '|---|------|------|------|------|',
+    '| 1 | 待补充 | | | |',
+    '',
+    '## 4.1 重大变更门禁',
+    '',
+    '### 是否涉及重大变更',
+    '- [ ] 否',
+    '- [x] 是，需要用户确认',
+    '',
+    '### Decision Brief',
+    '- 当前问题: 待补充',
+    '- 目标: 待补充',
+    '- 可选方案: 待补充',
+    '- 推荐方案: 待补充',
+    '- 用户确认: 待确认',
+    '',
+    '## 5. 验收标准',
+    '',
+    '- [ ] AC-1: 待补充',
+    '',
+    '---',
+    '',
+    '*此文件由 `docpath check` 在升级 quick→standard 时自动生成。*',
+  ].join('\n');
+}
 
 function normalizeHarnessOptions(options: CheckOptions): void {
   if (options.onlyHarness) {
@@ -79,6 +145,33 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
       };
       await writeCurrentState(cwd, current);
       logger.log('👉 已更新 .docpath/workspace/state.json，后续检查将强制执行 standard 门禁（如 plan/spec 校验与代码审查）。\n');
+
+      // 将 quick 风格的 spec.md 替换为 standard 模板
+      const taskDir = canonicalTaskDir(docpathDir, current.task_id);
+      const specPath = join(taskDir, 'spec.md');
+      if (existsSync(specPath)) {
+        try {
+          const oldSpec = await readFile(specPath, 'utf-8');
+          const isQuickSpec = oldSpec.includes('workflow_profile: quick') || oldSpec.includes('source: docpath quick');
+          if (isQuickSpec) {
+            const titleLine = oldSpec.split('\n').find(l => l.startsWith('# '));
+            const title = titleLine ? titleLine.replace(/^# /, '').trim() : current.task_title || current.task_id;
+            const frLines: string[] = [];
+            for (const line of oldSpec.split('\n')) {
+              const match = line.match(/^- \[ \] FR-\d+:(.*)/);
+              if (match) frLines.push(match[1].trim());
+              if (frLines.length >= 3) break;
+            }
+            const newSpec = renderStandardSpec(current.task_id, title, frLines);
+            await writeFileSafe(specPath, newSpec);
+            logger.log('📝  已自动将 spec.md 升级为 standard 格式（保留原标题和需求摘要）。');
+            logger.log('   请运行 `docpath write-spec` 将变更同步到 spec.json。');
+            logger.log('');
+          }
+        } catch {
+          logger.warn('⚠️  读取 spec.md 失败，跳过模板升级。');
+        }
+      }
     }
   }
 
