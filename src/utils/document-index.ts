@@ -486,20 +486,30 @@ async function collectMarkdownFiles(dir: string, baseDir: string): Promise<strin
 
 export async function isProjectDocumentIndexStale(
   docpathDir: string,
-  generatedAt: string | undefined,
+  entries: ProjectDocumentIndexEntry[],
   currentTaskId?: string,
 ): Promise<boolean> {
-  if (!generatedAt) return true;
-  const generatedTime = Date.parse(generatedAt);
-  if (Number.isNaN(generatedTime)) return true;
+  const entriesMap = new Map<string, number>();
+  for (const entry of entries) {
+    entriesMap.set(entry.path, entry.size);
+  }
 
   const files = await collectMarkdownFiles(docpathDir, docpathDir);
   for (const file of files) {
     if (isGeneratedViewDocPath(file)) continue;
     if (file.startsWith('tasks/current/')) continue;
+    if (file.startsWith('tasks/promote-backups/')) continue;
     if (currentTaskId && file.startsWith(`tasks/${currentTaskId}/`)) continue;
+
+    const recordedSize = entriesMap.get(file);
+    if (recordedSize === undefined) {
+      return true;
+    }
+
     const fileStat = await stat(join(docpathDir, file));
-    if (fileStat.mtime.getTime() > generatedTime + 1000) return true;
+    if (fileStat.size !== recordedSize) {
+      return true;
+    }
   }
   return false;
 }

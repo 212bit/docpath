@@ -264,6 +264,37 @@ describe('structured docs index', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check detects docs-index staleness when a non-ignored file is modified in size', () => {
+    const cwd = mkWorkspace();
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    // Modify a non-ignored file to change its size
+    const specDir = join(cwd, '.docpath', 'spec', 'backend');
+    mkdirSync(specDir, { recursive: true });
+    const apiMd = join(specDir, 'api.md');
+    writeFileSync(apiMd, '# Backend API reference summary - edited to change size\n');
+
+    const { output } = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+
+    assert.match(output, /docs-index 可能陈旧/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check detects docs-index staleness when a new non-ignored file is added', () => {
+    const cwd = mkWorkspace();
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    // Add a new non-ignored file
+    const newFile = join(cwd, '.docpath', 'rules', 'new-rule.md');
+    mkdirSync(join(cwd, '.docpath', 'rules'), { recursive: true });
+    writeFileSync(newFile, '# New Rule\n');
+
+    const { output } = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+
+    assert.match(output, /docs-index 可能陈旧/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('reveal filters structured docs index by level and topic', () => {
     const cwd = mkWorkspace();
     run(`docs scan --cwd ${cwd}`, cwd);
