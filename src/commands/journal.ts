@@ -32,7 +32,7 @@ import { emitNextHint } from '../utils/next-hint.js';
 interface JournalOptions {
   cwd: string;
   skipDecisionGc?: boolean;
-  /** Suppress prompt contract output when journal runs as an automatic closeout sub-step. */
+  /** Use compact closeout wording when journal runs as an automatic closeout sub-step. */
   quietPrompt?: boolean;
   /** 归档模式: 'always' = 默认行为 | 'skip' = 跳过归档 | 'dry-run' = 预览归档 */
   archiveMode?: 'always' | 'skip' | 'dry-run';
@@ -244,10 +244,12 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
 
   if (options.quietPrompt) {
     console.log(`📝  知识自动归档: ${summary.completedSteps}/${summary.totalSteps} 步完成`);
+    printAiNativeJournalPrompt(context, summary);
   } else {
     console.log('\n📋  知识记录待写入 spec.md');
     console.log('    journal 在 docpath agent done 流程中会自动完成知识提取与写入。');
     console.log('    如需手动操作，运行: docpath write-journal\n');
+    printAiNativeJournalPrompt(context, summary);
   }
 
   const archiveMode = options.archiveMode || 'skip';
@@ -258,6 +260,31 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
   }
 
   await finalizeJournal(cwd, context, archive, summary, !!options.skipDecisionGc, !!options.quietPrompt);
+}
+
+function printAiNativeJournalPrompt(context: JournalContext, summary: TaskSummary): void {
+  const decisionBrief = resolveDecisionBrief(context);
+  const blockedSteps = context.breadcrumb.entries
+    .filter((entry) => entry.taskId === context.taskId && entry.status === 'blocked')
+    .map((entry) => `${entry.step}: ${entry.context}`);
+  const decisions = collectAdrCandidates(context, summary)
+    .slice(0, 5)
+    .map((candidate) => `${candidate.title}: ${candidate.decision}`);
+
+  console.log('🤖  AI-native journal prompt contract');
+  console.log('    目标: 由当前 Agent 语义判断本任务是否产生可复用经验；CLI 只负责结构化落盘，不调用隐藏 LLM。');
+  console.log('    经验类型: design-decision, project-convention, pattern, anti-pattern, common-mistake, specification, gotcha');
+  console.log('    决策树:');
+  console.log('      1. 这是否会在未来任务中重复出现？否则跳过。');
+  console.log('      2. 是否有明确触发条件、期望行为和边界？否则跳过。');
+  console.log('      3. 应写到哪里: decisions / rules/style / rules/architecture / spec。');
+  console.log('      4. 是否避免了一次性实现细节、完成步数、普通 check/review 统计？否则跳过。');
+  console.log('    写入命令: docpath write-journal --structured --stdin');
+  console.log('    JSON schema: {"entries":[{"type":"pattern","target":"rules/style","summary":"...","rationale":"...","content":"...","evidence":["..."]}]}');
+  if (decisionBrief) console.log(`    decision_brief: ${decisionBrief.split('\n')[0].slice(0, 140)}`);
+  if (decisions.length > 0) console.log(`    decision_candidates: ${decisions.join(' | ').slice(0, 240)}`);
+  if (blockedSteps.length > 0) console.log(`    blocked_steps: ${blockedSteps.join(' | ').slice(0, 240)}`);
+  console.log('');
 }
 
 async function assertJournalGate(cwd: string): Promise<void> {

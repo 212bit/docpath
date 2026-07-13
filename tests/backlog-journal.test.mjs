@@ -69,6 +69,10 @@ function run(args, cwd) {
   return execSync(`node ${BIN} ${args}`, { cwd, encoding: 'utf-8', timeout: 20000 }).trim();
 }
 
+function runWithInput(args, cwd, input) {
+  return execSync(`node ${BIN} ${args}`, { cwd, input, encoding: 'utf-8', timeout: 20000 }).trim();
+}
+
 function decisionBlock(id, createdAt) {
   return [
     `## ${id} — architecture`,
@@ -108,6 +112,9 @@ describe('backlog journal integration', () => {
     const out = run('journal --optional-archive skip', cwd);
 
     assert.match(out, /物理任务目录归档已延后/);
+    assert.match(out, /AI-native journal prompt contract/);
+    assert.match(out, /design-decision, project-convention, pattern, anti-pattern, common-mistake, specification, gotcha/);
+    assert.match(out, /docpath write-journal --structured --stdin/);
     assert.match(out, /canonical evidence 保留在 \.docpath\/tasks\/T-20260531-alpha-promote\//);
     assert.match(out, /backlog 已自动回填完成: R-001/);
     assert.match(out, /next_hint:/);
@@ -317,6 +324,58 @@ Alpha
     assert.equal(threw, true, 'write-journal must fail on archived task');
     // no zombie canonical dir or current alias re-created
     assert.equal(existsSync(join(cwd, '.docpath', 'tasks', taskId, 'spec.md')), false, 'must not re-create zombie canonical spec');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('write-journal --structured routes semantic entries to decisions and rules while filtering low signal', () => {
+    const cwd = mkWorkspace();
+    const dp = join(cwd, '.docpath');
+    const payload = {
+      entries: [
+        {
+          type: 'design-decision',
+          target: 'decisions',
+          summary: 'Use AI-native journal prompt contract as semantic classification boundary',
+          rationale: 'Journal should expose a prompt contract and let the current agent classify reusable lessons instead of relying on keyword regex alone.',
+          content: 'This keeps DocPath deterministic while allowing semantic classification before structured writeback.',
+          evidence: ['src/commands/journal.ts', 'src/commands/write-journal.ts'],
+        },
+        {
+          type: 'anti-pattern',
+          target: 'rules/style',
+          summary: 'Do not persist task completion statistics as long-term lessons',
+          rationale: 'Counts such as completed steps and ordinary check/review pass messages do not reduce future error probability.',
+          content: 'When reviewing journal candidates, skip completion counts and generic gate pass messages unless they include a reusable trigger, behavior, and boundary.',
+          evidence: ['.docpath/workspace/lesson-candidates.md'],
+        },
+        {
+          type: 'pattern',
+          target: 'rules/architecture',
+          summary: 'Route semantic journal writeback through artifact sinks',
+          rationale: 'Prompt emitters should not write durable state directly; structured sinks own validation and filesystem writes.',
+          content: 'When adding AI-assisted workflow behavior, expose a prompt contract first and persist selected results through a deterministic write command.',
+          evidence: ['src/commands/register/quality.ts'],
+        },
+        {
+          type: 'pattern',
+          target: 'rules/style',
+          summary: 'done',
+          content: '完成 3/3 步',
+        },
+      ],
+    };
+
+    const out = runWithInput('write-journal --structured --stdin', cwd, JSON.stringify(payload));
+
+    assert.match(out, /structured journal 已写入 3 条/);
+    assert.match(out, /已跳过 1 条低信号/);
+    const decisions = readFileSync(join(dp, 'workspace', 'decisions.md'), 'utf-8');
+    assert.match(decisions, /AI-native journal prompt contract/);
+    const style = readFileSync(join(dp, 'rules', 'style.md'), 'utf-8');
+    assert.match(style, /Do not persist task completion statistics/);
+    assert.doesNotMatch(style, /完成 3\/3 步/);
+    const architecture = readFileSync(join(dp, 'rules', 'architecture.md'), 'utf-8');
+    assert.match(architecture, /Route semantic journal writeback through artifact sinks/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

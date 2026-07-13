@@ -6,11 +6,14 @@
  */
 
 import { existsSync } from 'fs';
+import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { archivedTaskDir, canonicalTaskDir, readActiveTaskFile, writeActiveTaskFile } from '../utils/task-files.js';
 import { readStdin } from '../utils/stdin.js';
+import { appendDecision } from '../governance/decisions.js';
+import { ensureRulesDir, resolveRulePaths } from '../utils/rules.js';
 
 interface WriteJournalOptions {
   cwd: string;
@@ -18,6 +21,35 @@ interface WriteJournalOptions {
   content?: string;
   /** 从 stdin 读取 */
   stdin?: boolean;
+  /** 内容为 AI-native structured journal JSON */
+  structured?: boolean;
+}
+
+type StructuredJournalType =
+  | 'design-decision'
+  | 'project-convention'
+  | 'pattern'
+  | 'anti-pattern'
+  | 'common-mistake'
+  | 'specification'
+  | 'gotcha'
+  | 'decision';
+
+type StructuredJournalTarget =
+  | 'decisions'
+  | 'spec'
+  | 'rules/style'
+  | 'rules/architecture'
+  | 'style'
+  | 'architecture';
+
+interface StructuredJournalEntry {
+  type: StructuredJournalType;
+  target: StructuredJournalTarget;
+  summary: string;
+  rationale?: string;
+  content: string;
+  evidence?: string[];
 }
 
 const JOURNAL_MARKER = '## Journal Record';
@@ -64,6 +96,11 @@ export async function writeJournalCommand(options: WriteJournalOptions): Promise
     }
   }
 
+  if (options.structured) {
+    await writeStructuredJournal(cwd, docpathDir, taskId, journalContent);
+    return;
+  }
+
   const previous = await readActiveTaskFile(docpathDir, taskId, 'spec.md');
 
   // 防御性检查：如果 spec.md 看起来不像一个正常的 spec（缺少标题或章节结构），警告用户
@@ -90,3 +127,171 @@ export async function writeJournalCommand(options: WriteJournalOptions): Promise
   console.log('📌  知识记录已追加到当前任务 spec.md');
 }
 
+function parseStructuredPayload(content: string): StructuredJournalEntry[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch (error) {
+    throw new Error(`write-journal --structured 需要合法 JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const entries = Array.isArray(parsed)
+    ? parsed
+    : typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as { entries?: unknown }).entries)
+      ? (parsed as { entries: unknown[] }).entries
+      : null;
+  if (!entries) throw new Error('write-journal --structured 需要 JSON array 或 {"entries":[...]}');
+  return entries.map(validateStructuredEntry);
+}
+
+function validateStructuredEntry(value: unknown, index: number): StructuredJournalEntry {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(`structured journal entry #${index + 1} 必须是 object`);
+  }
+  const entry = value as Partial<StructuredJournalEntry>;
+  const allowedTypes: StructuredJournalType[] = ['design-decision', 'project-convention', 'pattern', 'anti-pattern', 'common-mistake', 'specification', 'gotcha', 'decision'];
+  const allowedTargets: StructuredJournalTarget[] = ['decisions', 'spec', 'rules/style', 'rules/architecture', 'style', 'architecture'];
+  if (!allowedTypes.includes(entry.type as StructuredJournalType)) {
+    throw new Error(`structured journal entry #${index + 1} type 非法`);
+  }
+  if (!allowedTargets.includes(entry.target as StructuredJournalTarget)) {
+    throw new Error(`structured journal entry #${index + 1} target 非法`);
+  }
+  if (typeof entry.summary !== 'string' || !entry.summary.trim()) {
+    throw new Error(`structured journal entry #${index + 1} summary 必填`);
+  }
+  if (typeof entry.content !== 'string' || !entry.content.trim()) {
+    throw new Error(`structured journal entry #${index + 1} content 必填`);
+  }
+  if (entry.rationale !== undefined && typeof entry.rationale !== 'string') {
+    throw new Error(`structured journal entry #${index + 1} rationale 必须是字符串`);
+  }
+  if (entry.evidence !== undefined && (!Array.isArray(entry.evidence) || entry.evidence.some((item) => typeof item !== 'string'))) {
+    throw new Error(`structured journal entry #${index + 1} evidence 必须是字符串数组`);
+  }
+  return {
+    type: entry.type as StructuredJournalType,
+    target: entry.target as StructuredJournalTarget,
+    summary: entry.summary.trim(),
+    rationale: entry.rationale?.trim(),
+    content: entry.content.trim(),
+    evidence: entry.evidence?.map((item) => item.trim()).filter(Boolean),
+  };
+}
+
+function isLowSignalStructuredEntry(entry: StructuredJournalEntry): boolean {
+  const text = `${entry.summary} ${entry.rationale || ''} ${entry.content}`.replace(/\s+/g, ' ').trim();
+  if (text.length < 40) return true;
+  return [
+    /完成\s*\d+\s*\/\s*\d+\s*步/u,
+    /质量检查通过/u,
+    /代码审查/u,
+    /所有步骤已归档/u,
+    /^done$/i,
+  ].some((pattern) => pattern.test(text));
+}
+
+function renderStructuredEntry(entry: StructuredJournalEntry): string {
+  const evidence = entry.evidence && entry.evidence.length > 0
+    ? ['', 'Evidence:', ...entry.evidence.map((item) => `- ${item}`)]
+    : [];
+  return [
+    `### ${entry.type}: ${entry.summary}`,
+    '',
+    `Target: ${entry.target}`,
+    entry.rationale ? `Rationale: ${entry.rationale}` : '',
+    '',
+    entry.content,
+    ...evidence,
+  ].filter((line) => line !== '').join('\n');
+}
+
+function normalizeRuleTarget(target: StructuredJournalTarget): 'style' | 'architecture' | null {
+  if (target === 'style' || target === 'rules/style') return 'style';
+  if (target === 'architecture' || target === 'rules/architecture') return 'architecture';
+  return null;
+}
+
+async function appendRuleEntry(docpathDir: string, entry: StructuredJournalEntry): Promise<string> {
+  await ensureRulesDir(docpathDir);
+  const ruleTarget = normalizeRuleTarget(entry.target);
+  if (!ruleTarget) throw new Error(`target ${entry.target} 不是 rules 目标`);
+  const paths = resolveRulePaths(docpathDir);
+  const file = paths[ruleTarget];
+  await mkdir(join(docpathDir, 'rules'), { recursive: true });
+  const previous = existsSync(file.path) ? await readFile(file.path, 'utf-8') : `# ${ruleTarget === 'style' ? 'Style' : 'Architecture'} Rules\n`;
+  const block = [
+    '',
+    `## ${entry.type}: ${entry.summary}`,
+    '',
+    entry.rationale ? `- rationale: ${entry.rationale}` : '',
+    '',
+    entry.content,
+    '',
+    ...(entry.evidence?.length ? ['### Evidence', '', ...entry.evidence.map((item) => `- ${item}`), ''] : []),
+  ].filter((line) => line !== '').join('\n');
+  await writeFile(file.path, `${previous.trimEnd()}\n\n${block.trimEnd()}\n`, 'utf-8');
+  return file.displayPath;
+}
+
+async function appendStructuredSpecEntries(
+  docpathDir: string,
+  taskId: string,
+  entries: StructuredJournalEntry[],
+): Promise<void> {
+  if (entries.length === 0) return;
+  const previous = await readActiveTaskFile(docpathDir, taskId, 'spec.md');
+  const content = [
+    previous.trimEnd(),
+    '',
+    JOURNAL_MARKER,
+    '',
+    '### AI-native structured entries',
+    '',
+    ...entries.flatMap((entry) => [renderStructuredEntry(entry), '']),
+  ].join('\n');
+  await writeActiveTaskFile(docpathDir, taskId, 'spec.md', `${content.trimEnd()}\n`);
+}
+
+async function writeStructuredJournal(
+  cwd: string,
+  docpathDir: string,
+  taskId: string,
+  content: string,
+): Promise<void> {
+  const entries = parseStructuredPayload(content);
+  const highSignal = entries.filter((entry) => !isLowSignalStructuredEntry(entry));
+  const skipped = entries.length - highSignal.length;
+  if (highSignal.length === 0) {
+    console.error('❌  structured journal 全部为低信号条目，未写入。请提供触发条件、期望行为和边界。');
+    process.exit(1);
+  }
+
+  const specEntries: StructuredJournalEntry[] = [];
+  const written: string[] = [];
+  for (const entry of highSignal) {
+    const ruleTarget = normalizeRuleTarget(entry.target);
+    if (entry.target === 'decisions' || entry.type === 'design-decision' || entry.type === 'decision') {
+      await appendDecision(cwd, entry.type, entry.summary, entry.rationale || entry.content, {
+        taskId,
+        context: entry.rationale || entry.content,
+        impact: entry.content,
+        alternatives: ['不沉淀该经验', '仅追加到任务 spec 的 Journal Record'],
+        relatedFiles: entry.evidence && entry.evidence.length > 0 ? entry.evidence : ['.docpath/workspace/breadcrumb.md'],
+      });
+      written.push('.docpath/workspace/decisions.md');
+      continue;
+    }
+    if (ruleTarget) {
+      written.push(await appendRuleEntry(docpathDir, entry));
+      continue;
+    }
+    specEntries.push(entry);
+  }
+
+  await appendStructuredSpecEntries(docpathDir, taskId, specEntries);
+  if (specEntries.length > 0) written.push(`.docpath/tasks/${taskId}/spec.md`);
+
+  console.log(`✅  structured journal 已写入 ${highSignal.length} 条`);
+  if (skipped > 0) console.log(`🧹  已跳过 ${skipped} 条低信号 structured journal entry`);
+  for (const path of Array.from(new Set(written))) console.log(`- ${path}`);
+}

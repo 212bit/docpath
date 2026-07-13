@@ -110,11 +110,13 @@ export function registerQualityCommands(cli: CAC): void {
   cli.command('write-journal', '将归档知识记录写回当前任务 spec.md')
     .option('--cwd <path>', '项目目录')
     .option('--content <content>', 'journal 内容（Markdown）')
+    .option('--structured', '将内容解析为 AI-native structured journal JSON 并路由写入 spec/rules/decisions')
     .option('--stdin', '从 stdin 读取内容')
-    .action(async (options: { cwd?: string; content?: string; stdin?: boolean }) => {
+    .action(async (options: { cwd?: string; content?: string; structured?: boolean; stdin?: boolean }) => {
       await writeJournalCommand({
         cwd: options.cwd || process.cwd(),
         content: options.content,
+        structured: !!options.structured,
         stdin: options.stdin,
       });
     });
