@@ -491,7 +491,7 @@ export async function checkContextIndexHealth(docpathDir: string, currentTaskId:
       ));
     }
 
-    if (await isProjectDocumentIndexStale(docpathDir, index.generated_at)) {
+    if (await isProjectDocumentIndexStale(docpathDir, index.generated_at, currentTaskId)) {
       results.push(warningResult(
         'docs-index 可能陈旧',
         '检测到 .docpath 下存在比 docs-index 更新的 Markdown。修复建议: 运行 `docpath docs scan`。',

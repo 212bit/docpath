@@ -1,5 +1,6 @@
 import type { CAC } from 'cac';
 import { compactCommand, discoverCommand, nextCommand } from '../runtime.js';
+import { hooksStatusCommand } from '../../hooks/bridge.js';
 import { getOptionValue, normalizeEnumOption, normalizeTaskFileSyncSource, parseIntegerOption } from './shared.js';
 import { run as migrateBreadcrumbCommand } from '../migrate-breadcrumb.js';
 
@@ -40,6 +41,19 @@ export function registerRuntimeToolCommands(cli: CAC): void {
         agent: !!options.agent,
         verbose: !!options.verbose,
         autoFix: normalizeTaskFileSyncSource(options['auto-fix'] || options.autoFix || getOptionValue(argv, '--auto-fix'), 'next --auto-fix'),
+      });
+    });
+
+  cli.command('hooks <action>', '内部 hook 工具: status')
+    .option('--cwd <path>', '项目目录')
+    .option('--agent', '输出 Agent YAML')
+    .action(async (action: 'status', options: { cwd?: string; agent?: boolean }) => {
+      if (action !== 'status') {
+        throw new Error(`docpath hooks: unsupported action ${action} (expected status)`);
+      }
+      await hooksStatusCommand({
+        cwd: options.cwd || process.cwd(),
+        agent: !!options.agent,
       });
     });
 

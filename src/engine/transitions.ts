@@ -45,6 +45,14 @@ interface TransitionTarget {
   requiredGate?: GateStatus[];
 }
 
+export interface WorkflowTransitionMetadata {
+  event: WorkflowEvent;
+  phase: WorkflowPhase;
+  gate: GateStatus;
+  from: WorkflowPhase[];
+  requiredGate: GateStatus[];
+}
+
 const EVENT_RECOVERY_COMMAND: Record<WorkflowEvent, string> = {
   'task.created': 'docpath refine 或 docpath plan',
   'plan.ready': 'docpath go --step S1',
@@ -78,6 +86,24 @@ const EVENT_TARGETS: Record<WorkflowEvent, TransitionTarget> = {
   // 仍拒绝 check_fail / review_fail——失败态不得归档。
   'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'], requiredGate: ['review_pass', 'review_skipped', 'check_pass'] },
 };
+
+export function listWorkflowTransitions(): WorkflowTransitionMetadata[] {
+  return (Object.entries(EVENT_TARGETS) as Array<[WorkflowEvent, TransitionTarget]>).map(([event, target]) => ({
+    event,
+    phase: target.phase,
+    gate: target.gate,
+    from: [...target.from],
+    requiredGate: [...(target.requiredGate || [])],
+  }));
+}
+
+export function listValidWorkflowEvents(previous: Pick<CurrentState, 'phase' | 'gate'>): WorkflowTransitionMetadata[] {
+  return listWorkflowTransitions().filter((transition) => {
+    if (!transition.from.includes(previous.phase)) return false;
+    if (transition.requiredGate.length > 0 && !transition.requiredGate.includes(previous.gate)) return false;
+    return true;
+  });
+}
 
 const DEFAULT_STEP: Record<WorkflowEvent, string> = {
   'task.created': '任务已创建，下一步: 编写或细化 spec',
@@ -192,6 +218,12 @@ export async function transitionWorkflow(
     }
 
     await writeCurrentState(cwd, next);
+    try {
+      const { refreshAgentSnapshot } = await import('../hooks/bridge.js');
+      await refreshAgentSnapshot(cwd);
+    } catch {
+      // Snapshot refresh must not make a successful FSM transition fail.
+    }
     return next;
   });
 }

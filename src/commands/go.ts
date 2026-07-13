@@ -27,6 +27,7 @@ import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-g
 import { exitWithError } from '../utils/error-helpers.js';
 import { assertWorktreeContract } from './worktree.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
+import { assertNoDriftLock, refreshAgentSnapshot } from '../hooks/bridge.js';
 
 interface GoOptions {
   cwd: string;
@@ -161,6 +162,7 @@ async function finalizeStep(
   if (!sync.updated) {
     console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
   }
+  await refreshAgentSnapshot(cwd);
   await releaseExecutionLease(cwd, {
     sessionId,
     taskId,
@@ -245,6 +247,7 @@ export async function goCommand(options: GoOptions): Promise<void> {
     console.error('    确保 .docpath/tasks/current/spec.md 存在且首行为 `# T-<date>-<slug> - <标题>`，再运行 `docpath plan` 与 `docpath go`。');
     process.exit(1);
   }
+  await assertNoDriftLock(cwd, 'docpath go');
   let structuredSpec: Awaited<ReturnType<typeof readActiveStructuredSpecDocument>> = null;
   if (!status) {
     structuredSpec = await readActiveStructuredSpecDocument(docpathDir, resolvedTaskId);

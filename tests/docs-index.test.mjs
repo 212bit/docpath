@@ -233,6 +233,37 @@ describe('structured docs index', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('check ignores active task files when deciding docs-index staleness', () => {
+    const cwd = mkWorkspace();
+    run(`docs scan --cwd ${cwd}`, cwd);
+    const future = new Date(Date.now() + 5000);
+
+    // Update state.json with an active task ID
+    const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+    const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    state.task_id = 'T-TEST-ACTIVE';
+    state.phase = 'coding';
+    writeFileSync(statePath, JSON.stringify(state, null, 2));
+
+    // Create active task files and update their mtime to the future
+    const activeTaskDir = join(cwd, '.docpath', 'tasks', 'T-TEST-ACTIVE');
+    mkdirSync(activeTaskDir, { recursive: true });
+    const specMdPath = join(activeTaskDir, 'spec.md');
+    writeFileSync(specMdPath, '# Spec\n');
+    utimesSync(specMdPath, future, future);
+
+    const currentTaskDir = join(cwd, '.docpath', 'tasks', 'current');
+    mkdirSync(currentTaskDir, { recursive: true });
+    const currentSpecMdPath = join(currentTaskDir, 'spec.md');
+    writeFileSync(currentSpecMdPath, '# Spec\n');
+    utimesSync(currentSpecMdPath, future, future);
+
+    const { output } = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+
+    assert.doesNotMatch(output, /docs-index 可能陈旧/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('reveal filters structured docs index by level and topic', () => {
     const cwd = mkWorkspace();
     run(`docs scan --cwd ${cwd}`, cwd);

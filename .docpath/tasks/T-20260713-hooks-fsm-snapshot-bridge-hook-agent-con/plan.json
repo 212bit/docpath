@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-13T12:53:09.017Z",
+    "updated_at": "2026-07-13T12:53:09.017Z",
+    "content_sha256": "388fb71019e046a5432828997b1c08fd6f19e74353fc000f03c30193e96afc9f"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-13T12:53:09.017Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 hooks: FSM Snapshot Bridge — 内部生命周期 hook + agent context snapshot",
+      "description": "根据 spec 明确 FR-1: hooks: FSM Snapshot Bridge — 内部生命周期 hook + agent context snapshot 的实现边界和验收口径。",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 hooks: FSM Snapshot Bridge — 内部生命周期 hook + agent context snapshot",
+      "description": "在现有架构内完成 FR-1: hooks: FSM Snapshot Bridge — 内部生命周期 hook + agent context snapshot 的代码与文档更新。",
+      "acceptance": "FR-1 hooks: FSM Snapshot Bridge — 内部生命周期 hook + agent context snapshot 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-266 与任务 T-20260713-hooks-fsm-snapshot-bridge-hook-agent-con 建立双向关联",
+      "acceptance": "AC-1: 生成的 spec 可直接进入 `docpath plan`；AC-2: backlog 条目 R-266 与任务 T-20260713-hooks-fsm-snapshot-bridge-hook-agent-con 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}
