@@ -10,3 +10,5 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260713-hooks-fsm-snapshot-bridge-hook-agent-con","step":"review","status":"blocked","context":"代码审查: 0 错误, 11 警告, 0 提示","timestamp":"2026-07-13T13:21:31.814Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260713-hooks-fsm-snapshot-bridge-hook-agent-con","step":"review","status":"done","context":"代码审查: 0 错误, 11 警告, 0 提示","timestamp":"2026-07-13T13:21:46.079Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260713-hooks-fsm-snapshot-bridge-hook-agent-con","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-07-13T13:21:47.808Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260713-hooks-fsm-snapshot-bridge-hook-agent-con","step":"check","status":"blocked","context":"质量检查失败: 测试, docs-index 可能陈旧","timestamp":"2026-07-13T13:36:52.620Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260713-hooks-fsm-snapshot-bridge-hook-agent-con","step":"check","status":"done","context":"质量检查通过 (10 项)","timestamp":"2026-07-13T13:37:01.925Z"}
