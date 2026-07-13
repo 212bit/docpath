@@ -2,13 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-13T10:28:07.317Z
+> 扫描时间: 2026-07-13T12:35:32.142Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-266 | hooks: FSM Snapshot Bridge — 内部生命周期 hook + agent context snapshot | proposed | P0 | 3 |  |
+| R-266 | hooks: FSM Snapshot Bridge — 内部生命周期 hook + agent context snapshot | accepted | P0 | 3 |  |
 | R-259 | High-value reliability optimizations | proposed | P1 | 2 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-243 | Fix project brief next_hint after intake brief | proposed | P2 | 1 |  |
