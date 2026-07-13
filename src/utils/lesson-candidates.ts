@@ -1,4 +1,14 @@
 export type CandidateAction = 'keep' | 'archive' | 'skip';
+export type LessonTarget = 'style' | 'architecture';
+
+export interface LessonPattern {
+  type: 'anti-pattern' | 'best-practice' | 'convention' | 'architecture';
+  keyword: string;
+  description: string;
+  source: string;
+  taskId?: string;
+  target: LessonTarget;
+}
 
 export interface CandidateBlock {
   raw: string;
@@ -15,6 +25,7 @@ export interface CandidateClassification {
   block: CandidateBlock;
   action: CandidateAction;
   reasons: string[];
+  pattern?: LessonPattern;
 }
 
 function extractKeyword(text: string): string | null {
@@ -72,6 +83,27 @@ function lessonQualityReasons(candidate: CandidateBlock): string[] {
   if (!hasExpectedBehavior) reasons.push('缺少期望行为');
   if (!hasBoundary) reasons.push('缺少边界');
   return reasons;
+}
+
+function candidateToPattern(candidate: CandidateBlock): LessonPattern | undefined {
+  const typeValue = candidate.type;
+  const targetValue = candidate.target;
+  const type: LessonPattern['type'] = targetValue === 'architecture' || typeValue === 'architecture'
+    ? 'architecture'
+    : typeValue === 'anti-pattern' || typeValue === 'best-practice' || typeValue === 'convention'
+      ? typeValue
+      : 'best-practice';
+
+  if (!candidate.description) return undefined;
+
+  return {
+    type,
+    keyword: candidate.key,
+    description: candidate.description.slice(0, 300),
+    source: candidate.source,
+    taskId: candidate.taskId,
+    target: targetValue === 'architecture' || type === 'architecture' ? 'architecture' : 'style',
+  };
 }
 
 export function parseCandidateBlocks(content: string): CandidateBlock[] {
@@ -153,6 +185,11 @@ export function classifyCandidateBlocks(candidates: CandidateBlock[]): Candidate
       return { block: candidate, action: 'archive', reasons: qualityReasons };
     }
 
-    return { block: candidate, action: 'keep', reasons: ['具备触发条件、期望行为和边界'] };
+    return {
+      block: candidate,
+      action: 'keep',
+      reasons: ['具备触发条件、期望行为和边界'],
+      pattern: candidateToPattern(candidate),
+    };
   });
 }
