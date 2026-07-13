@@ -1,7 +1,6 @@
 import type { CAC } from 'cac';
 import { changesCommand } from '../changes.js';
 import { contextCommand } from '../context.js';
-import { dashboardCommand } from '../dashboard.js';
 import { deliverablesCommand } from '../deliverables.js';
 import { exportCommand } from '../export.js';
 import { promptAction } from '../prompt.js';
@@ -164,20 +163,6 @@ function registerProjectsCommand(cli: CAC): void {
     });
 }
 
-function registerDashboardCommand(cli: CAC): void {
-  cli.command('dashboard', '启动本地只读管理仪表盘')
-    .option('--cwd <path>', '项目目录')
-    .option('--host <host>', '监听地址 (默认 127.0.0.1)')
-    .option('--port <port>', '监听端口 (默认 5179)')
-    .action(async (options: { cwd?: string; host?: string; port?: string }) => {
-      await dashboardCommand({
-        cwd: options.cwd || process.cwd(),
-        host: options.host,
-        port: parseIntegerOption(options.port, 'dashboard --port', { min: 1, max: 65535 }),
-      });
-    });
-}
-
 function registerPromptCommand(cli: CAC): void {
   cli.command('prompt', '输出结构化 prompt（支持 OMX 风格）')
     .option('--cwd <path>', '项目目录')
@@ -199,6 +184,5 @@ export function registerReportingCommands(cli: CAC): void {
   registerRenderCommand(cli);
   registerStatsCommand(cli);
   registerProjectsCommand(cli);
-  registerDashboardCommand(cli);
   registerPromptCommand(cli);
 }

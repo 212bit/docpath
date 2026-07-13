@@ -115,7 +115,6 @@ describe('CLI positional argument guards', () => {
       ['reveal --level 4', /reveal --level: 参数非法/],
       ['compact --max-entries nope', /compact --max-entries: 参数非法/],
       ['agent handoff --max-entries nope', /agent --max-entries: 参数非法/],
-      ['dashboard --port nope', /dashboard --port: 参数非法/],
     ];
 
     for (const [command, pattern] of cases) {
@@ -124,6 +123,15 @@ describe('CLI positional argument guards', () => {
       assert.match(result.out, pattern, command);
     }
 
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('does not register the removed dashboard command', () => {
+    const cwd = mkWorkspace();
+    const result = run('dashboard', cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /未知命令: dashboard/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -166,7 +174,7 @@ describe('CLI positional argument guards', () => {
     const advancedHelp = run('help advanced', cwd);
     assert.equal(advancedHelp.code, 0);
     assert.match(advancedHelp.out, /Advanced and maintenance commands:/);
-    assert.match(advancedHelp.out, /dashboard\s+Start the read-only dashboard/);
+    assert.doesNotMatch(advancedHelp.out, /dashboard\s+Start the read-only dashboard/);
     assert.match(advancedHelp.out, /run\s+Low-level runtime lifecycle primitive/);
 
     const deprecatedHelp = run('help deprecated', cwd);

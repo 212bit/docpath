@@ -71,7 +71,7 @@ const LANGUAGE_RULES: Array<{
 
 const EXCLUDED_SOURCE_PATHS = [
   /(^|\/)node_modules\//,
-  /(^|\/)(dist|build|coverage|dashboard-dist|\.turbo|\.next|out)\//,
+  /(^|\/)(dist|build|coverage|\.turbo|\.next|out)\//,
   /(^|\/)(vendor|fixtures|__snapshots__)\//,
   /(^|\/).*\.min\.(js|mjs|cjs)$/i,
   /(^|\/).*\.d\.ts$/i,

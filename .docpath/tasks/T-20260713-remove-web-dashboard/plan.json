@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-13T09:20:31.804Z",
+    "updated_at": "2026-07-13T09:20:31.804Z",
+    "content_sha256": "6cc3474ef1f8ce847a5f7d57149f64b623c8b5c0f03973717bb114b8e8c37bc1"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-13T09:20:31.804Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Remove Web Dashboard",
+      "description": "根据 spec 明确 FR-1: Remove Web Dashboard 的实现边界和验收口径。",
+      "acceptance": "AC-1: docpath dashboard 命令不可用且不再出现在 advanced help；dashboard 源码、UI 源码、发布资产、构建脚本和相关测试被清理；项目构建与测试通过；普通 DocPath CLI 能力保持可用。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Remove Web Dashboard",
+      "description": "在现有架构内完成 FR-1: Remove Web Dashboard 的代码与文档更新。",
+      "acceptance": "FR-1 Remove Web Dashboard 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: docpath dashboard 命令不可用且不再出现在 advanced help；dashboard 源码、UI 源码、发布资产、构建脚本和相关测试被清理；项目构建与测试通过；普通 DocPath CLI 能力保持可用。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-264 与任务 T-20260713-remove-web-dashboard 建立双向关联",
+      "acceptance": "AC-1: docpath dashboard 命令不可用且不再出现在 advanced help；dashboard 源码、UI 源码、发布资产、构建脚本和相关测试被清理；项目构建与测试通过；普通 DocPath CLI 能力保持可用。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-264 与任务 T-20260713-remove-web-dashboard 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

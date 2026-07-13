@@ -8,12 +8,9 @@ import { defineConfig } from 'tsup';
  *   - build:clean → tsup --clean
  *   - build:test  → tsup
  *   - dev         → tsup --watch
- *
- * Dashboard（React + Vite）单独由 build:dashboard 构建，不在此处打包。
  */
 const CLI_ENTRY = [
   'src/index.ts',
-  'src/commands/dashboard.ts',
   'src/engine/breadcrumb.ts',
   'src/engine/state-machine.ts',
   'src/engine/transitions.ts',
