@@ -69,6 +69,7 @@ export function registerOperationalCommands(cli: CAC): void {
     .option('--approve-review', 'review 时手动批准')
     .option('--note <note>', '跳过原因（--skip-* 时必需）')
     .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
+    .option('--no-dirty-reminder', '不打印未提交业务文件提醒')
     .action(async (options: {
       cwd?: string;
       skipCheck?: boolean;
@@ -83,6 +84,8 @@ export function registerOperationalCommands(cli: CAC): void {
       'approve-review'?: boolean;
       note?: string;
       session?: string;
+      dirtyReminder?: boolean;
+      'dirty-reminder'?: boolean;
     }) => {
       await doneCommand({
         cwd: options.cwd || process.cwd(),
@@ -93,6 +96,7 @@ export function registerOperationalCommands(cli: CAC): void {
         approveReview: options.approveReview || options['approve-review'],
         note: options.note,
         session: options.session,
+        noDirtyReminder: options.dirtyReminder === false || options['dirty-reminder'] === false,
       });
     });
 

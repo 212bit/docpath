@@ -1,0 +1,16 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"S1","status":"in_progress","context":"开始执行: soft-dirty-reminder 检测函数与分流复用","timestamp":"2026-07-14T08:26:51.879Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-07-14T08:29:55.326Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"S2","status":"in_progress","context":"recover current-task edits before go","timestamp":"2026-07-14T08:30:16.690Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-07-14T08:30:42.678Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"S3","status":"in_progress","context":"recover current-task edits before go","timestamp":"2026-07-14T11:02:06.833Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-07-14T11:03:18.545Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"check","status":"blocked","context":"质量检查失败: 子任务完成度 (3/5)","timestamp":"2026-07-14T11:05:58.430Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"check","status":"in_progress","context":"recovery-recover: 从 blocked 恢复执行","timestamp":"2026-07-14T11:07:06.730Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"S4","status":"in_progress","context":"continue work","timestamp":"2026-07-14T11:07:13.578Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-07-14T11:07:18.883Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"S5","status":"in_progress","context":"implement tests","timestamp":"2026-07-14T11:07:30.219Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"S5","status":"done","context":"agent-step: S5","timestamp":"2026-07-14T11:11:38.965Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-07-14T11:14:07.763Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"review","status":"blocked","context":"代码审查: 0 错误, 6 警告, 0 提示","timestamp":"2026-07-14T11:14:12.180Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"review","status":"done","context":"代码审查: 0 错误, 6 警告, 0 提示","timestamp":"2026-07-14T11:14:26.474Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260714-done-commit","step":"journal","status":"done","context":"知识归档完成 (5/5 步)","timestamp":"2026-07-14T11:14:31.419Z"}

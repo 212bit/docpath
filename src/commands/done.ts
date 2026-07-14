@@ -15,6 +15,7 @@ import { resolveSessionContext } from '../utils/session.js';
 import { gatePolicyForProfile, isQuickProfile, isInstantProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
 import { isInWorktree } from '../utils/worktree.js';
 import { exitWithError } from '../utils/error-helpers.js';
+import { detectUncommittedNonDocPathFiles, renderCommitReminder } from '../utils/git-dirty-guard.js';
 
 interface DoneOptions {
   cwd: string;
@@ -25,6 +26,7 @@ interface DoneOptions {
   approveReview?: boolean;
   note?: string;
   session?: string;
+  noDirtyReminder?: boolean;
 }
 
 /**
@@ -58,7 +60,13 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
     approveReview: options.approveReview,
     note: options.note,
     session: session.sessionId,
+    noDirtyReminder: options.noDirtyReminder,
   });
+
+  const { nonDocPathFiles, count } = detectUncommittedNonDocPathFiles(cwd);
+  if (count > 0 && !options.noDirtyReminder) {
+    console.warn(renderCommitReminder(nonDocPathFiles));
+  }
 
   // 审计输出
   console.log('');
@@ -67,6 +75,7 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
   console.log(`    session: ${session.sessionId}`);
   console.log(`    workflow_profile: ${profile}`);
   console.log(`    gate_policy: spec=${policy.requiresSpec}, plan=${policy.requiresPlan}, check=${policy.liteCheck ? 'lite' : policy.requiresCheck}, review=${policy.requiresReview}, journal=${policy.journalMode}`);
+  console.log(`    未提交业务文件: ${count}`);
   console.log(`    底层调用: docpath agent done`);
   const gates: string[] = [];
   if (!options.skipCheck) gates.push(instantProfile ? 'check(lite)' : 'check');

@@ -66,14 +66,17 @@ FR-5/FR-6（changes --agent task-aware 归组）切分至独立 backlog R-262（
 ## 4.1 重大变更门禁
 
 ### 是否涉及重大变更
-- [x] 否
-- [ ] 是，需要用户确认
+- [ ] 否
+- [x] 是，需要用户确认
 
 ### 变更类型
+- [x] 工作流 / Agent 行为
 
 ### UI 设计门禁
 - [x] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）
 - [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）
+
+- 用户确认: 用户已确认对 done 阶段业务代码未 commit 开启软提醒，并且支持 --no-dirty-reminder 参数以进行静音。
 
 ### Decision Brief
 - 当前问题: done 阶段无 git 检查 → 任务可在残留未提交业务文件时被标记完成

@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import pc from 'picocolors';
+
 
 export interface DirtyWorktreeReport {
   isGitRepo: boolean;
@@ -189,3 +191,31 @@ export function assertNoNonDocPathChangesForExecutionStart(
   if (blockedFiles.length === 0) return;
   throw buildDirtyWorktreeError(command, report, blockedFiles, 'execution-start', options);
 }
+
+export function detectUncommittedNonDocPathFiles(cwd: string): { nonDocPathFiles: string[]; count: number } {
+  const report = detectDirtyWorktree(cwd);
+  if (!report.isGitRepo) {
+    return { nonDocPathFiles: [], count: 0 };
+  }
+  return {
+    nonDocPathFiles: report.nonDocPathFiles,
+    count: report.nonDocPathFiles.length,
+  };
+}
+
+export function renderCommitReminder(nonDocPathFiles: string[]): string {
+  if (!nonDocPathFiles || nonDocPathFiles.length === 0) {
+    return '';
+  }
+  const fileList = nonDocPathFiles.map((file) => `  - ${file}`).join('\n');
+  return [
+    pc.yellow('⚠️  警告: 存在未提交的业务代码/测试文件变动'),
+    pc.gray('未提交文件:'),
+    fileList,
+    pc.gray('建议使用以下命令提交关联改动:'),
+    `  docpath changes --agent && git commit`,
+    pc.yellow('免责声明: 这些文件可能混合了多个任务/Agent 的改动，请在 commit 前务必确认文件归属。'),
+  ].join('\n');
+}
+
+

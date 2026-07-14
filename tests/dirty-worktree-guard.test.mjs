@@ -5,6 +5,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse } from 'yaml';
+import { detectUncommittedNonDocPathFiles, renderCommitReminder } from '../dist/utils/git-dirty-guard.js';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 
@@ -305,5 +306,65 @@ describe('dirty worktree guard', () => {
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
+  });
+
+  describe('detectUncommittedNonDocPathFiles', () => {
+    it('returns empty for clean repo', () => {
+      const cwd = mkBaseWorkspace();
+      try {
+        initGitRepo(cwd);
+        const res = detectUncommittedNonDocPathFiles(cwd);
+        assert.deepEqual(res, { nonDocPathFiles: [], count: 0 });
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+
+    it('returns empty when only .docpath files are dirty', () => {
+      const cwd = mkBaseWorkspace();
+      try {
+        initGitRepo(cwd);
+        writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'dirty\n');
+        const res = detectUncommittedNonDocPathFiles(cwd);
+        assert.deepEqual(res, { nonDocPathFiles: [], count: 0 });
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+
+    it('returns files and count when non-docpath files are dirty', () => {
+      const cwd = mkBaseWorkspace();
+      try {
+        initGitRepo(cwd);
+        writeFileSync(join(cwd, 'README.md'), 'dirty\n');
+        const res = detectUncommittedNonDocPathFiles(cwd);
+        assert.deepEqual(res, { nonDocPathFiles: ['README.md'], count: 1 });
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('renderCommitReminder', () => {
+    it('returns empty string for empty input', () => {
+      const res = renderCommitReminder([]);
+      assert.equal(res, '');
+    });
+
+    it('returns warning with banner, files, command suggestion, and disclaimer', () => {
+      const files = ['src/app.ts', 'tests/app.test.ts'];
+      const res = renderCommitReminder(files);
+
+      // (a) banner
+      assert.match(res, /警告/);
+      assert.match(res, /未提交/);
+      // (b) file list
+      assert.match(res, /src\/app\.ts/);
+      assert.match(res, /tests\/app\.test\.ts/);
+      // (c) commit command suggestion
+      assert.match(res, /git commit/);
+      // (d) disclaimer
+      assert.match(res, /免责声明/);
+    });
   });
 });

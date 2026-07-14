@@ -33,7 +33,7 @@ import { emitNextHint } from '../utils/next-hint.js';
 import { isQuickProfile, isInstantProfile, gatePolicyForProfile } from '../engine/workflow-profile.js';
 import { assertQuickScope } from '../engine/quick-guard.js';
 import { readLastCheckEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
-import { assertCleanWorktreeForNewTask, assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
+import { assertCleanWorktreeForNewTask, assertNoNonDocPathChangesForExecutionStart, detectUncommittedNonDocPathFiles, renderCommitReminder } from '../utils/git-dirty-guard.js';
 
 type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
 
@@ -52,6 +52,7 @@ type AgentOptions = {
   autoNext?: boolean;
   enforce?: boolean;
   session?: string;
+  noDirtyReminder?: boolean;
 };
 
 const GATE_EVIDENCE_FRESH_MS = 60 * 60 * 1000;
@@ -427,6 +428,12 @@ async function handleAgentDone(options: AgentOptions): Promise<void> {
   }
   await finishAgentDoneTask(options, finalStatus);
   await emitAgentTaskEnd(cwd, finalStatus);
+
+  const { nonDocPathFiles, count } = detectUncommittedNonDocPathFiles(cwd);
+  if (count > 0 && !options.noDirtyReminder) {
+    console.warn(renderCommitReminder(nonDocPathFiles));
+  }
+
   await emitNextHint(cwd);
 }
 

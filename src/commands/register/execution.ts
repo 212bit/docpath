@@ -61,7 +61,8 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--approve-review', 'review 时手动批准')
     .option('--max-entries <n>', 'handoff 压缩时保留 breadcrumb 条数')
     .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
-    .action(async (action: 'enter' | 'step' | 'done' | 'handoff', options: { cwd?: string; step?: string; note?: string; status?: 'done' | 'blocked' | 'skipped'; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; maxEntries?: string; 'max-entries'?: string; session?: string }) => {
+    .option('--no-dirty-reminder', '不打印未提交业务文件提醒')
+    .action(async (action: 'enter' | 'step' | 'done' | 'handoff', options: { cwd?: string; step?: string; note?: string; status?: 'done' | 'blocked' | 'skipped'; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; maxEntries?: string; 'max-entries'?: string; session?: string; dirtyReminder?: boolean; 'dirty-reminder'?: boolean }) => {
       await agentCommand({
         cwd: options.cwd || process.cwd(),
         action,
@@ -75,6 +76,7 @@ export function registerExecutionCommands(cli: CAC): void {
         approveReview: !!(options.approveReview || options['approve-review']),
         maxEntries: parseIntegerOption(options.maxEntries || options['max-entries'], 'agent --max-entries', { min: 1 }),
         session: options.session,
+        noDirtyReminder: options.dirtyReminder === false || options['dirty-reminder'] === false,
       });
     });
 }
