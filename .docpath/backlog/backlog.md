@@ -2,13 +2,13 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-14T11:14:31.417Z
+> 扫描时间: 2026-07-14T11:19:17.071Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-259 | High-value reliability optimizations | proposed | P1 | 2 |  |
+| R-259 | High-value reliability optimizations | accepted | P1 | 2 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-243 | Fix project brief next_hint after intake brief | proposed | P2 | 1 |  |
 | R-250 | check 频繁报 docs-index 陈旧告警但无自愈/重建路径 | proposed | P2 | 1 |  |
