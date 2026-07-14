@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-14T05:10:08.995Z",
+    "updated_at": "2026-07-14T05:10:08.995Z",
+    "content_sha256": "82f922b664d454a4050dffbed83d4150e17670df1a6b276f94f0746fb3366ce9"
+  },
+  "task_id": "T-20260714-done-commit",
+  "backlog_id": "R-260",
+  "title": "T-20260714-done-commit - done 阶段业务代码未 commit 软提醒门控",
+  "generated_at": "2026-07-14T05:10:08.995Z",
+  "scope": {
+    "included": [
+      "done 命令收尾阶段的业务文件未提交软提醒（检测 + 列清单 + 免责 + 静音 flag）",
+      "DocPath 自身产物不计入提醒",
+      "复用 isDocPathManagedPath / nonDocPathFiles 现成分流"
+    ],
+    "excluded": [
+      "changes --agent 的 task-aware 归组能力（FR-5/FR-6，已切分至 R-262）",
+      "硬拒门控（明确决策:软提醒不阻断）",
+      "任何自动 commit 执行（DocPath 不抢 commit 执行权）"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": "- 当前问题: done 阶段无 git 检查 → 任务可在残留未提交业务文件时被标记完成\n- 目标: done 收尾时对 non-DocPath 未提交业务文件打印软提醒(不阻断),提示 agent/人显式确认归属后再 commit\n- 可选方案:\n  - 方案 A: 软提醒(done 不阻断,列文件+免责)\n  - 方案 B: 硬拒(非 DocPath 脏则拒绝 done)\n- 推荐方案: 方案 A\n- 决策理由: 单人多 agent 场景,硬拒把别 task/agent 的脏文件算到当前完成任务的头上,体验比\"代码没进库\"更糟;DocPath 不抢 commit 执行权,与 changes 的 read-only 立场一致\n- 不做什么: 不自动 commit;不阻断 done;不含 changes --agent 归组(切至 R-262)\n- 成本: 小(done 命令内复用现成分流 + 一段打印)\n- 风险: 软提醒可能被 agent 忽略;缓解: 醒目 warning + 列文件 + 免责防笃定\n- 回滚方案: 移除 done 中软提醒调用,backlog R-260 退回 proposed"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "done 命令检测工作树中 non-DocPath 未提交文件，存在时打印软提醒，不阻断流程退出码",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "提醒列出未提交业务文件清单 + 建议 commit 命令，并附免责声明（文件可能混合多个任务/agent，请确认归属后再 commit）",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "DocPath 自身产物（.docpath/）不计入提醒计数与清单",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "提醒输出可通过标志（如 --no-dirty-reminder 或 profile 策略）静音，默认开启",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容（done 退出码不变、不抢 commit 执行权）",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "工作树有业务文件未提交时,done 输出含醒目软提醒并列出文件名",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "工作树只有 .docpath/ 文件未提交(纯 DocPath 产物)时,done 不打印业务提醒",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "提醒含免责声明,提示文件可能混合多任务/多 agent",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "存在未提交业务文件时,done 退出码仍为 0(软提醒不阻断)",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "--no-dirty-reminder(或等效 flag)可静音提醒",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "done 阶段无 git 检查 → 任务可在残留未提交业务文件时被标记完成",
+    "options": [
+      "- 方案 A: 软提醒(done 不阻断,列文件+免责)"
+    ],
+    "chosen": "方案 A",
+    "rationale": "单人多 agent 场景,硬拒把别 task/agent 的脏文件算到当前完成任务的头上,体验比\"代码没进库\"更糟;DocPath 不抢 commit 执行权,与 changes 的 read-only 立场一致"
+  }
+}
