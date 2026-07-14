@@ -52,6 +52,15 @@ function mkWorkspace({
   writeFileSync(join(dp, 'workspace', 'last-check.md'), '# Last Check Evidence\n\n**结果**: ✅ PASS\n');
   writeFileSync(join(dp, 'tasks', 'current', 'spec.md'), `# ${taskId} - ${taskTitle}\n`);
   writeFileSync(join(dp, 'tasks', 'current', 'plan.md'), plan);
+  if (phase === 'executing') {
+    writeFileSync(join(dp, 'workspace', 'pending-done.json'), JSON.stringify({
+      task_id: taskId,
+      entered_at: new Date().toISOString(),
+      phase: 'executing',
+      warned: false,
+    }, null, 2));
+    writeFileSync(join(dp, 'workspace', 'pending-done.md'), '# Pending Done\n');
+  }
 
   return cwd;
 }

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-14T02:26:09.648Z",
+    "updated_at": "2026-07-14T02:26:09.648Z",
+    "content_sha256": "79fe03b871731906b4ec5f444593e53d9a63dfc23b5827973a2c3d854bc79490"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-14T02:26:09.648Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "Fix agent enter recommended command and dirty checks",
+      "description": "Fix agent enter recommended command and dirty checks",
+      "acceptance": "All tests pass",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

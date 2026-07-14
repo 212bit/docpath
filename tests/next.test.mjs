@@ -32,6 +32,15 @@ function mkWorkspace({ phase = 'idle', gate = 'none', taskId = 'T-NEXT', taskTit
   writeFileSync(join(dp, 'workspace', 'breadcrumb.md'), breadcrumb);
   writeFileSync(join(dp, 'tasks', 'current', 'plan.md'), plan);
   if (lastCheck) writeFileSync(join(dp, 'workspace', 'last-check.md'), lastCheck);
+  if (phase === 'executing') {
+    writeFileSync(join(dp, 'workspace', 'pending-done.json'), JSON.stringify({
+      task_id: taskId,
+      entered_at: new Date().toISOString(),
+      phase: 'executing',
+      warned: false,
+    }, null, 2));
+    writeFileSync(join(dp, 'workspace', 'pending-done.md'), '# Pending Done\n');
+  }
   return cwd;
 }
 
@@ -1246,6 +1255,22 @@ created_at: 2026-05-31
       phase: 'executing',
       gate: 'none',
       plan: '# Plan\n\n- [x] S1: completed\n',
+      breadcrumb: [
+        '# Breadcrumb',
+        '',
+        '### ✅ S1 [T-NEXT] — 2026-05-29T00:00:00.000Z',
+        '',
+        '---',
+        'taskId: T-NEXT',
+        'step: S1',
+        'status: done',
+        'timestamp: 2026-05-29T00:00:00.000Z',
+        '---',
+        '',
+        '- **状态**: done',
+        '- **上下文**: done',
+        '',
+      ].join('\n'),
     });
     writeFileSync(join(cwd, '.docpath', 'workspace', 'pending-done.md'), `---
 task_id: T-NEXT
@@ -1326,6 +1351,12 @@ phase: executing
 warned: false
 ---
 `);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'pending-done.json'), JSON.stringify({
+      task_id: 'T-NEXT',
+      entered_at: '2026-05-29T00:00:00.000Z',
+      phase: 'executing',
+      warned: false,
+    }, null, 2));
 
     nextAgent(cwd);
     nextAgent(cwd);

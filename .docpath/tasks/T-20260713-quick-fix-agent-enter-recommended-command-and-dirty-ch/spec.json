@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-14T02:18:53.430Z",
+    "updated_at": "2026-07-14T02:18:53.430Z",
+    "content_sha256": "6a6b94b4cab38d4fcfde29c8bf4269c2bf0d1640b5f37329d5aebc9a3922ec49"
+  },
+  "task_id": "T-20260713-quick-fix-agent-enter-recommended-command-and-dirty-ch",
+  "backlog_id": null,
+  "title": "T-20260713-quick-fix-agent-enter-recommended-command-and-dirty-ch - T-20260713-quick-fix-agent-enter-recommended-command-and-dirty-ch - Fix agent enter recommended command and dirty checks",
+  "generated_at": "2026-07-14T02:18:53.430Z",
+  "scope": {
+    "included": [
+      "待补充"
+    ],
+    "excluded": [
+      "待补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "用户在对话中确认进入 enter 路由修复。",
+    "decision_brief_markdown": "- 当前问题: docpath 没能按要求在适当的时机推荐并进入 agent enter，且在 executing 阶段的 dirty 校验未被执行。\n- 目标: 修复 next --agent 对 agent enter 的路由推荐，使 agent 必然在执行代码前执行 agent enter，并在 executing 阶段的 enter 命令中增加 worktree 校验。\n- 可选方案: 在 formatters 中追加 pendingDone 校验推荐 enter，并完善 agent.ts 的 enter 时期 dirty worktree 检查。\n- 推荐方案: 方案 C (实现上述修复且解决测试套件中的 mock drift/sentinel 问题)。\n- 用户确认: 用户在对话中确认进入 enter 路由修复。"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Fix agent enter recommended command and dirty checks",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "待补充",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "待补充",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "docpath 没能按要求在适当的时机推荐并进入 agent enter，且在 executing 阶段的 dirty 校验未被执行。",
+    "options": [
+      "在 formatters 中追加 pendingDone 校验推荐 enter，并完善 agent.ts 的 enter 时期 dirty worktree 检查。"
+    ],
+    "chosen": "方案 C (实现上述修复且解决测试套件中的 mock drift/sentinel 问题)。",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

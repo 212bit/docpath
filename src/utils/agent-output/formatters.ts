@@ -1121,6 +1121,13 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
     hasHealthRegressionWarning(context.installHealth),
   );
 
+  const hasDrift = context.drift.planDoneWithoutBreadcrumb.length > 0 || context.drift.breadcrumbDoneWithoutPlan.length > 0;
+  const isTroubleshooting = hasDrift
+    || inferred.recommended_command.startsWith('docpath debug')
+    || inferred.recommended_command.startsWith('docpath recover')
+    || inferred.recommended_command.startsWith('docpath tdd')
+    || (state?.gate === 'check_fail');
+
   if (shouldRouteToMajorChangeGate(context, inferred.recommended_command)) {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md'];
     return {
@@ -1133,9 +1140,22 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
     };
   }
 
+  if (!pendingDone && state?.phase === 'executing' && state.task_id && !isQuickProfile(state.workflow_profile) && !isTroubleshooting) {
+    const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'];
+    return {
+      next_action: '开始或恢复任务执行，运行 agent enter 初始化会话',
+      recommended_command: 'docpath agent enter',
+      required_context: required,
+      required_files: required,
+      must_update: ['.docpath/workspace/pending-done.md', '.docpath/workspace/breadcrumb.md'],
+      exit_criteria: '已运行 docpath agent enter 并生成 pending-done 哨兵',
+    };
+  }
+
   if (pendingDone && state?.phase === 'executing' && pendingDone.task_id === state.task_id) {
     const hasActiveOrOpenPlanWork = context.bc.inProgress > 0 || context.planTasks.some((task) => !task.done);
-    if (hasActiveOrOpenPlanWork) {
+
+    if (hasActiveOrOpenPlanWork || isTroubleshooting) {
       return {
         ...inferred,
         next_action: `${inferred.next_action}（检测到 pending-done 哨兵，完成当前步骤后再收尾）`,
