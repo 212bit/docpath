@@ -313,6 +313,31 @@ describe('structured docs index', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('reveal topic selection matches indexed document body terms, not only path title or summary', () => {
+    const cwd = mkWorkspace();
+    writeFileSync(join(cwd, '.docpath', 'spec', 'backend', 'ops.md'), [
+      '# Operations Note',
+      '',
+      'General operational note without the query term.',
+      '',
+      'The hiddenbodyneedle marker only appears in the document body after the summary line.',
+      '',
+    ].join('\n'));
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    const index = JSON.parse(readFileSync(join(cwd, '.docpath', 'docs-index.json'), 'utf-8'));
+    const entry = index.entries.find((item) => item.path === 'spec/backend/ops.md');
+    assert.ok(entry, 'body-term fixture should be indexed');
+    assert.doesNotMatch(`${entry.path} ${entry.title} ${entry.summary}`, /hiddenbodyneedle/);
+    assert.ok(entry.content_terms.includes('hiddenbodyneedle'), 'body-only term should be indexed compactly');
+
+    const output = run(`reveal --cwd ${cwd} --level 2 --topic hiddenbodyneedle --format raw`, cwd);
+
+    assert.match(output, /path: spec\/backend\/ops\.md/);
+    assert.doesNotMatch(output, /path: spec\/backend\/api\.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('reveal keeps generated index views discoverable but excludes them from selected token budget', () => {
     const cwd = mkWorkspace();
     run(`docs scan --cwd ${cwd}`, cwd);
