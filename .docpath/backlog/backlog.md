@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-15T02:31:43.893Z
+> 扫描时间: 2026-07-15T12:58:35.495Z
 
 ## 条目列表
 
@@ -11,7 +11,6 @@
 | R-259 | High-value reliability optimizations | dropped | P1 | 2 |  |
 | R-267 | docpath init --scan-existing 现有项目快速接入扫描功能 | active | P1 | 2 | T-20260715-docpath-init-scan-existing |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
-| R-243 | Fix project brief next_hint after intake brief | proposed | P2 | 1 |  |
 | R-250 | check 频繁报 docs-index 陈旧告警但无自愈/重建路径 | proposed | P2 | 1 |  |
 | R-252 | review 检测到 spec.md/spec.json 不同步但仅提示不修复 | proposed | P2 | 1 |  |
 | R-254 | review --skip-skill-review 重复传参 crash: item.split is not a function | proposed | P2 | 1 |  |
