@@ -127,6 +127,11 @@ docpath backlog accept R-001
 docpath backlog promote R-001
 ```
 
+promote 会创建当前任务的 `spec.md` 和结构化 `spec.json`。`spec.json` 是
+DocPath 后续 plan/check/review 使用的机器真源；如果 promote 后还要细化
+FR、AC、范围或门禁，请通过 `docpath write-spec --stdin` 写回 spec。直接
+手工编辑 `spec.md` 只会改变可读视图，不会同步更新 `spec.json`。
+
 ## 4.1 全新项目导入
 
 当用户只有 PPT 提取文本、接口文档、介绍文档、会议纪要或单份粗需求文档时，不要先拆成 backlog。先创建 project intake：

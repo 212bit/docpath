@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-15T02:31:43.893Z
+> 扫描时间: 2026-07-15T15:54:12.223Z
 
 ## 条目列表
 
@@ -20,7 +20,6 @@
 | R-262 | changes --agent task-aware 文件分组与显式 --task/--scope 归组 | proposed | P2 | 2 |  |
 | R-249 | go/promote 的 dirty worktree 拒绝未区分 DocPath 自身产物，频繁误拦 | proposed | P3 | 1 |  |
 | R-261 | journal --dry-run 归档预览文字与默认 archive policy 不符 | proposed | P3 | 1 |  |
-| R-263 | promote/write-spec 真源同步语义未前置化（FR checklist 漏进 spec.json,brainstorm yaml 仅作背景） | proposed | P3 | 1 |  |
 
 ## 用途说明
 
