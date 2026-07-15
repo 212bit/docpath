@@ -28,3 +28,10 @@
   next command.
 - Add CLI output fields append-only where possible to avoid breaking existing
   parsers.
+
+## gotcha: 手改 spec.md 后用 write-spec --stdin 重同步会把 phase 重置回 drafting
+- rationale: write-spec 落盘触发 task.created 转移 (from 含 executing)，勾选验收复选框这类小编辑经 --stdin 重同步后任务从 executing 回退 drafting；其提示的 recover check 并不适用 (recover 仅限 blocked 步骤)。
+触发: executing 阶段编辑 spec.md (含仅勾复选框) 且 agent step 提示 content_sha256 不同步。期望行为: 用 write-spec --stdin 重同步后，立即用 docpath run start --step <当前步> 记录归属并合法回到 executing (step.started 的宽松 from 即为漂移恢复设计)，再 agent step done + check。边界: 不适用于任务身份漂移 (heading/task_id 变化)，那类必须走 restore/reset/capture/promote。
+### Evidence
+- T-20260715-docpath-init-scan-existing S8: write-spec 后 phase=drafting, run start --step S8 恢复
+- src/engine/transitions.ts:72-74 from 列表

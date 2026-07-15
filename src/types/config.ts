@@ -34,6 +34,24 @@ export interface DocPathConfig {
     /** 是否启用语言级 review skill gate；默认启用 */
     enabled?: boolean;
   };
+
+  /**
+   * docpath docs scan 扫描外部文档路径的根列表（FR-4 / FR-5）。
+   * 默认 [".docpath/", "README.md", "docs/"]；缺省时兜底默认值（向后兼容）。
+   * docs scan 逐路径扫描合并索引，noise 按 §4.d（.gitignore + 硬黑名单）排除。
+   */
+  document_scan_paths?: string[];
+
+  /**
+   * scan-existing 从项目 manifest 提取的命令（FR-3）。
+   * 每条可空（未探测到 → 该字段缺省，配合 CLAUDE.md 的 TODO 提示）。
+   */
+  project_commands?: {
+    test?: string;
+    build?: string;
+    format?: string;
+    lint?: string;
+  };
 }
 
 /**
@@ -55,4 +73,20 @@ export function mergeArtifactConfig(userConfig?: Partial<ArtifactConfig>): Artif
     ...DEFAULT_ARTIFACT_CONFIG,
     ...userConfig,
   };
+}
+
+/**
+ * document_scan_paths 默认值（FR-4 / FR-5）。
+ * 仅扫这三项；外部 docs/ 等目录交给用户显式追加。
+ */
+export const DEFAULT_DOCUMENT_SCAN_PATHS: string[] = ['.docpath/', 'README.md', 'docs/'];
+
+/**
+ * 合并 document_scan_paths 与默认值：用户未声明/为空 → 走默认（向后兼容）。
+ */
+export function mergeDocumentScanPaths(userConfig?: string[]): string[] {
+  if (!userConfig || !Array.isArray(userConfig) || userConfig.length === 0) {
+    return [...DEFAULT_DOCUMENT_SCAN_PATHS];
+  }
+  return [...userConfig];
 }
