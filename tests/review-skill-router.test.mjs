@@ -214,6 +214,53 @@ describe('Review Skill Router', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('review treats file set mismatch as recoverable evidence warning, not a blocking code failure', () => {
+    const cwd = mkReviewWorkspace();
+    installTypeScriptSkill(cwd);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'review.json'), JSON.stringify({
+      schema_version: 1,
+      kind: 'review',
+      timestamp: new Date().toISOString(),
+      scope: 'all',
+      files: ['src/feature.ts'],
+      findings: [],
+      errors: 0,
+      warnings: 0,
+      infos: 0,
+      approved: false,
+      skill_reviews: [{
+        skill: 'docpath-review-typescript',
+        language: 'typescript',
+        role: 'language',
+        frameworks: [],
+        scope: 'all',
+        files: ['src/other.ts'],
+        diff_fingerprint: 'sha256:stale',
+        status: 'pass',
+        findings: [],
+        generated_at: new Date().toISOString(),
+      }],
+      skill_review_skips: [],
+    }, null, 2));
+
+    const result = run(['review', '--cwd', cwd], cwd);
+    const reviewJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'review.json'), 'utf-8'));
+
+    assert.equal(result.code, 0);
+    assert.match(result.out, /review_skill_gate: pass/);
+    assert.match(result.out, /evidence_warnings:/);
+    assert.match(result.out, /docpath-review-typescript: file set mismatch/);
+    assert.match(result.out, /fix: docpath write-review-skill --skill docpath-review-typescript --language typescript --scope all --stdin/);
+    assert.equal(reviewJson.approved, true);
+    assert.equal(reviewJson.skill_review_gate.status, 'pass');
+    assert.deepEqual(reviewJson.skill_review_gate.evidence_warnings, [{
+      skill: 'docpath-review-typescript',
+      reason: 'file set mismatch',
+      fix_command: 'docpath write-review-skill --skill docpath-review-typescript --language typescript --scope all --stdin',
+    }]);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('review fails when skill evidence status is fail', () => {
     const cwd = mkReviewWorkspace();
     installTypeScriptSkill(cwd);
