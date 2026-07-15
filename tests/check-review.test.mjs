@@ -169,6 +169,32 @@ function structuredSpecJson(markdown, overrides = {}) {
   };
 }
 
+function structuredPlanJson(markdown, overrides = {}) {
+  return {
+    schema_version: 1,
+    kind: 'plan',
+    source: {
+      kind: 'markdown',
+      created_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z',
+    },
+    title: 'T-AGENT - Agent Lifecycle',
+    markdown,
+    generated_at: '2026-06-01T00:00:00.000Z',
+    steps: [
+      {
+        id: 'S1',
+        name: '实现 agent done',
+        description: '实现 pending-done 收口。',
+        acceptance: 'agent done 能完成任务。',
+        dependencies: '无',
+        status: 'pending',
+      },
+    ],
+    ...overrides,
+  };
+}
+
 function writeActiveSpecJson(cwd, tasks, specJson, taskId = undefined) {
   const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
   let resolvedTaskId = taskId;
@@ -184,6 +210,23 @@ function writeActiveSpecJson(cwd, tasks, specJson, taskId = undefined) {
   const content = `${JSON.stringify({ ...specJson, task_id: resolvedTaskId }, null, 2)}\n`;
   writeFileSync(join(tasks, 'spec.json'), content);
   writeFileSync(join(canonical, 'spec.json'), content);
+}
+
+function writeActivePlanJson(cwd, tasks, planJson, taskId = undefined) {
+  const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+  let resolvedTaskId = taskId;
+  if (!resolvedTaskId && existsSync(statePath)) {
+    try {
+      const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+      resolvedTaskId = state.task_id;
+    } catch {}
+  }
+  resolvedTaskId = resolvedTaskId || 'T-AGENT';
+  const canonical = join(cwd, '.docpath', 'tasks', resolvedTaskId);
+  mkdirSync(canonical, { recursive: true });
+  const content = `${JSON.stringify(planJson, null, 2)}\n`;
+  writeFileSync(join(tasks, 'plan.json'), content);
+  writeFileSync(join(canonical, 'plan.json'), content);
 }
 
 function writePendingDoneFixture(workspace, record) {
@@ -407,6 +450,58 @@ describe('check and review commands', () => {
     assert.equal(existsSync(decisionsPath), false);
     assert.equal(readFileSync(breadcrumbPath, 'utf-8'), beforeBreadcrumb);
     assert.equal(readFileSync(statePath, 'utf-8'), beforeState);
+  });
+
+  it('review fails before evidence writes when canonical spec.md drifts from spec.json', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-spec-drift-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(canonical, 'spec.md'), '# Stale spec view\n');
+    writeActiveSpecJson(cwd, tasks, structuredSpecJson('', {
+      major_change_gate: {
+        required: false,
+        types: [],
+        user_confirmed: null,
+        decision_brief_markdown: '- 用户确认: 无',
+      },
+      ui_gate: {
+        state: 'exempt',
+      },
+    }), 'T-AGENT');
+    writeFileSync(join(cwd, 'todo.ts'), '// TODO review should not reach changed files\n');
+
+    const result = runResult(`review --cwd ${cwd}`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /机器真理源不同步/);
+    assert.match(result.out, /spec\.md/);
+    assert.match(result.out, /spec\.json/);
+    assert.match(result.out, /docpath write-spec --stdin/);
+    assert.match(result.out, /docpath render --view spec/);
+    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'review.json')), false);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('review fails before evidence writes when canonical plan.md drifts from plan.json', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-plan-drift-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(canonical, 'plan.md'), '# Stale plan view\n');
+    writeActivePlanJson(cwd, tasks, structuredPlanJson(''), 'T-AGENT');
+    writeFileSync(join(cwd, 'todo.ts'), '// TODO review should not reach changed files\n');
+
+    const result = runResult(`review --cwd ${cwd}`, cwd);
+
+    assert.equal(result.code, 1);
+    assert.match(result.out, /机器真理源不同步/);
+    assert.match(result.out, /plan\.md/);
+    assert.match(result.out, /plan\.json/);
+    assert.match(result.out, /docpath write-plan --stdin/);
+    assert.match(result.out, /docpath render --view plan/);
+    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'review.json')), false);
+    rmSync(cwd, { recursive: true, force: true });
   });
 
   it('review shows real file names for TODO findings', () => {
