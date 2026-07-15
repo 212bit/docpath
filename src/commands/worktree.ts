@@ -26,6 +26,7 @@ interface WorktreeOptions {
   action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge';
   name?: string;
   force?: boolean;
+  backlog?: string;
 }
 
 interface WorktreePaths {
@@ -40,6 +41,8 @@ interface WorktreeDiagnostics {
   dirty: boolean;
   completed: boolean;
   mergedToMain: boolean;
+  branchHasUniqueCommits: boolean;
+  branchUniqueCommits: number;
   safeToRemove: boolean;
   cleanupCommand: string | null;
 }
@@ -77,7 +80,21 @@ function samePath(left: string, right: string): boolean {
 }
 
 function recommendedSessionName(name: string): string {
-  return `codex-${name}`;
+  return `agent-${name}`;
+}
+
+function toolSessionPattern(name: string, backlogId?: string): string {
+  return backlogId
+    ? `<tool>-${backlogId}-${name}`
+    : `<tool>-${name}`;
+}
+
+function validateBacklogId(id: string): string {
+  const trimmed = id.trim().toUpperCase();
+  if (!/^R-\d+$/.test(trimmed)) {
+    throw new Error(`非法 backlog id: ${id}。格式应为 R-123。`);
+  }
+  return trimmed;
 }
 
 export async function resolveWorktreePaths(cwd: string, name: string): Promise<WorktreePaths> {
@@ -138,7 +155,7 @@ async function isTrackedDocPath(repoRoot: string, item: string): Promise<boolean
 /**
  * worktree create <name> — 创建新 worktree
  */
-async function worktreeCreate(cwd: string, name: string): Promise<void> {
+async function worktreeCreate(cwd: string, name: string, backlogId?: string): Promise<void> {
   // 1. 检查是否为 git 仓库
   if (!(await isGitRepo(cwd))) {
     console.error('❌  当前目录不是 git 仓库');
@@ -146,6 +163,7 @@ async function worktreeCreate(cwd: string, name: string): Promise<void> {
   }
 
   const { repoRoot, safeName, worktreesDir, worktreePath } = await resolveWorktreePaths(cwd, name);
+  const targetBacklogId = backlogId ? validateBacklogId(backlogId) : null;
 
   // 2. 检查 worktree 是否已存在
   const worktrees = await listWorktrees(repoRoot);
@@ -160,6 +178,9 @@ async function worktreeCreate(cwd: string, name: string): Promise<void> {
   }
 
   console.log(`\n🌳  创建 worktree: ${safeName}\n`);
+  if (targetBacklogId) {
+    console.log(`🎯  目标 backlog: ${targetBacklogId}\n`);
+  }
 
   // 4. 调用 git worktree add
   try {
@@ -173,6 +194,9 @@ async function worktreeCreate(cwd: string, name: string): Promise<void> {
   // 5. 初始化 .docpath/ 并创建 symlinks
   console.log(`\n📁  配置 .docpath/ 目录...\n`);
   await initWorktreeDocpath(repoRoot, worktreePath, safeName);
+  if (targetBacklogId) {
+    await copyTargetBacklogContext(repoRoot, worktreePath, targetBacklogId);
+  }
 
   // 5.1 自动软链接 node_modules 以复用依赖与构建缓存
   const mainNodeModules = join(repoRoot, 'node_modules');
@@ -188,8 +212,37 @@ async function worktreeCreate(cwd: string, name: string): Promise<void> {
   console.log(`\n进入 worktree 后:`);
   console.log(`  cd ${relative(repoRoot, worktreePath)}`);
   console.log(`  export DOCPATH_SESSION=${recommendedSessionName(safeName)}`);
+  console.log(`  # tool-specific: export DOCPATH_SESSION=${toolSessionPattern(safeName, targetBacklogId || undefined)}`);
   console.log(`  docpath worktree doctor`);
-  console.log(`  docpath next --agent`);
+  console.log(`  ${targetBacklogId ? `docpath backlog accept ${targetBacklogId}` : 'docpath next --agent'}`);
+}
+
+async function copyTargetBacklogContext(repoRoot: string, worktreePath: string, backlogId: string): Promise<void> {
+  const mainBacklogDir = join(repoRoot, '.docpath', 'backlog');
+  const worktreeBacklogDir = join(worktreePath, '.docpath', 'backlog');
+  const sourceItem = join(mainBacklogDir, `${backlogId}.md`);
+  const targetItem = join(worktreeBacklogDir, `${backlogId}.md`);
+  const sourceIndex = join(mainBacklogDir, 'backlog.md');
+  const targetIndex = join(worktreeBacklogDir, 'backlog.md');
+
+  if (!existsSync(sourceItem)) {
+    console.warn(`  ⚠️  未找到目标 backlog 文件: ${sourceItem}`);
+    console.warn(`     worktree 已创建，但需要先在主仓库确认 ${backlogId} 存在。`);
+    return;
+  }
+
+  await mkdir(worktreeBacklogDir, { recursive: true });
+  if (existsSync(worktreeBacklogDir) && lstatSync(worktreeBacklogDir).isSymbolicLink()) {
+    console.log(`  🎯 目标 backlog 上下文已通过 live-shared backlog 可见: ${backlogId}`);
+    return;
+  }
+  if (!samePath(sourceItem, targetItem)) {
+    await cp(sourceItem, targetItem);
+  }
+  if (existsSync(sourceIndex) && !samePath(sourceIndex, targetIndex)) {
+    await cp(sourceIndex, targetIndex);
+  }
+  console.log(`  🎯 已同步目标 backlog 上下文: ${backlogId}`);
 }
 
 /**
@@ -338,6 +391,8 @@ async function worktreeList(cwd: string): Promise<void> {
     console.log(`    dirty: ${diagnostics.dirty}`);
     console.log(`    completed: ${diagnostics.completed}`);
     console.log(`    merged_to_main: ${diagnostics.mergedToMain}`);
+    console.log(`    branch_has_unique_commits: ${diagnostics.branchHasUniqueCommits}`);
+    console.log(`    branch_unique_commits: ${diagnostics.branchUniqueCommits}`);
     console.log(`    safe_to_remove: ${diagnostics.safeToRemove}`);
     if (diagnostics.cleanupCommand) {
       console.log(`    cleanup: ${diagnostics.cleanupCommand}`);
@@ -406,6 +461,7 @@ async function getWorktreeDiagnostics(
   }
 
   let mergedToMain = isMain;
+  let branchUniqueCommits = 0;
   if (!isMain) {
     try {
       const head = (await runGitCapture(wtPath, ['rev-parse', 'HEAD'])).trim();
@@ -413,6 +469,12 @@ async function getWorktreeDiagnostics(
       mergedToMain = true;
     } catch {
       mergedToMain = false;
+    }
+    try {
+      const mainHead = (await runGitCapture(repoRoot, ['rev-parse', 'HEAD'])).trim();
+      branchUniqueCommits = Number((await runGitCapture(wtPath, ['rev-list', '--count', 'HEAD', '--not', mainHead])).trim());
+    } catch {
+      branchUniqueCommits = 0;
     }
   }
 
@@ -422,6 +484,8 @@ async function getWorktreeDiagnostics(
     dirty,
     completed,
     mergedToMain,
+    branchHasUniqueCommits: branchUniqueCommits > 0,
+    branchUniqueCommits,
     safeToRemove,
     cleanupCommand: safeToRemove ? `docpath worktree remove ${safeName}` : null,
   };
@@ -618,6 +682,8 @@ async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
   console.log(`  ℹ️ dirty: ${diagnostics.dirty}`);
   console.log(`  ℹ️ completed: ${diagnostics.completed}`);
   console.log(`  ℹ️ merged_to_main: ${diagnostics.mergedToMain}`);
+  console.log(`  ℹ️ branch_has_unique_commits: ${diagnostics.branchHasUniqueCommits}`);
+  console.log(`  ℹ️ branch_unique_commits: ${diagnostics.branchUniqueCommits}`);
   console.log(`  ℹ️ safe_to_remove: ${diagnostics.safeToRemove}`);
   if (diagnostics.cleanupCommand) {
     console.log(`  ℹ️ cleanup: ${diagnostics.cleanupCommand}`);
@@ -1059,7 +1125,7 @@ async function worktreeMerge(cwd: string, branchNameOrTarget?: string): Promise<
  * docpath worktree 命令入口
  */
 export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
-  const { cwd, action = 'list', name, force = false } = options;
+  const { cwd, action = 'list', name, force = false, backlog } = options;
 
   switch (action) {
     case 'create':
@@ -1068,7 +1134,7 @@ export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
         console.error('用法: docpath worktree create <name>');
         process.exit(1);
       }
-      await worktreeCreate(cwd, name);
+      await worktreeCreate(cwd, name, backlog);
       break;
 
     case 'list':
