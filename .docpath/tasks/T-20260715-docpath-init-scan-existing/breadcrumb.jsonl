@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260715-docpath-init-scan-existing","step":"S1","status":"in_progress","context":"开始执行: 注册 init `--scan-existing/-s` opt-in 选项","timestamp":"2026-07-15T10:39:57.784Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260715-docpath-init-scan-existing","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-07-15T10:42:09.674Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260715-docpath-init-scan-existing","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-07-15T10:46:40.580Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260715-docpath-init-scan-existing","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-07-15T10:51:43.219Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260715-docpath-init-scan-existing","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-07-15T11:01:18.005Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260715-docpath-init-scan-existing","step":"S5","status":"done","context":"agent-step: S5","timestamp":"2026-07-15T12:10:49.451Z","sessionId":"default"}

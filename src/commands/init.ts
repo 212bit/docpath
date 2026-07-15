@@ -32,6 +32,8 @@ import { detectProject, formatProjectInfo, detectMonorepo, type ProjectInfo } fr
 import { readCurrentState, writeCurrentState, type CurrentState } from '../utils/workspace.js';
 import { ensureRulesDir } from '../utils/rules.js';
 import { registerProject, resolveProjectRegistryDbPath } from '../engine/project-registry.js';
+import { writeScanArchitecture } from '../utils/scan-existing-arch.js';
+import { extractProjectCommands, type ProjectCommands } from '../utils/scan-existing-commands.js';
 
 interface InitOptions {
   cwd?: string;
@@ -39,6 +41,12 @@ interface InitOptions {
   force?: boolean;
   link?: string;
   interactive?: boolean;
+  /**
+   * --scan-existing/-s：扫描现有项目接入（opt-in 分支）。
+   * 不带该 flag 时 init 走原模板路径，行为与现状逐字节一致（NFR-1）。
+   * 扫描逻辑由 S2~S7 逐步实现；S1 只打通选项注册与解析管线。
+   */
+  scanExisting?: boolean;
 }
 
 type ExistingDocpathAction = 'register' | 'reinitialize' | 'cancel';
@@ -55,6 +63,12 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
 
   validateInteractiveOptions(options);
   if (await handleLinkMode(cwd, docpathDir, options.link)) return;
+
+  // S5 已接：config 写入 document_scan_paths + 项目命令。S3 已接：architecture.md 落盘。
+  // S6（CLAUDE.md 命令区块）/ S7（docs scan 外部路径）尚未实现，在此提示。
+  if (options.scanExisting) {
+    console.warn('⚠️  --scan-existing/-s：architecture.md + config.yaml 已按扫描生成；CLAUDE.md 命令区块（S6）、docs scan 外部路径（S7）尚未实现，将随后续 step 接入。');
+  }
 
   // 检查是否已存在
   if (!options.force && await exists(docpathDir)) {
@@ -87,10 +101,10 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   // ── 创建目录结构 ──
   console.log('\n📁  初始化 DocPath 工作流...\n');
   await createDocpathDirs(cwd, docpathDir);
-  await writeInitialConfig(cwd, level, projectInfo);
+  await writeInitialConfig(cwd, level, projectInfo, options.scanExisting);
   await writeInitialStateFiles(cwd, level);
   await writeInitialTemplates(cwd);
-  await writeInitialRules(cwd);
+  await writeInitialRules(cwd, options);
   await writeInitialGitignore(cwd);
 
   // ── 完成 ──
@@ -316,9 +330,24 @@ async function createRuntimeDirs(cwd: string): Promise<void> {
   for (const dir of dirs) await ensureDir(join(cwd, dir));
 }
 
-async function writeInitialConfig(cwd: string, level: ComplexityLevel, projectInfo: ProjectInfo): Promise<void> {
-  await writeFileSafe(join(cwd, '.docpath/config.yaml'), generateConfig(level, projectInfo));
-  console.log('  ✓  config.yaml (已填充项目信息)');
+async function writeInitialConfig(cwd: string, level: ComplexityLevel, projectInfo: ProjectInfo, scanExisting?: boolean): Promise<void> {
+  let commands: ProjectCommands | undefined;
+  if (scanExisting) {
+    // §4.c/FR-3：scan-existing 时提取 test/build/format/lint 命令并入 config（提取不到留空，S6 在 CLAUDE.md 标 TODO）。
+    try {
+      commands = await extractProjectCommands(cwd);
+    } catch {
+      commands = undefined;
+    }
+  }
+  await writeFileSafe(join(cwd, '.docpath/config.yaml'), generateConfig(level, projectInfo, { scanExisting, commands }));
+  if (scanExisting && commands) {
+    const filled = ['test', 'build', 'format', 'lint'].filter((k) => (commands as ProjectCommands)[k as keyof ProjectCommands].command).length;
+    const todo = 4 - filled;
+    console.log(`  ✓  config.yaml (scan-existing: ${filled} 命令, ${todo} TODO)`);
+  } else {
+    console.log('  ✓  config.yaml (已填充项目信息)');
+  }
 }
 
 async function writeInitialStateFiles(cwd: string, level: ComplexityLevel | undefined): Promise<void> {
@@ -361,8 +390,21 @@ async function writeSpecTemplate(cwd: string, tmpl: string): Promise<void> {
   await writeFileSafe(join(cwd, '.docpath/spec/template', tmpl), content);
 }
 
-async function writeInitialRules(cwd: string): Promise<void> {
-  await writeFileSafe(join(cwd, '.docpath/rules/architecture.md'), await loadTemplate(join(TEMPLATES_DIR, 'architecture.template.md')));
+async function writeInitialRules(cwd: string, options: { scanExisting?: boolean; force?: boolean }): Promise<void> {
+  if (options.scanExisting) {
+    // §4.b / FR-6：scan-existing 用扫描产物写 architecture.md（带保留地初写）。
+    // 文件已存在则跳过（force 可覆盖）；与 learn 的追加语义零冲突。
+    const result = await writeScanArchitecture(cwd, !!options.force);
+    if (result.outcome === 'written') {
+      console.log(`  ✓  rules/architecture.md (scan-existing 扫描生成)`);
+    } else if (result.outcome === 'skipped') {
+      console.log(`  ⏭️  rules/architecture.md (${result.reason})`);
+    } else {
+      console.warn(`  ⚠️  rules/architecture.md (${result.reason})`);
+    }
+  } else {
+    await writeFileSafe(join(cwd, '.docpath/rules/architecture.md'), await loadTemplate(join(TEMPLATES_DIR, 'architecture.template.md')));
+  }
   await writeFileSafe(join(cwd, '.docpath/rules/style.md'), await loadTemplate(join(TEMPLATES_DIR, 'style.template.md')));
 }
 
@@ -390,13 +432,37 @@ function printInitSummary(level: ComplexityLevel, levelSource: LevelSource, proj
   if (detected) console.log(`  🔍 检测到: ${detected}`);
 }
 
-function generateConfig(level: ComplexityLevel, projectInfo?: ProjectInfo): string {
+function generateConfig(level: ComplexityLevel, projectInfo?: ProjectInfo, scanOptions?: { scanExisting?: boolean; commands?: ProjectCommands }): string {
   const now = new Date().toISOString().split('T')[0];
   const name = projectInfo?.name || '';
   const desc = projectInfo?.description || '';
   const type = projectInfo?.type || 'unknown';
   const lang = projectInfo?.language || 'Unknown';
   const fw = projectInfo?.framework || '';
+  // §4.d/FR-4：scan-existing 时显式声明 document_scan_paths（默认三路径 + 用户可改）。
+  const scanPathsSection = scanOptions?.scanExisting
+    ? `
+# 文档扫描路径（由 init --scan-existing 声明，FR-4/FR-5）
+# docpath docs scan 逐路径扫描合并索引；noise 按 §4.d（.gitignore + 硬黑名单）排除。
+document_scan_paths:
+  - ".docpath/"
+  - "README.md"
+  - "docs/"
+`
+    : '';
+  // §4.c/FR-3：scan-existing 时把提取到的 test/build/format/lint 命令写入 config。
+  const cmds = scanOptions?.commands;
+  const cmdSection = scanOptions?.scanExisting && cmds
+    ? `
+# 项目命令（由 init --scan-existing 从 manifest 提取，FR-3）
+# 缺省字段表示未探测到，配合 CLAUDE.md 的 TODO 提示确认；勿编造。
+project_commands:
+  test: ${cmds.test.command ? `"${cmds.test.command}"` : ''}
+  build: ${cmds.build.command ? `"${cmds.build.command}"` : ''}
+  format: ${cmds.format.command ? `"${cmds.format.command}"` : ''}
+  lint: ${cmds.lint.command ? `"${cmds.lint.command}"` : ''}
+`
+    : '';
 
   return `# DocPath 项目配置
 # 由 docpath:init 自动生成 (${now})
@@ -415,7 +481,7 @@ workflow:
   enforce_tdd: false
   # 强制 Code Review (Phase 3 实现)
   enforce_review: false
-
+${scanPathsSection}${cmdSection}
 # 项目元信息 (自动检测)
 project:
   name: "${name}"

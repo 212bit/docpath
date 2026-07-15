@@ -1,51 +1,59 @@
 ## 执行计划
 
 ### S1: 注册 init `--scan-existing/-s` opt-in 选项
+- [x] S1: 注册 init `--scan-existing/-s` opt-in 选项
 - **描述**: 在 `src/commands/register/core.ts` 为 `init` 命令追加 `--scan-existing`/`-s` 选项注册，并在 `initCommand` 入口解析该 flag（透传给后续 scan 分支）。此 step 只做选项注册与解析管线打通，不实现扫描逻辑；不带该 flag 时 init 走原模板路径，行为与现状逐字节一致（NFR-1 回归基线）。
 - **验收条件**: AC-1 —— `docpath init --help` 列出 `--scan-existing/-s`；不带 flag 时 init 输出与现状逐字节一致。
 - **依赖**: 无
 
 ### S2: 实现 scan-existing 目录树扫描与 noise 排除
+- [x] S2: 实现 scan-existing 目录树扫描与 noise 排除
 - **描述**: 实现 FR-2 前置——在 scan-existing 分支实现项目根目录树扫描，生成缩进树形结构文本。noise 排除按 §4.d：复用项目根 `.gitignore` + 硬黑名单兜底（node_modules、.git、dist、build、target、.worktrees、coverage）。
 - **验收条件**: AC-2（目录树部分）—— 扫描输出含真实目录结构树且已去 noise；node_modules/build 等被排除。
 - **依赖**: S1
 
 ### S3: 生成非模板 architecture.md（带保留地初写）
+- [x] S3: 生成非模板 architecture.md（带保留地初写）
 - **描述**: 实现 FR-2 + FR-6——将 S2 扫描结果 + 从 manifest 推断的模块边界/依赖方向摘要写入 `.docpath/rules/architecture.md`。写入按 §4.b 带保留地初写语义（FR-6）：目标文件不存在或 `--force` 才写；已存在则跳过并打印"已存在 architecture.md，跳过；--force 可覆盖"提示，不读不改既有 learn/ADR 段落。
 - **验收条件**: AC-2 —— 生成非模板 architecture.md（含真实目录树 + 模块边界摘要）；已存在时跳过不覆盖（除非 --force）并打印提示。
 - **依赖**: S2
 
 ### S4: 解析 manifest 提取 test/build/format 命令
+- [x] S4: 解析 manifest 提取 test/build/format 命令
 - **描述**: 实现 FR-3——扩展 `src/utils/detect.ts`（或新增并行提取器）解析 package.json `scripts`、Cargo.toml、go.mod、pom.xml/build.gradle 等，提取 test/build/format 命令。降级策略按 §4.c：package.json scripts 直读；Cargo/go/Java 用默认约定 + 项级 Makefile/justfile/taskfile 优先聚合；提取不到的不静默不编造，留空并记录需 TODO 的命令槽位。不重构 detect 现有 type/language/framework 字段语义（NFR-2）。
 - **验收条件**: AC-3（命令提取部分）—— 能从 package.json 提取 scripts 命令；缺命令槽位被标记 TODO，不编造。
 - **依赖**: S3
 
 ### S5: config.yaml 新增 document_scan_paths 字段
+- [x] S5: config.yaml 新增 document_scan_paths 字段
 - **描述**: 实现 FR-4——在 `src/types/config.ts` 的 `DocPathConfig` 新增 `document_scan_paths: string[]`，默认 `[".docpath/", "README.md", "docs/"]`，向后兼容（兜底风格同 DEFAULT_ARTIFACT_CONFIG，不破坏 artifacts/review_skill_gate 读取）。同时把 S4 提取的 test/build/format 命令写入 config.yaml 对应命令字段。
 - **验收条件**: AC-4 —— config.yaml 可声明 document_scan_paths（缺省给默认三路径），向后兼容；review_skill_gate/artifacts 读取不受影响。AC-3（写 config 部分）—— 提取到的命令写入 config 命令字段。
 - **依赖**: S4
 
 ### S6: CLAUDE.md 末尾追加项目命令区块
+- [ ] S6: CLAUDE.md 末尾追加项目命令区块
 - **描述**: 按 §4.e 写边界把 S4 提取的命令清单写入根 CLAUDE.md：已存在则仅在末尾追加 `## 项目命令（由 init --scan-existing 生成）`区块，不动其他内容；不存在则新建。重复运行 scan-existing 时按区块标题锚点替换旧区块，避免重复堆积。缺命令槽位标注 `TODO: 未探测到 <test|build|format> 命令，请确认`。
 - **验收条件**: AC-3（CLAUDE.md 部分）—— 末尾追加 `## 项目命令`区块、缺命令位置标 TODO；AC-7 —— 重复运行不重复堆积（按标题锚点替换旧区块）。
 - **依赖**: S5
 
 ### S7: docs scan 读取 document_scan_paths 扫描外部路径
+- [ ] S7: docs scan 读取 document_scan_paths 扫描外部路径
 - **描述**: 改 `src/commands/docs.ts:235` 的 `docsScan`，读取 `document_scan_paths` 逐路径 scanDirectory 合并索引。外部路径 noise 排除按 §4.d（复用 .gitignore + 硬黑名单）。无该字段时行为与现状一致（仅扫 .docpath/）。产物仍落 `.docpath/workspace/docs-index.json`，不引入新 runtime 目录（NFR-3）。
 - **验收条件**: AC-5 —— `docpath docs scan` 读取 document_scan_paths 扫描外部路径（README.md/docs/ 进索引），node_modules/build 等被 .gitignore+黑名单排除；无字段时仅扫 .docpath/。
 - **依赖**: S6
 
 ### S8: 验证全部验收标准 + 单测
+- [ ] S8: 验证全部验收标准 + 单测
 - **描述**: 新增覆盖 FR-1~FR-5 主链路的单元测试并跑通 `pnpm test`；逐条核对 AC-1~AC-7 现场满足（含 scan-existing 重复运行的 CLAUDE.md 不堆积回归、docs scan 外部路径与 noise 排除回归、init 不带 flag 逐字节回归）。
 - **验收条件**: AC-6 —— 新增覆盖 FR-1~FR-5 单测，pnpm test 通过；AC-1~AC-7 逐条现场满足。
 - **依赖**: S7
 
 ## Checklist
-- [ ] S1
-- [ ] S2
-- [ ] S3
-- [ ] S4
-- [ ] S5
+- [x] S1
+- [x] S2
+- [x] S3
+- [x] S4
+- [x] S5
 - [ ] S6
 - [ ] S7
 - [ ] S8

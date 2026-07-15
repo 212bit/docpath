@@ -6,7 +6,7 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
-import { DEFAULT_ARTIFACT_CONFIG, mergeArtifactConfig, type ArtifactConfig, type DocPathConfig } from '../types/config.js';
+import { DEFAULT_ARTIFACT_CONFIG, mergeArtifactConfig, mergeDocumentScanPaths, type ArtifactConfig, type DocPathConfig } from '../types/config.js';
 
 /**
  * 读取 DocPath 配置文件
@@ -38,4 +38,13 @@ export async function readDocPathConfig(cwd: string): Promise<DocPathConfig> {
 export async function readArtifactConfig(cwd: string): Promise<ArtifactConfig> {
   const config = await readDocPathConfig(cwd);
   return mergeArtifactConfig(config.artifacts);
+}
+
+/**
+ * 读取 document_scan_paths（合并默认值，向后兼容）。
+ * 用于 docs scan（FR-5）决定扫哪些根路径。
+ */
+export async function readDocumentScanPaths(cwd: string): Promise<string[]> {
+  const config = await readDocPathConfig(cwd);
+  return mergeDocumentScanPaths(config.document_scan_paths);
 }
