@@ -346,6 +346,13 @@ function printReviewSkillGate(gate: ReviewSkillGate): void {
     console.log('    invalid_evidence:');
     for (const item of gate.invalid_evidence) console.log(`      - ${item.skill}: ${item.reason}`);
   }
+  if ((gate.evidence_warnings || []).length > 0) {
+    console.log('    evidence_warnings:');
+    for (const item of gate.evidence_warnings || []) {
+      console.log(`      - ${item.skill}: ${item.reason}`);
+      console.log(`        fix: ${item.fix_command}`);
+    }
+  }
   if (gate.skips.length > 0) {
     console.log('    skips:');
     for (const skip of gate.skips) console.log(`      - ${skip.skill}: ${skip.reason}`);
