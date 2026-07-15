@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-15T12:10:49.458Z",
-    "updated_at": "2026-07-15T12:10:49.458Z",
-    "content_sha256": "498d0819e79ba71a9617200920bd1a9ba77ee7ecbe92669bfa21d5670b137363"
+    "created_at": "2026-07-15T14:53:43.218Z",
+    "updated_at": "2026-07-15T14:53:43.218Z",
+    "content_sha256": "862b444ee799e6bd78b52992bcde79b3c07a036ecea7114b42de946216805a11"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-15T12:10:49.458Z",
+  "generated_at": "2026-07-15T14:53:43.218Z",
   "steps": [
     {
       "id": "S1",
@@ -56,7 +56,7 @@
       "description": "按 §4.e 写边界把 S4 提取的命令清单写入根 CLAUDE.md：已存在则仅在末尾追加 `## 项目命令（由 init --scan-existing 生成）`区块，不动其他内容；不存在则新建。重复运行 scan-existing 时按区块标题锚点替换旧区块，避免重复堆积。缺命令槽位标注 `TODO: 未探测到 <test|build|format> 命令，请确认`。",
       "acceptance": "AC-3（CLAUDE.md 部分）—— 末尾追加 `## 项目命令`区块、缺命令位置标 TODO；AC-7 —— 重复运行不重复堆积（按标题锚点替换旧区块）。",
       "dependencies": "S5",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S7",
