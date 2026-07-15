@@ -205,6 +205,75 @@ describe('changes command', () => {
     assert.equal(parsed.since, null);
     assert.equal(parsed.ready_to_commit, true);
     assert.equal(parsed.groups.templates_docs.includes('README.md'), true);
+    assert.equal(parsed.selection.mode, 'current_task');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('reports task-aware grouping for current task canonical evidence', () => {
+    const cwd = mkGitWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES'), { recursive: true });
+    mkdirSync(join(cwd, '.docpath', 'tasks', 'T-OTHER'), { recursive: true });
+    mkdirSync(join(cwd, 'src'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES', 'spec.md'), '# T-CHANGES - 新增 changes 命令\n');
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-OTHER', 'spec.md'), '# T-OTHER - 其他任务\n');
+    writeFileSync(join(cwd, 'src', 'mixed.ts'), 'export const mixed = true;\n');
+
+    const parsed = JSON.parse(run('changes --json', cwd));
+
+    assert.equal(parsed.selection.mode, 'current_task');
+    assert.equal(parsed.selection.selected_task_id, 'T-CHANGES');
+    assert.equal(parsed.selection.selected_files.includes('.docpath/tasks/T-CHANGES/spec.md'), true);
+    assert.equal(parsed.selection.outside_selected_task_files.includes('.docpath/tasks/T-OTHER/spec.md'), true);
+    assert.equal(parsed.selection.outside_selected_task_files.includes('src/mixed.ts'), true);
+    assert.match(parsed.selection.outside_selected_task_note, /may not belong to the selected task/);
+
+    const agent = run('changes --agent', cwd);
+    assert.match(agent, /selection:/);
+    assert.match(agent, /selected_files:/);
+    assert.match(agent, /\.docpath\/tasks\/T-CHANGES\/spec\.md/);
+    assert.match(agent, /outside_selected_task_files:/);
+    assert.match(agent, /src\/mixed\.ts/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('changes --task selects a non-current task for closeout suggestions', () => {
+    const cwd = mkGitWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'tasks', 'T-OTHER'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-OTHER', 'spec.json'), JSON.stringify({
+      schema_version: 1,
+      kind: 'spec',
+      title: 'T-OTHER - 其他任务 closeout',
+    }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-OTHER', 'plan.md'), '# plan\n');
+
+    const parsed = JSON.parse(run('changes --json --task T-OTHER', cwd));
+
+    assert.equal(parsed.current_task.task_id, 'T-CHANGES');
+    assert.equal(parsed.selection.mode, 'task');
+    assert.equal(parsed.selection.selected_task_id, 'T-OTHER');
+    assert.equal(parsed.selection.selected_task_title, '其他任务 closeout');
+    assert.equal(parsed.selection.selected_files.includes('.docpath/tasks/T-OTHER/spec.json'), true);
+    assert.equal(parsed.selection.selected_files.includes('.docpath/tasks/T-OTHER/plan.md'), true);
+    assert.equal(parsed.suggested_commit_message, 'chore: 其他任务 closeout');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('changes --scope limits grouping and stage guidance to explicit files', () => {
+    const cwd = mkGitWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-CHANGES', 'spec.md'), '# T-CHANGES - 新增 changes 命令\n');
+    writeFileSync(join(cwd, 'README.md'), '# scoped change\n');
+
+    const parsed = JSON.parse(run('changes --json --scope README.md', cwd));
+
+    assert.equal(parsed.selection.mode, 'scope');
+    assert.deepEqual(parsed.selection.scope_files, ['README.md']);
+    assert.deepEqual(parsed.selection.selected_files, ['README.md']);
+    assert.equal(parsed.counts.total, 1);
+    assert.deepEqual(parsed.groups.docpath, []);
+    assert.deepEqual(parsed.untracked_evidence.files, []);
+    assert.equal(parsed.recommended_stage_command, null);
+    assert.equal(parsed.ready_to_commit, true);
     rmSync(cwd, { recursive: true, force: true });
   });
 
