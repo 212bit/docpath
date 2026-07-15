@@ -226,21 +226,30 @@ function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unk
   return compact;
 }
 
+export async function refreshProjectDocumentIndex(docpathDir: string): Promise<{ entries: ProjectDocumentIndexEntry[]; docsIndexPath: string }> {
+  const mdFiles = await scanDirectory(docpathDir, docpathDir);
+
+  if (mdFiles.length === 0) {
+    return { entries: [], docsIndexPath: join(docpathDir, 'docs-index.json') };
+  }
+
+  const entries = await buildDocEntries(docpathDir, mdFiles);
+  const docsIndexPath = await writeDocsIndexes(docpathDir, entries);
+  return { entries, docsIndexPath };
+}
+
 /** docs scan — 扫描文档生成索引 */
 async function docsScan(cwd: string): Promise<void> {
   const docpathDir = await ensureDocpathDir(cwd);
 
   console.log('\n🔍  扫描文档...\n');
 
-  const mdFiles = await scanDirectory(docpathDir, docpathDir);
+  const { entries, docsIndexPath } = await refreshProjectDocumentIndex(docpathDir);
 
-  if (mdFiles.length === 0) {
+  if (entries.length === 0) {
     console.log('📭  未找到任何 .md 文件');
     return;
   }
-
-  const entries = await buildDocEntries(docpathDir, mdFiles);
-  const docsIndexPath = await writeDocsIndexes(docpathDir, entries);
 
   console.log(`✅  已生成 docs-index.json (${entries.length} 个文档)`);
   console.log(`📁  位置: ${docsIndexPath}`);
