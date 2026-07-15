@@ -70,6 +70,61 @@ function runResultWithInput(args, cwd, input) {
   }
 }
 
+function validSpec(taskId = 'T-WRITE', title = '合法 Spec') {
+  return [
+    `# ${taskId} - ${title}`,
+    '',
+    '> backlog_id: R-WRITE',
+    '',
+    '## 1. 背景与动机',
+    '',
+    '补充背景',
+    '',
+    '## 2. 需求清单',
+    '',
+    '### 功能需求',
+    '- [ ] FR-1: 需要结构化校验',
+    '',
+    '### 非功能需求',
+    '- [ ] NFR-1: 保持兼容',
+    '',
+    '## 3. 范围界定',
+    '',
+    '### 包含',
+    '- 写命令校验',
+    '',
+    '### 不包含',
+    '- 模板重写',
+    '',
+    '## 4. 关键决策',
+    '',
+    '| # | 决策 | 选项 | 结论 | 理由 |',
+    '|---|------|------|------|------|',
+    '| 1 | 校验 | 非空 / 结构 | 结构 | fail loud |',
+    '',
+    '## 4.1 重大变更门禁',
+    '',
+    '### 是否涉及重大变更',
+    '- [x] 否',
+    '- [ ] 是，需要用户确认',
+    '',
+    '### 变更类型',
+    '- [ ] 工作流 / Agent 行为',
+    '',
+    '### UI 设计门禁',
+    '- [x] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）',
+    '- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）',
+    '',
+    '### Decision Brief',
+    '- 用户确认: 无',
+    '',
+    '## 5. 验收标准',
+    '',
+    '- [ ] AC-1: 非法输入会失败',
+    '',
+  ].join('\n');
+}
+
 describe('write commands', () => {
   it('write-spec rejects malformed spec content and keeps file unchanged', () => {
     const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
@@ -166,6 +221,20 @@ describe('write commands', () => {
     assert.equal(specJson.ui_gate.state, 'exempt');
     assert.equal(specJson.functional_requirements[0].id, 'FR-1');
     assert.ok(existsSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.json')));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('write-spec resyncs the same active task without resetting phase to drafting', () => {
+    const cwd = mkWorkspace({ phase: 'executing', gate: 'none', taskId: 'T-WRITE', taskTitle: 'Write Commands' });
+    const output = runWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, validSpec('T-WRITE', 'Write Commands'));
+
+    assert.match(output, /spec\.md 已写入/);
+    assert.doesNotMatch(output, /docpath recover/);
+    assert.match(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.md'), 'utf-8'), /FR-1/);
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.task_id, 'T-WRITE');
+    assert.equal(state.phase, 'executing');
+    assert.equal(state.gate, 'none');
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -316,9 +385,9 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('write-spec keeps exit 0 when post-write transition fails (R-248)', () => {
-    // phase=checking 不在 task.created 的 from 列表里 → transitionWorkflow 抛 Illegal transition。
-    // 文件已写入即命令成功，后续步骤失败不应让命令 exit 1 覆盖成功信号。
+  it('write-spec keeps exit 0 when resyncing a checking task (R-248/R-268)', () => {
+    // R-268: same-task spec resync skips task.created, so checking no longer trips
+    // the old post-write transition failure path from R-248.
     const cwd = mkWorkspace({ phase: 'checking', gate: 'check_pass' });
     const spec = [
       '# T-WRITE - 合法 Spec',
@@ -382,8 +451,10 @@ describe('write commands', () => {
     });
     assert.equal(combined.status, 0);
     const allOut = `${combined.stdout || ''}${combined.stderr || ''}`;
-    assert.match(allOut, /文件已写入，但后续步骤失败/);
+    assert.doesNotMatch(allOut, /文件已写入，但后续步骤失败/);
     assert.match(readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.md'), 'utf-8'), /合法 Spec/);
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.phase, 'checking');
     rmSync(cwd, { recursive: true, force: true });
   });
 

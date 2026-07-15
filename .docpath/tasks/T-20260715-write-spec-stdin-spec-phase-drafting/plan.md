@@ -1,0 +1,27 @@
+## 执行计划
+
+### S1: 梳理 write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting
+- [x] S1: 梳理 write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting
+- **描述**: 根据 spec 明确 FR-1: write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting 的实现边界和验收口径。
+- **验收条件**: AC-1: AC-1 同 task_id 重同步保持当前 phase。AC-2 非 blocked 状态不推荐 recover。AC-3 新任务和 completed 后新 spec 绑定保持兼容。AC-4 自动化测试覆盖以上行为。
+- **依赖**: 无
+
+### S2: 实现 write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting
+- [x] S2: 实现 write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting
+- **描述**: 在现有架构内完成 FR-1: write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting 的代码与文档更新。
+- **验收条件**: FR-1 write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting 已实现，并保持现有工作流兼容。
+- **依赖**: S1
+
+### S3: 验证验收标准
+- [x] S3: 验证验收标准
+- **描述**: 验证 spec 中声明的验收标准：AC-1: AC-1 同 task_id 重同步保持当前 phase。AC-2 非 blocked 状态不推荐 recover。AC-3 新任务和 completed 后新 spec 绑定保持兼容。AC-4 自动化测试覆盖以上行为。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-268 与任务 T-20260715-write-spec-stdin-spec-phase-drafting 建立双向关联
+- **验收条件**: AC-1: AC-1 同 task_id 重同步保持当前 phase。AC-2 非 blocked 状态不推荐 recover。AC-3 新任务和 completed 后新 spec 绑定保持兼容。AC-4 自动化测试覆盖以上行为。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-268 与任务 T-20260715-write-spec-stdin-spec-phase-drafting 建立双向关联
+- **依赖**: S2
+
+## Checklist
+- [x] S1
+- [x] S2
+- [x] S3
+
+## 依赖关系图
+S1 → S2 → S3

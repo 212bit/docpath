@@ -8,7 +8,7 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
-import { runPostWriteSteps } from './runtime.js';
+import { nextCommand, runPostWriteSteps } from './runtime.js';
 import { validateSpecContent } from '../utils/doc-parser.js';
 import { writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState } from '../utils/workspace.js';
@@ -101,6 +101,15 @@ function shouldRequireCleanWorktreeForSpecWrite(current: Awaited<ReturnType<type
   return !current || current.phase === 'idle' || current.phase === 'completed';
 }
 
+function isSameActiveTaskSpecResync(
+  current: Awaited<ReturnType<typeof readCurrentState>>,
+  specContent: string,
+): boolean {
+  if (!current || ['idle', 'completed'].includes(current.phase)) return false;
+  const declaredTaskId = taskIdFromMarkdown(specContent);
+  return !!declaredTaskId && declaredTaskId === current.task_id?.trim();
+}
+
 export async function writeSpecCommand(options: WriteSpecOptions): Promise<void> {
   const { cwd } = options;
   const docpathDir = await assertDocpathWorkspace(cwd);
@@ -116,6 +125,11 @@ export async function writeSpecCommand(options: WriteSpecOptions): Promise<void>
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'spec.md', specContent);
 
   console.log(`✅  spec.md 已写入: ${canonicalPath}`);
+
+  if (isSameActiveTaskSpecResync(current, specContent)) {
+    await nextCommand({ cwd });
+    return;
+  }
 
   // 更新状态为 drafting → planning（brainstorm 完成）。
   // 文件已写入即命令成功，后续状态转换/next 失败不抛出，避免误导退出码（R-248）。

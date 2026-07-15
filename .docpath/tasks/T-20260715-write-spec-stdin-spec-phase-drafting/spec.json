@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-15T17:37:28.000Z",
+    "updated_at": "2026-07-15T17:37:28.000Z",
+    "content_sha256": "f9f7ea0402ec490372073e359ef789a7fc6744a50f02e02bf7bd9bcb7bf729bc"
+  },
+  "task_id": "T-20260715-write-spec-stdin-spec-phase-drafting",
+  "backlog_id": "R-268",
+  "title": "T-20260715-write-spec-stdin-spec-phase-drafting - write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting",
+  "generated_at": "2026-07-15T17:37:28.000Z",
+  "scope": {
+    "included": [
+      "write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "ok",
+    "decision_brief_markdown": "- 当前问题: ## 背景\n- 目标: write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting\n- 背景: 来自 backlog R-268\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: ok"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "write-spec --stdin 重同步已执行任务的 spec 时不应把 phase 重置回 drafting",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "AC-1 同 task_id 重同步保持当前 phase。AC-2 非 blocked 状态不推荐 recover。AC-3 新任务和 completed 后新 spec 绑定保持兼容。AC-4 自动化测试覆盖以上行为。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-268 与任务 T-20260715-write-spec-stdin-spec-phase-drafting 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "## 背景",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
