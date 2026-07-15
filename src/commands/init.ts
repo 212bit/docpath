@@ -34,6 +34,7 @@ import { ensureRulesDir } from '../utils/rules.js';
 import { registerProject, resolveProjectRegistryDbPath } from '../engine/project-registry.js';
 import { writeScanArchitecture } from '../utils/scan-existing-arch.js';
 import { extractProjectCommands, type ProjectCommands } from '../utils/scan-existing-commands.js';
+import { writeProjectCommandsBlock } from '../utils/scan-existing-claude.js';
 
 interface InitOptions {
   cwd?: string;
@@ -63,12 +64,6 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
 
   validateInteractiveOptions(options);
   if (await handleLinkMode(cwd, docpathDir, options.link)) return;
-
-  // S5 已接：config 写入 document_scan_paths + 项目命令。S3 已接：architecture.md 落盘。
-  // S6（CLAUDE.md 命令区块）/ S7（docs scan 外部路径）尚未实现，在此提示。
-  if (options.scanExisting) {
-    console.warn('⚠️  --scan-existing/-s：architecture.md + config.yaml 已按扫描生成；CLAUDE.md 命令区块（S6）、docs scan 外部路径（S7）尚未实现，将随后续 step 接入。');
-  }
 
   // 检查是否已存在
   if (!options.force && await exists(docpathDir)) {
@@ -101,11 +96,23 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   // ── 创建目录结构 ──
   console.log('\n📁  初始化 DocPath 工作流...\n');
   await createDocpathDirs(cwd, docpathDir);
-  await writeInitialConfig(cwd, level, projectInfo, options.scanExisting);
+  const scannedCommands = await writeInitialConfig(cwd, level, projectInfo, options.scanExisting);
   await writeInitialStateFiles(cwd, level);
   await writeInitialTemplates(cwd);
   await writeInitialRules(cwd, options);
   await writeInitialGitignore(cwd);
+  // S6 / FR-3：在 CLAUDE.md 模板写盘之后追加项目命令区块（§4.e / AC-7 锚点替换）。
+  // 必须晚于 writeInitialTemplates，否则模板写盘会覆盖区块。
+  if (options.scanExisting && scannedCommands) {
+    const r = await writeProjectCommandsBlock(cwd, scannedCommands);
+    if (r.outcome === 'written') {
+      console.log('  ✓  CLAUDE.md ## 项目命令区块 (scan-existing 新建)');
+    } else if (r.outcome === 'appended') {
+      console.log('  ✓  CLAUDE.md ## 项目命令区块 (scan-existing 追加)');
+    } else if (r.outcome === 'replaced') {
+      console.log('  ✓  CLAUDE.md ## 项目命令区块 (scan-existing 锚点替换)');
+    }
+  }
 
   // ── 完成 ──
   printInitSummary(level, levelSource, projectInfo);
@@ -330,7 +337,7 @@ async function createRuntimeDirs(cwd: string): Promise<void> {
   for (const dir of dirs) await ensureDir(join(cwd, dir));
 }
 
-async function writeInitialConfig(cwd: string, level: ComplexityLevel, projectInfo: ProjectInfo, scanExisting?: boolean): Promise<void> {
+async function writeInitialConfig(cwd: string, level: ComplexityLevel, projectInfo: ProjectInfo, scanExisting?: boolean): Promise<ProjectCommands | undefined> {
   let commands: ProjectCommands | undefined;
   if (scanExisting) {
     // §4.c/FR-3：scan-existing 时提取 test/build/format/lint 命令并入 config（提取不到留空，S6 在 CLAUDE.md 标 TODO）。
@@ -348,6 +355,7 @@ async function writeInitialConfig(cwd: string, level: ComplexityLevel, projectIn
   } else {
     console.log('  ✓  config.yaml (已填充项目信息)');
   }
+  return commands;
 }
 
 async function writeInitialStateFiles(cwd: string, level: ComplexityLevel | undefined): Promise<void> {

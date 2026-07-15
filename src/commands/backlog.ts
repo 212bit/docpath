@@ -465,10 +465,69 @@ function renderEvidenceSummary(evidence: BacklogEvidence): string {
   return ['## 1.1 已有证据', '', ...parts].join('\n');
 }
 
+interface BacklogChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+const SPEC_TRUTH_SYNC_HINT =
+  'spec.json 真源已生成；如需细化 FR/AC，请使用 `docpath write-spec --stdin`，直接手改 spec.md 不会更新 spec.json 真源。';
+
+function parseBacklogChecklist(body: string, prefix: 'FR'): BacklogChecklistItem[] {
+  const items: BacklogChecklistItem[] = [];
+  let inFence = false;
+
+  for (const line of body.split('\n')) {
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+
+    const match = line.match(new RegExp(`^\\s*[-*]\\s+\\[([ xX])\\]\\s+(${prefix}-\\d+)\\s*:\\s*(.+?)\\s*$`));
+    if (!match) continue;
+    items.push({
+      id: match[2],
+      text: match[3].trim(),
+      done: match[1].toLowerCase() === 'x',
+    });
+  }
+
+  return items;
+}
+
+function stripBacklogChecklistLines(body: string, prefix: 'FR'): string {
+  const lines: string[] = [];
+  let inFence = false;
+  const pattern = new RegExp(`^\\s*[-*]\\s+\\[[ xX]\\]\\s+${prefix}-\\d+\\s*:\\s*.+?\\s*$`);
+
+  for (const line of body.split('\n')) {
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence;
+      lines.push(line);
+      continue;
+    }
+    if (!inFence && pattern.test(line)) continue;
+    lines.push(line);
+  }
+
+  return lines.join('\n').trim();
+}
+
 function renderPromotedSpec(item: BacklogItem, taskId: string): string {
   const parsed = parseBacklogBody(item.body);
-  const backgroundSection = parsed.background || '- 待补充';
   const evidenceSection = renderEvidenceSummary(item.evidence);
+  const functionalRequirements = parseBacklogChecklist(item.body, 'FR');
+  const backgroundSection = (functionalRequirements.length > 0
+    ? stripBacklogChecklistLines(parsed.background, 'FR')
+    : parsed.background) || '- 待补充';
+  const functionalRequirementLines = functionalRequirements.length > 0
+    ? functionalRequirements.map((requirement) => `- [${requirement.done ? 'x' : ' '}] ${requirement.id}: ${requirement.text}`)
+    : [
+        `- [ ] FR-1: ${item.title}`,
+        `  - 来源 backlog: ${item.id}`,
+      ];
 
   // 验收标准：优先从 body 解析出的 acceptance，否则用默认骨架
   const acceptanceLines: string[] = [];
@@ -508,8 +567,7 @@ function renderPromotedSpec(item: BacklogItem, taskId: string): string {
     '## 2. 需求清单',
     '',
     '### 功能需求',
-    `- [ ] FR-1: ${item.title}`,
-    `  - 来源 backlog: ${item.id}`,
+    ...functionalRequirementLines,
     '',
     '### 非功能需求',
     '- [ ] NFR-1: 保持与现有 DocPath 工作流兼容',
@@ -873,6 +931,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   console.log(`✅  已 promote backlog 条目: ${item.id}`);
   console.log(`   task_id: ${taskId}`);
   console.log(`   spec: .docpath/${canonicalTaskRelativePath(taskId, 'spec.md')}`);
+  console.log(`   truth_sync: ${SPEC_TRUTH_SYNC_HINT}`);
   if (aliasBackup) {
     console.log(`   previous_current_backup: ${aliasBackup.backupDir}`);
     console.log(`   backup_files: ${aliasBackup.files.join(', ')}`);

@@ -35,6 +35,7 @@ const CLI_ENTRY = [
   'src/utils/scan-existing-tree.ts',
   'src/utils/scan-existing-arch.ts',
   'src/utils/scan-existing-commands.ts',
+  'src/utils/scan-existing-claude.ts',
   'src/utils/output-formatter.ts',
   'src/utils/error-messages.ts',
   'src/utils/error-helpers.ts',

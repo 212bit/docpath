@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-15T12:10:49.458Z",
-    "updated_at": "2026-07-15T12:10:49.458Z",
-    "content_sha256": "498d0819e79ba71a9617200920bd1a9ba77ee7ecbe92669bfa21d5670b137363"
+    "created_at": "2026-07-15T15:54:48.391Z",
+    "updated_at": "2026-07-15T15:54:48.391Z",
+    "content_sha256": "c98597696b86bc7a40f300c5044948691e1d34b878ae862af3ef56df16af257e"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-15T12:10:49.458Z",
+  "generated_at": "2026-07-15T15:54:48.391Z",
   "steps": [
     {
       "id": "S1",
@@ -56,7 +56,7 @@
       "description": "按 §4.e 写边界把 S4 提取的命令清单写入根 CLAUDE.md：已存在则仅在末尾追加 `## 项目命令（由 init --scan-existing 生成）`区块，不动其他内容；不存在则新建。重复运行 scan-existing 时按区块标题锚点替换旧区块，避免重复堆积。缺命令槽位标注 `TODO: 未探测到 <test|build|format> 命令，请确认`。",
       "acceptance": "AC-3（CLAUDE.md 部分）—— 末尾追加 `## 项目命令`区块、缺命令位置标 TODO；AC-7 —— 重复运行不重复堆积（按标题锚点替换旧区块）。",
       "dependencies": "S5",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S7",
@@ -64,7 +64,7 @@
       "description": "改 `src/commands/docs.ts:235` 的 `docsScan`，读取 `document_scan_paths` 逐路径 scanDirectory 合并索引。外部路径 noise 排除按 §4.d（复用 .gitignore + 硬黑名单）。无该字段时行为与现状一致（仅扫 .docpath/）。产物仍落 `.docpath/workspace/docs-index.json`，不引入新 runtime 目录（NFR-3）。",
       "acceptance": "AC-5 —— `docpath docs scan` 读取 document_scan_paths 扫描外部路径（README.md/docs/ 进索引），node_modules/build 等被 .gitignore+黑名单排除；无字段时仅扫 .docpath/。",
       "dependencies": "S6",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S8",
@@ -72,7 +72,7 @@
       "description": "新增覆盖 FR-1~FR-5 主链路的单元测试并跑通 `pnpm test`；逐条核对 AC-1~AC-7 现场满足（含 scan-existing 重复运行的 CLAUDE.md 不堆积回归、docs scan 外部路径与 noise 排除回归、init 不带 flag 逐字节回归）。",
       "acceptance": "AC-6 —— 新增覆盖 FR-1~FR-5 单测，pnpm test 通过；AC-1~AC-7 逐条现场满足。",
       "dependencies": "S7",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }
