@@ -312,6 +312,7 @@ function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unk
   };
 
   if (entry.task_id) compact.task_id = entry.task_id;
+  if (entry.content_terms && entry.content_terms.length > 0) compact.content_terms = entry.content_terms;
   if (entry.generated_view === true) compact.generated_view = true;
   if (entry.index_only === true) compact.index_only = true;
   if (entry.stale === true) compact.stale = true;
