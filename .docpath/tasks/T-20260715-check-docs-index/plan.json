@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-15T14:51:12.134Z",
+    "updated_at": "2026-07-15T14:51:12.134Z",
+    "content_sha256": "055a1b4facac51cc4c784d487d2043d7576d8670d1aa93dd5fa4f3b6b9bd1984"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-15T14:51:12.134Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 `docpath check` 检测 docs-index stale 时自动刷新 `.docpath/docs-index.json` 和人类视图 `.docpath/docs.md`。",
+      "description": "根据 spec 明确 FR-1: `docpath check` 检测 docs-index stale 时自动刷新 `.docpath/docs-index.json` 和人类视图 `.docpath/docs.md`。 的实现边界和验收口径。",
+      "acceptance": "AC-1: 修改已有非忽略 Markdown 后运行 `docpath check --skip-tests --skip-lint`，自动刷新 docs-index 且不输出 `docs-index 可能陈旧`。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 `docpath check` 检测 docs-index stale 时自动刷新 `.docpath/docs-index.json` 和人类视图 `.docpath/docs.md`。",
+      "description": "在现有架构内完成 FR-1: `docpath check` 检测 docs-index stale 时自动刷新 `.docpath/docs-index.json` 和人类视图 `.docpath/docs.md`。 的代码与文档更新。",
+      "acceptance": "FR-1 `docpath check` 检测 docs-index stale 时自动刷新 `.docpath/docs-index.json` 和人类视图 `.docpath/docs.md`。 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 自动刷新成功后不再输出 `docs-index 可能陈旧` warning，而是输出明确的通过项说明已刷新。",
+      "description": "在现有架构内完成 FR-2: 自动刷新成功后不再输出 `docs-index 可能陈旧` warning，而是输出明确的通过项说明已刷新。。",
+      "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 FR-3 自动刷新失败时保留 warning，并继续给出 `docpath docs scan` 手动修复建议。",
+      "description": "在现有架构内完成 FR-3: 自动刷新失败时保留 warning，并继续给出 `docpath docs scan` 手动修复建议。。",
+      "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "实现 FR-4 `docpath docs scan` CLI 继续保持原有输出行为，索引构建逻辑复用同一 helper，避免 check/docs scan 两套扫描实现漂移。",
+      "description": "在现有架构内完成 FR-4: `docpath docs scan` CLI 继续保持原有输出行为，索引构建逻辑复用同一 helper，避免 check/docs scan 两套扫描实现漂移。。",
+      "acceptance": "FR-4 已实现，并保持现有工作流兼容。",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 修改已有非忽略 Markdown 后运行 `docpath check --skip-tests --skip-lint`，自动刷新 docs-index 且不输出 `docs-index 可能陈旧`。；AC-2: 新增非忽略 Markdown 后运行 `docpath check --skip-tests --skip-lint`，新文件进入 `.docpath/docs-index.json` 且不输出 stale warning。；AC-3: `docpath docs scan` 行为保持兼容，仍能生成 docs-index 和 docs.md。；AC-4: 目标测试、typecheck、DocPath check/review 通过，或明确记录非阻塞环境限制。",
+      "acceptance": "AC-1: 修改已有非忽略 Markdown 后运行 `docpath check --skip-tests --skip-lint`，自动刷新 docs-index 且不输出 `docs-index 可能陈旧`。；AC-2: 新增非忽略 Markdown 后运行 `docpath check --skip-tests --skip-lint`，新文件进入 `.docpath/docs-index.json` 且不输出 stale warning。；AC-3: `docpath docs scan` 行为保持兼容，仍能生成 docs-index 和 docs.md。；AC-4: 目标测试、typecheck、DocPath check/review 通过，或明确记录非阻塞环境限制。",
+      "dependencies": "S5",
+      "status": "done"
+    }
+  ]
+}

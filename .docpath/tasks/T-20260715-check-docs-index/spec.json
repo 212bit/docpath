@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-15T14:36:59.663Z",
+    "updated_at": "2026-07-15T14:36:59.663Z",
+    "content_sha256": "b02c76893a94c8c08749d19c0eb821eed77834dd224d11567f7779353c2c41f1"
+  },
+  "task_id": "T-20260715-check-docs-index",
+  "backlog_id": "R-250",
+  "title": "T-20260715-check-docs-index - check docs-index stale self-heal",
+  "generated_at": "2026-07-15T14:36:59.663Z",
+  "scope": {
+    "included": [
+      "`src/commands/docs.ts` 中抽取可复用 docs-index refresh helper。",
+      "`src/commands/check/validators.ts` stale 分支自动调用 refresh helper。",
+      "`tests/docs-index.test.mjs` stale 回归测试从“报 warning”更新为“自动刷新且不报 warning”。"
+    ],
+    "excluded": [
+      "新增 `--fix-docs-index`。",
+      "更改 docs-index JSON schema 或文档排序规则。",
+      "解决所有 docs-index 陈旧来源。"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": ""
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "`docpath check` 检测 docs-index stale 时自动刷新 `.docpath/docs-index.json` 和人类视图 `.docpath/docs.md`。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "自动刷新成功后不再输出 `docs-index 可能陈旧` warning，而是输出明确的通过项说明已刷新。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "自动刷新失败时保留 warning，并继续给出 `docpath docs scan` 手动修复建议。",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "`docpath docs scan` CLI 继续保持原有输出行为，索引构建逻辑复用同一 helper，避免 check/docs scan 两套扫描实现漂移。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不新增 `check --fix-docs-index` 选项；保持 check 的默认体验自愈。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "不改变 docs-index schema。",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "自动刷新只重建 DocPath 文档索引，不修改任务状态或 lifecycle evidence。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "修改已有非忽略 Markdown 后运行 `docpath check --skip-tests --skip-lint`，自动刷新 docs-index 且不输出 `docs-index 可能陈旧`。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "新增非忽略 Markdown 后运行 `docpath check --skip-tests --skip-lint`，新文件进入 `.docpath/docs-index.json` 且不输出 stale warning。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`docpath docs scan` 行为保持兼容，仍能生成 docs-index 和 docs.md。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "目标测试、typecheck、DocPath check/review 通过，或明确记录非阻塞环境限制。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

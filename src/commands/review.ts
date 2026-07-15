@@ -33,7 +33,7 @@ interface ReviewOptions {
   dryRun?: boolean;
   /** 强制执行，即使不在 agent 会话中 */
   force?: boolean;
-  skipSkillReview?: string[];
+  skipSkillReview?: unknown[];
   skipSkillReviewReason?: string;
 }
 
@@ -108,7 +108,7 @@ function collectChangedFiles(cwd: string, scope: ReviewScope = 'all', current?: 
     const files = scope === 'staged'
       ? parseNameList(runGit(cwd, ['diff', '--name-only', '--cached']))
       : scope === 'last_commit'
-        ? parseNameList(runGit(cwd, ['show', '--name-only', '--format=""', 'HEAD']))
+        ? parseNameList(runGit(cwd, ['show', '--name-only', '--format=', 'HEAD']))
         : scope === 'task'
           ? collectTaskChangedFiles(cwd, current)
           : collectStatusChangedFiles(cwd);
@@ -359,9 +359,22 @@ function printReviewSkillGate(gate: ReviewSkillGate): void {
   }
 }
 
-function normalizeSkillSkipList(input?: string[]): string[] {
+function normalizeSkillSkipList(input?: unknown[]): string[] {
   if (!input) return [];
-  return input.flatMap((item) => item.split(',')).map((item) => item.trim()).filter(Boolean);
+  const normalized: string[] = [];
+  const visit = (item: unknown): void => {
+    if (item === undefined || item === null || item === false) return;
+    if (Array.isArray(item)) {
+      item.forEach(visit);
+      return;
+    }
+    if (typeof item !== 'string') {
+      throw new Error('--skip-skill-review requires a skill name');
+    }
+    normalized.push(...item.split(',').map((part) => part.trim()).filter(Boolean));
+  };
+  input.forEach(visit);
+  return normalized;
 }
 
 function buildRequestedSkips(gate: ReviewSkillGate, skillNames: string[], reason?: string): ReviewSkillSkip[] {
