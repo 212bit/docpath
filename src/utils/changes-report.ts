@@ -8,15 +8,17 @@
 import { resolveDocpathDir } from './file.js';
 import { readCurrentState } from './workspace.js';
 import { readLastCheckEvidence, readReviewEvidence } from './workspace-evidence.js';
-import { existsSync, lstatSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  buildForceAddCommand,
   readIgnoredEvidenceReport,
   readLinkedBacklogId,
   readUntrackedCanonicalEvidence,
   runGit,
   SKIPPED_UNTRACKED_EVIDENCE,
   skippedIgnoredEvidenceReport,
+  shellQuotePath,
   type IgnoredEvidenceReport,
   type UntrackedEvidenceReport,
 } from './git-closeout.js';
@@ -25,6 +27,8 @@ export type ChangeGroupName = 'source' | 'tests' | 'docpath' | 'templates_docs' 
 
 export interface ChangesReportOptions {
   since?: string;
+  task?: string;
+  scope?: string[];
 }
 
 interface ChangedFile {
@@ -52,6 +56,16 @@ export interface ArtifactPolicyReport {
   current_alias_policy: string;
 }
 
+export interface ChangesSelectionReport {
+  mode: 'current_task' | 'task' | 'scope';
+  selected_task_id: string;
+  selected_task_title: string;
+  scope_files: string[];
+  selected_files: string[];
+  outside_selected_task_files: string[];
+  outside_selected_task_note: string | null;
+}
+
 export interface ChangesReport {
   git_root: string;
   branch: string;
@@ -73,6 +87,7 @@ export interface ChangesReport {
   groups: Record<ChangeGroupName, string[]>;
   worktree_isolation: WorktreeIsolationReport;
   artifact_policy: ArtifactPolicyReport;
+  selection: ChangesSelectionReport;
   ignored_evidence: IgnoredEvidenceReport;
   untracked_evidence: UntrackedEvidenceReport;
   recommended_stage_command: string | null;
@@ -210,7 +225,7 @@ async function readReviewPass(docpathDir: string): Promise<boolean> {
 }
 
 function buildSuggestedCommitMessage(report: Omit<ChangesReport, 'suggested_commit_message'>): string {
-  const title = report.current_task.task_title || '更新 DocPath 工作流';
+  const title = report.selection.selected_task_title || report.current_task.task_title || '更新 DocPath 工作流';
   const hasSource = report.groups.source.length > 0;
   const hasTests = report.groups.tests.length > 0;
   const hasDocs = report.groups.templates_docs.length > 0;
@@ -351,23 +366,140 @@ function buildRecommendedStageCommand(
   return untrackedEvidence.add_command;
 }
 
+function normalizeRepoPath(path: string): string {
+  return path.trim().replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+}
+
+function filterFilesByScope(files: ChangedFile[], scope: string[]): ChangedFile[] {
+  if (scope.length === 0) return files;
+  const selected = new Set(scope.map(normalizeRepoPath));
+  return files.filter((file) => selected.has(file.path));
+}
+
+function taskCanonicalPrefixes(taskId: string): string[] {
+  if (!taskId) return [];
+  return [`.docpath/tasks/${taskId}/`, `.docpath/tasks/done/${taskId}/`];
+}
+
+function isTaskCanonicalFile(path: string, taskId: string): boolean {
+  return taskCanonicalPrefixes(taskId).some((prefix) => path.startsWith(prefix));
+}
+
+function filterIgnoredEvidenceByScope(report: IgnoredEvidenceReport, scope: string[]): IgnoredEvidenceReport {
+  if (scope.length === 0 || report.check === 'skipped') return report;
+  const selected = new Set(scope.map(normalizeRepoPath));
+  const files = report.files.filter((file) => selected.has(file));
+  const canonicalFiles = report.canonical_files.filter((file) => selected.has(file));
+  const aliasFiles = report.alias_files.filter((file) => selected.has(file));
+  return {
+    ...report,
+    files,
+    canonical_files: canonicalFiles,
+    alias_files: aliasFiles,
+    add_command: buildForceAddCommand(canonicalFiles),
+  };
+}
+
+function filterUntrackedEvidenceByScope(report: UntrackedEvidenceReport, scope: string[]): UntrackedEvidenceReport {
+  if (scope.length === 0) return report;
+  const selected = new Set(scope.map(normalizeRepoPath));
+  const files = report.files.filter((file) => selected.has(file));
+  return {
+    files,
+    add_command: files.length > 0 ? `git add ${files.map(shellQuotePath).join(' ')}` : null,
+  };
+}
+
+function readTaskTitle(docpathDir: string, taskId: string): string {
+  if (!taskId) return '';
+  const specJsonPath = join(docpathDir, 'tasks', taskId, 'spec.json');
+  if (existsSync(specJsonPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(specJsonPath, 'utf-8')) as { title?: unknown };
+      if (typeof parsed.title === 'string' && parsed.title.trim()) {
+        return parsed.title.replace(new RegExp(`^${taskId}\\s+-\\s+`), '').trim();
+      }
+    } catch {
+      // Fall through to spec.md.
+    }
+  }
+  const specMdPath = join(docpathDir, 'tasks', taskId, 'spec.md');
+  if (existsSync(specMdPath)) {
+    const match = readFileSync(specMdPath, 'utf-8').match(/^#\s+(.+)$/m);
+    if (match) return match[1].replace(new RegExp(`^${taskId}\\s+-\\s+`), '').trim();
+  }
+  return taskId;
+}
+
+function buildSelectionReport(args: {
+  files: ChangedFile[];
+  selectedTaskId: string;
+  selectedTaskTitle: string;
+  scope: string[];
+  explicitTask: boolean;
+}): ChangesSelectionReport {
+  const scopeFiles = args.scope.map(normalizeRepoPath).filter(Boolean);
+  if (scopeFiles.length > 0) {
+    return {
+      mode: 'scope',
+      selected_task_id: args.selectedTaskId,
+      selected_task_title: args.selectedTaskTitle,
+      scope_files: scopeFiles,
+      selected_files: args.files.map((file) => file.path),
+      outside_selected_task_files: [],
+      outside_selected_task_note: null,
+    };
+  }
+
+  const selectedFiles = args.files
+    .filter((file) => isTaskCanonicalFile(file.path, args.selectedTaskId))
+    .map((file) => file.path);
+  const outsideFiles = args.files
+    .filter((file) => !isTaskCanonicalFile(file.path, args.selectedTaskId))
+    .map((file) => file.path);
+  return {
+    mode: args.explicitTask ? 'task' : 'current_task',
+    selected_task_id: args.selectedTaskId,
+    selected_task_title: args.selectedTaskTitle,
+    scope_files: [],
+    selected_files: selectedFiles,
+    outside_selected_task_files: outsideFiles,
+    outside_selected_task_note: outsideFiles.length > 0
+      ? 'These files may not belong to the selected task; split commits or use --scope to close out an explicit file set.'
+      : null,
+  };
+}
+
 export async function buildChangesReport(cwd: string, options: ChangesReportOptions = {}): Promise<ChangesReport> {
   const gitRoot = ensureGitRepo(cwd);
   const docpathDir = await resolveDocpathDir(cwd);
   const current = await readCurrentState(cwd);
   const since = await resolveSinceRef(docpathDir, options.since);
-  const files = since
+  const scope = (options.scope || []).map(normalizeRepoPath).filter(Boolean);
+  const allFiles = since
     ? parseNameStatus(runGit(cwd, ['diff', '--name-status', since, '--']))
     : parsePorcelainStatus(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
+  const files = filterFilesByScope(allFiles, scope);
   const groups = groupChangedFiles(files);
   const worktreeIsolation = buildWorktreeIsolationReport(gitRoot, files, since);
-  const backlogId = await readLinkedBacklogId(docpathDir, current?.task_id);
+  const selectedTaskId = options.task?.trim() || current?.task_id || '';
+  const selectedTaskTitle = options.task?.trim()
+    ? readTaskTitle(docpathDir, selectedTaskId)
+    : current?.task_title || '';
+  const selection = buildSelectionReport({
+    files,
+    selectedTaskId,
+    selectedTaskTitle,
+    scope,
+    explicitTask: Boolean(options.task?.trim()),
+  });
+  const backlogId = await readLinkedBacklogId(docpathDir, selectedTaskId);
   const ignoredEvidence = since
     ? skippedIgnoredEvidenceReport('since mode summarizes committed diff and skips pre-commit ignored evidence readiness')
-    : readIgnoredEvidenceReport(gitRoot, current?.task_id, backlogId);
+    : filterIgnoredEvidenceByScope(readIgnoredEvidenceReport(gitRoot, selectedTaskId, backlogId), scope);
   const untrackedEvidence = since
     ? SKIPPED_UNTRACKED_EVIDENCE
-    : readUntrackedCanonicalEvidence(gitRoot, current?.task_id);
+    : filterUntrackedEvidenceByScope(readUntrackedCanonicalEvidence(gitRoot, selectedTaskId), scope);
   const closeoutContext = resolveCloseoutContext(files, !!current?.task_id);
   const lastCheckPass = await readLastCheckPass(docpathDir);
   const reviewPass = await readReviewPass(docpathDir);
@@ -411,6 +543,7 @@ export async function buildChangesReport(cwd: string, options: ChangesReportOpti
     groups,
     worktree_isolation: worktreeIsolation,
     artifact_policy: buildArtifactPolicyReport(),
+    selection,
     ignored_evidence: ignoredEvidence,
     untracked_evidence: untrackedEvidence,
     recommended_stage_command: recommendedStageCommand,

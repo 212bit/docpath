@@ -10,18 +10,30 @@ import { rolesCommand } from '../roles.js';
 import { statsCommand } from '../stats.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
+function parseScopeFiles(value: string | string[] | undefined): string[] {
+  if (!value) return [];
+  const values = Array.isArray(value) ? value : [value];
+  return values.flatMap((item) => item.split(','))
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function registerChangesCommand(cli: CAC): void {
   cli.command('changes', '提交前只读变更收口视图')
     .option('--cwd <path>', '项目目录')
     .option('--agent', '输出 Agent 可读 YAML 状态')
     .option('--json', '输出 JSON')
     .option('--since <ref>', '按 git ref 汇总差异，例如 HEAD、main、origin/main、last-check')
-    .action(async (options: { cwd?: string; agent?: boolean; json?: boolean; since?: string }) => {
+    .option('--task <taskId>', '按指定 task_id 生成 closeout 视图')
+    .option('--scope <files>', '按显式文件集生成 closeout 视图；多个文件用逗号分隔')
+    .action(async (options: { cwd?: string; agent?: boolean; json?: boolean; since?: string; task?: string; scope?: string | string[] }) => {
       await changesCommand({
         cwd: options.cwd || process.cwd(),
         agent: !!options.agent,
         json: !!options.json,
         since: options.since,
+        task: options.task,
+        scope: parseScopeFiles(options.scope),
       });
     });
 }
