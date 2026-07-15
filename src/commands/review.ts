@@ -17,6 +17,8 @@ import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { writeReviewEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
+import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift } from '../utils/structured-docs.js';
+import { canonicalTaskDir } from '../utils/task-files.js';
 import {
   buildReviewSkillRequirements,
   createReviewSkillSkip,
@@ -56,6 +58,20 @@ interface FindingGroups {
 interface FindingScopeCounts {
   current_diff: { errors: number; warnings: number; infos: number };
   baseline_or_whole_file: { errors: number; warnings: number; infos: number };
+}
+
+async function assertNoActiveTaskStructuredMarkdownDrift(docpathDir: string, taskId?: string): Promise<void> {
+  if (!taskId) return;
+  const taskDir = canonicalTaskDir(docpathDir, taskId);
+  for (const file of ['spec.md', 'plan.md'] as const) {
+    const drift = await detectStructuredMarkdownHashDrift(taskDir, file);
+    if (!drift) continue;
+    const jsonFile = file === 'plan.md' ? 'plan.json' : 'spec.json';
+    throw new Error([
+      `docpath review: 检测到 active task canonical ${file}/${jsonFile} 机器真理源不同步`,
+      formatStructuredMarkdownHashDrift(drift),
+    ].join('\n'));
+  }
 }
 
 function normalizeReviewScope(scope: string): ReviewScope {
@@ -432,6 +448,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   console.log('🔍 代码审查开始...');
   const scope = normalizeReviewScope(opts.scope || 'all');
   const current = await readCurrentState(opts.cwd);
+  await assertNoActiveTaskStructuredMarkdownDrift(docpathDir, current?.task_id);
   let effectiveScope = scope;
   let changedFiles = collectChangedFiles(opts.cwd, scope, current);
   if (scope === 'all' && changedFiles.length === 0 && current?.task_id) {
