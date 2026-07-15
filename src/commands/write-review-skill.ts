@@ -64,7 +64,7 @@ function collectChangedFiles(cwd: string, scope: ReviewScope): string[] {
     const files = scope === 'staged'
       ? parseNameList(runGit(cwd, ['diff', '--name-only', '--cached']))
       : scope === 'last_commit'
-        ? parseNameList(runGit(cwd, ['show', '--name-only', '--format=""', 'HEAD']))
+        ? parseNameList(runGit(cwd, ['show', '--name-only', '--format=', 'HEAD']))
         : parsePorcelainPaths(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
     return [...new Set(files)].filter((file) => /\.(ts|tsx|js|jsx|mjs|cjs|json)$/.test(file));
   } catch {

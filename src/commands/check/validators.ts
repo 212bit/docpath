@@ -19,6 +19,7 @@ import {
 import { resolveRulePaths, type RuleName } from '../../utils/rules.js';
 import { readFile, stat } from 'fs/promises';
 import { select, isCancel } from '@clack/prompts';
+import { refreshProjectDocumentIndex } from '../docs.js';
 import type { CheckOptions, CheckResult, TaskPlanProgress } from './types.js';
 import {
   formatValidationFailure,
@@ -492,10 +493,20 @@ export async function checkContextIndexHealth(docpathDir: string, currentTaskId:
     }
 
     if (await isProjectDocumentIndexStale(docpathDir, index.entries, currentTaskId)) {
-      results.push(warningResult(
-        'docs-index 可能陈旧',
-        '检测到 .docpath 下存在比 docs-index 更新的 Markdown。修复建议: 运行 `docpath docs scan`。',
-      ));
+      try {
+        const refreshed = await refreshProjectDocumentIndex(docpathDir);
+        results.push({
+          name: 'docs-index 已自动刷新',
+          passed: true,
+          output: `检测到 docs-index 陈旧，已自动运行索引刷新（${refreshed.entries.length} docs）。`,
+          category: 'context',
+        });
+      } catch (refreshError) {
+        results.push(warningResult(
+          'docs-index 可能陈旧',
+          `检测到 .docpath 下存在比 docs-index 更新的 Markdown，但自动刷新失败。修复建议: 运行 \`docpath docs scan\`。\n${refreshError instanceof Error ? refreshError.message : String(refreshError)}`,
+        ));
+      }
     }
 
     return results;
