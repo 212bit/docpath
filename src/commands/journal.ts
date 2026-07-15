@@ -34,8 +34,9 @@ interface JournalOptions {
   skipDecisionGc?: boolean;
   /** Use compact closeout wording when journal runs as an automatic closeout sub-step. */
   quietPrompt?: boolean;
-  /** 归档模式: 'always' = 默认行为 | 'skip' = 跳过归档 | 'dry-run' = 预览归档 */
+  /** 归档模式: 'always' = 物理归档 | 'skip' = 跳过归档 | 'dry-run' = legacy 归档预览 */
   archiveMode?: 'always' | 'skip' | 'dry-run';
+  dryRun?: boolean;
 }
 
 interface TaskSummary {
@@ -252,9 +253,10 @@ export async function journalCommand(options: JournalOptions): Promise<void> {
     printAiNativeJournalPrompt(context, summary);
   }
 
-  const archiveMode = options.archiveMode || 'skip';
-  const archive = await archiveCurrentTask(docpathDir, context.taskId, context.taskDir, archiveMode, !!options.quietPrompt);
-  if (archiveMode === 'dry-run') {
+  const dryRun = options.dryRun === true || options.archiveMode === 'dry-run';
+  const archiveMode = options.archiveMode === 'dry-run' ? 'always' : (options.archiveMode || 'skip');
+  const archive = await archiveCurrentTask(docpathDir, context.taskId, context.taskDir, archiveMode, !!options.quietPrompt, dryRun);
+  if (dryRun) {
     printJournalDryRunComplete();
     return;
   }
@@ -382,34 +384,44 @@ async function archiveCurrentTask(
   docpathDir: string,
   taskId: string,
   currentTaskDir: string,
-  archiveMode: NonNullable<JournalOptions['archiveMode']>,
+  archiveMode: 'always' | 'skip',
   quiet: boolean = false,
+  dryRun: boolean = false,
 ): Promise<ArchiveResult> {
   const doneDir = join(docpathDir, 'tasks', 'done');
   const archiveDir = archivedTaskDir(docpathDir, taskId || 'unknown');
   if (archiveMode === 'skip') {
     if (!quiet) {
       const canonicalPath = `.docpath/tasks/${taskId || 'unknown'}/`;
-      console.log('⏭️  物理任务目录归档已延后（journal 默认行为，对齐 agent done）');
-      console.log(`   这不是完成失败；逻辑完成与 journal 收尾仍会继续执行。`);
-      console.log(`   canonical evidence 保留在 ${canonicalPath}，用于 docpath changes --agent / git closeout。`);
-      console.log('   closeout 后可运行 docpath gc --force，将非活跃 canonical 任务目录移动到 .docpath/tasks/done/。');
-      console.log('   如需 journal 同次归档（老行为），使用 --optional-archive=always。');
+      if (dryRun) {
+        console.log('🔍  [dry-run] archive policy: skip（默认，不实际归档；canonical evidence 保留）');
+        console.log(`   canonical evidence 将保留在 ${canonicalPath}，用于 docpath changes --agent / git closeout。`);
+        console.log('   若要预览物理归档路径，运行: docpath journal --dry-run --optional-archive always');
+      } else {
+        console.log('⏭️  物理任务目录归档已延后（journal 默认行为，对齐 agent done）');
+        console.log(`   这不是完成失败；逻辑完成与 journal 收尾仍会继续执行。`);
+        console.log(`   canonical evidence 保留在 ${canonicalPath}，用于 docpath changes --agent / git closeout。`);
+        console.log('   closeout 后可运行 docpath gc --force，将非活跃 canonical 任务目录移动到 .docpath/tasks/done/。');
+        console.log('   如需 journal 同次归档（老行为），使用 --optional-archive=always。');
+      }
     }
   } else {
-    if (archiveMode === 'dry-run') console.log(`🔍  [dry-run] 将归档: ${currentTaskDir} → ${archiveDir}`);
+    if (dryRun) {
+      console.log('🔍  [dry-run] archive policy: always（将物理归档任务目录）');
+      console.log(`🔍  [dry-run] 将归档: ${currentTaskDir} → ${archiveDir}`);
+    }
     try {
       if (!existsSync(doneDir)) {
         const { mkdirSync } = await import('fs');
         mkdirSync(doneDir, { recursive: true });
       }
-      if (existsSync(currentTaskDir) && !existsSync(archiveDir) && archiveMode !== 'dry-run') {
+      if (existsSync(currentTaskDir) && !existsSync(archiveDir) && !dryRun) {
         await rename(currentTaskDir, archiveDir);
         await clearCurrentTaskAlias(docpathDir);
         console.log(`📦 任务已归档: tasks/done/${taskId || 'unknown'}`);
       } else if (existsSync(archiveDir)) {
         console.log(`⚠️  归档目标已存在: ${archiveDir}，跳过`);
-        if (archiveMode !== 'dry-run') await clearCurrentTaskAlias(docpathDir);
+        if (!dryRun) await clearCurrentTaskAlias(docpathDir);
       }
     } catch (e) {
       console.warn('⚠️  归档失败（非致命）:', (e as Error).message);

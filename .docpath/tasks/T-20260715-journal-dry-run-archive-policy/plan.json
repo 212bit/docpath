@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-15T17:08:52.772Z",
+    "updated_at": "2026-07-15T17:08:52.772Z",
+    "content_sha256": "ece33cc3cf50805526406bd037e3a956370aecbc74e36e4abd64423b2a529832"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-15T17:08:52.772Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 journal --dry-run 归档预览文字与默认 archive policy 不符",
+      "description": "根据 spec 明确 FR-1: journal --dry-run 归档预览文字与默认 archive policy 不符 的实现边界和验收口径。",
+      "acceptance": "AC-1: `journal --dry-run` 输出显式标注当前 archive policy（默认 skip），",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 journal --dry-run 归档预览文字与默认 archive policy 不符",
+      "description": "在现有架构内完成 FR-1: journal --dry-run 归档预览文字与默认 archive policy 不符 的代码与文档更新。",
+      "acceptance": "FR-1 journal --dry-run 归档预览文字与默认 archive policy 不符 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: `journal --dry-run` 输出显式标注当前 archive policy（默认 skip），；AC-2: 例如: `archive policy: skip（默认，不实际归档；canonical evidence 保留）`。；AC-3: 仅当显式传 `--optional-archive=always` 时，dry-run 输出\"将归档: ... → ...\"；AC-4: 才表述\"实际将发生\"的归档动作。；AC-5: 回归: 默认 dry-run 文字不再让 agent 误以为\"跑 journal 就会物理归档\"，；AC-6: 避免为确认行为而读源码。；AC-7: 生成的 spec 可直接进入 `docpath plan`；AC-8: backlog 条目 R-261 与任务 T-20260715-journal-dry-run-archive-policy 建立双向关联",
+      "acceptance": "AC-1: `journal --dry-run` 输出显式标注当前 archive policy（默认 skip），；AC-2: 例如: `archive policy: skip（默认，不实际归档；canonical evidence 保留）`。；AC-3: 仅当显式传 `--optional-archive=always` 时，dry-run 输出\"将归档: ... → ...\"；AC-4: 才表述\"实际将发生\"的归档动作。；AC-5: 回归: 默认 dry-run 文字不再让 agent 误以为\"跑 journal 就会物理归档\"，；AC-6: 避免为确认行为而读源码。；AC-7: 生成的 spec 可直接进入 `docpath plan`；AC-8: backlog 条目 R-261 与任务 T-20260715-journal-dry-run-archive-policy 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}
