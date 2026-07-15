@@ -103,7 +103,8 @@ export function registerQualityCommands(cli: CAC): void {
       await journalCommand({
         cwd: options.cwd || process.cwd(),
         skipDecisionGc: options['skip-gc'] ?? options.skipGc,
-        archiveMode: (options.dryRun || options['dry-run']) ? 'dry-run' : (options['optional-archive'] ?? options.optionalArchive),
+        dryRun: !!(options.dryRun || options['dry-run']),
+        archiveMode: options['optional-archive'] ?? options.optionalArchive,
       });
     });
 

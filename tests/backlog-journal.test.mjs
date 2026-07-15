@@ -297,6 +297,32 @@ Alpha
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('journal --dry-run reports the default skip archive policy without physical archive wording', () => {
+    const cwd = mkWorkspace();
+    const taskDir = join(cwd, '.docpath', 'tasks', 'T-20260531-alpha-promote');
+    const out = run('journal --dry-run', cwd);
+
+    assert.match(out, /archive policy: skip/);
+    assert.match(out, /默认，不实际归档/);
+    assert.match(out, /canonical evidence 将保留/);
+    assert.doesNotMatch(out, /将归档:/);
+    assert.equal(existsSync(taskDir), true, 'canonical task dir must remain');
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'done', 'T-20260531-alpha-promote')), false, 'dry-run must not archive');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('journal --dry-run --optional-archive always previews the physical archive path', () => {
+    const cwd = mkWorkspace();
+    const taskDir = join(cwd, '.docpath', 'tasks', 'T-20260531-alpha-promote');
+    const out = run('journal --dry-run --optional-archive always', cwd);
+
+    assert.match(out, /archive policy: always/);
+    assert.match(out, /将归档: .*T-20260531-alpha-promote.*tasks\/done\/T-20260531-alpha-promote/);
+    assert.equal(existsSync(taskDir), true, 'canonical task dir must remain during dry-run');
+    assert.equal(existsSync(join(cwd, '.docpath', 'tasks', 'done', 'T-20260531-alpha-promote')), false, 'dry-run must not archive');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('--optional-archive=always still physically archives', () => {
     const cwd = mkWorkspace();
     const taskDir = join(cwd, '.docpath', 'tasks', 'T-20260531-alpha-promote');
