@@ -65,12 +65,6 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   validateInteractiveOptions(options);
   if (await handleLinkMode(cwd, docpathDir, options.link)) return;
 
-  // S5/S6 已接：config 写 document_scan_paths + 项目命令；CLAUDE.md 命令区块已接；S3 已接 architecture.md。
-  // S7（docs scan 外部路径）尚未实现，将随后续 step 接入。
-  if (options.scanExisting) {
-    console.warn('⚠️  --scan-existing/-s：architecture.md + config.yaml + CLAUDE.md 命令区块已按扫描生成；docs scan 外部路径（S7）尚未实现。');
-  }
-
   // 检查是否已存在
   if (!options.force && await exists(docpathDir)) {
     if (options.interactive) {

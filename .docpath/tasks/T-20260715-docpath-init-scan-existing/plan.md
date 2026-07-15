@@ -37,7 +37,7 @@
 - **依赖**: S5
 
 ### S7: docs scan 读取 document_scan_paths 扫描外部路径
-- [ ] S7: docs scan 读取 document_scan_paths 扫描外部路径
+- [x] S7: docs scan 读取 document_scan_paths 扫描外部路径
 - **描述**: 改 `src/commands/docs.ts:235` 的 `docsScan`，读取 `document_scan_paths` 逐路径 scanDirectory 合并索引。外部路径 noise 排除按 §4.d（复用 .gitignore + 硬黑名单）。无该字段时行为与现状一致（仅扫 .docpath/）。产物仍落 `.docpath/workspace/docs-index.json`，不引入新 runtime 目录（NFR-3）。
 - **验收条件**: AC-5 —— `docpath docs scan` 读取 document_scan_paths 扫描外部路径（README.md/docs/ 进索引），node_modules/build 等被 .gitignore+黑名单排除；无字段时仅扫 .docpath/。
 - **依赖**: S6
@@ -55,7 +55,7 @@
 - [x] S4
 - [x] S5
 - [x] S6
-- [ ] S7
+- [x] S7
 - [ ] S8
 
 ## 依赖关系图
