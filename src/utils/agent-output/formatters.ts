@@ -18,6 +18,9 @@ import { isQuickProfile } from '../../engine/workflow-profile.js';
 import type { StructuredSpecDocument } from '../structured-docs.js';
 import { detectDirtyWorktree, type DirtyWorktreeReport } from '../git-dirty-guard.js';
 import { classifyCandidateBlocks, lessonCandidateKey, parseCandidateBlocks } from '../lesson-candidates.js';
+
+const SPEC_TRUTH_SYNC_ROUTE_HINT =
+  'spec.json 真源已生成；如需细化 FR/AC，请使用 `docpath write-spec --stdin`，直接手改 spec.md 不会更新 spec.json 真源。';
 export interface AgentOutput {
   agent_view: 'status' | 'next';
   state: string;
@@ -516,6 +519,7 @@ export function inferNextAction(
   gitCloseout: GitCloseoutSummary | null,
   dirtyWorktree: DirtyWorktreeReport,
   hasHealthWarning: boolean = false,
+  promotedBacklogId: string | null = null,
 ): {
   next_action: string;
   recommended_command: string;
@@ -535,6 +539,7 @@ export function inferNextAction(
   const hasPendingLessonCandidates = lessonSummary.pendingCount > 0;
   const globalRules = ruleDisplayPaths();
   const isCompleted = currentState === 'completed';
+  const backlogOriginId = state?.backlog_id || promotedBacklogId;
   const isIdleOrCompleted = currentState === 'idle'
     || isCompleted
     || phase === 'idle';
@@ -842,15 +847,17 @@ export function inferNextAction(
       break;
     case 'drafting':
       if (hasSpec && !hasIncompleteSpec) {
-        next_action = 'spec 已就绪，生成执行计划';
+        next_action = backlogOriginId
+          ? `spec 已就绪，生成执行计划。${SPEC_TRUTH_SYNC_ROUTE_HINT}`
+          : 'spec 已就绪，生成执行计划';
         recommended_command = 'docpath plan';
         required_context = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md'];
         exit_criteria = 'plan.md 已生成';
       } else if (hasSpec && hasIncompleteSpec) {
         // 感知 backlog origin：如果任务源自 promote，推荐 --from-backlog 模式
-        if (state?.backlog_id) {
-          next_action = `当前 spec 来自 backlog promote，请基于已有证据深化需求（而非从零澄清）`;
-          recommended_command = `docpath brainstorm --from-backlog ${state.backlog_id}`;
+        if (backlogOriginId) {
+          next_action = `当前 spec 来自 backlog promote，请基于已有证据深化需求（而非从零澄清）。${SPEC_TRUTH_SYNC_ROUTE_HINT}`;
+          recommended_command = `docpath brainstorm --from-backlog ${backlogOriginId}`;
         } else {
           next_action = '当前 spec 仍是骨架内容，请先补全需求背景、验收标准和范围边界';
           recommended_command = 'docpath brainstorm --dry-run';
@@ -1119,6 +1126,7 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
     context.gitCloseout,
     context.dirtyWorktree,
     hasHealthRegressionWarning(context.installHealth),
+    context.structuredSpec?.backlog_id || null,
   );
 
   const hasDrift = context.drift.planDoneWithoutBreadcrumb.length > 0 || context.drift.breadcrumbDoneWithoutPlan.length > 0;
