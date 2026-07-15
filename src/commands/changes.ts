@@ -12,6 +12,8 @@ interface ChangesOptions {
   agent?: boolean;
   json?: boolean;
   since?: string;
+  task?: string;
+  scope?: string[];
 }
 
 const GROUP_LABELS: Record<ChangeGroupName, string> = {
@@ -41,6 +43,17 @@ function renderAgentYaml(report: ChangesReport): string {
   lines.push(`  task_title: ${yamlString(report.current_task.task_title)}`);
   lines.push(`  phase: ${yamlString(report.current_task.phase)}`);
   lines.push(`  gate: ${yamlString(report.current_task.gate)}`);
+  lines.push('selection:');
+  lines.push(`  mode: ${yamlString(report.selection.mode)}`);
+  lines.push(`  selected_task_id: ${yamlString(report.selection.selected_task_id)}`);
+  lines.push(`  selected_task_title: ${yamlString(report.selection.selected_task_title)}`);
+  lines.push('  scope_files:');
+  for (const file of report.selection.scope_files) lines.push(`    - ${yamlString(file)}`);
+  lines.push('  selected_files:');
+  for (const file of report.selection.selected_files) lines.push(`    - ${yamlString(file)}`);
+  lines.push('  outside_selected_task_files:');
+  for (const file of report.selection.outside_selected_task_files) lines.push(`    - ${yamlString(file)}`);
+  lines.push(`  outside_selected_task_note: ${report.selection.outside_selected_task_note === null ? 'null' : yamlString(report.selection.outside_selected_task_note)}`);
   lines.push('counts:');
   lines.push(`  total: ${report.counts.total}`);
   lines.push(`  staged: ${report.counts.staged}`);
@@ -136,6 +149,10 @@ function renderHuman(report: ChangesReport): string {
   if (report.since) lines.push(`  基线: ${report.since}`);
   lines.push(`  收口上下文: ${report.closeout_context}`);
   lines.push(`  任务: ${report.current_task.task_id || '-'} ${report.current_task.task_title || ''}`.trimEnd());
+  lines.push(`  选择: ${report.selection.mode} ${report.selection.selected_task_id || '-'}`.trimEnd());
+  if (report.selection.scope_files.length > 0) {
+    lines.push(`  显式 scope: ${report.selection.scope_files.join(', ')}`);
+  }
   lines.push(`  变更: ${report.counts.total} 个文件（staged ${report.counts.staged}, unstaged ${report.counts.unstaged}, untracked ${report.counts.untracked}）`);
   lines.push(`  提交状态: ${report.ready_to_commit ? '✅ ready' : '⚠️ blocked'}`);
   lines.push('');
@@ -158,6 +175,19 @@ function renderHuman(report: ChangesReport): string {
     if (report.worktree_isolation.commit_relevant_files.length > 0) {
       lines.push('    commit-relevant files');
       for (const file of report.worktree_isolation.commit_relevant_files) lines.push(`      - ${file}`);
+    }
+  }
+
+  if (report.selection.selected_files.length > 0 || report.selection.outside_selected_task_files.length > 0) {
+    lines.push(`\n  Task-aware selection`);
+    if (report.selection.selected_files.length > 0) {
+      lines.push(`    selected task files (${report.selection.selected_files.length})`);
+      for (const file of report.selection.selected_files) lines.push(`      - ${file}`);
+    }
+    if (report.selection.outside_selected_task_files.length > 0) {
+      lines.push(`    outside selected task (${report.selection.outside_selected_task_files.length})`);
+      for (const file of report.selection.outside_selected_task_files) lines.push(`      - ${file}`);
+      if (report.selection.outside_selected_task_note) lines.push(`    note: ${report.selection.outside_selected_task_note}`);
     }
   }
 
@@ -215,7 +245,11 @@ function renderHuman(report: ChangesReport): string {
 
 export async function changesCommand(options: ChangesOptions): Promise<void> {
   await assertWorktreeContract(options.cwd);
-  const report = await buildChangesReport(options.cwd, { since: options.since });
+  const report = await buildChangesReport(options.cwd, {
+    since: options.since,
+    task: options.task,
+    scope: options.scope,
+  });
   if (options.json) {
     process.stdout.write(JSON.stringify(report, null, 2) + '\n');
     return;

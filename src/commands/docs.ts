@@ -312,11 +312,41 @@ function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unk
   };
 
   if (entry.task_id) compact.task_id = entry.task_id;
+  if (entry.content_terms && entry.content_terms.length > 0) compact.content_terms = entry.content_terms;
   if (entry.generated_view === true) compact.generated_view = true;
   if (entry.index_only === true) compact.index_only = true;
   if (entry.stale === true) compact.stale = true;
 
   return compact;
+}
+
+export async function refreshProjectDocumentIndex(
+  docpathDir: string,
+  cwd: string = dirname(resolve(docpathDir)),
+): Promise<{ entries: ProjectDocumentIndexEntry[]; docsIndexPath: string; externalCount: number; declaredExternal: boolean }> {
+  const mdFiles = await scanDirectory(docpathDir, docpathDir);
+  const declaredPaths = await readDeclaredDocumentScanPaths(cwd);
+  const externalFiles = declaredPaths
+    ? await collectExternalDocFiles(docpathDir, declaredPaths, new Set(mdFiles))
+    : [];
+
+  if (mdFiles.length === 0 && externalFiles.length === 0) {
+    return {
+      entries: [],
+      docsIndexPath: join(docpathDir, 'docs-index.json'),
+      externalCount: 0,
+      declaredExternal: !!declaredPaths,
+    };
+  }
+
+  const entries = await buildDocEntries(docpathDir, mdFiles, externalFiles);
+  const docsIndexPath = await writeDocsIndexes(docpathDir, entries);
+  return {
+    entries,
+    docsIndexPath,
+    externalCount: externalFiles.length,
+    declaredExternal: !!declaredPaths,
+  };
 }
 
 /** docs scan — 扫描文档生成索引 */
@@ -325,26 +355,16 @@ async function docsScan(cwd: string): Promise<void> {
 
   console.log('\n🔍  扫描文档...\n');
 
-  const mdFiles = await scanDirectory(docpathDir, docpathDir);
+  const { entries, docsIndexPath, externalCount, declaredExternal } = await refreshProjectDocumentIndex(docpathDir, cwd);
 
-  // FR-5：config 声明了 document_scan_paths → 逐路径扫描外部文档合并进索引；
-  // 未声明 → 仅扫 .docpath/，输出与现状一致（NFR-1 向后兼容）。
-  const declaredPaths = await readDeclaredDocumentScanPaths(cwd);
-  const externalFiles = declaredPaths
-    ? await collectExternalDocFiles(docpathDir, declaredPaths, new Set(mdFiles))
-    : [];
-
-  if (mdFiles.length === 0 && externalFiles.length === 0) {
+  if (entries.length === 0) {
     console.log('📭  未找到任何 .md 文件');
     return;
   }
 
-  const entries = await buildDocEntries(docpathDir, mdFiles, externalFiles);
-  const docsIndexPath = await writeDocsIndexes(docpathDir, entries);
-
   console.log(`✅  已生成 docs-index.json (${entries.length} 个文档)`);
-  if (declaredPaths) {
-    console.log(`📎  外部文档: ${externalFiles.length} 个（document_scan_paths 声明路径，§4.d 去噪）`);
+  if (declaredExternal) {
+    console.log(`📎  外部文档: ${externalCount} 个（document_scan_paths 声明路径，§4.d 去噪）`);
   }
   console.log(`📁  位置: ${docsIndexPath}`);
   console.log('');

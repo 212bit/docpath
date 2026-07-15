@@ -8,12 +8,14 @@ export function registerWorktreeCommands(cli: CAC): void {
     .command('worktree [action] [name]', 'Git Worktree 并发开发管理')
     .option('--cwd <path>', '项目目录')
     .option('--force', '强制删除（忽略未提交变更）')
-    .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean }) => {
+    .option('--backlog <id>', 'create: 绑定目标 backlog 条目（例如 R-268）')
+    .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean; backlog?: string }) => {
       await worktreeCommand({
         cwd: options.cwd || process.cwd(),
         action: action as 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | undefined,
         name,
         force: options.force,
+        backlog: options.backlog,
       });
     });
 
@@ -33,6 +35,7 @@ export function registerWorktreeCommands(cli: CAC): void {
   Examples:
     $ docpath worktree list
     $ docpath worktree create feature-auth
+    $ docpath worktree create feature-auth --backlog R-123
     $ docpath worktree doctor feature-auth
     $ docpath worktree repair feature-auth
     $ docpath worktree merge
@@ -45,7 +48,7 @@ export function registerWorktreeCommands(cli: CAC): void {
     - Isolated (ignored): workspace/, tasks/, journal/
 
   Use Cases:
-    - Develop Feature A with Codex in one worktree
+    - Develop Feature A with one agent in one worktree
     - Develop Feature B with Claude Code in another worktree
     - Both agents work concurrently with zero conflicts
 
@@ -54,6 +57,7 @@ export function registerWorktreeCommands(cli: CAC): void {
 
   worktree.example('docpath worktree list');
   worktree.example('docpath worktree create feature-a');
+  worktree.example('docpath worktree create feature-a --backlog R-123');
   worktree.example('docpath worktree doctor feature-a');
   worktree.example('docpath worktree repair feature-a');
   worktree.example('docpath worktree merge');

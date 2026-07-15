@@ -227,7 +227,7 @@ describe('structured docs index', () => {
     utimesSync(join(cwd, '.docpath', 'workspace', 'breadcrumb.md'), future, future);
     utimesSync(join(cwd, '.docpath', 'workspace', 'last-check.md'), future, future);
 
-    const { output } = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+    const { output } = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --verbose`, cwd);
 
     assert.doesNotMatch(output, /docs-index 可能陈旧/);
     rmSync(cwd, { recursive: true, force: true });
@@ -258,13 +258,13 @@ describe('structured docs index', () => {
     writeFileSync(currentSpecMdPath, '# Spec\n');
     utimesSync(currentSpecMdPath, future, future);
 
-    const { output } = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+    const { output } = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --verbose`, cwd);
 
     assert.doesNotMatch(output, /docs-index 可能陈旧/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('check detects docs-index staleness when a non-ignored file is modified in size', () => {
+  it('check auto-refreshes docs-index when a non-ignored file is modified in size', () => {
     const cwd = mkWorkspace();
     run(`docs scan --cwd ${cwd}`, cwd);
 
@@ -276,11 +276,14 @@ describe('structured docs index', () => {
 
     const { output } = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
 
-    assert.match(output, /docs-index 可能陈旧/);
+    assert.doesNotMatch(output, /docs-index 可能陈旧/);
+    const index = JSON.parse(readFileSync(join(cwd, '.docpath', 'docs-index.json'), 'utf-8'));
+    const apiEntry = index.entries.find((entry) => entry.path === 'spec/backend/api.md');
+    assert.match(apiEntry.title, /edited to change size/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('check detects docs-index staleness when a new non-ignored file is added', () => {
+  it('check auto-refreshes docs-index when a new non-ignored file is added', () => {
     const cwd = mkWorkspace();
     run(`docs scan --cwd ${cwd}`, cwd);
 
@@ -291,7 +294,9 @@ describe('structured docs index', () => {
 
     const { output } = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
 
-    assert.match(output, /docs-index 可能陈旧/);
+    assert.doesNotMatch(output, /docs-index 可能陈旧/);
+    const index = JSON.parse(readFileSync(join(cwd, '.docpath', 'docs-index.json'), 'utf-8'));
+    assert.ok(index.entries.some((entry) => entry.path === 'rules/new-rule.md'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -305,6 +310,31 @@ describe('structured docs index', () => {
     assert.match(output, /path: spec\/backend\/api.md/);
     assert.match(output, /Backend API reference summary/);
     assert.doesNotMatch(output, /path: tasks\/current\/spec.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('reveal topic selection matches indexed document body terms, not only path title or summary', () => {
+    const cwd = mkWorkspace();
+    writeFileSync(join(cwd, '.docpath', 'spec', 'backend', 'ops.md'), [
+      '# Operations Note',
+      '',
+      'General operational note without the query term.',
+      '',
+      'The hiddenbodyneedle marker only appears in the document body after the summary line.',
+      '',
+    ].join('\n'));
+    run(`docs scan --cwd ${cwd}`, cwd);
+
+    const index = JSON.parse(readFileSync(join(cwd, '.docpath', 'docs-index.json'), 'utf-8'));
+    const entry = index.entries.find((item) => item.path === 'spec/backend/ops.md');
+    assert.ok(entry, 'body-term fixture should be indexed');
+    assert.doesNotMatch(`${entry.path} ${entry.title} ${entry.summary}`, /hiddenbodyneedle/);
+    assert.ok(entry.content_terms.includes('hiddenbodyneedle'), 'body-only term should be indexed compactly');
+
+    const output = run(`reveal --cwd ${cwd} --level 2 --topic hiddenbodyneedle --format raw`, cwd);
+
+    assert.match(output, /path: spec\/backend\/ops\.md/);
+    assert.doesNotMatch(output, /path: spec\/backend\/api\.md/);
     rmSync(cwd, { recursive: true, force: true });
   });
 

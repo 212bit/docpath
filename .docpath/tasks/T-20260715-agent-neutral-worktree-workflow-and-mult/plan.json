@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-15T14:15:16.555Z",
+    "updated_at": "2026-07-15T14:15:16.555Z",
+    "content_sha256": "252f536ee64e0f08d56a7747cd0118c665f9e027fa5049ca0694b35295640884"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-15T14:15:16.555Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 Make the primary worktree workflow documentation and generated guidance agent-neutral by default. Codex, Claude Code, and OpenCode examples must be adapter examples, not the core protocol.",
+      "description": "根据 spec 明确 FR-1: Make the primary worktree workflow documentation and generated guidance agent-neutral by default. Codex, Claude Code, and OpenCode examples must be adapter examples, not the core protocol. 的实现边界和验收口径。",
+      "acceptance": "AC-1: `docpath worktree create feature-a` no longer prints a generic `DOCPATH_SESSION=codex-feature-a` recommendation; generic output uses agent-neutral guidance.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 Make the primary worktree workflow documentation and generated guidance agent-neutral by default. Codex, Claude Code, and OpenCode examples must be adapter examples, not the core protocol.",
+      "description": "在现有架构内完成 FR-1: Make the primary worktree workflow documentation and generated guidance agent-neutral by default. Codex, Claude Code, and OpenCode examples must be adapter examples, not the core protocol. 的代码与文档更新。",
+      "acceptance": "FR-1 Make the primary worktree workflow documentation and generated guidance agent-neutral by default. Codex, Claude Code, and OpenCode examples must be adapter examples, not the core protocol. 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 Replace default worktree session guidance from `codex-<slug>` to an agent-neutral pattern, recommended as `agent-<slug>` for generic output and `DOCPATH_SESSION=<tool>-<backlog-id>-<slug>` for tool-specific runs.",
+      "description": "在现有架构内完成 FR-2: Replace default worktree session guidance from `codex-<slug>` to an agent-neutral pattern, recommended as `agent-<slug>` for generic output and `DOCPATH_SESSION=<tool>-<backlog-id>-<slug>` for tool-specific runs.。",
+      "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 FR-3 Add `docpath worktree create <name> --backlog <R-id>` so a new worktree can immediately carry target backlog context and avoid `next --agent` recommending an unrelated older backlog item.",
+      "description": "在现有架构内完成 FR-3: Add `docpath worktree create <name> --backlog <R-id>` so a new worktree can immediately carry target backlog context and avoid `next --agent` recommending an unrelated older backlog item.。",
+      "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "实现 FR-4 Improve worktree doctor/readiness output so fresh branches distinguish branch merge-base status from whether the branch has unique commits; preserve `merged_to_main` compatibility while adding clearer metadata.",
+      "description": "在现有架构内完成 FR-4: Improve worktree doctor/readiness output so fresh branches distinguish branch merge-base status from whether the branch has unique commits; preserve `merged_to_main` compatibility while adding clearer metadata.。",
+      "acceptance": "FR-4 已实现，并保持现有工作流兼容。",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "实现 FR-5 Add or document a closeout-oriented worktree readiness path that summarizes check/review/journal/changes expectations without auto-merging or touching main.",
+      "description": "在现有架构内完成 FR-5: Add or document a closeout-oriented worktree readiness path that summarizes check/review/journal/changes expectations without auto-merging or touching main.。",
+      "acceptance": "FR-5 已实现，并保持现有工作流兼容。",
+      "dependencies": "S5",
+      "status": "done"
+    },
+    {
+      "id": "S7",
+      "name": "实现 FR-6 Preserve existing Codex adapter assets and install-health checks where they are explicitly about Codex; do not remove Codex-specific install validation.",
+      "description": "在现有架构内完成 FR-6: Preserve existing Codex adapter assets and install-health checks where they are explicitly about Codex; do not remove Codex-specific install validation.。",
+      "acceptance": "FR-6 已实现，并保持现有工作流兼容。",
+      "dependencies": "S6",
+      "status": "done"
+    },
+    {
+      "id": "S8",
+      "name": "实现 FR-7 Add focused regression tests for create guidance, `--backlog` behavior, doctor metadata, and documentation/help strings that previously hard-coded Codex as the generic agent.",
+      "description": "在现有架构内完成 FR-7: Add focused regression tests for create guidance, `--backlog` behavior, doctor metadata, and documentation/help strings that previously hard-coded Codex as the generic agent.。",
+      "acceptance": "FR-7 已实现，并保持现有工作流兼容。",
+      "dependencies": "S7",
+      "status": "done"
+    },
+    {
+      "id": "S9",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: `docpath worktree create feature-a` no longer prints a generic `DOCPATH_SESSION=codex-feature-a` recommendation; generic output uses agent-neutral guidance.；AC-2: Worktree docs/skill describe DocPath worktrees as agent-neutral and show Codex/Claude/OpenCode as adapter examples.；AC-3: `docpath worktree create feature-a --backlog R-268` records or copies enough target context that the new worktree can act on R-268 without `next --agent` defaulting to an unrelated backlog item.；AC-4: `docpath worktree doctor` output includes clearer branch uniqueness/merge readiness metadata while preserving existing fields.；AC-5: Tests cover default create guidance, `--backlog` behavior, doctor metadata, and the preserved Codex adapter boundary.；AC-6: `docpath check`, `docpath review`, and targeted tests pass before closeout, with any remaining follow-up backlog documented.",
+      "acceptance": "AC-1: `docpath worktree create feature-a` no longer prints a generic `DOCPATH_SESSION=codex-feature-a` recommendation; generic output uses agent-neutral guidance.；AC-2: Worktree docs/skill describe DocPath worktrees as agent-neutral and show Codex/Claude/OpenCode as adapter examples.；AC-3: `docpath worktree create feature-a --backlog R-268` records or copies enough target context that the new worktree can act on R-268 without `next --agent` defaulting to an unrelated backlog item.；AC-4: `docpath worktree doctor` output includes clearer branch uniqueness/merge readiness metadata while preserving existing fields.；AC-5: Tests cover default create guidance, `--backlog` behavior, doctor metadata, and the preserved Codex adapter boundary.；AC-6: `docpath check`, `docpath review`, and targeted tests pass before closeout, with any remaining follow-up backlog documented.",
+      "dependencies": "S8",
+      "status": "done"
+    }
+  ]
+}

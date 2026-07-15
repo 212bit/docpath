@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-15T13:07:26.830Z",
+    "updated_at": "2026-07-15T13:07:26.830Z",
+    "content_sha256": "fe49ac0b29f3e3eee31392e0d8d2f87809d6c76cae206904c7a1a1405b08b321"
+  },
+  "task_id": "T-20260715-review-skill-file-set-mismatch-0",
+  "backlog_id": "R-255",
+  "title": "T-20260715-review-skill-file-set-mismatch-0 - review-skill file set mismatch 阻塞正常代码（0 错误仍被卡）",
+  "generated_at": "2026-07-15T13:07:26.830Z",
+  "scope": {
+    "included": [
+      "`src/utils/review-skill-router.ts` 中 `file set mismatch` 的 recoverable evidence warning 分流。",
+      "`src/commands/review.ts` 中 `evidence_warnings` 的 CLI 输出。",
+      "回归测试覆盖 file set mismatch 不再阻塞且输出重生成命令。"
+    ],
+    "excluded": [
+      "自动生成/修复 review skill evidence。",
+      "改变 `write-review-skill` 对输入 file set 的严格校验。",
+      "改变 diff fingerprint mismatch、missing evidence 或 failed evidence 的阻塞行为。",
+      "合并或依赖 R-254 的重复 skip 参数修复。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "用户在 2026-07-15 对继续处理 R-255 明确回复“同意”。",
+    "decision_brief_markdown": "- 当前问题: Review Skill Gate 把 `file set mismatch` 这类 evidence 元数据范围不匹配当作硬阻塞，导致代码 0 错误时 review 仍失败。\n- 目标: 将 file set mismatch 转为可恢复 warning，提示重生成 evidence，同时不放松真实缺陷或缺失 evidence 的阻塞语义。\n- 背景: R-255 来自 DocPath 自身 review 收尾摩擦；用户在 2026-07-15 同意继续处理该 backlog。\n- 可选方案: A. 继续要求手动 skip；B. 降级为 warning 并提示 write-review-skill；C. 实现自动修复 evidence。\n- 推荐方案: B。\n- 决策理由: B 解决误拦并保持 CLI 不伪造语义 review evidence；C 需要 agent/LLM 生成 evidence，不适合当前 CLI 自动化边界。\n- 不做什么: 不改变 missing evidence、missing skill source、diff fingerprint mismatch 或 status fail 的阻塞语义；不实现 `--fix-skill-evidence`。\n- 成本: 小，集中在 review-skill-router 评估结果和 review 输出。\n- 风险: 部分消费者可能只看 `status=pass` 而忽略 warning；通过 append-only `evidence_warnings` 和 CLI 明示 fix command 降低风险。\n- 回滚方案: 回退本任务提交，恢复 file set mismatch 进入 invalid_evidence 的行为。\n- 用户确认: 用户在 2026-07-15 对继续处理 R-255 明确回复“同意”。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "`review` 检测到 review skill `file set mismatch` 时，输出明确的 evidence 重生成指引，包含对应 `docpath write-review-skill --skill ... --stdin` 命令。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "仅由 `file set mismatch` 造成的 review skill evidence 元数据问题不再强制阻塞 review；代码 0 错误时 review 可通过。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "保留其他 review skill gate 阻塞语义：missing evidence、missing skill source、diff fingerprint mismatch、status fail、pass evidence 含 error finding 仍应阻塞。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持现有 `review_skill_gate.status` 枚举兼容，不新增破坏性状态；新增输出字段必须 append-only。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "不实现 `--fix-skill-evidence` 自动重建；本任务只提供明确修复提示和非阻塞降级。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "review 检测到 file set mismatch 时输出 `evidence_warnings` 和对应 `docpath write-review-skill --skill ... --stdin` 修复命令。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "代码 0 错误且仅有 file set mismatch 时，review 不再被 Review Skill Gate 强制阻塞。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "diff fingerprint mismatch、missing evidence、status fail 等现有阻塞测试不回归。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "`review_skill_gate` JSON evidence 中保留 append-only `evidence_warnings`，现有 status 枚举不变。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "targeted review-skill-router tests、typecheck、DocPath check/review 通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "Review Skill Gate 把 `file set mismatch` 这类 evidence 元数据范围不匹配当作硬阻塞，导致代码 0 错误时 review 仍失败。",
+    "options": [
+      "A. 继续要求手动 skip；B. 降级为 warning 并提示 write-review-skill；C. 实现自动修复 evidence。"
+    ],
+    "chosen": "B。",
+    "rationale": "B 解决误拦并保持 CLI 不伪造语义 review evidence；C 需要 agent/LLM 生成 evidence，不适合当前 CLI 自动化边界。"
+  }
+}

@@ -56,14 +56,14 @@ export function registerQualityCommands(cli: CAC): void {
     .option('--force', '允许在无活跃 agent 会话时独立运行')
     .option('--skip-skill-review <skill>', '按 skill 粒度临时跳过 Review Skill Gate，可用逗号分隔')
     .option('--reason <reason>', 'skip skill review 的必填原因')
-    .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean; force?: boolean; 'skip-skill-review'?: string; skipSkillReview?: string; reason?: string }) => {
+    .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean; force?: boolean; 'skip-skill-review'?: string | string[] | boolean; skipSkillReview?: string | string[] | boolean; reason?: string }) => {
       await reviewCommand({
         cwd: options.cwd || process.cwd(),
         scope: normalizeEnumOption(options.scope, 'review --scope', ['all', 'staged', 'last_commit'] as const) || 'all',
         dryRun: options['dry-run'] ?? options.dryRun,
         approve: options.approve ?? false,
         force: options.force ?? false,
-        skipSkillReview: [options['skip-skill-review'], options.skipSkillReview].filter(Boolean) as string[],
+        skipSkillReview: [options['skip-skill-review'], options.skipSkillReview].filter(Boolean),
         skipSkillReviewReason: options.reason,
       });
     });

@@ -17,6 +17,8 @@ import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { writeReviewEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
+import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift } from '../utils/structured-docs.js';
+import { canonicalTaskDir } from '../utils/task-files.js';
 import {
   buildReviewSkillRequirements,
   createReviewSkillSkip,
@@ -33,7 +35,7 @@ interface ReviewOptions {
   dryRun?: boolean;
   /** 强制执行，即使不在 agent 会话中 */
   force?: boolean;
-  skipSkillReview?: string[];
+  skipSkillReview?: unknown[];
   skipSkillReviewReason?: string;
 }
 
@@ -56,6 +58,20 @@ interface FindingGroups {
 interface FindingScopeCounts {
   current_diff: { errors: number; warnings: number; infos: number };
   baseline_or_whole_file: { errors: number; warnings: number; infos: number };
+}
+
+async function assertNoActiveTaskStructuredMarkdownDrift(docpathDir: string, taskId?: string): Promise<void> {
+  if (!taskId) return;
+  const taskDir = canonicalTaskDir(docpathDir, taskId);
+  for (const file of ['spec.md', 'plan.md'] as const) {
+    const drift = await detectStructuredMarkdownHashDrift(taskDir, file);
+    if (!drift) continue;
+    const jsonFile = file === 'plan.md' ? 'plan.json' : 'spec.json';
+    throw new Error([
+      `docpath review: 检测到 active task canonical ${file}/${jsonFile} 机器真理源不同步`,
+      formatStructuredMarkdownHashDrift(drift),
+    ].join('\n'));
+  }
 }
 
 function normalizeReviewScope(scope: string): ReviewScope {
@@ -108,7 +124,7 @@ function collectChangedFiles(cwd: string, scope: ReviewScope = 'all', current?: 
     const files = scope === 'staged'
       ? parseNameList(runGit(cwd, ['diff', '--name-only', '--cached']))
       : scope === 'last_commit'
-        ? parseNameList(runGit(cwd, ['show', '--name-only', '--format=""', 'HEAD']))
+        ? parseNameList(runGit(cwd, ['show', '--name-only', '--format=', 'HEAD']))
         : scope === 'task'
           ? collectTaskChangedFiles(cwd, current)
           : collectStatusChangedFiles(cwd);
@@ -346,15 +362,35 @@ function printReviewSkillGate(gate: ReviewSkillGate): void {
     console.log('    invalid_evidence:');
     for (const item of gate.invalid_evidence) console.log(`      - ${item.skill}: ${item.reason}`);
   }
+  if ((gate.evidence_warnings || []).length > 0) {
+    console.log('    evidence_warnings:');
+    for (const item of gate.evidence_warnings || []) {
+      console.log(`      - ${item.skill}: ${item.reason}`);
+      console.log(`        fix: ${item.fix_command}`);
+    }
+  }
   if (gate.skips.length > 0) {
     console.log('    skips:');
     for (const skip of gate.skips) console.log(`      - ${skip.skill}: ${skip.reason}`);
   }
 }
 
-function normalizeSkillSkipList(input?: string[]): string[] {
+function normalizeSkillSkipList(input?: unknown[]): string[] {
   if (!input) return [];
-  return input.flatMap((item) => item.split(',')).map((item) => item.trim()).filter(Boolean);
+  const normalized: string[] = [];
+  const visit = (item: unknown): void => {
+    if (item === undefined || item === null || item === false) return;
+    if (Array.isArray(item)) {
+      item.forEach(visit);
+      return;
+    }
+    if (typeof item !== 'string') {
+      throw new Error('--skip-skill-review requires a skill name');
+    }
+    normalized.push(...item.split(',').map((part) => part.trim()).filter(Boolean));
+  };
+  input.forEach(visit);
+  return normalized;
 }
 
 function buildRequestedSkips(gate: ReviewSkillGate, skillNames: string[], reason?: string): ReviewSkillSkip[] {
@@ -412,6 +448,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   console.log('🔍 代码审查开始...');
   const scope = normalizeReviewScope(opts.scope || 'all');
   const current = await readCurrentState(opts.cwd);
+  await assertNoActiveTaskStructuredMarkdownDrift(docpathDir, current?.task_id);
   let effectiveScope = scope;
   let changedFiles = collectChangedFiles(opts.cwd, scope, current);
   if (scope === 'all' && changedFiles.length === 0 && current?.task_id) {

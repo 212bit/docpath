@@ -33,6 +33,7 @@ export interface ProjectDocumentIndexEntry {
   stale?: boolean;
   task_id?: string;
   topic_tags: string[];
+  content_terms?: string[];
 }
 
 export interface ProjectDocumentIndex {
@@ -222,6 +223,16 @@ export function inferTopicTags(input: {
   return Array.from(tags).slice(0, 24);
 }
 
+export function inferContentTerms(content: string): string[] {
+  const terms = new Set<string>();
+  const withoutFrontmatter = content.replace(/^---[\s\S]*?---\s*\n?/, '');
+  for (const term of normalizedWordTags(withoutFrontmatter)) {
+    terms.add(term);
+    if (terms.size >= 80) break;
+  }
+  return Array.from(terms);
+}
+
 export function shouldDefaultReadDocPath(filePath: string, _currentTaskId?: string, hasPreferredRules = false): boolean {
   const normalized = normalizeDocPath(filePath);
 
@@ -277,6 +288,7 @@ export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): Proje
     index_only: generatedView,
     task_id: taskId,
     topic_tags: inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId }),
+    content_terms: inferContentTerms(input.content),
   };
 }
 
@@ -325,6 +337,7 @@ export function normalizeProjectDocumentEntry(
     topic_tags: Array.isArray(raw.topic_tags) && raw.topic_tags.length > 0
       ? raw.topic_tags
       : inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId }),
+    content_terms: Array.isArray(raw.content_terms) ? raw.content_terms.filter((term) => typeof term === 'string') : [],
   };
 }
 
@@ -377,6 +390,7 @@ export function matchesDocumentSelection(entry: ProjectDocumentIndexEntry, optio
       entry.summary,
       entry.task_id || '',
       ...entry.topic_tags,
+      ...(entry.content_terms || []),
     ].join(' ').toLowerCase();
     
     // 检查任意一个同义词是否匹配
