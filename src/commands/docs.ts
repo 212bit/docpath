@@ -7,8 +7,10 @@
 
 import { existsSync } from 'fs';
 import { readFile, readdir, writeFile, stat } from 'fs/promises';
-import { join, relative, extname, basename } from 'path';
+import { join, relative, extname, basename, dirname, resolve, sep } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
+import { readDeclaredDocumentScanPaths } from '../utils/config.js';
+import { isExcludedForScan } from '../utils/scan-existing-tree.js';
 import {
   ARCHIVE_RETENTION_DAYS,
   PROJECT_DOCS_INDEX_VERSION,
@@ -76,6 +78,86 @@ async function scanDirectory(dir: string, baseDir: string): Promise<string[]> {
       }
     }
   } catch { /* ignore permission errors */ }
+
+  return results;
+}
+
+/** 外部扫描收集到的文件（abs 用于读盘，rel 为项目根相对的索引路径） */
+interface ExternalDocFile {
+  abs: string;
+  rel: string;
+}
+
+/**
+ * FR-5/§4.d：按 document_scan_paths 声明收集 .docpath/ 之外的 .md 文件。
+ *
+ * - 项目根 = docpathDir 的父目录（linked 模式下即目标项目根）。
+ * - noise 排除复用 scan-existing 的 §4.d 语义（.gitignore + 硬黑名单），
+ *   声明的根路径自身也受排除约束（显式声明 node_modules/ 也不放行）。
+ * - 只进声明路径，不递归未声明目录；`.docpath/` 及其内部由内部扫描覆盖，跳过。
+ * - 越出项目根的声明（../ 等）拒绝；不存在的声明路径静默跳过（默认三路径
+ *   中 README.md/docs/ 可缺）。
+ * - 与内部扫描路径同名（normalize 后）的外部文件跳过，内部优先，避免
+ *   docs-index 重复路径与 body 解析歧义。
+ */
+async function collectExternalDocFiles(
+  docpathDir: string,
+  declaredPaths: string[],
+  internalPaths: ReadonlySet<string>,
+): Promise<ExternalDocFile[]> {
+  const projectRoot = dirname(resolve(docpathDir));
+  const docpathAbs = resolve(docpathDir);
+  const results: ExternalDocFile[] = [];
+  const seen = new Set<string>();
+
+  const relOf = (abs: string): string => normalizeDocPath(relative(projectRoot, abs));
+
+  const pushFile = (abs: string): void => {
+    if (extname(abs) !== '.md') return;
+    if (isExcludedForScan(projectRoot, abs, basename(abs), false)) return;
+    const rel = relOf(abs);
+    if (internalPaths.has(rel) || seen.has(rel)) return;
+    seen.add(rel);
+    results.push({ abs, rel });
+  };
+
+  const walkDir = async (dir: string): Promise<void> => {
+    let entries: import('node:fs').Dirent[];
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const abs = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (resolve(abs) === docpathAbs) continue;
+        if (isExcludedForScan(projectRoot, abs, entry.name, true)) continue;
+        await walkDir(abs);
+      } else if (entry.isFile()) {
+        pushFile(abs);
+      }
+    }
+  };
+
+  for (const declared of declaredPaths) {
+    const abs = resolve(projectRoot, declared);
+    if (abs === docpathAbs || abs.startsWith(`${docpathAbs}${sep}`)) continue;
+    if (abs !== projectRoot && !abs.startsWith(`${projectRoot}${sep}`)) continue;
+
+    let info;
+    try {
+      info = await stat(abs);
+    } catch {
+      continue;
+    }
+    if (info.isFile()) {
+      pushFile(abs);
+    } else if (info.isDirectory()) {
+      if (abs !== projectRoot && isExcludedForScan(projectRoot, abs, basename(abs), true)) continue;
+      await walkDir(abs);
+    }
+  }
 
   return results;
 }
@@ -150,18 +232,21 @@ async function readCurrentTaskId(docpathDir: string): Promise<string | undefined
   }
 }
 
-async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<ProjectDocumentIndexEntry[]> {
+async function buildDocEntries(
+  docpathDir: string,
+  mdFiles: string[],
+  externalFiles: ExternalDocFile[] = [],
+): Promise<ProjectDocumentIndexEntry[]> {
   const entries: ProjectDocumentIndexEntry[] = [];
   const currentTaskId = await readCurrentTaskId(docpathDir);
   const hasPreferredRules = existsSync(join(docpathDir, 'rules'));
   const now = Date.now();
 
-  for (const file of mdFiles) {
-    const fullPath = join(docpathDir, file);
+  const pushEntry = async (fullPath: string, relPath: string): Promise<void> => {
     const fileStat = await stat(fullPath);
     const content = await readFile(fullPath, 'utf-8');
     const entry = buildProjectDocumentEntry({
-      path: file,
+      path: relPath,
       size: fileStat.size,
       mtime: fileStat.mtime,
       content,
@@ -172,10 +257,18 @@ async function buildDocEntries(docpathDir: string, mdFiles: string[]): Promise<P
     });
 
     if (entry.archive && isArchiveDocumentExpired(fileStat.mtime, now)) {
-      continue;
+      return;
     }
 
     entries.push(entry);
+  };
+
+  for (const file of mdFiles) {
+    await pushEntry(join(docpathDir, file), file);
+  }
+  // FR-5：外部文档以项目根相对路径进索引（默认 default_read=false，仅索引可检索）。
+  for (const external of externalFiles) {
+    await pushEntry(external.abs, external.rel);
   }
 
   return entries;
@@ -226,23 +319,52 @@ function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unk
   return compact;
 }
 
+export async function refreshProjectDocumentIndex(
+  docpathDir: string,
+  cwd: string = dirname(resolve(docpathDir)),
+): Promise<{ entries: ProjectDocumentIndexEntry[]; docsIndexPath: string; externalCount: number; declaredExternal: boolean }> {
+  const mdFiles = await scanDirectory(docpathDir, docpathDir);
+  const declaredPaths = await readDeclaredDocumentScanPaths(cwd);
+  const externalFiles = declaredPaths
+    ? await collectExternalDocFiles(docpathDir, declaredPaths, new Set(mdFiles))
+    : [];
+
+  if (mdFiles.length === 0 && externalFiles.length === 0) {
+    return {
+      entries: [],
+      docsIndexPath: join(docpathDir, 'docs-index.json'),
+      externalCount: 0,
+      declaredExternal: !!declaredPaths,
+    };
+  }
+
+  const entries = await buildDocEntries(docpathDir, mdFiles, externalFiles);
+  const docsIndexPath = await writeDocsIndexes(docpathDir, entries);
+  return {
+    entries,
+    docsIndexPath,
+    externalCount: externalFiles.length,
+    declaredExternal: !!declaredPaths,
+  };
+}
+
 /** docs scan — 扫描文档生成索引 */
 async function docsScan(cwd: string): Promise<void> {
   const docpathDir = await ensureDocpathDir(cwd);
 
   console.log('\n🔍  扫描文档...\n');
 
-  const mdFiles = await scanDirectory(docpathDir, docpathDir);
+  const { entries, docsIndexPath, externalCount, declaredExternal } = await refreshProjectDocumentIndex(docpathDir, cwd);
 
-  if (mdFiles.length === 0) {
+  if (entries.length === 0) {
     console.log('📭  未找到任何 .md 文件');
     return;
   }
 
-  const entries = await buildDocEntries(docpathDir, mdFiles);
-  const docsIndexPath = await writeDocsIndexes(docpathDir, entries);
-
   console.log(`✅  已生成 docs-index.json (${entries.length} 个文档)`);
+  if (declaredExternal) {
+    console.log(`📎  外部文档: ${externalCount} 个（document_scan_paths 声明路径，§4.d 去噪）`);
+  }
   console.log(`📁  位置: ${docsIndexPath}`);
   console.log('');
 }

@@ -26,13 +26,16 @@ export function registerCoreCommands(cli: CAC): void {
     .option('--level <level>', '初始复杂度级别 (0|1|2|3)')
     .option('--link <path>', '关联已初始化的项目路径')
     .option('--interactive', '交互式初始化')
-    .action(async (options: { cwd?: string; force?: boolean; level?: string; link?: string; interactive?: boolean }) => {
+    .option('--scan-existing', '扫描现有项目接入：提取真实技术栈/目录结构/test-build 命令并接入外部文档 (alias: -s)')
+    .option('-s', 'scan-existing 的短别名')
+    .action(async (options: { cwd?: string; force?: boolean; level?: string; link?: string; interactive?: boolean; scanExisting?: boolean; s?: boolean }) => {
       await initCommand({
         cwd: options.cwd || process.cwd(),
         force: !!options.force,
         level: parseInitLevel(options.level),
         link: options.link,
         interactive: !!options.interactive,
+        scanExisting: !!(options.scanExisting || (options as { s?: boolean }).s),
       });
     });
 
