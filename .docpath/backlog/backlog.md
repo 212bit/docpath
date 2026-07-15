@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-15T02:31:43.893Z
+> 扫描时间: 2026-07-15T12:28:42.542Z
 
 ## 条目列表
 
@@ -14,7 +14,6 @@
 | R-243 | Fix project brief next_hint after intake brief | proposed | P2 | 1 |  |
 | R-250 | check 频繁报 docs-index 陈旧告警但无自愈/重建路径 | proposed | P2 | 1 |  |
 | R-252 | review 检测到 spec.md/spec.json 不同步但仅提示不修复 | proposed | P2 | 1 |  |
-| R-254 | review --skip-skill-review 重复传参 crash: item.split is not a function | proposed | P2 | 1 |  |
 | R-255 | review-skill file set mismatch 阻塞正常代码（0 错误仍被卡） | proposed | P2 | 1 |  |
 | R-257 | Memory Indexing: docpath reveal 升级为内容检索 | active | P2 | 1 | T-20260712-memory-indexing-docpath-reveal |
 | R-262 | changes --agent task-aware 文件分组与显式 --task/--scope 归组 | proposed | P2 | 2 |  |
