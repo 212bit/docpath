@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-15T15:26:51.931Z",
-    "updated_at": "2026-07-15T15:26:51.931Z",
-    "content_sha256": "1b014ad1e53ffa645a95bdb58cfbfbc0a7efdcd234f8fa0346eaf2817560a5cc"
+    "created_at": "2026-07-15T15:54:48.391Z",
+    "updated_at": "2026-07-15T15:54:48.391Z",
+    "content_sha256": "c98597696b86bc7a40f300c5044948691e1d34b878ae862af3ef56df16af257e"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-15T15:26:51.931Z",
+  "generated_at": "2026-07-15T15:54:48.391Z",
   "steps": [
     {
       "id": "S1",
@@ -72,7 +72,7 @@
       "description": "新增覆盖 FR-1~FR-5 主链路的单元测试并跑通 `pnpm test`；逐条核对 AC-1~AC-7 现场满足（含 scan-existing 重复运行的 CLAUDE.md 不堆积回归、docs scan 外部路径与 noise 排除回归、init 不带 flag 逐字节回归）。",
       "acceptance": "AC-6 —— 新增覆盖 FR-1~FR-5 单测，pnpm test 通过；AC-1~AC-7 逐条现场满足。",
       "dependencies": "S7",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

@@ -3,14 +3,14 @@
   "kind": "spec",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-15T03:31:33.350Z",
-    "updated_at": "2026-07-15T03:31:33.350Z",
-    "content_sha256": "a690d4aa23837a5fc70d77e46072c71d1f313ecb92145e02d5bdade33b3f2a23"
+    "created_at": "2026-07-15T15:42:52.506Z",
+    "updated_at": "2026-07-15T15:42:52.506Z",
+    "content_sha256": "97a995ab1d28658a2c197596834f6b61402bb88547407d6c14c5885aea3b2608"
   },
   "task_id": "T-20260715-docpath-init-scan-existing",
   "backlog_id": "R-267",
   "title": "T-20260715-docpath-init-scan-existing - docpath init --scan-existing 现有项目快速接入扫描功能",
-  "generated_at": "2026-07-15T03:31:33.350Z",
+  "generated_at": "2026-07-15T15:42:52.506Z",
   "scope": {
     "included": [
       "init 的 `--scan-existing` opt-in 分支（四件事：结构扫描、arch.md 初写、命令提取填充、外部文档路径扫描接入 docs scan、config 新字段）。",
@@ -42,86 +42,86 @@
     {
       "id": "FR-1",
       "text": "`docpath init` 新增 opt-in 选项 `--scan-existing`/`-s`（register/core.ts 注册 + initCommand 分支），不带该 flag 时走原模板路径，不改 init 默认行为（见 §4.a/NFR-1）。",
-      "done": false
+      "done": true
     },
     {
       "id": "FR-2",
       "text": "scan-existing 分支扫描项目根目录树（去 §4.d noise），生成非模板 `.docpath/rules/architecture.md`，含真实目录结构树 + 模块边界/依赖方向摘要，写入受 §4.b 带保留初写语义约束。",
-      "done": false
+      "done": true
     },
     {
       "id": "FR-3",
       "text": "scan-existing 解析项目主流 manifest（package.json `scripts`、Cargo.toml、go.mod、pom.xml/build.gradle 等）提取 test/build/format 命令，填充 config.yaml 命令字段 + CLAUDE.md 末尾 `## 项目命令`区块；降级策略见 §4.c，CLAUDE.md 写边界见 §4.e。",
-      "done": false
+      "done": true
     },
     {
       "id": "FR-4",
       "text": "`DocPathConfig`（src/types/config.ts）新增 `document_scan_paths: string[]`，默认 `[\".docpath/\", \"README.md\", \"docs/\"]`，向后兼容，兜底风格同 DEFAULT_ARTIFACT_CONFIG。",
-      "done": false
+      "done": true
     },
     {
       "id": "FR-5",
       "text": "`docs scan`（docs.ts:235）读取 `document_scan_paths` 逐路径 scanDirectory 合并索引；外部路径 noise 排除见 §4.d；无该字段时仅扫 `.docpath/`（与现状一致）。",
-      "done": false
+      "done": true
     },
     {
       "id": "FR-6",
       "text": "architecture.md 写入采用带保留地初写语义（见 §4.b）——目标文件不存在或 `--force` 才写 scan 产物；已存在则跳过并打印\"跳过；--force 可覆盖\"提示，不读不改既有 learn/ADR 段落。",
-      "done": false
+      "done": true
     }
   ],
   "non_functional_requirements": [
     {
       "id": "NFR-1",
       "text": "向后兼容——不带 `--scan-existing` 的 init、无 `document_scan_paths` 的 config.yaml 行为与现状逐字节一致（回归基线：单项目干净 init 输出不变）。",
-      "done": false
+      "done": true
     },
     {
       "id": "NFR-2",
       "text": "复用现有探测/detect/utils 既有能力（src/utils/detect.ts 的 type/language/framework 提取），新增 test/build 命令提取为增量扩展，不重构 detect 现有字段语义。",
-      "done": false
+      "done": true
     },
     {
       "id": "NFR-3",
       "text": "保持与现有 DocPath 工作流兼容——scan-existing 产物路径仍落在既有 `.docpath/rules/architecture.md`、`.docpath/config.yaml`、根 `CLAUDE.md` 上，不引入新 runtime 目录。",
-      "done": false
+      "done": true
     }
   ],
   "acceptance_criteria": [
     {
       "id": "AC-1",
       "text": "`docpath init --scan-existing`/`-s` 注册可见（`init --help` 列出该 option），不带 flag 时 init 行为与现状逐字节一致。",
-      "done": false
+      "done": true
     },
     {
       "id": "AC-2",
       "text": "在含 `src/`+`package.json` 的现有项目跑 scan-existing，生成非模板 `architecture.md`（含真实目录树，去 noise）；已存在时跳过不覆盖（除非 `--force`）并打印跳过提示。",
-      "done": false
+      "done": true
     },
     {
       "id": "AC-3",
       "text": "scan-existing 解析 package.json `scripts` 写入 config 命令字段 + CLAUDE.md 末尾 `## 项目命令`区块；缺命令位置标注 `TODO: 未探测到 … 请确认`，不静默不编造。",
-      "done": false
+      "done": true
     },
     {
       "id": "AC-4",
       "text": "config.yaml 可声明 `document_scan_paths`（缺省给默认三路径），向后兼容；`review_skill_gate`/`artifacts` 读取不受影响。",
-      "done": false
+      "done": true
     },
     {
       "id": "AC-5",
       "text": "`docpath docs scan` 读取 `document_scan_paths` 扫描外部路径（README.md/docs/ 进索引），node_modules/build 等被 .gitignore+黑名单排除；无字段时仅扫 `.docpath/`。",
-      "done": false
+      "done": true
     },
     {
       "id": "AC-6",
       "text": "新增覆盖 FR-1~FR-5 的单元测试，`pnpm test` 通过。",
-      "done": false
+      "done": true
     },
     {
       "id": "AC-7",
       "text": "scan-existing 重复运行不重复堆积 CLAUDE.md 命令区块（按标题锚点替换旧区块）。",
-      "done": false
+      "done": true
     }
   ],
   "decision_brief": {

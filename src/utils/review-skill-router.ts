@@ -56,6 +56,7 @@ export interface ReviewSkillGate {
   requirements: ReviewSkillRequirement[];
   missing_evidence: string[];
   invalid_evidence: Array<{ skill: string; reason: string }>;
+  evidence_warnings?: Array<{ skill: string; reason: string; fix_command: string }>;
   skips: ReviewSkillSkip[];
 }
 
@@ -202,16 +203,17 @@ export function evaluateReviewSkillGate(input: {
   scope: ReviewScope;
 }): ReviewSkillGate {
   if (!input.enabled) {
-    return { status: 'disabled', scope: input.scope, requirements: [], missing_evidence: [], invalid_evidence: [], skips: [] };
+    return { status: 'disabled', scope: input.scope, requirements: [], missing_evidence: [], invalid_evidence: [], evidence_warnings: [], skips: [] };
   }
   if (input.requirements.length === 0) {
-    return { status: 'not_required', scope: input.scope, requirements: [], missing_evidence: [], invalid_evidence: [], skips: [] };
+    return { status: 'not_required', scope: input.scope, requirements: [], missing_evidence: [], invalid_evidence: [], evidence_warnings: [], skips: [] };
   }
 
   const reviews = input.skillReviews || [];
   const skips = input.skillSkips || [];
   const missingEvidence: string[] = [];
   const invalidEvidence: Array<{ skill: string; reason: string }> = [];
+  const evidenceWarnings: Array<{ skill: string; reason: string; fix_command: string }> = [];
   const acceptedSkips: ReviewSkillSkip[] = [];
 
   for (const requirement of input.requirements) {
@@ -235,7 +237,13 @@ export function evaluateReviewSkillGate(input: {
     const evidence = reviews.find((candidate) => candidate.skill === requirement.skill);
     const invalidReason = validateEvidenceForRequirement(evidence, requirement, input.scope);
     if (!evidence) missingEvidence.push(requirement.skill);
-    else if (invalidReason) invalidEvidence.push({ skill: requirement.skill, reason: invalidReason });
+    else if (invalidReason === 'file set mismatch') {
+      evidenceWarnings.push({
+        skill: requirement.skill,
+        reason: invalidReason,
+        fix_command: requirement.write_command,
+      });
+    } else if (invalidReason) invalidEvidence.push({ skill: requirement.skill, reason: invalidReason });
   }
 
   const failed = missingEvidence.length > 0 || invalidEvidence.length > 0;
@@ -245,6 +253,7 @@ export function evaluateReviewSkillGate(input: {
     requirements: input.requirements,
     missing_evidence: missingEvidence,
     invalid_evidence: invalidEvidence,
+    evidence_warnings: evidenceWarnings,
     skips: acceptedSkips,
   };
 }
