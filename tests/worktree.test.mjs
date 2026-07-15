@@ -114,7 +114,8 @@ describe('worktree command', () => {
 
     assert.match(out, /worktree 已创建/);
     assert.match(out, /docpath worktree doctor feature-a/);
-    assert.match(out, /export DOCPATH_SESSION=codex-feature-a/);
+    assert.match(out, /export DOCPATH_SESSION=agent-feature-a/);
+    assert.match(out, /DOCPATH_SESSION=<tool>-feature-a/);
     assert.equal(existsSync(worktreePath), true);
     assert.equal(existsSync(join(subdir, '.worktrees')), false, 'must anchor .worktrees at git root');
     assert.equal(
@@ -201,7 +202,9 @@ describe('worktree command', () => {
     assert.match(named, /merge-mediated backlog: symlink/);
     assert.match(named, /merge-mediated rules: tracked copy/);
     assert.match(named, /isolated tasks\/current: .*isolated/);
-    assert.match(named, /set DOCPATH_SESSION=codex-feature-doctor/);
+    assert.match(named, /set DOCPATH_SESSION=agent-feature-doctor/);
+    assert.match(named, /branch_has_unique_commits: false/);
+    assert.match(named, /branch_unique_commits: 0/);
     assert.match(named, /worktree doctor passed/);
 
     const current = run(['worktree', 'doctor'], worktreePath, { env: { DOCPATH_SESSION: '' } }).output;
@@ -225,6 +228,46 @@ describe('worktree command', () => {
     // rules stays merge-mediated (tracked copy is the expected design, no warning).
     assert.match(out, /✅.*merge-mediated rules: tracked copy/);
     assert.match(out, /worktree doctor passed/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('creates a worktree with target backlog context and agent-neutral session guidance', () => {
+    const cwd = mkRepoTrackedBacklog();
+    const backlogDir = join(cwd, '.docpath', 'backlog');
+    writeFileSync(join(backlogDir, 'R-321.md'), `---
+id: R-321
+title: Target backlog
+status: proposed
+priority: P2
+level: 1
+readiness: confirmed
+created_at: 2026-07-15
+---
+
+## 背景
+
+Target backlog body
+`);
+    writeFileSync(join(backlogDir, 'backlog.md'), [
+      '# DocPath Backlog Index',
+      '',
+      '| id | title | status | priority | level | task |',
+      '|----|-------|--------|----------|-------|------|',
+      '| R-321 | Target backlog | proposed | P2 | 1 |  |',
+      '',
+    ].join('\n'));
+
+    const out = run(['worktree', 'create', 'targeted-feature', '--backlog', 'R-321'], cwd).output;
+    const worktreePath = join(cwd, '.worktrees', 'targeted-feature');
+
+    assert.match(out, /目标 backlog: R-321/);
+    assert.match(out, /已同步目标 backlog 上下文: R-321/);
+    assert.match(out, /export DOCPATH_SESSION=agent-targeted-feature/);
+    assert.match(out, /DOCPATH_SESSION=<tool>-R-321-targeted-feature/);
+    assert.match(out, /docpath backlog accept R-321/);
+    assert.equal(existsSync(join(worktreePath, '.docpath', 'backlog', 'R-321.md')), true);
+    assert.match(readFileSync(join(worktreePath, '.docpath', 'backlog', 'backlog.md'), 'utf-8'), /R-321/);
+
     rmSync(cwd, { recursive: true, force: true });
   });
 

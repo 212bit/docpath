@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-15T14:00:57.525Z",
+    "updated_at": "2026-07-15T14:00:57.525Z",
+    "content_sha256": "42446cf0722b1200ad4ccf1a3c39be573b2385f1fd44f7edfb3be26ca26020f2"
+  },
+  "task_id": "T-20260715-agent-neutral-worktree-workflow-and-mult",
+  "backlog_id": "R-268",
+  "title": "T-20260715-agent-neutral-worktree-workflow-and-mult - Agent-neutral worktree workflow and multi-tool adapter support",
+  "generated_at": "2026-07-15T14:00:57.525Z",
+  "scope": {
+    "included": [
+      "`src/commands/worktree.ts` and command registration/help updates for `--backlog`, session guidance, and doctor metadata.",
+      "Worktree workflow docs and the local worktree skill wording, with an agent-neutral primary contract and adapter-specific examples.",
+      "Tests around worktree create/doctor/help and target backlog routing."
+    ],
+    "excluded": [
+      "Automatic merge into main.",
+      "Automatic git staging/commit wrappers beyond existing `changes --agent` guidance.",
+      "Full dirty-guard redesign, `write-spec --preserve-phase`, or stacked-worktree merge orchestration beyond plan-level documentation; those remain follow-up backlog items if needed.",
+      "Removing Codex install-health assets or changing `.codex/config.toml` semantics."
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [
+      "Yes, user confirmation required",
+      "Workflow / Agent behavior",
+      "Permission / write-operation boundaries",
+      "Long-term maintenance cost"
+    ],
+    "user_confirmed": null,
+    "decision_brief_markdown": "- Current problem: DocPath worktree UX and guidance are partially Codex-bound, which makes multi-tool adoption confusing and caused real dogfood friction when trying to target a specific backlog from an isolated worktree.\n- Goal: Make worktree workflow guidance and the minimum CLI create/doctor path agent-neutral while preserving Codex adapter compatibility.\n- Background: The completed R-254/R-243/R-255 worktree run exposed Codex-specific session naming, target backlog mismatch, manual closeout stitching, ambiguous doctor merge readiness, and git index permission diagnosis gaps.\n- Options: (A) only update docs; (B) update docs plus minimal create/doctor CLI support; (C) redesign all worktree lifecycle and merge automation now.\n- Recommended option: B.\n- Rationale: B fixes the highest-friction and multi-tool-blocking issues without expanding into merge automation or dirty-guard redesign.\n- Non-goals: Do not merge R-267, do not auto-merge worktrees, do not delete Codex adapter checks, do not solve all follow-up dogfood issues in one task.\n- Cost: Moderate; command parser/help/tests plus docs/skill updates.\n- Risks: Existing users may rely on `codex-` examples; `--backlog` may be confused with immediate promote; doctor metadata could be misread by parsers.\n- Mitigation: Preserve old create behavior, keep Codex examples as adapter examples, make new fields append-only, and make `--backlog` output explicit about copied backlog context vs task ownership.\n- Rollback: Revert worktree command/doc changes; existing low-level worktree create/doctor/remove behavior remains unchanged.\n- User confirmation: User agreed on 2026-07-15 after reviewing the worktree retrospective and multi-tool concern.\n\n### UI 设计门禁\n\n- [x] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）\n- [ ] 本任务涉及产品 UI 实现并显式开启 UI/UX 设计流程（go 前必须有 ui-brief.md + 已批准 design-approval.md）"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Make the primary worktree workflow documentation and generated guidance agent-neutral by default. Codex, Claude Code, and OpenCode examples must be adapter examples, not the core protocol.",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "Replace default worktree session guidance from `codex-<slug>` to an agent-neutral pattern, recommended as `agent-<slug>` for generic output and `DOCPATH_SESSION=<tool>-<backlog-id>-<slug>` for tool-specific runs.",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "Add `docpath worktree create <name> --backlog <R-id>` so a new worktree can immediately carry target backlog context and avoid `next --agent` recommending an unrelated older backlog item.",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "Improve worktree doctor/readiness output so fresh branches distinguish branch merge-base status from whether the branch has unique commits; preserve `merged_to_main` compatibility while adding clearer metadata.",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "Add or document a closeout-oriented worktree readiness path that summarizes check/review/journal/changes expectations without auto-merging or touching main.",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "Preserve existing Codex adapter assets and install-health checks where they are explicitly about Codex; do not remove Codex-specific install validation.",
+      "done": false
+    },
+    {
+      "id": "FR-7",
+      "text": "Add focused regression tests for create guidance, `--backlog` behavior, doctor metadata, and documentation/help strings that previously hard-coded Codex as the generic agent.",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "Keep existing `docpath worktree create <name>` behavior backward compatible when `--backlog` is omitted.",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "Do not mutate main checkout state or active R-267 task state from this task; all implementation work happens in the R-268 worktree.",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "Avoid broad renames that break installed Codex skills in this phase; compatibility aliases or transitional naming are acceptable.",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "CLI output fields should be append-only where practical so existing agent parsers do not break.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`docpath worktree create feature-a` no longer prints a generic `DOCPATH_SESSION=codex-feature-a` recommendation; generic output uses agent-neutral guidance.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "Worktree docs/skill describe DocPath worktrees as agent-neutral and show Codex/Claude/OpenCode as adapter examples.",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`docpath worktree create feature-a --backlog R-268` records or copies enough target context that the new worktree can act on R-268 without `next --agent` defaulting to an unrelated backlog item.",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "`docpath worktree doctor` output includes clearer branch uniqueness/merge readiness metadata while preserving existing fields.",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "Tests cover default create guidance, `--backlog` behavior, doctor metadata, and the preserved Codex adapter boundary.",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "`docpath check`, `docpath review`, and targeted tests pass before closeout, with any remaining follow-up backlog documented.",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "The completed R-254/R-243/R-255 worktree run exposed Codex-specific session naming, target backlog mismatch, manual closeout stitching, ambiguous doctor merge readiness, and git index permission diagnosis gaps.",
+    "options": [
+      "(A) only update docs; (B) update docs plus minimal create/doctor CLI support; (C) redesign all worktree lifecycle and merge automation now."
+    ],
+    "chosen": "The completed R-254/R-243/R-255 worktree run exposed Codex-specific session naming, target backlog mismatch, manual closeout stitching, ambiguous doctor merge readiness, and git index permission diagnosis gaps.",
+    "rationale": "B fixes the highest-friction and multi-tool-blocking issues without expanding into merge automation or dirty-guard redesign."
+  }
+}

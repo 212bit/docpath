@@ -1,6 +1,6 @@
-# Git Worktree 并发开发 - 使用指南
+# Agent-neutral Git Worktree 并发开发 - 使用指南
 
-> DocPath Worktree 支持真并发开发：多个 Agent 在独立的 Git worktrees 中同时开发不同 features。
+> DocPath Worktree 支持真并发开发：Codex、Claude Code、OpenCode 或兼容 Agent 在独立的 Git worktrees 中同时开发不同 features。
 
 ## 核心概念
 
@@ -53,7 +53,8 @@ docpath worktree create feature-a
 #   docpath worktree doctor feature-a
 # 进入 worktree 后:
 #   cd .worktrees/feature-a
-#   export DOCPATH_SESSION=codex-feature-a
+#   export DOCPATH_SESSION=agent-feature-a
+#   # tool-specific: export DOCPATH_SESSION=<tool>-feature-a
 #   docpath worktree doctor
 #   docpath next --agent
 ```
@@ -62,7 +63,7 @@ docpath worktree create feature-a
 
 ```bash
 cd .worktrees/feature-a
-export DOCPATH_SESSION=codex-feature-a
+export DOCPATH_SESSION=agent-feature-a
 docpath worktree doctor
 
 # 开始开发
@@ -105,16 +106,16 @@ docpath worktree remove feature-a --force
 
 ## 并发开发场景
 
-### 场景 1：Codex + Claude Code 并发开发
+### 场景 1：多工具并发开发
 
-**Terminal 1 (Codex 开发 Feature A)**：
+**Terminal 1 (Codex adapter 开发 Feature A)**：
 ```bash
 cd /project
-docpath worktree create feature-a
+docpath worktree create feature-a --backlog R-100
 cd .worktrees/feature-a
 
-export DOCPATH_SESSION=codex
-docpath backlog promote R-100
+export DOCPATH_SESSION=codex-R-100-feature-a
+docpath backlog accept R-100
 docpath agent enter
 # ... 开发 Feature A ...
 ```
@@ -122,11 +123,11 @@ docpath agent enter
 **Terminal 2 (Claude Code 开发 Feature B)**：
 ```bash
 cd /project
-docpath worktree create feature-b
+docpath worktree create feature-b --backlog R-101
 cd .worktrees/feature-b
 
-export DOCPATH_SESSION=claude
-docpath backlog promote R-101
+export DOCPATH_SESSION=claude-R-101-feature-b
+docpath backlog accept R-101
 docpath agent enter
 # ... 开发 Feature B ...
 ```
@@ -186,16 +187,18 @@ docpath worktree doctor
 
 ## 命令参考
 
-### `docpath worktree create <name>`
+### `docpath worktree create <name> [--backlog R-id]`
 
 创建新 worktree。
 
 **参数**：
 - `<name>`: Worktree 名称（也是分支名）
+- `--backlog R-id`: 可选。同步目标 backlog 上下文，并在创建输出中给出面向该条目的下一步命令。
 
 **示例**：
 ```bash
 docpath worktree create feature-auth
+docpath worktree create feature-auth --backlog R-123
 docpath worktree create bugfix-123
 ```
 
@@ -204,6 +207,7 @@ docpath worktree create bugfix-123
 - 创建 `.worktrees/<name>` 目录
 - 初始化独立 `.docpath/` 结构
 - 创建共享资源 symlinks
+- 如果传入 `--backlog`，同步目标 backlog 文件和索引到新 worktree 的 `.docpath/backlog/`
 
 ### `docpath worktree list`
 
