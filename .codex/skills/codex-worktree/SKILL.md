@@ -1,11 +1,11 @@
 ---
 name: codex-worktree
-description: Parallel development with Codex agents using DocPath worktrees for isolated state and zero collision
+description: Parallel development with DocPath worktrees for isolated state and zero collision across Codex, Claude Code, OpenCode, and compatible agents
 ---
 
-# Codex + DocPath Worktree
+# Agent-neutral DocPath Worktree
 
-Use this skill to orchestrate parallel Codex agents in DocPath worktrees for concurrent feature development.
+Use this skill to orchestrate parallel coding agents in DocPath worktrees for concurrent feature development. Codex is one supported adapter; the worktree protocol itself is agent-neutral.
 
 ## Core Concept
 
@@ -17,7 +17,7 @@ DocPath worktrees provide **true isolation** for parallel agent development:
 
 ## Prerequisites
 
-- Codex CLI installed and configured
+- At least one compatible coding agent installed and configured, such as Codex CLI, Claude Code, or OpenCode
 - DocPath project (with `.docpath/` directory)
 - Git repository
 
@@ -33,25 +33,34 @@ docpath worktree create feature-notifications
 docpath worktree list
 ```
 
-## Launching Parallel Codex Agents
+## Launching Parallel Agents
 
 ```bash
-# Launch Codex in each worktree with unique session IDs
+# Launch each tool in its own worktree with unique session IDs
 cd .worktrees/feature-auth
-export DOCPATH_SESSION=codex-auth
+export DOCPATH_SESSION=codex-R-101-feature-auth
 codex exec --sandbox workspace-write 'Implement authentication feature per spec' &
 
 cd .worktrees/feature-payment
-export DOCPATH_SESSION=codex-payment
-codex exec --sandbox workspace-write 'Implement payment integration per spec' &
+export DOCPATH_SESSION=claude-R-102-feature-payment
+claude 'Implement payment integration per spec' &
 
 cd .worktrees/feature-notifications
-export DOCPATH_SESSION=codex-notifications
-codex exec --sandbox workspace-write 'Implement notification system per spec' &
+export DOCPATH_SESSION=opencode-R-103-feature-notifications
+opencode 'Implement notification system per spec' &
+```
+
+Adapter-specific commands vary by tool. The stable DocPath contract is one worktree, one active agent session, and one explicit `DOCPATH_SESSION`.
+
+```bash
+# Codex adapter example
+cd .worktrees/feature-payment
+export DOCPATH_SESSION=codex-R-102-feature-payment
+codex exec --sandbox workspace-write 'Implement payment integration per spec' &
 ```
 
 **Key points:**
-- Use unique `DOCPATH_SESSION` per agent (e.g., `codex-auth`, `codex-payment`)
+- Use unique `DOCPATH_SESSION` per agent (recommended: `<tool>-<backlog-id>-<slug>`, e.g. `codex-R-101-auth`, `claude-R-102-payment`)
 - Each agent follows its own DocPath workflow independently
 - Run in background with `&` for true parallelism
 
@@ -79,7 +88,7 @@ Standard procedure:
 ```bash
 # In the feature worktree
 cd /path/to/project/.worktrees/feature-auth
-export DOCPATH_SESSION=codex-feature-auth
+export DOCPATH_SESSION=agent-feature-auth
 docpath worktree doctor
 docpath check
 docpath review
@@ -124,15 +133,15 @@ project/
 │  │  ├─ .docpath/
 │  │  │  ├─ backlog -> ../../.docpath/backlog/  ← symlink
 │  │  │  ├─ rules -> ../../.docpath/rules/      ← symlink
-│  │  │  ├─ workspace/      ← ISOLATED (codex-auth state)
-│  │  │  └─ tasks/          ← ISOLATED (codex-auth tasks)
+│  │  │  ├─ workspace/      ← ISOLATED (feature-auth state)
+│  │  │  └─ tasks/          ← ISOLATED (feature-auth tasks)
 │  │  └─ src/               ← feature-auth code
 │  └─ feature-payment/
 │     ├─ .docpath/
 │     │  ├─ backlog -> ../../.docpath/backlog/
 │     │  ├─ rules -> ../../.docpath/rules/
-│     │  ├─ workspace/      ← ISOLATED (codex-payment state)
-│     │  └─ tasks/          ← ISOLATED (codex-payment tasks)
+│     │  ├─ workspace/      ← ISOLATED (feature-payment state)
+│     │  └─ tasks/          ← ISOLATED (feature-payment tasks)
 │     └─ src/               ← feature-payment code
 ```
 
@@ -140,9 +149,9 @@ project/
 
 **Per-agent unique IDs:**
 ```bash
-DOCPATH_SESSION=codex-<feature-name>
-DOCPATH_SESSION=codex-<issue-number>
-DOCPATH_SESSION=codex-<timestamp>
+DOCPATH_SESSION=agent-<feature-name>
+DOCPATH_SESSION=<tool>-<backlog-id>-<feature-name>
+DOCPATH_SESSION=<tool>-<issue-number>
 ```
 
 **Benefits:**

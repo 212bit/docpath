@@ -614,6 +614,7 @@ created_at: 2026-05-31
     assert.match(out, /backup_files: plan\.json/);
     assert.match(out, /next_hint:/);
     assert.match(out, /recommended_command: docpath plan/);
+    assert.match(out, /truth_sync: .*docpath write-spec --stdin/);
 
     const spec = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8');
     assert.match(spec, /^# T-\d{8}-alpha-promote - Alpha Promote/m);
@@ -649,6 +650,85 @@ created_at: 2026-05-31
     assert.equal(state.level, 2);
     assert.equal(state.task_title, 'Alpha Promote');
     assert.match(state.task_id, /^T-\d{8}-alpha-promote$/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog promote promotes body FR checklist into spec truth source and next hint', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-260-fr-checklist.md'), `---
+id: R-260
+title: Done commit guard
+status: accepted
+priority: P2
+level: 1
+source: test
+readiness: shaped
+evidence:
+  brainstorm: R-260 plan exercise
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-07-14
+---
+
+## 背景
+
+真实需求已经在 backlog body 中结构化，不应被 title fallback 覆盖。
+
+\`\`\`yaml
+functional_requirements:
+  - id: FR-9
+    text: YAML 背景不应被提升
+\`\`\`
+
+## 需求
+
+- [ ] FR-1: detection 检测 agent done 前存在业务代码未提交
+- [ ] FR-2: warning 输出清晰软提醒
+- [x] FR-3: bypass 允许已有确认的场景继续
+
+## 验收
+
+- promote 后 spec.json 包含 FR-1 到 FR-3
+`);
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 2,
+      task_id: '',
+      task_title: '',
+      phase: 'idle',
+      gate: 'none',
+      current_step: '等待下一步',
+      started_at: '2026-07-14T00:00:00.000Z',
+      updated_at: '2026-07-14T00:00:00.000Z',
+    }, null, 2));
+
+    const out = run('backlog promote R-260', cwd);
+    assert.match(out, /truth_sync: .*docpath write-spec --stdin/);
+
+    const spec = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8');
+    assert.match(spec, /FR-1: detection 检测 agent done 前存在业务代码未提交/);
+    assert.match(spec, /FR-2: warning 输出清晰软提醒/);
+    assert.match(spec, /FR-3: bypass 允许已有确认的场景继续/);
+    assert.doesNotMatch(spec, /FR-1: Done commit guard/);
+    assert.doesNotMatch(spec, /FR-9: YAML 背景不应被提升/);
+
+    const specJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.json'), 'utf-8'));
+    assert.deepEqual(specJson.functional_requirements.map((item) => [item.id, item.text, item.done]), [
+      ['FR-1', 'detection 检测 agent done 前存在业务代码未提交', false],
+      ['FR-2', 'warning 输出清晰软提醒', false],
+      ['FR-3', 'bypass 允许已有确认的场景继续', true],
+    ]);
+
+    const next = parse(run('next --agent', cwd));
+    assert.equal(next.recommended_command, 'docpath plan');
+    assert.match(next.next_action, /docpath write-spec --stdin/);
+    assert.match(next.next_action, /手改 spec\.md 不会更新 spec\.json 真源/);
+
     rmSync(cwd, { recursive: true, force: true });
   });
 
