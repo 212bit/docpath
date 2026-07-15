@@ -155,6 +155,7 @@ describe('project intake commands', () => {
 
     assert.match(out, /project brief 已写入/);
     assert.match(out, new RegExp(`recommended_command: docpath project settle ${intakeId} --dry-run`));
+    assert.doesNotMatch(out, /docpath project plan/);
     assert.equal(readFileSync(join(cwd, '.docpath', 'project-intake', intakeId, 'brief.md'), 'utf-8'), '# Project Brief\n');
     assert.equal(state.stage, 'briefed');
     assert.ok(state.artifacts.some((artifact) => artifact.kind === 'brief'));

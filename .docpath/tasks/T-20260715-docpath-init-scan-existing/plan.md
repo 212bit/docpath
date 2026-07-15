@@ -31,19 +31,20 @@
 - **依赖**: S4
 
 ### S6: CLAUDE.md 末尾追加项目命令区块
-- [ ] S6: CLAUDE.md 末尾追加项目命令区块
+- [x] S6: CLAUDE.md 末尾追加项目命令区块
 - **描述**: 按 §4.e 写边界把 S4 提取的命令清单写入根 CLAUDE.md：已存在则仅在末尾追加 `## 项目命令（由 init --scan-existing 生成）`区块，不动其他内容；不存在则新建。重复运行 scan-existing 时按区块标题锚点替换旧区块，避免重复堆积。缺命令槽位标注 `TODO: 未探测到 <test|build|format> 命令，请确认`。
 - **验收条件**: AC-3（CLAUDE.md 部分）—— 末尾追加 `## 项目命令`区块、缺命令位置标 TODO；AC-7 —— 重复运行不重复堆积（按标题锚点替换旧区块）。
 - **依赖**: S5
 
 ### S7: docs scan 读取 document_scan_paths 扫描外部路径
-- [ ] S7: docs scan 读取 document_scan_paths 扫描外部路径
+- [x] S7: docs scan 读取 document_scan_paths 扫描外部路径
 - **描述**: 改 `src/commands/docs.ts:235` 的 `docsScan`，读取 `document_scan_paths` 逐路径 scanDirectory 合并索引。外部路径 noise 排除按 §4.d（复用 .gitignore + 硬黑名单）。无该字段时行为与现状一致（仅扫 .docpath/）。产物仍落 `.docpath/workspace/docs-index.json`，不引入新 runtime 目录（NFR-3）。
 - **验收条件**: AC-5 —— `docpath docs scan` 读取 document_scan_paths 扫描外部路径（README.md/docs/ 进索引），node_modules/build 等被 .gitignore+黑名单排除；无字段时仅扫 .docpath/。
 - **依赖**: S6
 
 ### S8: 验证全部验收标准 + 单测
-- [ ] S8: 验证全部验收标准 + 单测
+- [x] S8: 验证全部验收标准 + 单测
+- [x] S8: 验证全部验收标准 + 单测
 - **描述**: 新增覆盖 FR-1~FR-5 主链路的单元测试并跑通 `pnpm test`；逐条核对 AC-1~AC-7 现场满足（含 scan-existing 重复运行的 CLAUDE.md 不堆积回归、docs scan 外部路径与 noise 排除回归、init 不带 flag 逐字节回归）。
 - **验收条件**: AC-6 —— 新增覆盖 FR-1~FR-5 单测，pnpm test 通过；AC-1~AC-7 逐条现场满足。
 - **依赖**: S7
@@ -54,9 +55,9 @@
 - [x] S3
 - [x] S4
 - [x] S5
-- [ ] S6
-- [ ] S7
-- [ ] S8
+- [x] S6
+- [x] S7
+- [x] S8
 
 ## 依赖关系图
 S1 → S2 → S3 → S4 → S5 → S6 → S7 → S8
