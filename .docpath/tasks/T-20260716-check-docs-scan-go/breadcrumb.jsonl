@@ -1,0 +1,2 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-check-docs-scan-go","step":"S1","status":"in_progress","context":"开始执行: 验证 closeout dirty 白名单","timestamp":"2026-07-16T02:11:42.695Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-check-docs-scan-go","step":"S1","status":"in_progress","context":"implementation already landed; verify and close","timestamp":"2026-07-16T02:11:43.464Z","sessionId":"default"}

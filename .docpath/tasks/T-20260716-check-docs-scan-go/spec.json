@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T02:11:41.407Z",
+    "updated_at": "2026-07-16T02:11:41.407Z",
+    "content_sha256": "d9fd7ad2fd1b306d81679b42d18afae3d113c1de33fbdc85807a3e8f707c8324"
+  },
+  "task_id": "T-20260716-check-docs-scan-go",
+  "backlog_id": "R-270",
+  "title": "T-20260716-check-docs-scan-go - check docs-index dirty no longer blocks go",
+  "generated_at": "2026-07-16T02:11:41.407Z",
+  "scope": {
+    "included": [
+      "dirty guard 路径白名单"
+    ],
+    "excluded": [
+      "改变 check 自动刷新策略本身"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [
+      "否（行为扩展白名单，已实现并测试）"
+    ],
+    "user_confirmed": "goal 完成剩余 backlog；实现已落地 2044874",
+    "decision_brief_markdown": "- 用户确认: goal 完成剩余 backlog；实现已落地 2044874"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "docs-index.json 与 docs.md 在 execution-start dirty guard 中视为 closeout-owned",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "非 DocPath 脏文件仍被阻断",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持 R-249 对业务脏文件的严格门禁",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "dirty docs-index/docs.md alone do not fail execution-start dirty guard",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "non-DocPath dirty still blocked",
+      "done": true
+    },
+    {
+      "id": "AC-3",
+      "text": "tests/dirty-worktree-guard.test.mjs coverage",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T02:11:41.771Z",
+    "updated_at": "2026-07-16T02:11:41.771Z",
+    "content_sha256": "0f385986c7ab8810abba828f69c87e31220efd33dfdefde49278a500de27a262"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-16T02:11:41.771Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "验证 closeout dirty 白名单",
+      "description": "确认 isCurrentTaskExecutionPath 含 docs-index/docs.md；相关测试通过。",
+      "acceptance": "AC-1/2/3",
+      "dependencies": "无",
+      "status": "pending"
+    }
+  ]
+}
