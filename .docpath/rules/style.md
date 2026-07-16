@@ -62,3 +62,11 @@
 ### Evidence
 - R-238 (7b3f9f0) 用户确认 Option B vs R-271 未引用
 - 本任务 FR-4 同步修正 CLAUDE.md + docs/features/worktree-workflow.md 文档漂移
+
+## gotcha: 重大变更门禁是信号驱动: 未提交策略文件存在时勾'否'无效, 非重大变更惯例是先 land commit 再 check
+- rationale: resolveMajorChangeGateStatus 扫 git status(含 untracked)命中策略路径即出信号; 有信号时 structured spec 的 required:false 直接返回未确认(短路 markdown 解析), 只有'是+用户确认+Decision Brief'或工作区无策略路径变更才放行。R-274 收口时勾'否'反复被 next/write-spec 提示门禁未完成, 排查 major-change.ts 才定位机制。
+触发: 任务改动命中策略路径 (src/commands/{check,review,next,go,agent,backlog,brainstorm,refine,plan}.ts, src/engine/, src/governance/, src/utils/{agent-output,major-change,session,plan-sync,task-files}.ts, templates 协议模板, .docpath/rules/) 且未提交时, next/check/write-spec 持续提示'重大变更门禁未完成', 勾'否'无法消除。期望行为: 语义非重大时沿 R-272/R-274 惯例——实现+测试全绿后先按 changes --agent 提交落地(工作区不再含策略路径变更, 信号清零), 再跑 check; spec 4.1 保持勾'否', Decision Brief 记录用户既定 goal 与落地 commit hash。边界: 真属重大变更(动契约/权限/架构)必须勾'是，需要用户确认'+完整 Decision Brief+真实用户确认, 不得用提交时序绕过门禁; 用户确认内容不可虚构。
+### Evidence
+- src/utils/major-change.ts resolveMajorChangeGateStatus/structuredMajorGateConfirmation
+- T-20260716-wip-agent-handoff spec 4.1 先例 (实现已落地 2044874)
+- T-20260716-wip-note-md-note 落地 0b59b54

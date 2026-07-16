@@ -3,14 +3,14 @@
   "kind": "spec",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-16T11:36:33.706Z",
-    "updated_at": "2026-07-16T11:36:33.706Z",
-    "content_sha256": "7a9776dfcfa6747ebee2fb44f0ff07f95c8f5a18fe9e3974eaa9c81cd3feec4c"
+    "created_at": "2026-07-16T11:50:38.303Z",
+    "updated_at": "2026-07-16T11:50:38.303Z",
+    "content_sha256": "6b6ed258e60dc1825aa6425db17d7060586cc0ab40919d650ab54df8b41a7440"
   },
   "task_id": "T-20260716-wip-note-md-note",
   "backlog_id": "R-274",
   "title": "T-20260716-wip-note-md-note - wip-note.md 缺生命周期终点: 任务收口不清理, 陈旧 note 误导下个会话",
-  "generated_at": "2026-07-16T11:36:33.706Z",
+  "generated_at": "2026-07-16T11:50:38.303Z",
   "scope": {
     "included": [
       "src/commands/agent.ts (enter 陈旧检测) 与 journal 收口路径的 wip-note 清理",
@@ -26,8 +26,8 @@
     "types": [
       "否 (workspace 运行时视图的生命周期补全, 不动契约/权限/架构)"
     ],
-    "user_confirmed": null,
-    "decision_brief_markdown": ""
+    "user_confirmed": "goal 完成剩余 backlog (同 R-272/R-270 先例); 本会话用户指示 continue 按 R-274 分析收窄后的既定范围收口; 实现已落地 0b59b54。",
+    "decision_brief_markdown": "- 问题: R-272 的 wip-note.md 只写不删, 任务收口后陈旧 note (旧 task_id/step) 误导下个会话 resume。\n- 方案:\n  - A. journal 收口删除 + enter 陈旧 task_id 检测删除 (生命周期终点补全)\n  - B. 仅文档提醒人工清理 (不可靠, 误导面保留)\n  - C. 走 keep_workspace_views 白名单治理 (前提经核验不成立, 死配置另立 R-275)\n- 选择: A\n- 决策理由: 保持 backlog 声明的全部验收条件，且无额外依赖风险; 两处删除失败均不阻断主流程, R-272 写入语义不变 (NFR-1)。\n- 用户确认: goal 完成剩余 backlog (同 R-272/R-270 先例); 本会话用户指示 continue 按 R-274 分析收窄后的既定范围收口; 实现已落地 0b59b54。"
   },
   "ui_gate": {
     "state": "unknown"
@@ -69,9 +69,11 @@
     }
   ],
   "decision_brief": {
-    "problem": "",
-    "options": [],
-    "chosen": "",
-    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+    "problem": "R-272 的 wip-note.md 只写不删, 任务收口后陈旧 note (旧 task_id/step) 误导下个会话 resume。",
+    "options": [
+      "- A. journal 收口删除 + enter 陈旧 task_id 检测删除 (生命周期终点补全)"
+    ],
+    "chosen": "A",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险; 两处删除失败均不阻断主流程, R-272 写入语义不变 (NFR-1)。"
   }
 }

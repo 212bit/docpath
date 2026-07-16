@@ -37,6 +37,16 @@ resume 有真实误导面。原捕获的 "keep_workspace_views 白名单误删" 
 ### 是否涉及重大变更
 - [x] 否 (workspace 运行时视图的生命周期补全, 不动契约/权限/架构)
 
+### Decision Brief
+- 问题: R-272 的 wip-note.md 只写不删, 任务收口后陈旧 note (旧 task_id/step) 误导下个会话 resume。
+- 方案:
+  - A. journal 收口删除 + enter 陈旧 task_id 检测删除 (生命周期终点补全)
+  - B. 仅文档提醒人工清理 (不可靠, 误导面保留)
+  - C. 走 keep_workspace_views 白名单治理 (前提经核验不成立, 死配置另立 R-275)
+- 选择: A
+- 决策理由: 保持 backlog 声明的全部验收条件，且无额外依赖风险; 两处删除失败均不阻断主流程, R-272 写入语义不变 (NFR-1)。
+- 用户确认: goal 完成剩余 backlog (同 R-272/R-270 先例); 本会话用户指示 continue 按 R-274 分析收窄后的既定范围收口; 实现已落地 0b59b54。
+
 ## 5. 验收标准
 
 - [x] AC-1: journal 推进到 completed 后 wip-note.md 被删除 (agent done 路径同效, 幂等)。

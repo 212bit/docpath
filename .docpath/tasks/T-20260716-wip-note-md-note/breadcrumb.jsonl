@@ -6,3 +6,6 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-wip-note-md-note","step":"S3","status":"done","context":"handleAgentEnter: 任意 phase 有 task_id 即先 cleanupStaleWipNote (解析 '> task_id: ' 行, 不匹配/解析失败→提示+删除, 失败不阻断); maybeRecordWipNote 保持 executing 限定不变 (NFR-1)","timestamp":"2026-07-16T08:05:49.120Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-wip-note-md-note","step":"S4","status":"in_progress","context":"S4 测试+验收","timestamp":"2026-07-16T08:07:33.521Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-wip-note-md-note","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-07-16T11:43:23.704Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-wip-note-md-note","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-07-16T11:55:56.302Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-wip-note-md-note","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-07-16T11:57:04.578Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-wip-note-md-note","step":"journal","status":"done","context":"知识归档完成 (4/4 步)","timestamp":"2026-07-16T11:59:48.919Z"}
