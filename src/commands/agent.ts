@@ -136,6 +136,28 @@ async function writeWipNoteFile(
   return notePath;
 }
 
+/**
+ * R-274/FR-2: enter 时清理属于其他任务的陈旧 WIP note。
+ * note 的 task_id 从 `> task_id: ` 行解析; 解析不出视为陈旧一并清理。
+ */
+async function cleanupStaleWipNote(cwd: string, currentTaskId: string): Promise<void> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const notePath = join(docpathDir, 'workspace', 'wip-note.md');
+  const { readFile, rm } = await import('node:fs/promises');
+  let content: string;
+  try {
+    content = await readFile(notePath, 'utf-8');
+  } catch {
+    return; // 无 note, 无事可做
+  }
+  const noteTaskId = content.match(/^> task_id: (\S+)$/m)?.[1];
+  if (noteTaskId === currentTaskId) return;
+  try {
+    await rm(notePath, { force: true });
+    console.log(`🧹  已清理陈旧 WIP note (task_id: ${noteTaskId || 'unknown'} ≠ 当前 ${currentTaskId})`);
+  } catch { /* 清理失败不阻断 enter */ }
+}
+
 async function maybeRecordWipNote(cwd: string, taskId: string | undefined): Promise<void> {
   if (!taskId) return;
   const bc = await readBreadcrumb(cwd);
@@ -191,6 +213,10 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
     command: 'agent enter',
   });
 
+  // R-274: 任何 phase 进入都先清属于其他任务的陈旧 WIP note
+  if (current?.task_id) {
+    await cleanupStaleWipNote(cwd, current.task_id);
+  }
   // R-272: resume with in-progress step + dirty tree → surface/record WIP note
   if (current?.task_id && phase === 'executing') {
     await maybeRecordWipNote(cwd, current.task_id);

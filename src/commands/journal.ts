@@ -6,7 +6,7 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, writeFile, rename, readdir, stat } from 'fs/promises';
+import { readFile, writeFile, rename, readdir, stat, rm } from 'fs/promises';
 import { join } from 'path';
 import { readCurrentState, readWorkspaceMeta, parsePlanTasks, type CurrentState } from '../utils/workspace.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
@@ -362,6 +362,11 @@ async function finalizeJournal(
     });
   }
   await transitionWorkflow(cwd, 'journal.archived', { currentStep: '知识归档完成' });
+  // R-274/FR-1: 任务已 completed, WIP note 生命周期随之终结, 防陈旧误导下个会话。
+  // 删除失败不阻断 journal 主流程。
+  try {
+    await rm(join(context.docpathDir, 'workspace', 'wip-note.md'), { force: true });
+  } catch { /* 清理失败不阻断归档 */ }
   await completeLinkedBacklog(cwd, context.taskId, context.spec, context.structuredSpec);
   await writeBreadcrumb(cwd, {
     taskId: context.taskId,

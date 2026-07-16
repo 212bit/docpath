@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T11:36:33.706Z",
+    "updated_at": "2026-07-16T11:36:33.706Z",
+    "content_sha256": "7a9776dfcfa6747ebee2fb44f0ff07f95c8f5a18fe9e3974eaa9c81cd3feec4c"
+  },
+  "task_id": "T-20260716-wip-note-md-note",
+  "backlog_id": "R-274",
+  "title": "T-20260716-wip-note-md-note - wip-note.md 缺生命周期终点: 任务收口不清理, 陈旧 note 误导下个会话",
+  "generated_at": "2026-07-16T11:36:33.706Z",
+  "scope": {
+    "included": [
+      "src/commands/agent.ts (enter 陈旧检测) 与 journal 收口路径的 wip-note 清理",
+      "tests: AC-1/AC-2 用例 + R-272 回归"
+    ],
+    "excluded": [
+      "keep_workspace_views 死配置处置 (R-275)",
+      "wip-note 进 docs-index 的待遇调整 (index_only 现状可接受)"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [
+      "否 (workspace 运行时视图的生命周期补全, 不动契约/权限/架构)"
+    ],
+    "user_confirmed": null,
+    "decision_brief_markdown": ""
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "`docpath journal`(含经 agent done 触发) 成功推进任务到 completed 后删除 `workspace/wip-note.md`; 文件存在才删, 幂等, 删除失败不阻断 journal 主流程。",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "`agent enter` 检测到 wip-note 的 task_id 与当前 task_id 不一致时视为陈旧: 打印一行提示并删除该文件, 再走现有 maybeRecordWipNote 逻辑。",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "R-272 既有行为不变——in_progress+dirty 时 enter 写 note、handoff 无条件写 note 的语义与输出保持。",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "journal 推进到 completed 后 wip-note.md 被删除 (agent done 路径同效, 幂等)。",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "agent enter 遇 task_id 不匹配的陈旧 wip-note 打印提示并删除。",
+      "done": true
+    },
+    {
+      "id": "AC-3",
+      "text": "R-272 行为回归通过; 新增用例覆盖 AC-1/AC-2, pnpm test 全绿。",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

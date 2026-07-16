@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T11:43:23.708Z",
+    "updated_at": "2026-07-16T11:43:23.708Z",
+    "content_sha256": "d9aa199b1ad8854171da2058c44f7a3e6362498adbd541180f13036c77437b52"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-16T11:43:23.708Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 `docpath journal`(含经 agent done 触发) 成功推进任务到 completed 后删除 `workspace/wip-note.md`; 文件存在才删, 幂等, 删除失败不阻断 journal 主流程。",
+      "description": "根据 spec 明确 FR-1: `docpath journal`(含经 agent done 触发) 成功推进任务到 completed 后删除 `workspace/wip-note.md`; 文件存在才删, 幂等, 删除失败不阻断 journal 主流程。 的实现边界和验收口径。",
+      "acceptance": "AC-1: journal 推进到 completed 后 wip-note.md 被删除 (agent done 路径同效, 幂等)。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 `docpath journal`(含经 agent done 触发) 成功推进任务到 completed 后删除 `workspace/wip-note.md`; 文件存在才删, 幂等, 删除失败不阻断 journal 主流程。",
+      "description": "在现有架构内完成 FR-1: `docpath journal`(含经 agent done 触发) 成功推进任务到 completed 后删除 `workspace/wip-note.md`; 文件存在才删, 幂等, 删除失败不阻断 journal 主流程。 的代码与文档更新。",
+      "acceptance": "FR-1 `docpath journal`(含经 agent done 触发) 成功推进任务到 completed 后删除 `workspace/wip-note.md`; 文件存在才删, 幂等, 删除失败不阻断 journal 主流程。 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 `agent enter` 检测到 wip-note 的 task_id 与当前 task_id 不一致时视为陈旧: 打印一行提示并删除该文件, 再走现有 maybeRecordWipNote 逻辑。",
+      "description": "在现有架构内完成 FR-2: `agent enter` 检测到 wip-note 的 task_id 与当前 task_id 不一致时视为陈旧: 打印一行提示并删除该文件, 再走现有 maybeRecordWipNote 逻辑。。",
+      "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: journal 推进到 completed 后 wip-note.md 被删除 (agent done 路径同效, 幂等)。；AC-2: agent enter 遇 task_id 不匹配的陈旧 wip-note 打印提示并删除。；AC-3: R-272 行为回归通过; 新增用例覆盖 AC-1/AC-2, pnpm test 全绿。",
+      "acceptance": "AC-1: journal 推进到 completed 后 wip-note.md 被删除 (agent done 路径同效, 幂等)。；AC-2: agent enter 遇 task_id 不匹配的陈旧 wip-note 打印提示并删除。；AC-3: R-272 行为回归通过; 新增用例覆盖 AC-1/AC-2, pnpm test 全绿。",
+      "dependencies": "S3",
+      "status": "done"
+    }
+  ]
+}

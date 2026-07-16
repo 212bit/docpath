@@ -345,4 +345,47 @@ describe('docpath agent lifecycle', () => {
     assert.match(out, /无法解析 task_id|无任务/, 'should refuse without a bound task');
     fs.rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('agent enter cleans a stale WIP note from another task (R-274 AC-2)', () => {
+    const cwd = mkExecWorkspace();
+    const notePath = path.join(cwd, '.docpath', 'workspace', 'wip-note.md');
+    fs.writeFileSync(notePath, [
+      '# WIP Note',
+      '',
+      '> source: agent handoff',
+      '> task_id: T-OTHER-TASK',
+      '> step: S9',
+      '> updated_at: 2026-07-01T00:00:00.000Z',
+      '',
+      '- Status: stale note from a finished task.',
+      '',
+    ].join('\n'));
+
+    const out = run('agent enter', cwd);
+    assert.match(out, /已清理陈旧 WIP note/, 'stale note must be reported');
+    assert.match(out, /T-OTHER-TASK/);
+    assert.equal(fs.existsSync(notePath), false, 'stale wip-note.md must be deleted');
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('agent enter keeps a WIP note that belongs to the current task (R-274 回归)', () => {
+    const cwd = mkExecWorkspace();
+    const notePath = path.join(cwd, '.docpath', 'workspace', 'wip-note.md');
+    fs.writeFileSync(notePath, [
+      '# WIP Note',
+      '',
+      '> source: agent enter',
+      '> task_id: T-AGENT',
+      '> step: S1',
+      '> updated_at: 2026-07-01T00:00:00.000Z',
+      '',
+      '- Status: code may be written but unverified.',
+      '',
+    ].join('\n'));
+
+    const out = run('agent enter', cwd);
+    assert.doesNotMatch(out, /已清理陈旧 WIP note/);
+    assert.equal(fs.existsSync(notePath), true, 'current-task wip-note.md must survive enter');
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
 });

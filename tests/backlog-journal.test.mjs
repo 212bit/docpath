@@ -110,7 +110,6 @@ describe('backlog journal integration', () => {
   it('journal auto-completes linked backlog item', () => {
     const cwd = mkWorkspace();
     const out = run('journal --optional-archive skip', cwd);
-
     assert.match(out, /物理任务目录归档已延后/);
     assert.match(out, /AI-native journal prompt contract/);
     assert.match(out, /design-decision, project-convention, pattern, anti-pattern, common-mistake, specification, gotcha/);
@@ -477,6 +476,20 @@ Alpha
     assert.match(lessons, /事件溯源统一状态边界/);
     assert.match(lessons, /阻塞步骤/);
     assert.match(lessons, /遇到 X 阻塞/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('journal removes wip-note.md when the task completes (R-274 AC-1)', () => {
+    const cwd = mkWorkspace();
+    const notePath = join(cwd, '.docpath', 'workspace', 'wip-note.md');
+    writeFileSync(notePath, '# WIP Note\n\n> task_id: T-20260531-alpha-promote\n> step: S2\n\n- Status: unverified.\n');
+
+    const out = run('journal --optional-archive skip', cwd);
+    assert.match(out, /backlog 已自动回填完成/);
+    assert.equal(existsSync(notePath), false, 'wip-note.md must be deleted after journal completes the task');
+
+    // 幂等: 无 note 再跑 journal 不炸 (completed 后二次 journal 会被 FSM 拦, 只验证文件层不残留)
+    assert.equal(existsSync(notePath), false);
     rmSync(cwd, { recursive: true, force: true });
   });
 });
