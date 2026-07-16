@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse } from 'yaml';
-import { detectUncommittedNonDocPathFiles, renderCommitReminder } from '../dist/utils/git-dirty-guard.js';
+import { assertNoNonDocPathChangesForExecutionStart, detectUncommittedNonDocPathFiles, renderCommitReminder } from '../dist/utils/git-dirty-guard.js';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 
@@ -367,4 +367,20 @@ describe('dirty worktree guard', () => {
       assert.match(res, /免责声明/);
     });
   });
+  it('allows docs-index.json and docs.md as closeout-owned paths during execution start', () => {
+    const cwd = mkBaseWorkspace({ phase: 'executing', state: 'executing', taskId: 'T-TEST', taskTitle: 'Test' });
+    try {
+      initGitRepo(cwd);
+      writeFileSync(join(cwd, '.docpath', 'docs-index.json'), '{"version":1,"entries":[]}\n');
+      writeFileSync(join(cwd, '.docpath', 'docs.md'), '# Docs\n');
+      // Must not throw when only DocPath index artifacts are dirty
+      assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+        taskId: 'T-TEST',
+        step: 'S1',
+      });
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
 });

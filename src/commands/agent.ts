@@ -28,12 +28,14 @@ import { readCurrentState, resolveBoundTaskId, writeCurrentState } from '../util
 import { readActiveStructuredSpecDocument } from '../utils/task-files.js';
 import { releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { join } from 'node:path';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { isQuickProfile, isInstantProfile, gatePolicyForProfile } from '../engine/workflow-profile.js';
 import { assertQuickScope } from '../engine/quick-guard.js';
 import { readLastCheckEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
-import { assertCleanWorktreeForNewTask, assertNoNonDocPathChangesForExecutionStart, detectUncommittedNonDocPathFiles, renderCommitReminder } from '../utils/git-dirty-guard.js';
+import { assertCleanWorktreeForNewTask, assertNoNonDocPathChangesForExecutionStart, detectDirtyWorktree, detectUncommittedNonDocPathFiles, renderCommitReminder } from '../utils/git-dirty-guard.js';
+import { readBreadcrumb } from '../engine/breadcrumb.js';
 
 type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
 
@@ -100,6 +102,58 @@ function syncStatusForAgentStep(status: NonNullable<AgentOptions['status']>): 'd
         : 'pending';
 }
 
+
+async function writeWipNoteFile(
+  cwd: string,
+  payload: {
+    taskId: string;
+    step: string;
+    source: 'agent enter' | 'agent handoff';
+    dirtyFiles: number;
+    nonDocPathFiles: number;
+  },
+): Promise<string> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const notePath = join(docpathDir, 'workspace', 'wip-note.md');
+  const body = [
+    '# WIP Note',
+    '',
+    `> source: ${payload.source}`,
+    `> task_id: ${payload.taskId}`,
+    `> step: ${payload.step}`,
+    `> updated_at: ${new Date().toISOString()}`,
+    '',
+    payload.dirtyFiles > 0
+      ? `- Status: code/docs may be written but **unverified** (uncommitted files=${payload.dirtyFiles}, non-docpath=${payload.nonDocPathFiles}).`
+      : '- Status: worktree clean at handoff time; still confirm verification before claiming done.',
+    '- Next agent: run `docpath next --agent`, inspect this note + `git status`, then resume the active step.',
+    '',
+  ].join('\n');
+  const { writeFile, mkdir } = await import('node:fs/promises');
+  const { dirname } = await import('node:path');
+  await mkdir(dirname(notePath), { recursive: true });
+  await writeFile(notePath, body, 'utf-8');
+  return notePath;
+}
+
+async function maybeRecordWipNote(cwd: string, taskId: string | undefined): Promise<void> {
+  if (!taskId) return;
+  const bc = await readBreadcrumb(cwd);
+  const active = [...bc.entries].reverse().find((entry) => entry.status === 'in_progress' && entry.taskId === taskId);
+  if (!active) return;
+  const dirty = detectDirtyWorktree(cwd);
+  if (!dirty.isGitRepo || !dirty.dirty) return;
+  const path = await writeWipNoteFile(cwd, {
+    taskId,
+    step: active.step,
+    source: 'agent enter',
+    dirtyFiles: dirty.files.length,
+    nonDocPathFiles: dirty.nonDocPathFiles.length,
+  });
+  console.log(`\n📝  WIP note written: ${path}`);
+  console.log(`    step ${active.step} in_progress with ${dirty.files.length} uncommitted change(s); code may be written but unverified`);
+}
+
 async function handleAgentEnter(options: AgentOptions): Promise<void> {
   const { cwd } = options;
   await assertWorktreeContract(cwd);
@@ -136,6 +190,11 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
     step: current?.current_step || 'agent enter',
     command: 'agent enter',
   });
+
+  // R-272: resume with in-progress step + dirty tree → surface/record WIP note
+  if (current?.task_id && phase === 'executing') {
+    await maybeRecordWipNote(cwd, current.task_id);
+  }
 
   // Refresh backlog_id in state.json from spec.json if not already set.
   if (current?.task_id && !current.backlog_id) {
@@ -446,6 +505,23 @@ async function handleAgentHandoff(options: AgentOptions): Promise<void> {
     step: current?.current_step || 'handoff',
     command: 'agent handoff',
   });
+  // Always capture a handoff WIP snapshot when a task is active (R-272)
+  if (current?.task_id && (current.phase === 'executing' || current.phase === 'checking' || current.phase === 'reviewing')) {
+    const dirty = detectDirtyWorktree(options.cwd);
+    const bc = await readBreadcrumb(options.cwd);
+    const active = [...bc.entries].reverse().find((entry) =>
+      (entry.status === 'in_progress' || entry.status === 'blocked') && entry.taskId === current.task_id,
+    );
+    const step = active?.step || current.current_step || 'handoff';
+    const path = await writeWipNoteFile(options.cwd, {
+      taskId: current.task_id,
+      step,
+      source: 'agent handoff',
+      dirtyFiles: dirty.isGitRepo ? dirty.files.length : 0,
+      nonDocPathFiles: dirty.isGitRepo ? dirty.nonDocPathFiles.length : 0,
+    });
+    console.log(`\n📝  WIP handoff note recorded for ${step}: ${path}`);
+  }
   await compactCommand({
     cwd: options.cwd,
     maxEntries: options.maxEntries,

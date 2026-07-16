@@ -92,6 +92,9 @@ function isCurrentTaskExecutionPath(path: string, options: ExecutionStartDirtyOp
   if (taskId && file.startsWith(`.docpath/tasks/${taskId}/`)) return true;
   if (backlogId && file === `.docpath/backlog/${backlogId}.md`) return true;
   if (backlogId && file === '.docpath/backlog/backlog.md') return true;
+  // DocPath self-maintained index artifacts refreshed by check (R-270):
+  // auto docs-index refresh must not block go/agent enter on the same task.
+  if (file === '.docpath/docs-index.json' || file === '.docpath/docs.md') return true;
   return false;
 }
 

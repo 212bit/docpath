@@ -200,4 +200,36 @@ describe('agent handoff package', () => {
     assert.doesNotMatch(handoff, /不要直接继续完成任务/);
     rmSync(cwd, { recursive: true, force: true });
   });
+  it('records a WIP handoff note file when task is executing', () => {
+    const cwd = mkPassingWorkspace();
+    const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+    const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    state.phase = 'executing';
+    state.gate = 'none';
+    writeFileSync(statePath, JSON.stringify(state, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'workspace', 'breadcrumb.md'), [
+      '# Breadcrumb',
+      '',
+      '### 🔄 S1 [T-HANDOFF] — 2026-05-29T00:00:00.000Z',
+      '',
+      '---',
+      'taskId: T-HANDOFF',
+      'step: S1',
+      'status: in_progress',
+      'timestamp: 2026-05-29T00:00:00.000Z',
+      '---',
+      '',
+      '- **状态**: in_progress',
+      '- **上下文**: started',
+      '',
+    ].join('\n'));
+    const out = execSync(`node ${BIN} agent handoff --cwd ${cwd} --max-entries 5`, { cwd, encoding: 'utf-8', timeout: 20000 });
+    assert.match(out, /WIP handoff note recorded/);
+    const note = readFileSync(join(cwd, '.docpath', 'workspace', 'wip-note.md'), 'utf-8');
+    assert.match(note, /# WIP Note/);
+    assert.match(note, /task_id: T-HANDOFF/);
+    assert.match(note, /step: S1/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
 });
