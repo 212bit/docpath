@@ -421,7 +421,8 @@ describe('install agent adapters', () => {
 
     assert.equal(failed.code, 1);
     assert.match(failed.out, /本地改动 1 项/);
-    assert.match(failed.out, /本地改动示例: \.codex\/skills\/docpath\/SKILL\.md/);
+    assert.match(failed.out, /local_ahead \(本地领先, 模板未动\): \.codex\/skills\/docpath\/SKILL\.md/);
+    assert.match(failed.out, /先把修正 diff 回灌 templates\//);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -435,6 +436,62 @@ describe('install agent adapters', () => {
     assert.equal(failed.code, 1);
     assert.match(failed.out, /缺失 1 项/);
     assert.match(failed.out, /\.codex\/skills\/docpath-software\/SKILL\.md/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --check-only classifies manifest_stale and keeps the plain reinstall suggestion (R-279)', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    const metaPath = join(cwd, '.docpath', '.install-meta.json');
+    const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+    const asset = meta.assets.find((entry) => entry.path === 'CODEX.md');
+    assert.ok(asset, 'CODEX.md should be tracked in the install manifest');
+    asset.sha256 = '0'.repeat(64);
+    writeFileSync(metaPath, JSON.stringify(meta, null, 2) + '\n');
+
+    const failed = runResult(`install --cwd ${cwd} --target codex --check-only`, cwd);
+
+    assert.equal(failed.code, 1);
+    assert.match(failed.out, /manifest_stale \(本地已与模板一致\): CODEX\.md/);
+    assert.match(failed.out, /重装只刷新记录, 无覆盖风险/);
+    assert.match(failed.out, /建议运行: docpath install --target codex/);
+    assert.doesNotMatch(failed.out, /local_ahead/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --check-only classifies diverged and demands manual merge before reinstall (R-279)', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    writeFileSync(join(cwd, 'CODEX.md'), '# locally diverged protocol\n');
+    const metaPath = join(cwd, '.docpath', '.install-meta.json');
+    const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+    const asset = meta.assets.find((entry) => entry.path === 'CODEX.md');
+    asset.sha256 = '1'.repeat(64);
+    writeFileSync(metaPath, JSON.stringify(meta, null, 2) + '\n');
+
+    const failed = runResult(`install --cwd ${cwd} --target codex --check-only`, cwd);
+
+    assert.equal(failed.code, 1);
+    assert.match(failed.out, /diverged \(本地与模板双向漂移\): CODEX\.md/);
+    assert.match(failed.out, /人工比对合并后再重装/);
+    assert.match(failed.out, /先处理 local_ahead\/diverged 文件的回灌或合并/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --doctor --json recommends the read-only check instead of overwrite install when local is ahead (R-279 AC-2)', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target codex`, cwd);
+    writeFileSync(join(cwd, 'CODEX.md'), '# locally corrected protocol\n');
+
+    const failed = runResult(`install --cwd ${cwd} --target codex --doctor --json`, cwd);
+    const parsed = JSON.parse(failed.out);
+
+    assert.equal(parsed.passed, false);
+    const drift = parsed.issues.find((issue) => issue.id === 'install-manifest-drift');
+    assert.ok(drift, 'drift issue should be present');
+    assert.match(drift.message, /本地领先 1 项/);
+    assert.match(drift.message, /直接重装会覆盖丢失/);
+    assert.equal(parsed.recommended_command, 'docpath install --check');
     rmSync(cwd, { recursive: true, force: true });
   });
 

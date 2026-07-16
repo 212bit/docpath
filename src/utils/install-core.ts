@@ -36,6 +36,15 @@ export interface InstallAssetDriftReport {
   templateDrift: InstallAssetManifestEntry[];
   missingLocal: InstallAssetManifestEntry[];
   modifiedLocal: InstallAssetManifestEntry[];
+  /**
+   * R-279: modifiedLocal 的方向分类 (append-only 细分, 三者互斥且并集=modifiedLocal)。
+   * local_ahead: 模板自安装未动而本地被改——本地承载修正, 直接重装会覆盖丢失。
+   * manifest_stale: 本地已与当前模板渲染一致, 仅 manifest 记录过期——重装只刷新记录。
+   * diverged: 本地与模板都动了——需人工比对合并。
+   */
+  localAhead: InstallAssetManifestEntry[];
+  manifestStale: InstallAssetManifestEntry[];
+  diverged: InstallAssetManifestEntry[];
   hasDrift: boolean;
 }
 
@@ -302,9 +311,19 @@ export async function readInstallMetadata(docpathDir: string): Promise<InstallMe
 async function countLocalAssetDrift(
   targetDir: string,
   installedAssets: InstallAssetManifestEntry[],
-): Promise<{ missingLocal: InstallAssetManifestEntry[]; modifiedLocal: InstallAssetManifestEntry[] }> {
+  expectedByKey: Map<string, InstallAssetManifestEntry>,
+): Promise<{
+  missingLocal: InstallAssetManifestEntry[];
+  modifiedLocal: InstallAssetManifestEntry[];
+  localAhead: InstallAssetManifestEntry[];
+  manifestStale: InstallAssetManifestEntry[];
+  diverged: InstallAssetManifestEntry[];
+}> {
   const missingLocal: InstallAssetManifestEntry[] = [];
   const modifiedLocal: InstallAssetManifestEntry[] = [];
+  const localAhead: InstallAssetManifestEntry[] = [];
+  const manifestStale: InstallAssetManifestEntry[] = [];
+  const diverged: InstallAssetManifestEntry[] = [];
 
   for (const asset of installedAssets) {
     const localPath = join(targetDir, asset.path);
@@ -313,10 +332,17 @@ async function countLocalAssetDrift(
       continue;
     }
     const content = await readFile(localPath, 'utf-8');
-    if (sha256(content) !== asset.sha256 && !isLocallyCustomizableInstallAsset(asset)) modifiedLocal.push(asset);
+    const localSha = sha256(content);
+    if (localSha === asset.sha256 || isLocallyCustomizableInstallAsset(asset)) continue;
+    modifiedLocal.push(asset);
+    // R-279: 三方判定方向 (local vs 模板渲染 expected vs manifest 记录)。
+    const expected = expectedByKey.get(assetKey(asset));
+    if (expected && localSha === expected.sha256) manifestStale.push(asset);
+    else if (expected && expected.sha256 === asset.sha256) localAhead.push(asset);
+    else diverged.push(asset);
   }
 
-  return { missingLocal, modifiedLocal };
+  return { missingLocal, modifiedLocal, localAhead, manifestStale, diverged };
 }
 
 export async function detectInstallAssetDrift(
@@ -335,12 +361,14 @@ export async function detectInstallAssetDrift(
   const projectName = meta.projectName || fallback.projectName;
   const expectedAssets = await buildExpectedInstallAssets({ target, projectName });
   const installedByKey = new Map(meta.assets.map((asset) => [assetKey(asset), asset]));
+  const expectedByKey = new Map(expectedAssets.map((asset) => [assetKey(asset), asset]));
   const templateDrift = expectedAssets.filter((expected) => {
     if (isLocallyCustomizableInstallAsset(expected)) return false;
     const installed = installedByKey.get(assetKey(expected));
     return !installed || installed.sha256 !== expected.sha256;
   });
-  const { missingLocal, modifiedLocal } = await countLocalAssetDrift(targetDir, meta.assets);
+  const { missingLocal, modifiedLocal, localAhead, manifestStale, diverged } =
+    await countLocalAssetDrift(targetDir, meta.assets, expectedByKey);
 
   return {
     target,
@@ -349,6 +377,9 @@ export async function detectInstallAssetDrift(
     templateDrift,
     missingLocal,
     modifiedLocal,
+    localAhead,
+    manifestStale,
+    diverged,
     hasDrift: templateDrift.length > 0 || missingLocal.length > 0 || modifiedLocal.length > 0,
   };
 }
@@ -497,11 +528,18 @@ async function checkManifestDoctor(context: InstallContext): Promise<DoctorIssue
       projectName: context.projectName,
     });
     if (!report.hasDrift) return [];
+    // R-279: 本地领先/双向漂移时, 直接重装会覆盖本地修正——建议改为只读诊断入口。
+    const dangerous = report.localAhead.length > 0 || report.diverged.length > 0;
+    const dangerDetail = dangerous
+      ? `; 其中本地领先 ${report.localAhead.length} 项/双向漂移 ${report.diverged.length} 项 (${sampleAssetPaths([...report.localAhead, ...report.diverged])})——本地含未回灌修正, 直接重装会覆盖丢失`
+      : '';
     return [{
       severity: 'error',
       id: 'install-manifest-drift',
-      message: `安装资产 manifest 漂移: 模板 ${report.templateDrift.length} 项, 缺失 ${report.missingLocal.length} 项, 本地改动 ${report.modifiedLocal.length} 项`,
-      suggestion: `运行 docpath install --target ${report.target}`,
+      message: `安装资产 manifest 漂移: 模板 ${report.templateDrift.length} 项, 缺失 ${report.missingLocal.length} 项, 本地改动 ${report.modifiedLocal.length} 项${dangerDetail}`,
+      suggestion: dangerous
+        ? '运行 docpath install --check'
+        : `运行 docpath install --target ${report.target}`,
     }];
   } catch (err) {
     return [{

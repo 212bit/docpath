@@ -133,9 +133,24 @@ async function runInstallCheck(context: InstallContext): Promise<void> {
   if (sample) console.log(`    模板漂移示例: ${sample}`);
   const missingSample = sampleAssetPaths(report.missingLocal);
   if (missingSample) console.log(`    缺失文件示例: ${missingSample}`);
-  const modifiedSample = sampleAssetPaths(report.modifiedLocal);
-  if (modifiedSample) console.log(`    本地改动示例: ${modifiedSample}`);
-  console.log(`    建议运行: docpath install --target ${report.target}`);
+  // R-279: 本地改动按三方判定分方向, 各给对应处置——不再一律推荐覆盖式重装。
+  if (report.localAhead.length > 0) {
+    console.log(`    local_ahead (本地领先, 模板未动): ${sampleAssetPaths(report.localAhead)}`);
+    console.log('      → 本地承载未回灌修正; 先把修正 diff 回灌 templates/, 勿直接 install --force 覆盖');
+  }
+  if (report.manifestStale.length > 0) {
+    console.log(`    manifest_stale (本地已与模板一致): ${sampleAssetPaths(report.manifestStale)}`);
+    console.log('      → 仅 manifest 记录过期; 重装只刷新记录, 无覆盖风险');
+  }
+  if (report.diverged.length > 0) {
+    console.log(`    diverged (本地与模板双向漂移): ${sampleAssetPaths(report.diverged)}`);
+    console.log('      → 人工比对合并后再重装');
+  }
+  if (report.localAhead.length > 0 || report.diverged.length > 0) {
+    console.log('    建议: 先处理 local_ahead/diverged 文件的回灌或合并, 再运行 docpath install --target ' + report.target + ' --force 刷新副本与 manifest');
+  } else {
+    console.log(`    建议运行: docpath install --target ${report.target}`);
+  }
   throw new Error('install manifest drift detected');
 }
 

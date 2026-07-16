@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T18:00:17.500Z",
+    "updated_at": "2026-07-16T18:00:17.500Z",
+    "content_sha256": "211b2390dd30b286073e205a79e3f5ce7a0f76316a2b5160ce9c51a6ceea773b"
+  },
+  "task_id": "T-20260716-install-check-install-p0",
+  "backlog_id": "R-279",
+  "title": "T-20260716-install-check-install-p0 - install --check 漂移不分方向: 本地领先时仍推荐覆盖式 install, 曾指向致 P0 的操作",
+  "generated_at": "2026-07-16T18:00:17.500Z",
+  "scope": {
+    "included": [
+      "src/utils/install-core.ts (三方分类 + doctor 建议方向化)",
+      "src/commands/install.ts (check 失败输出分组)",
+      "tests/install.test.mjs (断言迁移 + 3 条方向用例)"
+    ],
+    "excluded": [
+      "install --force 对豁免资产覆写行为 (R-278)",
+      "自动回灌/三方合并实现 (仅诊断与建议)",
+      "doctor 其余检查项改造"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [
+      "否 (诊断输出与建议命令的精化, 不改安装写入行为/契约; install 路径不在策略文件清单)"
+    ],
+    "user_confirmed": "2026-07-17 用户回顾后指示\"捕获，并且推进它\"——R-279 为回顾报告中我方标注的最高优先级项 (危险推荐命令), 修法方向 (三方判定+方向化建议) 已写入回顾与 backlog 正文。",
+    "decision_brief_markdown": "- 用户确认: 2026-07-17 用户回顾后指示\"捕获，并且推进它\"——R-279 为回顾报告中我方标注的最高优先级项 (危险推荐命令), 修法方向 (三方判定+方向化建议) 已写入回顾与 backlog 正文。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "modifiedLocal 逐项三方向分类 (local/expected/manifest 三方 sha): local==expected → manifest_stale (重装仅刷新记录, 无覆盖风险); local≠expected 且 expected==manifest → local_ahead (模板未动本地领先, 直接重装会覆盖丢失); 双不等或模板已不产出该资产 → diverged (人工比对合并)。三类互斥且并集=modifiedLocal, 报告字段 append-only。",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "install --check 失败输出按方向分组列出文件与各自处置; 存在 local_ahead/diverged 时总建议改为\"先回灌/合并再 install --force\", 不再一律推荐覆盖式重装。",
+      "done": true
+    },
+    {
+      "id": "FR-3",
+      "text": "install_health/doctor 的 recommended_command 方向化——存在 local_ahead/diverged 时给只读诊断入口 docpath install --check, message 附方向计数与覆盖警示; 否则维持 install 建议。",
+      "done": true
+    },
+    {
+      "id": "FR-4",
+      "text": "AGENTS.md 等豁免资产维持现状 (不进 modifiedLocal, 不受本条影响)。",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "与现有安装/检查流程兼容 (既有 31 条 install 用例迁移 1 条断言后全部回归)",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "三种方向的工作区分别输出方向标签与对应建议; local_ahead 输出含回灌警示且不出现覆盖式建议 (tests/install.test.mjs 3 条新用例)。",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "install --doctor --json 在 local_ahead 场景 recommended_command='docpath install --check', message 含\"本地领先 1 项\"与覆盖警示。",
+      "done": true
+    },
+    {
+      "id": "AC-3",
+      "text": "pnpm test 全绿 (647/647)。",
+      "done": true
+    },
+    {
+      "id": "AC-4",
+      "text": "R-277 修复后的当前仓库 install --check 仍通过 (141 assets, 无回归)。",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

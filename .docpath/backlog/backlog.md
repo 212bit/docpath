@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-16T17:37:44.343Z
+> 扫描时间: 2026-07-16T17:39:54.711Z
 
 ## 条目列表
 
@@ -11,7 +11,7 @@
 | R-259 | High-value reliability optimizations | dropped | P1 | 2 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-278 | install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制 | proposed | P2 | 2 |  |
-| R-279 | install --check 漂移不分方向: 本地领先时仍推荐覆盖式 install, 曾指向致 P0 的操作 | proposed | P2 | 2 |  |
+| R-279 | install --check 漂移不分方向: 本地领先时仍推荐覆盖式 install, 曾指向致 P0 的操作 | active | P2 | 2 | T-20260716-install-check-install-p0 |
 | R-280 | completed 任务上 go/agent step 应 fail-loud 拒绝, 而非半执行污染 canonical breadcrumb | proposed | P2 | 2 |  |
 | R-281 | 重大变更门禁失败提示应列出信号文件与两条合法出路 | proposed | P2 | 2 |  |
 | R-282 | backlog edit --acceptance/--background 不替换正文占位段, 与 promote 成熟度检查不一致 | proposed | P2 | 2 |  |
