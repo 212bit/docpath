@@ -22,7 +22,7 @@ router 指纹 task 分支用全历史与之不一致。用户裁定: 方案 A + 
 ## 2. 需求清单
 
 ### 功能需求
-- [x] FR-1: review 默认口径——有活跃任务且 started_at 可解析时默认 scope='task', 否则回退 'all'; 显式 --scope 仍优先; 空仓/无提交时 task 口径降级覆盖工作区 (taskCommitFiles 失败不拖垮并集)。
+- [x] FR-1: review 默认口径——有活跃任务且任务锚点可解析时默认 scope='task', 否则回退 'all'; 显式 --scope 仍优先; 空仓/无提交时 task 口径降级覆盖工作区 (taskCommitFiles 失败不拖垮并集)。任务锚点 = canonical 任务目录 breadcrumb 首条时间戳, 回退 state.started_at——后者是 phase 开始时间, 每次 phase 转移被刷新, 直接用会在 review 失败等转移后静默缩小任务 diff (收口自证时发现并修复, 含锚点回归用例)。
   - 来源 backlog: R-276
 - [x] FR-2: CLI 枚举放行 task——review --scope 与 write-review-skill --scope 接受 task, 帮助文案更新, 缺省值下沉到命令内与 review 同源解析。
 - [x] FR-3: router 指纹对齐——review-skill-router.ts diffForFile(task) 改为 baseRef..HEAD + 工作区 (与 review.ts 同口径), resolveTaskBaseRef 收敛到 router 单一定义, 调用方传入 taskBaseRef。
@@ -105,7 +105,7 @@ router 指纹 task 分支用全历史与之不一致。用户裁定: 方案 A + 
 - [x] AC-2: 无活跃任务 (或 started_at 缺失) 时 review 行为与现状一致 (scope=all 回退; 既有无任务用例回归)。
 - [x] AC-3: router 指纹 task 口径与 review.ts 一致——同状态稳定, 新提交后变化 (AC-3 用例)。
 - [x] AC-4: review 后新提交 ⇒ done 拒绝复用并重审 (HEAD moved); head 匹配与无 head 旧证据均维持复用 (三态用例)。
-- [x] AC-5: pnpm test 全绿 (643/643, 含 6 条新用例 + 既有契约迁移到 task 口径)。
+- [x] AC-5: pnpm test 全绿 (644/644, 含 7 条新用例——6 条验收 + 1 条 phase 转移锚点回归——及既有契约迁移到 task 口径)。
 - [x] AC-6: 生成的 spec 可直接进入 `docpath plan` (已执行, S1-S3 完成)。
 - [x] AC-7: backlog 条目 R-276 与任务 T-20260716-review-skill-router-diff-commit-first 建立双向关联。
 

@@ -84,6 +84,26 @@ function runGit(cwd: string, args: string[]): string {
 }
 
 /**
+ * R-276: task 口径的时间锚点。state.started_at 是 phase 开始时间 (每次 phase 转移被
+ * transitions 刷新), 直接用它做任务累计 diff 锚会在 check/review 失败等转移后静默
+ * 缩小覆盖面。真任务起点取 canonical 任务目录 breadcrumb 首条时间戳 (append-only,
+ * 任务作用域); 缺失时回退 fallback (state.started_at)。
+ */
+export function resolveTaskStartedAt(docpathDir: string, taskId?: string, fallback?: string): string | undefined {
+  if (taskId?.trim()) {
+    try {
+      const raw = readFileSync(join(docpathDir, 'tasks', taskId, 'breadcrumb.jsonl'), 'utf-8');
+      const first = raw.split('\n').find((line) => line.trim());
+      const ts = first ? (JSON.parse(first) as { timestamp?: unknown }).timestamp : undefined;
+      if (typeof ts === 'string' && ts.trim()) return ts;
+    } catch {
+      // 无 canonical breadcrumb (quick 任务/手工工作区) → 回退 state.started_at。
+    }
+  }
+  return fallback?.trim() ? fallback : undefined;
+}
+
+/**
  * R-276: task 口径的 diff 基线 = 任务 started_at 以来首个提交的父提交。
  * 无 started_at / 任务内无提交 / 首提交无父 (root) 时分别回退 null / null / 首提交自身。
  */

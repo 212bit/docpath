@@ -24,6 +24,7 @@ import {
   createReviewSkillSkip,
   evaluateReviewSkillGate,
   resolveTaskBaseRef,
+  resolveTaskStartedAt,
   type ReviewSkillGate,
   type ReviewSkillSkip,
 } from '../utils/review-skill-router.js';
@@ -126,22 +127,22 @@ function taskCommitFiles(cwd: string, startedAt?: string): string[] {
   }
 }
 
-function collectTaskChangedFiles(cwd: string, current?: Awaited<ReturnType<typeof readCurrentState>>): string[] {
+function collectTaskChangedFiles(cwd: string, taskStartedAt?: string): string[] {
   try {
-    return [...new Set([...taskCommitFiles(cwd, current?.started_at), ...collectStatusChangedFiles(cwd)])].filter(isReviewableFile);
+    return [...new Set([...taskCommitFiles(cwd, taskStartedAt), ...collectStatusChangedFiles(cwd)])].filter(isReviewableFile);
   } catch {
     return [];
   }
 }
 
-function collectChangedFiles(cwd: string, scope: ReviewScope = 'all', current?: Awaited<ReturnType<typeof readCurrentState>>): string[] {
+function collectChangedFiles(cwd: string, scope: ReviewScope = 'all', taskStartedAt?: string): string[] {
   try {
     const files = scope === 'staged'
       ? parseNameList(runGit(cwd, ['diff', '--name-only', '--cached']))
       : scope === 'last_commit'
         ? parseNameList(runGit(cwd, ['show', '--name-only', '--format=', 'HEAD']))
         : scope === 'task'
-          ? collectTaskChangedFiles(cwd, current)
+          ? collectTaskChangedFiles(cwd, taskStartedAt)
           : collectStatusChangedFiles(cwd);
     return [...new Set(files)].filter(isReviewableFile);
   } catch {
@@ -217,12 +218,12 @@ function fileLineCount(cwd: string, file: string): number {
   }
 }
 
-function diffForFile(cwd: string, file: string, scope: ReviewScope, current?: Awaited<ReturnType<typeof readCurrentState>>): string {
+function diffForFile(cwd: string, file: string, scope: ReviewScope, taskStartedAt?: string): string {
   try {
     if (scope === 'staged') return runGit(cwd, ['diff', '--unified=0', '--cached', '--', file]);
     if (scope === 'last_commit') return runGit(cwd, ['diff', '--unified=0', 'HEAD~1..HEAD', '--', file]);
     if (scope === 'task') {
-      const baseRef = resolveTaskBaseRef(cwd, current?.started_at);
+      const baseRef = resolveTaskBaseRef(cwd, taskStartedAt);
       return [
         baseRef ? runGit(cwd, ['diff', '--unified=0', `${baseRef}..HEAD`, '--', file]) : '',
         runGit(cwd, ['diff', '--unified=0', '--', file]),
@@ -238,10 +239,10 @@ function diffForFile(cwd: string, file: string, scope: ReviewScope, current?: Aw
   }
 }
 
-function collectDiffLineRanges(cwd: string, changedFiles: string[], scope: ReviewScope, current?: Awaited<ReturnType<typeof readCurrentState>>): Map<string, Array<{ start: number; end: number }>> {
+function collectDiffLineRanges(cwd: string, changedFiles: string[], scope: ReviewScope, taskStartedAt?: string): Map<string, Array<{ start: number; end: number }>> {
   const rangesByFile = new Map<string, Array<{ start: number; end: number }>>();
   for (const file of changedFiles) {
-    const ranges = parseChangedLineRanges(diffForFile(cwd, file, scope, current));
+    const ranges = parseChangedLineRanges(diffForFile(cwd, file, scope, taskStartedAt));
     if (ranges.length === 0) {
       try {
         const status = runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all', '--', file]);
@@ -446,18 +447,21 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const docpathDir = await resolveDocpathDir(opts.cwd);
   console.log('🔍 代码审查开始...');
   const current = await readCurrentState(opts.cwd);
+  // R-276: 任务锚点用 canonical breadcrumb 首条时间 (state.started_at 是 phase 开始时间,
+  // 会被 phase 转移刷新, 直接用会静默缩小任务累计 diff)。
+  const taskStartedAt = resolveTaskStartedAt(docpathDir, current?.task_id, current?.started_at);
   // R-276: 未显式指定 scope 时, 活跃任务默认审任务累计 diff (提交∪工作区), 与提交时序解耦。
   const scope = opts.scope
     ? normalizeReviewScope(String(opts.scope))
-    : current?.task_id && current?.started_at ? 'task' : 'all';
+    : current?.task_id && taskStartedAt ? 'task' : 'all';
   if (!opts.scope && scope === 'task') {
     console.log('ℹ️  活跃任务默认走 task 累计 diff 审查 (显式 --scope all 可覆盖)');
   }
   await assertNoActiveTaskStructuredMarkdownDrift(docpathDir, current?.task_id);
   let effectiveScope = scope;
-  let changedFiles = collectChangedFiles(opts.cwd, scope, current);
+  let changedFiles = collectChangedFiles(opts.cwd, scope, taskStartedAt);
   if (scope === 'all' && changedFiles.length === 0 && current?.task_id) {
-    const taskFiles = collectChangedFiles(opts.cwd, 'task', current);
+    const taskFiles = collectChangedFiles(opts.cwd, 'task', taskStartedAt);
     if (taskFiles.length > 0) {
       effectiveScope = 'task';
       changedFiles = taskFiles;
@@ -472,7 +476,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   console.log(`📋 审查 ${changedFiles.length} 个文件...`);
   const findings = classifyFindings(
     await analyzeChangedFiles(opts.cwd, changedFiles),
-    collectDiffLineRanges(opts.cwd, changedFiles, effectiveScope, current),
+    collectDiffLineRanges(opts.cwd, changedFiles, effectiveScope, taskStartedAt),
   );
   console.log(`    scope: ${effectiveScope}; finding_scope: mixed`);
   printFindingScopeSummary(countFindingScopes(findings));
@@ -484,7 +488,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const groups = groupFindings(findings);
   printFindings(groups);
   const previousReview = await readReviewEvidence(docpathDir);
-  const taskBaseRef = effectiveScope === 'task' ? resolveTaskBaseRef(opts.cwd, current?.started_at) : undefined;
+  const taskBaseRef = effectiveScope === 'task' ? resolveTaskBaseRef(opts.cwd, taskStartedAt) : undefined;
   const { enabled, requirements } = await buildReviewSkillRequirements(opts.cwd, docpathDir, changedFiles, effectiveScope, { taskBaseRef });
   const previewGate = evaluateReviewSkillGate({
     enabled,

@@ -3,14 +3,14 @@
   "kind": "spec",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-16T15:09:27.947Z",
-    "updated_at": "2026-07-16T15:09:27.947Z",
-    "content_sha256": "14ed337cf0ab6d14d9e68e1f99873389513b94e542c5ef8415b3514b1a9bce9c"
+    "created_at": "2026-07-16T15:39:51.855Z",
+    "updated_at": "2026-07-16T15:39:51.855Z",
+    "content_sha256": "2ed64589dcb278307072b46c7c08f726f5e1ed8b94e305099148a2b6c7a321ba"
   },
   "task_id": "T-20260716-review-skill-router-diff-commit-first",
   "backlog_id": "R-276",
   "title": "T-20260716-review-skill-router-diff-commit-first - review skill router 只审未提交 diff, commit-first 收口惯例会整体绕过语言级审查",
-  "generated_at": "2026-07-16T15:09:27.947Z",
+  "generated_at": "2026-07-16T15:39:51.855Z",
   "scope": {
     "included": [
       "src/commands/review.ts (默认口径解析 + head 记录 + baseRef 传递)",
@@ -41,7 +41,7 @@
   "functional_requirements": [
     {
       "id": "FR-1",
-      "text": "review 默认口径——有活跃任务且 started_at 可解析时默认 scope='task', 否则回退 'all'; 显式 --scope 仍优先; 空仓/无提交时 task 口径降级覆盖工作区 (taskCommitFiles 失败不拖垮并集)。",
+      "text": "review 默认口径——有活跃任务且任务锚点可解析时默认 scope='task', 否则回退 'all'; 显式 --scope 仍优先; 空仓/无提交时 task 口径降级覆盖工作区 (taskCommitFiles 失败不拖垮并集)。任务锚点 = canonical 任务目录 breadcrumb 首条时间戳, 回退 state.started_at——后者是 phase 开始时间, 每次 phase 转移被刷新, 直接用会在 review 失败等转移后静默缩小任务 diff (收口自证时发现并修复, 含锚点回归用例)。",
       "done": true
     },
     {
@@ -90,7 +90,7 @@
     },
     {
       "id": "AC-5",
-      "text": "pnpm test 全绿 (643/643, 含 6 条新用例 + 既有契约迁移到 task 口径)。",
+      "text": "pnpm test 全绿 (644/644, 含 7 条新用例——6 条验收 + 1 条 phase 转移锚点回归——及既有契约迁移到 task 口径)。",
       "done": true
     },
     {

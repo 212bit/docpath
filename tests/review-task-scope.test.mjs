@@ -120,6 +120,33 @@ describe('review task scope default (R-276)', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('task anchor survives phase transitions that refresh state.started_at (AC-1 锚点回归)', () => {
+    const cwd = mkTaskWorkspace('dp-r276-anchor-');
+    installTypeScriptSkill(cwd);
+    commitBaselineBeforeTask(cwd);
+    mkdirSync(join(cwd, 'src'), { recursive: true });
+    commitTaskChange(cwd, 'export const feature = 1;\n');
+
+    // canonical 任务 breadcrumb 首条时间 = 真任务起点 (早于任务提交)
+    const taskDir = join(cwd, '.docpath', 'tasks', 'T-R276');
+    mkdirSync(taskDir, { recursive: true });
+    writeFileSync(join(taskDir, 'breadcrumb.jsonl'), `${JSON.stringify({ timestamp: STARTED_AT, type: 'task', step: 'promote' })}\n`);
+
+    // 模拟 phase 转移把 state.started_at 刷新到任务提交之后 (transitions.ts 行为)
+    const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
+    const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    state.started_at = new Date(Date.now() + 60_000).toISOString();
+    writeFileSync(statePath, JSON.stringify(state, null, 2));
+
+    const result = run(['review', '--cwd', cwd, '--dry-run'], cwd);
+
+    assert.equal(result.code, 0);
+    assert.match(result.out, /scope: task/);
+    assert.match(result.out, /review_skill_gate: required/);
+    assert.match(result.out, /files: src\/feature\.ts/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('review evidence records the git HEAD at review time', () => {
     const cwd = mkTaskWorkspace('dp-r276-head-');
     writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));

@@ -8,6 +8,7 @@ import {
   createReviewSkillEvidence,
   findRequirement,
   resolveTaskBaseRef,
+  resolveTaskStartedAt,
   type ReviewScope,
   type ReviewSkillFinding,
   type ReviewSkillStatus,
@@ -139,9 +140,11 @@ export async function writeReviewSkillCommand(options: WriteReviewSkillOptions):
   if (!language) throw new Error('write-review-skill requires --language');
   const current = await readCurrentState(cwd);
   // R-276: 默认口径与 docpath review 同源——活跃任务走 task 累计 diff, 否则 all。
+  // 任务锚点同 review: canonical breadcrumb 首条时间, 回退 state.started_at (phase 开始时间)。
+  const taskStartedAt = resolveTaskStartedAt(docpathDir, current?.task_id, current?.started_at);
   const scope = options.scope
     ? normalizeScope(options.scope)
-    : current?.task_id && current?.started_at ? 'task' : 'all';
+    : current?.task_id && taskStartedAt ? 'task' : 'all';
   const payload = await readPayload(options);
   const status = normalizeStatus(payload.status || options.status || '');
   const files = payload.files || [];
@@ -151,8 +154,8 @@ export async function writeReviewSkillCommand(options: WriteReviewSkillOptions):
     throw new Error('pass skill review evidence cannot contain severity:error findings');
   }
 
-  const changedFiles = collectChangedFiles(cwd, scope, current?.started_at);
-  const taskBaseRef = scope === 'task' ? resolveTaskBaseRef(cwd, current?.started_at) : undefined;
+  const changedFiles = collectChangedFiles(cwd, scope, taskStartedAt);
+  const taskBaseRef = scope === 'task' ? resolveTaskBaseRef(cwd, taskStartedAt) : undefined;
   const { enabled, requirements } = await buildReviewSkillRequirements(cwd, docpathDir, changedFiles, scope, { taskBaseRef });
   if (!enabled) throw new Error('review skill gate is disabled for this workspace');
   const requirement = findRequirement(requirements, skill, language);

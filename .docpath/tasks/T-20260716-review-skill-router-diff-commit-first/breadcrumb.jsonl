@@ -5,3 +5,4 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-review-skill-router-diff-commit-first","step":"S3","status":"in_progress","context":"S3 验证: 全量 643 绿 + 6 条 R-276 验收用例 (AC-1/3/4 + head 记录 + 兼容)","timestamp":"2026-07-16T15:06:07.460Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-review-skill-router-diff-commit-first","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-07-16T15:06:07.849Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-review-skill-router-diff-commit-first","step":"check","status":"done","context":"质量检查通过 (11 项)","timestamp":"2026-07-16T15:14:19.685Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-review-skill-router-diff-commit-first","step":"review","status":"blocked","context":"代码审查: 0 错误, 7 警告, 7 提示","timestamp":"2026-07-16T15:18:49.448Z"}
