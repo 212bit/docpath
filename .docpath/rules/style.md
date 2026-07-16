@@ -78,3 +78,10 @@
 - T-20260716-review-skill-router-diff-commit-first spec FR-1~FR-4
 - .docpath/backlog/analysis/R-276-analysis.md F1-F3 绕过链
 - tests/review-task-scope.test.mjs AC-4 三态
+
+## common-mistake: 不要把 docpath 状态命令接进 grep/head 管道链——管道退出码掩蔽失败, 后续命令会在错误任务上执行
+- rationale: 同一会话两次: promote 失败被 `| grep | head` 吞掉退出码 (管道状态=最后一段), && 链继续跑 plan/enter/go, go 在已完成任务的 breadcrumb 上追加伪事件, 脏文件又反过来挡住 promote 重试。
+触发: 想串联 backlog promote/plan/go/agent 等状态命令并过滤输出。期望行为: 状态命令逐条独立执行, 读完整输出确认成功再下一条; 只对只读命令 (status/next/reveal) 用管道过滤; 误跑后用 git checkout -- <breadcrumb> 恢复被污染的已完成任务证据。边界: bash pipefail 可缓解但仍会丢关键错误正文, 不作为替代。
+### Evidence
+- 本会话 R-276/R-277 两次 promote 失败被吞 → go 污染 completed 任务 breadcrumb
+- git checkout -- .docpath/tasks/<id>/breadcrumb.jsonl 恢复

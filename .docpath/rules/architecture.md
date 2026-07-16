@@ -35,3 +35,11 @@
 - src/engine/transitions.ts:322-324 phase 变化刷新 started_at
 - src/utils/review-skill-router.ts resolveTaskStartedAt
 - tests/review-task-scope.test.mjs 'task anchor survives phase transitions'
+
+## common-mistake: 契约/协议文档修正必须全链检索承载面: 本地协议文件+docs+templates+已装副本; install-manifest-drift 长红可能意味着'本地是对的, 模板是旧的'
+- rationale: R-273 修正了 CLAUDE.md 与 docs 主体但漏了模板层, 导致 install (CLI 反复推荐的修复命令) 会用致 P0 的 R-271 旧契约覆盖已修正文件; Codex/OpenCODE 根副本继续给会话喂错误契约 (R-271 事故根因模式)。drift 方向不能默认'本地错模板对'。
+触发: 修正协议/契约文档 (CLAUDE.md/AGENTS.md/工作流语义), 或诊断 install-manifest-drift。期望行为: 修正时 grep 契约关键词全链——本地根副本、docs/、templates/ (含 templates/protocols/)、.docpath/protocols/; drift 诊断先 diff 判方向: 本地领先 (承载用户确认修正) → 回灌模板 + install --force 刷新; 模板领先 → 才是常规重装。--force 前留 sha 校验关键文件覆写前后一致。边界: AGENTS.md 等豁免资产允许本地定制, 恢复本地版本后 check 仍通过; --force 会覆写豁免资产 (R-278)。
+### Evidence
+- R-277 analysis .docpath/backlog/analysis/R-277-analysis.md 漂移面清单
+- templates/CLAUDE.md option C 原文 vs R-273 裁定 (ADR-20260716-011)
+- src/utils/install-core.ts isLocallyCustomizableInstallAsset
