@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-16T02:12:49.384Z",
-    "updated_at": "2026-07-16T02:12:49.384Z",
-    "content_sha256": "ed55802ecf43d30b24a7c677afce40b16eb33987bd5d94e042f26f0169dd3205"
+    "created_at": "2026-07-16T02:13:04.686Z",
+    "updated_at": "2026-07-16T02:13:04.686Z",
+    "content_sha256": "56325ca4fb596e67fd194ac1defcce77307734c544421cdacfec6af17819600b"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-16T02:12:49.384Z",
+  "generated_at": "2026-07-16T02:13:04.686Z",
   "steps": [
     {
       "id": "S1",
@@ -16,7 +16,7 @@
       "description": "handoff/enter WIP 文件行为已实现；tests/handoff 覆盖。",
       "acceptance": "AC-1/2/3",
       "dependencies": "无",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

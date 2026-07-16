@@ -48,3 +48,10 @@
 触发: check 自动刷新 docs-index 后 go/agent enter。期望: dirty guard 放行这两文件。边界: 业务源码脏文件仍阻断。
 ### Evidence
 - src/utils/git-dirty-guard.ts
+
+## gotcha: 会话中断时用 workspace/wip-note.md 记录未验证改动，不要用 breadcrumb done 伪步骤
+- rationale: breadcrumb done 会与 plan 漂移检测冲突
+触发: agent enter（in_progress+dirty）或 agent handoff。期望: 写 .docpath/workspace/wip-note.md。边界: 不改 plan checklist。
+### Evidence
+- src/commands/agent.ts
+- tests/handoff.test.mjs
