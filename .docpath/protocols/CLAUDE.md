@@ -132,10 +132,89 @@ Workflow:
   or long-term maintenance cost require brainstorm/refine plus a Decision Brief
   and explicit user confirmation before implementation.
 - Run `docpath check` before marking work complete.
+- `docpath journal` (standalone and via `agent done`) does NOT physically move
+  the task directory; it advances state, backfills backlog, and writes lesson
+  candidates + decisions. Physical archiving (`tasks/<id>/` → `tasks/done/<id>/`)
+  is owned by `docpath gc --force` after closeout. `docpath write-journal`
+  (knowledge record into spec.md) must run BEFORE archiving — it fails loud on
+  an already-archived task.
 - Before any local `git commit`, run `docpath changes --agent`. Treat it as a
   read-only closeout report; only force-add exact canonical evidence paths it
   recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by
   default.
+
+## Worktree Concurrent Development
+
+DocPath supports true concurrent development via Git Worktrees. Use when multiple
+agents need to develop different features simultaneously without conflicts.
+
+### When to Use Worktrees
+
+Use `docpath worktree create <name>` when:
+- User explicitly requests concurrent development
+- Developing Feature A while another agent/session develops Feature B
+- Need complete isolation (separate workspace/, tasks/, state)
+
+Do NOT use worktrees for:
+- Single-agent sequential development (use normal workflow)
+- Quick testing or verification (use session isolation with DOCPATH_SESSION)
+
+### Worktree Workflow
+
+```bash
+# Create worktree for Feature A
+docpath worktree create feature-a
+cd .worktrees/feature-a
+
+# Set session ID (optional but recommended)
+export DOCPATH_SESSION=codex
+
+# Standard DocPath workflow
+docpath backlog promote R-xxx
+docpath agent enter
+docpath agent step --step S1
+# ... develop ...
+docpath check
+git commit
+
+# Merge back to main
+cd ../../
+git merge feature-a
+docpath worktree remove feature-a
+```
+
+### Worktree Isolation
+
+Resources are split by sharing model (R-238 Option B, reaffirmed by R-273 —
+do NOT symlink tracked directories: git records the swap as mass deletion and
+merging it back deletes main's files):
+
+**Merge-mediated** (tracked copy — shared via branch merges, not live):
+- `.docpath/backlog/` - requirement pool; tracked in main, each worktree gets a
+  snapshot copy. Snapshots can go stale (known limitation; merge reconciles).
+  Backlog id allocation is single-pool at the CLI layer: `capture`/`add` inside
+  a worktree also scans the main checkout's backlog to avoid id collisions.
+- `.docpath/rules/` - rules; tracked, each worktree gets a snapshot, reconciled on merge
+- `.docpath/tasks/done/` - completed-task archives; tracked, reconciled on merge
+
+**Isolated** (independent per worktree — gitignored runtime):
+- `.docpath/workspace/` - each worktree has its own state.json
+- `.docpath/tasks/current/` - each worktree has its own active task runtime
+- `.docpath/journal/` - independent archives
+
+**Result**: Each worktree runs as an independent DocPath workspace; backlog,
+rules, and completed tasks reconcile at merge. `docpath worktree doctor`
+reports each resource against its expected model (merge-mediated / isolated)
+and fails a symlinked backlog over tracked files (repair with
+`docpath worktree repair`).
+
+### Commands
+
+- `docpath worktree list` - list all worktrees
+- `docpath worktree create <name>` - create new worktree
+- `docpath worktree remove <name>` - delete worktree
+
+See `docs/features/worktree-workflow.md` for detailed usage guide.
 
 ## Decision Log Aging
 

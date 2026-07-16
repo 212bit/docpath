@@ -28,7 +28,7 @@ DocPath 在每个 worktree 中创建**独立的 .docpath/ 运行时**，同时�
 └─ workspace/  ← isolated（gitignored）
 
 .worktrees/feature-a/.docpath/
-├─ backlog -> ../../../.docpath/backlog/   ← symlink 真共享
+├─ backlog/    ← tracked 快照（合并中介）
 ├─ rules/      ← tracked 快照（合并中介）
 ├─ tasks/done/ ← tracked 快照（合并中介）
 ├─ tasks/current/ ← feature-a 独立运行时（gitignored）
@@ -206,7 +206,7 @@ docpath worktree create bugfix-123
 - 创建 Git 分支
 - 创建 `.worktrees/<name>` 目录
 - 初始化独立 `.docpath/` 结构
-- 创建共享资源 symlinks
+- 按共享模型初始化资源（tracked 目录复制快照；不对 tracked 目录做 symlink）
 - 如果传入 `--backlog`，同步目标 backlog 文件和索引到新 worktree 的 `.docpath/backlog/`
 
 ### `docpath worktree list`
@@ -552,7 +552,7 @@ project/
 ├─ .worktrees/
 │  └─ feature-a/
 │     ├─ .docpath/
-│     │  ├─ backlog -> ../../../.docpath/backlog/  ← symlink 真共享
+│     │  ├─ backlog/        ← tracked 快照（合并中介）
 │     │  ├─ rules/          ← tracked 快照（合并中介）
 │     │  ├─ tasks/done/     ← tracked 快照（合并中介）
 │     │  ├─ tasks/current/  ← feature-a 独立运行时（gitignored）

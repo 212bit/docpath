@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T17:03:33.778Z",
+    "updated_at": "2026-07-16T17:03:33.778Z",
+    "content_sha256": "fec775d831338b554de37947ab8d1ed7113de2b658607f04b9dad1361988d1b5"
+  },
+  "task_id": "T-20260716-r-273-p0-symlink-install-claude-md",
+  "backlog_id": "R-277",
+  "title": "T-20260716-r-273-p0-symlink-install-claude-md - R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md",
+  "generated_at": "2026-07-16T17:03:33.778Z",
+  "scope": {
+    "included": [
+      "templates/{CLAUDE,CODEX,OPENCODE}.md 与 templates/protocols/CLAUDE.md",
+      "docs/features/worktree-workflow.md 三处残留",
+      "重装刷新: CODEX.md/OPENCODE.md/AGENTS.md 根副本、.docpath/{protocols,workflows,skills,commands}、.install-meta.json"
+    ],
+    "excluded": [
+      "AGENTS.md 模板内容变更 (无 worktree 章节; 本地 Git Convention 定制经豁免机制保留)",
+      "install --force 对豁免资产的覆写警告机制 (已另捕获 R-278)",
+      "install 覆写保护/三方合并机制"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "契约经 R-238 (7b3f9f0 Option B) 与 R-273 (ADR-20260716-011 方案 B, 回滚 R-271) 两度用户裁定; 本任务无新决策, 仅把已裁定文本回灌漏改的模板层; 本会话用户指示\"继续\"清余量。",
+    "decision_brief_markdown": "- 当前问题: 协议模板与已装副本仍文档化 R-271 致 P0 的 symlink 共享契约, install 会用旧契约覆盖已修正的 CLAUDE.md。\n- 目标: 模板层与全部已装副本对齐 R-238 Option B/R-273 裁定契约; install_health 清零。\n- 可选方案:\n  - 方案 A: 模板回灌已裁定文本 + --force 重装刷新副本与 manifest\n  - 方案 B: 仅改本地副本不动模板 (下次 install 复发)\n  - 方案 C: 把 CLAUDE.md 加入豁免名单 (掩蔽真实漂移, 模板仍带毒)\n- 推荐方案: 方案 A\n- 决策理由: 契约文本本身已经 R-238/R-273 两度用户裁定, 本任务零新决策; 只有回灌模板才能杜绝 install 复发与新项目带毒。\n- 不做什么: 不改契约语义; 不动 AGENTS.md 模板; 不做覆写保护机制 (R-278 另议)。\n- 成本: 低——纯文档回灌 + 重装。\n- 风险: --force 覆写豁免资产 AGENTS.md 的本地定制——已发生并从 HEAD 恢复, check 经豁免机制仍通过; 该体验缺口另捕获。\n- 回滚方案: 回滚本任务提交, 模板与副本回到旧文本 (install_health 重新报错)。\n- 用户确认: 契约经 R-238 (7b3f9f0 Option B) 与 R-273 (ADR-20260716-011 方案 B, 回滚 R-271) 两度用户裁定; 本任务无新决策, 仅把已裁定文本回灌漏改的模板层; 本会话用户指示\"继续\"清余量。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "templates/CLAUDE.md Worktree Isolation 段回灌 R-238 Option B/R-273 文本 (与本地 CLAUDE.md byte-identical 对齐)。",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "templates/protocols/CLAUDE.md 补 journal/gc 语义段与 Worktree 章节, 与根模板对齐。",
+      "done": true
+    },
+    {
+      "id": "FR-3",
+      "text": "templates/CODEX.md、templates/OPENCODE.md 的 \"via symlink\" 资源段改为 merge-mediated/isolated 契约一致精简版。",
+      "done": true
+    },
+    {
+      "id": "FR-4",
+      "text": "docs/features/worktree-workflow.md L31/L555 ASCII 图与 L209 步骤描述改为 tracked 副本表述。",
+      "done": true
+    },
+    {
+      "id": "FR-5",
+      "text": "docpath install --target universal --force 刷新根副本 (CODEX/OPENCODE 获得正确契约) 与 manifest; AGENTS.md 本地定制 (Git Convention 章节) 属豁免资产, 覆写后已从 HEAD 恢复且 check 仍通过。",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容 (install.test.mjs 31 用例 + 全量回归)",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "全仓 grep \"via symlink\"/\"Live-shared\"/\"option C\" 在协议模板/已装副本零命中 (契约警示句 \"do NOT symlink\" 除外)。",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "docpath install --check 通过 (141 assets); next/status 的 install_health passed=true, errors=0 (2026-07-10 以来首次清零)。",
+      "done": true
+    },
+    {
+      "id": "AC-3",
+      "text": "重装前后本地 CLAUDE.md sha256 一致 (byte-identical)。",
+      "done": true
+    },
+    {
+      "id": "AC-4",
+      "text": "pnpm test 全绿 (644/644, install.test.mjs 31 用例回归)。",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "协议模板与已装副本仍文档化 R-271 致 P0 的 symlink 共享契约, install 会用旧契约覆盖已修正的 CLAUDE.md。",
+    "options": [
+      "- 方案 A: 模板回灌已裁定文本 + --force 重装刷新副本与 manifest"
+    ],
+    "chosen": "方案 A",
+    "rationale": "契约文本本身已经 R-238/R-273 两度用户裁定, 本任务零新决策; 只有回灌模板才能杜绝 install 复发与新项目带毒。"
+  }
+}

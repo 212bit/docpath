@@ -151,17 +151,25 @@ docpath worktree remove feature-a
 
 ### Worktree Isolation
 
-**Shared resources** (via symlink):
-- `.docpath/backlog/` - needs global view
-- `.docpath/rules/` - consistent rules across worktrees
+Resources are split by sharing model (R-238 Option B, reaffirmed by R-273 —
+do NOT symlink tracked directories: git records the swap as mass deletion and
+merging it back deletes main's files):
 
-**Isolated resources** (independent):
+**Merge-mediated** (tracked copy — shared via branch merges, not live):
+- `.docpath/backlog/` - requirement pool; each worktree gets a snapshot copy,
+  reconciled on merge. Backlog id allocation is single-pool at the CLI layer.
+- `.docpath/rules/` - rules; snapshot per worktree, reconciled on merge
+- `.docpath/tasks/done/` - completed-task archives; reconciled on merge
+
+**Isolated** (independent per worktree — gitignored runtime):
 - `.docpath/workspace/` - each worktree has its own state.json
-- `.docpath/tasks/` - each worktree has its own tasks
+- `.docpath/tasks/current/` - each worktree has its own active task runtime
 - `.docpath/journal/` - independent archives
 
-**Result**: Each worktree runs as an independent DocPath workspace, sharing only
-the requirement pool and rules.
+**Result**: Each worktree runs as an independent DocPath workspace; backlog,
+rules, and completed tasks reconcile at merge. `docpath worktree doctor`
+reports each resource against its expected model and fails a symlinked backlog
+over tracked files (repair with `docpath worktree repair`).
 
 ### Commands
 

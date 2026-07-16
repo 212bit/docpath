@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T17:02:01.388Z",
+    "updated_at": "2026-07-16T17:02:01.388Z",
+    "content_sha256": "849601a6462499efb92011d7562ecf099b40c34ee53650182e9b339047ba68db"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-16T17:02:01.388Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md",
+      "description": "根据 spec 明确 FR-1: R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md 的实现边界和验收口径。",
+      "acceptance": "AC-1: AC-1: 全仓 grep \"via symlink\"/\"Live-shared\"/\"option C\" 在协议模板/已装副本零命中 (docs 契约历史小节警告性提及除外)。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md",
+      "description": "在现有架构内完成 FR-1: R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md 的代码与文档更新。",
+      "acceptance": "FR-1 R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: AC-1: 全仓 grep \"via symlink\"/\"Live-shared\"/\"option C\" 在协议模板/已装副本零命中 (docs 契约历史小节警告性提及除外)。；AC-2: AC-2: install --check 通过; next/status 的 install_health passed=true, errors=0。；AC-3: AC-3: 重装前后本地 CLAUDE.md 内容 byte-identical。；AC-4: AC-4: pnpm test 全绿 (install.test.mjs 回归)。；AC-5: 生成的 spec 可直接进入 `docpath plan`；AC-6: backlog 条目 R-277 与任务 T-20260716-r-273-p0-symlink-install-claude-md 建立双向关联",
+      "acceptance": "AC-1: AC-1: 全仓 grep \"via symlink\"/\"Live-shared\"/\"option C\" 在协议模板/已装副本零命中 (docs 契约历史小节警告性提及除外)。；AC-2: AC-2: install --check 通过; next/status 的 install_health passed=true, errors=0。；AC-3: AC-3: 重装前后本地 CLAUDE.md 内容 byte-identical。；AC-4: AC-4: pnpm test 全绿 (install.test.mjs 回归)。；AC-5: 生成的 spec 可直接进入 `docpath plan`；AC-6: backlog 条目 R-277 与任务 T-20260716-r-273-p0-symlink-install-claude-md 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

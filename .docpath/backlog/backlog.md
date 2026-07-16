@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-16T16:41:25.774Z
+> 扫描时间: 2026-07-16T17:04:43.865Z
 
 ## 条目列表
 
@@ -10,7 +10,8 @@
 |----|-------|--------|----------|-------|------|
 | R-259 | High-value reliability optimizations | dropped | P1 | 2 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
-| R-277 | R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md | proposed | P2 | 2 |  |
+| R-277 | R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md | active | P2 | 2 | T-20260716-r-273-p0-symlink-install-claude-md |
+| R-278 | install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制 | proposed | P2 | 2 |  |
 | R-249 | go/promote 的 dirty worktree 拒绝未区分 DocPath 自身产物，频繁误拦 | dropped | P3 | 1 |  |
 
 ## 用途说明
