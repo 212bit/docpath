@@ -1,0 +1,2 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-worktree-backlog-per-worktree-live-share","step":"S1","status":"in_progress","context":"开始执行: create 强制 backlog symlink","timestamp":"2026-07-16T02:04:11.241Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-worktree-backlog-per-worktree-live-share","step":"S1","status":"in_progress","context":"implement R-271 live-shared backlog","timestamp":"2026-07-16T02:04:12.067Z","sessionId":"default"}

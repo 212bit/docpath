@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T02:04:09.867Z",
+    "updated_at": "2026-07-16T02:04:09.867Z",
+    "content_sha256": "fd8878095c29ca31fea5b56a12ee9805cd446806e0126574d52d06e429ec0fc5"
+  },
+  "task_id": "T-20260716-worktree-backlog-per-worktree-live-share",
+  "backlog_id": "R-271",
+  "title": "T-20260716-worktree-backlog-per-worktree-live-share - worktree backlog live-shared symlink",
+  "generated_at": "2026-07-16T02:04:09.867Z",
+  "scope": {
+    "included": [
+      "worktree create/doctor/repair 对 backlog 的 live-share 行为",
+      "相关测试"
+    ],
+    "excluded": [
+      "将 main 仓库 backlog 从 git 取消跟踪的迁移",
+      "rules/spec/templates 策略变更"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为",
+      "权限 / 写操作边界"
+    ],
+    "user_confirmed": "目标「完成剩余所有 backlog」下推进",
+    "decision_brief_markdown": "- 当前问题: worktree backlog 副本 stale + id 撞号\n- 目标: backlog live-shared symlink + doctor FAIL\n- 推荐方案: 强制 symlink（含 tracked 场景）\n- 不做什么: 不 untrack main backlog；不改 rules 策略\n- 用户确认: 目标「完成剩余所有 backlog」下推进"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "worktree create 始终将 `.docpath/backlog` 配置为指向主仓的 live-shared symlink（即使 main 中 backlog 被 git 跟踪）",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "worktree doctor 将 backlog 非 symlink 的目录副本判定为 FAIL",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "worktree repair 可将 backlog 目录副本修正为 symlink",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "`--backlog` 目标上下文在 live-shared 下无需拷贝",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不改变 rules/templates 的 merge-mediated 策略（本次仅 backlog）",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "id 分配继续依赖共享目录 + wx 独占创建",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "worktree create 将 backlog 建为指向主仓的 symlink",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "doctor 在 backlog 为普通目录副本时 FAIL",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "--backlog 在 live-shared 下无需拷贝即可可见",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "自动化测试覆盖 create symlink 与 doctor fail",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "worktree backlog 副本 stale + id 撞号",
+    "options": [
+      "强制 symlink（含 tracked 场景）"
+    ],
+    "chosen": "强制 symlink（含 tracked 场景）",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
