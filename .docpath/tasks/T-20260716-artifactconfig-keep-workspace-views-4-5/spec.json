@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T12:58:00.492Z",
+    "updated_at": "2026-07-16T12:58:00.492Z",
+    "content_sha256": "8d7c45a33dd02aacd610b4fcc163129f0fb3730e6c42218d150bf3e448360eff"
+  },
+  "task_id": "T-20260716-artifactconfig-keep-workspace-views-4-5",
+  "backlog_id": "R-275",
+  "title": "T-20260716-artifactconfig-keep-workspace-views-4-5 - ArtifactConfig 死字段清理: keep_workspace_views 等 4/5 字段无消费方, 删除并同修文档",
+  "generated_at": "2026-07-16T12:58:00.492Z",
+  "scope": {
+    "included": [
+      "src/types/config.ts: ArtifactConfig 接口 + DEFAULT_ARTIFACT_CONFIG 死字段删除与迁移注释",
+      "docs/workflows/artifact-policy.md 与 gc-decisions 帮助文案的漂移修正",
+      "tests/artifact-config.test.mjs: 契约回归 (默认只含 generate_md_views; 残留旧字段惰性)"
+    ],
+    "excluded": [
+      "decisions 老化 14 天参数的可配置化 (如有真实需求随消费方另立)",
+      "config.yaml/config.json 双真源整併 (architecture rules 已有 gotcha, 独立大题)"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "API / 数据契约"
+    ],
+    "user_confirmed": "用户于 2026-07-16 本会话明确指示\"继续做 R-275\"; 方案 (b) 删除处置在 backlog 捕获时即已记录并经分析核验收敛, 删除范围扩展至同对象全部死字段已落 analysis 与 backlog 正文。",
+    "decision_brief_markdown": "- 当前问题: ArtifactConfig 5 字段中 4 个定义后从未被读取, 其中 decisions_retention_days 文档值 (30) 还与实际行为 (14) 矛盾; 死配置已实际误导过一次需求捕获 (R-274)。\n- 目标: 配置面只保留有真实消费方的字段, 文档与代码行为一致。\n- 可选方案:\n  - 方案 A (=backlog 方案 b): 删除 4 个死字段 + 迁移注释 + 文档同修\n  - 方案 B (=backlog 方案 a): 为死字段接线实现功能 (白名单清理/retention 可配置化)\n- 推荐方案: 方案 A\n- 决策理由: 满足 backlog 声明的全部验收条件且无额外依赖风险; 接线属为死配置补功能 (YAGNI), 白名单引入第二真源; 删除后行为零变化 (字段本就无人读)。\n- 不做什么: 不动 generate_md_views 及其消费链; 不做 retention 可配置化; 不整併 config 双真源。\n- 成本: 低——纯删除 + 文档修正, 契约测试固定迁移语义。\n- 风险: 用户 config.json 残留旧字段——已核验为惰性 (merge 后无读取方), 迁移注释说明可安全移除。\n- 回滚方案: 回滚本任务提交即恢复原类型定义与文档。\n- 用户确认: 用户于 2026-07-16 本会话明确指示\"继续做 R-275\"; 方案 (b) 删除处置在 backlog 捕获时即已记录并经分析核验收敛, 删除范围扩展至同对象全部死字段已落 analysis 与 backlog 正文。\n- 变更类型说明: 仅勾\"API / 数据契约\"——config.json artifacts 配置面收缩; promote 脚手架预勾的\"架构/模块边界\"\"工作流/Agent 行为\"与实际不符 (零行为变更), 已取消。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "删除 ArtifactConfig 与 DEFAULT_ARTIFACT_CONFIG 中 keep_workspace_views、generate_on_demand、archive_decisions_monthly、decisions_retention_days; 保留 generate_md_views 与 mergeArtifactConfig/readArtifactConfig 链路; 类型定义处留迁移注释 (残留用户配置无行为影响)。",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "文档漂移同修——docs/workflows/artifact-policy.md 配置结构/示例只含 generate_md_views 并附迁移注释; gc-decisions CLI 帮助文案 \"默认 30\" 修正为实际默认 14 (register/backlog-maintenance.ts)。",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容 (generate_md_views 行为不变, 全量测试回归)",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "全仓 grep 四个死字段名仅命中迁移注释 (src/types/config.ts, artifact-policy.md)、契约测试 legacy fixture (tests/artifact-config.test.mjs) 与 backlog/归档历史。",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "pnpm test 全绿 (637/637, 含 3 条新契约用例); generate_md_views 行为回归不变。",
+      "done": true
+    },
+    {
+      "id": "AC-3",
+      "text": "artifact-policy.md 不再文档化任何无消费方字段。",
+      "done": true
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan` (已执行, plan S1-S3 全部完成)。",
+      "done": true
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-275 与任务 T-20260716-artifactconfig-keep-workspace-views-4-5 建立双向关联 (links.task/links.spec + backlog_id 头)。",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "ArtifactConfig 5 字段中 4 个定义后从未被读取, 其中 decisions_retention_days 文档值 (30) 还与实际行为 (14) 矛盾; 死配置已实际误导过一次需求捕获 (R-274)。",
+    "options": [
+      "- 方案 A (=backlog 方案 b): 删除 4 个死字段 + 迁移注释 + 文档同修"
+    ],
+    "chosen": "方案 A",
+    "rationale": "满足 backlog 声明的全部验收条件且无额外依赖风险; 接线属为死配置补功能 (YAGNI), 白名单引入第二真源; 删除后行为零变化 (字段本就无人读)。"
+  }
+}

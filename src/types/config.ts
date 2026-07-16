@@ -4,22 +4,16 @@
 
 /**
  * Artifact 生成策略配置
+ *
+ * 迁移注释 (R-275, 2026-07-16): 曾有 generate_on_demand、archive_decisions_monthly、
+ * decisions_retention_days、keep_workspace_views 四个字段, 定义后从未被任何代码读取
+ * (render 恒可用; decisions 老化由 gcDecisions 固定按月归档、默认 14 天; workspace
+ * 清理走 workspace-cleanup.ts 硬编码四区域), 已删除。用户 config.json 中残留这些
+ * 字段无任何行为影响, 可安全移除。
  */
 export interface ArtifactConfig {
   /** 是否默认生成 Markdown 渲染视图（从 JSON 派生） */
   generate_md_views: boolean;
-
-  /** 是否支持按需渲染（通过 docpath render 命令） */
-  generate_on_demand: boolean;
-
-  /** decisions.md 是否按月自动归档 */
-  archive_decisions_monthly: boolean;
-
-  /** decisions.md 保留窗口（天数，超过此窗口的决策会被归档） */
-  decisions_retention_days: number;
-
-  /** 需要保留的 workspace 视图文件列表 */
-  keep_workspace_views: string[];
 }
 
 /**
@@ -59,10 +53,6 @@ export interface DocPathConfig {
  */
 export const DEFAULT_ARTIFACT_CONFIG: ArtifactConfig = {
   generate_md_views: false,
-  generate_on_demand: true,
-  archive_decisions_monthly: true,
-  decisions_retention_days: 30,
-  keep_workspace_views: ['current.md', 'last-check.md', 'review.md'],
 };
 
 /**

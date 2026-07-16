@@ -90,20 +90,15 @@ DocPath 使用 JSON 作为唯一机器真值源，Markdown 作为人类可读渲
 interface ArtifactConfig {
   /** 是否默认生成 Markdown 渲染视图 */
   generate_md_views: boolean;  // 默认: false
-  
-  /** 是否支持按需渲染 */
-  generate_on_demand: boolean;  // 默认: true
-  
-  /** decisions.md 自动归档配置 */
-  archive_decisions_monthly: boolean;  // 默认: true
-  
-  /** decisions.md 保留窗口（天） */
-  decisions_retention_days: number;  // 默认: 30
-  
-  /** 保留的 workspace 视图列表 */
-  keep_workspace_views: string[];  // 默认: ['current.md', 'last-check.md', 'review.md']
 }
 ```
+
+> 迁移注释 (R-275, 2026-07-16): 曾文档化的 `generate_on_demand`、
+> `archive_decisions_monthly`、`decisions_retention_days`、`keep_workspace_views`
+> 均为无消费方的死配置, 已从代码删除——`docpath render` 恒可用, decisions 老化由
+> `gcDecisions` 固定按月归档 (默认保留 14 天, 可用 `docpath gc-decisions
+> --retention-days N` 覆盖), workspace 清理走硬编码四区域。用户配置中残留这些字段
+> 无任何行为影响, 可安全移除。
 
 ### 配置位置
 
@@ -116,11 +111,7 @@ interface ArtifactConfig {
 ```json
 {
   "artifacts": {
-    "generate_md_views": false,
-    "generate_on_demand": true,
-    "archive_decisions_monthly": true,
-    "decisions_retention_days": 30,
-    "keep_workspace_views": ["current.md", "last-check.md", "review.md"]
+    "generate_md_views": false
   }
 }
 ```
