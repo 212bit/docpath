@@ -15,6 +15,7 @@ import { readGitCloseoutSummary, type GitCloseoutSummary } from '../git-closeout
 import { resolveMajorChangeGateStatus, type MajorChangeGateStatus } from '../major-change.js';
 import { readLastCheckMarkdown } from '../workspace-evidence.js';
 import { isQuickProfile } from '../../engine/workflow-profile.js';
+import { constrainRecommendedCommandToWorkflow } from '../../engine/transitions.js';
 import type { StructuredSpecDocument } from '../structured-docs.js';
 import { detectDirtyWorktree, type DirtyWorktreeReport } from '../git-dirty-guard.js';
 import { classifyCandidateBlocks, lessonCandidateKey, parseCandidateBlocks } from '../lesson-candidates.js';
@@ -504,6 +505,33 @@ function buildLearnRoute(
   };
 }
 
+
+function withWorkflowConstraint(
+  route: {
+    next_action: string;
+    recommended_command: string;
+    required_context: string[];
+    required_files: string[];
+    must_update: string[];
+    exit_criteria: string;
+  },
+  phase: string,
+  gate: string,
+): typeof route {
+  const constrained = constrainRecommendedCommandToWorkflow(route.recommended_command, {
+    phase: phase as any,
+    gate: gate as any,
+  });
+  if (constrained === route.recommended_command) return route;
+  return {
+    ...route,
+    recommended_command: constrained,
+    next_action: constrained === 'docpath next --agent'
+      ? `${route.next_action}（FSM 约束：原推荐不合法，回退 next --agent）`
+      : `${route.next_action}（FSM 约束：推荐已对齐合法转移）`,
+  };
+}
+
 export function inferNextAction(
   state: Awaited<ReturnType<typeof readCurrentState>>,
   bc: BreadcrumbSummary,
@@ -546,14 +574,14 @@ export function inferNextAction(
 
   if (dirtyWorktree.isGitRepo && dirtyWorktree.dirty && isIdleOrCompleted) {
     const required = ['.docpath/workspace/current.md'];
-    return {
+    return withWorkflowConstraint({
       next_action: `当前 Git worktree 有 ${dirtyWorktree.files.length} 个未提交变更，先完成 git closeout 或创建隔离 worktree 后再启动新任务`,
       recommended_command: 'docpath changes --agent',
       required_context: required,
       required_files: required,
       must_update: [],
       exit_criteria: 'docpath changes --agent 已确认提交范围；新开发使用 docpath worktree create <slug> 隔离',
-    };
+    }, phase, gate);
   }
 
   let next_action = '评估当前任务状态';
@@ -578,7 +606,7 @@ export function inferNextAction(
     const required = reviewSkipped
       ? ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md']
       : ['.docpath/workspace/current.md', '.docpath/workspace/review.md', '.docpath/workspace/last-check.md'];
-    return {
+    return withWorkflowConstraint({
       next_action: reviewSkipped
         ? '审查已按工作流策略跳过，执行知识归档'
         : '审查已通过，执行知识归档',
@@ -587,7 +615,7 @@ export function inferNextAction(
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/workspace/decisions.md'],
       exit_criteria: '任务归档完成并进入 completed',
-    };
+    }, phase, gate);
   }
 
   if (drift.planDoneWithoutBreadcrumb.length > 0 || drift.breadcrumbDoneWithoutPlan.length > 0) {
@@ -600,19 +628,19 @@ export function inferNextAction(
         ? `breadcrumb done 但 plan 未勾选: ${drift.breadcrumbDoneWithoutPlan.join(', ')}`
         : '',
     ].filter(Boolean).join('; ');
-    return {
+    return withWorkflowConstraint({
       next_action: `修正 plan/breadcrumb 漂移: ${detail}`,
       recommended_command: 'docpath check',
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'],
       exit_criteria: 'plan checklist 与 breadcrumb done 记录一致',
-    };
+    }, phase, gate);
   }
 
   if (bc.blocked > 0) {
     const blocked = bc.entries.find(e => e.status === 'blocked');
-    return {
+    return withWorkflowConstraint({
       next_action: `处理阻塞步骤: ${blocked?.step || 'unknown'}`,
       recommended_command: blocked?.step ? `docpath recover ${blocked.step}` : 'docpath debug reproduce',
       required_context: [
@@ -627,7 +655,7 @@ export function inferNextAction(
       ],
       must_update: ['.docpath/workspace/breadcrumb.md'],
       exit_criteria: '阻塞项有复现、定位或修复记录',
-    };
+    }, phase, gate);
   }
 
   const activeCheckFailure = gate === 'check_fail'
@@ -640,170 +668,180 @@ export function inferNextAction(
         '.docpath/workspace/last-check.md',
         '.docpath/workspace/tdd-state.json',
       ];
-      return {
+      return withWorkflowConstraint({
         next_action: '质量检查失败，先修复失败项后回到 TDD 循环推进',
         recommended_command: 'docpath tdd next',
         required_context: required,
         required_files: required,
         must_update: ['.docpath/workspace/last-check.md', '.docpath/workspace/tdd-state.json'],
         exit_criteria: '修复失败项后重新通过 check，并推进 TDD 到下一阶段',
-      };
+      }, phase, gate);
     }
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md', '.docpath/workspace/breadcrumb.md'];
-    return {
+    return withWorkflowConstraint({
       next_action: '修复质量检查失败项',
       recommended_command: 'docpath debug reproduce',
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/workspace/last-check.md'],
       exit_criteria: '重新运行 docpath check 并通过',
-    };
+    }, phase, gate);
   }
 
   if (quickProfile && currentState !== 'completed' && phase !== 'completed') {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/quick.md'];
     if (gate === 'check_pass' || lastCheckPassed) {
-      return {
+      return withWorkflowConstraint({
         next_action: 'quick 任务已通过检查，执行压缩收口',
         recommended_command: 'docpath done',
         required_context: [...required, '.docpath/workspace/last-check.md'],
         required_files: [...required, '.docpath/workspace/last-check.md'],
         must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/workspace/decisions.md'],
         exit_criteria: 'quick 任务完成，review skip 由 quick profile 记录为审计证据',
-      };
+      }, phase, gate);
     }
-    return {
+    return withWorkflowConstraint({
       next_action: '执行 quick 任务改动并进行压缩收口',
       recommended_command: 'docpath done',
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/last-check.md', '.docpath/workspace/breadcrumb.md', '.docpath/workspace/decisions.md'],
       exit_criteria: 'docpath done 已运行 check，并按 quick profile 跳过 full review 后完成',
-    };
+    }, phase, gate);
   }
 
   const activeStep = [...bc.entries].reverse().find(e => e.status === 'in_progress');
   if (!isCompleted && activeStep) {
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'];
-    return {
+    return withWorkflowConstraint({
       next_action: `完成进行中的步骤: ${activeStep.step}`,
       recommended_command: `docpath agent step --step ${activeStep.step} --status done`,
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'],
       exit_criteria: `${activeStep.step} 已完成并记录 breadcrumb`,
-    };
+    }, phase, gate);
   }
 
   if (!isCompleted && firstOpenTask) {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md', '.docpath/tasks/current/plan.md'];
-    return {
+    return withWorkflowConstraint({
       next_action: `执行下一个未完成步骤: ${firstOpenTask.id} ${firstOpenTask.title}`,
       recommended_command: `docpath go --step ${firstOpenTask.id}`,
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'],
       exit_criteria: `${firstOpenTask.id} 已完成并勾选 plan checklist`,
-    };
+    }, phase, gate);
   }
 
-  if (!isCompleted && allPlanDone && !lastCheckPassed && gate !== 'check_pass') {
+  if (
+    !isCompleted
+    && allPlanDone
+    && gate !== 'check_pass'
+    && gate !== 'review_pass'
+    && gate !== 'review_skipped'
+    && gate !== 'review_fail'
+    && phase !== 'reviewing'
+    && phase !== 'journaling'
+    && phase !== 'completed'
+  ) {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'];
-    return {
+    return withWorkflowConstraint({
       next_action: '计划已完成，运行质量检查',
       recommended_command: 'docpath check',
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/last-check.md', '.docpath/workspace/breadcrumb.md'],
       exit_criteria: 'last-check.md 显示 PASS',
-    };
+    }, phase, gate);
   }
 
   if (!isCompleted && gate === 'check_pass') {
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md'];
-    return {
+    return withWorkflowConstraint({
       next_action: '质量检查已通过，执行审查',
       recommended_command: 'docpath review',
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/review.md', '.docpath/workspace/breadcrumb.md'],
       exit_criteria: '审查通过并记录 review 证据',
-    };
+    }, phase, gate);
   }
 
   if (isCompleted) {
     const required = ['.docpath/workspace/current.md'];
     if (gitCloseout?.needs_closeout) {
-      return {
+      return withWorkflowConstraint({
         next_action: '任务已完成，先运行 git closeout 只读检查',
         recommended_command: 'docpath changes --agent',
         required_context: required,
         required_files: required,
         must_update: [],
         exit_criteria: 'docpath changes --agent 已确认提交范围、canonical ignored evidence 与门禁证据',
-      };
+      }, phase, gate);
     }
     if (acceptedBacklog) {
-      return {
+      return withWorkflowConstraint({
         next_action: `从 backlog 拉起下一项任务: ${acceptedBacklog.id} ${acceptedBacklog.title}`,
         recommended_command: `docpath backlog promote ${acceptedBacklog.id}`,
         required_context: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
         required_files: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
         must_update: [],
         exit_criteria: `${acceptedBacklog.id} 已 promote 成活跃任务`,
-      };
+      }, phase, gate);
     }
     if (hasPendingLessonCandidates) {
       return buildLearnRoute(lessonSummary, hasHealthWarning, globalRules);
     }
     if (immatureAcceptedBacklog) {
-      return {
+      return withWorkflowConstraint({
         next_action: `backlog 条目尚未达到可执行成熟度: ${immatureAcceptedBacklog.id} ${immatureAcceptedBacklog.title}`,
         recommended_command: `docpath backlog edit ${immatureAcceptedBacklog.id} --readiness analyzed --evidence-analysis <path>`,
         required_context: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
         required_files: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
         must_update: [],
         exit_criteria: `${immatureAcceptedBacklog.id} 已补齐 readiness/evidence 后再 promote`,
-      };
+      }, phase, gate);
     }
     if (proposedBacklog) {
       if (!isExecutableBacklogItem(proposedBacklog)) {
-        return {
+        return withWorkflowConstraint({
           next_action: `先分析 backlog 条目再接收: ${proposedBacklog.id} ${proposedBacklog.title}`,
           recommended_command: `docpath brainstorm --dry-run --input ${quoteInline(proposedBacklog.title)}`,
           required_context: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
           required_files: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
           must_update: ['.docpath/backlog/'],
           exit_criteria: `${proposedBacklog.id} 已完成 dry-run 分析并通过 backlog edit 补齐 readiness/evidence 后再 accept`,
-        };
+        }, phase, gate);
       }
-      return {
+      return withWorkflowConstraint({
         next_action: `先接收 backlog 条目: ${proposedBacklog.id} ${proposedBacklog.title}`,
         recommended_command: `docpath backlog accept ${proposedBacklog.id}`,
         required_context: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
         required_files: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
         must_update: [],
         exit_criteria: `${proposedBacklog.id} 已进入 accepted`,
-      };
+      }, phase, gate);
     }
     if (!acceptedBacklog && !proposedBacklog && historicalTaskDirCount > GC_TASK_DIR_THRESHOLD) {
-      return {
+      return withWorkflowConstraint({
         next_action: `检测到 ${historicalTaskDirCount} 个历史任务目录，建议预览 workspace cleanup 与历史任务归档候选`,
         recommended_command: 'docpath gc',
         required_context: required,
         required_files: required,
         must_update: [],
         exit_criteria: '已预览 workspace cleanup 与历史任务归档候选；确认后可运行 docpath gc --force',
-      };
+      }, phase, gate);
     }
-    return {
+    return withWorkflowConstraint({
       next_action: '任务已完成，可捕获新想法；若需求已经清晰，再运行 analyze/refine 后创建可执行 backlog',
       recommended_command: 'docpath backlog capture --title <title>',
       required_context: required,
       required_files: required,
       must_update: [],
       exit_criteria: '已捕获 raw backlog 条目，或已完成 analyze/refine 后创建成熟 backlog',
-    };
+    }, phase, gate);
   }
 
   switch (currentState) {
@@ -905,7 +943,7 @@ export function inferNextAction(
       recommended_command = 'docpath status';
   }
 
-  return { next_action, recommended_command, required_context, required_files: required_context, must_update, exit_criteria };
+  return withWorkflowConstraint({ next_action, recommended_command, required_context, required_files: required_context, must_update, exit_criteria }, phase, gate);
 }
 
 export type RouteSummary = ReturnType<typeof inferNextAction>;

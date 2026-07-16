@@ -1368,4 +1368,60 @@ warned: false
     assert.match(sentinel, /warned: true/);
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('after check_pass with completed plan recommends review not plan', () => {
+    const plan = [
+      '## 执行计划',
+      '',
+      '### S1: Done step',
+      '- [x] S1: Done step',
+      '- **描述**: finished',
+      '- **验收条件**: done',
+      '',
+      '## Checklist',
+      '- [x] S1',
+    ].join('\n');
+    const breadcrumb = [
+      '# Breadcrumb',
+      '',
+      '### ✅ S1 [T-NEXT] — 2026-05-29T00:00:00.000Z',
+      '',
+      '---',
+      'taskId: T-NEXT',
+      'step: S1',
+      'status: done',
+      'timestamp: 2026-05-29T00:00:00.000Z',
+      '---',
+      '',
+      '- **状态**: done',
+      '- **上下文**: done',
+      '',
+    ].join('\n');
+    const cwd = mkWorkspace({
+      phase: 'checking',
+      gate: 'check_pass',
+      plan,
+      lastCheck: '**结果**: ✅ PASS\n',
+      breadcrumb,
+    });
+    // Provide a complete-looking spec so drafting/plan routes cannot win
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), [
+      '# T-NEXT - Next routing',
+      '',
+      '## 1. 背景与动机',
+      'Complete enough for routing tests.',
+      '',
+      '## 2. 需求清单',
+      '### 功能需求',
+      '- [x] FR-1: done',
+      '',
+      '## 5. 验收标准',
+      '- [x] AC-1: done',
+    ].join('\n'));
+
+    const output = nextAgent(cwd);
+    assert.equal(output.recommended_command, 'docpath review');
+    assert.doesNotMatch(output.recommended_command || '', /docpath plan/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

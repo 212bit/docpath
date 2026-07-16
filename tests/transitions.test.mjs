@@ -130,7 +130,7 @@ describe('transitionWorkflow', () => {
     );
     await assert.rejects(
       () => transitionWorkflow(cwd, 'journal.archived'),
-      /建议下一步: docpath check 或 docpath review/,
+      /建议下一步: docpath check/,
     );
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -183,6 +183,82 @@ describe('transitionWorkflow', () => {
     const next = await transitionWorkflow(cwd, 'journal.archived');
     assert.equal(next.phase, 'completed');
     assert.equal(next.gate, 'review_skipped');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+});
+
+describe('FSM next_hint single-source helpers', () => {
+  let preferredWorkflowCommand;
+  let isWorkflowGateCommand;
+  let isWorkflowGateCommandAllowed;
+  let constrainRecommendedCommandToWorkflow;
+  let workflowEventSuggestedCommand;
+  let listValidWorkflowEvents;
+
+  before(async () => {
+    ({
+      preferredWorkflowCommand,
+      isWorkflowGateCommand,
+      isWorkflowGateCommandAllowed,
+      constrainRecommendedCommandToWorkflow,
+      workflowEventSuggestedCommand,
+      listValidWorkflowEvents,
+    } = await import('../dist/engine/transitions.js'));
+  });
+
+  it('exports suggested command for check.passed as review', () => {
+    assert.equal(workflowEventSuggestedCommand('check.passed'), 'docpath review');
+  });
+
+  it('prefers review when phase=checking gate=check_pass', () => {
+    assert.equal(preferredWorkflowCommand({ phase: 'checking', gate: 'check_pass' }), 'docpath review');
+    assert.equal(
+      isWorkflowGateCommandAllowed('docpath review', { phase: 'checking', gate: 'check_pass' }),
+      true,
+    );
+    // journal.archived is also FSM-legal after check_pass (quick archive path)
+    assert.equal(
+      isWorkflowGateCommandAllowed('docpath journal', { phase: 'checking', gate: 'check_pass' }),
+      true,
+    );
+  });
+
+  it('constrains illegal review recommendation from executing to a legal FSM command', () => {
+    const constrained = constrainRecommendedCommandToWorkflow('docpath review', {
+      phase: 'executing',
+      gate: 'none',
+    });
+    assert.notEqual(constrained, 'docpath review');
+    assert.match(constrained, /docpath (check|next --agent)/);
+  });
+
+  it('does not rewrite non-gate backlog routes', () => {
+    const cmd = 'docpath backlog promote R-1';
+    assert.equal(isWorkflowGateCommand(cmd), false);
+    assert.equal(
+      constrainRecommendedCommandToWorkflow(cmd, { phase: 'completed', gate: 'review_pass' }),
+      cmd,
+    );
+  });
+
+  it('lists only legal events for reviewing/review_pass including journal.archived', () => {
+    const events = listValidWorkflowEvents({ phase: 'reviewing', gate: 'review_pass' }).map((e) => e.event);
+    assert.ok(events.includes('journal.archived'));
+    assert.equal(preferredWorkflowCommand({ phase: 'reviewing', gate: 'review_pass' }), 'docpath journal');
+  });
+
+  it('illegal transition recovery suggests a currently legal command', async () => {
+    const cwd = mkWorkspace({ phase: 'executing', gate: 'none' });
+    await assert.rejects(
+      () => transitionWorkflow(cwd, 'review.passed'),
+      (err) => {
+        assert.match(String(err.message), /Illegal workflow transition/);
+        // must not suggest journal/review when neither is legal from executing/none
+        assert.doesNotMatch(String(err.message), /建议下一步: docpath journal/);
+        assert.match(String(err.message), /建议下一步: docpath (check|next --agent)/);
+        return true;
+      },
+    );
     rmSync(cwd, { recursive: true, force: true });
   });
 });

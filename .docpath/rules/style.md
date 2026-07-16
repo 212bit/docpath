@@ -35,3 +35,10 @@
 ### Evidence
 - T-20260715-docpath-init-scan-existing S8: write-spec 后 phase=drafting, run start --step S8 恢复
 - src/engine/transitions.ts:72-74 from 列表
+
+## gotcha: check 通过后 next_hint 必须读 gate=check_pass，不能再走 allPlanDone→check
+- rationale: 仅看 plan 全完成会在 check 已通过时仍推荐 plan/check，与正文 review 分叉
+触发: phase=checking gate=check_pass 且 plan 全完成。期望: recommended_command=docpath review（或 profile 等价）。边界: plan/breadcrumb drift 与 blocked 仍可优先。
+### Evidence
+- src/utils/agent-output/formatters.ts
+- tests/next.test.mjs

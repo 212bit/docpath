@@ -397,6 +397,13 @@ function nextActionForIntake(docpathDir: string, state: ProjectIntakeState): { n
   };
 }
 
+function printIntakeNextHint(route: { next_action: string; recommended_command: string; exit_criteria: string }): void {
+  console.log('next_hint:');
+  console.log(`  next_action: ${route.next_action}`);
+  console.log(`  recommended_command: ${route.recommended_command}`);
+  console.log(`  exit_criteria: ${route.exit_criteria}`);
+}
+
 function printAgentStatus(docpathDir: string, state: ProjectIntakeState): void {
   const route = nextActionForIntake(docpathDir, state);
   const missing = missingAnalysisSections(docpathDir, state.id);
@@ -519,10 +526,7 @@ async function projectCapture(options: ProjectCommandOptions): Promise<void> {
   if (sources[0]?.content_path) console.log(`   source: ${sources[0].content_path}`);
   if (sources[0]?.original_path && !sources[0]?.content_path) console.log(`   source_ref: ${sources[0].original_path}`);
   console.log('');
-  console.log('next_hint:');
-  console.log(`  next_action: shape requirements from captured project materials ${intakeId}`);
-  console.log(`  recommended_command: docpath project analyze ${intakeId} --dry-run`);
-  console.log('  exit_criteria: requirements-shaping analysis sections are written under analysis/');
+  printIntakeNextHint(nextActionForIntake(docpathDir, state));
 }
 
 async function projectAnalyze(options: ProjectCommandOptions): Promise<void> {
@@ -569,17 +573,7 @@ async function projectAnalyze(options: ProjectCommandOptions): Promise<void> {
   console.log(`   section: ${section}`);
   console.log(`   path: ${relativePath!}`);
   console.log('');
-  console.log('next_hint:');
-  if (writtenSections!.length === ANALYSIS_SECTIONS.length) {
-    console.log(`  next_action: create requirements brief with approval gate for ${intakeId}`);
-    console.log(`  recommended_command: docpath project brief ${intakeId} --dry-run`);
-    console.log('  exit_criteria: brief.md captures scope, gaps, decisions, acceptance candidates, and approval gate');
-  } else {
-    const missing = ANALYSIS_SECTIONS.filter((candidate) => !writtenSections!.includes(candidate));
-    console.log(`  next_action: complete remaining requirements-shaping analysis sections: ${missing.join(', ')}`);
-    console.log(`  recommended_command: docpath project analyze ${intakeId} --section ${missing[0]} --stdin`);
-    console.log('  exit_criteria: all requirements-shaping analysis sections are written');
-  }
+  printIntakeNextHint(nextActionForIntake(docpathDir, await readIntakeState(docpathDir, intakeId)));
 }
 
 async function projectBrief(options: ProjectCommandOptions): Promise<void> {
@@ -618,10 +612,7 @@ async function projectBrief(options: ProjectCommandOptions): Promise<void> {
   console.log(`✅  project brief 已写入: ${intakeId}`);
   console.log(`   path: ${relativePath!}`);
   console.log('');
-  console.log('next_hint:');
-  console.log(`  next_action: settle requirements, architecture, phase scope, and approval ${intakeId}`);
-  console.log(`  recommended_command: docpath project settle ${intakeId} --dry-run`);
-  console.log('  exit_criteria: settle.md records approved truth sources, gap states, and backlog eligibility');
+  printIntakeNextHint(nextActionForIntake(docpathDir, await readIntakeState(docpathDir, intakeId)));
 }
 
 async function projectSettle(options: ProjectCommandOptions): Promise<void> {
@@ -667,15 +658,21 @@ async function projectSettle(options: ProjectCommandOptions): Promise<void> {
   console.log(`   path: ${relativePath!}`);
   console.log(`   approval_state: ${approvalState}`);
   console.log('');
-  console.log('next_hint:');
-  if (approvalState === 'blocked') {
-    console.log(`  next_action: resolve blocking gaps before backlog decomposition ${intakeId}`);
-    console.log(`  recommended_command: docpath project settle ${intakeId} --dry-run`);
-    console.log('  exit_criteria: blocking gaps are resolved or reclassified');
-  } else {
-    console.log(`  next_action: create backlog guidance from settled project scope ${intakeId}`);
-    console.log(`  recommended_command: docpath project backlog ${intakeId} --dry-run`);
-    console.log('  exit_criteria: backlog guidance references settle evidence and phase scope anchors');
+  {
+    const settled = await readIntakeState(docpathDir, intakeId);
+    if (settled.approval_state === 'blocked') {
+      printIntakeNextHint({
+        next_action: `resolve blocking gaps before backlog decomposition ${intakeId}`,
+        recommended_command: `docpath project settle ${intakeId} --dry-run`,
+        exit_criteria: 'blocking gaps are resolved or reclassified',
+      });
+    } else {
+      printIntakeNextHint({
+        next_action: `create backlog guidance from settled project scope ${intakeId}`,
+        recommended_command: `docpath project backlog ${intakeId} --dry-run`,
+        exit_criteria: 'backlog guidance references settle evidence and phase scope anchors',
+      });
+    }
   }
 }
 
@@ -747,10 +744,11 @@ async function projectBacklog(options: ProjectCommandOptions): Promise<void> {
   console.log(`   path: ${relativePath!}`);
   console.log('   status: confirmed');
   console.log('');
-  console.log('next_hint:');
-  console.log(`  next_action: create reviewed backlog items from approved intake guidance ${intakeId}`);
-  console.log(`  recommended_command: docpath backlog add --title "<title>" --evidence-analysis "${relativePath!}"`);
-  console.log('  exit_criteria: reviewed backlog items are captured with project-intake provenance');
+  printIntakeNextHint({
+    next_action: `create reviewed backlog items from approved intake guidance ${intakeId}`,
+    recommended_command: `docpath backlog add --title "<title>" --evidence-analysis "${relativePath!}"`,
+    exit_criteria: 'reviewed backlog items are captured with project-intake provenance',
+  });
 }
 
 async function projectStatus(options: ProjectCommandOptions): Promise<void> {

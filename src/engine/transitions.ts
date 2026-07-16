@@ -105,6 +105,112 @@ export function listValidWorkflowEvents(previous: Pick<CurrentState, 'phase' | '
   });
 }
 
+/** Suggested CLI after a named workflow event succeeds (or when recovering that event). */
+export function workflowEventSuggestedCommand(event: WorkflowEvent): string {
+  return EVENT_RECOVERY_COMMAND[event] || 'docpath next --agent';
+}
+
+/** Gate-progression CLI verbs that must stay consistent with FSM legality. */
+const WORKFLOW_GATE_COMMAND_PREFIXES = [
+  'docpath check',
+  'docpath review',
+  'docpath journal',
+  'docpath done',
+  'docpath recover',
+  'docpath debug reproduce',
+  'docpath tdd next',
+] as const;
+
+export function isWorkflowGateCommand(command: string): boolean {
+  const cmd = command.trim();
+  return WORKFLOW_GATE_COMMAND_PREFIXES.some((prefix) => cmd === prefix || cmd.startsWith(`${prefix} `));
+}
+
+/**
+ * Preferred machine command derived only from FSM-valid events at current phase/gate.
+ * Gate completion status decides between peer-legal events (e.g. review vs journal
+ * both legal from checking/check_pass for quick archive, but standard path wants review first).
+ */
+export function preferredWorkflowCommand(previous: Pick<CurrentState, 'phase' | 'gate'>): string {
+  const valid = new Set(listValidWorkflowEvents(previous).map((item) => item.event));
+  const gate = previous.gate;
+
+  // Review already decided → archive next
+  if ((gate === 'review_pass' || gate === 'review_skipped') && valid.has('journal.archived')) {
+    return 'docpath journal';
+  }
+  // Check passed, review not yet done → review (or quick done path leaves journal also legal)
+  if (gate === 'check_pass' && (valid.has('review.passed') || valid.has('review.skipped') || valid.has('review.failed'))) {
+    return 'docpath review';
+  }
+  if (gate === 'review_fail' && (valid.has('review.passed') || valid.has('review.failed'))) {
+    return 'docpath review';
+  }
+  if (gate === 'check_fail' && (valid.has('check.passed') || valid.has('check.failed'))) {
+    return 'docpath check';
+  }
+  if (valid.has('journal.archived')) return 'docpath journal';
+  if (valid.has('review.passed') || valid.has('review.failed') || valid.has('review.skipped')) {
+    return 'docpath review';
+  }
+  if (valid.has('check.passed') || valid.has('check.failed')) return 'docpath check';
+  if (valid.has('plan.ready')) return 'docpath plan';
+  if (valid.has('step.started')) return 'docpath next --agent';
+  return 'docpath next --agent';
+}
+
+/** Whether a recommended CLI verb is legal under current FSM phase/gate. */
+export function isWorkflowGateCommandAllowed(
+  command: string,
+  previous: Pick<CurrentState, 'phase' | 'gate'>,
+): boolean {
+  const cmd = command.trim();
+  if (!isWorkflowGateCommand(cmd)) return true;
+
+  const valid = new Set(listValidWorkflowEvents(previous).map((item) => item.event));
+
+  if (cmd === 'docpath review' || cmd.startsWith('docpath review ')) {
+    return valid.has('review.passed') || valid.has('review.failed') || valid.has('review.skipped');
+  }
+  if (cmd === 'docpath check' || cmd.startsWith('docpath check ')) {
+    return valid.has('check.passed') || valid.has('check.failed');
+  }
+  if (cmd === 'docpath journal' || cmd.startsWith('docpath journal ')) {
+    return valid.has('journal.archived');
+  }
+  if (cmd === 'docpath done' || cmd.startsWith('docpath done ')) {
+    // quick closeout: legal when archive is open, or check just passed (review skipped path)
+    return valid.has('journal.archived') || valid.has('check.passed') || valid.has('review.skipped');
+  }
+  if (cmd.startsWith('docpath recover')) {
+    // recover is breadcrumb-scoped; router only emits it when blocked entries exist.
+    // FSM phase/gate alone cannot authorize or deny it — pass through.
+    return true;
+  }
+  if (cmd === 'docpath debug reproduce' || cmd.startsWith('docpath debug ')) {
+    // troubleshooting pass-through when check/review failed, else allow if currently failing
+    return true;
+  }
+  if (cmd === 'docpath tdd next' || cmd.startsWith('docpath tdd ')) {
+    return true;
+  }
+  return true;
+}
+
+/**
+ * If recommended_command is a gate verb illegal at current phase/gate, replace with
+ * FSM-derived preferred command. Non-gate routes (backlog/learn/go/plan) pass through.
+ */
+export function constrainRecommendedCommandToWorkflow(
+  command: string,
+  previous: Pick<CurrentState, 'phase' | 'gate'>,
+): string {
+  const cmd = command.trim() || 'docpath next --agent';
+  if (!isWorkflowGateCommand(cmd)) return cmd;
+  if (isWorkflowGateCommandAllowed(cmd, previous)) return cmd;
+  return preferredWorkflowCommand(previous);
+}
+
 const DEFAULT_STEP: Record<WorkflowEvent, string> = {
   'task.created': '任务已创建，下一步: 编写或细化 spec',
   'plan.ready': '计划已就绪，下一步: 开始执行',
@@ -157,7 +263,7 @@ export async function transitionWorkflow(
     const previous = await readCurrentState(cwd) || fallbackState();
     if (!target.from.includes(previous.phase)) {
       const allowedFrom = target.from.join(', ');
-      const suggested = EVENT_RECOVERY_COMMAND[event] || 'docpath next --agent';
+      const suggested = preferredWorkflowCommand(previous);
       throw new Error(
         `[docpath] Illegal workflow transition: ${event} cannot run from phase=${previous.phase}` +
         `（允许来源: ${allowedFrom}；建议下一步: ${suggested}）`,
@@ -169,7 +275,7 @@ export async function transitionWorkflow(
     // 但「检查未过不得评审」必须由 FSM 层兜住，而非仅靠命令层自觉。
     if (target.requiredGate && !target.requiredGate.includes(previous.gate)) {
       const allowedGate = target.requiredGate.join(', ');
-      const suggested = EVENT_RECOVERY_COMMAND[event] || 'docpath next --agent';
+      const suggested = preferredWorkflowCommand(previous);
       throw new Error(
         `[docpath] Illegal workflow transition: ${event} cannot run with gate=${previous.gate}` +
         `（允许门禁: ${allowedGate}；建议下一步: ${suggested}）`,

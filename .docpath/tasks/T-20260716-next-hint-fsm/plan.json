@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-16T01:48:07.457Z",
-    "updated_at": "2026-07-16T01:48:07.457Z",
-    "content_sha256": "af45b641e61f94af524719d9d8ef0f52a47a02496fc28648154829b0913a4f17"
+    "created_at": "2026-07-16T01:59:18.435Z",
+    "updated_at": "2026-07-16T01:59:18.435Z",
+    "content_sha256": "959f35521567a57b9420b7f26ca61c3294a3ccfa8cbf345372d4674ab4a9e39d"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-16T01:48:07.457Z",
+  "generated_at": "2026-07-16T01:59:18.435Z",
   "steps": [
     {
       "id": "S1",
@@ -16,7 +16,7 @@
       "description": "在 transitions.ts 导出 workflowEventSuggestedCommand 与 listPreferredWorkflowCommands / isWorkflowGateCommand 辅助，基于 EVENT_TARGETS + EVENT_RECOVERY_COMMAND，不改 phase/gate 矩阵。",
       "acceptance": "可从 phase/gate 列出合法 gate 类 CLI 建议；非法转移错误中的 suggested 与同一映射一致。",
       "dependencies": "无",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S2",
@@ -24,7 +24,7 @@
       "description": "inferNextAction 返回 check/review/journal/recover/done 等 gate 类命令前，用 FSM 合法候选校验；非法则回退 preferred FSM 命令或 docpath next --agent。保持 backlog/learn/closeout 阶梯不变。",
       "acceptance": "AC-1/AC-2 对应路径满足；非 gate 路由行为不变。",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S3",
@@ -32,7 +32,7 @@
       "description": "确认 lifecycle 命令仅经 emitNextHint；project intake 重复 next_hint 字符串收敛到 nextActionForIntake 单源（若仍有重复）。",
       "acceptance": "AC-3/AC-5。",
       "dependencies": "S2",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S4",
@@ -40,7 +40,7 @@
       "description": "增加/更新单元与集成测试：check→review hint、blocked-only recover、FSM 约束单元；跑相关测试并 check/review。",
       "acceptance": "AC-4 通过；docpath check/review 通过。",
       "dependencies": "S3",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }
