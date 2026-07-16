@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-16T02:11:41.771Z",
-    "updated_at": "2026-07-16T02:11:41.771Z",
-    "content_sha256": "0f385986c7ab8810abba828f69c87e31220efd33dfdefde49278a500de27a262"
+    "created_at": "2026-07-16T02:11:44.615Z",
+    "updated_at": "2026-07-16T02:11:44.615Z",
+    "content_sha256": "0e31964af0d207e33f2123cb2e9d320a9ed2c7f8b11315bf229204a66dc7aaa0"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-16T02:11:41.771Z",
+  "generated_at": "2026-07-16T02:11:44.615Z",
   "steps": [
     {
       "id": "S1",
@@ -16,7 +16,7 @@
       "description": "确认 isCurrentTaskExecutionPath 含 docs-index/docs.md；相关测试通过。",
       "acceptance": "AC-1/2/3",
       "dependencies": "无",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

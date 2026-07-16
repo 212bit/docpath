@@ -1,2 +1,6 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-check-docs-scan-go","step":"S1","status":"in_progress","context":"开始执行: 验证 closeout dirty 白名单","timestamp":"2026-07-16T02:11:42.695Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-check-docs-scan-go","step":"S1","status":"in_progress","context":"implementation already landed; verify and close","timestamp":"2026-07-16T02:11:43.464Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-check-docs-scan-go","step":"S1","status":"done","context":"implemented in 2044874; dirty-worktree-guard tests pass","timestamp":"2026-07-16T02:11:44.611Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-check-docs-scan-go","step":"check","status":"done","context":"质量检查通过 (9 项)","timestamp":"2026-07-16T02:11:48.238Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-check-docs-scan-go","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-07-16T02:12:03.054Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-check-docs-scan-go","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-07-16T02:12:04.712Z"}

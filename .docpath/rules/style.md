@@ -42,3 +42,9 @@
 ### Evidence
 - src/utils/agent-output/formatters.ts
 - tests/next.test.mjs
+
+## gotcha: check 自动刷新的 docs-index/docs.md 应视为 execution-start 可放行路径
+- rationale: 否则 check→go 串联互绊
+触发: check 自动刷新 docs-index 后 go/agent enter。期望: dirty guard 放行这两文件。边界: 业务源码脏文件仍阻断。
+### Evidence
+- src/utils/git-dirty-guard.ts
