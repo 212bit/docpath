@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T02:13:03.323Z",
+    "updated_at": "2026-07-16T02:13:03.323Z",
+    "content_sha256": "b7e1ddd60d628d6a5d9dc2c779e829bd18d1ce2b4096ce8c090f64a9bbd2df48"
+  },
+  "task_id": "T-20260716-wip-agent-handoff",
+  "backlog_id": "R-272",
+  "title": "T-20260716-wip-agent-handoff - WIP note on handoff/enter",
+  "generated_at": "2026-07-16T02:13:03.323Z",
+  "scope": {
+    "included": [],
+    "excluded": []
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [
+      "否（已实现并测试）"
+    ],
+    "user_confirmed": "goal 完成剩余 backlog；实现已落地 2044874",
+    "decision_brief_markdown": "- 用户确认: goal 完成剩余 backlog；实现已落地 2044874"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "agent handoff 写入 wip-note.md（task/step/dirty 摘要）",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "agent enter 在 in_progress + dirty 时写入 wip-note.md",
+      "done": true
+    },
+    {
+      "id": "FR-3",
+      "text": "不通过 breadcrumb done 伪步骤引入 plan drift",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "WIP 文件位于 workspace 运行时目录",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "handoff writes wip-note.md",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "enter records WIP when dirty+in_progress",
+      "done": true
+    },
+    {
+      "id": "AC-3",
+      "text": "no plan/breadcrumb drift",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
