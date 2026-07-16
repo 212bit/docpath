@@ -4,3 +4,6 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-install-check-install-p0","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-07-16T17:59:12.142Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-install-check-install-p0","step":"S3","status":"in_progress","context":"S3 验证: 三方向用例+doctor json AC-2+全量 647 绿+当前仓 check 无回归","timestamp":"2026-07-16T17:59:12.732Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-install-check-install-p0","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-07-16T17:59:13.093Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-install-check-install-p0","step":"check","status":"done","context":"质量检查通过 (10 项)","timestamp":"2026-07-16T18:04:42.358Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-install-check-install-p0","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-07-16T18:05:09.074Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-install-check-install-p0","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-07-16T18:08:45.340Z"}

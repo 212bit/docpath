@@ -2,7 +2,7 @@
 
 > 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。
 
-> 扫描时间: 2026-07-16T17:10:49.744Z
+> 扫描时间: 2026-07-16T18:04:41.846Z
 
 ## 文档列表
 
@@ -27,8 +27,13 @@
 | backlog/R-262.md | runbook | project | 2 | false | false | false | 2151 |  | R-262 | [来源: 2026-07-13 R-266 收尾复盘] 一个工作树混了三类未提交/已 commit 产物 | 2026-07-15T17:32:21.732Z | 6.1KB |
 | backlog/R-263.md | runbook | project | 2 | false | false | false | 2235 |  | R-263 | [来源: 2026-07-14 R-260 立项实操] promote R-260 成 task | 2026-07-15T17:32:04.930Z | 6.3KB |
 | backlog/R-268.md | runbook | project | 2 | false | false | false | 673 |  | R-268 | write-spec stdin 在同一已启动任务内重同步 spec 真源时不应重置 workflow phase。当前问题是相同 task_id 的 spec 同步会走 task created 转移，把 executing checking planning 误回到 drafting，并可能给出错误恢复提示。本次只处理同任务重同步和提示选择，不改变新任务 | 2026-07-15T17:48:15.618Z | 1.8KB |
-| backlog/R-277.md | runbook | project | 2 | false | false | false | 957 |  | R-277 | install-manifest-drift 诊断时发现 (2026-07-17, analysis: .docpath/backlog/analysis/R-277-analysis.md): | 2026-07-16T16:42:18.643Z | 2.7KB |
 | backlog/R-278.md | runbook | project | 2 | false | false | false | 277 |  | R-278 | 2026-07-17 R-277 执行中实测: AGENTS.md 在 isLocallyCustomizableInstallAsset 豁免名单 (drift 检查跳过, 语义=允许本地定制), 但 install --force 仍直接用模板覆写, 丢失本地 Git Convention 定制章节 (本次从 HEAD 恢复)。豁免语义与 force 覆 | 2026-07-16T17:04:43.842Z | 796B |
+| backlog/R-279.md | runbook | project | 2 | false | false | false | 1009 |  | R-279 | R-277 实证 (2026-07-17): 本地 CLAUDE.md 承载 R-269/R-273 用户确认修正, 模板是 | 2026-07-16T17:39:54.680Z | 2.7KB |
+| backlog/R-280.md | runbook | project | 2 | false | false | false | 270 |  | R-280 | 本会话两次实证: promote 失败被管道吞掉后 && 链继续, go --step S1 在 state=completed 的任务上执行, 向已归档证据 canonical breadcrumb.jsonl 追加伪事件 (13:53 S1 无 start 配对), 脏文件再反过来挡 promote, 需 git checkout 恢复。complete | 2026-07-16T17:35:35.267Z | 814B |
+| backlog/R-281.md | runbook | project | 2 | false | false | false | 353 |  | R-281 | R-274 实证: 提示只说'补齐 Decision Brief 和用户确认', 不说明 (a) 勾'否'在有未提交策略文件信号时永远无效 (structuredMajorGateConfirmation required=false 短路返回 false) (b) 两条合法出路——真重大: 是+Decision Brief+用户确认可带脏策略文件通过 (R | 2026-07-16T17:35:35.417Z | 972B |
+| backlog/R-282.md | runbook | project | 2 | false | false | false | 284 |  | R-282 | R-276/R-277 两次实证: capture 后 edit --acceptance 填了 frontmatter 字段, promote 仍报'正文仍为空或包含占位内容'——字段编辑不改写 body 的 '## 验收 - 待补充' 节, 报错也不指明是正文哪节占位, 只能 --body-file 全量重写。修法: (a) --acceptance/- | 2026-07-16T17:36:30.990Z | 829B |
+| backlog/R-283.md | runbook | project | 2 | false | false | false | 264 |  | R-283 | R-275/R-276 的 S3 认领两次被 dirty guard 拒 (本任务实现未提交是执行期常态), 只能按 rules gotcha 走 docpath run start 恢复归属。对'当前任务的顺序下一步'认领应放行本任务范围内脏文件 (可复用 changes --agent 的任务归组判定); 新任务启动/跨任务场景维持拦截。 | 2026-07-16T17:36:31.165Z | 734B |
+| backlog/R-284.md | runbook | project | 2 | false | false | false | 336 |  | R-284 | 三次 promote 实证 (R-275/R-276/R-277): (1) AC 行 'AC-1: AC-1:' 双前缀——backlog 验收行自带编号再拼一次; (2) Decision Brief 解析出 '当前问题: ## 背景' 垃圾值——把节标题当正文; (3) 变更类型自动预勾两次不准 (R-275 勾架构/工作流, R-276 勾权限/范围 | 2026-07-16T17:36:31.326Z | 931B |
 | backlog/analysis/R-230-open-questions.md | runbook | project | 2 | false | false | false | 2239 |  | DocPath UI Design - Open Questions | - **背景**：当前 Dashboard 使用深色 Obsidian 主题，改造后计划使用温暖浅色 | 2026-06-21T17:43:53.174Z | 5.6KB |
 | backlog/analysis/R-230-product.md | runbook | project | 2 | false | false | false | 1453 |  | DocPath UI Design - Product Analysis | - **效率提升**：通过可视化仪表盘，2 秒内定位需要人工介入的阻塞点，而非逐个项目运行 `docpath status` | 2026-06-21T17:43:53.162Z | 3.6KB |
 | backlog/analysis/R-230-requirements.md | runbook | project | 2 | false | false | false | 1432 |  | DocPath UI Design - Requirements Analysis | DocPath 是一个渐进式文档驱动工作流 CLI 工具，专为大模型 Agent 和人类开发者设计。当前已有基础 Dashboard UI，使用 React + Tailwind CSS 4 + Vite 构建。 | 2026-06-21T17:43:53.158Z | 3.4KB |
@@ -129,7 +134,8 @@
 | backlog/archived/R-274.md | runbook | project | 2 | false | false | false | 966 |  | R-274 | 2026-07-16 代码核验 (analysis: .docpath/backlog/analysis/R-274-analysis.md): | 2026-07-16T11:59:48.912Z | 2.6KB |
 | backlog/archived/R-275.md | runbook | project | 2 | false | false | false | 1600 |  | R-275 | 2026-07-16 代码核验 (analysis: .docpath/backlog/analysis/R-275-analysis.md): | 2026-07-16T13:06:32.517Z | 4.2KB |
 | backlog/archived/R-276.md | runbook | project | 2 | false | false | false | 1909 |  | R-276 | 2026-07-16 代码核验 (analysis: .docpath/backlog/analysis/R-276-analysis.md): | 2026-07-16T15:46:16.775Z | 4.9KB |
-| backlog/backlog.md | runbook | project | 2 | false | false | false | 384 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-16T17:04:43.866Z | 1.2KB |
+| backlog/archived/R-277.md | runbook | project | 2 | false | false | false | 1549 |  | R-277 | install-manifest-drift 诊断时发现 (2026-07-17, analysis: .docpath/backlog/analysis/R-277-analysis.md): | 2026-07-16T17:11:56.356Z | 4.2KB |
+| backlog/backlog.md | runbook | project | 2 | false | false | false | 590 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-16T17:39:54.711Z | 1.7KB |
 | commands/docpath-agent-done.md | reference | project | 3 | false | false | false | 280 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-07-16T16:53:46.631Z | 1.1KB |
 | commands/docpath-agent-enter.md | reference | project | 3 | false | false | false | 315 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-07-16T16:53:46.631Z | 1.2KB |
 | commands/docpath-agent-handoff.md | reference | project | 3 | false | false | false | 277 |  | /docpath-agent-handoff | Persist a compact handoff package for the next Claude Code session. | 2026-07-16T16:53:46.631Z | 1.1KB |
@@ -169,24 +175,24 @@
 | commands/docpath-write-journal.md | reference | project | 3 | false | false | false | 198 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task through the CLI. | 2026-07-16T16:53:46.641Z | 792B |
 | commands/docpath-write-plan.md | reference | project | 3 | false | false | false | 216 |  | /docpath-write-plan | Artifact sink: write an execution plan already generated by the current agent | 2026-07-16T16:53:46.641Z | 862B |
 | commands/docpath-write-spec.md | reference | project | 3 | false | false | false | 215 |  | /docpath-write-spec | Artifact sink: write spec content already generated by the current agent session | 2026-07-16T16:53:46.642Z | 859B |
-| docs.md | index | project | 2 | false | false | false | 75264 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-16T15:14:19.168Z | 250.5KB |
+| docs.md | index | project | 2 | false | false | false | 76080 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-16T17:10:49.747Z | 253.0KB |
 | harness.md | index | project | 2 | false | false | false | 252 |  | DocPath Harness Rules | - [ ] 读取 current.md 确认当前状态 | 2026-05-28T12:29:00.329Z | 786B |
 | protocols/AGENTS.md | index | project | 2 | false | false | false | 2512 |  | DocPath Agent Protocol | 1. Run `docpath next --agent` to read the `agent_view: next` route and the | 2026-07-16T16:53:46.629Z | 9.8KB |
 | protocols/CLAUDE.md | index | project | 2 | false | false | false | 2368 |  | DocPath Claude Code Protocol | 1. Run `/docpath-next` or `docpath next --agent` for the `agent_view: next` | 2026-07-16T16:53:46.630Z | 9.3KB |
 | protocols/OPENCODE.md | index | project | 2 | false | false | false | 1214 |  | DocPath OpenCode Protocol | 1. Run `docpath next --agent` for the `agent_view: next` route, | 2026-07-16T16:53:46.630Z | 4.7KB |
 | review-skills/javascript/SKILL.md | index | project | 2 | false | false | false | 423 |  | DocPath Review Skill: JavaScript | Use this skill only when `docpath review` emits a Review Skill Router requirement | 2026-06-20T15:45:09.124Z | 1.7KB |
 | review-skills/typescript/SKILL.md | index | project | 2 | false | false | false | 425 |  | DocPath Review Skill: TypeScript | Use this skill only when `docpath review` emits a Review Skill Router requirement | 2026-06-20T15:45:09.125Z | 1.7KB |
-| rules/architecture.md | reference | project | 2 | true | false | false | 1429 |  | DocPath Architecture Rules | - `.docpath/rules/style.md` 和 `.docpath/rules/architecture.md` 是 preferred 规则真源；`.docpath/spec/style.md` 和 `.docpath/spec/architecture.md` 仅作 legacy fallback。 | 2026-07-16T15:47:33.390Z | 3.9KB |
-| rules/style.md | reference | project | 2 | true | false | false | 2411 |  | DocPath Agent Style Rules | - Start/resume with `docpath next --agent`. Use `docpath status --agent` only | 2026-07-16T15:47:33.391Z | 6.9KB |
+| rules/architecture.md | reference | project | 2 | true | false | false | 1933 |  | DocPath Architecture Rules | - `.docpath/rules/style.md` 和 `.docpath/rules/architecture.md` 是 preferred 规则真源；`.docpath/spec/style.md` 和 `.docpath/spec/architecture.md` 仅作 legacy fallback。 | 2026-07-16T17:13:23.407Z | 5.2KB |
+| rules/style.md | reference | project | 2 | true | false | false | 2788 |  | DocPath Agent Style Rules | - Start/resume with `docpath next --agent`. Use `docpath status --agent` only | 2026-07-16T17:13:23.408Z | 7.8KB |
 | skills/caveman.md | index | project | 2 | false | false | false | 260 |  | Skill: Caveman Mode (省 token 模式) | 1. **回复极简** — 不解释已知信息，只说做了什么 | 2026-07-16T16:53:46.627Z | 646B |
 | skills/diagnose.md | index | project | 2 | false | false | false | 258 |  | Skill: Diagnose (诊断) | - 遇到编译错误/运行时异常 | 2026-07-16T16:53:46.628Z | 633B |
 | skills/grill-me.md | index | project | 2 | false | false | false | 302 |  | Skill: Grill Me (计划压力测试) | - 计划是否能解决实际问题？ | 2026-07-16T16:53:46.628Z | 813B |
+| tasks/T-20260716-install-check-install-p0/plan.md | runbook | task | 1 | false | false | false | 1037 | T-20260716-install-check-install-p0 | plan | - [x] S1: 梳理 install --check 漂移不分方向: 本地领先时仍推荐覆盖式 install, 曾指向致 P0 的操作 | 2026-07-16T17:59:13.098Z | 2.6KB |
+| tasks/T-20260716-install-check-install-p0/spec.md | runbook | task | 1 | false | false | false | 1366 | T-20260716-install-check-install-p0 | T-20260716-install-check-install-p0 - install --check 漂移不分方向: 本地领先时仍推荐覆盖式 install, 曾指向致 P0 的操作 | R-277 实证 (2026-07-17): 本地 CLAUDE.md 承载 R-269/R-273 用户确认修正, 模板是 | 2026-07-16T18:00:17.500Z | 3.5KB |
 | tasks/T-20260716-r-273-p0-symlink-install-claude-md/plan.md | runbook | task | 1 | false | false | false | 1091 | T-20260716-r-273-p0-symlink-install-claude-md | plan | - [x] S1: 梳理 R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md | 2026-07-16T17:02:01.389Z | 2.8KB |
 | tasks/T-20260716-r-273-p0-symlink-install-claude-md/spec.md | runbook | task | 1 | false | false | false | 2041 | T-20260716-r-273-p0-symlink-install-claude-md | T-20260716-r-273-p0-symlink-install-claude-md - R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md | install-manifest-drift 诊断时发现 (2026-07-17, analysis: | 2026-07-16T17:03:33.778Z | 5.4KB |
-| tasks/T-20260716-review-skill-router-diff-commit-first/plan.md | runbook | task | 1 | false | false | false | 1128 | T-20260716-review-skill-router-diff-commit-first | plan | - [x] S1: 梳理 review skill router 只审未提交 diff, commit-first 收口惯例会整体绕过语言级审查 | 2026-07-16T15:06:07.854Z | 2.9KB |
-| tasks/T-20260716-review-skill-router-diff-commit-first/spec.md | runbook | task | 1 | false | false | false | 2798 | T-20260716-review-skill-router-diff-commit-first | T-20260716-review-skill-router-diff-commit-first - review skill router 只审未提交 diff, commit-first 收口惯例会整体绕过语言级审查 | 2026-07-16 代码核验 (analysis: .docpath/backlog/analysis/R-276-analysis.md): | 2026-07-16T15:39:51.855Z | 7.1KB |
-| tasks/current/plan.md | runbook | task | 1 | true | false | false | 1091 | T-20260716-r-273-p0-symlink-install-claude-md | plan | - [x] S1: 梳理 R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md | 2026-07-16T17:02:01.389Z | 2.8KB |
-| tasks/current/spec.md | runbook | task | 1 | true | false | false | 2041 | T-20260716-r-273-p0-symlink-install-claude-md | T-20260716-r-273-p0-symlink-install-claude-md - R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md | install-manifest-drift 诊断时发现 (2026-07-17, analysis: | 2026-07-16T17:03:33.778Z | 5.4KB |
+| tasks/current/plan.md | runbook | task | 1 | true | false | false | 1037 | T-20260716-install-check-install-p0 | plan | - [x] S1: 梳理 install --check 漂移不分方向: 本地领先时仍推荐覆盖式 install, 曾指向致 P0 的操作 | 2026-07-16T17:59:13.098Z | 2.6KB |
+| tasks/current/spec.md | runbook | task | 1 | true | false | false | 1366 | T-20260716-install-check-install-p0 | T-20260716-install-check-install-p0 - install --check 漂移不分方向: 本地领先时仍推荐覆盖式 install, 曾指向致 P0 的操作 | R-277 实证 (2026-07-17): 本地 CLAUDE.md 承载 R-269/R-273 用户确认修正, 模板是 | 2026-07-16T18:00:17.500Z | 3.5KB |
 | tasks/done/T-20260528-agent-integration/plan.md | runbook | task | 3 | false | true | false | 929 | T-20260528-agent-integration | 执行计划 | ``` | 2026-05-28T14:53:27.931Z | 2.6KB |
 | tasks/done/T-20260528-agent-integration/spec.md | runbook | task | 3 | false | true | false | 847 | T-20260528-agent-integration | 规约: Agent Integration (Phase 1+2) | DocPath 需要面向 AI Agent 的接口层，使其能被 Claude Code / OpenCode 等工具原生使用。 | 2026-05-28T14:37:39.406Z | 2.4KB |
 | tasks/done/T-20260528-harness-lite/plan.md | runbook | task | 3 | false | true | false | 838 | T-20260528-harness-lite | Plan: Harness Lite Phase 1 | **目标**: 让 `docpath check` 能发现并运行 typecheck 相关脚本 | 2026-05-29T05:13:03.422Z | 2.5KB |
@@ -685,6 +691,8 @@
 | tasks/done/T-20260716-next-hint-fsm/spec.md | runbook | task | 3 | false | true | false | 1439 | T-20260716-next-hint-fsm | T-20260716-next-hint-fsm - next_hint 应从 FSM 合法转移单源派生,禁止各命令手写路由提示 | `next_hint` 与命令正文推荐多源手写，与 `transitions.ts` 的 FSM 合法转移脱节。现场症状： | 2026-07-16T01:47:57.747Z | 3.8KB |
 | tasks/done/T-20260716-r-271-tracked-backlog-symlink-worktree-m/plan.md | runbook | task | 3 | false | true | false | 2224 | T-20260716-r-271-tracked-backlog-symlink-worktree-m | plan | - [x] S1: 梳理 worktree create/repair 撤销 forceLiveShared——backlog 与 rules/spec/templates 同走 tracked→目录副本分支; 现存 symlink 形态的 backlog 经 repair 转回 tracked 副本 (从 main checkout 复制)。 | 2026-07-16T05:35:06.791Z | 6.3KB |
 | tasks/done/T-20260716-r-271-tracked-backlog-symlink-worktree-m/spec.md | runbook | task | 3 | false | true | false | 1887 | T-20260716-r-271-tracked-backlog-symlink-worktree-m | T-20260716-r-271-tracked-backlog-symlink-worktree-m - R-271 后续: tracked backlog 被 symlink 替换后, worktree 合并回 main 会删除 backlog 并留下悬空 symlink | 2026-07-16 review R-271 (ef1be38) 时 scratch 仓实测复现数据丢失链: 本仓 102 个 | 2026-07-16T05:35:06.792Z | 5.2KB |
+| tasks/done/T-20260716-review-skill-router-diff-commit-first/plan.md | runbook | task | 3 | false | true | false | 1128 | T-20260716-review-skill-router-diff-commit-first | plan | - [x] S1: 梳理 review skill router 只审未提交 diff, commit-first 收口惯例会整体绕过语言级审查 | 2026-07-16T15:06:07.854Z | 2.9KB |
+| tasks/done/T-20260716-review-skill-router-diff-commit-first/spec.md | runbook | task | 3 | false | true | false | 2798 | T-20260716-review-skill-router-diff-commit-first | T-20260716-review-skill-router-diff-commit-first - review skill router 只审未提交 diff, commit-first 收口惯例会整体绕过语言级审查 | 2026-07-16 代码核验 (analysis: .docpath/backlog/analysis/R-276-analysis.md): | 2026-07-16T15:39:51.855Z | 7.1KB |
 | tasks/done/T-20260716-wip-agent-handoff/plan.md | runbook | task | 3 | false | true | false | 89 | T-20260716-wip-agent-handoff | plan | - [x] S1: 验证 WIP note 行为 | 2026-07-16T02:13:04.687Z | 254B |
 | tasks/done/T-20260716-wip-agent-handoff/spec.md | runbook | task | 3 | false | true | false | 315 | T-20260716-wip-agent-handoff | T-20260716-wip-agent-handoff - WIP note on handoff/enter | 会话中断后 breadcrumb 仅有「开始执行」。实现已在 2044874：agent enter/handoff 写 `.docpath/workspace/wip-note.md`。 | 2026-07-16T02:13:03.323Z | 954B |
 | tasks/done/T-20260716-wip-note-md-note/plan.md | runbook | task | 3 | false | true | false | 1199 | T-20260716-wip-note-md-note | plan | - [x] S1: 梳理 `docpath journal`(含经 agent done 触发) 成功推进任务到 completed 后删除 `workspace/wip-note.md`; 文件存在才删, 幂等, 删除失败不阻断 journal 主流程。 | 2026-07-16T11:43:23.708Z | 3.1KB |
@@ -752,14 +760,16 @@
 | tasks/promote-backups/2026-07-16T13-57-38-582Z/spec.md | runbook | project | 2 | false | false | false | 2208 |  | T-20260716-artifactconfig-keep-workspace-views-4-5 - ArtifactConfig 死字段清理: keep_workspace_views 等 4/5 字段无消费方, 删除并同修文档 | 2026-07-16 代码核验 (analysis: .docpath/backlog/analysis/R-275-analysis.md): | 2026-07-16T13:57:38.585Z | 5.7KB |
 | tasks/promote-backups/2026-07-16T16-42-18-629Z/plan.md | runbook | project | 2 | false | false | false | 1128 |  | plan | - [x] S1: 梳理 review skill router 只审未提交 diff, commit-first 收口惯例会整体绕过语言级审查 | 2026-07-16T16:42:18.631Z | 2.9KB |
 | tasks/promote-backups/2026-07-16T16-42-18-629Z/spec.md | runbook | project | 2 | false | false | false | 2798 |  | T-20260716-review-skill-router-diff-commit-first - review skill router 只审未提交 diff, commit-first 收口惯例会整体绕过语言级审查 | 2026-07-16 代码核验 (analysis: .docpath/backlog/analysis/R-276-analysis.md): | 2026-07-16T16:42:18.631Z | 7.1KB |
+| tasks/promote-backups/2026-07-16T17-39-54-663Z/plan.md | runbook | project | 2 | false | false | false | 1091 |  | plan | - [x] S1: 梳理 R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md | 2026-07-16T17:39:54.665Z | 2.8KB |
+| tasks/promote-backups/2026-07-16T17-39-54-663Z/spec.md | runbook | project | 2 | false | false | false | 2041 |  | T-20260716-r-273-p0-symlink-install-claude-md - R-273 契约修正未覆盖模板层: 协议模板/已装副本仍文档化致 P0 的 symlink 共享, install 会用旧契约覆盖已修正的 CLAUDE.md | install-manifest-drift 诊断时发现 (2026-07-17, analysis: | 2026-07-16T17:39:54.666Z | 5.4KB |
 | workflows/bugfix.md | index | project | 2 | false | false | false | 160 |  | Workflow: Bug Fix | - 收集错误信息 (日志、截图、复现步骤) | 2026-07-16T16:53:46.626Z | 463B |
 | workflows/debug.md | index | project | 2 | false | false | false | 145 |  | Workflow: Debug | - 收集症状 (日志、指标、复现步骤) | 2026-07-16T16:53:46.626Z | 416B |
 | workflows/feature.md | index | project | 2 | false | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-07-16T16:53:46.627Z | 753B |
 | workflows/refactor.md | index | project | 2 | false | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-07-16T16:53:46.627Z | 424B |
 | workflows/research.md | index | project | 2 | false | false | false | 146 |  | Workflow: Research | - 明确调研目标 | 2026-07-16T16:53:46.627Z | 409B |
-| workspace/breadcrumb.md | index | project | 0 | false | false | false | 878 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-16T17:06:42.127Z | 2.9KB |
+| workspace/breadcrumb.md | index | project | 0 | false | false | false | 719 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-16T17:59:13.095Z | 2.3KB |
 | workspace/compact-context.md | index | project | 0 | false | false | false | 3467 |  | Context Handoff — T-20260715-docpath-init-scan-existing | - ✅ PASS (2026-07-15T15:57:32.756Z) | 2026-07-15T16:06:13.998Z | 11.2KB |
-| workspace/current.md | index | project | 0 | true | false | false | 534 |  | 📍 当前工作流状态 | ```yaml | 2026-07-16T17:10:49.277Z | 1.5KB |
+| workspace/current.md | index | project | 0 | true | false | false | 445 |  | 📍 当前工作流状态 | ```yaml | 2026-07-16T18:04:41.469Z | 1.3KB |
 | workspace/decisions-2026-05.md | index | project | 0 | false | false | false | 16136 |  | 决策日志归档 — 2026-05 | --- | 2026-06-16T11:00:07.138Z | 46.7KB |
 | workspace/decisions-2026-06.md | index | project | 0 | false | false | false | 4794 |  | 决策日志归档 — 2026-06 | --- | 2026-07-14T11:14:31.428Z | 13.9KB |
 | workspace/decisions-2026-07.md | index | project | 0 | false | false | false | 2528 |  | 决策日志归档 — 2026-07 | --- | 2026-07-16T11:59:48.928Z | 7.2KB |
@@ -769,9 +779,9 @@
 | workspace/decisions-2026-W26.md | index | project | 0 | false | false | false | 2675 |  | 决策日志归档 — 2026-W26 | --- | 2026-07-12T13:49:33.906Z | 7.7KB |
 | workspace/decisions.md | log | project | 3 | false | true | false | 9319 |  | 决策日志 — DocPath ADR | --- | 2026-07-16T15:46:16.788Z | 26.8KB |
 | workspace/journal.md | index | project | 0 | false | false | false | 120 |  | 📖 工作日志 | - 新增 write-design 命令 | 2026-06-10T04:44:31.299Z | 361B |
-| workspace/last-check.md | index | project | 0 | true | false | false | 171 |  | Last Check Evidence | **时间**: 2026-07-16T15:14:19.681Z | 2026-07-16T15:14:19.684Z | 504B |
-| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 5489 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-16T15:46:16.786Z | 17.7KB |
-| workspace/review.md | index | project | 0 | true | false | false | 657 |  | Code Review Report | **时间**: 2026-07-16T15:45:24.505Z | 2026-07-16T15:45:24.523Z | 2.3KB |
+| workspace/last-check.md | index | project | 0 | true | false | false | 157 |  | Last Check Evidence | **时间**: 2026-07-16T17:10:50.213Z | 2026-07-16T17:10:50.217Z | 473B |
+| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 5590 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-16T17:11:56.368Z | 18.1KB |
+| workspace/review.md | index | project | 0 | true | false | false | 97 |  | Code Review Report | **时间**: 2026-07-16T17:11:55.618Z | 2026-07-16T17:11:55.638Z | 343B |
 
 ## 用途说明
 
