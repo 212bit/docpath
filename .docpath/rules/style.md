@@ -70,3 +70,11 @@
 - src/utils/major-change.ts resolveMajorChangeGateStatus/structuredMajorGateConfirmation
 - T-20260716-wip-agent-handoff spec 4.1 先例 (实现已落地 2044874)
 - T-20260716-wip-note-md-note 落地 0b59b54
+
+## project-convention: R-276 后 review 默认 task 累计 diff 且 done 复用绑定 HEAD: 收口顺序=最终提交→review→写 skill 证据→done
+- rationale: review 默认口径改为任务累计 diff (canonical breadcrumb 锚点), 树干净也覆盖已提交变更, commit-first 不再绕过语言级审查; done 复用在 HEAD 前进时拒绝并强制重审, review 后再提交会使 skill 证据指纹失效。
+触发: 任务收口。期望行为: 业务实现全部提交后再跑 docpath review, 按 router write_command (--scope task) 写语言级 skill 证据, 紧接 docpath done (HEAD 未动则复用直通); 收口 chore 提交放在 done 之后。边界: 显式 --scope all/staged/last_commit 仍可用; 无活跃任务回退 all; 旧 review 证据无 head 字段维持 60min 时间窗复用。
+### Evidence
+- T-20260716-review-skill-router-diff-commit-first spec FR-1~FR-4
+- .docpath/backlog/analysis/R-276-analysis.md F1-F3 绕过链
+- tests/review-task-scope.test.mjs AC-4 三态

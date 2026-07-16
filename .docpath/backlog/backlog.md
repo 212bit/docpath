@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-16T13:57:38.626Z
+> 扫描时间: 2026-07-16T15:46:16.779Z
 
 ## 条目列表
 
@@ -10,7 +10,6 @@
 |----|-------|--------|----------|-------|------|
 | R-259 | High-value reliability optimizations | dropped | P1 | 2 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
-| R-276 | review skill router 只审未提交 diff, commit-first 收口惯例会整体绕过语言级审查 | active | P2 | 2 | T-20260716-review-skill-router-diff-commit-first |
 | R-249 | go/promote 的 dirty worktree 拒绝未区分 DocPath 自身产物，频繁误拦 | dropped | P3 | 1 |  |
 
 ## 用途说明

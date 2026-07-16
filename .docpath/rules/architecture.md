@@ -27,3 +27,11 @@
 - R-273 分析 .docpath/backlog/analysis/R-273-analysis.md
 - src/commands/worktree.ts checkBacklogContract
 - tests/worktree.test.mjs '合并回 main 不删 backlog' 回归
+
+## gotcha: state.started_at 是 phase 开始时间 (每次 phase 转移刷新), 不是任务开始时间——任务级锚点必须用 canonical breadcrumb 首条时间
+- rationale: transitions.ts 在 phase 变化时 next.started_at = nowIso()。R-276 收口自证时, review.failed 转移把锚点推到实现提交之后, 任务累计 diff 被静默清空 (write-review-skill 构建零需求)。任何把 started_at 当任务起点的消费方都会在 check/review 失败等转移后覆盖面缩水。
+触发: 需要'任务开始以来'语义的时间锚 (累计 diff、任务内提交、耗时统计)。期望行为: 用 resolveTaskStartedAt (review-skill-router.ts)——canonical tasks/<id>/breadcrumb.jsonl 首条时间戳, 缺失回退 state.started_at; 不要直接读 state.started_at。边界: phase 级语义 (当前阶段耗时) 用 state.started_at 反而正确; canonical breadcrumb 不存在的 quick/手工工作区走回退。
+### Evidence
+- src/engine/transitions.ts:322-324 phase 变化刷新 started_at
+- src/utils/review-skill-router.ts resolveTaskStartedAt
+- tests/review-task-scope.test.mjs 'task anchor survives phase transitions'
