@@ -10,7 +10,8 @@
 
 import { readFile, writeFile, readdir, mkdir, rename } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { join, dirname, resolve, isAbsolute } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { resolveDocpathDir } from '../utils/file.js';
 
@@ -342,11 +343,42 @@ export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id
 }
 
 /**
+ * worktree 内解析主 checkout 的 .docpath（R-273/FR-3 id 单池）。
+ * 经 git rev-parse --git-common-dir 定位主 .git，不依赖 .worktrees/ 路径约定；
+ * 非 git 仓、解析失败或主 checkout 无 .docpath 时返回 null（回退现行为）。
+ */
+function resolveMainCheckoutDocpathDir(cwd: string): string | null {
+  try {
+    const gitCommonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
+      cwd,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (!gitCommonDir) return null;
+    const absGitDir = isAbsolute(gitCommonDir) ? gitCommonDir : resolve(cwd, gitCommonDir);
+    const candidate = join(dirname(absGitDir), '.docpath');
+    return existsSync(candidate) ? candidate : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 分配下一个 R-### id（基于现有条目最大编号 +1，3 位补零）。
+ *
+ * R-273/FR-3：worktree 的本地 backlog 副本可能 stale，同时扫描主 checkout 的
+ * backlog/ 与 archived/ 取全局 max，避免基于旧快照分配出与 main 撞号的 id。
+ * 边界：跨 checkout 同时 capture 的原子性不在此保证（wx 预留仅锁本 checkout）。
  */
 export async function nextBacklogId(cwd: string): Promise<string> {
   const docpathDir = await resolveDocpathDir(cwd);
   const dirs = [backlogDir(docpathDir), archivedBacklogDir(docpathDir)];
+
+  const mainDocpathDir = resolveMainCheckoutDocpathDir(cwd);
+  if (mainDocpathDir && resolve(mainDocpathDir) !== resolve(docpathDir)) {
+    dirs.push(backlogDir(mainDocpathDir), archivedBacklogDir(mainDocpathDir));
+  }
+
   let max = 0;
 
   for (const dir of dirs) {

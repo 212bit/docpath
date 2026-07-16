@@ -7,6 +7,7 @@ import {
   mkdirSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
   readFileSync,
 } from 'node:fs';
@@ -53,8 +54,8 @@ function mkRepo() {
   mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
   mkdirSync(join(dp, 'journal'), { recursive: true });
 
-  // Match the real hybrid contract (option C):
-  //   backlog        live-shared  (gitignored in main, symlinked in worktrees)
+  // Match the real hybrid contract (R-238 Option B, R-273):
+  //   backlog        merge-mediated (tracked copy)
   //   rules          merge-mediated (tracked)
   //   tasks/done     merge-mediated (tracked)
   //   workspace      isolated (gitignored)
@@ -63,7 +64,6 @@ function mkRepo() {
   writeFileSync(join(cwd, '.gitignore'), [
     '/.docpath/workspace/',
     '/.docpath/tasks/current/',
-    '/.docpath/backlog',
     '/.worktrees/',
     '',
   ].join('\n'));
@@ -93,14 +93,10 @@ function mkRepo() {
   return cwd;
 }
 
-// Variant where backlog is tracked (old-style) to exercise the doctor's
-// "tracked copy is not live-shared" warning path.
+// Under R-238 Option B, backlog is tracked by default (mkRepo already commits
+// it), so this is an alias kept for the tests that assert tracked-backlog paths.
 function mkRepoTrackedBacklog() {
-  const cwd = mkRepo();
-  // Force backlog into git despite the gitignore, then commit.
-  git(cwd, ['add', '-f', '.docpath/backlog/backlog.md']);
-  git(cwd, ['commit', '-m', 'track backlog']);
-  return cwd;
+  return mkRepo();
 }
 
 describe('worktree command', () => {
@@ -125,15 +121,15 @@ describe('worktree command', () => {
     );
 
     const backlogResource = join(worktreePath, '.docpath', 'backlog');
-    assert.equal(lstatSync(backlogResource).isSymbolicLink(), true, 'backlog must be a live-shared symlink');
-    assert.equal(statSync(backlogResource).isDirectory(), true, 'symlinked backlog must resolve to a directory');
+    assert.equal(lstatSync(backlogResource).isSymbolicLink(), false, 'tracked backlog must be a merge-mediated copy, not a symlink (R-273)');
+    assert.equal(lstatSync(backlogResource).isDirectory(), true);
     const rulesResource = join(worktreePath, '.docpath', 'rules');
     assert.equal(lstatSync(rulesResource).isSymbolicLink(), false, 'rules must be a merge-mediated tracked copy, not a symlink');
     assert.equal(lstatSync(rulesResource).isDirectory(), true);
     assert.equal(
       git(worktreePath, ['status', '--porcelain=v1', '--untracked-files=all', '--', '.docpath/backlog', '.docpath/rules']),
       '',
-      'backlog symlink must be gitignored and rules tracked copy must stay clean',
+      'backlog and rules tracked copies must stay clean (no deletion noise)',
     );
     assert.equal(
       git(worktreePath, ['ls-files', '--', '.docpath/tasks/current']).trim(),
@@ -199,7 +195,7 @@ describe('worktree command', () => {
 
     const named = run(['worktree', 'doctor', 'feature-doctor'], cwd, { env: { DOCPATH_SESSION: '' } }).output;
     assert.match(named, /Worktree doctor: feature-doctor/);
-    assert.match(named, /live-shared backlog: symlink/);
+    assert.match(named, /merge-mediated backlog: tracked copy/);
     assert.match(named, /merge-mediated rules: tracked copy/);
     assert.match(named, /isolated tasks\/current: .*isolated/);
     assert.match(named, /set DOCPATH_SESSION=agent-feature-doctor/);
@@ -218,35 +214,98 @@ describe('worktree command', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('forces live-shared backlog symlink even when main tracks backlog', () => {
+  it('makes backlog a tracked copy (not a symlink) when main tracks backlog (R-273)', () => {
     const cwd = mkRepoTrackedBacklog();
-    const worktreePath = join(cwd, '.worktrees', 'feature-live-backlog');
-    const createOut = run(['worktree', 'create', 'feature-live-backlog'], cwd).output;
-    assert.match(createOut, /backlog -> 主仓库 \(live-shared\)/);
-    assert.equal(lstatSync(join(worktreePath, '.docpath', 'backlog')).isSymbolicLink(), true);
-    const out = run(['worktree', 'doctor', 'feature-live-backlog'], cwd, { env: { DOCPATH_SESSION: 'codex-feature-live-backlog' } }).output;
-    assert.match(out, /✅ live-shared backlog: symlink/);
-    // rules stays merge-mediated (tracked copy is the expected design, no warning).
+    const worktreePath = join(cwd, '.worktrees', 'feature-copy-backlog');
+    const createOut = run(['worktree', 'create', 'feature-copy-backlog'], cwd).output;
+    assert.match(createOut, /backlog -> tracked copy/);
+    assert.equal(lstatSync(join(worktreePath, '.docpath', 'backlog')).isSymbolicLink(), false);
+    assert.equal(lstatSync(join(worktreePath, '.docpath', 'backlog')).isDirectory(), true);
+    // No backlog deletion noise in the worktree (the R-271 data-loss trigger).
+    assert.equal(
+      git(worktreePath, ['status', '--porcelain=v1', '--untracked-files=all', '--', '.docpath/backlog']),
+      '',
+      'tracked backlog copy must not show as deleted',
+    );
+    const out = run(['worktree', 'doctor', 'feature-copy-backlog'], cwd, { env: { DOCPATH_SESSION: 'codex-feature-copy-backlog' } }).output;
+    assert.match(out, /✅ merge-mediated backlog: tracked copy/);
     assert.match(out, /✅.*merge-mediated rules: tracked copy/);
     assert.match(out, /worktree doctor passed/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('fails doctor when backlog is a directory copy instead of live-shared symlink', () => {
+  it('fails doctor when a tracked backlog is a symlink (R-271 residue, R-273)', () => {
     const cwd = mkRepoTrackedBacklog();
-    const worktreePath = join(cwd, '.worktrees', 'feature-stale-copy');
-    run(['worktree', 'create', 'feature-stale-copy'], cwd);
-    // Break live-share: replace symlink with a plain directory copy
+    const worktreePath = join(cwd, '.worktrees', 'feature-symlink-residue');
+    run(['worktree', 'create', 'feature-symlink-residue'], cwd);
+    // Simulate the R-271 residue: replace the tracked copy with a symlink to main.
     const backlogLink = join(worktreePath, '.docpath', 'backlog');
     rmSync(backlogLink, { recursive: true, force: true });
-    mkdirSync(backlogLink, { recursive: true });
-    writeFileSync(join(backlogLink, 'R-STALE.md'), '---\nid: R-STALE\n---\n');
-    const out = run(['worktree', 'doctor', 'feature-stale-copy'], cwd, {
+    symlinkSync(join(cwd, '.docpath', 'backlog'), backlogLink, 'dir');
+    const out = run(['worktree', 'doctor', 'feature-symlink-residue'], cwd, {
       expectFailure: true,
-      env: { DOCPATH_SESSION: 'codex-feature-stale-copy' },
+      env: { DOCPATH_SESSION: 'codex-feature-symlink-residue' },
     }).output;
-    assert.match(out, /❌ live-shared backlog: tracked copy \(not live-shared\)/);
+    assert.match(out, /❌ merge-mediated backlog: symlink over tracked backlog/);
     assert.match(out, /worktree doctor failed/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('repair converts a symlinked tracked backlog back to a copy (R-273 AC-2)', () => {
+    const cwd = mkRepoTrackedBacklog();
+    const worktreePath = join(cwd, '.worktrees', 'feature-repair-backlog');
+    run(['worktree', 'create', 'feature-repair-backlog'], cwd);
+    const backlogLink = join(worktreePath, '.docpath', 'backlog');
+    rmSync(backlogLink, { recursive: true, force: true });
+    symlinkSync(join(cwd, '.docpath', 'backlog'), backlogLink, 'dir');
+
+    const out = run(['worktree', 'repair', 'feature-repair-backlog'], cwd, { env: { DOCPATH_SESSION: 'codex-feature-repair-backlog' } }).output;
+    assert.match(out, /backlog 修正为 tracked copy/);
+    assert.equal(lstatSync(backlogLink).isSymbolicLink(), false);
+    assert.equal(lstatSync(backlogLink).isDirectory(), true);
+    assert.equal(existsSync(join(backlogLink, 'backlog.md')), true, 'copy must carry main backlog contents');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('merging a worktree branch does not delete main backlog (R-273 AC-1 regression)', () => {
+    const cwd = mkRepoTrackedBacklog();
+    const worktreePath = join(cwd, '.worktrees', 'feature-merge-safe');
+    run(['worktree', 'create', 'feature-merge-safe'], cwd);
+
+    // Agent habit: broad add -A + commit inside the worktree, then merge back.
+    writeFileSync(join(worktreePath, 'feature.txt'), 'work\n');
+    git(worktreePath, ['add', '-A']);
+    git(worktreePath, ['commit', '-m', 'feat: worktree change']);
+    git(cwd, ['merge', '--no-ff', '-m', 'merge worktree', 'feature-merge-safe']);
+
+    const mainBacklog = join(cwd, '.docpath', 'backlog');
+    assert.equal(lstatSync(mainBacklog).isSymbolicLink(), false, 'main backlog must not become a symlink after merge');
+    assert.equal(existsSync(join(mainBacklog, 'backlog.md')), true, 'main backlog files must survive the merge');
+    assert.equal(
+      git(cwd, ['ls-files', '--', '.docpath/backlog/backlog.md']).trim(),
+      '.docpath/backlog/backlog.md',
+      'backlog must stay tracked in main after merge',
+    );
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('allocates backlog ids from the union of worktree and main pools (R-273 AC-3)', () => {
+    const cwd = mkRepoTrackedBacklog();
+    const worktreePath = join(cwd, '.worktrees', 'feature-id-pool');
+    run(['worktree', 'create', 'feature-id-pool'], cwd);
+
+    // Main pool advances after the worktree snapshot was taken (stale copy).
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-005.md'), '---\nid: R-005\ntitle: main item\nstatus: proposed\npriority: P2\nlevel: 1\nsource: test\nreadiness: raw\ncreated_at: 2026-07-16\n---\nbody\n');
+
+    const out = run(['backlog', 'capture', '--title', 'from worktree'], worktreePath).output;
+    assert.match(out, /R-006/, 'worktree capture must see main pool max (R-005) and allocate R-006');
+    assert.equal(existsSync(join(worktreePath, '.docpath', 'backlog', 'R-006.md')), true, 'reservation lands in the worktree copy');
+    assert.equal(existsSync(join(cwd, '.docpath', 'backlog', 'R-006.md')), false, 'main pool is not written by worktree capture');
+
+    // Main-side allocation is unchanged by worktree-local reservations (known
+    // asymmetry, documented in nextBacklogId).
+    const mainOut = run(['backlog', 'capture', '--title', 'from main'], cwd).output;
+    assert.match(mainOut, /R-006/, 'main allocation scans only its own pools');
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -280,7 +339,7 @@ Target backlog body
     const worktreePath = join(cwd, '.worktrees', 'targeted-feature');
 
     assert.match(out, /目标 backlog: R-321/);
-    assert.match(out, /目标 backlog 上下文已通过 live-shared backlog 可见: R-321/);
+    assert.match(out, /已同步目标 backlog 上下文: R-321/);
     assert.match(out, /export DOCPATH_SESSION=agent-targeted-feature/);
     assert.match(out, /DOCPATH_SESSION=<tool>-R-321-targeted-feature/);
     assert.match(out, /docpath backlog accept R-321/);
