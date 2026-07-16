@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-16T01:47:57.747Z",
+    "updated_at": "2026-07-16T01:47:57.747Z",
+    "content_sha256": "079e5046e7086c12e9d9a5ee2b055ef1e350922fc1446bf426cce3a700207034"
+  },
+  "task_id": "T-20260716-next-hint-fsm",
+  "backlog_id": "R-269",
+  "title": "T-20260716-next-hint-fsm - next_hint 应从 FSM 合法转移单源派生,禁止各命令手写路由提示",
+  "generated_at": "2026-07-16T01:47:57.747Z",
+  "scope": {
+    "included": [
+      "FSM 建议命令导出与 gate 路由约束",
+      "check 通过后 next_hint 稳定性",
+      "非法恢复提示约束",
+      "project intake next_hint 单源化（若仍有重复字符串）",
+      "相关测试"
+    ],
+    "excluded": [
+      "用纯 FSM 替换整个 `inferNextAction`",
+      "改变 project-intake 与 task FSM 的边界",
+      "R-270/R-271/R-272 范围"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "目标「完成剩余所有 backlog」下按方案 B 推进（confirmed by goal）",
+    "decision_brief_markdown": "- 当前问题: next_hint 多源手写与 FSM 合法转移脱节\n- 目标: gate 类 next_hint 由 FSM 候选约束 + agent router 单源派生\n- 背景: R-267 S8 与 project-brief next_hint 同族问题；分析见 R-269-analysis\n- 可选方案:\n  - 方案 A: 仅修 check→plan 错路由\n  - 方案 B: 导出 FSM 候选并约束 gate 类 recommended_command\n  - 方案 C: 完全用 FSM 替换 inferNextAction\n- 推荐方案: 方案 B\n- 决策理由: 在不丢失 backlog/git 语义的前提下堵住多源分叉\n- 不做什么: 不重写 backlog 优先级；不把 project-intake 并入 task FSM\n- 成本: 中\n- 风险: 过度约束；通过仅约束 gate 命令族缓解\n- 回滚方案: 回滚本任务提交\n- 用户确认: 目标「完成剩余所有 backlog」下按方案 B 推进（confirmed by goal）"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "导出 FSM 派生的工作流建议命令接口（基于 `listValidWorkflowEvents` / event→command 映射），作为 gate 类路由的合法命令真源",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "`inferNextAction` 在推荐 gate 类命令（check/review/journal/recover/done 等）时，校验其与当前 phase/gate 合法；非法则回退合法 FSM 建议或 `docpath next --agent`",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "生命周期命令的 machine `next_hint` 继续统一经 `emitNextHint` / agent router；禁止同输出路径出现可分叉的第二套 gate 命令字符串",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "project intake 的 next_hint 统一走既有 `nextActionForIntake` 单源，仅推荐已支持的 project/backlog 命令",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不改变 FSM phase/gate 合法矩阵本身",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "不重写 backlog/learn/git closeout 优先级阶梯（仅约束 gate 命令族）",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "自动化测试覆盖关键路径",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "check 通过且 gate=check_pass 时，next_hint 推荐 `docpath review`（或 profile 等价路径），不在 plan 已存在且步骤全完成时推荐 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "非法转移恢复提示仅推荐当前 phase/gate 合法命令或 `docpath next --agent`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "生命周期命令的 machine next_hint 统一经 emitNextHint / agent router",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "自动化测试覆盖 check→review、blocked-only recover、FSM 约束",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "project intake next_hint 仅推荐已支持命令",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "backlog R-269 与任务 T-20260716-next-hint-fsm 双向关联保持",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "next_hint 多源手写与 FSM 合法转移脱节",
+    "options": [
+      "- 方案 A: 仅修 check→plan 错路由"
+    ],
+    "chosen": "方案 B",
+    "rationale": "在不丢失 backlog/git 语义的前提下堵住多源分叉"
+  }
+}

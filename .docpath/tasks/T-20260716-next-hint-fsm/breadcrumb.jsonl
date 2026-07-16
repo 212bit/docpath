@@ -1,0 +1,2 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-next-hint-fsm","step":"S1","status":"in_progress","context":"开始执行: 导出 FSM 建议命令接口","timestamp":"2026-07-16T01:48:08.782Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260716-next-hint-fsm","step":"S1","status":"in_progress","context":"claim promote/spec/plan artifacts and implement R-269 FSM next_hint single source","timestamp":"2026-07-16T01:48:26.936Z","sessionId":"default"}
