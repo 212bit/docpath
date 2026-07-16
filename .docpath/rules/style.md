@@ -55,3 +55,10 @@
 ### Evidence
 - src/commands/agent.ts
 - tests/handoff.test.mjs
+
+## common-mistake: 改动数据契约/共享模型前必须查最近一次用户确认的 ADR, 别信可能过时的 CLAUDE.md
+- rationale: R-271 依据 CLAUDE.md 仍写着的 live-shared/gitignored 描述做实现, 但该描述早在 R-238 (用户确认翻回 Option B tracked) 时就已失真; R-271 决策简报未引用 R-238, 于是做出与最近用户裁定相反的实现并引入 P0。
+触发: 任务涉及 backlog/tracking/共享/权限等数据或工作流契约。期望行为: 实现前 grep 决策日志 (workspace/decisions*.md) 与相关提交历史 (git log -S <契约关键词> -- .gitignore 等) 找最近一次用户确认的裁定; 文档 (CLAUDE.md/docs) 与代码/gitignore 冲突时以'最近用户确认 + 代码实际行为'为准, 并把文档漂移一并修正。边界: 冲突无法判定归属时停下问用户, 别照最顺手的文档执行。
+### Evidence
+- R-238 (7b3f9f0) 用户确认 Option B vs R-271 未引用
+- 本任务 FR-4 同步修正 CLAUDE.md + docs/features/worktree-workflow.md 文档漂移

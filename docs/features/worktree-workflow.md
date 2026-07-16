@@ -17,11 +17,11 @@ Git Worktree 允许你在同一个仓库中同时检出多个分支到不同的�
 
 ### DocPath Worktree 的特殊之处
 
-DocPath 在每个 worktree 中创建**独立的 .docpath/ 运行时**，同时按资源类型采用混合共享模型（option C）：
+DocPath 在每个 worktree 中创建**独立的 .docpath/ 运行时**，同时按资源类型采用混合共享模型（R-238 Option B，R-273 复核确认）：
 
 ```
 主目录/.docpath/
-├─ backlog/    ← live-shared（gitignored，symlink 源）
+├─ backlog/    ← merge-mediated（tracked，快照副本，合并时对齐）
 ├─ rules/      ← merge-mediated（tracked，合并时对齐）
 ├─ tasks/done/ ← merge-mediated（tracked，合并时对齐）
 ├─ tasks/current/ ← isolated（gitignored）
@@ -229,7 +229,7 @@ docpath worktree create bugfix-123
 **检查内容**：
 - Git worktree metadata
 - `.docpath/` 目录结构
-- `backlog` live-shared symlink（tracked copy 降级为 warning）
+- `backlog` merge-mediated tracked copy（tracked 场景下 symlink 报 FAIL——R-271 残留，用 `docpath worktree repair` 转回副本；untracked 项目的 symlink 合法）
 - `rules` merge-mediated tracked copy
 - `tasks/current` isolated（untracked；tracked 降级为 warning）
 - isolated `workspace` / `journal`
@@ -269,21 +269,21 @@ docpath worktree remove feature-a --force
 
 ## 共享与隔离策略
 
-DocPath worktree 采用**混合策略（option C）**，按资源语义分别选择共享模型：
+DocPath worktree 采用**混合策略（R-238 Option B，R-273 复核确认）**，按资源语义分别选择共享模型：
 
-### Live-shared 资源（Symlink 到主仓库）
+### Merge-mediated 资源（Tracked 快照，合并对齐）
 
 | 资源 | 说明 |
 |------|------|
-| `backlog/` | 需求池；主仓 gitignored，worktree 内 symlink，所有 worktrees 实时共用一份 |
+| `backlog/` | 需求池；主仓 tracked，worktree 内为快照副本，合并时对齐 |
 
-**实现**：主仓 `.gitignore` 忽略 `/.docpath/backlog`，`worktree create` 对未跟踪的 backlog 建 symlink 指向主仓。
+**实现**：主仓 `.docpath/backlog/` 随 git 跟踪，`worktree create` 对 tracked 资源复制一份副本进 worktree（与 rules/tasks-done 同策略）。
 
-**好处**：所有 worktrees 看到同一份实时需求池；promote/edit 立即互见。
+**好处**：backlog 进 git，有版本备份与跨机同步；worktree 独立演进、合并回主干时对齐。
 
-> 代价：backlog 不进 git，无版本备份与跨机同步；仅同一仓库本机的 worktrees 间共享。
+> 代价：worktree 内副本可能 stale（已知限制，合并收敛）。id 分配为规避撞号，`capture`/`add` 在 worktree 内会同时扫主 checkout 的 backlog 取全局 max。
 
-> ⚠️ **tracked 漂移注意**：若 backlog 文件（`backlog.md`、`R-xxx.md`）在加 `/.docpath/backlog` gitignore 规则**之前**就被提交过，`.gitignore` 对已 tracked 文件无效，规则形同虚设。此时 worktree 拿到的是 tracked 副本而非 symlink，`doctor` 会 warn "tracked copy (not live-shared)"，且 `backlog.md` 会在合并时参与三方合并（与"无冲突"承诺不符）。修复：在主仓 `git rm --cached .docpath/backlog/*` 后提交，再重建 worktree 即可正确 symlink。可用 `git ls-files .docpath/backlog/` 检测是否已 tracked。
+> ⚠️ **契约历史**：backlog 曾两度被改为 live-shared symlink（option C S1、R-271），均因"symlink 覆盖 tracked 目录 → git 记为整目录删除 → 合并回 main 删除 backlog"的数据丢失风险而回滚（R-273 已复现）。现契约为 tracked 副本；`doctor` 对 tracked 项目上的 symlink backlog 报 FAIL，用 `docpath worktree repair` 转回副本。可用 `git ls-files .docpath/backlog/` 确认已 tracked。
 
 ### Merge-mediated 资源（Tracked 快照，合并对齐）
 
@@ -402,11 +402,11 @@ git add -f .docpath/tasks/current/*
 
 ### 处理 .docpath/ 合并冲突
 
-**无冲突（live-shared / 隔离）**：
-- `backlog/`: 主仓 gitignored + worktree symlink，不进 git，无冲突
+**无冲突（隔离）**：
 - `workspace/`、`tasks/current/`、`journal/`: gitignored 隔离运行时，不进 git，无冲突
 
 **需合并对齐（merge-mediated，tracked）**：
+- `backlog/`: tracked 快照，合并时按常规三路合并对齐（`backlog.md` 索引可再生，冲突时以条目文件为准重建）
 - `rules/`: tracked 快照，合并时按常规三路合并对齐
 - `tasks/done/`: tracked 归档，合并时对齐；worktree 新完成的任务在此汇合
 
@@ -543,7 +543,7 @@ readlink .docpath/backlog
 ```
 project/
 ├─ .docpath/
-│  ├─ backlog/              ← live-shared 源（gitignored）
+│  ├─ backlog/              ← merge-mediated（tracked，快照副本）
 │  ├─ rules/                ← merge-mediated（tracked）
 │  ├─ tasks/done/           ← merge-mediated（tracked）
 │  ├─ tasks/current/        ← isolated（gitignored）

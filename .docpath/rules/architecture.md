@@ -19,3 +19,11 @@
 ### Evidence
 - src/utils/config.ts readDeclaredDocumentScanPaths yaml 优先 json 回退
 - src/commands/init.ts generateConfig 写 config.yaml
+
+## anti-pattern: 绝不用 symlink 替换 git-tracked 目录——合并回主干会删除该目录
+- rationale: R-271 把 tracked 的 .docpath/backlog 强制换成指向 main 的 symlink, git 将其记为'整目录文件删除 + 新增 symlink blob'; agent 惯用 add -A / worktree merge FR-2 自动提交把删除记入提交, 合回 main 后 backlog 全删且 .docpath/backlog 成悬空 symlink (P0, R-273 复现)。
+触发: 想在 worktree/副本间'实时共享'某个已被 git track 的目录。期望行为: tracked 目录只能走 merge-mediated 拷贝副本 (worktree create 已有 tracked→cp 分支); 只有 untracked 资源可 symlink。若确需 live-share tracked 目录, 必须先 git rm --cached + gitignore 使其 untracked (这本身是数据契约变更, 需用户确认)。边界: doctor 应对'tracked 路径上的 symlink'报 FAIL 引导 repair。
+### Evidence
+- R-273 分析 .docpath/backlog/analysis/R-273-analysis.md
+- src/commands/worktree.ts checkBacklogContract
+- tests/worktree.test.mjs '合并回 main 不删 backlog' 回归
