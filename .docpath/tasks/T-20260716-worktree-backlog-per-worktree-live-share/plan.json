@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-16T02:04:10.282Z",
-    "updated_at": "2026-07-16T02:04:10.282Z",
-    "content_sha256": "e2708774b65a1711f6da20d30005a0a78fb7b1863a9b339b58e69d0efd7c52f4"
+    "created_at": "2026-07-16T02:07:14.374Z",
+    "updated_at": "2026-07-16T02:07:14.374Z",
+    "content_sha256": "2d3c618f885dea2c12fe1f1007e471959bdf1257f12de36644f091dd00cadbbb"
   },
   "title": "执行计划",
-  "generated_at": "2026-07-16T02:04:10.282Z",
+  "generated_at": "2026-07-16T02:07:14.374Z",
   "steps": [
     {
       "id": "S1",
@@ -16,7 +16,7 @@
       "description": "initWorktreeDocpath 对 backlog 始终 symlink 到 main；copyTargetBacklogContext 在 symlink 时跳过拷贝。",
       "acceptance": "AC-1/AC-3",
       "dependencies": "无",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S2",
@@ -24,7 +24,7 @@
       "description": "doctor 用 checkLiveShared 检查 backlog；repair 将 backlog 副本改为 symlink。",
       "acceptance": "AC-2",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S3",
@@ -32,7 +32,7 @@
       "description": "更新 worktree 测试；check/review/journal/commit。",
       "acceptance": "AC-4；质量门禁通过",
       "dependencies": "S2",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

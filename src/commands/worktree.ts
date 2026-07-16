@@ -296,14 +296,18 @@ async function initWorktreeDocpath(mainRepoPath: string, worktreePath: string, n
     }
   }
 
-  // 创建共享资源引用。Git 已跟踪的目录不能替换为 symlink，否则 worktree
-  // 会把目录内 tracked 文件全部显示为删除；仅对未跟踪资源使用 symlink。
+  // 共享资源策略：
+  // - backlog: 始终 live-shared symlink（R-271）。即使 main 跟踪 backlog，
+  //   副本会 stale 且 id 分配会撞号；worktree 内可能出现 backlog 路径的 git
+  //   删除噪声，但 live 一致性优先。
+  // - rules/spec/templates: 已跟踪则 merge-mediated 副本，未跟踪则 symlink。
   console.log(`  🔗 配置共享资源...`);
   const sharedResources = ['backlog', 'rules', 'spec', 'templates'];
   for (const resource of sharedResources) {
     const targetPath = join(mainRepoPath, '.docpath', resource);
     const linkPath = join(docpathDir, resource);
-    const tracked = await hasTrackedFiles(mainRepoPath, `.docpath/${resource}`);
+    const forceLiveShared = resource === 'backlog';
+    const tracked = !forceLiveShared && await hasTrackedFiles(mainRepoPath, `.docpath/${resource}`);
 
     if (tracked) {
       if (!existsSync(linkPath) || lstatSync(linkPath).isSymbolicLink()) {
@@ -318,13 +322,16 @@ async function initWorktreeDocpath(mainRepoPath: string, worktreePath: string, n
       continue;
     }
 
-    if (existsSync(targetPath)) {
+    if (existsSync(targetPath) || forceLiveShared) {
       if (existsSync(linkPath)) {
         await rm(linkPath, { recursive: true, force: true });
       }
+      if (!existsSync(targetPath)) {
+        await mkdir(targetPath, { recursive: true });
+      }
       const relativePath = relative(dirname(linkPath), targetPath);
       await createSymlink(relativePath, linkPath, 'dir');
-      console.log(`    ✓ ${resource} -> 主仓库`);
+      console.log(`    ✓ ${resource} -> 主仓库${forceLiveShared ? ' (live-shared)' : ''}`);
     }
   }
 
@@ -535,10 +542,10 @@ function checkLiveShared(path: string, label: string): DoctorCheck {
   try {
     const stat = lstatSync(path);
     // Live-shared resources must be a symlink to the main checkout so every
-    // worktree sees one global view. A tracked copy is a stale snapshot, not
-    // live-shared — warn so the breakage is visible instead of masked.
+    // worktree sees one global view. A directory copy is a stale snapshot and
+    // fails the contract (R-271): agents must repair, not continue on stale backlog.
     if (stat.isSymbolicLink()) return { status: 'pass', label, detail: `symlink: ${path}` };
-    if (stat.isDirectory()) return { status: 'warn', label, detail: `tracked copy (not live-shared): ${path}` };
+    if (stat.isDirectory()) return { status: 'fail', label, detail: `tracked copy (not live-shared): ${path}` };
     return { status: 'fail', label, detail: `not a directory or symlink: ${path}` };
   } catch (error) {
     return { status: 'fail', label, detail: error instanceof Error ? error.message : String(error) };
@@ -617,7 +624,7 @@ export async function getWorktreeDoctorStatus(cwd: string, name?: string): Promi
   const checks: DoctorCheck[] = [
     checkExists(join(worktreePath, '.git'), 'git worktree metadata'),
     checkDirectory(docpathDir, '.docpath directory'),
-    checkMergeMediated(join(docpathDir, 'backlog'), 'merge-mediated backlog'),
+    checkLiveShared(join(docpathDir, 'backlog'), 'live-shared backlog'),
     checkMergeMediated(join(docpathDir, 'rules'), 'merge-mediated rules'),
     workspaceCheck,
     tasksCurrentCheck,
@@ -863,11 +870,13 @@ async function worktreeRepair(cwd: string, name?: string): Promise<void> {
   for (const resource of sharedResources) {
     const targetPath = join(repoRoot, '.docpath', resource);
     const linkPath = join(docpathDir, resource);
-    const tracked = await hasTrackedFiles(repoRoot, `.docpath/${resource}`);
+    // backlog is always live-shared (R-271); other tracked resources stay merge-mediated copies.
+    const forceLiveShared = resource === 'backlog';
+    const tracked = !forceLiveShared && await hasTrackedFiles(repoRoot, `.docpath/${resource}`);
 
     try {
       if (tracked) {
-        // Tracked: should be a directory copy (not a symlink)
+        // Tracked (non-backlog): should be a directory copy (not a symlink)
         if (!existsSync(linkPath) || lstatSync(linkPath).isSymbolicLink()) {
           await rm(linkPath, { recursive: true, force: true });
           if (existsSync(targetPath)) {
@@ -880,7 +889,7 @@ async function worktreeRepair(cwd: string, name?: string): Promise<void> {
           console.log(`    ✓ ${resource} 已经是 tracked copy`);
         }
       } else {
-        // Untracked: should be a symlink pointing to the main checkout
+        // Untracked or force live-shared: should be a symlink pointing to the main checkout
         if (existsSync(targetPath)) {
           let shouldCreate = true;
           if (existsSync(linkPath)) {
