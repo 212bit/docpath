@@ -78,7 +78,7 @@ describe('Review Skill Router', () => {
     assert.match(result.out, /language: typescript/);
     assert.match(result.out, /files: src\/feature\.ts/);
     assert.match(result.out, /diff_fingerprint: sha256:/);
-    assert.match(result.out, /write_command: docpath write-review-skill --skill docpath-review-typescript --language typescript --scope all --stdin/);
+    assert.match(result.out, /write_command: docpath write-review-skill --skill docpath-review-typescript --language typescript --scope task --stdin/);
     assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'review.json')), false);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -138,7 +138,7 @@ describe('Review Skill Router', () => {
       '--cwd', cwd,
       '--skill', 'docpath-review-typescript',
       '--language', 'typescript',
-      '--scope', 'all',
+      '--scope', 'task',
       '--content', payload,
     ], cwd);
     const reviewResult = run(['review', '--cwd', cwd], cwd);
@@ -168,7 +168,7 @@ describe('Review Skill Router', () => {
       '--cwd', cwd,
       '--skill', 'docpath-review-typescript',
       '--language', 'typescript',
-      '--scope', 'all',
+      '--scope', 'task',
       '--content', payload,
     ], cwd);
 
@@ -191,7 +191,7 @@ describe('Review Skill Router', () => {
       '--cwd', cwd,
       '--skill', 'docpath-review-typescript',
       '--language', 'typescript',
-      '--scope', 'all',
+      '--scope', 'task',
       '--content', payload,
     ], cwd);
 
@@ -214,7 +214,7 @@ describe('Review Skill Router', () => {
       '--cwd', cwd,
       '--skill', 'docpath-review-typescript',
       '--language', 'typescript',
-      '--scope', 'all',
+      '--scope', 'task',
       '--content', payload,
     ], cwd).code, 0);
     writeFileSync(join(cwd, 'src', 'feature.ts'), 'export const feature = false;\n');
@@ -236,7 +236,7 @@ describe('Review Skill Router', () => {
       schema_version: 1,
       kind: 'review',
       timestamp: new Date().toISOString(),
-      scope: 'all',
+      scope: 'task',
       files: ['src/feature.ts'],
       findings: [],
       errors: 0,
@@ -248,7 +248,7 @@ describe('Review Skill Router', () => {
         language: 'typescript',
         role: 'language',
         frameworks: [],
-        scope: 'all',
+        scope: 'task',
         files: ['src/other.ts'],
         diff_fingerprint: 'sha256:stale',
         status: 'pass',
@@ -265,13 +265,13 @@ describe('Review Skill Router', () => {
     assert.match(result.out, /review_skill_gate: pass/);
     assert.match(result.out, /evidence_warnings:/);
     assert.match(result.out, /docpath-review-typescript: file set mismatch/);
-    assert.match(result.out, /fix: docpath write-review-skill --skill docpath-review-typescript --language typescript --scope all --stdin/);
+    assert.match(result.out, /fix: docpath write-review-skill --skill docpath-review-typescript --language typescript --scope task --stdin/);
     assert.equal(reviewJson.approved, true);
     assert.equal(reviewJson.skill_review_gate.status, 'pass');
     assert.deepEqual(reviewJson.skill_review_gate.evidence_warnings, [{
       skill: 'docpath-review-typescript',
       reason: 'file set mismatch',
-      fix_command: 'docpath write-review-skill --skill docpath-review-typescript --language typescript --scope all --stdin',
+      fix_command: 'docpath write-review-skill --skill docpath-review-typescript --language typescript --scope task --stdin',
     }]);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -290,7 +290,7 @@ describe('Review Skill Router', () => {
       '--cwd', cwd,
       '--skill', 'docpath-review-typescript',
       '--language', 'typescript',
-      '--scope', 'all',
+      '--scope', 'task',
       '--content', payload,
     ], cwd).code, 0);
 

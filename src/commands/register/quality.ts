@@ -50,7 +50,7 @@ export function registerQualityCommands(cli: CAC): void {
 
   cli.command('review', '结构化代码审查 (本地静态检查)')
     .option('--cwd <path>', '项目目录')
-    .option('--scope <scope>', '审查范围: all|staged|last_commit (默认 all)')
+    .option('--scope <scope>', '审查范围: all|staged|last_commit|task (默认: 活跃任务走 task 累计 diff, 否则 all)')
     .option('--dry-run', '只预览审查结果，不写入状态')
     .option('--approve', '直接批准（跳过自动检查）')
     .option('--force', '允许在无活跃 agent 会话时独立运行')
@@ -59,7 +59,8 @@ export function registerQualityCommands(cli: CAC): void {
     .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean; force?: boolean; 'skip-skill-review'?: string | string[] | boolean; skipSkillReview?: string | string[] | boolean; reason?: string }) => {
       await reviewCommand({
         cwd: options.cwd || process.cwd(),
-        scope: normalizeEnumOption(options.scope, 'review --scope', ['all', 'staged', 'last_commit'] as const) || 'all',
+        // R-276: 缺省时不强制 all, 由 reviewCommand 按活跃任务解析默认口径。
+        scope: normalizeEnumOption(options.scope, 'review --scope', ['all', 'staged', 'last_commit', 'task'] as const),
         dryRun: options['dry-run'] ?? options.dryRun,
         approve: options.approve ?? false,
         force: options.force ?? false,
@@ -72,7 +73,7 @@ export function registerQualityCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--skill <skill>', 'Router requirement skill id')
     .option('--language <language>', '语言: typescript|javascript')
-    .option('--scope <scope>', '审查范围: all|staged|last_commit (默认 all)')
+    .option('--scope <scope>', '审查范围: all|staged|last_commit|task (默认与 docpath review 同源解析)')
     .option('--status <status>', '结果: pass|fail')
     .option('--files <files>', '逗号分隔的文件列表，必须覆盖当前 requirement')
     .option('--findings-json <json>', 'findings JSON，形如 {"findings":[]}')
@@ -84,7 +85,7 @@ export function registerQualityCommands(cli: CAC): void {
         cwd: options.cwd || process.cwd(),
         skill: options.skill,
         language: options.language,
-        scope: normalizeEnumOption(options.scope, 'write-review-skill --scope', ['all', 'staged', 'last_commit'] as const) || 'all',
+        scope: normalizeEnumOption(options.scope, 'write-review-skill --scope', ['all', 'staged', 'last_commit', 'task'] as const),
         status: options.status,
         files: options.files,
         findingsJson: options['findings-json'] || options.findingsJson,

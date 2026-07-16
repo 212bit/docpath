@@ -561,12 +561,20 @@ describe('check and review commands', () => {
     execSync('git add todo.ts', { cwd, encoding: 'utf-8' });
     execSync('git commit -m feature', { cwd, encoding: 'utf-8' });
 
+    // R-276: 活跃任务默认即 task 累计 diff, 树干净也覆盖已提交变更。
     const out = run(`review --cwd ${cwd} --dry-run`, cwd);
 
-    assert.match(out, /自动切换为 task 累积 diff 审查/);
+    assert.match(out, /活跃任务默认走 task 累计 diff 审查/);
     assert.match(out, /scope: task/);
     assert.match(out, /todo\.ts/);
     assert.match(out, /未处理的 TODO/);
+
+    // 显式 --scope all 且树干净时, 原有自动切换兜底仍生效。
+    const explicitAll = run(`review --cwd ${cwd} --scope all --dry-run`, cwd);
+
+    assert.match(explicitAll, /自动切换为 task 累积 diff 审查/);
+    assert.match(explicitAll, /scope: task/);
+    assert.match(explicitAll, /todo\.ts/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -636,7 +644,7 @@ describe('check and review commands', () => {
     assert.match(out, /finding_scope: mixed/);
     assert.match(out, /next_hint:/);
     assert.match(out, /recommended_command:/);
-    assert.equal(reviewJson.scope, 'all');
+    assert.equal(reviewJson.scope, 'task');
     assert.equal(reviewJson.skill_review_gate.status, 'pass_with_skips');
     assert.equal(reviewJson.finding_scope, 'mixed');
     assert.equal(reviewJson.finding_scope_counts.current_diff.infos, 1);

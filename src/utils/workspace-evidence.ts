@@ -43,6 +43,8 @@ export interface ReviewEvidence {
   schema_version: 1;
   kind: 'review';
   timestamp: string;
+  /** R-276: 审查时的 git HEAD; 供 done 复用判定感知 review 后的新提交 (旧证据缺省, 向后兼容) */
+  head?: string;
   scope?: string;
   finding_scope?: 'current_changes' | 'baseline' | 'mixed';
   finding_scope_counts?: ReviewFindingScopeCounts;

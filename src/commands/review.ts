@@ -23,6 +23,7 @@ import {
   buildReviewSkillRequirements,
   createReviewSkillSkip,
   evaluateReviewSkillGate,
+  resolveTaskBaseRef,
   type ReviewSkillGate,
   type ReviewSkillSkip,
 } from '../utils/review-skill-router.js';
@@ -102,13 +103,27 @@ function runGit(cwd: string, args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000 });
 }
 
+/** R-276: 证据记录审查时的 HEAD, 供 done 复用判定感知 review 后的新提交。 */
+function currentGitHead(cwd: string): string | undefined {
+  try {
+    return runGit(cwd, ['rev-parse', 'HEAD']).trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function collectStatusChangedFiles(cwd: string): string[] {
   return parsePorcelainPaths(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
 }
 
 function taskCommitFiles(cwd: string, startedAt?: string): string[] {
   if (!startedAt?.trim()) return [];
-  return parseNameList(runGit(cwd, ['log', '--name-only', '--format=', `--since=${startedAt}`, 'HEAD']));
+  try {
+    return parseNameList(runGit(cwd, ['log', '--name-only', '--format=', `--since=${startedAt}`, 'HEAD']));
+  } catch {
+    // 空仓/无提交 (bad revision HEAD) 时降级为空, 让 task 口径仍覆盖工作区变更。
+    return [];
+  }
 }
 
 function collectTaskChangedFiles(cwd: string, current?: Awaited<ReturnType<typeof readCurrentState>>): string[] {
@@ -199,23 +214,6 @@ function fileLineCount(cwd: string, file: string): number {
     return readFileSync(join(cwd, file), 'utf-8').split('\n').length;
   } catch {
     return 0;
-  }
-}
-
-function resolveTaskBaseRef(cwd: string, startedAt?: string): string | null {
-  if (!startedAt?.trim()) return null;
-  try {
-    const commits = parseNameList(runGit(cwd, ['rev-list', '--reverse', `--since=${startedAt}`, 'HEAD']));
-    const first = commits[0];
-    if (!first) return null;
-    try {
-      runGit(cwd, ['rev-parse', '--verify', `${first}^`]);
-      return `${first}^`;
-    } catch {
-      return first;
-    }
-  } catch {
-    return null;
   }
 }
 
@@ -413,6 +411,7 @@ async function handleApprove(cwd: string, docpathDir: string, taskId: string): P
     schema_version: 1,
     kind: 'review',
     timestamp: new Date().toISOString(),
+    head: currentGitHead(cwd),
     files: [],
     findings: [],
     errors: 0,
@@ -446,8 +445,14 @@ async function persistReviewResult(cwd: string, taskId: string, groups: FindingG
 export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const docpathDir = await resolveDocpathDir(opts.cwd);
   console.log('🔍 代码审查开始...');
-  const scope = normalizeReviewScope(opts.scope || 'all');
   const current = await readCurrentState(opts.cwd);
+  // R-276: 未显式指定 scope 时, 活跃任务默认审任务累计 diff (提交∪工作区), 与提交时序解耦。
+  const scope = opts.scope
+    ? normalizeReviewScope(String(opts.scope))
+    : current?.task_id && current?.started_at ? 'task' : 'all';
+  if (!opts.scope && scope === 'task') {
+    console.log('ℹ️  活跃任务默认走 task 累计 diff 审查 (显式 --scope all 可覆盖)');
+  }
   await assertNoActiveTaskStructuredMarkdownDrift(docpathDir, current?.task_id);
   let effectiveScope = scope;
   let changedFiles = collectChangedFiles(opts.cwd, scope, current);
@@ -479,7 +484,8 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const groups = groupFindings(findings);
   printFindings(groups);
   const previousReview = await readReviewEvidence(docpathDir);
-  const { enabled, requirements } = await buildReviewSkillRequirements(opts.cwd, docpathDir, changedFiles, effectiveScope);
+  const taskBaseRef = effectiveScope === 'task' ? resolveTaskBaseRef(opts.cwd, current?.started_at) : undefined;
+  const { enabled, requirements } = await buildReviewSkillRequirements(opts.cwd, docpathDir, changedFiles, effectiveScope, { taskBaseRef });
   const previewGate = evaluateReviewSkillGate({
     enabled,
     requirements,
@@ -526,6 +532,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     schema_version: 1,
     kind: 'review',
     timestamp: new Date().toISOString(),
+    head: currentGitHead(opts.cwd),
     scope: effectiveScope,
     finding_scope: 'mixed',
     finding_scope_counts,

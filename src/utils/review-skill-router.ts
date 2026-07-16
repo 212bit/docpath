@@ -83,6 +83,28 @@ function runGit(cwd: string, args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000 });
 }
 
+/**
+ * R-276: task 口径的 diff 基线 = 任务 started_at 以来首个提交的父提交。
+ * 无 started_at / 任务内无提交 / 首提交无父 (root) 时分别回退 null / null / 首提交自身。
+ */
+export function resolveTaskBaseRef(cwd: string, startedAt?: string): string | null {
+  if (!startedAt?.trim()) return null;
+  try {
+    const commits = runGit(cwd, ['rev-list', '--reverse', `--since=${startedAt}`, 'HEAD'])
+      .split('\n').map((line) => line.trim()).filter(Boolean);
+    const first = commits[0];
+    if (!first) return null;
+    try {
+      runGit(cwd, ['rev-parse', '--verify', `${first}^`]);
+      return `${first}^`;
+    } catch {
+      return first;
+    }
+  } catch {
+    return null;
+  }
+}
+
 export function isReviewSkillGateSourceFile(file: string): boolean {
   if (EXCLUDED_SOURCE_PATHS.some((pattern) => pattern.test(file))) return false;
   return LANGUAGE_RULES.some((rule) => rule.extensions.test(file));
@@ -93,13 +115,18 @@ function languageForFile(file: string): (typeof LANGUAGE_RULES)[number] | null {
   return LANGUAGE_RULES.find((rule) => rule.extensions.test(file)) || null;
 }
 
-function diffForFile(cwd: string, file: string, scope: ReviewScope): string {
+function diffForFile(cwd: string, file: string, scope: ReviewScope, taskBaseRef?: string | null): string {
   try {
     if (scope === 'staged') return runGit(cwd, ['diff', '--cached', '--', file]);
     if (scope === 'last_commit') return runGit(cwd, ['diff', 'HEAD~1..HEAD', '--', file]);
     if (scope === 'task') {
-      const log = runGit(cwd, ['log', '--follow', '--patch', '--format=', '--', file]);
-      if (log.trim()) return log;
+      // R-276: 与 review.ts 同口径——任务基线..HEAD + 工作区, 不再用全历史 patch。
+      const parts = [
+        taskBaseRef ? runGit(cwd, ['diff', `${taskBaseRef}..HEAD`, '--', file]) : '',
+        runGit(cwd, ['diff', '--', file]),
+        runGit(cwd, ['diff', '--cached', '--', file]),
+      ].join('\n');
+      if (parts.trim()) return parts;
     }
     const unstaged = runGit(cwd, ['diff', '--', file]);
     const staged = runGit(cwd, ['diff', '--cached', '--', file]);
@@ -114,12 +141,12 @@ function diffForFile(cwd: string, file: string, scope: ReviewScope): string {
   }
 }
 
-function fingerprintForFiles(cwd: string, scope: ReviewScope, files: string[]): string {
+function fingerprintForFiles(cwd: string, scope: ReviewScope, files: string[], taskBaseRef?: string | null): string {
   const hash = createHash('sha256');
   hash.update(`scope:${scope}\n`);
   for (const file of [...files].sort()) {
     hash.update(`file:${file}\n`);
-    hash.update(diffForFile(cwd, file, scope));
+    hash.update(diffForFile(cwd, file, scope, taskBaseRef));
     hash.update('\n');
   }
   return `sha256:${hash.digest('hex')}`;
@@ -135,6 +162,7 @@ export async function buildReviewSkillRequirements(
   docpathDir: string,
   changedFiles: string[],
   scope: ReviewScope,
+  opts?: { taskBaseRef?: string | null },
 ): Promise<{ enabled: boolean; requirements: ReviewSkillRequirement[] }> {
   const enabled = await isReviewSkillGateEnabled(cwd);
   if (!enabled) return { enabled, requirements: [] };
@@ -158,7 +186,7 @@ export async function buildReviewSkillRequirements(
         role: 'language' as const,
         frameworks: [],
         files: sortedFiles,
-        diff_fingerprint: fingerprintForFiles(cwd, scope, sortedFiles),
+        diff_fingerprint: fingerprintForFiles(cwd, scope, sortedFiles, opts?.taskBaseRef),
         skill_source_path: `.docpath/review-skills/${rule.sourceDir}/SKILL.md`,
         write_command: `docpath write-review-skill --skill ${rule.skill} --language ${rule.language} --scope ${scope} --stdin`,
         skill_missing: !existsSync(skillSourcePath),

@@ -12,6 +12,7 @@
  * handoff -> persist compact context for session transfer
  */
 
+import { execFileSync } from 'node:child_process';
 import { checkCommand } from './check.js';
 import { journalCommand } from './journal.js';
 import { reviewCommand } from './review.js';
@@ -325,7 +326,20 @@ async function canReuseReviewGate(cwd: string, stateAtStart: Awaited<ReturnType<
   if (!evidence) return 'review evidence missing';
   if (!evidence.approved || evidence.errors > 0) return 'review evidence is not approved';
   if (!isFreshEvidence(evidence.timestamp)) return 'review evidence is stale';
+  // R-276: 证据带 head 时绑定复用——review 之后有新提交则强制重审 (旧证据无 head 维持时间窗判定)。
+  if (evidence.head) {
+    const head = currentGitHeadOptional(cwd);
+    if (head && evidence.head !== head) return 'HEAD moved since review evidence';
+  }
   return null;
+}
+
+function currentGitHeadOptional(cwd: string): string | undefined {
+  try {
+    return execFileSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf-8', timeout: 10000 }).trim() || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 async function runAgentCheckGate(options: AgentOptions, stateAtStart: Awaited<ReturnType<typeof readCurrentState>>): Promise<void> {

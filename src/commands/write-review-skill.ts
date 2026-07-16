@@ -1,11 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readStdin } from '../utils/stdin.js';
+import { readCurrentState } from '../utils/workspace.js';
 import { readReviewEvidence, writeReviewEvidence } from '../utils/workspace-evidence.js';
 import {
   buildReviewSkillRequirements,
   createReviewSkillEvidence,
   findRequirement,
+  resolveTaskBaseRef,
   type ReviewScope,
   type ReviewSkillFinding,
   type ReviewSkillStatus,
@@ -32,8 +34,8 @@ interface WriteReviewSkillPayload {
 }
 
 function normalizeScope(scope: string): ReviewScope {
-  if (scope === 'all' || scope === 'staged' || scope === 'last_commit') return scope;
-  throw new Error(`write-review-skill --scope: 参数非法: ${scope}（允许: all|staged|last_commit）`);
+  if (scope === 'all' || scope === 'staged' || scope === 'last_commit' || scope === 'task') return scope;
+  throw new Error(`write-review-skill --scope: 参数非法: ${scope}（允许: all|staged|last_commit|task）`);
 }
 
 function normalizeStatus(status: string): ReviewSkillStatus {
@@ -59,13 +61,26 @@ function runGit(cwd: string, args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000 });
 }
 
-function collectChangedFiles(cwd: string, scope: ReviewScope): string[] {
+function taskCommitFiles(cwd: string, startedAt?: string): string[] {
+  if (!startedAt?.trim()) return [];
+  try {
+    return parseNameList(runGit(cwd, ['log', '--name-only', '--format=', `--since=${startedAt}`, 'HEAD']));
+  } catch {
+    // 空仓/无提交时降级为空, 让 task 口径仍覆盖工作区变更 (与 review.ts 同步)。
+    return [];
+  }
+}
+
+function collectChangedFiles(cwd: string, scope: ReviewScope, startedAt?: string): string[] {
   try {
     const files = scope === 'staged'
       ? parseNameList(runGit(cwd, ['diff', '--name-only', '--cached']))
       : scope === 'last_commit'
         ? parseNameList(runGit(cwd, ['show', '--name-only', '--format=', 'HEAD']))
-        : parsePorcelainPaths(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
+        : scope === 'task'
+          // R-276: 与 review.ts 同口径——任务提交文件 ∪ 工作区变更。
+          ? [...taskCommitFiles(cwd, startedAt), ...parsePorcelainPaths(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']))]
+          : parsePorcelainPaths(runGit(cwd, ['status', '--porcelain=v1', '--untracked-files=all']));
     return [...new Set(files)].filter((file) => /\.(ts|tsx|js|jsx|mjs|cjs|json)$/.test(file));
   } catch {
     return [];
@@ -122,7 +137,11 @@ export async function writeReviewSkillCommand(options: WriteReviewSkillOptions):
   const language = options.language?.trim();
   if (!skill) throw new Error('write-review-skill requires --skill');
   if (!language) throw new Error('write-review-skill requires --language');
-  const scope = normalizeScope(options.scope || 'all');
+  const current = await readCurrentState(cwd);
+  // R-276: 默认口径与 docpath review 同源——活跃任务走 task 累计 diff, 否则 all。
+  const scope = options.scope
+    ? normalizeScope(options.scope)
+    : current?.task_id && current?.started_at ? 'task' : 'all';
   const payload = await readPayload(options);
   const status = normalizeStatus(payload.status || options.status || '');
   const files = payload.files || [];
@@ -132,8 +151,9 @@ export async function writeReviewSkillCommand(options: WriteReviewSkillOptions):
     throw new Error('pass skill review evidence cannot contain severity:error findings');
   }
 
-  const changedFiles = collectChangedFiles(cwd, scope);
-  const { enabled, requirements } = await buildReviewSkillRequirements(cwd, docpathDir, changedFiles, scope);
+  const changedFiles = collectChangedFiles(cwd, scope, current?.started_at);
+  const taskBaseRef = scope === 'task' ? resolveTaskBaseRef(cwd, current?.started_at) : undefined;
+  const { enabled, requirements } = await buildReviewSkillRequirements(cwd, docpathDir, changedFiles, scope, { taskBaseRef });
   if (!enabled) throw new Error('review skill gate is disabled for this workspace');
   const requirement = findRequirement(requirements, skill, language);
   if (!requirement) throw new Error(`no current Review Skill Router requirement for ${skill}/${language}`);
@@ -157,6 +177,7 @@ export async function writeReviewSkillCommand(options: WriteReviewSkillOptions):
     schema_version: 1,
     kind: 'review',
     timestamp: new Date().toISOString(),
+    head: previous?.head,
     scope: previous?.scope || scope,
     finding_scope: previous?.finding_scope || 'mixed',
     finding_scope_counts: previous?.finding_scope_counts,
