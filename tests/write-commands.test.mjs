@@ -1009,4 +1009,23 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('go rejects execution when task is completed', () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    const content = [
+      '## 执行计划',
+      '',
+      '### S1: Step',
+      '- **描述**: test',
+      '- **验收条件**: test',
+      '- **依赖**: 无',
+      '',
+    ].join('\n');
+    runWithInput(`write-plan --cwd ${cwd} --stdin`, cwd, content);
+
+    const result = runResult(`go --cwd ${cwd} --step S1 --dry-run`, cwd);
+    assert.equal(result.code, 1);
+    assert.match(result.out, /当前任务已处于 completed 状态/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
 });

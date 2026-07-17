@@ -216,6 +216,12 @@ export async function goCommand(options: GoOptions): Promise<void> {
   const { docpathDir, specPath } = await resolveGoContext(cwd);
   const extraFields = await readSpecFields(specPath);
   let current = await readCurrentState(cwd);
+  if (current?.phase === 'completed') {
+    throw new Error(
+      `docpath go: 当前任务已处于 completed 状态，无法使用 go 推进或修改子任务。\n` +
+      `    如果是新工作，请运行 docpath next --agent 或 docpath backlog promote <id> 推进新任务。`
+    );
+  }
   const tasks = await readPlanSteps(docpathDir, current?.task_id);
   const target = selectTargetStep(tasks, step, status, current?.current_step);
   if (!target) {

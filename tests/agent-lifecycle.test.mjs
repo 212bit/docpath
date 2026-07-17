@@ -388,4 +388,31 @@ describe('docpath agent lifecycle', () => {
     assert.equal(fs.existsSync(notePath), true, 'current-task wip-note.md must survive enter');
     fs.rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('agent step rejects execution when task is completed', () => {
+    const cwd = mkExecWorkspace();
+    fs.writeFileSync(path.join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 2,
+      task_id: 'T-AGENT',
+      task_title: 'Agent Lifecycle',
+      phase: 'completed',
+      gate: 'review_pass',
+      current_step: '知识归档完成',
+      started_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z',
+    }));
+
+    let failed = false;
+    try {
+      execSync(`node ${CLI} agent step --step S1 --status done`, { cwd, stdio: 'ignore' });
+    } catch (e) {
+      failed = true;
+      assert.equal(e.status, 1);
+    }
+    assert.equal(failed, true, 'Command should fail');
+
+    const out = run('agent step --step S1 --status done', cwd);
+    assert.match(out, /当前任务已处于 completed 状态/);
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
 });

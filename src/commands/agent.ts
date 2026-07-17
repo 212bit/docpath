@@ -261,6 +261,13 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
 
 async function handleAgentStep(options: AgentOptions): Promise<void> {
   const { cwd } = options;
+  const current = await readCurrentState(cwd);
+  if (current?.phase === 'completed') {
+    throw new Error(
+      `docpath agent step: 当前任务已处于 completed 状态，无法修改子任务状态。\n` +
+      `    如果是新工作，请运行 docpath next --agent 或 docpath backlog promote <id> 推进新任务。`
+    );
+  }
   const taskId = await requireBoundTask('step', cwd);
   const session = resolveSessionContext(options.session);
   const step = requireStep(options.action, options.step);

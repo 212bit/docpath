@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-17T02:21:59.147Z",
+    "updated_at": "2026-07-17T02:21:59.147Z",
+    "content_sha256": "b1f76d9cc25c8ebbb11c074ed767cc812921b400167064839fbac39861ad2afd"
+  },
+  "task_id": "T-20260717-completed-go-agent-step-fail-loud-canoni",
+  "backlog_id": "R-280",
+  "title": "T-20260717-completed-go-agent-step-fail-loud-canoni - completed 任务上 go/agent step 应 fail-loud 拒绝, 而非半执行污染 canonical breadcrumb",
+  "generated_at": "2026-07-17T02:21:59.147Z",
+  "scope": {
+    "included": [
+      "completed 任务上 go/agent step 应 fail-loud 拒绝, 而非半执行污染 canonical breadcrumb"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "已由用户指示推进该 backlog 任务 (2026-07-17)",
+    "decision_brief_markdown": "- 当前问题: ## 背景\n- 目标: completed 任务上 go/agent step 应 fail-loud 拒绝, 而非半执行污染 canonical breadcrumb\n- 背景: 来自 backlog R-280\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 已由用户指示推进该 backlog 任务 (2026-07-17)"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "completed 任务上 go/agent step 应 fail-loud 拒绝, 而非半执行污染 canonical breadcrumb",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "当任务已处于 completed 状态时，执行 `docpath go` 应以非零状态码（fail-loud）退出，报错信息包含引导说明，且没有任何写入或状态更新。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "当任务已处于 completed 状态时，执行 `docpath agent step` 应以非零状态码（fail-loud）退出，报错信息包含引导说明，且没有任何写入或状态更新。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "全套测试通过且新增针对 completed 任务拒绝推进的单元/端到端测试用例。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-280 与任务 T-20260717-completed-go-agent-step-fail-loud-canoni 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "## 背景",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
