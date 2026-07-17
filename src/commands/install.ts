@@ -35,6 +35,7 @@ import {
   buildInstallDoctorReportFromContext,
   createInstallContext,
   sha256,
+  isLocallyCustomizableInstallAsset,
 } from '../utils/install-core.js';
 
 const MERGE_DRIVER_ID = 'docpath-markdown';
@@ -88,17 +89,48 @@ function renderDiffHint(existing: string, next: string): string {
   return changes.length > 0 ? changes.join('\n') : '  内容不同，但未能生成简短 diff。';
 }
 
-async function writeManagedFile(filePath: string, content: string, force: boolean, label: string): Promise<'written' | 'skipped' | 'unchanged'> {
+async function writeManagedFile(
+  filePath: string,
+  content: string,
+  force: boolean,
+  label: string,
+  isCustomizable = false
+): Promise<'written' | 'skipped' | 'unchanged'> {
   if (await exists(filePath)) {
     const existing = await readFile(filePath, 'utf-8');
     if (existing === content) {
       console.log(`✓  ${label} 已是最新`);
       return 'unchanged';
     }
-    if (!force) {
-      console.log(`⏭️  ${label} 已存在，跳过。使用 --force 覆盖；差异预览:`);
-      console.log(renderDiffHint(existing, content));
-      return 'skipped';
+
+    if (isCustomizable) {
+      if (force) {
+        const isInteractive = (process.stdin.isTTY && process.stdout.isTTY) || process.env.DOCPATH_TEST_TTY === '1';
+        if (isInteractive) {
+          const { confirm, isCancel } = await import('@clack/prompts');
+          const shouldOverwrite = await confirm({
+            message: `检测到本地定制资产 ${label} 已被修改，是否用模板覆写（这会丢失本地定制）？`,
+            initialValue: false,
+          });
+          if (isCancel(shouldOverwrite) || shouldOverwrite !== true) {
+            console.log(`⏭️  跳过覆写本地定制资产 ${label}。`);
+            return 'skipped';
+          }
+        } else {
+          console.warn(`⚠️  警告: 检测到本地定制资产 ${label} 已被修改。在非交互模式下跳过覆写。若要重置，请先手动删除该文件。`);
+          return 'skipped';
+        }
+      } else {
+        console.log(`⏭️  ${label} 已存在，跳过。使用 --force 覆盖；差异预览:`);
+        console.log(renderDiffHint(existing, content));
+        return 'skipped';
+      }
+    } else {
+      if (!force) {
+        console.log(`⏭️  ${label} 已存在，跳过。使用 --force 覆盖；差异预览:`);
+        console.log(renderDiffHint(existing, content));
+        return 'skipped';
+      }
     }
   }
 
@@ -577,7 +609,8 @@ async function installProtocolFile(
   const tplPath = await resolveTemplate(filename);
   let content = await readFile(tplPath, 'utf-8');
   content = content.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
-  await writeManagedFile(filePath, content, force, filename);
+  const isCustomizable = isLocallyCustomizableInstallAsset({ path: filename });
+  await writeManagedFile(filePath, content, force, filename, isCustomizable);
 }
 
 async function installAgentCommands(

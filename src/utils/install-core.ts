@@ -293,7 +293,7 @@ function assetKey(asset: Pick<InstallAssetManifestEntry, 'path' | 'source'>): st
   return `${asset.path}\0${asset.source}`;
 }
 
-function isLocallyCustomizableInstallAsset(asset: Pick<InstallAssetManifestEntry, 'path'>): boolean {
+export function isLocallyCustomizableInstallAsset(asset: Pick<InstallAssetManifestEntry, 'path'>): boolean {
   return asset.path === 'AGENTS.md';
 }
 

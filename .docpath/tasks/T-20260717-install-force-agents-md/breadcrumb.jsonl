@@ -1,0 +1,11 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"S1","status":"in_progress","context":"开始执行: 梳理 install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制","timestamp":"2026-07-17T02:35:15.760Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-07-17T02:35:18.583Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"S2","status":"in_progress","context":"开始执行: 实现 install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制","timestamp":"2026-07-17T02:35:22.002Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-07-17T02:35:53.760Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"S3","status":"in_progress","context":"recover current-task edits before go","timestamp":"2026-07-17T02:35:59.447Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"check","status":"blocked","context":"质量检查失败: 子任务完成度 (2/3)","timestamp":"2026-07-17T02:45:20.955Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-07-17T02:45:23.521Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"check","status":"done","context":"质量检查通过 (9 项)","timestamp":"2026-07-17T02:48:19.132Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"review","status":"blocked","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-07-17T02:48:29.095Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-07-17T02:48:48.237Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260717-install-force-agents-md","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-07-17T02:48:50.882Z"}

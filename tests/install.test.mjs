@@ -812,4 +812,77 @@ describe('install agent adapters', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('install --force preserves modified AGENTS.md in non-interactive mode and warns', () => {
+    const cwd = mkWorkspace();
+    // 1. Initial clean install
+    run(`install --cwd ${cwd} --target universal`, cwd);
+
+    // 2. Modify AGENTS.md locally
+    const agentsPath = join(cwd, 'AGENTS.md');
+    writeFileSync(agentsPath, '# Custom local conventions\n');
+
+    // 3. Re-run install with --force (non-interactive by default)
+    const result = runResult(`install --cwd ${cwd} --target universal --force 2>&1`, cwd);
+    const content = readFileSync(agentsPath, 'utf-8');
+
+    // 4. Verify AGENTS.md was not overwritten
+    assert.equal(content, '# Custom local conventions\n');
+    assert.match(result.out, /警告: 检测到本地定制资产 AGENTS.md 已被修改/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --force in interactive mode - overwrites modified AGENTS.md if confirmed', () => {
+    const cwd = mkWorkspace();
+    // 1. Initial clean install
+    run(`install --cwd ${cwd} --target universal`, cwd);
+
+    // 2. Modify AGENTS.md locally
+    const agentsPath = join(cwd, 'AGENTS.md');
+    writeFileSync(agentsPath, '# Custom local conventions\n');
+
+    // 3. Re-run install with --force (interactive confirm: pass 'y\n')
+    const out = execSync(`node ${BIN} install --cwd ${cwd} --target universal --force`, {
+      cwd,
+      input: 'y\n',
+      env: { ...process.env, DOCPATH_TEST_TTY: '1' },
+      encoding: 'utf-8',
+      timeout: 20000,
+    });
+
+    const content = readFileSync(agentsPath, 'utf-8');
+    // 4. Verify AGENTS.md was overwritten with template content
+    assert.doesNotMatch(content, /Custom local conventions/);
+    assert.match(content, /DocPath Agent Protocol/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --force in interactive mode - preserves modified AGENTS.md if declined', () => {
+    const cwd = mkWorkspace();
+    // 1. Initial clean install
+    run(`install --cwd ${cwd} --target universal`, cwd);
+
+    // 2. Modify AGENTS.md locally
+    const agentsPath = join(cwd, 'AGENTS.md');
+    writeFileSync(agentsPath, '# Custom local conventions\n');
+
+    // 3. Re-run install with --force (interactive decline: pass 'n\n')
+    const out = execSync(`node ${BIN} install --cwd ${cwd} --target universal --force`, {
+      cwd,
+      input: 'n\n',
+      env: { ...process.env, DOCPATH_TEST_TTY: '1' },
+      encoding: 'utf-8',
+      timeout: 20000,
+    });
+
+    const content = readFileSync(agentsPath, 'utf-8');
+    // 4. Verify AGENTS.md was not overwritten
+    assert.equal(content, '# Custom local conventions\n');
+    assert.match(out, /跳过覆写本地定制资产 AGENTS.md/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
+

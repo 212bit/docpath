@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-17T02:45:23.530Z",
+    "updated_at": "2026-07-17T02:45:23.530Z",
+    "content_sha256": "ea2975d0287df055be6fa731c6c331b69955d4cf5b00c11de61aa2461cfcc1d9"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-17T02:45:23.530Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制",
+      "description": "根据 spec 明确 FR-1: install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制 的实现边界和验收口径。",
+      "acceptance": "AC-1: force install of modified exempt assets should skip and warning in non-interactive mode. * Prompt for overwrite in interactive mode. * Add unit tests.",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制",
+      "description": "在现有架构内完成 FR-1: install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制 的代码与文档更新。",
+      "acceptance": "FR-1 install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: force install of modified exempt assets should skip and warning in non-interactive mode. * Prompt for overwrite in interactive mode. * Add unit tests.；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-278 与任务 T-20260717-install-force-agents-md 建立双向关联",
+      "acceptance": "AC-1: force install of modified exempt assets should skip and warning in non-interactive mode. * Prompt for overwrite in interactive mode. * Add unit tests.；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-278 与任务 T-20260717-install-force-agents-md 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}
