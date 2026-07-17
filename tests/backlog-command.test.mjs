@@ -197,6 +197,98 @@ Old body
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('backlog edit incrementally updates individual sections', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: proposed
+priority: P1
+level: 2
+source: test
+readiness: raw
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+旧背景内容
+
+## 验收
+
+旧验收内容
+`);
+
+    // 1. Edit background only
+    run('backlog edit R-001 --background "更新后的背景"', cwd);
+    let item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8');
+    assert.match(item, /## 背景\n\n更新后的背景/);
+    assert.match(item, /## 验收\n\n旧验收内容/);
+
+    // 2. Edit acceptance only
+    run('backlog edit R-001 --acceptance "更新后的验收"', cwd);
+    item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), 'utf-8');
+    assert.match(item, /## 背景\n\n更新后的背景/);
+    assert.match(item, /## 验收\n\n更新后的验收/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog promote maturity check reports precise error for section placeholder', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: proposed
+priority: P1
+level: 2
+source: test
+readiness: raw
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+- 待补充
+
+## 验收
+
+已填写验收标准
+`);
+
+    assert.throws(
+      () => run('backlog accept R-001', cwd),
+      (err) => {
+        const out = err.stdout || err.stderr || err.message || '';
+        return /背景.*章节正文为空或包含占位内容/.test(out)
+          && !/验收.*章节正文为空或包含占位内容/.test(out)
+          && /或者使用 --body-file 全量重写正文/.test(out);
+      }
+    );
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('backlog edit replaces body from body file', () => {
     const cwd = mkWorkspace();
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });

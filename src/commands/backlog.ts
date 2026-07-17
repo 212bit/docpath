@@ -129,13 +129,79 @@ async function readBacklogBodyFile(cwd: string, bodyFile: string): Promise<strin
   return content.trim();
 }
 
-async function resolveBacklogBody(options: BacklogCommandOptions): Promise<string> {
+function getMarkdownSection(body: string, title: string): string | null {
+  const normalized = body.replace(/\r\n/g, '\n').trim();
+  const sectionRegex = new RegExp(`^##\\s+${title}\\s*$`, 'm');
+  const match = normalized.match(sectionRegex);
+  if (!match) return null;
+
+  const startIndex = match.index!;
+  const headerLen = match[0].length;
+  const contentStartIndex = startIndex + headerLen;
+
+  const nextHeadingRegex = /^#{1,3}\s+\S/m;
+  const rest = normalized.slice(contentStartIndex);
+  const nextMatch = rest.match(nextHeadingRegex);
+
+  const contentEndIndex = nextMatch
+    ? contentStartIndex + nextMatch.index!
+    : normalized.length;
+
+  return normalized.slice(contentStartIndex, contentEndIndex).trim();
+}
+
+function replaceMarkdownSection(body: string, title: string, content: string): string {
+  const normalized = body.replace(/\r\n/g, '\n').trim();
+  const sectionRegex = new RegExp(`^##\\s+${title}\\s*$`, 'm');
+  const match = normalized.match(sectionRegex);
+  if (!match) {
+    return normalized + `\n\n## ${title}\n\n${content}`;
+  }
+
+  const startIndex = match.index!;
+  const headerLen = match[0].length;
+  const contentStartIndex = startIndex + headerLen;
+
+  const nextHeadingRegex = /^#{1,3}\s+\S/m;
+  const rest = normalized.slice(contentStartIndex);
+  const nextMatch = rest.match(nextHeadingRegex);
+
+  const contentEndIndex = nextMatch
+    ? contentStartIndex + nextMatch.index!
+    : normalized.length;
+
+  const before = normalized.slice(0, contentStartIndex).trimEnd();
+  const after = normalized.slice(contentEndIndex).trim();
+
+  return `${before}\n\n${content}\n\n${after}`.trim() + '\n';
+}
+
+function isPlaceholderValue(value: string | null | undefined): boolean {
+  if (!value) return true;
+  const lines = value.trim().split('\n');
+  return lines.some((line) =>
+    /^\s*(?:[-*]\s*)?(?:待补充|暂无|无|none|n\/a|tbd|todo)\s*$/i.test(line.trim())
+  );
+}
+
+async function resolveBacklogBody(options: BacklogCommandOptions, existingBody?: string): Promise<string> {
   if (options.bodyFile && hasInlineBodyOptions(options)) {
     throw new Error('docpath backlog: --body-file 不能与 --background/--acceptance 同时使用');
   }
 
   if (options.bodyFile) {
     return readBacklogBodyFile(options.cwd, options.bodyFile);
+  }
+
+  if (existingBody && (hasSection(existingBody, '背景') || hasSection(existingBody, '验收'))) {
+    let body = existingBody;
+    if (options.background != null) {
+      body = replaceMarkdownSection(body, '背景', options.background);
+    }
+    if (options.acceptance != null) {
+      body = replaceMarkdownSection(body, '验收', options.acceptance);
+    }
+    return body;
   }
 
   return buildInlineBacklogBody(options);
@@ -178,10 +244,15 @@ function hasSection(body: string, title: string): boolean {
 }
 
 function isPlaceholderBody(body: string): boolean {
-  const lines = body.trim().split('\n');
-  return !body.trim() || lines.some((line) =>
-    /^\s*(?:[-*]\s*)?(?:待补充|暂无|无|none|n\/a|tbd|todo)\s*$/i.test(line.trim())
-  );
+  const bg = getMarkdownSection(body, '背景');
+  const ac = getMarkdownSection(body, '验收');
+  if (bg === null && ac === null) {
+    const lines = body.trim().split('\n');
+    return !body.trim() || lines.some((line) =>
+      /^\s*(?:[-*]\s*)?(?:待补充|暂无|无|none|n\/a|tbd|todo)\s*$/i.test(line.trim())
+    );
+  }
+  return isPlaceholderValue(bg) || isPlaceholderValue(ac);
 }
 
 function readinessRank(readiness: BacklogReadiness): number {
@@ -190,8 +261,19 @@ function readinessRank(readiness: BacklogReadiness): number {
 
 function missingReadinessEvidence(item: BacklogItem): string[] {
   const issues: string[] = [];
-  if (isPlaceholderBody(item.body)) {
-    issues.push('正文仍为空或包含占位内容');
+  const bg = getMarkdownSection(item.body, '背景');
+  const ac = getMarkdownSection(item.body, '验收');
+  if (bg !== null || ac !== null) {
+    if (isPlaceholderValue(bg)) {
+      issues.push('`## 背景` 章节正文为空或包含占位内容');
+    }
+    if (isPlaceholderValue(ac)) {
+      issues.push('`## 验收` 章节正文为空或包含占位内容');
+    }
+  } else {
+    if (isPlaceholderBody(item.body)) {
+      issues.push('正文仍为空或包含占位内容');
+    }
   }
   if (item.level >= 2 && readinessRank(item.readiness) < readinessRank('analyzed')) {
     issues.push(`level ${item.level} 条目 readiness=${item.readiness}，至少需要 analyzed`);
@@ -219,6 +301,7 @@ function assertBacklogReadyForExecution(item: BacklogItem, action: 'accept' | 'p
     `docpath backlog ${action}: backlog 条目 ${item.id} 尚未达到可执行成熟度`,
     ...issues.map((issue) => `- ${issue}`),
     `修复建议: docpath backlog edit ${item.id} --background <text> --acceptance <text> --readiness analyzed --evidence-analysis <path>`,
+    `或者使用 --body-file 全量重写正文: docpath backlog edit ${item.id} --body-file <path>`,
     item.level >= 3
       ? `level 3 还需: --readiness confirmed --evidence-decision <ref> --user-confirmed <text>`
       : '',
@@ -252,14 +335,39 @@ function inspectBacklogItem(item: BacklogItem): BacklogGroomIssue[] {
       suggestion: `docpath backlog edit ${item.id} --background <text> --acceptance <text>`,
     });
   }
-  if ((item.status === 'proposed' || item.status === 'accepted') && isPlaceholderBody(item.body)) {
-    issues.push({
-      id: item.id,
-      severity: 'error',
-      field: 'body',
-      message: '条目正文为空或仍包含占位内容',
-      suggestion: `docpath backlog edit ${item.id} --body-file <path>`,
-    });
+  const bg = getMarkdownSection(item.body, '背景');
+  const ac = getMarkdownSection(item.body, '验收');
+  if (bg !== null || ac !== null) {
+    if (item.status === 'proposed' || item.status === 'accepted') {
+      if (isPlaceholderValue(bg)) {
+        issues.push({
+          id: item.id,
+          severity: 'error',
+          field: 'body.background',
+          message: '条目正文 `## 背景` 章节为空或包含占位内容',
+          suggestion: `docpath backlog edit ${item.id} --background <text>`,
+        });
+      }
+      if (isPlaceholderValue(ac)) {
+        issues.push({
+          id: item.id,
+          severity: 'error',
+          field: 'body.acceptance',
+          message: '条目正文 `## 验收` 章节为空或包含占位内容',
+          suggestion: `docpath backlog edit ${item.id} --acceptance <text>`,
+        });
+      }
+    }
+  } else {
+    if ((item.status === 'proposed' || item.status === 'accepted') && isPlaceholderBody(item.body)) {
+      issues.push({
+        id: item.id,
+        severity: 'error',
+        field: 'body',
+        message: '条目正文为空或仍包含占位内容',
+        suggestion: `docpath backlog edit ${item.id} --body-file <path>`,
+      });
+    }
   }
   if (
     item.status !== 'dropped'
@@ -267,13 +375,34 @@ function inspectBacklogItem(item: BacklogItem): BacklogGroomIssue[] {
     && item.status !== 'accepted'
     && isPlaceholderBody(item.body)
   ) {
-    issues.push({
-      id: item.id,
-      severity: 'error',
-      field: 'body',
-      message: '条目正文为空或仍包含占位内容',
-      suggestion: `docpath backlog edit ${item.id} --body-file <path>`,
-    });
+    if (bg !== null || ac !== null) {
+      if (isPlaceholderValue(bg)) {
+        issues.push({
+          id: item.id,
+          severity: 'error',
+          field: 'body.background',
+          message: '条目正文 `## 背景` 章节为空或包含占位内容',
+          suggestion: `docpath backlog edit ${item.id} --background <text>`,
+        });
+      }
+      if (isPlaceholderValue(ac)) {
+        issues.push({
+          id: item.id,
+          severity: 'error',
+          field: 'body.acceptance',
+          message: '条目正文 `## 验收` 章节为空或包含占位内容',
+          suggestion: `docpath backlog edit ${item.id} --acceptance <text>`,
+        });
+      }
+    } else {
+      issues.push({
+        id: item.id,
+        severity: 'error',
+        field: 'body',
+        message: '条目正文为空或仍包含占位内容',
+        suggestion: `docpath backlog edit ${item.id} --body-file <path>`,
+      });
+    }
   }
   if (item.status !== 'dropped' && item.level >= 2 && readinessRank(item.readiness) < readinessRank('analyzed')) {
     issues.push({
@@ -802,7 +931,7 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
   if (options.priority) updated.priority = normalizePriority(options.priority);
   if (options.level) updated.level = normalizeLevel(options.level);
   if (options.bodyFile || hasInlineBodyOptions(options)) {
-    updated.body = await resolveBacklogBody(options);
+    updated.body = await resolveBacklogBody(options, item.body);
     if (readinessRank(updated.readiness) < readinessRank('shaped') && !isPlaceholderBody(updated.body)) {
       updated.readiness = 'shaped';
     }
