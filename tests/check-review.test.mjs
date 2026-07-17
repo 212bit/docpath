@@ -902,8 +902,8 @@ describe('check and review commands', () => {
     assert.equal(result.code, 1);
     assert.match(result.out, /重大决策确认检查/);
     assert.match(result.out, /新增重大依赖: antd, react/);
-    assert.match(result.out, /检测到重大变更/);
-    assert.match(result.out, /未记录 Decision Brief 和用户确认/);
+    assert.match(result.out, /检测到未提交的重大变更/);
+    assert.match(result.out, /重大变更门禁有两种合法出路/);
 
     const confirmedSpec = `${readFileSync(join(tasks, 'spec.md'), 'utf-8').replace('## 5. 验收标准', [
       '## 4.1 重大决策门禁',
@@ -1004,7 +1004,7 @@ describe('check and review commands', () => {
     const nonInteractiveResult = runResult(`check --cwd ${cwd} --skip-tests --skip-lint --fix-drift current --non-interactive`, cwd);
     assert.equal(nonInteractiveResult.code, 1);
     assert.match(nonInteractiveResult.out, /重大决策确认检查/);
-    assert.match(nonInteractiveResult.out, /未记录 Decision Brief 和用户确认/);
+    assert.match(nonInteractiveResult.out, /检测到未提交的重大变更/);
 
     // 2. 调用 writeMajorChangeConfirmation 回写证据
     const { writeMajorChangeConfirmation } = await import('../dist/commands/check/evidence.js');
@@ -1211,7 +1211,7 @@ describe('check and review commands', () => {
     assert.equal(result.code, 1);
     assert.match(result.out, /重大决策确认检查/);
     assert.match(result.out, /Agent 协议模板变更: templates\/AGENTS\.md/);
-    assert.match(result.out, /检测到重大变更/);
+    assert.match(result.out, /检测到未提交的重大变更/);
 
     const confirmedSpec = `${readFileSync(join(tasks, 'spec.md'), 'utf-8').replace('## 5. 验收标准', [
       '## 4.1 重大变更门禁',

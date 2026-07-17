@@ -170,12 +170,24 @@ export function collectMajorDecisionSignals(cwd: string): MajorDecisionSignal[] 
 
 export function formatMajorChangeGateFailure(signals: MajorDecisionSignal[]): string {
   return [
-    '检测到重大变更，但当前 spec 未记录 Decision Brief 和用户确认。',
+    '❌  检测到未提交的重大变更，但当前 spec 尚未通过重大变更门禁。',
+    '',
+    '🚨  触发信号的未提交文件:',
     ...signals.map((signal) => `- ${signal.label}: ${signal.detail}`),
-    '修复方式:',
-    '  1. 在 spec.md 的 `## 4.1 重大变更门禁` 填写 Decision Brief',
-    '  2. 勾选 `是，需要用户确认`',
-    '  3. 在 `用户确认:` 记录明确确认内容后再继续实现',
+    '',
+    '💡  重大变更门禁有两种合法出路：',
+    '',
+    '  👉  出路一：如果本次开发确属重大变更（将变更类型、设计、或工作流）',
+    '      1. 在 spec.md 的 "## 4.1 重大变更门禁" 中填写详细的 Decision Brief（问题、目标、方案、风险等）；',
+    '      2. 将门禁选择勾选为：[x] 是，需要用户确认；',
+    '      3. 在 "用户确认:" 填写具体的确认依据（不能为 "待确认"、"无"、"N/A" 或空）。',
+    '      （这允许您带着未提交的重大资产文件通过 check/review）',
+    '',
+    '  👉  出路二：如果本次开发不属重大变更（例如：仅为遗留改动、本地调试，或属于其他任务的变更）',
+    '      - 请先通过 git commit 提交这些信号文件，或通过 git restore 撤销无关改动；',
+    '      - 只要 Git 工作区中没有这些未提交的信号文件，重大变更门禁就不会被触发（即使 spec 勾选 "否" 也能直接通过）。',
+    '',
+    '⚠️  注意：在存在未提交信号文件时，仅仅在 spec.md 中勾选 "否" 是无法通过门禁的。',
   ].join('\n');
 }
 

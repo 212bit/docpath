@@ -185,4 +185,16 @@ describe('major change preflight gate', () => {
     const route = parse(result.out);
     assert.equal(route.recommended_command, 'docpath go --step S1');
   });
+
+  it('failure message is detailed and lists signal files and two outlets', () => {
+    const cwd = mkWorkspace({ phase: 'planning', confirmed: false });
+    const result = runResult(`go --cwd ${cwd} --step S1`, cwd);
+    assert.notEqual(result.code, 0);
+    assert.match(result.out, /检测到未提交的重大变更/);
+    assert.match(result.out, /重大变更门禁有两种合法出路/);
+    assert.match(result.out, /出路一：如果本次开发确属重大变更/);
+    assert.match(result.out, /出路二：如果本次开发不属重大变更/);
+    assert.match(result.out, /git commit/);
+  });
 });
+

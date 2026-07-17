@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-17T12:05:15.888Z",
+    "updated_at": "2026-07-17T12:05:15.888Z",
+    "content_sha256": "b41c135056cb4765a7041d191b7877b9bb351625a3e6b8c138553bcdb28633ca"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-17T12:05:15.888Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 重大变更门禁失败提示应列出信号文件与两条合法出路",
+      "description": "根据 spec 明确 FR-1: 重大变更门禁失败提示应列出信号文件与两条合法出路 的实现边界和验收口径。",
+      "acceptance": "AC-1: 重大变更门禁失败信息 formatMajorChangeGateFailure 更新，清晰展示未提交的信号文件列表。 * 提示信息中说明勾选 否 时在有未提交信号文件时无效。 * 提示中明确指出两条出路：出路一是填写 Decision Brief 并勾选 是 加上用户确认内容，出路二是提交或撤销信号文件以清空未提交修改。 * 补充/更新对应的单元测试进行验证。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 重大变更门禁失败提示应列出信号文件与两条合法出路",
+      "description": "在现有架构内完成 FR-1: 重大变更门禁失败提示应列出信号文件与两条合法出路 的代码与文档更新。",
+      "acceptance": "FR-1 重大变更门禁失败提示应列出信号文件与两条合法出路 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 重大变更门禁失败信息 formatMajorChangeGateFailure 更新，清晰展示未提交的信号文件列表。 * 提示信息中说明勾选 否 时在有未提交信号文件时无效。 * 提示中明确指出两条出路：出路一是填写 Decision Brief 并勾选 是 加上用户确认内容，出路二是提交或撤销信号文件以清空未提交修改。 * 补充/更新对应的单元测试进行验证。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-281 与任务 T-20260717-task 建立双向关联",
+      "acceptance": "AC-1: 重大变更门禁失败信息 formatMajorChangeGateFailure 更新，清晰展示未提交的信号文件列表。 * 提示信息中说明勾选 否 时在有未提交信号文件时无效。 * 提示中明确指出两条出路：出路一是填写 Decision Brief 并勾选 是 加上用户确认内容，出路二是提交或撤销信号文件以清空未提交修改。 * 补充/更新对应的单元测试进行验证。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-281 与任务 T-20260717-task 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}
