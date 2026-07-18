@@ -2,7 +2,7 @@
 
 > 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。
 
-> 扫描时间: 2026-07-17T14:33:08.144Z
+> 扫描时间: 2026-07-18T01:32:30.098Z
 
 ## 文档列表
 
@@ -27,8 +27,7 @@
 | backlog/R-262.md | runbook | project | 2 | false | false | false | 2151 |  | R-262 | [来源: 2026-07-13 R-266 收尾复盘] 一个工作树混了三类未提交/已 commit 产物 | 2026-07-15T17:32:21.732Z | 6.1KB |
 | backlog/R-263.md | runbook | project | 2 | false | false | false | 2235 |  | R-263 | [来源: 2026-07-14 R-260 立项实操] promote R-260 成 task | 2026-07-15T17:32:04.930Z | 6.3KB |
 | backlog/R-268.md | runbook | project | 2 | false | false | false | 673 |  | R-268 | write-spec stdin 在同一已启动任务内重同步 spec 真源时不应重置 workflow phase。当前问题是相同 task_id 的 spec 同步会走 task created 转移，把 executing checking planning 误回到 drafting，并可能给出错误恢复提示。本次只处理同任务重同步和提示选择，不改变新任务 | 2026-07-15T17:48:15.618Z | 1.8KB |
-| backlog/R-282.md | runbook | project | 2 | false | false | false | 428 |  | R-282 | R-276/R-277 两次实证: capture 后 edit --acceptance 填了 frontmatter 字段, promote 仍报'正文仍为空或包含占位内容'——字段编辑不改写 body 的 '## 验收 - 待补充' 节, 报错也不指明是正文哪节占位, 只能 --body-file 全量重写。我们需要让 edit 只替换指定节，且 pr | 2026-07-17T14:21:19.621Z | 1.2KB |
-| backlog/R-283.md | runbook | project | 2 | false | false | false | 264 |  | R-283 | R-275/R-276 的 S3 认领两次被 dirty guard 拒 (本任务实现未提交是执行期常态), 只能按 rules gotcha 走 docpath run start 恢复归属。对'当前任务的顺序下一步'认领应放行本任务范围内脏文件 (可复用 changes --agent 的任务归组判定); 新任务启动/跨任务场景维持拦截。 | 2026-07-16T17:36:31.165Z | 734B |
+| backlog/R-283.md | runbook | project | 2 | false | false | false | 507 |  | R-283 | R-275/R-276 S3 认领两次被 dirty guard 拒 (本任务实现未提交是执行期常态), 只能走 docpath run start 恢复归属。我们需要对'当前任务的顺序下一步'认领放行本任务范围内脏文件。 | 2026-07-17T15:53:19.562Z | 1.3KB |
 | backlog/R-284.md | runbook | project | 2 | false | false | false | 336 |  | R-284 | 三次 promote 实证 (R-275/R-276/R-277): (1) AC 行 'AC-1: AC-1:' 双前缀——backlog 验收行自带编号再拼一次; (2) Decision Brief 解析出 '当前问题: ## 背景' 垃圾值——把节标题当正文; (3) 变更类型自动预勾两次不准 (R-275 勾架构/工作流, R-276 勾权限/范围 | 2026-07-16T17:36:31.326Z | 931B |
 | backlog/R-285.md | runbook | project | 2 | false | false | false | 366 |  | R-285 | R-279 收口实测 (2026-07-17): review.json 的 skill_reviews 是工作区级持久, 上一任务 (R-276, 6 个 TS 文件) 的 pass 证据在新任务 (R-279, 2 个 TS 文件) review 时因 file set mismatch 仅降级为 evidence_warnings, 审查仍 appro | 2026-07-16T18:09:35.188Z | 1.0KB |
 | backlog/analysis/R-230-open-questions.md | runbook | project | 2 | false | false | false | 2239 |  | DocPath UI Design - Open Questions | - **背景**：当前 Dashboard 使用深色 Obsidian 主题，改造后计划使用温暖浅色 | 2026-06-21T17:43:53.174Z | 5.6KB |
@@ -70,6 +69,7 @@
 | backlog/analysis/R-280-analysis.md | runbook | project | 2 | false | false | false | 760 |  | R-280 Analysis: Fail-loud on completed tasks for go and agent step | R-280 ensures that executing `docpath go` and `docpath agent step` (or its wrapper `docpath step`) on a task that has already reached the `completed` phase/state will fail-loud and | 2026-07-17T02:10:03.165Z | 2.8KB |
 | backlog/analysis/R-281-analysis.md | runbook | project | 2 | false | false | false | 856 |  | R-281 Analysis: Detailed major change gate failure message | When uncommitted changes trigger a major change signal, the quality check blocks execution if the spec has not confirmed the major change gate. Currently, the failure message `form | 2026-07-17T03:28:28.637Z | 2.6KB |
 | backlog/analysis/R-282-analysis.md | runbook | project | 2 | false | false | false | 350 |  | R-282 Analysis: Backlog Edit Incremental Update & Precise Promote Check | 1. **Backlog Edit Wipes Out Other Sections**: Currently, `docpath backlog edit --acceptance` or `--background` replaces the entire markdown body of the backlog item. The unedited s | 2026-07-17T14:20:56.582Z | 1.3KB |
+| backlog/analysis/R-283-analysis.md | runbook | project | 2 | false | false | false | 326 |  | R-283 Analysis: Go step release dirty guard on active task files | Currently, during task execution (active task phase is `executing`), running `docpath go` to start or resume a subsequent step will be blocked by `assertNoNonDocPathChangesForExecu | 2026-07-17T15:34:28.262Z | 1.3KB |
 | backlog/analysis/memory-layer-optimization-evidence.md | runbook | project | 2 | false | false | false | 1167 |  | 记忆层（Spec Memory Layer, §2.2）优化 - 核对证据 | 1. **删/实现"新 API 契约"**（文档准确性，零代码） | 2026-07-01T16:06:10.356Z | 3.2KB |
 | backlog/archived/R-208.md | runbook | project | 2 | false | false | false | 1557 |  | R-208 | 在非 force 模式下（即没有指定 `--force` 时），`docpath install` 命令在检测到目标目录中的文件内容与模板存在差异时，会为了保护用户的本地修改而选择跳过（skip）写入该文件。 | 2026-06-19T12:02:12.411Z | 4.1KB |
 | backlog/archived/R-211.md | runbook | project | 2 | false | false | false | 400 |  | R-211 | 09c6e0d 为消除 worktree 创建时 git 噪声，把被跟踪的 .docpath 资源改为副本，静默破坏了 backlog/rules 共享与 tasks 隔离契约；doctor 还把破坏判为 pass 掩盖问题。resolveSharedResource 等运行时重定向成死代码。 | 2026-06-19T11:45:53.573Z | 1.3KB |
@@ -140,7 +140,8 @@
 | backlog/archived/R-279.md | runbook | project | 2 | false | false | false | 1124 |  | R-279 | R-277 实证 (2026-07-17): 本地 CLAUDE.md 承载 R-269/R-273 用户确认修正, 模板是 | 2026-07-16T18:08:45.332Z | 3.0KB |
 | backlog/archived/R-280.md | runbook | project | 2 | false | false | false | 844 |  | R-280 | 本会话两次实证: promote 失败被管道吞掉后 && 链继续, go --step S1 在 state=completed 的任务上执行, 向已归档证据 canonical breadcrumb.jsonl 追加伪事件 (13:53 S1 无 start 配对), 脏文件再反过来挡 promote, 需 git checkout 恢复。complete | 2026-07-17T02:31:06.164Z | 2.3KB |
 | backlog/archived/R-281.md | runbook | project | 2 | false | false | false | 829 |  | R-281 | R-274 实证: 提示只说'补齐 Decision Brief 和用户确认', 不说明 勾'否'在有未提交策略文件信号时永远无效，以及真重大与非重大的两条合法出路。CLI 门禁失败输出需要更清晰地告知具体触发信号的文件列表和两条出路指南。 | 2026-07-17T12:08:43.405Z | 2.0KB |
-| backlog/backlog.md | runbook | project | 2 | false | false | false | 453 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-17T14:21:19.648Z | 1.4KB |
+| backlog/archived/R-282.md | runbook | project | 2 | false | false | false | 804 |  | R-282 | R-276/R-277 两次实证: capture 后 edit --acceptance 填了 frontmatter 字段, promote 仍报'正文仍为空或包含占位内容'——字段编辑不改写 body 的 '## 验收 - 待补充' 节, 报错也不指明是正文哪节占位, 只能 --body-file 全量重写。我们需要让 edit 只替换指定节，且 pr | 2026-07-17T14:33:28.382Z | 2.2KB |
+| backlog/backlog.md | runbook | project | 2 | false | false | false | 401 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-17T15:53:19.588Z | 1.2KB |
 | commands/docpath-agent-done.md | reference | project | 3 | false | false | false | 280 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-07-16T16:53:46.631Z | 1.1KB |
 | commands/docpath-agent-enter.md | reference | project | 3 | false | false | false | 315 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-07-16T16:53:46.631Z | 1.2KB |
 | commands/docpath-agent-handoff.md | reference | project | 3 | false | false | false | 277 |  | /docpath-agent-handoff | Persist a compact handoff package for the next Claude Code session. | 2026-07-16T16:53:46.631Z | 1.1KB |
@@ -180,7 +181,7 @@
 | commands/docpath-write-journal.md | reference | project | 3 | false | false | false | 198 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task through the CLI. | 2026-07-16T16:53:46.641Z | 792B |
 | commands/docpath-write-plan.md | reference | project | 3 | false | false | false | 216 |  | /docpath-write-plan | Artifact sink: write an execution plan already generated by the current agent | 2026-07-16T16:53:46.641Z | 862B |
 | commands/docpath-write-spec.md | reference | project | 3 | false | false | false | 215 |  | /docpath-write-spec | Artifact sink: write spec content already generated by the current agent session | 2026-07-16T16:53:46.642Z | 859B |
-| docs.md | index | project | 2 | false | false | false | 79263 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-17T12:08:22.060Z | 262.7KB |
+| docs.md | index | project | 2 | false | false | false | 80033 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-17T14:33:08.146Z | 265.1KB |
 | harness.md | index | project | 2 | false | false | false | 252 |  | DocPath Harness Rules | - [ ] 读取 current.md 确认当前状态 | 2026-05-28T12:29:00.329Z | 786B |
 | protocols/AGENTS.md | index | project | 2 | false | false | false | 2512 |  | DocPath Agent Protocol | 1. Run `docpath next --agent` to read the `agent_view: next` route and the | 2026-07-16T16:53:46.629Z | 9.8KB |
 | protocols/CLAUDE.md | index | project | 2 | false | false | false | 2368 |  | DocPath Claude Code Protocol | 1. Run `/docpath-next` or `docpath next --agent` for the `agent_view: next` | 2026-07-16T16:53:46.630Z | 9.3KB |
@@ -198,12 +199,14 @@
 | tasks/T-20260717-backlog-edit-acceptance-background-promo/spec.md | runbook | task | 1 | false | false | false | 1362 | T-20260717-backlog-edit-acceptance-background-promo | T-20260717-backlog-edit-acceptance-background-promo - backlog edit --acceptance/--background 不替换正文占位段, 与 promote 成熟度检查不一致 | R-276/R-277 两次实证: capture 后 edit --acceptance 填了 frontmatter 字段, promote 仍报'正文仍为空或包含占位内容'——字段编辑不改写 body 的 '## 验收 - 待补充' 节, 报错也不指明是正文哪节占位, 只能 --body-file 全量重写。我们需要让 edit 只替换指定节，且 pr | 2026-07-17T14:22:35.982Z | 3.5KB |
 | tasks/T-20260717-completed-go-agent-step-fail-loud-canoni/plan.md | runbook | task | 1 | false | false | false | 1041 | T-20260717-completed-go-agent-step-fail-loud-canoni | plan | - [x] S1: 梳理 completed 任务上 go/agent step 应 fail-loud 拒绝, 而非半执行污染 canonical breadcrumb | 2026-07-17T02:28:01.021Z | 2.7KB |
 | tasks/T-20260717-completed-go-agent-step-fail-loud-canoni/spec.md | runbook | task | 1 | false | false | false | 1401 | T-20260717-completed-go-agent-step-fail-loud-canoni | T-20260717-completed-go-agent-step-fail-loud-canoni - completed 任务上 go/agent step 应 fail-loud 拒绝, 而非半执行污染 canonical breadcrumb | 本会话两次实证: promote 失败被管道吞掉后 && 链继续, go --step S1 在 state=completed 的任务上执行, 向已归档证据 canonical breadcrumb.jsonl 追加伪事件 (13:53 S1 无 start 配对), 脏文件再反过来挡 promote, 需 git checkout 恢复。complete | 2026-07-17T02:21:59.147Z | 3.6KB |
+| tasks/T-20260717-go-step-run-start/plan.md | runbook | task | 1 | false | false | false | 1404 | T-20260717-go-step-run-start | plan | - [x] S1: 梳理 go --step 认领当前任务下一步被本任务自身脏文件拦截, 需 run start 绕行 | 2026-07-18T01:29:02.663Z | 3.4KB |
+| tasks/T-20260717-go-step-run-start/spec.md | runbook | task | 1 | false | false | false | 1428 | T-20260717-go-step-run-start | T-20260717-go-step-run-start - go --step 认领当前任务下一步被本任务自身脏文件拦截, 需 run start 绕行 | R-275/R-276 S3 认领两次被 dirty guard 拒 (本任务实现未提交是执行期常态), 只能走 docpath run start 恢复归属。我们需要对'当前任务的顺序下一步'认领放行本任务范围内脏文件。 | 2026-07-17T15:53:19.554Z | 3.5KB |
 | tasks/T-20260717-install-force-agents-md/plan.md | runbook | task | 1 | false | false | false | 639 | T-20260717-install-force-agents-md | plan | - [x] S1: 梳理 install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制 | 2026-07-17T02:45:23.530Z | 1.8KB |
 | tasks/T-20260717-install-force-agents-md/spec.md | runbook | task | 1 | false | false | false | 1084 | T-20260717-install-force-agents-md | T-20260717-install-force-agents-md - install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制 | R-277 test: AGENTS.md is in exempt list but force install still overwrites, losing local customizations. | 2026-07-17T02:34:37.593Z | 2.8KB |
 | tasks/T-20260717-task/plan.md | runbook | task | 1 | false | false | false | 1135 | T-20260717-task | plan | - [x] S1: 梳理 重大变更门禁失败提示应列出信号文件与两条合法出路 | 2026-07-17T12:05:15.888Z | 2.6KB |
 | tasks/T-20260717-task/spec.md | runbook | task | 1 | false | false | false | 1388 | T-20260717-task | T-20260717-task - 重大变更门禁失败提示应列出信号文件与两条合法出路 | R-274 实证: 提示只说'补齐 Decision Brief 和用户确认', 不说明 勾'否'在有未提交策略文件信号时永远无效，以及真重大与非重大的两条合法出路。CLI 门禁失败输出需要更清晰地告知具体触发信号的文件列表和两条出路指南。 | 2026-07-17T11:58:23.910Z | 3.3KB |
-| tasks/current/plan.md | runbook | task | 1 | true | false | false | 970 | T-20260717-backlog-edit-acceptance-background-promo | plan | - [x] S1: 梳理 backlog edit --acceptance/--background 不替换正文占位段, 与 promote 成熟度检查不一致 | 2026-07-17T14:29:52.987Z | 2.5KB |
-| tasks/current/spec.md | runbook | task | 1 | true | false | false | 1362 | T-20260717-backlog-edit-acceptance-background-promo | T-20260717-backlog-edit-acceptance-background-promo - backlog edit --acceptance/--background 不替换正文占位段, 与 promote 成熟度检查不一致 | R-276/R-277 两次实证: capture 后 edit --acceptance 填了 frontmatter 字段, promote 仍报'正文仍为空或包含占位内容'——字段编辑不改写 body 的 '## 验收 - 待补充' 节, 报错也不指明是正文哪节占位, 只能 --body-file 全量重写。我们需要让 edit 只替换指定节，且 pr | 2026-07-17T14:22:35.982Z | 3.5KB |
+| tasks/current/plan.md | runbook | task | 1 | true | false | false | 1404 | T-20260717-go-step-run-start | plan | - [x] S1: 梳理 go --step 认领当前任务下一步被本任务自身脏文件拦截, 需 run start 绕行 | 2026-07-18T01:29:02.663Z | 3.4KB |
+| tasks/current/spec.md | runbook | task | 1 | true | false | false | 1428 | T-20260717-go-step-run-start | T-20260717-go-step-run-start - go --step 认领当前任务下一步被本任务自身脏文件拦截, 需 run start 绕行 | R-275/R-276 S3 认领两次被 dirty guard 拒 (本任务实现未提交是执行期常态), 只能走 docpath run start 恢复归属。我们需要对'当前任务的顺序下一步'认领放行本任务范围内脏文件。 | 2026-07-17T15:53:19.554Z | 3.5KB |
 | tasks/done/T-20260528-agent-integration/plan.md | runbook | task | 3 | false | true | false | 929 | T-20260528-agent-integration | 执行计划 | ``` | 2026-05-28T14:53:27.931Z | 2.6KB |
 | tasks/done/T-20260528-agent-integration/spec.md | runbook | task | 3 | false | true | false | 847 | T-20260528-agent-integration | 规约: Agent Integration (Phase 1+2) | DocPath 需要面向 AI Agent 的接口层，使其能被 Claude Code / OpenCode 等工具原生使用。 | 2026-05-28T14:37:39.406Z | 2.4KB |
 | tasks/done/T-20260528-harness-lite/plan.md | runbook | task | 3 | false | true | false | 838 | T-20260528-harness-lite | Plan: Harness Lite Phase 1 | **目标**: 让 `docpath check` 能发现并运行 typecheck 相关脚本 | 2026-05-29T05:13:03.422Z | 2.5KB |
@@ -783,14 +786,16 @@
 | tasks/promote-backups/2026-07-17T03-28-55-228Z/spec.md | runbook | project | 2 | false | false | false | 1084 |  | T-20260717-install-force-agents-md - install --force 无警告覆写豁免资产 (AGENTS.md) 的本地定制 | R-277 test: AGENTS.md is in exempt list but force install still overwrites, losing local customizations. | 2026-07-17T03:28:55.229Z | 2.8KB |
 | tasks/promote-backups/2026-07-17T14-21-19-606Z/plan.md | runbook | project | 2 | false | false | false | 1135 |  | plan | - [x] S1: 梳理 重大变更门禁失败提示应列出信号文件与两条合法出路 | 2026-07-17T14:21:19.607Z | 2.6KB |
 | tasks/promote-backups/2026-07-17T14-21-19-606Z/spec.md | runbook | project | 2 | false | false | false | 1388 |  | T-20260717-task - 重大变更门禁失败提示应列出信号文件与两条合法出路 | R-274 实证: 提示只说'补齐 Decision Brief 和用户确认', 不说明 勾'否'在有未提交策略文件信号时永远无效，以及真重大与非重大的两条合法出路。CLI 门禁失败输出需要更清晰地告知具体触发信号的文件列表和两条出路指南。 | 2026-07-17T14:21:19.607Z | 3.3KB |
+| tasks/promote-backups/2026-07-17T15-53-19-547Z/plan.md | runbook | project | 2 | false | false | false | 970 |  | plan | - [x] S1: 梳理 backlog edit --acceptance/--background 不替换正文占位段, 与 promote 成熟度检查不一致 | 2026-07-17T15:53:19.548Z | 2.5KB |
+| tasks/promote-backups/2026-07-17T15-53-19-547Z/spec.md | runbook | project | 2 | false | false | false | 1362 |  | T-20260717-backlog-edit-acceptance-background-promo - backlog edit --acceptance/--background 不替换正文占位段, 与 promote 成熟度检查不一致 | R-276/R-277 两次实证: capture 后 edit --acceptance 填了 frontmatter 字段, promote 仍报'正文仍为空或包含占位内容'——字段编辑不改写 body 的 '## 验收 - 待补充' 节, 报错也不指明是正文哪节占位, 只能 --body-file 全量重写。我们需要让 edit 只替换指定节，且 pr | 2026-07-17T15:53:19.549Z | 3.5KB |
 | workflows/bugfix.md | index | project | 2 | false | false | false | 160 |  | Workflow: Bug Fix | - 收集错误信息 (日志、截图、复现步骤) | 2026-07-16T16:53:46.626Z | 463B |
 | workflows/debug.md | index | project | 2 | false | false | false | 145 |  | Workflow: Debug | - 收集症状 (日志、指标、复现步骤) | 2026-07-16T16:53:46.626Z | 416B |
 | workflows/feature.md | index | project | 2 | false | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-07-16T16:53:46.627Z | 753B |
 | workflows/refactor.md | index | project | 2 | false | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-07-16T16:53:46.627Z | 424B |
 | workflows/research.md | index | project | 2 | false | false | false | 146 |  | Workflow: Research | - 明确调研目标 | 2026-07-16T16:53:46.627Z | 409B |
-| workspace/breadcrumb.md | index | project | 0 | false | false | false | 731 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-17T14:29:52.984Z | 2.5KB |
+| workspace/breadcrumb.md | index | project | 0 | false | false | false | 673 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-18T01:29:02.661Z | 2.2KB |
 | workspace/compact-context.md | index | project | 0 | false | false | false | 3467 |  | Context Handoff — T-20260715-docpath-init-scan-existing | - ✅ PASS (2026-07-15T15:57:32.756Z) | 2026-07-15T16:06:13.998Z | 11.2KB |
-| workspace/current.md | index | project | 0 | true | false | false | 439 |  | 📍 当前工作流状态 | ```yaml | 2026-07-17T14:33:07.730Z | 1.3KB |
+| workspace/current.md | index | project | 0 | true | false | false | 428 |  | 📍 当前工作流状态 | ```yaml | 2026-07-18T01:32:29.691Z | 1.2KB |
 | workspace/decisions-2026-05.md | index | project | 0 | false | false | false | 16136 |  | 决策日志归档 — 2026-05 | --- | 2026-06-16T11:00:07.138Z | 46.7KB |
 | workspace/decisions-2026-06.md | index | project | 0 | false | false | false | 4794 |  | 决策日志归档 — 2026-06 | --- | 2026-07-14T11:14:31.428Z | 13.9KB |
 | workspace/decisions-2026-07.md | index | project | 0 | false | false | false | 2528 |  | 决策日志归档 — 2026-07 | --- | 2026-07-16T11:59:48.928Z | 7.2KB |
@@ -800,10 +805,10 @@
 | workspace/decisions-2026-W26.md | index | project | 0 | false | false | false | 2675 |  | 决策日志归档 — 2026-W26 | --- | 2026-07-12T13:49:33.906Z | 7.7KB |
 | workspace/decisions.md | log | project | 3 | false | true | false | 9591 |  | 决策日志 — DocPath ADR | --- | 2026-07-16T18:08:45.349Z | 27.5KB |
 | workspace/journal.md | index | project | 0 | false | false | false | 120 |  | 📖 工作日志 | - 新增 write-design 命令 | 2026-06-10T04:44:31.299Z | 361B |
-| workspace/last-check.md | index | project | 0 | true | false | false | 171 |  | Last Check Evidence | **时间**: 2026-07-17T12:08:22.604Z | 2026-07-17T12:08:22.606Z | 504B |
-| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 6172 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-17T12:08:43.416Z | 20.0KB |
+| workspace/last-check.md | index | project | 0 | true | false | false | 171 |  | Last Check Evidence | **时间**: 2026-07-17T14:33:08.690Z | 2026-07-17T14:33:08.692Z | 504B |
+| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 6277 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-17T14:33:28.396Z | 20.4KB |
 | workspace/pending-done.md | index | project | 0 | false | false | false | 35 |  | pending-done | pending-done | 2026-07-17T02:10:39.986Z | 137B |
-| workspace/review.md | index | project | 0 | true | false | false | 498 |  | Code Review Report | **时间**: 2026-07-17T12:08:38.742Z | 2026-07-17T12:08:38.763Z | 1.8KB |
+| workspace/review.md | index | project | 0 | true | false | false | 237 |  | Code Review Report | **时间**: 2026-07-17T14:33:25.175Z | 2026-07-17T14:33:25.204Z | 801B |
 
 ## 用途说明
 

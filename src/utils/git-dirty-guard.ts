@@ -1,5 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import pc from 'picocolors';
+import { existsSync, lstatSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 
 export interface DirtyWorktreeReport {
@@ -7,6 +9,7 @@ export interface DirtyWorktreeReport {
   repoRoot: string | null;
   dirty: boolean;
   files: string[];
+  untrackedFiles: string[];
   docpathFiles: string[];
   nonDocPathFiles: string[];
   staged: number;
@@ -142,6 +145,7 @@ export function detectDirtyWorktree(cwd: string): DirtyWorktreeReport {
       repoRoot: null,
       dirty: false,
       files: [],
+      untrackedFiles: [],
       docpathFiles: [],
       nonDocPathFiles: [],
       staged: 0,
@@ -157,6 +161,7 @@ export function detectDirtyWorktree(cwd: string): DirtyWorktreeReport {
     .map(parseStatusLine)
     .filter((line): line is ParsedStatusLine => line !== null);
   const files = Array.from(new Set(parsed.map((line) => line.file))).sort();
+  const untrackedFiles = Array.from(new Set(parsed.filter((line) => line.untracked).map((line) => line.file))).sort();
   const docpathFiles = files.filter(isDocPathManagedPath);
   const nonDocPathFiles = files.filter((file) => !isDocPathManagedPath(file));
 
@@ -165,6 +170,7 @@ export function detectDirtyWorktree(cwd: string): DirtyWorktreeReport {
     repoRoot,
     dirty: files.length > 0,
     files,
+    untrackedFiles,
     docpathFiles,
     nonDocPathFiles,
     staged: parsed.filter((line) => line.staged).length,
@@ -183,6 +189,20 @@ export function assertCleanWorktreeForNewTask(cwd: string, command: string, opti
   throw buildDirtyWorktreeError(command, report, blockedFiles, 'new-task');
 }
 
+function isSymlink(path: string): boolean {
+  try {
+    return lstatSync(path).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+function isDocpathWorktree(gitRoot: string): boolean {
+  return existsSync(join(gitRoot, '.git')) &&
+    isSymlink(join(gitRoot, '.docpath', 'backlog')) &&
+    isSymlink(join(gitRoot, '.docpath', 'rules'));
+}
+
 export function assertNoNonDocPathChangesForExecutionStart(
   cwd: string,
   command: string,
@@ -190,7 +210,35 @@ export function assertNoNonDocPathChangesForExecutionStart(
 ): void {
   const report = detectDirtyWorktree(cwd);
   if (!report.isGitRepo || !report.dirty) return;
-  const blockedFiles = report.files.filter((file) => !isCurrentTaskExecutionPath(file, options));
+
+  let isActiveTask = false;
+  try {
+    const docpathDir = join(report.repoRoot || cwd, '.docpath');
+    const statePath = join(docpathDir, 'workspace', 'state.json');
+    if (existsSync(statePath)) {
+      const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+      if (state && state.task_id && options.taskId && state.task_id === options.taskId && state.phase === 'executing') {
+        isActiveTask = true;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  const inWorktree = report.repoRoot ? isDocpathWorktree(report.repoRoot) : false;
+  const untrackedSet = new Set(report.untrackedFiles);
+
+  const blockedFiles = report.files.filter((file) => {
+    if (isCurrentTaskExecutionPath(file, options)) return false;
+
+    if (isActiveTask) {
+      if (inWorktree) return false;
+      if (!untrackedSet.has(file)) return false;
+    }
+
+    return true;
+  });
+
   if (blockedFiles.length === 0) return;
   throw buildDirtyWorktreeError(command, report, blockedFiles, 'execution-start', options);
 }

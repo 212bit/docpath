@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse } from 'yaml';
@@ -378,6 +378,86 @@ describe('dirty worktree guard', () => {
         taskId: 'T-TEST',
         step: 'S1',
       });
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('allows dirty tracked files when running on the same active task (non-worktree)', () => {
+    const cwd = mkBaseWorkspace({ phase: 'executing', state: 'executing', taskId: 'T-TEST', taskTitle: 'Test' });
+    try {
+      initGitRepo(cwd);
+      writeFileSync(join(cwd, 'src-app.ts'), 'original\n');
+      git(cwd, ['add', 'src-app.ts']);
+      git(cwd, ['commit', '-m', 'add src-app.ts']);
+      writeFileSync(join(cwd, 'src-app.ts'), 'modified\n');
+
+      assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+        taskId: 'T-TEST',
+        step: 'S1',
+      });
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('still blocks untracked business files in non-worktree mode even if same active task', () => {
+    const cwd = mkBaseWorkspace({ phase: 'executing', state: 'executing', taskId: 'T-TEST', taskTitle: 'Test' });
+    try {
+      initGitRepo(cwd);
+      writeFileSync(join(cwd, 'untracked-src.ts'), 'new file\n');
+
+      assert.throws(
+        () => assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+          taskId: 'T-TEST',
+          step: 'S1',
+        }),
+        /当前 Git worktree 存在与当前任务无关或无法确认归属的未提交变更/
+      );
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('allows dirty untracked and tracked files when running on the same active task in worktree mode', () => {
+    const cwd = mkBaseWorkspace({ phase: 'executing', state: 'executing', taskId: 'T-TEST', taskTitle: 'Test' });
+    try {
+      initGitRepo(cwd);
+      const backlogDir = join(cwd, '.docpath', 'backlog-real');
+      mkdirSync(backlogDir, { recursive: true });
+      symlinkSync('backlog-real', join(cwd, '.docpath', 'backlog'));
+
+      const rulesDir = join(cwd, '.docpath', 'rules-real');
+      mkdirSync(rulesDir, { recursive: true });
+      symlinkSync('rules-real', join(cwd, '.docpath', 'rules'));
+
+      writeFileSync(join(cwd, 'untracked-src.ts'), 'new file\n');
+
+      assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+        taskId: 'T-TEST',
+        step: 'S1',
+      });
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('still blocks dirty files in cross-task scenarios', () => {
+    const cwd = mkBaseWorkspace({ phase: 'executing', state: 'executing', taskId: 'T-TEST', taskTitle: 'Test' });
+    try {
+      initGitRepo(cwd);
+      writeFileSync(join(cwd, 'src-app.ts'), 'original\n');
+      git(cwd, ['add', 'src-app.ts']);
+      git(cwd, ['commit', '-m', 'add src-app.ts']);
+      writeFileSync(join(cwd, 'src-app.ts'), 'modified\n');
+
+      assert.throws(
+        () => assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+          taskId: 'T-OTHER',
+          step: 'S1',
+        }),
+        /当前 Git worktree 存在与当前任务无关或无法确认归属的未提交变更/
+      );
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
