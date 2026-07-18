@@ -881,7 +881,7 @@ Promoted task routes through standard spec/plan lifecycle.
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('backlog promote pre-fills major change and UI gates for confirmed CLI workflow work', () => {
+  it('backlog promote pre-fills major change and UI gates for confirmed CLI workflow work but leaves change types unchecked', () => {
     const cwd = mkWorkspace();
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
     writeFileSync(join(cwd, '.docpath', 'backlog', 'R-002-workflow.md'), `---
@@ -928,8 +928,8 @@ CLI workflow task can proceed without product UI design assets.
     const spec = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), 'utf-8');
     assert.match(spec, /- \[ \] 否/);
     assert.match(spec, /- \[x\] 是，需要用户确认/);
-    assert.match(spec, /- \[x\] 工作流 \/ Agent 行为/);
-    assert.match(spec, /- \[x\] 权限 \/ 写操作边界/);
+    assert.match(spec, /- \[ \] 工作流 \/ Agent 行为/);
+    assert.match(spec, /- \[ \] 权限 \/ 写操作边界/);
     assert.match(spec, /- \[x\] 本任务不涉及产品 UI 实现/);
     assert.match(spec, /- 用户确认: 用户确认修复 workflow 和 git commit 边界/);
     assert.match(spec, /Decision Brief 证据: docs\/decision\.md/);

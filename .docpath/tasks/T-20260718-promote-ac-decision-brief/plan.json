@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-18T03:01:31.155Z",
+    "updated_at": "2026-07-18T03:01:31.155Z",
+    "content_sha256": "118f9d11812f81e8fc9859bff7a043661065e8b1e13a32f3600adfb674a90204"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-18T03:01:31.155Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 promote 脚手架质量: AC 双前缀 / Decision Brief 垃圾解析 / 变更类型误预勾",
+      "description": "根据 spec 明确 FR-1: promote 脚手架质量: AC 双前缀 / Decision Brief 垃圾解析 / 变更类型误预勾 的实现边界和验收口径。",
+      "acceptance": "AC-1: 修复 AC 行双前缀问题，如果 backlog 验收标准行中已包含 AC- 前缀则去重。 * 修复 Decision Brief 当前问题解析垃圾值问题，正确解析背景章节首行正文（排除标题本身）。 * 变更类型默认全部不勾选，防误触。 * 补充测试保障质量。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 promote 脚手架质量: AC 双前缀 / Decision Brief 垃圾解析 / 变更类型误预勾",
+      "description": "在现有架构内完成 FR-1: promote 脚手架质量: AC 双前缀 / Decision Brief 垃圾解析 / 变更类型误预勾 的代码与文档更新。",
+      "acceptance": "FR-1 promote 脚手架质量: AC 双前缀 / Decision Brief 垃圾解析 / 变更类型误预勾 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 修复 AC 行双前缀问题，如果 backlog 验收标准行中已包含 AC- 前缀则去重。 * 修复 Decision Brief 当前问题解析垃圾值问题，正确解析背景章节首行正文（排除标题本身）。 * 变更类型默认全部不勾选，防误触。 * 补充测试保障质量。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-284 与任务 T-20260718-promote-ac-decision-brief 建立双向关联",
+      "acceptance": "AC-1: 修复 AC 行双前缀问题，如果 backlog 验收标准行中已包含 AC- 前缀则去重。 * 修复 Decision Brief 当前问题解析垃圾值问题，正确解析背景章节首行正文（排除标题本身）。 * 变更类型默认全部不勾选，防误触。 * 补充测试保障质量。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-284 与任务 T-20260718-promote-ac-decision-brief 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

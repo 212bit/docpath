@@ -644,7 +644,7 @@ function stripBacklogChecklistLines(body: string, prefix: 'FR'): string {
   return lines.join('\n').trim();
 }
 
-function renderPromotedSpec(item: BacklogItem, taskId: string): string {
+function renderPromotedSpec(item: BacklogItem, taskId: string, cwd?: string): string {
   const parsed = parseBacklogBody(item.body);
   const evidenceSection = renderEvidenceSummary(item.evidence);
   const functionalRequirements = parseBacklogChecklist(item.body, 'FR');
@@ -661,11 +661,15 @@ function renderPromotedSpec(item: BacklogItem, taskId: string): string {
   // 验收标准：优先从 body 解析出的 acceptance，否则用默认骨架
   const acceptanceLines: string[] = [];
   if (parsed.acceptance) {
-    // 将 body 中的验收内容转为 AC 条目
+    // 将 body 中的验收内容转为 AC 条目，并去重 AC-1: 前缀
     const acItems = parsed.acceptance
       .split('\n')
       .filter(l => l.trim())
-      .map((line, i) => `- [ ] AC-${i + 1}: ${line.replace(/^\s*(\d+\.\s*|[-*]\s*)+/, '').trim()}`);
+      .map((line, i) => {
+        let clean = line.replace(/^\s*(\d+\.\s*|[-*]\s*)+/, '').trim();
+        clean = clean.replace(/^(?:AC|ac)-\d+\s*:\s*/, '').trim();
+        return `- [ ] AC-${i + 1}: ${clean}`;
+      });
     if (acItems.length > 0) acceptanceLines.push(...acItems);
   }
   // 始终保留关联 AC
@@ -673,8 +677,9 @@ function renderPromotedSpec(item: BacklogItem, taskId: string): string {
   acceptanceLines.push(`- [ ] AC-${acStart}: 生成的 spec 可直接进入 \`docpath plan\``);
   acceptanceLines.push(`- [ ] AC-${acStart + 1}: backlog 条目 ${item.id} 与任务 ${taskId} 建立双向关联`);
 
-  // Decision Brief 预填：如果 evidence.decision_brief 有内容则注入
+  // Decision Brief 预填：如果 evidence.decision_brief 有非占位内容则注入
   const decisionBriefContent = item.evidence.decision_brief?.trim();
+  const hasDecisionBrief = decisionBriefContent && !isPlaceholderValue(decisionBriefContent);
 
   const lines: string[] = [
     `# ${taskId} - ${item.title}`,
@@ -715,11 +720,11 @@ function renderPromotedSpec(item: BacklogItem, taskId: string): string {
     '|---|------|------|------|------|',
     '| 1 | backlog promote seed spec | 保留 backlog 作为来源 | 采用 | 便于后续 plan/go 接续 |',
     '',
-    ...renderMajorDecisionGate(item),
+    ...renderMajorDecisionGate(item, cwd),
   );
 
   // 如果 decision_brief 有预填内容，在 Decision Brief 段后追加
-  if (decisionBriefContent) {
+  if (hasDecisionBrief) {
     lines.push('', '### 已有 Decision Brief (来自 backlog evidence)', '', decisionBriefContent);
   }
 
@@ -766,36 +771,70 @@ function isProductUiImplementationTask(item: BacklogItem): boolean {
   return hasExplicitUiDesignIntent(text);
 }
 
-function inferMajorChangeTypes(item: BacklogItem): Set<string> {
-  const text = backlogSearchText(item);
+function inferMajorChangeTypes(item: BacklogItem, cwd?: string): Set<string> {
   const types = new Set<string>();
-  if (includesAny(text, [/workflow|worktree|agent|docpath|fsm|门禁|工作流|状态机|任务流/i])) {
-    types.add('工作流 / Agent 行为');
+  if (!cwd) return types;
+
+  try {
+    const report = detectDirtyWorktree(cwd);
+    if (report.isGitRepo && report.dirty) {
+      for (const file of report.files) {
+        const normalized = file.replace(/\\/g, '/');
+        if (
+          normalized.startsWith('src/engine/') ||
+          normalized.startsWith('src/commands/agent.ts') ||
+          normalized.startsWith('src/commands/go.ts') ||
+          normalized.startsWith('src/commands/transitions.ts') ||
+          normalized.startsWith('.docpath/workspace/state.json')
+        ) {
+          types.add('工作流 / Agent 行为');
+        }
+        if (
+          normalized.startsWith('src/utils/git-closeout.ts') ||
+          normalized.startsWith('src/utils/git-dirty-guard.ts') ||
+          normalized.startsWith('src/utils/lock.ts')
+        ) {
+          types.add('权限 / 写操作边界');
+        }
+        if (
+          normalized.startsWith('package.json') ||
+          normalized.startsWith('tsup.config.ts') ||
+          normalized.startsWith('tsconfig.json') ||
+          normalized.startsWith('src/utils/config.ts')
+        ) {
+          types.add('技术栈 / 框架');
+        }
+      }
+    }
+  } catch {
+    // ignore
   }
-  if (includesAny(text, [/permission|write boundary|staging|commit|git add|权限|写操作|索引|提交/i])) {
-    types.add('权限 / 写操作边界');
-  }
-  if (includesAny(text, [/architecture|module boundary|架构|模块边界/i])) {
-    types.add('架构 / 模块边界');
-  }
-  if (includesAny(text, [/api|contract|schema|协议|契约/i])) {
-    types.add('API / 数据契约');
-  }
-  if (includesAny(text, [/scope|broad|全部|范围扩大/i])) {
-    types.add('范围扩大');
-  }
+
   return types;
 }
 
-function renderMajorDecisionGate(item: BacklogItem): string[] {
+function renderMajorDecisionGate(item: BacklogItem, cwd?: string): string[] {
   const productUi = isProductUiImplementationTask(item);
-  const inferredTypes = inferMajorChangeTypes(item);
+  const inferredTypes = inferMajorChangeTypes(item, cwd);
   const userConfirmed = item.evidence.user_confirmed?.trim() || '';
   const requiresMajorConfirmation = item.level >= 3 || userConfirmed.length > 0 || inferredTypes.size > 0;
   const checked = (value: boolean) => value ? 'x' : ' ';
   const typeLine = (label: string) => `- [${checked(inferredTypes.has(label))}] ${label}`;
   const decisionBriefRef = item.evidence.decision_brief?.trim() || '';
-  const problem = item.body.trim().split('\n').find((line) => line.trim().length > 0)?.trim() || item.title;
+  const hasDbRef = decisionBriefRef && !isPlaceholderValue(decisionBriefRef);
+
+  // Problem extraction: extract first line of background section without heading
+  const bgSection = getMarkdownSection(item.body, '背景');
+  let problem = '';
+  if (bgSection && !isPlaceholderValue(bgSection)) {
+    const firstLine = bgSection.trim().split('\n').find((line) => line.trim().length > 0)?.trim();
+    if (firstLine) {
+      problem = firstLine.replace(/^\s*(\d+\.\s*|[-*]\s*)+/, '').trim();
+    }
+  }
+  if (!problem || isPlaceholderValue(problem)) {
+    problem = item.title;
+  }
 
   return [
     '## 4.1 重大变更门禁',
@@ -829,12 +868,12 @@ function renderMajorDecisionGate(item: BacklogItem): string[] {
     '### Decision Brief',
     `- 当前问题: ${problem}`,
     `- 目标: ${item.title}`,
-    `- 背景: 来自 backlog ${item.id}${decisionBriefRef ? `，Decision Brief 证据: ${decisionBriefRef}` : ''}`,
+    `- 背景: 来自 backlog ${item.id}${hasDbRef ? `，Decision Brief 证据: ${decisionBriefRef}` : ''}`,
     '- 可选方案:',
     '  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程',
     '  - 方案 B: 补充分析，扩展本任务范围',
     '- 推荐方案: 方案 A',
-    '- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险',
+    '- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险',
     '- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围',
     '- 成本: 中等，按 plan 拆分后逐步验证',
     '- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移',
@@ -1040,7 +1079,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   const aliasBackup = await backupCurrentTaskAlias(docpathDir);
   await clearCurrentTaskAlias(docpathDir);
 
-  const specContent = renderPromotedSpec(item, taskId);
+  const specContent = renderPromotedSpec(item, taskId, options.cwd);
   await writeActiveTaskFile(docpathDir, taskId, 'spec.md', specContent);
 
   item.status = nextStatus;
