@@ -42,6 +42,7 @@ const CLI_ENTRY = [
   'src/utils/contextual-help.ts',
   'src/utils/agent-output.ts',
   'src/utils/topic-synonyms.ts',
+  'src/utils/workspace-evidence.ts',
   'src/commands/check/evidence.ts',
   'src/commands/check/validators.ts',
 ];

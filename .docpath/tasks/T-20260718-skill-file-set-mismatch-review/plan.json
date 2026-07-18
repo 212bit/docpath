@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-18T05:14:51.219Z",
+    "updated_at": "2026-07-18T05:14:51.219Z",
+    "content_sha256": "27a2ac74a947635d2ffb6194aa29128a586c87299d918dd4eeac17e1eef955d7"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-18T05:14:51.219Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review",
+      "description": "根据 spec 明确 FR-1: 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review 的实现边界和验收口径。",
+      "acceptance": "AC-1: 在 `ReviewEvidence` 和 `LastCheckEvidence` 结构中引入 `task_id` 属性，并在生成证据时写入。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review",
+      "description": "在现有架构内完成 FR-1: 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review 的代码与文档更新。",
+      "acceptance": "FR-1 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 在 `ReviewEvidence` 和 `LastCheckEvidence` 结构中引入 `task_id` 属性，并在生成证据时写入。；AC-2: 读取证据时，如果发现其 `task_id` 与当前的活跃 `task_id` 存在冲突/不匹配，则判定为失效并返回 `null`。；AC-3: 保留对无 `task_id` 的历史陈旧/测试证据的向后兼容，不强制失效。；AC-4: 提供完整的自动化单元测试验证隔离行为。；AC-5: 生成的 spec 可直接进入 `docpath plan`；AC-6: backlog 条目 R-285 与任务 T-20260718-skill-file-set-mismatch-review 建立双向关联",
+      "acceptance": "AC-1: 在 `ReviewEvidence` 和 `LastCheckEvidence` 结构中引入 `task_id` 属性，并在生成证据时写入。；AC-2: 读取证据时，如果发现其 `task_id` 与当前的活跃 `task_id` 存在冲突/不匹配，则判定为失效并返回 `null`。；AC-3: 保留对无 `task_id` 的历史陈旧/测试证据的向后兼容，不强制失效。；AC-4: 提供完整的自动化单元测试验证隔离行为。；AC-5: 生成的 spec 可直接进入 `docpath plan`；AC-6: backlog 条目 R-285 与任务 T-20260718-skill-file-set-mismatch-review 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

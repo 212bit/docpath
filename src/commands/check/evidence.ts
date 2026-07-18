@@ -111,6 +111,8 @@ async function hasCompletedPlan(cwd: string): Promise<boolean> {
 export async function writeLastCheckEvidence(cwd: string, results: CheckResult[], allPassed: boolean): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
   const gitBaseline = readGitBaseline(cwd);
+  const workflowState = await readCurrentState(cwd);
+  const taskId = workflowState?.task_id || 'check';
   const checks: CheckEvidenceItem[] = results.map((result) => ({
     name: result.name,
     passed: result.passed,
@@ -121,6 +123,7 @@ export async function writeLastCheckEvidence(cwd: string, results: CheckResult[]
   await writeLastCheckEvidenceFiles(docpathDir, {
     schema_version: 1,
     kind: 'last-check',
+    task_id: taskId,
     timestamp: new Date().toISOString(),
     passed: allPassed,
     check_count: results.length,

@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 import { readFileSafe, writeFileAtomic } from './file.js';
 import type { ReviewSkillEvidence, ReviewSkillGate, ReviewSkillSkip } from './review-skill-router.js';
 
@@ -19,6 +20,7 @@ export interface CheckEvidenceItem {
 export interface LastCheckEvidence {
   schema_version: 1;
   kind: 'last-check';
+  task_id?: string;
   timestamp: string;
   passed: boolean;
   check_count: number;
@@ -42,6 +44,7 @@ export interface ReviewFindingScopeCounts {
 export interface ReviewEvidence {
   schema_version: 1;
   kind: 'review';
+  task_id?: string;
   timestamp: string;
   /** R-276: 审查时的 git HEAD; 供 done 复用判定感知 review 后的新提交 (旧证据缺省, 向后兼容) */
   head?: string;
@@ -97,6 +100,9 @@ export function renderLastCheckMarkdown(evidence: LastCheckEvidence): string {
   lines.push(`**时间**: ${evidence.timestamp}`);
   lines.push(`**结果**: ${evidence.passed ? '✅ PASS' : '❌ FAIL'}`);
   lines.push(`**检查项**: ${evidence.check_count}`);
+  if (evidence.task_id) {
+    lines.push(`task_id: ${evidence.task_id}`);
+  }
   if (evidence.git) {
     lines.push(`git_ref: ${evidence.git.ref}`);
     lines.push(`branch: ${evidence.git.branch}`);
@@ -121,10 +127,29 @@ export async function writeLastCheckEvidence(docpathDir: string, evidence: LastC
 
 export async function readLastCheckEvidence(docpathDir: string): Promise<LastCheckEvidence | null> {
   const fromJson = parseJson<LastCheckEvidence>(await readFileSafe(lastCheckJsonPath(docpathDir)));
-  if (fromJson?.kind === 'last-check') return fromJson;
+
+  let currentTaskId: string | undefined;
+  try {
+    const statePath = join(docpathDir, 'workspace', 'state.json');
+    if (existsSync(statePath)) {
+      const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+      currentTaskId = state?.task_id;
+    }
+  } catch {
+    // ignore
+  }
+  const expectedTaskId = currentTaskId || 'check';
+
+  if (fromJson?.kind === 'last-check') {
+    if (fromJson.task_id !== undefined && fromJson.task_id !== expectedTaskId) return null;
+    return fromJson;
+  }
 
   const markdown = await readFileSafe(lastCheckMarkdownPath(docpathDir));
   if (!markdown) return null;
+  const taskId = markdown.match(/^task_id:\s*(.+)$/m)?.[1]?.trim();
+  if (taskId !== undefined && taskId !== expectedTaskId) return null;
+
   const timestamp = markdown.match(/^\*\*时间\*\*:\s*(.+)$/m)?.[1]?.trim() || '';
   const passed = /^\*\*结果\*\*:\s*✅\s*PASS\s*$/m.test(markdown);
   const checkCount = Number.parseInt(markdown.match(/^\*\*检查项\*\*:\s*(\d+)$/m)?.[1] || '0', 10);
@@ -134,6 +159,7 @@ export async function readLastCheckEvidence(docpathDir: string): Promise<LastChe
   return {
     schema_version: 1,
     kind: 'last-check',
+    task_id: taskId || 'check',
     timestamp,
     passed,
     check_count: Number.isFinite(checkCount) ? checkCount : 0,
@@ -147,6 +173,7 @@ export function renderReviewMarkdown(evidence: ReviewEvidence): string {
     '# Code Review Report',
     '',
     `**时间**: ${evidence.timestamp}`,
+    ...(evidence.task_id ? [`task_id: ${evidence.task_id}`] : []),
     ...(evidence.scope ? [`scope: ${evidence.scope}`] : []),
     ...(evidence.finding_scope ? [`finding_scope: ${evidence.finding_scope}`] : []),
     ...(evidence.finding_scope_counts ? [
@@ -177,10 +204,29 @@ export async function writeReviewEvidence(docpathDir: string, evidence: ReviewEv
 
 export async function readReviewEvidence(docpathDir: string): Promise<ReviewEvidence | null> {
   const fromJson = parseJson<ReviewEvidence>(await readFileSafe(reviewJsonPath(docpathDir)));
-  if (fromJson?.kind === 'review') return fromJson;
+
+  let currentTaskId: string | undefined;
+  try {
+    const statePath = join(docpathDir, 'workspace', 'state.json');
+    if (existsSync(statePath)) {
+      const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+      currentTaskId = state?.task_id;
+    }
+  } catch {
+    // ignore
+  }
+  const expectedTaskId = currentTaskId || 'review';
+
+  if (fromJson?.kind === 'review') {
+    if (fromJson.task_id !== undefined && fromJson.task_id !== expectedTaskId) return null;
+    return fromJson;
+  }
 
   const markdown = await readFileSafe(reviewMarkdownPath(docpathDir));
   if (!markdown) return null;
+  const taskId = markdown.match(/^task_id:\s*(.+)$/m)?.[1]?.trim();
+  if (taskId !== undefined && taskId !== expectedTaskId) return null;
+
   const timestamp = markdown.match(/^\*\*时间\*\*:\s*(.+)$/m)?.[1]?.trim() || '';
   const files = Number.parseInt(markdown.match(/^\*\*文件\*\*:\s*(\d+)$/m)?.[1] || '0', 10);
   const errorLines = [...markdown.matchAll(/^- \[ERROR\]/gm)].length;
@@ -190,6 +236,7 @@ export async function readReviewEvidence(docpathDir: string): Promise<ReviewEvid
   return {
     schema_version: 1,
     kind: 'review',
+    task_id: taskId || 'review',
     timestamp,
     scope: markdown.match(/^scope:\s*(.+)$/m)?.[1]?.trim(),
     finding_scope: markdown.match(/^finding_scope:\s*(current_changes|baseline|mixed)$/m)?.[1] as ReviewEvidence['finding_scope'] | undefined,
