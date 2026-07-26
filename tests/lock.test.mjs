@@ -109,6 +109,74 @@ describe('withLock', () => {
   });
 });
 
+describe('lock ownership and atomic stale takeover (R-293)', () => {
+  it('release verifies ownership: never deletes a lock taken over by another holder', async () => {
+    const { dir, lockPath } = mkLockPath();
+    let signalAcquired;
+    const acquiredGate = new Promise((r) => { signalAcquired = r; });
+    let releaseFn;
+    const releaseGate = new Promise((r) => { releaseFn = r; });
+
+    const holder = withLock(lockPath, async () => {
+      signalAcquired();
+      await releaseGate;
+    }, { staleMs: 60_000 });
+
+    await acquiredGate;
+    // 模拟持锁超期被他人抢占重建：锁文件被替换为他人记录
+    const foreignRecord = JSON.stringify({ pid: process.pid, ts: Date.now(), token: 'foreign-owner' });
+    writeFileSync(lockPath, foreignRecord, 'utf-8');
+
+    releaseFn();
+    await holder;
+
+    assert.equal(existsSync(lockPath), true, '易主后的锁不得被原持有者的释放误删');
+    assert.match(readFileSync(lockPath, 'utf-8'), /foreign-owner/);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('legacy lock records without token fall back to pid ownership on release', async () => {
+    const { dir, lockPath } = mkLockPath();
+    let signalAcquired;
+    const acquiredGate = new Promise((r) => { signalAcquired = r; });
+    let releaseFn;
+    const releaseGate = new Promise((r) => { releaseFn = r; });
+
+    const holder = withLock(lockPath, async () => {
+      signalAcquired();
+      await releaseGate;
+    }, { staleMs: 60_000 });
+
+    await acquiredGate;
+    // 旧格式（无 token）+ 同 pid → 按 pid 回退判定为本进程属主，允许释放
+    writeFileSync(lockPath, JSON.stringify({ pid: process.pid, ts: Date.now() }), 'utf-8');
+
+    releaseFn();
+    await holder;
+
+    assert.equal(existsSync(lockPath), false, '旧格式同 pid 锁按回退规则正常释放');
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('concurrent takeover of the same stale lock keeps mutual exclusion', async () => {
+    const { dir, lockPath } = mkLockPath();
+    const counterPath = join(dir, 'counter.txt');
+    writeFileSync(counterPath, '0', 'utf-8');
+    // 预置 stale 锁：死 pid + 过期时间戳
+    writeFileSync(lockPath, JSON.stringify({ pid: 999999, ts: Date.now() - 60_000 }), 'utf-8');
+
+    const N = 5;
+    await Promise.all(Array.from({ length: N }, () => withLock(lockPath, async () => {
+      const value = parseInt(readFileSync(counterPath, 'utf-8'), 10);
+      await sleep(10);
+      writeFileSync(counterPath, String(value + 1), 'utf-8');
+    }, { staleMs: 1_000, retryMs: 10, timeoutMs: 10_000 })));
+
+    assert.equal(readFileSync(counterPath, 'utf-8'), String(N), '并发 stale 夺锁必须保持互斥（无 lost update）');
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
 describe('mutateCurrentState (R-286 锁下沉唯一变更入口)', () => {
   let mutateCurrentState;
   let readCurrentState;

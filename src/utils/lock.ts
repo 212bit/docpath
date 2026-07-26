@@ -14,8 +14,9 @@
  * 符合 DocPath「宁可报错也不漂移」的纪律。
  */
 
-import { writeFile, readFile, unlink, mkdir } from 'node:fs/promises';
+import { writeFile, readFile, unlink, mkdir, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 export interface LockOptions {
   /** 自旋总超时（毫秒），超过即放弃并抛错 */
@@ -33,6 +34,17 @@ const DEFAULT_STALE_MS = 30_000;
 interface LockRecord {
   pid: number;
   ts: number;
+  /** 属主标识（R-293）：释放/夺锁校验用，防止按路径误删他人锁。旧格式无此字段，按 pid 回退。 */
+  token?: string;
+}
+
+/** 读取并解析锁记录；不存在/损坏返回 null。 */
+async function readLockRecord(lockPath: string): Promise<LockRecord | null> {
+  try {
+    return JSON.parse(await readFile(lockPath, 'utf-8')) as LockRecord;
+  } catch {
+    return null;
+  }
 }
 
 function sleep(ms: number): Promise<void> {
@@ -55,27 +67,17 @@ function isProcessAlive(pid: number): boolean {
  * 读不到 / 解析失败的锁文件视为损坏 → 可抢占（保守地认为持有者已异常退出）。
  */
 async function isLockStale(lockPath: string, staleMs: number): Promise<boolean> {
-  let raw: string;
-  try {
-    raw = await readFile(lockPath, 'utf-8');
-  } catch {
-    // 读取期间锁被释放 → 视为可获取
-    return true;
-  }
-  let record: LockRecord;
-  try {
-    record = JSON.parse(raw) as LockRecord;
-  } catch {
-    return true; // 损坏的锁文件
-  }
+  const record = await readLockRecord(lockPath);
+  // 读取期间锁被释放，或锁文件损坏 → 视为可获取
+  if (!record) return true;
   if (typeof record.ts !== 'number' || Date.now() - record.ts > staleMs) return true;
   if (!isProcessAlive(record.pid)) return true;
   return false;
 }
 
 /** 尝试原子获锁；成功返回 true。已存在返回 false；其它错误抛出。 */
-async function tryAcquire(lockPath: string): Promise<boolean> {
-  const record: LockRecord = { pid: process.pid, ts: Date.now() };
+async function tryAcquire(lockPath: string, token: string): Promise<boolean> {
+  const record: LockRecord = { pid: process.pid, ts: Date.now(), token };
   try {
     await mkdir(dirname(lockPath), { recursive: true });
     await writeFile(lockPath, JSON.stringify(record), { encoding: 'utf-8', flag: 'wx' });
@@ -83,6 +85,43 @@ async function tryAcquire(lockPath: string): Promise<boolean> {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'EEXIST') return false;
     throw error;
+  }
+}
+
+/**
+ * 原子夺取 stale 锁（R-293）：直接 unlink 会双删——两个等待者都判定 stale 时，
+ * 后 unlink 的会删掉先获锁者刚创建的新锁（unlink 按路径不按 inode）→ 双持有。
+ * rename 对同一路径原子，仅一个等待者成功改走旧锁；失败者直接回到重试循环。
+ */
+async function takeoverStaleLock(lockPath: string, token: string): Promise<void> {
+  const stalePath = `${lockPath}.stale-${token}`;
+  try {
+    await rename(lockPath, stalePath);
+  } catch {
+    return; // 已被他人夺取或释放，回到重试循环
+  }
+  try {
+    await unlink(stalePath);
+  } catch {
+    // 清理失败不影响互斥
+  }
+}
+
+/**
+ * 属主校验释放（R-293）：token 匹配（旧格式无 token 按 pid 回退）才 unlink。
+ * 自己持锁超 staleMs 被抢占重建后，无校验的 unlink 会误删新持有者的锁。
+ * read-match-unlink 间仍有极小 TOCTOU 窗口（仅在持锁超期且恰在两步之间被
+ * 抢占时触发），相比无校验已从常态缩为双重罕见事件。
+ */
+async function releaseOwnedLock(lockPath: string, token: string): Promise<void> {
+  const record = await readLockRecord(lockPath);
+  if (!record) return; // 已被释放/抢占
+  const owned = record.token ? record.token === token : record.pid === process.pid;
+  if (!owned) return; // 锁已易主，绝不误删他人锁
+  try {
+    await unlink(lockPath);
+  } catch {
+    // 竞态释放，忽略
   }
 }
 
@@ -103,20 +142,17 @@ export async function withLock<T>(
   const retryMs = options.retryMs ?? DEFAULT_RETRY_MS;
   const staleMs = options.staleMs ?? DEFAULT_STALE_MS;
   const deadline = Date.now() + timeoutMs;
+  const token = randomUUID();
 
   let acquired = false;
   while (!acquired) {
-    if (await tryAcquire(lockPath)) {
+    if (await tryAcquire(lockPath, token)) {
       acquired = true;
       break;
     }
-    // 锁被占用：检查是否 stale，可抢占则删除后立即重试。
+    // 锁被占用：检查是否 stale，可抢占则原子夺锁后立即重试。
     if (await isLockStale(lockPath, staleMs)) {
-      try {
-        await unlink(lockPath);
-      } catch {
-        // 已被他人释放/抢占，无所谓，下一轮重试。
-      }
+      await takeoverStaleLock(lockPath, token);
       continue;
     }
     if (Date.now() >= deadline) {
@@ -131,10 +167,6 @@ export async function withLock<T>(
   try {
     return await fn();
   } finally {
-    try {
-      await unlink(lockPath);
-    } catch {
-      // 锁可能已被 stale 抢占删除，忽略。
-    }
+    await releaseOwnedLock(lockPath, token);
   }
 }
