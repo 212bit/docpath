@@ -652,7 +652,8 @@ export async function nextCommand(options: NextOptions): Promise<void> {
       const drifts = await detectActiveTaskFileDrift(docpathDir, state.task_id);
       if (drifts.length > 0) {
         if (options.autoFix === 'merge') {
-          const { tryThreeWayMerge, writeActiveTaskFile } = await import('../utils/task-files.js');
+          const { writeActiveTaskFile } = await import('../utils/task-files.js');
+          const { tryThreeWayMerge } = await import('../utils/structured-heal.js');
           const mergedFiles: string[] = [];
           for (const drift of drifts) {
             if (drift.reason === 'content-mismatch') {

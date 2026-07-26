@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T18:52:39.255Z",
+    "updated_at": "2026-07-26T18:52:39.255Z",
+    "content_sha256": "8261a62e6a36ef9619942351ec7751033b246307efd376ee99710984ddb5894e"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-26T18:52:39.255Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 模块拆分: task-files 漂移消解域迁出 + formatters Context Injection 迁出 (机械)",
+      "description": "根据 spec 明确 FR-1: 模块拆分: task-files 漂移消解域迁出 + formatters Context Injection 迁出 (机械) 的实现边界和验收口径。",
+      "acceptance": "AC-1: 迁移后各文件行数下降且职责单一化；无循环依赖（structured-heal→task-files 单向）。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 模块拆分: task-files 漂移消解域迁出 + formatters Context Injection 迁出 (机械)",
+      "description": "在现有架构内完成 FR-1: 模块拆分: task-files 漂移消解域迁出 + formatters Context Injection 迁出 (机械) 的代码与文档更新。",
+      "acceptance": "FR-1 模块拆分: task-files 漂移消解域迁出 + formatters Context Injection 迁出 (机械) 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 迁移后各文件行数下降且职责单一化；无循环依赖（structured-heal→task-files 单向）。；AC-2: 全量套件绿，零行为变更；导入路径全链更新（含 dist 测试导入）。；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-304 与任务 T-20260726-task-files-formatters-context-injection 建立双向关联",
+      "acceptance": "AC-1: 迁移后各文件行数下降且职责单一化；无循环依赖（structured-heal→task-files 单向）。；AC-2: 全量套件绿，零行为变更；导入路径全链更新（含 dist 测试导入）。；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-304 与任务 T-20260726-task-files-formatters-context-injection 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

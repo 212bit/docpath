@@ -18,7 +18,8 @@ import { join } from 'path';
 
 import { logger } from '../utils/logger.js';
 import { evaluateQuickScope } from '../engine/quick-guard.js';
-import { readActiveStructuredSpecDocument, canonicalTaskDir, healStructuredMarkdownDrift, writeActiveTaskFile } from '../utils/task-files.js';
+import { readActiveStructuredSpecDocument, canonicalTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
+import { healStructuredMarkdownDrift } from '../utils/structured-heal.js';
 import { mutateCurrentState } from '../utils/workspace.js';
 import { syncProtocolBlocks } from '../utils/protocol-blocks.js';
 import { resolveTemplate } from '../utils/install-core.js';

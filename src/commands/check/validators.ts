@@ -174,7 +174,8 @@ export async function checkTaskFileDrift(cwd: string, docpathDir: string, option
     : undefined;
   if (drifts.length > 0 && fixSource) {
     if (fixSource === 'merge') {
-      const { tryThreeWayMerge, writeActiveTaskFile } = await import('../../utils/task-files.js');
+      const { writeActiveTaskFile } = await import('../../utils/task-files.js');
+      const { tryThreeWayMerge } = await import('../../utils/structured-heal.js');
       const { syncCurrentDocument } = await import('../../utils/workspace.js');
       let hasConflict = false;
       const mergedFiles: string[] = [];

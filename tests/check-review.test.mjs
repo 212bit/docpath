@@ -1705,7 +1705,8 @@ describe('healStructuredMarkdownDrift (R-287 方案 A 自愈原语)', () => {
   let healStructuredMarkdownDrift;
 
   before(async () => {
-    ({ writeActiveTaskFile, healStructuredMarkdownDrift } = await import('../dist/utils/task-files.js'));
+    ({ writeActiveTaskFile } = await import('../dist/utils/task-files.js'));
+    ({ healStructuredMarkdownDrift } = await import('../dist/utils/structured-heal.js'));
   });
 
   const HEAL_SPEC = [

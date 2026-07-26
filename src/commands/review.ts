@@ -17,7 +17,7 @@ import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { writeReviewEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
-import { healStructuredMarkdownDrift } from '../utils/task-files.js';
+import { healStructuredMarkdownDrift } from '../utils/structured-heal.js';
 import {
   buildReviewSkillRequirements,
   createReviewSkillSkip,
