@@ -2,7 +2,7 @@
 
 > 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。
 
-> 扫描时间: 2026-07-26T18:08:05.048Z
+> 扫描时间: 2026-07-26T18:35:02.359Z
 
 ## 文档列表
 
@@ -29,7 +29,7 @@
 | backlog/R-268.md | runbook | project | 2 | false | false | false | 673 |  | R-268 | write-spec stdin 在同一已启动任务内重同步 spec 真源时不应重置 workflow phase。当前问题是相同 task_id 的 spec 同步会走 task created 转移，把 executing checking planning 误回到 drafting，并可能给出错误恢复提示。本次只处理同任务重同步和提示选择，不改变新任务 | 2026-07-15T17:48:15.618Z | 1.8KB |
 | backlog/R-292.md | runbook | project | 2 | false | false | false | 126 |  | R-292 | - 待补充 | 2026-07-26T12:51:22.686Z | 413B |
 | backlog/R-296.md | runbook | project | 2 | false | false | false | 252 |  | R-296 | R-293 的 rename 夺锁存在判定-执行 TOCTOU（全量套件满载实测 4/5 丢更新）。 | 2026-07-26T17:48:36.915Z | 727B |
-| backlog/R-300.md | runbook | project | 2 | false | false | false | 999 |  | R-300 | R-297 完成层间单源后，flavor 间（CLAUDE/AGENTS/CODEX/OPENCODE）仍是同义异文的手工对齐关系。2026-07-27 勘察实证：worktree-isolation 契约段三份文本已分叉（CODEX/OPENCODE 为删减变体，R-273 反模式细节与 id 分配说明仅存于 CLAUDE 版）；lifecycle 命令序 | 2026-07-26T17:53:24.614Z | 2.8KB |
+| backlog/R-302.md | runbook | project | 2 | false | false | false | 496 |  | R-302 | 二次 review P1-b：运行时工件增长治理不一。勘察修正：trace 有截断但为丢弃式（2000→1000 行，历史直接支撑过 R-299 证据决策，丢弃可惜）；全局 breadcrumb 的 truncateBreadcrumb 机制（200 条窗口、持锁、连带渲染 md）自建成起零调用方——纯死机制，全局 jsonl 已 132KB。decisio | 2026-07-26T18:33:45.081Z | 1.4KB |
 | backlog/analysis/R-230-open-questions.md | runbook | project | 2 | false | false | false | 2239 |  | DocPath UI Design - Open Questions | - **背景**：当前 Dashboard 使用深色 Obsidian 主题，改造后计划使用温暖浅色 | 2026-06-21T17:43:53.174Z | 5.6KB |
 | backlog/analysis/R-230-product.md | runbook | project | 2 | false | false | false | 1453 |  | DocPath UI Design - Product Analysis | - **效率提升**：通过可视化仪表盘，2 秒内定位需要人工介入的阻塞点，而非逐个项目运行 `docpath status` | 2026-06-21T17:43:53.162Z | 3.6KB |
 | backlog/analysis/R-230-requirements.md | runbook | project | 2 | false | false | false | 1432 |  | DocPath UI Design - Requirements Analysis | DocPath 是一个渐进式文档驱动工作流 CLI 工具，专为大模型 Agent 和人类开发者设计。当前已有基础 Dashboard UI，使用 React + Tailwind CSS 4 + Vite 构建。 | 2026-06-21T17:43:53.158Z | 3.4KB |
@@ -164,7 +164,9 @@
 | backlog/archived/R-297.md | runbook | project | 2 | false | false | false | 762 |  | R-297 | 协议契约存在 root/templates/templates-protocols/.docpath-protocols 多层载体，R-273/R-277/R-290 均为「修一层漏一层」事故。2026-07-27 勘察：root↔templates 已被 install manifest drift 治理；无人治理的是 templates/<flavor> | 2026-07-26T16:26:20.637Z | 2.2KB |
 | backlog/archived/R-298.md | runbook | project | 2 | false | false | false | 843 |  | R-298 | FSM 门禁事件 check.passed/check.failed/review.failed 的 from 数组含 'completed'，已完成任务可被门禁动作静默重入（transitions.ts:79-84）。这是 R-279（completed 上 go/agent step 半执行污染 breadcrumb）与 R-291（completed  | 2026-07-26T16:51:33.005Z | 2.5KB |
 | backlog/archived/R-299.md | runbook | project | 2 | false | false | false | 873 |  | R-299 | 命令面 60 项（29 core/19 advanced/9 hidden/3 deprecated），1243 次 trace 实测仅 28 项承载全部使用、32 项零调用。2026-07-27 用户逐组勾选确认砍除方案：组A 零使用死命令 12 项（deprecated 三件套 brainstor/disclosure/tdd + 过时视图 resume | 2026-07-26T17:42:02.322Z | 2.5KB |
-| backlog/backlog.md | runbook | project | 2 | false | false | false | 422 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-26T17:53:24.644Z | 1.3KB |
+| backlog/archived/R-300.md | runbook | project | 2 | false | false | false | 1009 |  | R-300 | R-297 完成层间单源后，flavor 间（CLAUDE/AGENTS/CODEX/OPENCODE）仍是同义异文的手工对齐关系。2026-07-27 勘察实证：worktree-isolation 契约段三份文本已分叉（CODEX/OPENCODE 为删减变体，R-273 反模式细节与 id 分配说明仅存于 CLAUDE 版）；lifecycle 命令序 | 2026-07-26T18:08:31.151Z | 2.8KB |
+| backlog/archived/R-301.md | runbook | project | 2 | false | false | false | 848 |  | R-301 | 二次 review P1-a：全量套件 212s 串行，check 高频门禁每次全额支付（单工程期实测累计 ~35 分钟纯等待）。--test-concurrency=1 为历史保守设置；测试用例自 R-273 时代起均已使用独立 mkdtempSync 工作区。2026-07-27 实测 --test-concurrency=4 连续 3 轮 669/66 | 2026-07-26T18:27:44.111Z | 2.3KB |
+| backlog/backlog.md | runbook | project | 2 | false | false | false | 408 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-26T18:33:45.105Z | 1.2KB |
 | commands/docpath-agent-done.md | reference | project | 3 | false | false | false | 280 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-07-26T17:59:09.666Z | 1.1KB |
 | commands/docpath-agent-enter.md | reference | project | 3 | false | false | false | 315 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-07-26T17:59:09.666Z | 1.2KB |
 | commands/docpath-agent-handoff.md | reference | project | 3 | false | false | false | 277 |  | /docpath-agent-handoff | Persist a compact handoff package for the next Claude Code session. | 2026-07-26T17:59:09.666Z | 1.1KB |
@@ -197,7 +199,7 @@
 | commands/docpath-write-journal.md | reference | project | 3 | false | false | false | 198 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task through the CLI. | 2026-07-26T17:59:09.674Z | 792B |
 | commands/docpath-write-plan.md | reference | project | 3 | false | false | false | 216 |  | /docpath-write-plan | Artifact sink: write an execution plan already generated by the current agent | 2026-07-26T17:59:09.674Z | 862B |
 | commands/docpath-write-spec.md | reference | project | 3 | false | false | false | 215 |  | /docpath-write-spec | Artifact sink: write spec content already generated by the current agent session | 2026-07-26T17:59:09.675Z | 859B |
-| docs.md | index | project | 2 | false | false | false | 90509 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-26T17:40:58.535Z | 297.5KB |
+| docs.md | index | project | 2 | false | false | false | 91369 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-26T18:08:05.050Z | 300.1KB |
 | harness.md | index | project | 2 | false | false | false | 252 |  | DocPath Harness Rules | - [ ] 读取 current.md 确认当前状态 | 2026-05-28T12:29:00.329Z | 786B |
 | protocols/AGENTS.md | index | project | 2 | false | false | false | 2575 |  | DocPath Agent Protocol | 1. Run `docpath next --agent` to read the `agent_view: next` route and the | 2026-07-26T17:59:09.664Z | 10.1KB |
 | protocols/CLAUDE.md | index | project | 2 | false | false | false | 2434 |  | DocPath Claude Code Protocol | 1. Run `/docpath-next` or `docpath next --agent` for the `agent_view: next` | 2026-07-26T17:59:09.664Z | 9.5KB |
@@ -205,17 +207,21 @@
 | protocols/OPENCODE.md | index | project | 2 | false | false | false | 1911 |  | DocPath OpenCode Protocol | 1. Run `docpath next --agent` for the `agent_view: next` route, | 2026-07-26T17:59:09.665Z | 7.5KB |
 | review-skills/javascript/SKILL.md | index | project | 2 | false | false | false | 423 |  | DocPath Review Skill: JavaScript | Use this skill only when `docpath review` emits a Review Skill Router requirement | 2026-06-20T15:45:09.124Z | 1.7KB |
 | review-skills/typescript/SKILL.md | index | project | 2 | false | false | false | 425 |  | DocPath Review Skill: TypeScript | Use this skill only when `docpath review` emits a Review Skill Router requirement | 2026-06-20T15:45:09.125Z | 1.7KB |
-| rules/architecture.md | reference | project | 2 | true | false | false | 4773 |  | DocPath Architecture Rules | - `.docpath/rules/style.md` 和 `.docpath/rules/architecture.md` 是 preferred 规则真源；`.docpath/spec/style.md` 和 `.docpath/spec/architecture.md` 仅作 legacy fallback。 | 2026-07-26T16:26:21.101Z | 12.3KB |
+| rules/architecture.md | reference | project | 2 | true | false | false | 5260 |  | DocPath Architecture Rules | - `.docpath/rules/style.md` 和 `.docpath/rules/architecture.md` 是 preferred 规则真源；`.docpath/spec/style.md` 和 `.docpath/spec/architecture.md` 仅作 legacy fallback。 | 2026-07-26T18:28:07.807Z | 13.5KB |
 | rules/style.md | reference | project | 2 | true | false | false | 2788 |  | DocPath Agent Style Rules | - Start/resume with `docpath next --agent`. Use `docpath status --agent` only | 2026-07-16T17:13:23.408Z | 7.8KB |
 | skills/caveman.md | index | project | 2 | false | false | false | 260 |  | Skill: Caveman Mode (省 token 模式) | 1. **回复极简** — 不解释已知信息，只说做了什么 | 2026-07-26T17:59:09.663Z | 646B |
 | skills/diagnose.md | index | project | 2 | false | false | false | 258 |  | Skill: Diagnose (诊断) | - 遇到编译错误/运行时异常 | 2026-07-26T17:59:09.663Z | 633B |
 | skills/grill-me.md | index | project | 2 | false | false | false | 302 |  | Skill: Grill Me (计划压力测试) | - 计划是否能解决实际问题？ | 2026-07-26T17:59:09.663Z | 813B |
+| tasks/T-20260726-1-4-3-212s-82s/plan.md | runbook | task | 1 | false | false | false | 611 | T-20260726-1-4-3-212s-82s | plan | - [x] S1: 梳理 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s) | 2026-07-26T18:25:56.624Z | 1.6KB |
+| tasks/T-20260726-1-4-3-212s-82s/spec.md | runbook | task | 1 | false | false | false | 1374 | T-20260726-1-4-3-212s-82s | T-20260726-1-4-3-212s-82s - 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s) | 二次 review P1-a：全量套件 212s 串行，check 高频门禁每次全额支付（单工程期实测累计 ~35 分钟纯等待）。--test-concurrency=1 为历史保守设置；测试用例自 R-273 时代起均已使用独立 mkdtempSync 工作区。2026-07-27 实测 --test-concurrency=4 连续 3 轮 669/66 | 2026-07-26T18:25:21.255Z | 3.5KB |
 | tasks/T-20260726-16-tasks-task-60-44/plan.md | runbook | task | 1 | false | false | false | 960 | T-20260726-16-tasks-task-60-44 | plan | - [x] S1: 梳理 命令面收缩: 删 16 项零使用命令+tasks 并入 task (用户逐组确认, 60→44) | 2026-07-26T17:37:07.587Z | 2.5KB |
 | tasks/T-20260726-16-tasks-task-60-44/spec.md | runbook | task | 1 | false | false | false | 2128 | T-20260726-16-tasks-task-60-44 | T-20260726-16-tasks-task-60-44 - 命令面收缩: 删 16 项零使用命令+tasks 并入 task (用户逐组确认, 60→44) | 命令面 60 项（29 core/19 advanced/9 hidden/3 deprecated），1243 次 trace 实测仅 28 项承载全部使用、32 项零调用。2026-07-27 用户逐组勾选确认砍除方案：组A 零使用死命令 12 项（deprecated 三件套 brainstor/disclosure/tdd + 过时视图 resume | 2026-07-26T17:08:55.665Z | 5.7KB |
 | tasks/T-20260726-b-blocks-render-check/plan.md | runbook | task | 1 | false | false | false | 952 | T-20260726-b-blocks-render-check | plan | - [x] S1: 梳理 协议共享契约段注入 (方案 B): blocks 源 + 标记注入 + render 渲染 + check 校验 | 2026-07-26T18:04:18.494Z | 2.5KB |
 | tasks/T-20260726-b-blocks-render-check/spec.md | runbook | task | 1 | false | false | false | 2258 | T-20260726-b-blocks-render-check | T-20260726-b-blocks-render-check - 协议共享契约段注入 (方案 B): blocks 源 + 标记注入 + render 渲染 + check 校验 | R-297 完成层间单源后，flavor 间（CLAUDE/AGENTS/CODEX/OPENCODE）仍是同义异文的手工对齐关系。2026-07-27 勘察实证：worktree-isolation 契约段三份文本已分叉（CODEX/OPENCODE 为删减变体，R-273 反模式细节与 id 分配说明仅存于 CLAUDE 版）；lifecycle 命令序 | 2026-07-26T17:53:24.606Z | 5.8KB |
-| tasks/current/plan.md | runbook | task | 1 | true | false | false | 952 | T-20260726-b-blocks-render-check | plan | - [x] S1: 梳理 协议共享契约段注入 (方案 B): blocks 源 + 标记注入 + render 渲染 + check 校验 | 2026-07-26T18:04:18.494Z | 2.5KB |
-| tasks/current/spec.md | runbook | task | 1 | true | false | false | 2258 | T-20260726-b-blocks-render-check | T-20260726-b-blocks-render-check - 协议共享契约段注入 (方案 B): blocks 源 + 标记注入 + render 渲染 + check 校验 | R-297 完成层间单源后，flavor 间（CLAUDE/AGENTS/CODEX/OPENCODE）仍是同义异文的手工对齐关系。2026-07-27 勘察实证：worktree-isolation 契约段三份文本已分叉（CODEX/OPENCODE 为删减变体，R-273 反模式细节与 id 分配说明仅存于 CLAUDE 版）；lifecycle 命令序 | 2026-07-26T17:53:24.606Z | 5.8KB |
+| tasks/T-20260726-quick-r-303-gate-rules-architecture/quick.md | runbook | task | 1 | false | false | false | 144 | T-20260726-quick-r-303-gate-rules-architecture | Quick Task: T-20260726-quick-r-303-gate-rules-architecture | - title: R-303 双教义成文: gate 写边界规则写入 rules/architecture | 2026-07-26T18:27:51.663Z | 540B |
+| tasks/T-20260726-quick-r-303-gate-rules-architecture/spec.md | runbook | task | 1 | false | false | false | 395 | T-20260726-quick-r-303-gate-rules-architecture | T-20260726-quick-r-303-gate-rules-architecture - T-20260726-quick-r-303-gate-rules-architecture - R-303 双教义成文: gate 写边界规则写入 rules/architecture | <!-- 原 quick 任务已自动升级为 standard 流程，需要补全设计文档。 --> | 2026-07-26T18:33:46.589Z | 1.1KB |
+| tasks/current/quick.md | runbook | task | 1 | false | false | false | 144 | T-20260726-quick-r-303-gate-rules-architecture | Quick Task: T-20260726-quick-r-303-gate-rules-architecture | - title: R-303 双教义成文: gate 写边界规则写入 rules/architecture | 2026-07-26T18:27:51.663Z | 540B |
+| tasks/current/spec.md | runbook | task | 1 | true | false | false | 395 | T-20260726-quick-r-303-gate-rules-architecture | T-20260726-quick-r-303-gate-rules-architecture - T-20260726-quick-r-303-gate-rules-architecture - R-303 双教义成文: gate 写边界规则写入 rules/architecture | <!-- 原 quick 任务已自动升级为 standard 流程，需要补全设计文档。 --> | 2026-07-26T18:33:46.590Z | 1.1KB |
 | tasks/done/T-20260528-agent-integration/plan.md | runbook | task | 3 | false | true | false | 929 | T-20260528-agent-integration | 执行计划 | ``` | 2026-05-28T14:53:27.931Z | 2.6KB |
 | tasks/done/T-20260528-agent-integration/spec.md | runbook | task | 3 | false | true | false | 847 | T-20260528-agent-integration | 规约: Agent Integration (Phase 1+2) | DocPath 需要面向 AI Agent 的接口层，使其能被 Claude Code / OpenCode 等工具原生使用。 | 2026-05-28T14:37:39.406Z | 2.4KB |
 | tasks/done/T-20260528-harness-lite/plan.md | runbook | task | 3 | false | true | false | 838 | T-20260528-harness-lite | Plan: Harness Lite Phase 1 | **目标**: 让 `docpath check` 能发现并运行 typecheck 相关脚本 | 2026-05-29T05:13:03.422Z | 2.5KB |
@@ -865,14 +871,16 @@
 | tasks/promote-backups/2026-07-26T17-08-55-606Z/spec.md | runbook | project | 2 | false | false | false | 2078 |  | T-20260726-fsm-completed-task-reopen-r-279-r-291-fs - FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口) | FSM 门禁事件 check.passed/check.failed/review.failed 的 from 数组含 'completed'，已完成任务可被门禁动作静默重入（transitions.ts:79-84）。这是 R-279（completed 上 go/agent step 半执行污染 breadcrumb）与 R-291（completed  | 2026-07-26T17:08:55.608Z | 5.5KB |
 | tasks/promote-backups/2026-07-26T17-53-24-538Z/plan.md | runbook | project | 2 | false | false | false | 960 |  | plan | - [x] S1: 梳理 命令面收缩: 删 16 项零使用命令+tasks 并入 task (用户逐组确认, 60→44) | 2026-07-26T17:53:24.539Z | 2.5KB |
 | tasks/promote-backups/2026-07-26T17-53-24-538Z/spec.md | runbook | project | 2 | false | false | false | 2128 |  | T-20260726-16-tasks-task-60-44 - 命令面收缩: 删 16 项零使用命令+tasks 并入 task (用户逐组确认, 60→44) | 命令面 60 项（29 core/19 advanced/9 hidden/3 deprecated），1243 次 trace 实测仅 28 项承载全部使用、32 项零调用。2026-07-27 用户逐组勾选确认砍除方案：组A 零使用死命令 12 项（deprecated 三件套 brainstor/disclosure/tdd + 过时视图 resume | 2026-07-26T17:53:24.540Z | 5.7KB |
+| tasks/promote-backups/2026-07-26T18-25-21-199Z/plan.md | runbook | project | 2 | false | false | false | 952 |  | plan | - [x] S1: 梳理 协议共享契约段注入 (方案 B): blocks 源 + 标记注入 + render 渲染 + check 校验 | 2026-07-26T18:25:21.201Z | 2.5KB |
+| tasks/promote-backups/2026-07-26T18-25-21-199Z/spec.md | runbook | project | 2 | false | false | false | 2258 |  | T-20260726-b-blocks-render-check - 协议共享契约段注入 (方案 B): blocks 源 + 标记注入 + render 渲染 + check 校验 | R-297 完成层间单源后，flavor 间（CLAUDE/AGENTS/CODEX/OPENCODE）仍是同义异文的手工对齐关系。2026-07-27 勘察实证：worktree-isolation 契约段三份文本已分叉（CODEX/OPENCODE 为删减变体，R-273 反模式细节与 id 分配说明仅存于 CLAUDE 版）；lifecycle 命令序 | 2026-07-26T18:25:21.202Z | 5.8KB |
 | workflows/bugfix.md | index | project | 2 | false | false | false | 160 |  | Workflow: Bug Fix | - 收集错误信息 (日志、截图、复现步骤) | 2026-07-26T17:59:09.661Z | 463B |
 | workflows/debug.md | index | project | 2 | false | false | false | 145 |  | Workflow: Debug | - 收集症状 (日志、指标、复现步骤) | 2026-07-26T17:59:09.662Z | 416B |
 | workflows/feature.md | index | project | 2 | false | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-07-26T17:59:09.662Z | 753B |
 | workflows/refactor.md | index | project | 2 | false | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-07-26T17:59:09.662Z | 424B |
 | workflows/research.md | index | project | 2 | false | false | false | 161 |  | Workflow: Research | - 明确调研目标 | 2026-07-26T17:59:09.662Z | 449B |
-| workspace/breadcrumb.md | index | project | 0 | false | false | false | 1192 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-26T18:04:18.491Z | 3.7KB |
+| workspace/breadcrumb.md | index | project | 0 | false | false | false | 294 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-26T18:29:26.297Z | 920B |
 | workspace/compact-context.md | index | project | 0 | false | false | false | 3467 |  | Context Handoff — T-20260715-docpath-init-scan-existing | - ✅ PASS (2026-07-15T15:57:32.756Z) | 2026-07-15T16:06:13.998Z | 11.2KB |
-| workspace/current.md | index | project | 0 | true | false | false | 486 |  | 📍 当前工作流状态 | ```yaml | 2026-07-26T18:08:04.560Z | 1.4KB |
+| workspace/current.md | index | project | 0 | true | false | false | 342 |  | 📍 当前工作流状态 | ```yaml | 2026-07-26T18:35:01.789Z | 1.1KB |
 | workspace/decisions-2026-05.md | index | project | 0 | false | false | false | 16136 |  | 决策日志归档 — 2026-05 | --- | 2026-06-16T11:00:07.138Z | 46.7KB |
 | workspace/decisions-2026-06.md | index | project | 0 | false | false | false | 4794 |  | 决策日志归档 — 2026-06 | --- | 2026-07-14T11:14:31.428Z | 13.9KB |
 | workspace/decisions-2026-07.md | index | project | 0 | false | false | false | 6870 |  | 决策日志归档 — 2026-07 | --- | 2026-07-26T16:26:20.653Z | 20.1KB |
@@ -880,12 +888,11 @@
 | workspace/decisions-2026-W24.md | index | project | 0 | false | false | false | 22924 |  | 决策日志归档 — 2026-W24 | --- | 2026-07-12T13:49:33.903Z | 65.1KB |
 | workspace/decisions-2026-W25.md | index | project | 0 | false | false | false | 18387 |  | 决策日志归档 — 2026-W25 | --- | 2026-07-12T13:49:33.905Z | 51.8KB |
 | workspace/decisions-2026-W26.md | index | project | 0 | false | false | false | 2675 |  | 决策日志归档 — 2026-W26 | --- | 2026-07-12T13:49:33.906Z | 7.7KB |
-| workspace/decisions.md | log | project | 3 | false | true | false | 5995 |  | 决策日志 — DocPath ADR | --- | 2026-07-26T16:26:20.654Z | 16.7KB |
+| workspace/decisions.md | log | project | 3 | false | true | false | 6411 |  | 决策日志 — DocPath ADR | --- | 2026-07-26T18:29:26.299Z | 18.0KB |
 | workspace/journal.md | index | project | 0 | false | false | false | 120 |  | 📖 工作日志 | - 新增 write-design 命令 | 2026-06-10T04:44:31.299Z | 361B |
-| workspace/last-check.md | index | project | 0 | true | false | false | 181 |  | Last Check Evidence | **时间**: 2026-07-26T17:40:58.995Z | 2026-07-26T17:40:58.997Z | 544B |
-| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 8186 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-26T17:42:02.333Z | 26.9KB |
-| workspace/pending-done.md | index | project | 0 | false | false | false | 35 |  | pending-done | pending-done | 2026-07-17T02:10:39.986Z | 137B |
-| workspace/review.md | index | project | 0 | true | false | false | 434 |  | Code Review Report | **时间**: 2026-07-26T17:42:01.820Z | 2026-07-26T17:42:01.822Z | 1.4KB |
+| workspace/last-check.md | index | project | 0 | true | false | false | 80 |  | Last Check Evidence | **时间**: 2026-07-26T18:29:25.516Z | 2026-07-26T18:29:25.518Z | 289B |
+| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 8483 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-26T18:29:26.298Z | 28.0KB |
+| workspace/review.md | index | project | 0 | true | false | false | 97 |  | Code Review Report | **时间**: 2026-07-26T18:27:43.339Z | 2026-07-26T18:27:43.362Z | 343B |
 
 ## 用途说明
 

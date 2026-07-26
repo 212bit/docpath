@@ -3,31 +3,30 @@
   "kind": "spec",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-07-26T18:27:51.657Z",
-    "updated_at": "2026-07-26T18:27:51.657Z",
-    "content_sha256": "d15ae739c5c4286b2b91a0188aaba971201a7707586f3c5bd20c533d0c773af1"
+    "created_at": "2026-07-26T18:33:46.589Z",
+    "updated_at": "2026-07-26T18:33:46.589Z",
+    "content_sha256": "34bae7753e8f350e4baf5c80b72de6dc7ef25cbbec8bf4bcd5a5e1e0eae97a93"
   },
   "task_id": "T-20260726-quick-r-303-gate-rules-architecture",
   "backlog_id": null,
-  "title": "T-20260726-quick-r-303-gate-rules-architecture - R-303 双教义成文: gate 写边界规则写入 rules/architecture",
-  "generated_at": "2026-07-26T18:27:51.657Z",
+  "title": "T-20260726-quick-r-303-gate-rules-architecture - T-20260726-quick-r-303-gate-rules-architecture - R-303 双教义成文: gate 写边界规则写入 rules/architecture",
+  "generated_at": "2026-07-26T18:33:46.589Z",
   "scope": {
     "included": [
-      "R-303 双教义成文: gate 写边界规则写入 rules/architecture"
+      "待补充"
     ],
     "excluded": [
-      "Full spec/plan ceremony for standard or strict tasks.",
-      "Architecture, protocol, migration, permission, or broad module changes."
+      "待补充"
     ]
   },
   "major_change_gate": {
-    "required": false,
+    "required": true,
     "types": [],
-    "user_confirmed": "`docpath quick` invocation.",
-    "decision_brief_markdown": "- 当前问题: Tiny task governance should be proportional.\n- 可选方案:\n  - 方案 A: 使用标准任务流程\n  - 方案 B: 使用 quick 轻量任务流程\n- 推荐方案: 方案 B\n- 决策理由: 方案 B 在保证 check 门禁的前提下显著降低了低风险任务的摩擦\n- 用户确认: `docpath quick` invocation."
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 待补充\n- 目标: 待补充\n- 可选方案: 待补充\n- 推荐方案: 待补充\n- 用户确认: 待确认"
   },
   "ui_gate": {
-    "state": "exempt"
+    "state": "unknown"
   },
   "functional_requirements": [
     {
@@ -39,33 +38,23 @@
   "non_functional_requirements": [
     {
       "id": "NFR-1",
-      "text": "Keep the change scoped and auditable.",
+      "text": "待补充",
       "done": false
     }
   ],
   "acceptance_criteria": [
     {
       "id": "AC-1",
-      "text": "The scoped change is completed.",
-      "done": false
-    },
-    {
-      "id": "AC-2",
-      "text": "`docpath check` passes before closeout.",
-      "done": false
-    },
-    {
-      "id": "AC-3",
-      "text": "Review skip is recorded as quick-profile policy evidence.",
+      "text": "待补充",
       "done": false
     }
   ],
   "decision_brief": {
-    "problem": "Tiny task governance should be proportional.",
+    "problem": "待补充",
     "options": [
-      "- 方案 A: 使用标准任务流程"
+      "待补充"
     ],
-    "chosen": "方案 B",
-    "rationale": "方案 B 在保证 check 门禁的前提下显著降低了低风险任务的摩擦"
+    "chosen": "待补充",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
   }
 }
