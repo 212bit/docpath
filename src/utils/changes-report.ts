@@ -215,13 +215,47 @@ async function readReviewPass(docpathDir: string): Promise<boolean> {
   return evidence?.approved === true;
 }
 
-function buildSuggestedCommitMessage(report: Omit<ChangesReport, 'suggested_commit_message'>): string {
+function buildSuggestedCommitMessage(
+  report: Omit<ChangesReport, 'suggested_commit_message'>,
+  stepNotes: string[] = [],
+): string {
   const title = report.selection.selected_task_title || report.current_task.task_title || '更新 DocPath 工作流';
   const hasSource = report.groups.source.length > 0;
   const hasTests = report.groups.tests.length > 0;
   const hasDocs = report.groups.templates_docs.length > 0;
   const type = hasSource ? 'feat' : hasTests ? 'test' : hasDocs ? 'docs' : 'chore';
-  return `${type}: ${title}`;
+  const subject = `${type}: ${title}`;
+  if (stepNotes.length === 0) return subject;
+  // R-308 记录收敛：正文由步骤 note 汇编——agent 在 step done 时写过的话
+  // 不必在 commit message 里重述，改用建议稿并按需增删。
+  return [subject, '', ...stepNotes.map((note) => `- ${note}`)].join('\n');
+}
+
+/** R-308: 从 canonical breadcrumb 提取本任务的实质性步骤 note（去重、滤默认噪音、限量）。 */
+async function collectTaskStepNotes(docpathDir: string, taskId: string): Promise<string[]> {
+  const path = join(docpathDir, 'tasks', taskId, 'breadcrumb.jsonl');
+  if (!existsSync(path)) return [];
+  try {
+    const lines = readFileSync(path, 'utf-8').split('\n').filter(Boolean);
+    const notes: string[] = [];
+    const seen = new Set<string>();
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line) as { status?: string; context?: string; step?: string };
+        const note = (entry.context || '').trim();
+        if (entry.status !== 'done' || !note) continue;
+        if (/^agent-step: /.test(note) || /^run-end/.test(note) || note === '完成') continue; // 默认噪音
+        if (seen.has(note)) continue;
+        seen.add(note);
+        notes.push(note);
+      } catch {
+        // 跳过坏行
+      }
+    }
+    return notes.slice(0, 6);
+  } catch {
+    return [];
+  }
 }
 
 function groupChangedFiles(files: ChangedFile[]): Record<ChangeGroupName, string[]> {
@@ -545,6 +579,11 @@ export async function buildChangesReport(cwd: string, options: ChangesReportOpti
 
   return {
     ...partial,
-    suggested_commit_message: buildSuggestedCommitMessage(partial),
+    suggested_commit_message: buildSuggestedCommitMessage(
+      partial,
+      partial.selection.selected_task_id
+        ? await collectTaskStepNotes(docpathDir, partial.selection.selected_task_id)
+        : [],
+    ),
   };
 }

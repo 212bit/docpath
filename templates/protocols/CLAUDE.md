@@ -34,7 +34,6 @@ Prefer the installed slash commands over long pasted prompts:
 /docpath-agent-enter
 /docpath-agent-step S1
 /docpath-agent-done task
-/docpath-agent-handoff
 /docpath-check
 /docpath-review
 /docpath-brainstorm
@@ -103,7 +102,6 @@ docpath agent enter   # optional session declaration; requires an executing step
 docpath agent step --step "S1" --status done
 docpath check
 docpath agent done --step "<task>"
-docpath agent handoff
 ```
 <!-- /docpath:block -->
 
@@ -114,7 +112,6 @@ Workflow:
 3. Make the scoped change.
 4. Record completion with `docpath agent step --step "<id>" --status done`.
 5. Run `docpath check` and `docpath agent done` before claiming completion.
-6. Use `docpath agent handoff` when another session may resume the work.
 
 ## Required Gates
 

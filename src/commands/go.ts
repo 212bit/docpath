@@ -10,7 +10,7 @@
 
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { mutateCurrentState, readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
@@ -19,8 +19,9 @@ import { parsePlanSteps, type PlanStep } from '../utils/doc-parser.js';
 import { markPlanStep, type PlanStepStatus } from '../utils/plan-sync.js';
 import { runCommand } from './runtime.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
-import { readActiveStructuredSpecDocument, readActiveTaskFile } from '../utils/task-files.js';
-import { acquireExecutionLease, releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
+import { readActiveStructuredSpecDocument, readActiveTaskFile, writeActiveTaskFile } from '../utils/task-files.js';
+import { renderDraftPlan } from './plan.js';
+import { resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
@@ -78,7 +79,20 @@ async function readSpecFields(specPath: string): Promise<Record<string, string>>
 }
 
 async function readPlanSteps(docpathDir: string, taskId: string | undefined): Promise<PlanStep[]> {
-  const planContent = await readActiveTaskFile(docpathDir, taskId, 'plan.md');
+  let planContent = await readActiveTaskFile(docpathDir, taskId, 'plan.md');
+
+  // R-306 免 plan 直达：level ≤1 任务无 plan 时由 go 自动生成单步压缩计划，
+  // promote → go 两步进入执行；level 2+ 仍要求显式 plan。
+  if (!planContent.trim() && taskId) {
+    const state = await readCurrentState(dirname(docpathDir));
+    const spec = await readActiveTaskFile(docpathDir, taskId, 'spec.md');
+    if ((state?.level ?? 2) <= 1 && spec.trim()) {
+      planContent = renderDraftPlan(spec, state?.level ?? 1);
+      await writeActiveTaskFile(docpathDir, taskId, 'plan.md', planContent);
+      console.log('⚡  level-1 免 plan 直达：已自动生成单步压缩计划（R-306）');
+    }
+  }
+
   if (!planContent.trim()) {
     exitWithError('MISSING_PLAN');
   }
@@ -154,7 +168,6 @@ async function finalizeStep(
     status,
     note: `go-status: ${target.id} -> ${status}`,
     session: sessionId,
-    releaseLease: false,
   });
 
   const syncStatus: PlanStepStatus = status === 'done' ? 'done' : status === 'skipped' ? 'skipped' : 'blocked';
@@ -163,12 +176,6 @@ async function finalizeStep(
     console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
   }
   await refreshAgentSnapshot(cwd);
-  await releaseExecutionLease(cwd, {
-    sessionId,
-    taskId,
-    step: target.id,
-    command: 'go status',
-  });
 
   console.log(`✅  已记录步骤状态: ${target.id} -> ${status}`);
   await emitNextHint(cwd);
@@ -181,12 +188,6 @@ async function startStep(
   extraFields: Record<string, string>,
   sessionId: string,
 ): Promise<void> {
-  await acquireExecutionLease(cwd, {
-    sessionId,
-    taskId,
-    step: target.id,
-    command: 'go start',
-  });
 
   await writeBreadcrumb(cwd, {
     taskId,

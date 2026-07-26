@@ -29,6 +29,8 @@ export function mkExecWorkspace(dir) {
 
   mkdirSync(workspace, { recursive: true });
   mkdirSync(tasks, { recursive: true });
+  // R-307: 契约类测试固定关闭小 diff 豁免（fixture diff 天然小于阈值）
+  writeFileSync(join(root, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { min_diff_lines: 0 } }, null, 2));
 
   writeFileSync(join(workspace, 'state.json'), JSON.stringify({
     level: 2,

@@ -37,6 +37,7 @@ function mkTaskWorkspace(name) {
   mkdirSync(join(dp, 'workspace'), { recursive: true });
   mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
   writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: r276-test\n');
+  writeFileSync(join(dp, 'config.json'), JSON.stringify({ review_skill_gate: { min_diff_lines: 0 } }, null, 2));
   writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
     level: 1,
     task_id: 'T-R276',
@@ -149,7 +150,7 @@ describe('review task scope default (R-276)', () => {
 
   it('review evidence records the git HEAD at review time', () => {
     const cwd = mkTaskWorkspace('dp-r276-head-');
-    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
     commitBaselineBeforeTask(cwd);
     mkdirSync(join(cwd, 'src'), { recursive: true });
     commitTaskChange(cwd, 'export const feature = 1;\n');
@@ -167,7 +168,7 @@ describe('review task scope default (R-276)', () => {
 describe('review reuse HEAD binding (R-276 AC-4)', () => {
   function mkReuseWorkspace(head) {
     const cwd = mkTaskWorkspace('dp-r276-reuse-');
-    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
     commitBaselineBeforeTask(cwd);
     const statePath = join(cwd, '.docpath', 'workspace', 'state.json');
     const state = JSON.parse(readFileSync(statePath, 'utf-8'));
@@ -199,7 +200,7 @@ describe('review reuse HEAD binding (R-276 AC-4)', () => {
 
   it('reuses fresh approved evidence when HEAD matches', () => {
     const cwd = mkTaskWorkspace('dp-r276-reuse-match-');
-    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
     commitBaselineBeforeTask(cwd);
     const head = git(cwd, ['rev-parse', 'HEAD']).trim();
     const statePath = join(cwd, '.docpath', 'workspace', 'state.json');

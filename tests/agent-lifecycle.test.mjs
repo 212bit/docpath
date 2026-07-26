@@ -352,7 +352,7 @@ describe('docpath agent lifecycle', () => {
     fs.writeFileSync(notePath, [
       '# WIP Note',
       '',
-      '> source: agent handoff',
+      '> source: agent enter',
       '> task_id: T-OTHER-TASK',
       '> step: S9',
       '> updated_at: 2026-07-01T00:00:00.000Z',

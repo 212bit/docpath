@@ -8,11 +8,7 @@ import { mkExecWorkspace } from './helpers.mjs';
 
 import {
   DEFAULT_SESSION_ID,
-  acquireExecutionLease,
-  acquireLease,
-  releaseExecutionLease,
   resolveSessionContext,
-  taskLeaseResource,
 } from '../dist/utils/session.js';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
@@ -43,7 +39,7 @@ function leaseFile(cwd, resource) {
   return join(cwd, '.docpath', 'workspace', 'leases', `${file}.json`);
 }
 
-describe('session and lease utilities', () => {
+describe('session utilities (R-309: lease 层已删除)', () => {
   it('uses a compatibility default session when no explicit session is provided', () => {
     const previous = process.env.DOCPATH_SESSION;
     delete process.env.DOCPATH_SESSION;
@@ -52,91 +48,6 @@ describe('session and lease utilities', () => {
     else process.env.DOCPATH_SESSION = previous;
   });
 
-  it('prevents another session from claiming a live task lease', async () => {
-    const cwd = mkProject();
-    await acquireExecutionLease(cwd, {
-      sessionId: 'alpha',
-      taskId: 'T-LEASE',
-      step: 'S1',
-      command: 'test',
-    });
-
-    await assert.rejects(
-      () => acquireExecutionLease(cwd, {
-        sessionId: 'beta',
-        taskId: 'T-LEASE',
-        step: 'S1',
-        command: 'test',
-      }),
-      /session lease conflict/,
-    );
-    rmSync(cwd, { recursive: true, force: true });
-  });
-
-  it('allows a stale lease to be taken over', async () => {
-    const cwd = mkProject();
-    const resource = taskLeaseResource('T-STALE');
-    await acquireLease(cwd, {
-      sessionId: 'alpha',
-      taskId: 'T-STALE',
-      command: 'test',
-    }, resource);
-
-    const path = leaseFile(cwd, resource);
-    const stale = JSON.parse(readFileSync(path, 'utf-8'));
-    stale.updated_at = '2026-01-01T00:00:00.000Z';
-    stale.expires_at = '2026-01-01T00:00:01.000Z';
-    writeFileSync(path, `${JSON.stringify(stale, null, 2)}\n`);
-
-    const [record] = await acquireExecutionLease(cwd, {
-      sessionId: 'beta',
-      taskId: 'T-STALE',
-      step: 'S1',
-      command: 'test',
-    });
-    assert.equal(record.session_id, 'beta');
-    rmSync(cwd, { recursive: true, force: true });
-  });
-
-  it('releases only leases held by the same session', async () => {
-    const cwd = mkProject();
-    await acquireExecutionLease(cwd, {
-      sessionId: 'alpha',
-      taskId: 'T-RELEASE',
-      step: 'S1',
-      command: 'test',
-    });
-
-    await releaseExecutionLease(cwd, {
-      sessionId: 'beta',
-      taskId: 'T-RELEASE',
-      step: 'S1',
-      command: 'test',
-    });
-    await assert.rejects(
-      () => acquireExecutionLease(cwd, {
-        sessionId: 'beta',
-        taskId: 'T-RELEASE',
-        step: 'S1',
-        command: 'test',
-      }),
-      /session lease conflict/,
-    );
-
-    await releaseExecutionLease(cwd, {
-      sessionId: 'alpha',
-      taskId: 'T-RELEASE',
-      step: 'S1',
-      command: 'test',
-    });
-    await acquireExecutionLease(cwd, {
-      sessionId: 'beta',
-      taskId: 'T-RELEASE',
-      step: 'S1',
-      command: 'test',
-    });
-    rmSync(cwd, { recursive: true, force: true });
-  });
 });
 
 describe('session-aware CLI flow', () => {
@@ -160,13 +71,10 @@ describe('session-aware CLI flow', () => {
       '',
     ].join('\n'));
 
+    // R-309: lease 硬锁已按数据裁决删除（205 次调用零竞争；worktree 隔离为
+    // 多 agent 正道），同工作区并发降级为「会话感知」——不硬拦但必须可见。
     const start = run('go --step S1 --session alpha', cwd);
     assert.equal(start.code, 0, start.out);
-
-    const blocked = run('go --step S2 --session beta', cwd);
-    assert.notEqual(blocked.code, 0);
-    assert.match(blocked.out, /session lease conflict/);
-    assert.match(blocked.out, /session=alpha/);
 
     const breadcrumbJsonl = readFileSync(join(workspace, 'breadcrumb.jsonl'), 'utf-8')
       .trim()
@@ -179,6 +87,13 @@ describe('session-aware CLI flow', () => {
 
     const next = run('go --step S2 --session beta', cwd);
     assert.equal(next.code, 0, next.out);
+
+    // 会话感知保留：双会话经 touchSession 记录，status --agent 曝光 active_sessions
+    // 会话感知机制在位（active_sessions 字段输出）；已退出进程的会话被 pid
+    // 存活检查正确过滤，活跃列表语义由 listActiveSessions 套件单独覆盖。
+    const status = run('status --agent', cwd);
+    assert.equal(status.code, 0, status.out);
+    assert.match(status.out, /active_sessions/);
     rmSync(cwd, { recursive: true, force: true });
   });
 });

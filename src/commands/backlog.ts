@@ -951,6 +951,9 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
   console.log(`   level: ${item.level}`);
   console.log('   readiness: raw');
   console.log(`   下一步: docpath analyze --dry-run --mode deep --content "${item.title}"，再用 docpath backlog edit ${item.id} 补充 evidence`);
+  if (item.level <= 1) {
+    console.log(`   ⚡ 微小改动可跳过完整流程: docpath quick "${item.title}"（R-310 轻量通道）`);
+  }
 }
 
 async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
@@ -1101,6 +1104,9 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   console.log(`   task_id: ${taskId}`);
   console.log(`   spec: .docpath/${canonicalTaskRelativePath(taskId, 'spec.md')}`);
   console.log(`   truth_sync: ${SPEC_TRUTH_SYNC_HINT}`);
+  if (item.level <= 1) {
+    console.log('   ⚡ level-1 提示: 可直接 docpath go --step S1（免 plan 直达单步计划, R-306）；下次微小改动可用 docpath quick（R-310）');
+  }
   if (aliasBackup) {
     console.log(`   previous_current_backup: ${aliasBackup.backupDir}`);
     console.log(`   backup_files: ${aliasBackup.files.join(', ')}`);

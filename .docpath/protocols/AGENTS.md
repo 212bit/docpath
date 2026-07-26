@@ -99,7 +99,6 @@ docpath agent enter   # optional session declaration; requires an executing step
 docpath agent step --step "S1" --status done
 docpath check
 docpath agent done --step "<task>"
-docpath agent handoff
 ```
 <!-- /docpath:block -->
 
@@ -128,7 +127,6 @@ Rules:
   permissions, migrations, CI/CD, or broad multi-file changes.
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath agent done` before claiming a task is complete.
-- Run `docpath agent handoff` when another session may resume the task.
 - Before any local `git commit`, run `docpath changes --agent`. Treat it as a
   read-only closeout report; only force-add exact canonical evidence paths it
   recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by

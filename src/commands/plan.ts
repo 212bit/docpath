@@ -143,11 +143,37 @@ function assertGeneratedPlanCoverage(spec: string, plan: string): void {
   throw new Error(lines.join('\n'));
 }
 
-function renderDraftPlan(spec: string): string {
+export function renderDraftPlan(spec: string, level = 2): string {
   const title = extractFirstMatch(spec, /^#\s+(.+)$/m) || '当前任务';
   const features = extractChecklistEntries(spec, 'FR');
   const acceptances = extractChecklistEntries(spec, 'AC');
   const primaryFeature = features[0]?.text || title.replace(/^T-\d{8}-[a-z0-9-]+\s+-\s+/, '');
+
+  // R-306 比例刻度：level ≤1 任务生成单步计划——24 任务实测中三段式
+  // (梳理/实现/验证)对小任务是被走过场的虚构仪式。全部 FR/AC 并入单步以满足覆盖断言。
+  if (level <= 1) {
+    const featureSummary = features.length > 0
+      ? features.map((item) => `${item.id}: ${item.text}`).join('；')
+      : primaryFeature;
+    const acceptanceSummary = acceptances.length > 0
+      ? acceptances.map((item) => `${item.id}: ${item.text}`).join('；')
+      : 'plan.md 已生成并可进入执行';
+    return [
+      '## 执行计划',
+      '',
+      `### S1: 实现并验证 ${primaryFeature}`,
+      `- **描述**: 完成 ${featureSummary}，随做随验（level-1 压缩计划，R-306）。`,
+      `- **验收条件**: ${acceptanceSummary}`,
+      '- **依赖**: 无',
+      '',
+      '## Checklist',
+      '- [ ] S1',
+      '',
+      '## 依赖关系图',
+      'S1',
+      '',
+    ].join('\n');
+  }
   const primaryFeatureId = features[0]?.id;
   const primaryAcceptance = acceptances[0]
     ? `${acceptances[0].id}: ${acceptances[0].text}`
@@ -314,7 +340,7 @@ async function writeGeneratedPlan(cwd: string, docpathDir: string, spec: string)
   const existingPlan = taskId === 'current'
     ? ''
     : await readCanonicalPlan(docpathDir, taskId);
-  const planContent = existingPlan.trim() ? existingPlan : renderDraftPlan(spec || '');
+  const planContent = existingPlan.trim() ? existingPlan : renderDraftPlan(spec || '', current?.level ?? 2);
   assertGeneratedPlanCoverage(spec, planContent);
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'plan.md', planContent);
   return canonicalPath;

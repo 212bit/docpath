@@ -87,12 +87,6 @@ docpath check
 docpath agent done --step "<task>"
 ```
 
-### Handoff
-
-```bash
-docpath agent handoff
-```
-
 ## Rules
 
 - Do not act from memory alone.
@@ -108,7 +102,6 @@ docpath agent handoff
   read-only closeout report; only force-add exact canonical evidence paths it
   recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by
   default.
-- Use `docpath agent handoff` when another session may resume the task.
 
 ## Worktree Concurrent Development
 

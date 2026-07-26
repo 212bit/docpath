@@ -113,7 +113,6 @@ describe('CLI positional argument guards', () => {
       ['context --max-tokens nope', /context --max-tokens: 参数非法/],
       ['reveal --level nope', /reveal --level: 参数非法/],
       ['reveal --level 4', /reveal --level: 参数非法/],
-      ['agent handoff --max-entries nope', /agent --max-entries: 参数非法/],
     ];
 
     for (const [command, pattern] of cases) {

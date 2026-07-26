@@ -456,7 +456,7 @@ describe('check and review commands', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-spec-drift-'));
     const { tasks } = mkExecWorkspace(cwd);
     const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
-    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
     writeFileSync(join(canonical, 'spec.md'), '# Stale spec view\n');
     writeFileSync(join(tasks, 'spec.md'), '# Stale spec view\n');
     writeActiveSpecJson(cwd, tasks, structuredSpecJson('', {
@@ -489,7 +489,7 @@ describe('check and review commands', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-plan-drift-'));
     const { tasks } = mkExecWorkspace(cwd);
     const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
-    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
     writeFileSync(join(canonical, 'plan.md'), '# Stale plan view\n');
     writeFileSync(join(tasks, 'plan.md'), '# Stale plan view\n');
     writeActivePlanJson(cwd, tasks, structuredPlanJson(''), 'T-AGENT');
@@ -551,7 +551,7 @@ describe('check and review commands', () => {
     execSync('git init', { cwd, encoding: 'utf-8' });
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
-    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
     writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
     execSync('git add baseline.ts .docpath/config.json', { cwd, encoding: 'utf-8' });
     execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
@@ -588,7 +588,7 @@ describe('check and review commands', () => {
     execSync('git init', { cwd, encoding: 'utf-8' });
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
-    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
     writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
     execSync('git add baseline.ts .docpath/config.json', { cwd, encoding: 'utf-8' });
     execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
@@ -613,7 +613,7 @@ describe('check and review commands', () => {
     execSync('git init', { cwd, encoding: 'utf-8' });
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
-    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
     writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
     execSync('git add baseline.ts', { cwd, encoding: 'utf-8' });
     execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
@@ -699,7 +699,7 @@ describe('check and review commands', () => {
     mkExecWorkspace(cwd);
     markReadyForReview(cwd);
     execSync('git init', { cwd, encoding: 'utf-8' });
-    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
     writeFileSync(join(cwd, 'manual.ts'), 'export const manual = true;\n');
 
     const out = run(`review --cwd ${cwd} --approve`, cwd);

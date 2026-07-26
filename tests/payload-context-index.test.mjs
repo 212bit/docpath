@@ -141,16 +141,14 @@ describe('Hybrid Context Index', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('lets handoff generate index and status --agent expose a compact summary', () => {
+  it('lets agent enter generate index and status --agent expose a compact summary (R-309: 生成迁至 enter)', () => {
     const cwd = mkWorkspace();
-    execSync(`node ${BIN} agent handoff --cwd ${cwd} --max-entries 5`, { cwd, encoding: 'utf-8', timeout: 20000 });
+    execSync(`node ${BIN} agent enter --cwd ${cwd}`, { cwd, encoding: 'utf-8', timeout: 20000 });
 
     const indexPath = join(cwd, '.docpath', 'tasks', 'current', 'context-index.json');
-    const handoff = readFileSync(join(cwd, '.docpath', 'workspace', 'compact-context.md'), 'utf-8');
     const status = execSync(`node ${BIN} status --cwd ${cwd} --agent`, { cwd, encoding: 'utf-8', timeout: 20000 });
 
     assert.equal(existsSync(indexPath), true);
-    assert.match(handoff, /## Hybrid Context Index/);
     assert.match(status, /context_index:/);
     assert.match(status, /path: \.docpath\/tasks\/current\/context-index\.json/);
     assert.match(status, /trunk_count: 4/);

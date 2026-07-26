@@ -183,7 +183,12 @@ export async function buildReviewSkillRequirements(
   changedFiles: string[],
   scope: ReviewScope,
   opts?: { taskBaseRef?: string | null },
-): Promise<{ enabled: boolean; requirements: ReviewSkillRequirement[] }> {
+): Promise<{
+  enabled: boolean;
+  requirements: ReviewSkillRequirement[];
+  /** R-307: 小 diff 豁免时携带（requirements 为空且不要求证据） */
+  exempted?: { total_diff_lines: number; min_diff_lines: number };
+}> {
   const enabled = await isReviewSkillGateEnabled(cwd);
   if (!enabled) return { enabled, requirements: [] };
 
@@ -214,7 +219,40 @@ export async function buildReviewSkillRequirements(
     })
     .sort((a, b) => a.skill.localeCompare(b.skill));
 
+  // R-307 小 diff 豁免：语言级审查本身保留价值判断，但把审查结论写成 JSON 证据
+  // 的仪式在小变更下成本失衡。阈值基于「本 scope 的累计 diff 行数」——task scope
+  // 走 R-282 的 HEAD 绑定累计 diff，拆分提交不能规避阈值。
+  if (requirements.length > 0) {
+    const minLines = await resolveSkillGateMinDiffLines(cwd);
+    const uniqueFiles = [...new Set(requirements.flatMap((item) => item.files))];
+    const totalLines = uniqueFiles.reduce(
+      (sum, file) => sum + countDiffLines(diffForFile(cwd, file, scope, opts?.taskBaseRef)),
+      0,
+    );
+    if (totalLines < minLines) {
+      return { enabled, requirements: [], exempted: { total_diff_lines: totalLines, min_diff_lines: minLines } };
+    }
+  }
+
   return { enabled, requirements };
+}
+
+const REVIEW_SKILL_MIN_DIFF_LINES_DEFAULT = 30;
+
+async function resolveSkillGateMinDiffLines(cwd: string): Promise<number> {
+  try {
+    const config = await readDocPathConfig(cwd);
+    const declared = (config.review_skill_gate as { min_diff_lines?: unknown } | undefined)?.min_diff_lines;
+    if (typeof declared === 'number' && Number.isFinite(declared) && declared >= 0) return declared;
+  } catch {
+    // 配置读取失败回退默认
+  }
+  return REVIEW_SKILL_MIN_DIFF_LINES_DEFAULT;
+}
+
+/** 统计 diff 的实际增删行（排除 +++/--- 文件头）。 */
+function countDiffLines(diff: string): number {
+  return diff.split('\n').filter((line) => /^[+-]/.test(line) && !/^(\+\+\+|---)/.test(line)).length;
 }
 
 function sameFileSet(actual: string[], expected: string[]): boolean {

@@ -14,7 +14,6 @@ const PACKAGE_VERSION = JSON.parse(readFileSync(new URL('../package.json', impor
 const CLAUDE_EXPOSED_COMMANDS = [
   'agent-done',
   'agent-enter',
-  'agent-handoff',
   'agent-step',
   'brainstorm',
   'check',
@@ -96,7 +95,7 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(commandsDir, 'docpath-agent-enter.md')), true);
     assert.equal(existsSync(join(commandsDir, 'docpath-agent-step.md')), true);
     assert.equal(existsSync(join(commandsDir, 'docpath-agent-done.md')), true);
-    assert.equal(existsSync(join(commandsDir, 'docpath-agent-handoff.md')), true);
+    assert.equal(existsSync(join(commandsDir, 'docpath-agent-handoff.md')), false); // R-309 handoff 已删除
     for (const command of CLAUDE_EXPOSED_COMMANDS) {
       assert.equal(existsSync(join(commandsDir, `docpath-${command}.md`)), true, `${command} slash command should be installed`);
     }

@@ -9,14 +9,14 @@
  * enter   -> load state and mark execution start
  * step    -> record progress for a sub-task
  * done    -> run quality gates and mark completion/blocked
- * handoff -> persist compact context for session transfer
  */
 
 import { execFileSync } from 'node:child_process';
 import { checkCommand } from './check.js';
 import { journalCommand } from './journal.js';
 import { reviewCommand } from './review.js';
-import { compactCommand, runCommand } from './runtime.js';
+import { runCommand } from './runtime.js';
+import { writeHybridContextIndex } from '../utils/context-index.js';
 import { goCommand } from './go.js';
 import { assertWorktreeContract } from './worktree.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
@@ -27,7 +27,7 @@ import { markPlanStep } from '../utils/plan-sync.js';
 import { emit } from '../hooks/lifecycle.js';
 import { mutateCurrentState, readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { readActiveStructuredSpecDocument } from '../utils/task-files.js';
-import { releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
+import { resolveSessionContext, touchSession } from '../utils/session.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { join } from 'node:path';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
@@ -38,7 +38,7 @@ import { readLastCheckEvidence, readReviewEvidence } from '../utils/workspace-ev
 import { assertCleanWorktreeForNewTask, assertNoNonDocPathChangesForExecutionStart, detectDirtyWorktree, detectUncommittedNonDocPathFiles, renderCommitReminder } from '../utils/git-dirty-guard.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
 
-type AgentAction = 'enter' | 'step' | 'done' | 'handoff';
+type AgentAction = 'enter' | 'step' | 'done';
 
 type AgentOptions = {
   cwd: string;
@@ -109,7 +109,7 @@ async function writeWipNoteFile(
   payload: {
     taskId: string;
     step: string;
-    source: 'agent enter' | 'agent handoff';
+    source: 'agent enter';
     dirtyFiles: number;
     nonDocPathFiles: number;
   },
@@ -126,7 +126,7 @@ async function writeWipNoteFile(
     '',
     payload.dirtyFiles > 0
       ? `- Status: code/docs may be written but **unverified** (uncommitted files=${payload.dirtyFiles}, non-docpath=${payload.nonDocPathFiles}).`
-      : '- Status: worktree clean at handoff time; still confirm verification before claiming done.',
+      : '- Status: worktree clean at capture time; still confirm verification before claiming done.',
     '- Next agent: run `docpath next --agent`, inspect this note + `git status`, then resume the active step.',
     '',
   ].join('\n');
@@ -180,6 +180,10 @@ async function maybeRecordWipNote(cwd: string, taskId: string | undefined): Prom
 async function handleAgentEnter(options: AgentOptions): Promise<void> {
   const { cwd } = options;
   await assertWorktreeContract(cwd);
+  // R-309: handoff 删除后 context-index 生成迁至 enter（会话入口构建上下文包）。
+  try {
+    await writeHybridContextIndex(cwd);
+  } catch { /* index 生成失败不阻断 enter */ }
   const current = await readCurrentState(cwd);
   const session = resolveSessionContext(options.session);
   const phase = current?.phase || '';
@@ -280,17 +284,10 @@ async function handleAgentStep(options: AgentOptions): Promise<void> {
     status,
     note: options.note || `agent-step: ${step}`,
     session: session.sessionId,
-    releaseLease: false,
   });
 
   const sync = await markPlanStep(cwd, step, syncStatusForAgentStep(status));
   if (!sync.updated) console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
-  await releaseExecutionLease(cwd, {
-    sessionId: session.sessionId,
-    taskId,
-    step,
-    command: 'agent step',
-  });
 
   if (status !== 'done') {
     await runCommand({
@@ -493,12 +490,6 @@ async function completeFinalPlanStepIfNeeded(options: AgentOptions, taskId: stri
     context: `agent-done: ${step}`,
     sessionId: session.sessionId,
   });
-  await releaseExecutionLease(options.cwd, {
-    sessionId: session.sessionId,
-    taskId,
-    step,
-    command: 'agent done',
-  });
 }
 
 async function emitAgentTaskEnd(cwd: string, finalStatus: NonNullable<AgentOptions['status']>): Promise<void> {
@@ -544,52 +535,14 @@ async function handleAgentDone(options: AgentOptions): Promise<void> {
   await emitNextHint(cwd);
 }
 
-async function handleAgentHandoff(options: AgentOptions): Promise<void> {
-  const current = await readCurrentState(options.cwd);
-  const session = resolveSessionContext(options.session);
-  await touchSession(options.cwd, {
-    sessionId: session.sessionId,
-    taskId: current?.task_id || 'runtime',
-    step: current?.current_step || 'handoff',
-    command: 'agent handoff',
-  });
-  // Always capture a handoff WIP snapshot when a task is active (R-272)
-  if (current?.task_id && (current.phase === 'executing' || current.phase === 'checking' || current.phase === 'reviewing')) {
-    const dirty = detectDirtyWorktree(options.cwd);
-    const bc = await readBreadcrumb(options.cwd);
-    const active = [...bc.entries].reverse().find((entry) =>
-      (entry.status === 'in_progress' || entry.status === 'blocked') && entry.taskId === current.task_id,
-    );
-    const step = active?.step || current.current_step || 'handoff';
-    const path = await writeWipNoteFile(options.cwd, {
-      taskId: current.task_id,
-      step,
-      source: 'agent handoff',
-      dirtyFiles: dirty.isGitRepo ? dirty.files.length : 0,
-      nonDocPathFiles: dirty.isGitRepo ? dirty.nonDocPathFiles.length : 0,
-    });
-    console.log(`\n📝  WIP handoff note recorded for ${step}: ${path}`);
-  }
-  await compactCommand({
-    cwd: options.cwd,
-    maxEntries: options.maxEntries,
-  });
-  await runCommand({
-    cwd: options.cwd,
-    action: 'recover',
-    session: session.sessionId,
-  });
-}
-
 export async function agentCommand(options: AgentOptions): Promise<void> {
   const { action } = options;
 
-  if (!['enter', 'step', 'done', 'handoff'].includes(action)) {
-    throw new Error(`Unsupported agent action: ${action}. Expected enter | step | done | handoff`);
+  if (!['enter', 'step', 'done'].includes(action)) {
+    throw new Error(`Unsupported agent action: ${action}. Expected enter | step | done`);
   }
 
   if (action === 'enter') return handleAgentEnter(options);
   if (action === 'step') return handleAgentStep(options);
-  if (action === 'done') return handleAgentDone(options);
-  return handleAgentHandoff(options);
+  return handleAgentDone(options);
 }

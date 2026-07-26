@@ -486,7 +486,10 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   printFindings(groups);
   const previousReview = await readReviewEvidence(docpathDir);
   const taskBaseRef = effectiveScope === 'task' ? resolveTaskBaseRef(opts.cwd, taskStartedAt) : undefined;
-  const { enabled, requirements } = await buildReviewSkillRequirements(opts.cwd, docpathDir, changedFiles, effectiveScope, { taskBaseRef });
+  const { enabled, requirements, exempted } = await buildReviewSkillRequirements(opts.cwd, docpathDir, changedFiles, effectiveScope, { taskBaseRef });
+  if (exempted) {
+    console.log(`⚡  review skill 证据豁免（R-307 小 diff）: 累计 diff ${exempted.total_diff_lines} 行 < 阈值 ${exempted.min_diff_lines}（语言级审查仍建议自查，仅豁免证据仪式）`);
+  }
   const previewGate = evaluateReviewSkillGate({
     enabled,
     requirements,
