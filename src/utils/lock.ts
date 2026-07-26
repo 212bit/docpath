@@ -38,13 +38,36 @@ interface LockRecord {
   token?: string;
 }
 
-/** 读取并解析锁记录；不存在/损坏返回 null。 */
-async function readLockRecord(lockPath: string): Promise<LockRecord | null> {
+/** 读取锁文件原始内容；不存在返回 null。 */
+async function readLockRaw(lockPath: string): Promise<string | null> {
   try {
-    return JSON.parse(await readFile(lockPath, 'utf-8')) as LockRecord;
+    return await readFile(lockPath, 'utf-8');
   } catch {
     return null;
   }
+}
+
+/** 解析锁记录；null/损坏返回 null。 */
+function parseLockRecord(raw: string | null): LockRecord | null {
+  if (raw === null) return null;
+  try {
+    return JSON.parse(raw) as LockRecord;
+  } catch {
+    return null;
+  }
+}
+
+/** 读取并解析锁记录；不存在/损坏返回 null。 */
+async function readLockRecord(lockPath: string): Promise<LockRecord | null> {
+  return parseLockRecord(await readLockRaw(lockPath));
+}
+
+/** 对已读取的记录做 stale 判定（损坏视为可回收）。 */
+function isStaleRecord(record: LockRecord | null, staleMs: number): boolean {
+  if (!record) return true;
+  if (typeof record.ts !== 'number' || Date.now() - record.ts > staleMs) return true;
+  if (!isProcessAlive(record.pid)) return true;
+  return false;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -66,15 +89,6 @@ function isProcessAlive(pid: number): boolean {
  * 判断一个已存在的锁是否可被抢占。
  * 读不到 / 解析失败的锁文件视为损坏 → 可抢占（保守地认为持有者已异常退出）。
  */
-async function isLockStale(lockPath: string, staleMs: number): Promise<boolean> {
-  const record = await readLockRecord(lockPath);
-  // 读取期间锁被释放，或锁文件损坏 → 视为可获取
-  if (!record) return true;
-  if (typeof record.ts !== 'number' || Date.now() - record.ts > staleMs) return true;
-  if (!isProcessAlive(record.pid)) return true;
-  return false;
-}
-
 /** 尝试原子获锁；成功返回 true。已存在返回 false；其它错误抛出。 */
 async function tryAcquire(lockPath: string, token: string): Promise<boolean> {
   const record: LockRecord = { pid: process.pid, ts: Date.now(), token };
@@ -89,16 +103,30 @@ async function tryAcquire(lockPath: string, token: string): Promise<boolean> {
 }
 
 /**
- * 原子夺取 stale 锁（R-293）：直接 unlink 会双删——两个等待者都判定 stale 时，
- * 后 unlink 的会删掉先获锁者刚创建的新锁（unlink 按路径不按 inode）→ 双持有。
- * rename 对同一路径原子，仅一个等待者成功改走旧锁；失败者直接回到重试循环。
+ * 原子夺取 stale 锁（R-293/R-296）：
+ * - 直接 unlink 会双删——两个等待者都判定 stale 时，后 unlink 的会删掉先获锁者
+ *   刚创建的新锁（unlink 按路径不按 inode）→ 双持有。rename 对同一路径原子。
+ * - 判定与执行之间锁可能已易主（R-296 TOCTOU）：紧邻 rename 前按原始内容复核；
+ *   rename 后再核对改走的内容，发现误夺活锁则按原文恢复（保 token，原持有者的
+ *   tenure 复核可确认在位）。恢复被第三方抢先属三重巧合微秒窗口，由获锁方的
+ *   tenure 复核兜底。
  */
-async function takeoverStaleLock(lockPath: string, token: string): Promise<void> {
+async function takeoverStaleLock(lockPath: string, token: string, judgedRaw: string): Promise<void> {
+  if (await readLockRaw(lockPath) !== judgedRaw) return; // 判定已过期，放弃夺锁
   const stalePath = `${lockPath}.stale-${token}`;
   try {
     await rename(lockPath, stalePath);
   } catch {
     return; // 已被他人夺取或释放，回到重试循环
+  }
+  const takenRaw = await readLockRaw(stalePath);
+  if (takenRaw !== null && takenRaw !== judgedRaw) {
+    // 误夺易主后的活锁：按原始内容恢复
+    try {
+      await writeFile(lockPath, takenRaw, { encoding: 'utf-8', flag: 'wx' });
+    } catch {
+      // 第三方已抢入空位——由其与原持有者的 tenure 复核收敛
+    }
   }
   try {
     await unlink(stalePath);
@@ -143,16 +171,33 @@ export async function withLock<T>(
   const staleMs = options.staleMs ?? DEFAULT_STALE_MS;
   const deadline = Date.now() + timeoutMs;
   const token = randomUUID();
+  // 本次获锁过程中是否见过 stale 记录：只有 stale 争夺场景才存在误夺/失位风险，
+  // 常态获锁跳过 tenure 复核保持零开销（R-296）。
+  let sawStale = false;
 
   let acquired = false;
   while (!acquired) {
     if (await tryAcquire(lockPath, token)) {
-      acquired = true;
-      break;
+      if (!sawStale) {
+        acquired = true;
+        break;
+      }
+      // tenure 复核（R-296）：stale 争夺期间，基于旧判定的夺锁可能在获锁瞬间
+      // 改走本锁；短暂 jitter 后确认锁仍属于自己才算真正持有。
+      await sleep(2 + Math.floor(Math.random() * 4));
+      const holder = parseLockRecord(await readLockRaw(lockPath));
+      if (holder?.token === token) {
+        acquired = true;
+        break;
+      }
+      continue; // 失位：回到竞争循环
     }
-    // 锁被占用：检查是否 stale，可抢占则原子夺锁后立即重试。
-    if (await isLockStale(lockPath, staleMs)) {
-      await takeoverStaleLock(lockPath, token);
+    // 锁被占用：按同一次读取的原始内容判定 stale，可回收则原子夺锁后立即重试。
+    const raw = await readLockRaw(lockPath);
+    if (raw === null) continue; // 读取瞬间已被释放，立即重试
+    if (isStaleRecord(parseLockRecord(raw), staleMs)) {
+      sawStale = true;
+      await takeoverStaleLock(lockPath, token, raw);
       continue;
     }
     if (Date.now() >= deadline) {
