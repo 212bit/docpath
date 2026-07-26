@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T12:32:00.273Z",
+    "updated_at": "2026-07-26T12:32:00.273Z",
+    "content_sha256": "b8f0eb21cac9b232b11ee201e7a985384fbd43acb5144b9583e039b9990361ea"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-26T12:32:00.273Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 git-dirty-guard 修缮: isDocpathWorktree symlink 死逻辑 + isActiveTask 阶段条件误拦回补",
+      "description": "根据 spec 明确 FR-1: git-dirty-guard 修缮: isDocpathWorktree symlink 死逻辑 + isActiveTask 阶段条件误拦回补 的实现边界和验收口径。",
+      "acceptance": "AC-1: 在真实 git worktree 内（tracked-copy 契约下）isDocpathWorktree 判定为 true，execution-start 放宽分支有回归测试覆盖。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 git-dirty-guard 修缮: isDocpathWorktree symlink 死逻辑 + isActiveTask 阶段条件误拦回补",
+      "description": "在现有架构内完成 FR-1: git-dirty-guard 修缮: isDocpathWorktree symlink 死逻辑 + isActiveTask 阶段条件误拦回补 的代码与文档更新。",
+      "acceptance": "FR-1 git-dirty-guard 修缮: isDocpathWorktree symlink 死逻辑 + isActiveTask 阶段条件误拦回补 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 在真实 git worktree 内（tracked-copy 契约下）isDocpathWorktree 判定为 true，execution-start 放宽分支有回归测试覆盖。；AC-2: phase=checking/reviewing 时，本任务的 tracked 改动不再被 execution-start guard 拦截；与任务无关文件仍被拦截。；AC-3: 现有 dirty-worktree-guard 测试全绿，新增上述两场景测试。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-288 与任务 T-20260726-git-dirty-guard-isdocpathworktree-symlin 建立双向关联",
+      "acceptance": "AC-1: 在真实 git worktree 内（tracked-copy 契约下）isDocpathWorktree 判定为 true，execution-start 放宽分支有回归测试覆盖。；AC-2: phase=checking/reviewing 时，本任务的 tracked 改动不再被 execution-start guard 拦截；与任务无关文件仍被拦截。；AC-3: 现有 dirty-worktree-guard 测试全绿，新增上述两场景测试。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-288 与任务 T-20260726-git-dirty-guard-isdocpathworktree-symlin 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

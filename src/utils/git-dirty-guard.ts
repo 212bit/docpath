@@ -189,19 +189,20 @@ export function assertCleanWorktreeForNewTask(cwd: string, command: string, opti
   throw buildDirtyWorktreeError(command, report, blockedFiles, 'new-task');
 }
 
-function isSymlink(path: string): boolean {
+function isLinkedGitWorktree(gitRoot: string): boolean {
+  // Linked worktree marker: `.git` is a *file* (gitdir pointer), not a directory.
+  // R-288: 判定必须与共享契约无关——旧实现依赖 backlog/rules 为 symlink，
+  // R-273 改为 tracked copy 后永远 false，worktree 放宽分支成死逻辑。
   try {
-    return lstatSync(path).isSymbolicLink();
+    return lstatSync(join(gitRoot, '.git')).isFile();
   } catch {
     return false;
   }
 }
 
-function isDocpathWorktree(gitRoot: string): boolean {
-  return existsSync(join(gitRoot, '.git')) &&
-    isSymlink(join(gitRoot, '.docpath', 'backlog')) &&
-    isSymlink(join(gitRoot, '.docpath', 'rules'));
-}
+// R-288: check/review 失败后回补代码时 phase 处于 checking/reviewing，
+// 仍属于同一任务的活跃执行期，不应重新拦截本任务自己的 tracked 改动。
+const ACTIVE_TASK_PHASES = new Set(['executing', 'checking', 'reviewing']);
 
 export function assertNoNonDocPathChangesForExecutionStart(
   cwd: string,
@@ -217,7 +218,7 @@ export function assertNoNonDocPathChangesForExecutionStart(
     const statePath = join(docpathDir, 'workspace', 'state.json');
     if (existsSync(statePath)) {
       const state = JSON.parse(readFileSync(statePath, 'utf-8'));
-      if (state && state.task_id && options.taskId && state.task_id === options.taskId && state.phase === 'executing') {
+      if (state && state.task_id && options.taskId && state.task_id === options.taskId && ACTIVE_TASK_PHASES.has(state.phase)) {
         isActiveTask = true;
       }
     }
@@ -225,7 +226,7 @@ export function assertNoNonDocPathChangesForExecutionStart(
     // ignore
   }
 
-  const inWorktree = report.repoRoot ? isDocpathWorktree(report.repoRoot) : false;
+  const inWorktree = report.repoRoot ? isLinkedGitWorktree(report.repoRoot) : false;
   const untrackedSet = new Set(report.untrackedFiles);
 
   const blockedFiles = report.files.filter((file) => {

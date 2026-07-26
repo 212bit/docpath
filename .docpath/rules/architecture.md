@@ -43,3 +43,11 @@
 - R-277 analysis .docpath/backlog/analysis/R-277-analysis.md 漂移面清单
 - templates/CLAUDE.md option C 原文 vs R-273 裁定 (ADR-20260716-011)
 - src/utils/install-core.ts isLocallyCustomizableInstallAsset
+
+## pattern: 契约翻转清扫面必须包含编码契约的代码判定点, 不止文档/模板载体
+- rationale: R-273 把 backlog/rules 从 symlink 改为 tracked copy 时, 只清扫了文档/模板层(R-277 教训), 但 src 中两处以 symlink 存在性编码旧契约的判定 isDocpathWorktree(git-dirty-guard.ts 与 changes-report.ts 各一份重复实现)未被清扫, 永远返回 false, worktree 放宽分支与 changes 的 worktree_isolation 报告静默变成死功能且无任何告警。死功能比报错更危险: 测试还在用 symlink 伪造旧契约信号喂它, 全绿掩盖失效。
+触发: 修改任何共享/存储契约(symlink vs copy, tracked vs ignored, 路径布局)。期望行为: 除 R-277 的文档四层外, 额外 grep 代码中以该契约特征做判定的谓词(存在性/文件类型/路径形态检查)与用契约特征搭建 fixture 的测试; 判定逻辑应选择与契约无关的机制信号(如 linked worktree 用 .git 是文件, 而非 symlink 布局), 且全仓库仅保留一份实现。边界: 语义依赖契约的消费方(如 changes-report 的 noise 分类)不能只换判定, 需同步改写语义后再复活(见 R-289)。
+### Evidence
+- src/utils/git-dirty-guard.ts isLinkedGitWorktree (R-288 修复)
+- src/utils/changes-report.ts:152 遗留重复实现 (R-289 待修)
+- tests/dirty-worktree-guard.test.mjs 原 symlink 伪造用例已改真实 git worktree add
