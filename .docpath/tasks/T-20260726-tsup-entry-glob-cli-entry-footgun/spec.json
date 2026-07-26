@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T15:15:23.907Z",
+    "updated_at": "2026-07-26T15:15:23.907Z",
+    "content_sha256": "12fbe2e659f549ca349cb2f29b5eb8729daf3dca6c849b245e7843321cf5c1a1"
+  },
+  "task_id": "T-20260726-tsup-entry-glob-cli-entry-footgun",
+  "backlog_id": "R-295",
+  "title": "T-20260726-tsup-entry-glob-cli-entry-footgun - tsup entry glob 全量编译, 根除 CLI_ENTRY 白名单与测试导入 footgun",
+  "generated_at": "2026-07-26T15:15:23.907Z",
+  "scope": {
+    "included": [
+      "tsup entry glob 全量编译, 根除 CLI_ENTRY 白名单与测试导入 footgun"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: tsup.config.ts 维护 44 项手工 CLI_ENTRY 白名单，测试经 ../dist 导入的每个 src 文件必须列名，否则「构建成功但测试 ERR_MODULE_NOT_FOUND」（memory/rules 记录的既踩 footgun；本会话 R-286/R-287 均被迫补名单）。白名单与测试导入面的耦合是纯维护负担，且失败形态有欺骗性（build 绿、测试红、报错不指向根因）。\n- 目标: tsup entry glob 全量编译, 根除 CLI_ENTRY 白名单与测试导入 footgun\n- 背景: 来自 backlog R-295\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "tsup entry glob 全量编译, 根除 CLI_ENTRY 白名单与测试导入 footgun",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "tsup.config.ts 无手工 entry 白名单；任意 src 文件构建后在 dist 有对应产物（金丝雀断言）。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "全量测试套件（pnpm test 等价路径）全绿；CLI bin(dist/index.js) 行为不变。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "构建耗时无量级回归（秒级内）。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-295 与任务 T-20260726-tsup-entry-glob-cli-entry-footgun 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "tsup.config.ts 维护 44 项手工 CLI_ENTRY 白名单，测试经 ../dist 导入的每个 src 文件必须列名，否则「构建成功但测试 ERR_MODULE_NOT_FOUND」（memory/rules 记录的既踩 footgun；本会话 R-286/R-287 均被迫补名单）。白名单与测试导入面的耦合是纯维护负担，且失败形态有欺骗性（build 绿、测试红、报错不指向根因）。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

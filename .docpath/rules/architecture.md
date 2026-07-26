@@ -67,3 +67,11 @@
 - src/utils/task-files.ts healStructuredMarkdownDrift 四象限裁决
 - src/utils/structured-docs.ts enforceStructuredMarkers
 - tests/check-review.test.mjs healStructuredMarkdownDrift 三用例 + 3-way 回归
+
+## pattern: 判定与执行分离的操作必须在执行点复核判定依据(write-before-validate/TOCTOU 家族)
+- rationale: 同日两例同族缺陷: R-291 plan 先写盘后校验 FSM(completed 任务证据被污染 3 次); R-296 锁 stale 夺锁基于陈旧判定 rename 误夺新获取的活锁(全量套件实测 4/5 丢更新, 隔离测试 18/18 全绿掩盖——竞态类缺陷必须满载/压力验证)。共同模式: 判定(合法性/staleness)与执行(写盘/rename)之间状态可变, 判定结果不复核即执行。
+触发: 实现任何「先判定后执行」的状态操作(门禁校验+写盘, staleness+回收, 存在性+创建)。期望行为: (1) 执行点用判定时捕获的原始内容/版本做紧邻复核, 不匹配即放弃; (2) 破坏性执行(rename/unlink/覆写)后核对实际作用对象, 误伤按原文恢复; (3) 无法完全闭合的残余窗口显式注释定性并用兜底机制(tenure 复核/持锁最终校验)收敛; (4) 竞态修复的测试必须含并发压力用例且经全量套件满载验证, 隔离绿不作数。边界: 完全闭合需 OS 级 flock/心跳续租, 引入前以上工程手段为上限。
+### Evidence
+- src/commands/plan.ts R-291 前置校验
+- src/utils/lock.ts takeoverStaleLock/tenure 复核 (R-296)
+- tests/lock.test.mjs 并发 stale 夺锁压力用例

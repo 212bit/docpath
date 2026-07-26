@@ -3,55 +3,16 @@ import { defineConfig } from 'tsup';
 /**
  * DocPath CLI 构建配置。
  *
- * entry 列表集中在此，供 build:clean / build:test / dev 三个脚本共用，
- * 避免在 package.json 中三重复制。clean / watch 仍由命令行 flag 控制：
+ * entry 为 glob 全量（R-295）：此前的手工 CLI_ENTRY 白名单要求「测试经 ../dist
+ * 导入的每个 src 文件必须列名，否则构建成功但测试 ERR_MODULE_NOT_FOUND」——
+ * 白名单与测试导入面的耦合随全量编译一并消亡。esm splitting 保持共享 chunk
+ * 单例语义。clean / watch 仍由命令行 flag 控制：
  *   - build:clean → tsup --clean
  *   - build:test  → tsup
  *   - dev         → tsup --watch
  */
-const CLI_ENTRY = [
-  'src/index.ts',
-  'src/engine/breadcrumb.ts',
-  'src/engine/state-machine.ts',
-  'src/engine/transitions.ts',
-  'src/engine/policy.ts',
-  'src/engine/backlog.ts',
-  'src/governance/decisions.ts',
-  'src/utils/pending-done.ts',
-  'src/utils/doc-parser.ts',
-  'src/utils/ui-gate.ts',
-  'src/utils/lock.ts',
-  'src/utils/workspace.ts',
-  'src/utils/structured-docs.ts',
-  'src/utils/task-files.ts',
-  'src/utils/session.ts',
-  'src/utils/git-closeout.ts',
-  'src/utils/merge-driver.ts',
-  'src/utils/payload.ts',
-  'src/utils/context-index.ts',
-  'src/utils/deliverables.ts',
-  'src/utils/roles.ts',
-  'src/utils/worktree.ts',
-  'src/utils/git-dirty-guard.ts',
-  'src/utils/config.ts',
-  'src/types/config.ts',
-  'src/utils/scan-existing-tree.ts',
-  'src/utils/scan-existing-arch.ts',
-  'src/utils/scan-existing-commands.ts',
-  'src/utils/scan-existing-claude.ts',
-  'src/utils/output-formatter.ts',
-  'src/utils/error-messages.ts',
-  'src/utils/error-helpers.ts',
-  'src/utils/contextual-help.ts',
-  'src/utils/agent-output.ts',
-  'src/utils/topic-synonyms.ts',
-  'src/utils/workspace-evidence.ts',
-  'src/commands/check/evidence.ts',
-  'src/commands/check/validators.ts',
-];
-
 export default defineConfig({
-  entry: CLI_ENTRY,
+  entry: ['src/**/*.ts'],
   format: ['esm'],
   outDir: 'dist',
 });
