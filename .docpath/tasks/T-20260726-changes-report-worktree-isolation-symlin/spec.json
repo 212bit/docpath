@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T13:09:55.995Z",
+    "updated_at": "2026-07-26T13:09:55.995Z",
+    "content_sha256": "7cdfe8b12e466c6b593c6f9293e0606e60e009b533dc68df52e6074c097fc256"
+  },
+  "task_id": "T-20260726-changes-report-worktree-isolation-symlin",
+  "backlog_id": "R-289",
+  "title": "T-20260726-changes-report-worktree-isolation-symlin - changes-report worktree_isolation 死功能: 重复 symlink 判定 + noise 分类语义违反 R-273 契约",
+  "generated_at": "2026-07-26T13:09:55.995Z",
+  "scope": {
+    "included": [
+      "changes-report worktree_isolation 死功能: 重复 symlink 判定 + noise 分类语义违反 R-273 契约"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: R-288 实施中发现 src/utils/changes-report.ts:152 存在 isDocpathWorktree 的完整重复实现，同样以「.docpath/backlog 与 .docpath/rules 是 symlink」识别 worktree——R-273 契约修正后永远 false，导致 changes --agent 的 worktree_isolation 报告整体成死功能（active 恒为 false）。\n- 目标: changes-report worktree_isolation 死功能: 重复 symlink 判定 + noise 分类语义违反 R-273 契约\n- 背景: 来自 backlog R-289\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "changes-report worktree_isolation 死功能: 重复 symlink 判定 + noise 分类语义违反 R-273 契约",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "全仓库仅存一份 worktree 判定实现（grep 断言），在真实 linked worktree 内判定为 true。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "worktree 内 changes --agent：backlog/rules/tasks-done 变更列为 commit-relevant，不再归类为 isolation noise。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "isolated 运行时文件仍归类为 noise，现有 changes 测试全绿，新增契约一致性测试。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-289 与任务 T-20260726-changes-report-worktree-isolation-symlin 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "R-288 实施中发现 src/utils/changes-report.ts:152 存在 isDocpathWorktree 的完整重复实现，同样以「.docpath/backlog 与 .docpath/rules 是 symlink」识别 worktree——R-273 契约修正后永远 false，导致 changes --agent 的 worktree_isolation 报告整体成死功能（active 恒为 false）。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

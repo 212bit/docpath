@@ -1,9 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 
@@ -290,46 +291,93 @@ describe('changes command', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('separates expected DocPath worktree isolation noise from commit-relevant files', () => {
-    const cwd = mkGitWorkspace();
-    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
-    mkdirSync(join(cwd, '.docpath', 'rules'), { recursive: true });
-    mkdirSync(join(cwd, '.docpath', 'tasks', 'done', 'T-OLD'), { recursive: true });
-    writeFileSync(join(cwd, '.docpath', 'backlog', 'backlog.md'), '# tracked backlog\n');
-    writeFileSync(join(cwd, '.docpath', 'rules', 'style.md'), '# tracked style\n');
-    writeFileSync(join(cwd, '.docpath', 'tasks', 'done', 'T-OLD', 'spec.md'), '# old spec\n');
-    git(cwd, 'add .docpath/backlog .docpath/rules .docpath/tasks/done');
-    git(cwd, 'commit -m tracked-docpath');
+  it('classifies merge-mediated resources as commit-relevant in a real linked git worktree (R-273/R-289)', () => {
+    const mainCwd = mkdtempSync(join(tmpdir(), 'dp-changes-wt-'));
+    try {
+      git(mainCwd, 'init');
+      git(mainCwd, 'config user.email test@example.com');
+      git(mainCwd, 'config user.name Test');
 
-    const shared = join(cwd, 'shared-docpath');
-    mkdirSync(join(shared, 'backlog'), { recursive: true });
-    mkdirSync(join(shared, 'rules'), { recursive: true });
-    writeFileSync(join(shared, 'backlog', 'backlog.md'), '# shared backlog\n');
-    writeFileSync(join(shared, 'rules', 'style.md'), '# shared style\n');
-    rmSync(join(cwd, '.docpath', 'backlog'), { recursive: true, force: true });
-    rmSync(join(cwd, '.docpath', 'rules'), { recursive: true, force: true });
-    rmSync(join(cwd, '.docpath', 'tasks', 'done', 'T-OLD'), { recursive: true, force: true });
-    symlinkSync(join(shared, 'backlog'), join(cwd, '.docpath', 'backlog'), 'dir');
-    symlinkSync(join(shared, 'rules'), join(cwd, '.docpath', 'rules'), 'dir');
+      // 对齐真实仓库契约：isolated 运行时 gitignored；merge-mediated 资源与派生视图 tracked
+      writeFileSync(join(mainCwd, '.gitignore'), '.docpath/workspace/\n.docpath/tasks/current/\n.docpath/journal/\n.worktrees/\n');
+      mkdirSync(join(mainCwd, '.docpath', 'backlog'), { recursive: true });
+      mkdirSync(join(mainCwd, '.docpath', 'rules'), { recursive: true });
+      mkdirSync(join(mainCwd, '.docpath', 'tasks', 'done', 'T-OLD'), { recursive: true });
+      writeFileSync(join(mainCwd, '.docpath', 'config.yaml'), 'project:\n  name: changes-wt-test\n');
+      writeFileSync(join(mainCwd, '.docpath', 'backlog', 'backlog.md'), '# tracked backlog\n');
+      writeFileSync(join(mainCwd, '.docpath', 'rules', 'style.md'), '# tracked style\n');
+      writeFileSync(join(mainCwd, '.docpath', 'tasks', 'done', 'T-OLD', 'spec.md'), '# old spec\n');
+      writeFileSync(join(mainCwd, '.docpath', 'docs.md'), '# derived docs view\n');
+      writeFileSync(join(mainCwd, 'README.md'), '# main\n');
+      git(mainCwd, 'add .');
+      git(mainCwd, 'commit -m initial');
 
-    mkdirSync(join(cwd, 'src'), { recursive: true });
-    writeFileSync(join(cwd, 'src', 'feature.ts'), 'export const feature = true;\n');
-    writeFileSync(join(cwd, '.docpath', 'workspace', 'review.md'), '# changed review\n');
+      // 真实 linked worktree: `.git` 为 gitdir 指针文件
+      const wtCwd = join(mainCwd, '.worktrees', 'wt');
+      git(mainCwd, `worktree add ${wtCwd} -b wt-branch`);
 
-    const parsed = JSON.parse(run('changes --json', cwd));
-    assert.equal(parsed.worktree_isolation.active, true);
-    assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/backlog/backlog.md'), true);
-    assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/rules/style.md'), true);
-    assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/tasks/done/T-OLD/spec.md'), true);
-    assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/workspace/review.md'), true);
-    assert.equal(parsed.worktree_isolation.commit_relevant_files.includes('src/feature.ts'), true);
+      // 独立 runtime（gitignored → isolated 契约成立，doctor 契约门禁可过）
+      mkdirSync(join(wtCwd, '.docpath', 'workspace'), { recursive: true });
+      mkdirSync(join(wtCwd, '.docpath', 'tasks', 'current'), { recursive: true });
+      writeFileSync(join(wtCwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+        level: 2,
+        task_id: 'T-CHANGES',
+        task_title: 'worktree changes',
+        phase: 'executing',
+        gate: 'review_pass',
+        current_step: 'S1',
+        started_at: '2026-07-26T00:00:00.000Z',
+        updated_at: '2026-07-26T00:00:00.000Z',
+      }, null, 2) + '\n');
+      writeFileSync(join(wtCwd, '.docpath', 'workspace', 'current.md'), '# current\n');
+      writeFileSync(join(wtCwd, '.docpath', 'workspace', 'breadcrumb.md'), '# breadcrumb\n');
 
-    const agent = run('changes --agent', cwd);
-    assert.match(agent, /worktree_isolation:/);
-    assert.match(agent, /expected_noise_count: [1-9]/);
-    assert.match(agent, /commit_relevant_files:/);
-    assert.match(agent, /src\/feature\.ts/);
-    rmSync(cwd, { recursive: true, force: true });
+      // merge-mediated 变更（应提交并随分支合并回 main）+ 派生视图变更（噪音）
+      writeFileSync(join(wtCwd, '.docpath', 'backlog', 'backlog.md'), '# updated backlog\n');
+      writeFileSync(join(wtCwd, '.docpath', 'rules', 'style.md'), '# updated style\n');
+      writeFileSync(join(wtCwd, '.docpath', 'tasks', 'done', 'T-OLD', 'spec.md'), '# updated old spec\n');
+      mkdirSync(join(wtCwd, 'src'), { recursive: true });
+      writeFileSync(join(wtCwd, 'src', 'feature.ts'), 'export const feature = true;\n');
+      writeFileSync(join(wtCwd, '.docpath', 'docs.md'), '# regenerated docs view\n');
+
+      const parsed = JSON.parse(run('changes --json', wtCwd));
+      assert.equal(parsed.worktree_isolation.active, true);
+      assert.equal(parsed.worktree_isolation.commit_relevant_files.includes('.docpath/backlog/backlog.md'), true);
+      assert.equal(parsed.worktree_isolation.commit_relevant_files.includes('.docpath/rules/style.md'), true);
+      assert.equal(parsed.worktree_isolation.commit_relevant_files.includes('.docpath/tasks/done/T-OLD/spec.md'), true);
+      assert.equal(parsed.worktree_isolation.commit_relevant_files.includes('src/feature.ts'), true);
+      assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/docs.md'), true);
+      assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/backlog/backlog.md'), false,
+        'merge-mediated backlog 变更绝不能被归类为隔离噪音（R-271 数据丢失模式）');
+      // isolated 运行时被 gitignore 隔离，根本不应出现在变更分组里
+      const groupedFiles = Object.values(parsed.groups).flat();
+      assert.equal(groupedFiles.some((path) => String(path).startsWith('.docpath/workspace/')), false);
+
+      const agent = run('changes --agent', wtCwd);
+      assert.match(agent, /worktree_isolation:/);
+      assert.match(agent, /expected_noise_count: [1-9]/);
+      assert.match(agent, /commit_relevant_files:/);
+      assert.match(agent, /src\/feature\.ts/);
+    } finally {
+      rmSync(mainCwd, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps a single worktree-detection implementation repo-wide (R-289 AC-1)', () => {
+    const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+    const srcRoot = join(repoRoot, 'src');
+    const legacyHits = [];
+    const definitionSites = [];
+    for (const entry of readdirSync(srcRoot, { recursive: true })) {
+      const rel = String(entry);
+      if (!rel.endsWith('.ts')) continue;
+      const content = readFileSync(join(srcRoot, rel), 'utf-8');
+      if (/\bisDocpathWorktree\b/.test(content)) legacyHits.push(rel);
+      if (/function isLinkedGitWorktree\b/.test(content)) definitionSites.push(rel);
+    }
+    assert.deepEqual(legacyHits, [], '旧 symlink 契约判定 isDocpathWorktree 必须归零');
+    assert.deepEqual(definitionSites, [join('utils', 'git-dirty-guard.ts')],
+      'worktree 判定实现必须唯一且位于 git-dirty-guard.ts');
   });
 
   it('reports ignored DocPath evidence with git add -f hints in all output modes', () => {

@@ -8,7 +8,8 @@
 import { resolveDocpathDir } from './file.js';
 import { readCurrentState } from './workspace.js';
 import { readLastCheckEvidence, readReviewEvidence } from './workspace-evidence.js';
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { isLinkedGitWorktree } from './git-dirty-guard.js';
 import { join } from 'node:path';
 import {
   buildForceAddCommand,
@@ -141,28 +142,18 @@ function classifyPath(path: string): ChangeGroupName {
   return 'other';
 }
 
-function isSymlink(path: string): boolean {
-  try {
-    return lstatSync(path).isSymbolicLink();
-  } catch {
-    return false;
-  }
-}
-
-function isDocpathWorktree(gitRoot: string): boolean {
-  return existsSync(join(gitRoot, '.git')) &&
-    isSymlink(join(gitRoot, '.docpath', 'backlog')) &&
-    isSymlink(join(gitRoot, '.docpath', 'rules'));
-}
-
+/**
+ * R-273 契约（R-289 修正）：merge-mediated 资源（backlog/、rules/、tasks/done/）
+ * 在 worktree 内的变更必须随分支提交并合并回 main，属 commit-relevant——
+ * 旧名单把它们归为噪音是 symlink（live-shared）时代的语义，会反向引导
+ * agent 不提交应合并的 backlog 变更（R-271 家族数据丢失模式）。
+ * 只有 isolated 运行时与派生视图算隔离噪音。
+ */
 function isExpectedWorktreeIsolationNoise(path: string): boolean {
-  return path.startsWith('.docpath/backlog/') ||
-    path === '.docpath/backlog' ||
-    path.startsWith('.docpath/rules/') ||
-    path === '.docpath/rules' ||
-    path === '.docpath/docs.md' ||
-    path.startsWith('.docpath/workspace/') ||
-    /^\.docpath\/tasks\/done\/T-[^/]+\/(?:spec|plan)\.(?:md|json)$/.test(path);
+  return path.startsWith('.docpath/workspace/') ||
+    path.startsWith('.docpath/tasks/current/') ||
+    path.startsWith('.docpath/journal/') ||
+    path === '.docpath/docs.md';
 }
 
 function parsePorcelainStatus(output: string): ChangedFile[] {
@@ -261,7 +252,7 @@ function resolveCloseoutContext(files: ChangedFile[], hasTask: boolean): Changes
 }
 
 function buildWorktreeIsolationReport(gitRoot: string, files: ChangedFile[], since: string | null): WorktreeIsolationReport {
-  const active = !since && isDocpathWorktree(gitRoot);
+  const active = !since && isLinkedGitWorktree(gitRoot);
   if (!active) {
     return {
       active: false,

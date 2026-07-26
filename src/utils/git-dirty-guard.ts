@@ -189,10 +189,13 @@ export function assertCleanWorktreeForNewTask(cwd: string, command: string, opti
   throw buildDirtyWorktreeError(command, report, blockedFiles, 'new-task');
 }
 
-function isLinkedGitWorktree(gitRoot: string): boolean {
-  // Linked worktree marker: `.git` is a *file* (gitdir pointer), not a directory.
-  // R-288: 判定必须与共享契约无关——旧实现依赖 backlog/rules 为 symlink，
-  // R-273 改为 tracked copy 后永远 false，worktree 放宽分支成死逻辑。
+/**
+ * Linked worktree marker: `.git` is a *file* (gitdir pointer), not a directory.
+ * R-288: 判定必须与共享契约无关——旧实现依赖 backlog/rules 为 symlink，
+ * R-273 改为 tracked copy 后永远 false，worktree 放宽分支成死逻辑。
+ * R-289: 全仓库唯一 worktree 判定实现，changes-report 等消费方一律复用此导出。
+ */
+export function isLinkedGitWorktree(gitRoot: string): boolean {
   try {
     return lstatSync(join(gitRoot, '.git')).isFile();
   } catch {

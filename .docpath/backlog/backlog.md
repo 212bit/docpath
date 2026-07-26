@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-26T13:09:55.499Z
+> 扫描时间: 2026-07-26T13:19:59.079Z
 
 ## 条目列表
 
@@ -10,7 +10,6 @@
 |----|-------|--------|----------|-------|------|
 | R-287 | spec/plan 结构化字段单真源: MD managed block 自动重渲染, desync 由自愈取代告警 | proposed | P0 | 3 |  |
 | R-259 | High-value reliability optimizations | dropped | P1 | 2 |  |
-| R-289 | changes-report worktree_isolation 死功能: 重复 symlink 判定 + noise 分类语义违反 R-273 契约 | proposed | P1 | 2 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-290 | CLAUDE.md Lifecycle 顺序与实现矛盾: 文档 agent enter 在 go 之前, CLI 在 planning 阶段 fail-loud 要求先 go | proposed | P2 | 2 |  |
 | R-291 | plan 命令写盘先于 FSM 校验: completed 任务 plan.json 被改写后才报 Illegal transition, 半执行污染 canonical 证据 | proposed | P2 | 2 |  |
