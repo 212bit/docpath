@@ -42,7 +42,6 @@ Prefer the installed slash commands over long pasted prompts:
 /docpath-go
 /docpath-journal
 /docpath-continue
-/docpath-compact
 /docpath-refine
 /docpath-reveal
 /docpath-context
@@ -84,8 +83,7 @@ tail range.
   health, and closeout evidence. Claude owns semantic recovery decisions:
   whether a drifted spec is a new task, an old task restore, or a user-confirmed
   reset.
-- If `/docpath-next`, `/docpath-status`, `docpath check`, or `docpath tasks
-  drift` reports task identity drift, do not repair it with `agent step`; choose
+- If `/docpath-next`, `/docpath-status`, `docpath check`, or `docpath task drift` reports task identity drift, do not repair it with `agent step`; choose
   a restore/reset/capture/promote path with explicit user intent.
 - `/docpath-next` / `docpath next --agent` is read-only and advisory. Use it at
   session start/resume or when state is uncertain; do not treat it as
