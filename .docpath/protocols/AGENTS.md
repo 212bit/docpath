@@ -90,6 +90,10 @@ Use lifecycle commands instead of manual state edits:
 
 ```bash
 docpath quick "Fix typo in docs"   # only for tiny low-risk changes
+```
+
+<!-- docpath:block lifecycle-commands -->
+```bash
 docpath go --step S1
 docpath agent enter   # optional session declaration; requires an executing step
 docpath agent step --step "S1" --status done
@@ -97,6 +101,7 @@ docpath check
 docpath agent done --step "<task>"
 docpath agent handoff
 ```
+<!-- /docpath:block -->
 
 Rules:
 

@@ -20,6 +20,8 @@ import { logger } from '../utils/logger.js';
 import { evaluateQuickScope } from '../engine/quick-guard.js';
 import { readActiveStructuredSpecDocument, canonicalTaskDir, healStructuredMarkdownDrift, writeActiveTaskFile } from '../utils/task-files.js';
 import { mutateCurrentState } from '../utils/workspace.js';
+import { syncProtocolBlocks } from '../utils/protocol-blocks.js';
+import { resolveTemplate } from '../utils/install-core.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 
 /**
@@ -122,6 +124,25 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     for (const file of ['spec.md', 'plan.md'] as const) {
       const healed = await healStructuredMarkdownDrift(docpathDir, current.task_id, file);
       if (healed.healed) logger.log(`🩹  ${file} 机器真理源漂移已自愈: ${healed.reason}`);
+    }
+  }
+
+  // R-300: 协议共享契约注入区一致性（templates/protocols/blocks 存在时生效）。
+  // fail-loud 指向 render 命令——gate 不写 templates 手写源（去写副作用原则）；
+  // root 副本 ↔ canonical 由 install manifest drift 治理，此处不重叠。
+  {
+    const templatesDir = await resolveTemplate();
+    const blockReport = await syncProtocolBlocks(templatesDir, { write: false });
+    if (blockReport.available) {
+      const stale = blockReport.files.filter((f) => f.updated.length > 0 || f.unknown.length > 0);
+      if (stale.length > 0) {
+        const detail = stale
+          .map((f) => `${f.file}: ${[...f.updated, ...f.unknown.map((n) => `${n}(缺块源)`)].join(', ')}`)
+          .join('; ');
+        logger.error(`❌  协议共享契约注入区与块源不一致: ${detail}`);
+        logger.log('    修复: docpath render --view protocols（重渲染注入区后提交 canonical）');
+        throw new Error('docpath check failed: protocol blocks drift');
+      }
     }
   }
 

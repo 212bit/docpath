@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T17:53:24.606Z",
+    "updated_at": "2026-07-26T17:53:24.606Z",
+    "content_sha256": "44cc39a65b1e65a6b6860058588975e13f4210423d3411d59ea5c90f54516aa1"
+  },
+  "task_id": "T-20260726-b-blocks-render-check",
+  "backlog_id": "R-300",
+  "title": "T-20260726-b-blocks-render-check - 协议共享契约段注入 (方案 B): blocks 源 + 标记注入 + render 渲染 + check 校验",
+  "generated_at": "2026-07-26T17:53:24.606Z",
+  "scope": {
+    "included": [
+      "协议共享契约段注入 (方案 B): blocks 源 + 标记注入 + render 渲染 + check 校验"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "2026-07-27 用户显式选定方案 B",
+    "decision_brief_markdown": "- 当前问题: R-297 完成层间单源后，flavor 间（CLAUDE/AGENTS/CODEX/OPENCODE）仍是同义异文的手工对齐关系。2026-07-27 勘察实证：worktree-isolation 契约段三份文本已分叉（CODEX/OPENCODE 为删减变体，R-273 反模式细节与 id 分配说明仅存于 CLAUDE 版）；lifecycle 命令序内核在 CLAUDE/CODEX 逐字相同、AGENTS 多一行前缀、OPENCODE 为分阶段变体。语义变更需人工同步 N 份的模式即 R-290 事故类。用户选定方案 B：共享契约段抽块注入，flavor 措辞保留手写。\n- 目标: 协议共享契约段注入 (方案 B): blocks 源 + 标记注入 + render 渲染 + check 校验\n- 背景: 来自 backlog R-300，Decision Brief 证据: 方案 B 为 R-297 方案比选中的既列选项, 用户 2026-07-27 显式选定; 勘察实证 worktree 段三份已分叉支撑必要性; check 校验采 fail-loud 而非自愈写盘(gate 去写副作用原则, 与 R-287 任务运行时视图自愈的边界区分)\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 2026-07-27 用户显式选定方案 B\n\n### 已有 Decision Brief (来自 backlog evidence)\n\n方案 B 为 R-297 方案比选中的既列选项, 用户 2026-07-27 显式选定; 勘察实证 worktree 段三份已分叉支撑必要性; check 校验采 fail-loud 而非自愈写盘(gate 去写副作用原则, 与 R-287 任务运行时视图自愈的边界区分)"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "协议共享契约段注入 (方案 B): blocks 源 + 标记注入 + render 渲染 + check 校验",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "两块源落地，注入区渲染幂等（连续 render 零 diff）；未知块名 fail-loud。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "覆盖面达成（lifecycle 3/4 + worktree 3/4，每 flavor ≥1 块），worktree 三份分叉收敛到块源全文。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "check 在注入区漂移时 fail-loud 并给出 render 命令；块源修改经 render 一次收敛全部注入点。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "全量套件绿；root 副本经 install 机制同步后 manifest 全绿。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "backlog 条目 R-300 与任务 T-20260726-b-blocks-render-check 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "R-297 完成层间单源后，flavor 间（CLAUDE/AGENTS/CODEX/OPENCODE）仍是同义异文的手工对齐关系。2026-07-27 勘察实证：worktree-isolation 契约段三份文本已分叉（CODEX/OPENCODE 为删减变体，R-273 反模式细节与 id 分配说明仅存于 CLAUDE 版）；lifecycle 命令序内核在 CLAUDE/CODEX 逐字相同、AGENTS 多一行前缀、OPENCODE 为分阶段变体。语义变更需人工同步 N 份的模式即 R-290 事故类。用户选定方案 B：共享契约段抽块注入，flavor 措辞保留手写。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

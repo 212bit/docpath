@@ -96,6 +96,7 @@ tail range.
 
 ## Lifecycle
 
+<!-- docpath:block lifecycle-commands -->
 ```bash
 docpath go --step S1
 docpath agent enter   # optional session declaration; requires an executing step
@@ -104,6 +105,7 @@ docpath check
 docpath agent done --step "<task>"
 docpath agent handoff
 ```
+<!-- /docpath:block -->
 
 Workflow:
 
@@ -184,6 +186,7 @@ docpath worktree remove feature-a
 
 ### Worktree Isolation
 
+<!-- docpath:block worktree-isolation -->
 Resources are split by sharing model (R-238 Option B, reaffirmed by R-273 —
 do NOT symlink tracked directories: git records the swap as mass deletion and
 merging it back deletes main's files):
@@ -206,6 +209,7 @@ rules, and completed tasks reconcile at merge. `docpath worktree doctor`
 reports each resource against its expected model (merge-mediated / isolated)
 and fails a symlinked backlog over tracked files (repair with
 `docpath worktree repair`).
+<!-- /docpath:block -->
 
 ### Commands
 

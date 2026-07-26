@@ -10,6 +10,8 @@ import {
 } from '../utils/task-files.js';
 import { readStructuredTaskMarkdownView, type StructuredTaskMarkdownFile } from '../utils/structured-docs.js';
 import { readLastCheckMarkdown, readReviewMarkdown } from '../utils/workspace-evidence.js';
+import { syncProtocolBlocks } from '../utils/protocol-blocks.js';
+import { resolveTemplate } from '../utils/install-core.js';
 
 const SUPPORTED_VIEWS = ['current', 'spec', 'plan', 'breadcrumb', 'check', 'review'] as const;
 
@@ -120,6 +122,26 @@ function renderSummary(cwd: string, rendered: RenderedView[]): string {
 export async function renderCommand(options: RenderOptions): Promise<void> {
   if (options.all && options.view) throw new Error('render 不能同时使用 --all 和 --view');
   if (!options.all && !options.view) throw new Error('render 需要 --view <name> 或 --all');
+
+  // R-300: protocols 视图——从 templates/protocols/blocks/ 重渲染 flavor canonical
+  // 的共享契约注入区。写 templates 源（非 JSON 派生视图），故不纳入 --all，仅显式调用。
+  if (options.view === 'protocols') {
+    const templatesDir = await resolveTemplate();
+    const report = await syncProtocolBlocks(templatesDir, { write: true });
+    if (!report.available) {
+      throw new Error('render --view protocols: 未找到 templates/protocols/blocks（仅 DocPath 开发仓库可用）');
+    }
+    const unknown = report.files.flatMap((f) => f.unknown.map((n) => `${f.file}:${n}`));
+    if (unknown.length > 0) {
+      throw new Error(`render --view protocols: 标记引用了不存在的块源: ${unknown.join(', ')}`);
+    }
+    for (const f of report.files) {
+      if (f.updated.length > 0) console.log(`🩹  ${f.file} 注入区已重渲染: ${f.updated.join(', ')}`);
+      else if (f.present.length > 0) console.log(`✓  ${f.file} 注入区已同步 (${f.present.join(', ')})`);
+    }
+    console.log('提示: root 副本经 install manifest 机制同步（docpath install --check）。');
+    return;
+  }
 
   if (options.all) {
     const rendered: RenderedView[] = [];

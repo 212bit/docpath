@@ -166,3 +166,70 @@ describe('render command', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 });
+
+describe('protocol shared contract blocks (R-300 方案 B)', () => {
+  let renderProtocolBlocks;
+  let syncProtocolBlocks;
+
+  const load = async () => {
+    if (!renderProtocolBlocks) {
+      ({ renderProtocolBlocks, syncProtocolBlocks } = await import('../dist/utils/protocol-blocks.js'));
+    }
+  };
+
+  it('renders injection regions idempotently and reports drift precisely', async () => {
+    await load();
+    const blocks = { demo: '共享契约正文\n多行内容' };
+    const doc = [
+      '# Flavor',
+      '',
+      '<!-- docpath:block demo -->',
+      '旧的分叉内容',
+      '<!-- /docpath:block -->',
+      '',
+      'flavor 专属叙述保留。',
+    ].join('\n');
+
+    const first = renderProtocolBlocks(doc, blocks);
+    assert.deepEqual(first.updated, ['demo'], '分叉注入区必须被重渲染');
+    assert.match(first.content, /共享契约正文\n多行内容/);
+    assert.match(first.content, /flavor 专属叙述保留。/, '标记外内容逐字保留');
+
+    const second = renderProtocolBlocks(first.content, blocks);
+    assert.deepEqual(second.updated, [], '重复渲染必须零变化（幂等）');
+  });
+
+  it('fails loud on missing close marker and reports unknown block names', async () => {
+    await load();
+    assert.throws(
+      () => renderProtocolBlocks('<!-- docpath:block broken -->\n内容无闭标记', { broken: 'x' }),
+      /缺少闭标记/,
+    );
+
+    const result = renderProtocolBlocks(
+      '<!-- docpath:block ghost -->\n原样保留\n<!-- /docpath:block -->',
+      {},
+    );
+    assert.deepEqual(result.unknown, ['ghost']);
+    assert.match(result.content, /原样保留/, '未知块不得改写内容');
+  });
+
+  it('repo canonical flavors carry the agreed block coverage and stay in sync', async () => {
+    await load();
+    const repoRoot = new URL('..', import.meta.url).pathname;
+    const report = await syncProtocolBlocks(join(repoRoot, 'templates'), { write: false });
+    assert.equal(report.available, true);
+
+    const byFile = Object.fromEntries(report.files.map((f) => [f.file, f]));
+    // 覆盖面契约（blocks/README）：lifecycle 3/4 + worktree 3/4，每 flavor ≥1 块
+    assert.deepEqual(byFile['CLAUDE.md'].present.sort(), ['lifecycle-commands', 'worktree-isolation']);
+    assert.deepEqual(byFile['CODEX.md'].present.sort(), ['lifecycle-commands', 'worktree-isolation']);
+    assert.deepEqual(byFile['AGENTS.md'].present, ['lifecycle-commands']);
+    assert.deepEqual(byFile['OPENCODE.md'].present, ['worktree-isolation']);
+    // 仓库内注入区必须与块源同步（check 门禁同款校验）
+    for (const f of report.files) {
+      assert.deepEqual(f.updated, [], `${f.file} 注入区与块源不得漂移`);
+      assert.deepEqual(f.unknown, [], `${f.file} 不得引用不存在的块源`);
+    }
+  });
+});
