@@ -170,3 +170,32 @@ describe('docpath runtime lifecycle', () => {
     assert.match(out, /下一步|建议|next/i, `got: ${out.slice(0, 100)}`);
   });
 });
+
+describe('trace rotation (R-302: 零丢失轮转)', () => {
+  let writeTraceEntry;
+
+  before(async () => {
+    ({ writeTraceEntry } = await import('../dist/utils/trace.js'));
+  });
+
+  it('archives dropped entries to a monthly file instead of discarding', async () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'dp-trace-rot-'));
+    const wsDir = path.join(cwd, '.docpath', 'workspace');
+    fs.mkdirSync(wsDir, { recursive: true });
+    fs.writeFileSync(path.join(cwd, '.docpath', 'config.yaml'), 'project:\n  name: trace-rot\ntrace: true\n');
+    const tracePath = path.join(wsDir, 'trace.jsonl');
+    const seeded = Array.from({ length: 2001 }, (_, i) => JSON.stringify({ ts: '2026-07-01T00:00:00.000Z', command: 'seed', seq: i })).join('\n');
+    fs.writeFileSync(tracePath, `${seeded}\n`);
+
+    await writeTraceEntry(cwd, { command: 'trigger', args: [], durationMs: 1, exitCode: 0 });
+
+    const remaining = fs.readFileSync(tracePath, 'utf-8').split('\n').filter(Boolean).length;
+    assert.ok(remaining <= 1001, `主文件应截到窗口内（实际 ${remaining}）`);
+    const month = new Date().toISOString().slice(0, 7);
+    const archive = path.join(wsDir, `trace-${month}.jsonl`);
+    assert.ok(fs.existsSync(archive), '裁掉的条目必须归档而非丢弃');
+    const archived = fs.readFileSync(archive, 'utf-8').split('\n').filter(Boolean).length;
+    assert.ok(archived >= 1000, `归档条数应为被裁量级（实际 ${archived}）`);
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+});

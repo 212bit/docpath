@@ -492,4 +492,26 @@ Alpha
     assert.equal(existsSync(notePath), false);
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('journal trims the global breadcrumb window (R-302: 接线既有 truncate 机制)', () => {
+    const cwd = mkWorkspace();
+    const jsonlPath = join(cwd, '.docpath', 'workspace', 'breadcrumb.jsonl');
+    const seeded = Array.from({ length: 260 }, (_, i) => JSON.stringify({
+      schema_version: 1,
+      kind: 'breadcrumb',
+      taskId: 'T-JOURNAL',
+      step: `S${i}`,
+      status: 'done',
+      timestamp: '2026-07-01T00:00:00.000Z',
+      context: `entry ${i}`,
+    })).join('\n');
+    writeFileSync(jsonlPath, `${seeded}\n`);
+
+    const out = run('journal --optional-archive skip', cwd);
+
+    assert.match(out, /全局 breadcrumb 已裁剪/);
+    const remaining = readFileSync(jsonlPath, 'utf-8').split('\n').filter(Boolean).length;
+    assert.ok(remaining <= 200, `全局窗口必须 ≤200（实际 ${remaining}）`);
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

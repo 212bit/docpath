@@ -9,7 +9,7 @@ import { existsSync } from 'fs';
 import { readFile, writeFile, rename, readdir, stat, rm } from 'fs/promises';
 import { join } from 'path';
 import { readCurrentState, readWorkspaceMeta, parsePlanTasks, type CurrentState } from '../utils/workspace.js';
-import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
+import { MAX_ENTRIES, readBreadcrumb, truncateBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 
 import { resolveDocpathDir } from '../utils/file.js';
 import { transitionWorkflow } from '../engine/transitions.js';
@@ -707,5 +707,17 @@ async function gcJournalDecisions(cwd: string, skipDecisionGc: boolean): Promise
     }
   } catch (e) {
     console.warn('⚠️  decisions.md 老化失败（非致命）:', (e as Error).message);
+  }
+
+  // R-302: 全局 breadcrumb 窗口裁剪——truncateBreadcrumb 机制自建成起从未被接线，
+  // 全局 jsonl 无界增长。任务级 canonical breadcrumb 保存完整历史，全局文件仅为
+  // 活跃工作窗口，journal（任务收口）是天然裁剪点。
+  try {
+    const trimmed = await truncateBreadcrumb(cwd);
+    if (trimmed > 0) {
+      console.log(`🧹  全局 breadcrumb 已裁剪 ${trimmed} 条（窗口上限 ${MAX_ENTRIES}；任务级历史在 canonical 目录不受影响）`);
+    }
+  } catch (e) {
+    console.warn('⚠️  breadcrumb 裁剪失败（非致命）:', (e as Error).message);
   }
 }

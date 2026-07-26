@@ -1,0 +1,9 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-breadcrumb-trace","step":"S1","status":"in_progress","context":"开始执行: 梳理 运行时工件轮转: 接线 breadcrumb 死机制 + trace 丢弃改月归档","timestamp":"2026-07-26T18:35:52.587Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-breadcrumb-trace","step":"S1","status":"done","context":"勘察修正: trace 有界但丢弃式; breadcrumb truncate 零调用方死机制; 顺序教训: 先 promote 后实现","timestamp":"2026-07-26T18:35:53.584Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-breadcrumb-trace","step":"S2","status":"in_progress","context":"开始执行: 实现 运行时工件轮转: 接线 breadcrumb 死机制 + trace 丢弃改月归档","timestamp":"2026-07-26T18:36:03.693Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-breadcrumb-trace","step":"S2","status":"done","context":"journal 接线 truncateBreadcrumb; trace 裁剪归档月文件","timestamp":"2026-07-26T18:36:04.655Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-breadcrumb-trace","step":"S3","status":"in_progress","context":"开始执行: 验证验收标准","timestamp":"2026-07-26T18:36:05.641Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-breadcrumb-trace","step":"S3","status":"done","context":"52/52 新旧断言绿","timestamp":"2026-07-26T18:36:06.521Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-breadcrumb-trace","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-07-26T18:37:35.420Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-breadcrumb-trace","step":"review","status":"done","context":"代码审查: 0 错误, 4 警告, 0 提示","timestamp":"2026-07-26T18:37:51.019Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-breadcrumb-trace","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-07-26T18:37:52.824Z"}

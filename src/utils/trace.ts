@@ -234,7 +234,13 @@ function truncateTraceFileIfNeeded(traceFile: string): void {
     const content = readFileSync(traceFile, 'utf-8');
     const lines = content.split('\n').filter(line => line.trim() !== '');
     if (lines.length > 2000) {
+      // R-302: 丢弃式截断改零丢失轮转——裁掉的旧条目归档到月文件
+      // （decisions 月轮转同款模式；trace 历史曾直接支撑 R-299 证据决策）。
+      const dropped = lines.slice(0, lines.length - 1000);
       const truncated = lines.slice(-1000);
+      const month = new Date().toISOString().slice(0, 7);
+      const archiveFile = traceFile.replace(/\.jsonl$/, `-${month}.jsonl`);
+      appendFileSync(archiveFile, dropped.join('\n') + '\n', 'utf-8');
       writeFileSync(traceFile, truncated.join('\n') + '\n', 'utf-8');
     }
   } catch {

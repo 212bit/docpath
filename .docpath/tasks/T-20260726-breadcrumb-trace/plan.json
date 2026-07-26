@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T18:36:06.526Z",
+    "updated_at": "2026-07-26T18:36:06.526Z",
+    "content_sha256": "61b0c47831076da9e4d3bb2d00f38631d37e282092293c153e66649fe3344807"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-26T18:36:06.526Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 运行时工件轮转: 接线 breadcrumb 死机制 + trace 丢弃改月归档",
+      "description": "根据 spec 明确 FR-1: 运行时工件轮转: 接线 breadcrumb 死机制 + trace 丢弃改月归档 的实现边界和验收口径。",
+      "acceptance": "AC-1: journal 后全局 breadcrumb ≤200 条且输出裁剪报告；任务级 canonical 不受影响。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 运行时工件轮转: 接线 breadcrumb 死机制 + trace 丢弃改月归档",
+      "description": "在现有架构内完成 FR-1: 运行时工件轮转: 接线 breadcrumb 死机制 + trace 丢弃改月归档 的代码与文档更新。",
+      "acceptance": "FR-1 运行时工件轮转: 接线 breadcrumb 死机制 + trace 丢弃改月归档 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: journal 后全局 breadcrumb ≤200 条且输出裁剪报告；任务级 canonical 不受影响。；AC-2: trace 超窗后旧条目落月归档文件，主文件截回窗口，零丢弃。；AC-3: 全量套件绿。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-302 与任务 T-20260726-breadcrumb-trace 建立双向关联",
+      "acceptance": "AC-1: journal 后全局 breadcrumb ≤200 条且输出裁剪报告；任务级 canonical 不受影响。；AC-2: trace 超窗后旧条目落月归档文件，主文件截回窗口，零丢弃。；AC-3: 全量套件绿。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-302 与任务 T-20260726-breadcrumb-trace 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}
