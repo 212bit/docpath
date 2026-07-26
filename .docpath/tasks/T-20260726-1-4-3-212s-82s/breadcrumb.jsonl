@@ -1,0 +1,12 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"S1","status":"in_progress","context":"开始执行: 梳理 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s)","timestamp":"2026-07-26T18:25:22.991Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"S1","status":"done","context":"实验定案: 并发4 三轮全绿 82s","timestamp":"2026-07-26T18:25:23.829Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"S2","status":"in_progress","context":"开始执行: 实现 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s)","timestamp":"2026-07-26T18:25:24.455Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"S1","status":"in_progress","context":"开始执行: 梳理 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s)","timestamp":"2026-07-26T18:25:35.697Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"S1","status":"done","context":"实验定案: 并发4 三轮全绿 82s vs 串行 212s","timestamp":"2026-07-26T18:25:36.480Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"S2","status":"in_progress","context":"开始执行: 实现 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s)","timestamp":"2026-07-26T18:25:37.119Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"S2","status":"done","context":"package.json 并发 1→4","timestamp":"2026-07-26T18:25:54.965Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"S3","status":"in_progress","context":"开始执行: 验证验收标准","timestamp":"2026-07-26T18:25:55.726Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"S3","status":"done","context":"并发 4 三轮 669/669 实证在案; check 门禁将以并发跑全量自证","timestamp":"2026-07-26T18:25:56.618Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-07-26T18:27:27.949Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-07-26T18:27:43.031Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-1-4-3-212s-82s","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-07-26T18:27:44.118Z"}

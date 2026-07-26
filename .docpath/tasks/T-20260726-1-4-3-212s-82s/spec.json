@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T18:25:21.255Z",
+    "updated_at": "2026-07-26T18:25:21.255Z",
+    "content_sha256": "826d76c68d9ca7186a4b4ba5bf932a8369dcaf13d2c6326bc8ae84d1c3c7e763"
+  },
+  "task_id": "T-20260726-1-4-3-212s-82s",
+  "backlog_id": "R-301",
+  "title": "T-20260726-1-4-3-212s-82s - 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s)",
+  "generated_at": "2026-07-26T18:25:21.255Z",
+  "scope": {
+    "included": [
+      "门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s)"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 二次 review P1-a：全量套件 212s 串行，check 高频门禁每次全额支付（单工程期实测累计 ~35 分钟纯等待）。--test-concurrency=1 为历史保守设置；测试用例自 R-273 时代起均已使用独立 mkdtempSync 工作区。2026-07-27 实测 --test-concurrency=4 连续 3 轮 669/669 全绿，82s（2.6×加速）。\n- 目标: 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s)\n- 背景: 来自 backlog R-301\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s)",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "pnpm test 并发 4 运行，全量绿；耗时 <100s（对比串行 212s）。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "连续 3 轮无 flake 实证在案。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "backlog 条目 R-301 与任务 T-20260726-1-4-3-212s-82s 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "二次 review P1-a：全量套件 212s 串行，check 高频门禁每次全额支付（单工程期实测累计 ~35 分钟纯等待）。--test-concurrency=1 为历史保守设置；测试用例自 R-273 时代起均已使用独立 mkdtempSync 工作区。2026-07-27 实测 --test-concurrency=4 连续 3 轮 669/669 全绿，82s（2.6×加速）。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

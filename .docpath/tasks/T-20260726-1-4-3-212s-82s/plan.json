@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T18:25:56.624Z",
+    "updated_at": "2026-07-26T18:25:56.624Z",
+    "content_sha256": "562ccd9ba98b923b3dadb906b72f0a17556dde3a05b5b383496e4fdaa80ca5a9"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-26T18:25:56.624Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s)",
+      "description": "根据 spec 明确 FR-1: 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s) 的实现边界和验收口径。",
+      "acceptance": "AC-1: pnpm test 并发 4 运行，全量绿；耗时 <100s（对比串行 212s）。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s)",
+      "description": "在现有架构内完成 FR-1: 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s) 的代码与文档更新。",
+      "acceptance": "FR-1 门禁延迟: 测试并发 1→4 (3 轮实证全绿, 212s→82s) 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: pnpm test 并发 4 运行，全量绿；耗时 <100s（对比串行 212s）。；AC-2: 连续 3 轮无 flake 实证在案。；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-301 与任务 T-20260726-1-4-3-212s-82s 建立双向关联",
+      "acceptance": "AC-1: pnpm test 并发 4 运行，全量绿；耗时 <100s（对比串行 212s）。；AC-2: 连续 3 轮无 flake 实证在案。；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-301 与任务 T-20260726-1-4-3-212s-82s 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}
