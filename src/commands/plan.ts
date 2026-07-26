@@ -10,7 +10,7 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
-import { transitionWorkflow } from '../engine/transitions.js';
+import { listValidWorkflowEvents, preferredWorkflowCommand, transitionWorkflow } from '../engine/transitions.js';
 import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { readActiveAnalysisSummary, writeActiveTaskFile } from '../utils/task-files.js';
@@ -339,6 +339,18 @@ export async function planCommand(options: PlanOptions): Promise<void> {
   }
 
   const current = await readCurrentState(cwd);
+
+  // R-291: 写盘前先用 FSM 单源校验 plan.ready 合法性（fail-loud，零写入）。
+  // 此前顺序是「先写 plan.md/plan.json 再转移」，completed 任务上误跑 plan 会先
+  // 污染 canonical 计划证据才报非法转移（R-279 同族的半执行模式）。
+  // transitionWorkflow 的持锁校验保留为最终防线，这里只是把校验提到写盘之前。
+  if (current && !listValidWorkflowEvents(current).some((item) => item.event === 'plan.ready')) {
+    throw new Error(
+      `docpath plan: 当前 phase=${current.phase} 不允许生成计划（plan.ready 非法转移，已拒绝写盘）。\n` +
+      `    建议下一步: ${preferredWorkflowCommand(current)}`,
+    );
+  }
+
   await assertMajorChangeGateReady(cwd, docpathDir, current?.task_id, 'plan');
 
   // 已有计划时同步 active alias；无计划时生成保守草案，避免 planning 状态缺 plan.md。

@@ -194,3 +194,55 @@ describe('plan/breadcrumb sync', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 });
+
+describe('plan command FSM precondition (R-291)', () => {
+  it('refuses to write plan files when plan.ready is illegal for the current phase', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-plan-gate-'));
+    const dp = join(cwd, '.docpath');
+    mkdirSync(join(dp, 'workspace'), { recursive: true });
+    mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
+    mkdirSync(join(dp, 'tasks', 'T-DONE'), { recursive: true });
+    writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: plan-gate-test\n');
+    writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
+      level: 1,
+      task_id: 'T-DONE',
+      task_title: 'Done task',
+      phase: 'completed',
+      gate: 'review_pass',
+      current_step: 'done',
+      started_at: '2026-07-26T00:00:00.000Z',
+      updated_at: '2026-07-26T00:00:00.000Z',
+    }, null, 2));
+    writeFileSync(join(dp, 'workspace', 'current.md'), '# Current\n');
+    const spec = '# T-DONE - Done task\n\n## 2. 需求清单\n\n### 功能需求\n- [ ] FR-1: 已完成需求\n';
+    const plan = '## 执行计划\n\n### S1: old step\n- [x] S1: old step\n\n## Checklist\n- [x] S1\n';
+    const planJson = '{"kind":"plan","note":"must stay byte-identical"}\n';
+    for (const dir of ['current', 'T-DONE']) {
+      writeFileSync(join(dp, 'tasks', dir, 'spec.md'), spec);
+      writeFileSync(join(dp, 'tasks', dir, 'plan.md'), plan);
+      writeFileSync(join(dp, 'tasks', dir, 'plan.json'), planJson);
+    }
+
+    try {
+      let code = 0;
+      let out = '';
+      try {
+        out = execSync(`node ${BIN} plan --cwd ${cwd}`, { cwd, encoding: 'utf-8', timeout: 20000 });
+      } catch (error) {
+        code = error.status ?? 1;
+        out = `${error.stdout?.toString() || ''}${error.stderr?.toString() || ''}`;
+      }
+
+      assert.notEqual(code, 0, 'completed 阶段的 plan 必须以非零码失败');
+      assert.match(out, /不允许生成计划/);
+      assert.match(out, /建议下一步/);
+      // 零写入：canonical 与 current 的计划证据必须逐字节保持原样（R-291 半执行污染回归）
+      for (const dir of ['current', 'T-DONE']) {
+        assert.equal(readFileSync(join(dp, 'tasks', dir, 'plan.md'), 'utf-8'), plan, `${dir}/plan.md 不得被改写`);
+        assert.equal(readFileSync(join(dp, 'tasks', dir, 'plan.json'), 'utf-8'), planJson, `${dir}/plan.json 不得被改写`);
+      }
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+});

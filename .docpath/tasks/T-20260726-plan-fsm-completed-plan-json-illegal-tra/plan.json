@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T14:23:27.861Z",
+    "updated_at": "2026-07-26T14:23:27.861Z",
+    "content_sha256": "388bb6a4b9091afb6f6b9e9f4923e03571c2a953b209928b7601baea06d195b7"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-26T14:23:27.861Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 plan 命令写盘先于 FSM 校验: completed 任务 plan.json 被改写后才报 Illegal transition, 半执行污染 canonical 证据",
+      "description": "根据 spec 明确 FR-1: plan 命令写盘先于 FSM 校验: completed 任务 plan.json 被改写后才报 Illegal transition, 半执行污染 canonical 证据 的实现边界和验收口径。",
+      "acceptance": "AC-1: 非法阶段（completed 等）运行 docpath plan 退出码非零，plan.md/plan.json 与运行前逐字节一致（零写入）。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 plan 命令写盘先于 FSM 校验: completed 任务 plan.json 被改写后才报 Illegal transition, 半执行污染 canonical 证据",
+      "description": "在现有架构内完成 FR-1: plan 命令写盘先于 FSM 校验: completed 任务 plan.json 被改写后才报 Illegal transition, 半执行污染 canonical 证据 的代码与文档更新。",
+      "acceptance": "FR-1 plan 命令写盘先于 FSM 校验: completed 任务 plan.json 被改写后才报 Illegal transition, 半执行污染 canonical 证据 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 非法阶段（completed 等）运行 docpath plan 退出码非零，plan.md/plan.json 与运行前逐字节一致（零写入）。；AC-2: 错误信息含非法原因与 FSM 派生的建议下一步命令。；AC-3: 合法阶段 plan 行为不变，--dry-run 不受影响；现有测试全绿并新增回归测试。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-291 与任务 T-20260726-plan-fsm-completed-plan-json-illegal-tra 建立双向关联",
+      "acceptance": "AC-1: 非法阶段（completed 等）运行 docpath plan 退出码非零，plan.md/plan.json 与运行前逐字节一致（零写入）。；AC-2: 错误信息含非法原因与 FSM 派生的建议下一步命令。；AC-3: 合法阶段 plan 行为不变，--dry-run 不受影响；现有测试全绿并新增回归测试。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-291 与任务 T-20260726-plan-fsm-completed-plan-json-illegal-tra 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}
