@@ -10,27 +10,39 @@ import { resolveDocpathDir } from './file.js';
 import { DEFAULT_ARTIFACT_CONFIG, mergeArtifactConfig, mergeDocumentScanPaths, type ArtifactConfig, type DocPathConfig } from '../types/config.js';
 
 /**
- * 读取 DocPath 配置文件
+ * 读取 DocPath 配置 —— 唯一出口（R-294 合一）。
  *
- * 优先级：项目 .docpath/config.json > 全局 ~/.docpath/config.json > 默认值
+ * 真源与优先级：config.yaml（init 写入的项目配置）优先，config.json（历史/
+ * 特性配置如 artifacts、review_skill_gate）按顶层字段回退填充；冲突 yaml 胜
+ * （rules 既定惯例：消费方优先 yaml、需要兼容时回退 json）。
+ * 此前 readDocPathConfig 只读 json，init 写入 yaml 的字段经它永远不可见
+ * （S5 事故类）；各消费方按字段自选真源的分裂就此收敛。
  */
 export async function readDocPathConfig(cwd: string): Promise<DocPathConfig> {
   const docpathDir = await resolveDocpathDir(cwd);
+
+  let jsonConfig: DocPathConfig = {};
   const projectConfigPath = join(docpathDir, 'config.json');
-
-  let config: DocPathConfig = {};
-
-  // 读取项目配置
   if (existsSync(projectConfigPath)) {
     try {
-      const content = await readFile(projectConfigPath, 'utf-8');
-      config = JSON.parse(content) as DocPathConfig;
+      jsonConfig = JSON.parse(await readFile(projectConfigPath, 'utf-8')) as DocPathConfig;
     } catch (error) {
       console.warn(`Warning: Failed to parse ${projectConfigPath}:`, error);
     }
   }
 
-  return config;
+  let yamlConfig: DocPathConfig = {};
+  const yamlPath = join(docpathDir, 'config.yaml');
+  if (existsSync(yamlPath)) {
+    try {
+      yamlConfig = (parseYaml(await readFile(yamlPath, 'utf-8')) as DocPathConfig | null) ?? {};
+    } catch (error) {
+      console.warn(`Warning: Failed to parse ${yamlPath}:`, error);
+    }
+  }
+
+  // 顶层字段浅合并：yaml 胜，json 回退填充。
+  return { ...jsonConfig, ...yamlConfig };
 }
 
 /**
@@ -65,20 +77,9 @@ function normalizeDeclaredScanPaths(value: unknown): string[] | null {
  *
  * docs scan 用它决定是否扫外部路径：返回 null 表示未声明该字段，
  * 此时 docs scan 必须保持现状（仅扫 .docpath/，NFR-1 向后兼容）。
- * 优先读 init 写入的 .docpath/config.yaml，回退兼容 .docpath/config.json。
+ * R-294：字段级 yaml 特判退役，统一走 readDocPathConfig（yaml 优先 + json 回退）。
  */
 export async function readDeclaredDocumentScanPaths(cwd: string): Promise<string[] | null> {
-  const docpathDir = await resolveDocpathDir(cwd);
-  const yamlPath = join(docpathDir, 'config.yaml');
-  if (existsSync(yamlPath)) {
-    try {
-      const parsed = parseYaml(await readFile(yamlPath, 'utf-8')) as { document_scan_paths?: unknown } | null;
-      const declared = normalizeDeclaredScanPaths(parsed?.document_scan_paths);
-      if (declared) return declared;
-    } catch (error) {
-      console.warn(`Warning: Failed to parse ${yamlPath}:`, error);
-    }
-  }
   const config = await readDocPathConfig(cwd);
   return normalizeDeclaredScanPaths(config.document_scan_paths);
 }

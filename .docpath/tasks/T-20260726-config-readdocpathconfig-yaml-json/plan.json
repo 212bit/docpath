@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T15:04:29.770Z",
+    "updated_at": "2026-07-26T15:04:29.770Z",
+    "content_sha256": "0076efa8ae6219bec942c0a7b026454785e80389c328671c27d35eb4d846fd80"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-26T15:04:29.770Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 config 读取合一: readDocPathConfig 统一 yaml 优先+json 回退, 根除按字段选真源",
+      "description": "根据 spec 明确 FR-1: config 读取合一: readDocPathConfig 统一 yaml 优先+json 回退, 根除按字段选真源 的实现边界和验收口径。",
+      "acceptance": "AC-1: yaml 与 json 并存时，顶层同名字段 yaml 胜；json 独有字段仍可见；yaml 独有字段（init 写入类）经 readDocPathConfig 可见（S5 事故类根除）。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 config 读取合一: readDocPathConfig 统一 yaml 优先+json 回退, 根除按字段选真源",
+      "description": "在现有架构内完成 FR-1: config 读取合一: readDocPathConfig 统一 yaml 优先+json 回退, 根除按字段选真源 的代码与文档更新。",
+      "acceptance": "FR-1 config 读取合一: readDocPathConfig 统一 yaml 优先+json 回退, 根除按字段选真源 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: yaml 与 json 并存时，顶层同名字段 yaml 胜；json 独有字段仍可见；yaml 独有字段（init 写入类）经 readDocPathConfig 可见（S5 事故类根除）。；AC-2: readDeclaredDocumentScanPaths 行为不变（既有测试全绿），实现改走统一出口、无字段级特判。；AC-3: 仅 config.json 存在（历史工作区）行为完全不变；review_skill_gate/artifacts 既有 fixture 测试全绿。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-294 与任务 T-20260726-config-readdocpathconfig-yaml-json 建立双向关联",
+      "acceptance": "AC-1: yaml 与 json 并存时，顶层同名字段 yaml 胜；json 独有字段仍可见；yaml 独有字段（init 写入类）经 readDocPathConfig 可见（S5 事故类根除）。；AC-2: readDeclaredDocumentScanPaths 行为不变（既有测试全绿），实现改走统一出口、无字段级特判。；AC-3: 仅 config.json 存在（历史工作区）行为完全不变；review_skill_gate/artifacts 既有 fixture 测试全绿。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-294 与任务 T-20260726-config-readdocpathconfig-yaml-json 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

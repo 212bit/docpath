@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T15:01:22.857Z",
+    "updated_at": "2026-07-26T15:01:22.857Z",
+    "content_sha256": "8425de38e6845ff256995fa016e9d7da04b960badffeaf5db58f02780defb7a1"
+  },
+  "task_id": "T-20260726-config-readdocpathconfig-yaml-json",
+  "backlog_id": "R-294",
+  "title": "T-20260726-config-readdocpathconfig-yaml-json - config 读取合一: readDocPathConfig 统一 yaml 优先+json 回退, 根除按字段选真源",
+  "generated_at": "2026-07-26T15:01:22.857Z",
+  "scope": {
+    "included": [
+      "config 读取合一: readDocPathConfig 统一 yaml 优先+json 回退, 根除按字段选真源"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 2026-07-26 架构 review 定性的配置双真源：readDocPathConfig（src/utils/config.ts:17-34）只读 .docpath/config.json，而 init 只写 config.yaml——经 json 读取器消费的新字段永远看不到 init 写入的值（rules gotcha 记录的 S5 事故类）。目前仅 readDeclaredDocumentScanPaths 打了 yaml 优先补丁，形成「按字段各选真源」。全仓库审计（2026-07-26）：config.json 直接读取仅剩 readDocPathConfig 一处，其余消费方（trace/stats/config 命令/brainstorm/resume/quick-guard/project-registry）均已 yaml 化——修复面集中单函数。\n- 目标: config 读取合一: readDocPathConfig 统一 yaml 优先+json 回退, 根除按字段选真源\n- 背景: 来自 backlog R-294\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "config 读取合一: readDocPathConfig 统一 yaml 优先+json 回退, 根除按字段选真源",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "yaml 与 json 并存时，顶层同名字段 yaml 胜；json 独有字段仍可见；yaml 独有字段（init 写入类）经 readDocPathConfig 可见（S5 事故类根除）。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "readDeclaredDocumentScanPaths 行为不变（既有测试全绿），实现改走统一出口、无字段级特判。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "仅 config.json 存在（历史工作区）行为完全不变；review_skill_gate/artifacts 既有 fixture 测试全绿。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-294 与任务 T-20260726-config-readdocpathconfig-yaml-json 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "2026-07-26 架构 review 定性的配置双真源：readDocPathConfig（src/utils/config.ts:17-34）只读 .docpath/config.json，而 init 只写 config.yaml——经 json 读取器消费的新字段永远看不到 init 写入的值（rules gotcha 记录的 S5 事故类）。目前仅 readDeclaredDocumentScanPaths 打了 yaml 优先补丁，形成「按字段各选真源」。全仓库审计（2026-07-26）：config.json 直接读取仅剩 readDocPathConfig 一处，其余消费方（trace/stats/config 命令/brainstorm/resume/quick-guard/project-registry）均已 yaml 化——修复面集中单函数。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}
