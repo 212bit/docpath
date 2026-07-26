@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-26T18:45:34.894Z
+> 扫描时间: 2026-07-26T18:46:16.097Z
 
 ## 条目列表
 
@@ -13,6 +13,7 @@
 | R-292 | plan 命令写盘先于 FSM 校验, completed 任务 plan.json 被改写后才报非法转移 | dropped | P2 | 2 |  |
 | R-296 | R-293 残余: stale 夺锁的判定-执行 TOCTOU, rename 可误夺判定后新获取的活锁(全量套件 4/5 实测) | dropped | P2 | 2 |  |
 | R-249 | go/promote 的 dirty worktree 拒绝未区分 DocPath 自身产物，频繁误拦 | dropped | P3 | 1 |  |
+| R-304 | 模块拆分: task-files 漂移消解域迁出 + formatters Context Injection 迁出 (机械) | proposed | P3 | 1 |  |
 
 ## 用途说明
 
