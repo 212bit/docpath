@@ -381,7 +381,8 @@ async function writeInitialTemplates(cwd: string): Promise<void> {
   const breadcrumbContent = await loadTemplate(join(TEMPLATES_DIR, 'breadcrumb.template.md'));
   await writeFileSafe(join(cwd, '.docpath/workspace/breadcrumb.md'), breadcrumbContent);
   console.log('  ✓  workspace/breadcrumb.md (面包屑)');
-  await writeFileSafe(join(cwd, 'CLAUDE.md'), await loadTemplate(join(TEMPLATES_DIR, 'CLAUDE.md')));
+  // R-297: 协议文件唯一手写层为 templates/protocols/。
+  await writeFileSafe(join(cwd, 'CLAUDE.md'), await loadTemplate(join(TEMPLATES_DIR, 'protocols', 'CLAUDE.md')));
   console.log('  ✓  CLAUDE.md (灵魂协议文件)');
   const templates = ['architecture.template.md', 'style.template.md', 'spec.template.md', 'plan.template.md', 'task.template.md', 'check.template.md', 'review.template.md'];
   for (const tmpl of templates) await writeSpecTemplate(cwd, tmpl);

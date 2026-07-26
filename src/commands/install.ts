@@ -606,7 +606,8 @@ async function installProtocolFile(
   force: boolean
 ): Promise<void> {
   const filePath = join(targetDir, filename);
-  const tplPath = await resolveTemplate(filename);
+  // R-297: 协议根文件从唯一手写层 templates/protocols/ 渲染（参数化源）。
+  const tplPath = await resolveTemplate('protocols', filename);
   let content = await readFile(tplPath, 'utf-8');
   content = content.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
   const isCustomizable = isLocallyCustomizableInstallAsset({ path: filename });

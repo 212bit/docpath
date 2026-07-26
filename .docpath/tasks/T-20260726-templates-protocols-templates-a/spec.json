@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T16:11:50.809Z",
+    "updated_at": "2026-07-26T16:11:50.809Z",
+    "content_sha256": "68ff7743a4b08ab0fa8f0364165ccb117567040a46490cabda59a9c8f8940c16"
+  },
+  "task_id": "T-20260726-templates-protocols-templates-a",
+  "backlog_id": "R-297",
+  "title": "T-20260726-templates-protocols-templates-a - 协议单源: templates/protocols 唯一手写层, 删除 templates 根层重复副本 (方案 A 收敛)",
+  "generated_at": "2026-07-26T16:11:50.809Z",
+  "scope": {
+    "included": [
+      "协议单源: templates/protocols 唯一手写层, 删除 templates 根层重复副本 (方案 A 收敛)"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "2026-07-27 用户于方案比选中选定方案 A（层间单源，推荐项）",
+    "decision_brief_markdown": "- 当前问题: 协议契约存在 root/templates/templates-protocols/.docpath-protocols 多层载体，R-273/R-277/R-290 均为「修一层漏一层」事故。2026-07-27 勘察：root↔templates 已被 install manifest drift 治理；无人治理的是 templates/<flavor>.md ↔ templates/protocols/<flavor>.md 层，实锤三处漂移（protocols/OPENCODE 缺 71 行 worktree 章节、templates/AGENTS 写死 \"docpath\" 会漏入其它项目、CODEX 无 protocols 副本）。flavor 间为措辞重写（9% 重叠）非复制，不在本任务范围。\n- 目标: 协议单源: templates/protocols 唯一手写层, 删除 templates 根层重复副本 (方案 A 收敛)\n- 背景: 来自 backlog R-297，Decision Brief 证据: 方案 A(层间单源) 用户 2026-07-27 选定; 管线精读后收敛为删层: root↔templates 已有 install drift 治理, 真空层直接消灭优于新增 sync 机制; 备选 B(共享段注入)留后续, C(全量单源)勘察数据不支持\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 2026-07-27 用户于方案比选中选定方案 A（层间单源，推荐项）\n\n### 已有 Decision Brief (来自 backlog evidence)\n\n方案 A(层间单源) 用户 2026-07-27 选定; 管线精读后收敛为删层: root↔templates 已有 install drift 治理, 真空层直接消灭优于新增 sync 机制; 备选 B(共享段注入)留后续, C(全量单源)勘察数据不支持"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "协议单源: templates/protocols 唯一手写层, 删除 templates 根层重复副本 (方案 A 收敛)",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "手写层唯一（templates/protocols/ 4 flavor 参数化），templates 根层协议文件删除+防复辟断言。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "install 各 target 资产等价迁移（AGENTS 写死名修复），install/doctor 测试全绿。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "protocols/OPENCODE 补齐 worktree 章节，R-290 修正在 4 份源保持。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "init 与 install 同源；全量套件绿。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "backlog 条目 R-297 与任务 T-20260726-templates-protocols-templates-a 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "协议契约存在 root/templates/templates-protocols/.docpath-protocols 多层载体，R-273/R-277/R-290 均为「修一层漏一层」事故。2026-07-27 勘察：root↔templates 已被 install manifest drift 治理；无人治理的是 templates/<flavor>.md ↔ templates/protocols/<flavor>.md 层，实锤三处漂移（protocols/OPENCODE 缺 71 行 worktree 章节、templates/AGENTS 写死 \"docpath\" 会漏入其它项目、CODEX 无 protocols 副本）。flavor 间为措辞重写（9% 重叠）非复制，不在本任务范围。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

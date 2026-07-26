@@ -34,6 +34,17 @@ describe('build scripts', () => {
     assert.deepEqual(missing, [], 'src 全部模块必须编译进 dist');
   });
 
+  it('protocol carriers stay single-sourced under templates/protocols (R-297)', () => {
+    const flavors = ['CLAUDE.md', 'AGENTS.md', 'CODEX.md', 'OPENCODE.md'];
+    for (const flavor of flavors) {
+      // 防复辟：templates 根层不得再出现 flavor 协议副本（曾是 R-277 事故层）
+      assert.equal(existsSync(join(repoRoot, 'templates', flavor)), false,
+        `templates/${flavor} 不得复辟——唯一手写层是 templates/protocols/`);
+      assert.equal(existsSync(join(repoRoot, 'templates', 'protocols', flavor)), true,
+        `templates/protocols/${flavor} 必须存在（canonical 源）`);
+    }
+  });
+
   it('tsup config carries no hand-maintained entry whitelist', () => {
     const config = readFileSync(join(repoRoot, 'tsup.config.ts'), 'utf-8');
     assert.match(config, /entry: \['src\/\*\*\/\*\.ts'\]/);

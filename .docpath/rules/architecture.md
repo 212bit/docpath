@@ -75,3 +75,11 @@
 - src/commands/plan.ts R-291 前置校验
 - src/utils/lock.ts takeoverStaleLock/tenure 复核 (R-296)
 - tests/lock.test.mjs 并发 stale 夺锁压力用例
+
+## pattern: 协议契约手写层已收敛为 templates/protocols/ 唯一 canonical, 全链清扫面随之缩减
+- rationale: R-297 落地: templates 根层 4 份 flavor 副本删除(曾是 R-273/R-277/R-290 修一层漏一层的事故层, 且实锤 3 处漂移: protocols/OPENCODE 缺 71 行 worktree 章节/templates/AGENTS 写死项目名会泄漏进其它项目/CODEX 无 canonical), install/init 全部改读 protocols 参数化源, 防复辟断言在 build-scripts 测试固化。
+触发: 修正协议/契约文档(CLAUDE/AGENTS/CODEX/OPENCODE 语义)。期望行为: 只改 templates/protocols/<flavor>.md 一处; 本仓库 root 副本经 install 渲染刷新(manifest drift 治理), .docpath/protocols 经 install protocols group 分发; flavor 间为措辞重写关系, 语义变更仍需人工核对 4 份 flavor 的对应段落(共享段注入见后续方案 B 条目)。边界: R-277 规则的清扫面从「根副本+docs+templates+protocols」缩减为「protocols canonical + flavor 间语义对齐」; templates 根层出现 flavor 协议文件即为复辟, 测试会拦。
+### Evidence
+- templates/protocols/ 4 flavor canonical
+- src/utils/install-core.ts:211 / install.ts:609 / init.ts:384 读点
+- tests/build-scripts.test.mjs R-297 防复辟断言

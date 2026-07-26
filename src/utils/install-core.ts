@@ -208,7 +208,8 @@ export async function buildExpectedInstallAssets(options: {
   const assets: InstallAssetManifestEntry[] = [];
 
   for (const filename of entryProtocolFiles(options.target)) {
-    const template = await readFile(await resolveTemplate(filename), 'utf-8');
+    // R-297: 协议根文件从唯一手写层 templates/protocols/ 渲染（参数化源）。
+    const template = await readFile(await resolveTemplate('protocols', filename), 'utf-8');
     const content = template.replace(/\{\{PROJECT_NAME\}\}/g, options.projectName);
     assets.push(manifestEntry(filename, `protocol:${filename}`, content));
   }

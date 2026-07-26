@@ -110,6 +110,77 @@ docpath agent handoff
   default.
 - Use `docpath agent handoff` when another session may resume the task.
 
+## Worktree Concurrent Development
+
+DocPath supports true concurrent development via Git Worktrees. Use when multiple
+agents need to develop different features simultaneously without conflicts.
+
+### When to Use Worktrees
+
+Use `docpath worktree create <name>` when:
+- User explicitly requests concurrent development
+- Developing Feature A while another agent/session develops Feature B
+- Need complete isolation (separate workspace/, tasks/, state)
+
+Do NOT use worktrees for:
+- Single-agent sequential development (use normal workflow)
+- Quick testing or verification (use session isolation with DOCPATH_SESSION)
+
+### Worktree Workflow
+
+```bash
+# Create worktree for Feature A
+docpath worktree create feature-a
+cd .worktrees/feature-a
+
+# Set session ID (optional but recommended)
+export DOCPATH_SESSION=opencode
+
+# Standard DocPath workflow
+docpath backlog promote R-xxx
+docpath plan
+docpath go --step S1
+# ... develop ...
+docpath agent step --step S1 --status done
+docpath check
+git commit
+
+# Merge back to main
+cd ../../
+git merge feature-a
+docpath worktree remove feature-a
+```
+
+### Worktree Isolation
+
+Resources are split by sharing model (R-238 Option B, reaffirmed by R-273 —
+do NOT symlink tracked directories: git records the swap as mass deletion and
+merging it back deletes main's files):
+
+**Merge-mediated** (tracked copy — shared via branch merges, not live):
+- `.docpath/backlog/` - requirement pool; each worktree gets a snapshot copy,
+  reconciled on merge. Backlog id allocation is single-pool at the CLI layer.
+- `.docpath/rules/` - rules; snapshot per worktree, reconciled on merge
+- `.docpath/tasks/done/` - completed-task archives; reconciled on merge
+
+**Isolated** (independent per worktree — gitignored runtime):
+- `.docpath/workspace/` - each worktree has its own state.json
+- `.docpath/tasks/current/` - each worktree has its own active task runtime
+- `.docpath/journal/` - independent archives
+
+**Result**: Each worktree runs as an independent DocPath workspace; backlog,
+rules, and completed tasks reconcile at merge. `docpath worktree doctor`
+reports each resource against its expected model and fails a symlinked backlog
+over tracked files (repair with `docpath worktree repair`).
+
+### Commands
+
+- `docpath worktree list` - list all worktrees
+- `docpath worktree create <name>` - create new worktree
+- `docpath worktree remove <name>` - delete worktree
+
+See `docs/features/worktree-workflow.md` for detailed usage guide.
+
 ## Config
 
 Config: `.docpath/config.yaml`
