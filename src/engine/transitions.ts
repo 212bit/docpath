@@ -11,6 +11,7 @@ import { normalizeWorkflowProfile, type WorkflowProfile } from './workflow-profi
 
 export type WorkflowEvent =
   | 'task.created'
+  | 'task.reopened'
   | 'plan.ready'
   | 'step.started'
   | 'step.completed'
@@ -53,6 +54,7 @@ export interface WorkflowTransitionMetadata {
 
 const EVENT_RECOVERY_COMMAND: Record<WorkflowEvent, string> = {
   'task.created': 'docpath refine 或 docpath plan',
+  'task.reopened': 'docpath go --step <id>',
   'plan.ready': 'docpath go --step S1',
   'step.started': 'docpath next --agent',
   'step.completed': 'docpath next --agent',
@@ -74,12 +76,16 @@ const EVENT_TARGETS: Record<WorkflowEvent, TransitionTarget> = {
   // requiredGate 进一步约束 previous.gate：phase 级 from 拦不住「check_fail 仍进 review」，
   // 故评审/归档事件显式声明可接受的前置门禁，未通过检查者在 FSM 层即被拒。
   'step.completed': { phase: 'executing', gate: 'none', from: ['executing', 'checking'] },
-  'check.passed': { phase: 'checking', gate: 'check_pass', from: ['planning', 'executing', 'checking', 'completed'] },
-  'check.failed': { phase: 'checking', gate: 'check_fail', from: ['executing', 'checking', 'reviewing', 'completed'] },
+  // R-298: 门禁事件禁入 completed——已完成任务的重入必须走显式 task.reopened，
+  // 否则 completed 态可被 check/review 静默重入（R-279/R-291 半执行污染家族的 FSM 层残口）。
+  // task.created（创建新任务）与 journal.archived（幂等重归档）保留 completed 来源，属合法语义。
+  'task.reopened': { phase: 'executing', gate: 'none', from: ['completed'] },
+  'check.passed': { phase: 'checking', gate: 'check_pass', from: ['planning', 'executing', 'checking'] },
+  'check.failed': { phase: 'checking', gate: 'check_fail', from: ['executing', 'checking', 'reviewing'] },
   // 评审前置：检查必须已通过（check_pass），或在评审内重入（review_pass/review_fail）。
   'review.passed': { phase: 'reviewing', gate: 'review_pass', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
   'review.skipped': { phase: 'reviewing', gate: 'review_skipped', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_skipped'] },
-  'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing', 'completed'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
+  'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
   // 归档前置：评审已通过（review_pass），或 quick profile 跳过评审后检查已通过（check_pass）。
   // 仍拒绝 check_fail / review_fail——失败态不得归档。
   'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'], requiredGate: ['review_pass', 'review_skipped', 'check_pass'] },
@@ -211,6 +217,7 @@ export function constrainRecommendedCommandToWorkflow(
 
 const DEFAULT_STEP: Record<WorkflowEvent, string> = {
   'task.created': '任务已创建，下一步: 编写或细化 spec',
+  'task.reopened': '任务已重开，修复后重新走 check/review/journal 闭环',
   'plan.ready': '计划已就绪，下一步: 开始执行',
   'step.started': '步骤执行中',
   'step.completed': '步骤已完成，继续下一步',

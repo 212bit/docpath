@@ -77,26 +77,45 @@ describe('transitionWorkflow', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('records a failed review rerun from completed state', async () => {
-    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
-    await transitionWorkflow(cwd, 'review.failed', { currentStep: 'review rerun failed' });
-    const persisted = readState(cwd);
+  it('rejects gate events on completed state without an explicit reopen (R-298)', async () => {
+    for (const event of ['review.failed', 'check.failed', 'check.passed']) {
+      const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+      await assert.rejects(
+        transitionWorkflow(cwd, event, { currentStep: 'should not run' }),
+        /Illegal workflow transition/,
+        `${event} 不得从 completed 静默重入`,
+      );
+      const persisted = readState(cwd);
+      assert.equal(persisted.phase, 'completed', `${event} 被拒后状态必须原样保留`);
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 
+  it('reopens a completed task via the explicit task.reopened event (R-298)', async () => {
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    const reopened = await transitionWorkflow(cwd, 'task.reopened', { currentStep: '任务已重开' });
+    assert.equal(reopened.phase, 'executing');
+    assert.equal(reopened.gate, 'none');
+
+    // 重开后完整门禁流转恢复：check → review 可正常推进
+    await transitionWorkflow(cwd, 'check.passed', { currentStep: 'recheck ok' });
+    await transitionWorkflow(cwd, 'review.passed', { currentStep: 'rereview ok' });
+    const persisted = readState(cwd);
     assert.equal(persisted.phase, 'reviewing');
-    assert.equal(persisted.gate, 'review_fail');
-    assert.equal(persisted.current_step, 'review rerun failed');
+    assert.equal(persisted.gate, 'review_pass');
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('records a failed re-check from completed state', async () => {
-    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
-    await transitionWorkflow(cwd, 'check.failed', { currentStep: 're-check failed' });
-    const persisted = readState(cwd);
+  it('keeps task.created and journal.archived legal from completed (new task / idempotent re-archive)', async () => {
+    const created = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    const next = await transitionWorkflow(created, 'task.created', { taskId: 'T-NEXT', taskTitle: 'next task' });
+    assert.equal(next.phase, 'drafting');
+    rmSync(created, { recursive: true, force: true });
 
-    assert.equal(persisted.phase, 'checking');
-    assert.equal(persisted.gate, 'check_fail');
-    assert.equal(persisted.current_step, 're-check failed');
-    rmSync(cwd, { recursive: true, force: true });
+    const archived = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
+    const rearchived = await transitionWorkflow(archived, 'journal.archived', { currentStep: 're-archive' });
+    assert.equal(rearchived.phase, 'completed');
+    rmSync(archived, { recursive: true, force: true });
   });
 
   it('writes journal.archived as completed/review_pass', async () => {

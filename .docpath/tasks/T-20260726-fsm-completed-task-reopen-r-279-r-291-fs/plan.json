@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T16:47:07.224Z",
+    "updated_at": "2026-07-26T16:47:07.224Z",
+    "content_sha256": "f96fd151f97e78ad41fcdc87f660dd06fcd315ae9f49f1453a4a09b8126ac9e6"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-26T16:47:07.224Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口)",
+      "description": "根据 spec 明确 FR-1: FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口) 的实现边界和验收口径。",
+      "acceptance": "AC-1: completed 态直发 check.passed/check.failed/review.failed 均被 FSM 拒绝（fail-loud 含建议命令）。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口)",
+      "description": "在现有架构内完成 FR-1: FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口) 的代码与文档更新。",
+      "acceptance": "FR-1 FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口) 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: completed 态直发 check.passed/check.failed/review.failed 均被 FSM 拒绝（fail-loud 含建议命令）。；AC-2: docpath task reopen 将 completed 任务转入 executing 并记录 breadcrumb；重开后 check/review/journal 全流程可走通。；AC-3: task.created（新任务）与 journal.archived（重归档）的 completed 来源行为不变；全量套件绿。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-298 与任务 T-20260726-fsm-completed-task-reopen-r-279-r-291-fs 建立双向关联",
+      "acceptance": "AC-1: completed 态直发 check.passed/check.failed/review.failed 均被 FSM 拒绝（fail-loud 含建议命令）。；AC-2: docpath task reopen 将 completed 任务转入 executing 并记录 breadcrumb；重开后 check/review/journal 全流程可走通。；AC-3: task.created（新任务）与 journal.archived（重归档）的 completed 来源行为不变；全量套件绿。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-298 与任务 T-20260726-fsm-completed-task-reopen-r-279-r-291-fs 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

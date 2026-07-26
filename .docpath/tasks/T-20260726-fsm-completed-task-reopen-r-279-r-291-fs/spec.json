@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T16:34:04.522Z",
+    "updated_at": "2026-07-26T16:34:04.522Z",
+    "content_sha256": "38d1494c7586d18949880ec6a6930607d873c01264dcecfa3823d26332e08341"
+  },
+  "task_id": "T-20260726-fsm-completed-task-reopen-r-279-r-291-fs",
+  "backlog_id": "R-298",
+  "title": "T-20260726-fsm-completed-task-reopen-r-279-r-291-fs - FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口)",
+  "generated_at": "2026-07-26T16:34:04.522Z",
+  "scope": {
+    "included": [
+      "FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口)"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "用户批准架构 review 建议路线, continue 授权按序实施",
+    "decision_brief_markdown": "- 当前问题: FSM 门禁事件 check.passed/check.failed/review.failed 的 from 数组含 'completed'，已完成任务可被门禁动作静默重入（transitions.ts:79-84）。这是 R-279（completed 上 go/agent step 半执行污染 breadcrumb）与 R-291（completed 上 plan 污染计划证据）同族事故的 FSM 层残口：命令层已逐个加守卫，但状态机本身仍宣告重入合法，tests/transitions.test.mjs:80/91 甚至固化了该行为。2026-07-26 架构 review 建议（用户已确认方向）：去掉门禁事件的 completed 来源，重入必须走显式 reopen 事件。\n- 目标: FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口)\n- 背景: 来自 backlog R-298，Decision Brief 证据: 2026-07-26 架构 review P2-10 建议(加显式 task.reopened, from 去 completed), 用户批准 review 路线并以 continue 授权; task.created/journal.archived 保留 completed 来源(新任务/幂等重归档为合法语义)\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 用户批准架构 review 建议路线, continue 授权按序实施\n\n### 已有 Decision Brief (来自 backlog evidence)\n\n2026-07-26 架构 review P2-10 建议(加显式 task.reopened, from 去 completed), 用户批准 review 路线并以 continue 授权; task.created/journal.archived 保留 completed 来源(新任务/幂等重归档为合法语义)"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口)",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "completed 态直发 check.passed/check.failed/review.failed 均被 FSM 拒绝（fail-loud 含建议命令）。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "docpath task reopen 将 completed 任务转入 executing 并记录 breadcrumb；重开后 check/review/journal 全流程可走通。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "task.created（新任务）与 journal.archived（重归档）的 completed 来源行为不变；全量套件绿。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-298 与任务 T-20260726-fsm-completed-task-reopen-r-279-r-291-fs 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "FSM 门禁事件 check.passed/check.failed/review.failed 的 from 数组含 'completed'，已完成任务可被门禁动作静默重入（transitions.ts:79-84）。这是 R-279（completed 上 go/agent step 半执行污染 breadcrumb）与 R-291（completed 上 plan 污染计划证据）同族事故的 FSM 层残口：命令层已逐个加守卫，但状态机本身仍宣告重入合法，tests/transitions.test.mjs:80/91 甚至固化了该行为。2026-07-26 架构 review 建议（用户已确认方向）：去掉门禁事件的 completed 来源，重入必须走显式 reopen 事件。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

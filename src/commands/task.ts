@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
+import { transitionWorkflow } from '../engine/transitions.js';
 import { listBacklogItems, setBacklogStatus } from '../engine/backlog.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { mutateCurrentState, readCurrentState, type CurrentState } from '../utils/workspace.js';
@@ -116,6 +117,31 @@ async function taskReset(options: TaskCommandOptions): Promise<void> {
   console.log('📌  工作流已回到 idle');
 }
 
+/**
+ * R-298: completed 任务的唯一合法重入路径。门禁事件（check/review）已禁入
+ * completed，重开必须显式声明意图并记录 breadcrumb，之后重走完整闭环。
+ */
+async function taskReopen(options: TaskCommandOptions): Promise<void> {
+  const current = await readCurrentState(options.cwd);
+  if (!current?.task_id || current.phase !== 'completed') {
+    throw new Error(
+      `docpath task reopen: 仅 completed 任务可重开（当前 phase=${current?.phase || 'idle'}）。` +
+      '活跃任务请直接继续；无任务请走 backlog promote / quick。',
+    );
+  }
+  const next = await transitionWorkflow(options.cwd, 'task.reopened', {
+    currentStep: `任务已重开: ${current.task_id}`,
+  });
+  await writeBreadcrumb(options.cwd, {
+    taskId: current.task_id,
+    step: 'task.reopened',
+    status: 'done',
+    context: '完成态任务经显式 reopen 回到 executing（R-298）',
+  });
+  console.log(`✅  已重开任务: ${current.task_id}（phase: ${next.phase}）`);
+  console.log('📌  修复完成后请重新走 check → review → journal 闭环');
+}
+
 export async function taskCommand(options: TaskCommandOptions): Promise<void> {
   const action = options.action?.trim().toLowerCase();
   switch (action) {
@@ -125,7 +151,10 @@ export async function taskCommand(options: TaskCommandOptions): Promise<void> {
     case 'reset':
       await taskReset(options);
       return;
+    case 'reopen':
+      await taskReopen(options);
+      return;
     default:
-      throw new Error(`docpath task: unsupported action ${action || '(empty)'}（允许: abort|reset）`);
+      throw new Error(`docpath task: unsupported action ${action || '(empty)'}（允许: abort|reset|reopen）`);
   }
 }

@@ -57,7 +57,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
       });
     });
 
-  cli.command('task <action>', '当前任务生命周期管理: abort | reset')
+  cli.command('task <action>', '当前任务生命周期管理: abort | reset | reopen')
     .option('--cwd <path>', '项目目录')
     .action(async (action: string, options: { cwd?: string }) => {
       await taskCommand({
