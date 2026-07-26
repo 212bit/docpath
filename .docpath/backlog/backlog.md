@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-26T19:22:41.435Z
+> 扫描时间: 2026-07-26T19:51:11.885Z
 
 ## 条目列表
 
@@ -15,11 +15,11 @@
 | R-311 | install --check 不读安装元数据 target 默认 universal, 非 universal 项目产生跨 target 假漂移 (SynapBuddy 实测) | proposed | P2 | 2 |  |
 | R-312 | 非 force install 静默跳过差异文件仍输出完成庆祝, 无跳过清单 (SynapBuddy 实测: 三份陈旧协议副本被掩盖) | proposed | P2 | 2 |  |
 | R-249 | go/promote 的 dirty worktree 拒绝未区分 DocPath 自身产物，频繁误拦 | dropped | P3 | 1 |  |
-| R-306 | 比例刻度加陡: level-1 任务 S 步骤仪式压缩 (评估: 虚构仪式占三四成) | proposed | P3 | 2 |  |
-| R-307 | 小 diff skill 证据豁免/自动化 (评估: 证据动作一半是仪式) | proposed | P3 | 2 |  |
-| R-308 | 三处重复记录收敛: note/commit/journal 单一来源化 | proposed | P3 | 2 |  |
-| R-309 | lease/handoff 层数据裁决式去留 (评估: 24 任务零使用恒空) | proposed | P3 | 2 |  |
-| R-310 | quick 通道可发现性: next/promote 主动建议轻量路径 | proposed | P3 | 2 |  |
+| R-306 | 比例刻度加陡: level-1 任务 S 步骤仪式压缩 (评估: 虚构仪式占三四成) | dropped | P3 | 2 |  |
+| R-307 | 小 diff skill 证据豁免/自动化 (评估: 证据动作一半是仪式) | dropped | P3 | 2 |  |
+| R-308 | 三处重复记录收敛: note/commit/journal 单一来源化 | dropped | P3 | 2 |  |
+| R-309 | lease/handoff 层数据裁决式去留 (评估: 24 任务零使用恒空) | dropped | P3 | 2 |  |
+| R-310 | quick 通道可发现性: next/promote 主动建议轻量路径 | dropped | P3 | 2 |  |
 
 ## 用途说明
 
