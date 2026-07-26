@@ -9,7 +9,7 @@
 
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
-import { resolveDocpathDir, writeFileSafe } from '../utils/file.js';
+import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { reviewCommand } from './review.js';
@@ -18,7 +18,7 @@ import { join } from 'path';
 
 import { logger } from '../utils/logger.js';
 import { evaluateQuickScope } from '../engine/quick-guard.js';
-import { readActiveStructuredSpecDocument, canonicalTaskDir } from '../utils/task-files.js';
+import { readActiveStructuredSpecDocument, canonicalTaskDir, healStructuredMarkdownDrift, writeActiveTaskFile } from '../utils/task-files.js';
 import { mutateCurrentState } from '../utils/workspace.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 
@@ -115,6 +115,16 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
   let current = await readCurrentState(cwd);
 
+  // R-287 方案 A：gate 入口先收敛 active task 的 spec/plan md/json 漂移
+  //（json 真源回写勾选态 + 吸收 md 内容），使「任意 gate 自动收敛」成立。
+  // 任务身份漂移会在写入层 fail-loud，自愈不掩盖身份问题。
+  if (current?.task_id) {
+    for (const file of ['spec.md', 'plan.md'] as const) {
+      const healed = await healStructuredMarkdownDrift(docpathDir, current.task_id, file);
+      if (healed.healed) logger.log(`🩹  ${file} 机器真理源漂移已自愈: ${healed.reason}`);
+    }
+  }
+
   if (current && current.task_id && (current.workflow_profile === 'quick' || current.workflow_profile === 'instant')) {
     let spec: Awaited<ReturnType<typeof readActiveStructuredSpecDocument>> = null;
     try {
@@ -166,9 +176,10 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
               if (frLines.length >= 3) break;
             }
             const newSpec = renderStandardSpec(current.task_id, title, frLines);
-            await writeFileSafe(specPath, newSpec);
-            logger.log('📝  已自动将 spec.md 升级为 standard 格式（保留原标题和需求摘要）。');
-            logger.log('   请运行 `docpath write-spec` 将变更同步到 spec.json。');
+            // R-287：md+json 原子双写（writeActiveTaskFile），门禁不再制造漂移、
+            // 也不再要求 agent 手动 write-spec 同步。
+            await writeActiveTaskFile(docpathDir, current.task_id, 'spec.md', newSpec);
+            logger.log('📝  已自动将 spec.md 升级为 standard 格式并同步 spec.json 真源（保留原标题和需求摘要）。');
             logger.log('');
           }
         } catch {

@@ -24,14 +24,24 @@
 
 ### 3.2 自愈原语 healStructuredMarkdownDrift(docpathDir, taskId, file)
 
-1. `detectStructuredMarkdownHashDrift` 无漂移 → no-op。
+> 实施中修正（S2 实测）：json 不持久化 markdown 全文快照（仅存 sha），
+> 「快照恢复」实为字段全量渲染；且 current/canonical 双副本的方向裁决必须
+> 与既有 file-drift/3-way 合并机制划清边界，否则会覆盖对侧独立编辑。
+
+0. **方向裁决（四象限）**：current 与 canonical md 内容互异时，按双侧「已验证同步」
+   态（json 存在且与同目录 md sha 一致）裁决——仅 (canonical 已验证, current 未验证)
+   = 基线+新编辑 → 继续自愈吸收 current；其余三象限（双未验证/仅 current 验证/双验证）
+   方向不可裁决 → no-op 让位 file-drift/3-way 机制，自愈绝不抢跑覆盖。
+1. canonical 与 current 均无 sha 漂移 → no-op。
 2. json 缺失/损坏 → 直接 `writeActiveTaskFile(md)` 重建 json（吸收路径）。
-3. 正常漂移：
+3. md 完全缺失 json 的全部已知条目（整体掏空/陈旧视图）→ 吸收会把破坏传播进
+   json（门禁/scope 全被默认值覆盖），改按 json 真源字段全量渲染恢复；原 md 剩余
+   文本零丢失保留在文末「自愈保留的原 Markdown 内容」小节，由人工取舍。
+4. 常规漂移：
    a. 对 md 按 json 真源做 **marker 强制**：已知 id 的 checklist 行勾选态回写为 json 状态（复用 markPlanStep 的行级正则模式；spec 的 FR/NFR/AC 同法）；
    b. md 中 json 没有的条目/文本一律保留；
    c. 结果经 `writeActiveTaskFile` 双写落盘 → 重解析吸收 md 侧内容进 json、sha 同步归零漂移；
-   d. 返回 healed 报告（被强制回写的 marker 列表 + 被吸收的新增条目 id），调用方 loud 输出。
-   零内容丢失（只动 marker 字符），故无需备份文件。
+   d. 返回 healed 报告（被强制回写的 marker 列表 + md 侧移除被吸收的条目 id），调用方 loud 输出。
 
 ### 3.3 检测点改造（AC-2/AC-4）
 

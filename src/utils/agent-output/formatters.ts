@@ -1140,12 +1140,14 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
       drift.jsonPath.replace(`${context.docpathDir}/`, '.docpath/'),
     ])));
     return {
-      next_action: `检测到 ${first.file} 与 ${first.file.replace('.md', '.json')} 机器真理源不同步：${formatStructuredMarkdownHashDrift(first).split('\n')[0]}`,
+      // R-287：next/status 保持只读，不在 advisory 路径写盘；漂移由下一次
+      // check/review 门禁自愈收敛，此处仅指路。手动控制路径（write-spec/plan）仍合法。
+      next_action: `检测到 ${first.file} 与 ${first.file.replace('.md', '.json')} 机器真理源不同步（下一次 check/review 将自愈收敛；如需手动控制可用 ${command}）：${formatStructuredMarkdownHashDrift(first).split('\n')[0]}`,
       recommended_command: command,
       required_context: required,
       required_files: required,
       must_update: required.filter((path) => path.endsWith('.md') || path.endsWith('.json')),
-      exit_criteria: 'Markdown 与 JSON source.content_sha256 一致；后续 next/status 不再使用过期机器真理源',
+      exit_criteria: 'Markdown 与 JSON source.content_sha256 一致（gate 自愈或手动同步后）；后续 next/status 不再使用过期机器真理源',
     };
   }
 

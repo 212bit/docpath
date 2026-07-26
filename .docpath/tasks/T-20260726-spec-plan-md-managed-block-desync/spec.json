@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T13:27:40.930Z",
+    "updated_at": "2026-07-26T13:27:40.930Z",
+    "content_sha256": "1570c2cdb8b1c74c545e237066e81bc95935f442382188a8ebdc38deb93ad768"
+  },
+  "task_id": "T-20260726-spec-plan-md-managed-block-desync",
+  "backlog_id": "R-287",
+  "title": "T-20260726-spec-plan-md-managed-block-desync - spec/plan 结构化字段单真源: MD managed block 自动重渲染, desync 由自愈取代告警",
+  "generated_at": "2026-07-26T13:27:40.930Z",
+  "scope": {
+    "included": [
+      "spec/plan 结构化字段单真源: MD managed block 自动重渲染, desync 由自愈取代告警"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "API / 数据契约",
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "2026-07-26 用户确认方案 A（JSON 结构化真源 + managed 段落自愈渲染, 叙述保留人写）; 落地细化为 marker 强制+内容吸收见 analysis",
+    "decision_brief_markdown": "- 当前问题: 2026-07-26 架构 review 定性：spec/plan 的 JSON+MD 双源靠 agent 自觉同步，是一系列已归档问题（write-plan 后 plan.md/plan.json 哈希反复不一致、review 检测到 spec 不同步仅提示不修复、步骤 done 后底部 checklist 未同步勾选、docs-index 陈旧告警无自愈路径）的共同根因。最典型的自伤在 check.ts:140-170：quick→standard 升级时 check 改 state.json、重生成 spec.md，然后打印「请运行 docpath write-spec 同步到 spec.json」——门禁命令自己制造双源漂移，再把弥合责任交还 agent。write-spec/write-plan/write-design/write-journal/write-analysis/write-review-skill 六个命令本质是手动同步泵。\n- 目标: spec/plan 结构化字段单真源: MD managed block 自动重渲染, desync 由自愈取代告警\n- 背景: 来自 backlog R-287，Decision Brief 证据: 方案A(JSON 结构化真源+受管段落自愈渲染,叙述保留人写), 用户 2026-07-26 确认; 落地细化为「状态 marker 由 json 强制+内容由 md 吸收」消除整段重渲染内容丢失隐患; 备选 B(MD 真源) C(全派生) 未采纳; 不改 write-* 入口/FSM; next/status 保持只读; 回滚=heal 调用点逐点 revert; 详见 .docpath/backlog/analysis/R-287-analysis.md\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 2026-07-26 用户确认方案 A（JSON 结构化真源 + managed 段落自愈渲染, 叙述保留人写）; 落地细化为 marker 强制+内容吸收见 analysis\n\n### 已有 Decision Brief (来自 backlog evidence)\n\n方案A(JSON 结构化真源+受管段落自愈渲染,叙述保留人写), 用户 2026-07-26 确认; 落地细化为「状态 marker 由 json 强制+内容由 md 吸收」消除整段重渲染内容丢失隐患; 备选 B(MD 真源) C(全派生) 未采纳; 不改 write-* 入口/FSM; next/status 保持只读; 回滚=heal 调用点逐点 revert; 详见 .docpath/backlog/analysis/R-287-analysis.md"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "spec/plan 结构化字段单真源: MD managed block 自动重渲染, desync 由自愈取代告警",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "结构化字段写路径唯一（JSON）；MD 对应段落由渲染器幂等生成，重复渲染零 diff。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "check/review 全部 desync 检测点改为自动重渲染，不再输出「请手动运行 write-* 同步」类提示。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "人工叙述段落在重渲染后逐字保留。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "崩溃/中断场景（JSON 已写、MD 未写）下，下一次任意 gate 命令自动收敛；一致性回归测试覆盖。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "backlog 条目 R-287 与任务 T-20260726-spec-plan-md-managed-block-desync 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "2026-07-26 架构 review 定性：spec/plan 的 JSON+MD 双源靠 agent 自觉同步，是一系列已归档问题（write-plan 后 plan.md/plan.json 哈希反复不一致、review 检测到 spec 不同步仅提示不修复、步骤 done 后底部 checklist 未同步勾选、docs-index 陈旧告警无自愈路径）的共同根因。最典型的自伤在 check.ts:140-170：quick→standard 升级时 check 改 state.json、重生成 spec.md，然后打印「请运行 docpath write-spec 同步到 spec.json」——门禁命令自己制造双源漂移，再把弥合责任交还 agent。write-spec/write-plan/write-design/write-journal/write-analysis/write-review-skill 六个命令本质是手动同步泵。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

@@ -666,6 +666,61 @@ export function renderStructuredMarkdown(doc: StructuredTaskDocument): string {
     : renderSpecMarkdownFromDocument(doc);
 }
 
+export interface MarkerEnforcementResult {
+  content: string;
+  /** 勾选态被按 json 真源回写的条目 id */
+  enforced: string[];
+  /** json 已知条目中在 markdown 里找不到对应 checklist 行的 id */
+  missing: string[];
+  /** json 已知条目总数 */
+  knownCount: number;
+}
+
+/** doc 的全部结构化条目 (id, 目标 marker)。 */
+function structuredItemMarkers(doc: StructuredTaskDocument): Array<{ id: string; mark: 'x' | ' ' | '~' | '!' }> {
+  if (doc.kind === 'plan') {
+    return doc.steps.map((step) => ({ id: step.id, mark: markerFromStatus(step.status) }));
+  }
+  return [...doc.functional_requirements, ...doc.non_functional_requirements, ...doc.acceptance_criteria]
+    .map((item) => ({ id: item.id, mark: item.done ? 'x' as const : ' ' as const }));
+}
+
+/**
+ * R-287 方案 A 自愈原语（内容零丢失）：按 json 真源把「已知条目」的 checklist
+ * 勾选态回写进 markdown；markdown 中 json 没有的条目/叙述一律保留。
+ * 行级正则复用 markPlanStep 已验证的模式（R-253：全局替换所有匹配行）。
+ */
+export function enforceStructuredMarkers(doc: StructuredTaskDocument, markdown: string): MarkerEnforcementResult {
+  const enforced: string[] = [];
+  const missing: string[] = [];
+  let content = markdown;
+  const items = structuredItemMarkers(doc);
+  for (const { id, mark } of items) {
+    const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const lineRegex = new RegExp(
+      `^(\\s*- \\[)[ xX~!](\\]\\s*(?:\\*\\*)?${escapedId}(?:\\*\\*)?(?:\\s*[:：].*)?$)`,
+      'gm',
+    );
+    let found = false;
+    let touched = false;
+    const next = content.replace(lineRegex, (whole, prefix: string, suffix: string) => {
+      found = true;
+      const replaced = `${prefix}${mark}${suffix}`;
+      if (replaced !== whole) touched = true;
+      return replaced;
+    });
+    if (!found) {
+      missing.push(id);
+      continue;
+    }
+    if (touched) {
+      content = next;
+      enforced.push(id);
+    }
+  }
+  return { content, enforced, missing, knownCount: items.length };
+}
+
 export async function writeStructuredTaskJson(
   dir: string,
   file: StructuredTaskMarkdownFile,
@@ -744,11 +799,19 @@ export function formatStructuredMarkdownHashDrift(drift: StructuredMarkdownHashD
     `${drift.markdownPath} 与 ${drift.jsonPath} 的 source.content_sha256 不一致`,
     `markdown_sha256: ${drift.actualHash}`,
     `json_source_sha256: ${drift.expectedHash}`,
-    `修复建议: 若 Markdown 是最新内容，运行 ${writeCommand}；若 JSON 是最新内容，运行 docpath render --view ${view}`,
+    `修复建议: 运行 docpath check 或 docpath review 将自动收敛（自愈）；也可手动控制——Markdown 最新用 ${writeCommand}，JSON 最新用 docpath render --view ${view}`,
   ].join('\n');
 }
 
 async function readStructuredTaskJson(dir: string, file: StructuredTaskMarkdownFile): Promise<StructuredTaskDocument | null> {
+  return readStructuredTaskJsonDocument(dir, file);
+}
+
+/** 读取目录下的结构化 json 真源文档（spec.json / plan.json），供自愈等消费方使用。 */
+export async function readStructuredTaskDocument(
+  dir: string,
+  file: StructuredTaskMarkdownFile,
+): Promise<StructuredTaskDocument | null> {
   return readStructuredTaskJsonDocument(dir, file);
 }
 

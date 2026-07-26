@@ -59,3 +59,11 @@
 - src/utils/workspace.ts mutateCurrentState/stateLockPath
 - src/engine/transitions.ts 持锁段用原语不经 mutate
 - tests/lock.test.mjs state write boundary (R-286 AC-1)
+
+## pattern: 双副本+真源的自愈必须按「验证态四象限」裁决方向, 且与既有冲突合并机制划清边界
+- rationale: R-287 实施发现: md/json sha 漂移本身无方向信息, 朴素自愈(整段重渲染或无差别吸收)在不同拓扑下分别造成内容丢失(json 没有的手写条目被渲染删除)、破坏传播(掏空视图被吸收进真源, 已确认门禁被默认值覆盖)、越权覆盖(canonical 侧独立编辑被 current 共识清除, 抢了 3-way 合并机制的活)。「已验证同步」=json 存在且与同目录 md sha 一致——json 缺失时漂移检测恒 null 属条件空洞成立, 绝不能当同步证据。
+触发: 为任何「多副本+派生真源」结构设计自愈/收敛逻辑(spec/plan md-json, current-canonical 双目录, 或未来类似结构)。期望行为: (1) 方向裁决用双侧验证态四象限, 仅「基线+新编辑」(对侧已验证, 本侧未验证)可吸收, 其余象限 no-op 让位专职冲突机制; (2) 状态字段由真源 marker 强制回写, 内容字段由输入侧吸收, 整段重渲染仅用于掏空/损坏恢复且原文必须零丢失保留(附录小节); (3) 自愈只在 gate 命令(可写路径)执行, next/status 等 advisory 路径保持只读只指路; (4) fail-loud 边界(任务身份漂移/损坏 json)不得被自愈掩盖。边界: file-drift/3-way 合并拥有「双侧独立编辑」域, 自愈不得抢跑; 测试 fixture 的 helper 双目录写行为可制造与生产不同的拓扑, 断言前先确认 fixture 真实落盘态。
+### Evidence
+- src/utils/task-files.ts healStructuredMarkdownDrift 四象限裁决
+- src/utils/structured-docs.ts enforceStructuredMarkers
+- tests/check-review.test.mjs healStructuredMarkdownDrift 三用例 + 3-way 回归

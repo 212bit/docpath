@@ -17,8 +17,7 @@ import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { writeReviewEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
-import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift } from '../utils/structured-docs.js';
-import { canonicalTaskDir } from '../utils/task-files.js';
+import { healStructuredMarkdownDrift } from '../utils/task-files.js';
 import {
   buildReviewSkillRequirements,
   createReviewSkillSkip,
@@ -62,17 +61,15 @@ interface FindingScopeCounts {
   baseline_or_whole_file: { errors: number; warnings: number; infos: number };
 }
 
-async function assertNoActiveTaskStructuredMarkdownDrift(docpathDir: string, taskId?: string): Promise<void> {
+// R-287 方案 A：漂移不再阻塞评审，改为在门禁入口自愈收敛（json 真源回写勾选态 + 吸收 md 内容）。
+// 仅自愈自身 IO/身份漂移失败时 fail-loud。
+async function healActiveTaskStructuredMarkdownDrift(docpathDir: string, taskId?: string): Promise<void> {
   if (!taskId) return;
-  const taskDir = canonicalTaskDir(docpathDir, taskId);
   for (const file of ['spec.md', 'plan.md'] as const) {
-    const drift = await detectStructuredMarkdownHashDrift(taskDir, file);
-    if (!drift) continue;
-    const jsonFile = file === 'plan.md' ? 'plan.json' : 'spec.json';
-    throw new Error([
-      `docpath review: 检测到 active task canonical ${file}/${jsonFile} 机器真理源不同步`,
-      formatStructuredMarkdownHashDrift(drift),
-    ].join('\n'));
+    const result = await healStructuredMarkdownDrift(docpathDir, taskId, file);
+    if (result.healed) {
+      console.log(`🩹  ${file} 机器真理源漂移已自愈: ${result.reason}`);
+    }
   }
 }
 
@@ -457,7 +454,7 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   if (!opts.scope && scope === 'task') {
     console.log('ℹ️  活跃任务默认走 task 累计 diff 审查 (显式 --scope all 可覆盖)');
   }
-  await assertNoActiveTaskStructuredMarkdownDrift(docpathDir, current?.task_id);
+  await healActiveTaskStructuredMarkdownDrift(docpathDir, current?.task_id);
   let effectiveScope = scope;
   let changedFiles = collectChangedFiles(opts.cwd, scope, taskStartedAt);
   if (scope === 'all' && changedFiles.length === 0 && current?.task_id) {

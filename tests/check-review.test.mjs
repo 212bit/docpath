@@ -458,6 +458,7 @@ describe('check and review commands', () => {
     const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
     writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
     writeFileSync(join(canonical, 'spec.md'), '# Stale spec view\n');
+    writeFileSync(join(tasks, 'spec.md'), '# Stale spec view\n');
     writeActiveSpecJson(cwd, tasks, structuredSpecJson('', {
       major_change_gate: {
         required: false,
@@ -473,13 +474,14 @@ describe('check and review commands', () => {
 
     const result = runResult(`review --cwd ${cwd}`, cwd);
 
-    assert.equal(result.code, 1);
-    assert.match(result.out, /机器真理源不同步/);
-    assert.match(result.out, /spec\.md/);
-    assert.match(result.out, /spec\.json/);
-    assert.match(result.out, /docpath write-spec --stdin/);
-    assert.match(result.out, /docpath render --view spec/);
-    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'review.json')), false);
+    // R-287: 漂移不再阻塞评审，由门禁入口自愈收敛（陈旧视图从 json 真源恢复）。
+    assert.match(result.out, /spec\.md 机器真理源漂移已自愈/);
+    assert.doesNotMatch(result.out, /机器真理源不同步/);
+    const healedSpec = readFileSync(join(canonical, 'spec.md'), 'utf-8');
+    assert.match(healedSpec, /FR-1/);
+
+    const second = runResult(`review --cwd ${cwd}`, cwd);
+    assert.doesNotMatch(second.out, /漂移已自愈/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -489,18 +491,20 @@ describe('check and review commands', () => {
     const canonical = writeCanonicalTaskCopy(cwd, 'T-AGENT', tasks);
     writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false } }, null, 2));
     writeFileSync(join(canonical, 'plan.md'), '# Stale plan view\n');
+    writeFileSync(join(tasks, 'plan.md'), '# Stale plan view\n');
     writeActivePlanJson(cwd, tasks, structuredPlanJson(''), 'T-AGENT');
     writeFileSync(join(cwd, 'todo.ts'), '// TODO review should not reach changed files\n');
 
     const result = runResult(`review --cwd ${cwd}`, cwd);
 
-    assert.equal(result.code, 1);
-    assert.match(result.out, /机器真理源不同步/);
-    assert.match(result.out, /plan\.md/);
-    assert.match(result.out, /plan\.json/);
-    assert.match(result.out, /docpath write-plan --stdin/);
-    assert.match(result.out, /docpath render --view plan/);
-    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'review.json')), false);
+    // R-287: 漂移不再阻塞评审，由门禁入口自愈收敛（陈旧视图从 json 真源恢复）。
+    assert.match(result.out, /plan\.md 机器真理源漂移已自愈/);
+    assert.doesNotMatch(result.out, /机器真理源不同步/);
+    const healedPlan = readFileSync(join(canonical, 'plan.md'), 'utf-8');
+    assert.match(healedPlan, /S1/);
+
+    const second = runResult(`review --cwd ${cwd}`, cwd);
+    assert.doesNotMatch(second.out, /漂移已自愈/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -1182,8 +1186,12 @@ describe('check and review commands', () => {
 
     assert.equal(result.code, 0, result.out);
     assert.match(result.out, /全部通过/);
-    assert.match(result.out, /source\.content_sha256 不一致/);
-    assert.match(result.out, /recommended_command: docpath write-spec --stdin/);
+    // R-287: check 入口自愈收敛漂移，不再在 next_hint 里指挥手动 write-spec。
+    assert.match(result.out, /spec\.md 机器真理源漂移已自愈/);
+    assert.doesNotMatch(result.out, /source\.content_sha256 不一致/);
+    assert.doesNotMatch(result.out, /recommended_command: docpath write-spec --stdin/);
+    const healedSpec = readFileSync(join(canonical, 'spec.md'), 'utf-8');
+    assert.match(healedSpec, /FR-1/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -1689,5 +1697,110 @@ describe('check and review commands', () => {
     assert.match(out, /未找到可解析的工作流状态/);
     assert.match(out, /state\.json 是否存在/);
     assert.match(out, /current\.md 只是由 state\.json 重建的渲染产物/);
+  });
+});
+
+describe('healStructuredMarkdownDrift (R-287 方案 A 自愈原语)', () => {
+  let writeActiveTaskFile;
+  let healStructuredMarkdownDrift;
+
+  before(async () => {
+    ({ writeActiveTaskFile, healStructuredMarkdownDrift } = await import('../dist/utils/task-files.js'));
+  });
+
+  const HEAL_SPEC = [
+    '# T-HEAL - Heal Test',
+    '',
+    '## 1. 背景与动机',
+    '',
+    '原始叙述。',
+    '',
+    '## 2. 需求清单',
+    '',
+    '### 功能需求',
+    '- [ ] FR-1: 第一需求',
+    '',
+    '### 非功能需求',
+    '- [ ] NFR-1: 隔离',
+    '',
+    '## 5. 验收标准',
+    '',
+    '- [ ] AC-1: 验收一',
+    '',
+  ].join('\n');
+
+  function mkHealWorkspace() {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-heal-'));
+    const dp = join(cwd, '.docpath');
+    mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
+    mkdirSync(join(dp, 'tasks', 'T-HEAL'), { recursive: true });
+    return { cwd, dp, canonical: join(dp, 'tasks', 'T-HEAL'), current: join(dp, 'tasks', 'current') };
+  }
+
+  it('enforces json-truth markers while absorbing markdown additions and narrative (zero loss)', async () => {
+    const { cwd, dp, canonical, current } = mkHealWorkspace();
+    try {
+      await writeActiveTaskFile(dp, 'T-HEAL', 'spec.md', HEAL_SPEC);
+      // 手改 current 工作别名 md：翻勾 FR-1、新增 FR-9、加叙述段 → 漂移
+      const edited = readFileSync(join(current, 'spec.md'), 'utf-8')
+        .replace('- [ ] FR-1: 第一需求', '- [x] FR-1: 第一需求\n- [ ] FR-9: 手写新增')
+        .replace('原始叙述。', '原始叙述。\n\n手写的新叙述段。');
+      writeFileSync(join(current, 'spec.md'), edited);
+
+      const result = await healStructuredMarkdownDrift(dp, 'T-HEAL', 'spec.md');
+      assert.equal(result.healed, true);
+      assert.deepEqual(result.enforced_markers, ['FR-1']);
+
+      const healedMd = readFileSync(join(canonical, 'spec.md'), 'utf-8');
+      assert.match(healedMd, /- \[ \] FR-1: 第一需求/, '勾选态必须回写为 json 真源状态');
+      assert.match(healedMd, /FR-9: 手写新增/, 'markdown 新增条目必须保留');
+      assert.match(healedMd, /手写的新叙述段。/, '叙述段必须逐字保留');
+      const healedJson = JSON.parse(readFileSync(join(canonical, 'spec.json'), 'utf-8'));
+      assert.ok(healedJson.functional_requirements.some((item) => item.id === 'FR-9'), '新增条目必须吸收进 json');
+
+      const second = await healStructuredMarkdownDrift(dp, 'T-HEAL', 'spec.md');
+      assert.equal(second.healed, false, '自愈必须幂等：二次调用报 no-drift');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('restores a gutted markdown view from json truth instead of absorbing the destruction', async () => {
+    const { cwd, dp, canonical, current } = mkHealWorkspace();
+    try {
+      await writeActiveTaskFile(dp, 'T-HEAL', 'spec.md', HEAL_SPEC);
+      writeFileSync(join(current, 'spec.md'), '# T-HEAL - Heal Test\n\n只剩标题的坏视图\n');
+
+      const result = await healStructuredMarkdownDrift(dp, 'T-HEAL', 'spec.md');
+      assert.equal(result.healed, true);
+      assert.match(result.reason, /恢复/);
+
+      const healedMd = readFileSync(join(canonical, 'spec.md'), 'utf-8');
+      assert.match(healedMd, /FR-1/, '结构化条目必须从 json 真源恢复');
+      assert.match(healedMd, /只剩标题的坏视图/, '原 markdown 剩余文本必须零丢失保留（自愈保留小节）');
+      const healedJson = JSON.parse(readFileSync(join(canonical, 'spec.json'), 'utf-8'));
+      assert.ok(healedJson.functional_requirements.some((item) => item.id === 'FR-1'), '破坏不得传播进 json 真源');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('converges the crash window where markdown was written without a json update', async () => {
+    const { cwd, dp, canonical, current } = mkHealWorkspace();
+    try {
+      await writeActiveTaskFile(dp, 'T-HEAL', 'spec.md', HEAL_SPEC);
+      // 模拟崩溃窗口：md 已更新（含结构化条目），json 未跟上
+      writeFileSync(join(current, 'spec.md'), HEAL_SPEC.replace('原始叙述。', '崩溃前写入的叙述。'));
+
+      const result = await healStructuredMarkdownDrift(dp, 'T-HEAL', 'spec.md');
+      assert.equal(result.healed, true);
+
+      const healedMd = readFileSync(join(canonical, 'spec.md'), 'utf-8');
+      assert.match(healedMd, /崩溃前写入的叙述。/);
+      const second = await healStructuredMarkdownDrift(dp, 'T-HEAL', 'spec.md');
+      assert.equal(second.healed, false, '收敛后 sha 必须一致');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
   });
 });
