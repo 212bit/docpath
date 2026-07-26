@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T20:02:46.034Z",
+    "updated_at": "2026-07-26T20:02:46.034Z",
+    "content_sha256": "7a9076629a7e98ac8bc692c2fd458ffa6479e97b17a066b9da6234100ec6fdd1"
+  },
+  "task_id": "T-20260726-backlog-accept-edit-capture-dirty-guard-",
+  "backlog_id": "R-313",
+  "title": "T-20260726-backlog-accept-edit-capture-dirty-guard- - backlog 记账变更(accept/edit/capture 他条目)被 dirty guard 误伤, 阻塞开新任务需先手动收口 (SynapBuddy 实测, 本仓库亦 12+ 次 chore(backlog) 绕行)",
+  "generated_at": "2026-07-26T20:02:46.034Z",
+  "scope": {
+    "included": [
+      "backlog 记账变更(accept/edit/capture 他条目)被 dirty guard 误伤, 阻塞开新任务需先手动收口 (SynapBuddy 实测, 本仓库亦 12+ 次 chore(backlog) 绕行)"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: SynapBuddy 实测（2026-07-27）：`backlog accept` 产生的条目/索引变更让 worktree 变脏，quick/promote/agent enter 的 dirty guard 拒绝开新任务，必须先手动 chore(backlog) 收口。本仓库同病：本轮工程为此打了 12+ 个绕行提交。定性：backlog 记账（capture/add/edit/accept/drop 及索引重生成）是 DocPath 命令自己产出的簿记状态，与 docs-index 同类（R-270 已豁免先例）；guard 使命是防任务代码混入，拦簿记属误伤。\n- 目标: backlog 记账变更(accept/edit/capture 他条目)被 dirty guard 误伤, 阻塞开新任务需先手动收口 (SynapBuddy 实测, 本仓库亦 12+ 次 chore(backlog) 绕行)\n- 背景: 来自 backlog R-313\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "backlog 记账变更(accept/edit/capture 他条目)被 dirty guard 误伤, 阻塞开新任务需先手动收口 (SynapBuddy 实测, 本仓库亦 12+ 次 chore(backlog) 绕行)",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "仅 backlog 簿记脏文件时 quick/promote/agent enter/go 全部放行；混有业务脏文件仍拦。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "既有 dirty-guard 语义测试全绿 + 新增簿记放行/混合拦截两用例。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "backlog 条目 R-313 与任务 T-20260726-backlog-accept-edit-capture-dirty-guard- 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "SynapBuddy 实测（2026-07-27）：`backlog accept` 产生的条目/索引变更让 worktree 变脏，quick/promote/agent enter 的 dirty guard 拒绝开新任务，必须先手动 chore(backlog) 收口。本仓库同病：本轮工程为此打了 12+ 个绕行提交。定性：backlog 记账（capture/add/edit/accept/drop 及索引重生成）是 DocPath 命令自己产出的簿记状态，与 docs-index 同类（R-270 已豁免先例）；guard 使命是防任务代码混入，拦簿记属误伤。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

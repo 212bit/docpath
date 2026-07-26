@@ -67,6 +67,18 @@ function isDocPathManagedPath(path: string): boolean {
   return file === '.docpath' || file.startsWith('.docpath/');
 }
 
+/**
+ * DocPath 簿记路径（R-313）：backlog 记账（capture/add/edit/accept/drop 与
+ * 索引重生成）是 DocPath 命令自己产出的状态，与 docs-index 同类（R-270 先例）。
+ * dirty guard 的使命是防任务代码混入，不拦簿记——否则每次 backlog 操作后
+ * 开新任务都要先手动 chore(backlog) 收口（SynapBuddy 与本仓库双重实测摩擦）。
+ * changes --agent 的 outside-task 可见性不受影响，簿记随下次收口提交。
+ */
+function isDocPathBookkeepingPath(path: string): boolean {
+  const file = normalizeGitPath(path);
+  return file === '.docpath/backlog' || file.startsWith('.docpath/backlog/');
+}
+
 function previewFiles(files: string[]): string[] {
   const preview = files.slice(0, 12);
   if (files.length > preview.length) preview.push(`... ${files.length - preview.length} more`);
@@ -88,13 +100,12 @@ function formatDirtySummary(report: DirtyWorktreeReport, files: string[]): strin
 function isCurrentTaskExecutionPath(path: string, options: ExecutionStartDirtyOptions): boolean {
   const file = normalizeGitPath(path);
   const taskId = options.taskId?.trim();
-  const backlogId = options.backlogId?.trim();
 
   if (file.startsWith('.docpath/workspace/')) return true;
   if (file.startsWith('.docpath/tasks/current/')) return true;
   if (taskId && file.startsWith(`.docpath/tasks/${taskId}/`)) return true;
-  if (backlogId && file === `.docpath/backlog/${backlogId}.md`) return true;
-  if (backlogId && file === '.docpath/backlog/backlog.md') return true;
+  // R-313: backlog 全域为簿记路径，不再限于绑定条目
+  if (isDocPathBookkeepingPath(file)) return true;
   // DocPath self-maintained index artifacts refreshed by check (R-270):
   // auto docs-index refresh must not block go/agent enter on the same task.
   if (file === '.docpath/docs-index.json' || file === '.docpath/docs.md') return true;
@@ -182,9 +193,9 @@ export function detectDirtyWorktree(cwd: string): DirtyWorktreeReport {
 export function assertCleanWorktreeForNewTask(cwd: string, command: string, options: CleanWorktreeOptions = {}): void {
   const report = detectDirtyWorktree(cwd);
   if (!report.isGitRepo || !report.dirty) return;
-  const blockedFiles = options.allowDirtyPath
-    ? report.files.filter((file) => !options.allowDirtyPath?.(file))
-    : report.files;
+  const blockedFiles = report.files
+    .filter((file) => !isDocPathBookkeepingPath(file))
+    .filter((file) => !options.allowDirtyPath?.(file));
   if (blockedFiles.length === 0) return;
   throw buildDirtyWorktreeError(command, report, blockedFiles, 'new-task');
 }

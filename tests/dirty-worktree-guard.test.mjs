@@ -490,6 +490,39 @@ describe('dirty worktree guard', () => {
     }
   });
 
+  it('allows backlog bookkeeping dirt for new-task start (R-313)', () => {
+    const cwd = mkBaseWorkspace({ phase: 'completed', state: 'completed' });
+    try {
+      initGitRepo(cwd);
+      // 仅簿记脏文件: 新增条目 + 索引变更(accept/capture 的典型产物)
+      mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+      writeFileSync(join(cwd, '.docpath', 'backlog', 'R-099.md'), '---\nid: R-099\n---\n新条目\n');
+      writeFileSync(join(cwd, '.docpath', 'backlog', 'backlog.md'), '# index updated\n');
+
+      const result = runResult(['quick', 'Tiny fix'], cwd);
+      assert.doesNotMatch(result.out, /当前 Git worktree 存在未提交变更/, '簿记脏文件不得阻塞开任务');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('still blocks when business files mix with backlog bookkeeping (R-313)', () => {
+    const cwd = mkBaseWorkspace({ phase: 'completed', state: 'completed' });
+    try {
+      initGitRepo(cwd);
+      mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+      writeFileSync(join(cwd, '.docpath', 'backlog', 'R-099.md'), 'entry\n');
+      writeFileSync(join(cwd, 'README.md'), 'business dirt\n');
+
+      const result = runResult(['quick', 'Tiny fix'], cwd);
+      assert.equal(result.code, 1);
+      assert.match(result.out, /README\.md/, '业务脏文件仍必须拦截');
+      assert.doesNotMatch(result.out, /R-099\.md/, '簿记文件不应出现在拦截清单');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
   it('still blocks dirty files in cross-task scenarios', () => {
     const cwd = mkBaseWorkspace({ phase: 'executing', state: 'executing', taskId: 'T-TEST', taskTitle: 'Test' });
     try {
