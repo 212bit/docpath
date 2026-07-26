@@ -51,3 +51,11 @@
 - src/utils/git-dirty-guard.ts isLinkedGitWorktree (R-288 修复)
 - src/utils/changes-report.ts:152 遗留重复实现 (R-289 待修)
 - tests/dirty-worktree-guard.test.mjs 原 symlink 伪造用例已改真实 git worktree add
+
+## pattern: state.json 变更必须经唯一持锁入口; withLock 不可重入, mutator/持锁段内禁止嵌套锁调用
+- rationale: R-286: withLock 曾只覆盖 transitionWorkflow, 8 处命令层直写 writeCurrentState 构成无锁 RMW(26cd064 的 lost-update 修复只堵了正门)。收敛后写入面为 mutateCurrentState(命令层唯一入口)与 transitionWorkflow(FSM), 二者经 stateLockPath 共享同一把锁。withLock 是文件锁非可重入锁: 同一 lockPath 嵌套获取会自旋 5s 后 fail-loud 超时。
+触发: 需要修改 workspace state.json, 或在 mutator/transitionWorkflow 持锁段内想调用其它状态命令。期望行为: 命令层一律 mutateCurrentState(cwd, mutator), mutator 基于入参 previous 重算增量(勿用闭包陈旧 state), 用返回值刷新局部变量; mutator 内禁止调用 transitionWorkflow 或再次 mutateCurrentState; 决策输入可在锁外计算, 但必须幂等(如 Math.max/固定值), 由锁内 previous 重算兜底。边界: engine 层(transitions/workspace 自身)在持锁段内继续用 read/write 原语; tests/lock.test.mjs 的 boundary 用例 grep 断言 src/commands|hooks 零 writeCurrentState 引用, 新旁路会直接挂测试。
+### Evidence
+- src/utils/workspace.ts mutateCurrentState/stateLockPath
+- src/engine/transitions.ts 持锁段用原语不经 mutate
+- tests/lock.test.mjs state write boundary (R-286 AC-1)

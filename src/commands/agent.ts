@@ -25,7 +25,7 @@ import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { recordSkipReason } from '../engine/policy.js';
 import { markPlanStep } from '../utils/plan-sync.js';
 import { emit } from '../hooks/lifecycle.js';
-import { readCurrentState, resolveBoundTaskId, writeCurrentState } from '../utils/workspace.js';
+import { mutateCurrentState, readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { readActiveStructuredSpecDocument } from '../utils/task-files.js';
 import { releaseExecutionLease, resolveSessionContext, touchSession } from '../utils/session.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -228,7 +228,8 @@ async function handleAgentEnter(options: AgentOptions): Promise<void> {
     const docpathDir = await resolveDocpathDir(cwd);
     const spec = await readActiveStructuredSpecDocument(docpathDir, current.task_id);
     if (spec?.backlog_id) {
-      await writeCurrentState(cwd, { ...current, backlog_id: spec.backlog_id });
+      const base = current;
+      await mutateCurrentState(cwd, (previous) => ({ ...(previous ?? base), backlog_id: spec.backlog_id }));
     }
   }
 

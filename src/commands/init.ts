@@ -29,7 +29,7 @@ import type { ComplexityLevel } from '../engine/state-machine.js';
 import { createDefaultState } from '../engine/state-machine.js';
 import { loadTemplate } from '../utils/file.js';
 import { detectProject, formatProjectInfo, detectMonorepo, type ProjectInfo } from '../utils/detect.js';
-import { readCurrentState, writeCurrentState, type CurrentState } from '../utils/workspace.js';
+import { mutateCurrentState, readCurrentState, type CurrentState } from '../utils/workspace.js';
 import { ensureRulesDir } from '../utils/rules.js';
 import { registerProject, resolveProjectRegistryDbPath } from '../engine/project-registry.js';
 import { writeScanArchitecture } from '../utils/scan-existing-arch.js';
@@ -181,7 +181,7 @@ async function repairRuntimeWorkspace(cwd: string): Promise<void> {
   } else if (!(await exists(currentPath))) {
     const current = await readCurrentState(cwd);
     if (current) {
-      await writeCurrentState(cwd, current);
+      await mutateCurrentState(cwd, (previous) => previous ?? current);
       console.log('  🩹 已补齐缺失 runtime: workspace/current.md');
     }
   }
@@ -373,7 +373,7 @@ async function writeInitialStateFiles(cwd: string, level: ComplexityLevel | unde
     started_at: defaultState.started_at || new Date().toISOString(),
     updated_at: defaultState.updated_at || new Date().toISOString(),
   };
-  await writeCurrentState(cwd, state);
+  await mutateCurrentState(cwd, () => state);
   console.log('  ✓  workspace/state.json + current.md (状态寄存器)');
 }
 

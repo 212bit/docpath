@@ -11,7 +11,7 @@
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentState, resolveBoundTaskId, writeCurrentState } from '../utils/workspace.js';
+import { mutateCurrentState, readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -269,13 +269,16 @@ export async function goCommand(options: GoOptions): Promise<void> {
     if (profileResolution.upgraded) {
       console.log(`⚠️  已自动将工作流 Profile 从 "${profileResolution.storedProfile}" 升级为 "${profileResolution.effectiveProfile}"`);
       profileResolution.reasons.forEach((reason) => console.log(`   - ${reason}`));
-      current = {
-        ...current,
-        workflow_profile: profileResolution.effectiveProfile,
-        level: Math.max(current.level, 2),
-        updated_at: new Date().toISOString(),
-      };
-      await writeCurrentState(cwd, current);
+      const fallback = current;
+      current = await mutateCurrentState(cwd, (previous) => {
+        const base = previous ?? fallback;
+        return {
+          ...base,
+          workflow_profile: profileResolution.effectiveProfile,
+          level: Math.max(base.level, 2),
+          updated_at: new Date().toISOString(),
+        };
+      });
     }
   }
   await assertMajorChangeGateReady(cwd, docpathDir, resolvedTaskId, 'go');

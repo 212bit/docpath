@@ -9,6 +9,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import * as readline from 'readline';
 import { resolveDocpathDir, writeFileAtomic } from './file.js';
+import { withLock } from './lock.js';
 import { readActiveTaskFile, resolveActiveTaskDocPath } from './task-files.js';
 import {
   normalizeWorkflowSnapshot,
@@ -108,6 +109,33 @@ export async function resolveBoundTaskId(cwd: string): Promise<string> {
   }
   const state = await readCurrentState(cwd);
   return (state?.task_id || '').trim();
+}
+
+/** state.json 互斥锁路径 —— transitionWorkflow 与 mutateCurrentState 必须共享同一把锁。 */
+export async function stateLockPath(cwd: string): Promise<string> {
+  return join(await resolveDocpathDir(cwd), 'workspace', 'state.lock');
+}
+
+/**
+ * 状态唯一变更入口：持锁执行 读 → mutator → 写，防止无锁 read-modify-write
+ * 丢失并发更新（R-286：8 处命令层旁路直写曾绕过 FSM 锁）。
+ *
+ * 约束：
+ * - mutator 必须基于入参 previous 重算增量，不要使用闭包里早先读到的陈旧 state；
+ * - withLock 不可重入：mutator 内禁止调用 transitionWorkflow 或再次 mutateCurrentState；
+ * - transitionWorkflow 在自己的持锁段内继续使用 read/write 原语，不经此入口；
+ * - src/commands、src/hooks 不得直接导入 writeCurrentState（测试层 grep 断言固化）。
+ */
+export async function mutateCurrentState(
+  cwd: string,
+  mutator: (previous: CurrentState | null) => CurrentState | Promise<CurrentState>,
+): Promise<CurrentState> {
+  return withLock(await stateLockPath(cwd), async () => {
+    const previous = await readCurrentState(cwd);
+    const next = await mutator(previous);
+    await writeCurrentState(cwd, next);
+    return next;
+  });
 }
 
 /**

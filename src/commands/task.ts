@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { listBacklogItems, setBacklogStatus } from '../engine/backlog.js';
 import { resolveDocpathDir } from '../utils/file.js';
-import { readCurrentState, writeCurrentState, type CurrentState } from '../utils/workspace.js';
+import { mutateCurrentState, readCurrentState, type CurrentState } from '../utils/workspace.js';
 import {
   archivedTaskDir,
   canonicalTaskDir,
@@ -33,8 +33,8 @@ function assertActiveTask(current: CurrentState | null, action: string): Current
 
 async function writeIdleState(cwd: string, previous: CurrentState, currentStep: string): Promise<void> {
   const ts = nowIso();
-  await writeCurrentState(cwd, {
-    ...previous,
+  await mutateCurrentState(cwd, (latest) => ({
+    ...(latest ?? previous),
     state: 'idle',
     phase: 'idle',
     gate: 'none',
@@ -44,7 +44,7 @@ async function writeIdleState(cwd: string, previous: CurrentState, currentStep: 
     current_step: currentStep,
     started_at: ts,
     updated_at: ts,
-  });
+  }));
 }
 
 async function archiveCanonicalTask(docpathDir: string, taskId: string): Promise<string | null> {

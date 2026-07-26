@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { clearCurrentTaskAlias, currentTaskDir, canonicalTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
-import { readCurrentState, writeCurrentState } from '../utils/workspace.js';
+import { readCurrentState } from '../utils/workspace.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 
@@ -160,17 +160,14 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
     taskTitle: title,
     currentStep: 'quick task created',
   });
-  const executing = await transitionWorkflow(cwd, 'step.started', {
+  // level/profile 直接随 FSM 转移落盘（R-286）：此前是出锁后无锁覆写 patch，
+  // 既开竞态窗口，也可能覆盖并发转移的结果。
+  await transitionWorkflow(cwd, 'step.started', {
     taskId,
     taskTitle: title,
-    currentStep: 'quick task active',
-  });
-  await writeCurrentState(cwd, {
-    ...executing,
+    currentStep: options.instant ? 'instant task active' : 'quick task active',
     level: options.instant ? 0 : 1,
-    workflow_profile: options.instant ? 'instant' : 'quick',
-    current_step: options.instant ? 'instant task active' : 'quick task active',
-    updated_at: new Date().toISOString(),
+    workflowProfile: profile,
   });
 
   console.log(`✅  ${profile} task 已创建: ${taskId}`);

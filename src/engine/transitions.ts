@@ -4,9 +4,7 @@
  * 命令层只发出业务事件；phase/gate/state 的具体落盘规则集中在这里。
  */
 
-import { join } from 'node:path';
-import { readCurrentState, writeCurrentState, type CurrentState } from '../utils/workspace.js';
-import { resolveDocpathDir } from '../utils/file.js';
+import { readCurrentState, stateLockPath, writeCurrentState, type CurrentState } from '../utils/workspace.js';
 import { withLock } from '../utils/lock.js';
 import { normalizeWorkflowSnapshot, type GateStatus, type WorkflowPhase } from './state-machine.js';
 import { normalizeWorkflowProfile, type WorkflowProfile } from './workflow-profile.js';
@@ -258,7 +256,7 @@ export async function transitionWorkflow(
   // 各自读到同一旧状态、各自写回，导致后写者覆盖先写者的转移（lost update）。
   // 锁文件与 state.json 同目录；.gitignore 末尾的 `.docpath` 兜底规则会忽略
   // 所有未追踪的 .docpath/ 文件，故 state.lock 不会泄漏进 git status。
-  const lockPath = join(await resolveDocpathDir(cwd), 'workspace', 'state.lock');
+  const lockPath = await stateLockPath(cwd);
   return withLock(lockPath, async () => {
     const previous = await readCurrentState(cwd) || fallbackState();
     if (!target.from.includes(previous.phase)) {

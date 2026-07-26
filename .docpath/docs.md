@@ -2,7 +2,7 @@
 
 > 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。
 
-> 扫描时间: 2026-07-18T05:18:13.118Z
+> 扫描时间: 2026-07-26T13:02:14.191Z
 
 ## 文档列表
 
@@ -27,7 +27,12 @@
 | backlog/R-262.md | runbook | project | 2 | false | false | false | 2151 |  | R-262 | [来源: 2026-07-13 R-266 收尾复盘] 一个工作树混了三类未提交/已 commit 产物 | 2026-07-15T17:32:21.732Z | 6.1KB |
 | backlog/R-263.md | runbook | project | 2 | false | false | false | 2235 |  | R-263 | [来源: 2026-07-14 R-260 立项实操] promote R-260 成 task | 2026-07-15T17:32:04.930Z | 6.3KB |
 | backlog/R-268.md | runbook | project | 2 | false | false | false | 673 |  | R-268 | write-spec stdin 在同一已启动任务内重同步 spec 真源时不应重置 workflow phase。当前问题是相同 task_id 的 spec 同步会走 task created 转移，把 executing checking planning 误回到 drafting，并可能给出错误恢复提示。本次只处理同任务重同步和提示选择，不改变新任务 | 2026-07-15T17:48:15.618Z | 1.8KB |
-| backlog/R-285.md | runbook | project | 2 | false | false | false | 563 |  | R-285 | R-279 收口实测 (2026-07-17): review.json 的 skill_reviews 是工作区级持久, 上一任务 (R-276, 6 个 TS 文件) 的 pass 证据在新任务 (R-279, 2 个 TS 文件) review 时因 file set mismatch 仅降级为 evidence_warnings, 审查仍 appro | 2026-07-18T05:13:03.605Z | 1.5KB |
+| backlog/R-286.md | runbook | project | 2 | false | false | false | 769 |  | R-286 | 2026-07-26 架构 review 实锤：withLock 互斥只覆盖 transitionWorkflow（src/engine/transitions.ts:262）这一条路，但存在 8 处绕过 FSM 直接调用 writeCurrentState 的旁路——go.ts:278、check.ts:146、quick.ts:168、agent.ts: | 2026-07-26T12:51:40.801Z | 2.3KB |
+| backlog/R-287.md | runbook | project | 2 | false | false | false | 895 |  | R-287 | 2026-07-26 架构 review 定性：spec/plan 的 JSON+MD 双源靠 agent 自觉同步，是一系列已归档问题（write-plan 后 plan.md/plan.json 哈希反复不一致、review 检测到 spec 不同步仅提示不修复、步骤 done 后底部 checklist 未同步勾选、docs-index 陈旧告警无自愈 | 2026-07-26T12:05:36.957Z | 2.4KB |
+| backlog/R-289.md | runbook | project | 2 | false | false | false | 752 |  | R-289 | R-288 实施中发现 src/utils/changes-report.ts:152 存在 isDocpathWorktree 的完整重复实现，同样以「.docpath/backlog 与 .docpath/rules 是 symlink」识别 worktree——R-273 契约修正后永远 false，导致 changes --agent 的 workt | 2026-07-26T12:28:46.080Z | 2.2KB |
+| backlog/R-290.md | runbook | project | 2 | false | false | false | 133 |  | R-290 | - 待补充 | 2026-07-26T12:47:40.416Z | 448B |
+| backlog/R-291.md | runbook | project | 2 | false | false | false | 140 |  | R-291 | - 待补充 | 2026-07-26T12:51:04.867Z | 459B |
+| backlog/R-292.md | runbook | project | 2 | false | false | false | 126 |  | R-292 | - 待补充 | 2026-07-26T12:51:22.686Z | 413B |
 | backlog/analysis/R-230-open-questions.md | runbook | project | 2 | false | false | false | 2239 |  | DocPath UI Design - Open Questions | - **背景**：当前 Dashboard 使用深色 Obsidian 主题，改造后计划使用温暖浅色 | 2026-06-21T17:43:53.174Z | 5.6KB |
 | backlog/analysis/R-230-product.md | runbook | project | 2 | false | false | false | 1453 |  | DocPath UI Design - Product Analysis | - **效率提升**：通过可视化仪表盘，2 秒内定位需要人工介入的阻塞点，而非逐个项目运行 `docpath status` | 2026-06-21T17:43:53.162Z | 3.6KB |
 | backlog/analysis/R-230-requirements.md | runbook | project | 2 | false | false | false | 1432 |  | DocPath UI Design - Requirements Analysis | DocPath 是一个渐进式文档驱动工作流 CLI 工具，专为大模型 Agent 和人类开发者设计。当前已有基础 Dashboard UI，使用 React + Tailwind CSS 4 + Vite 构建。 | 2026-06-21T17:43:53.158Z | 3.4KB |
@@ -70,6 +75,7 @@
 | backlog/analysis/R-283-analysis.md | runbook | project | 2 | false | false | false | 326 |  | R-283 Analysis: Go step release dirty guard on active task files | Currently, during task execution (active task phase is `executing`), running `docpath go` to start or resume a subsequent step will be blocked by `assertNoNonDocPathChangesForExecu | 2026-07-17T15:34:28.262Z | 1.3KB |
 | backlog/analysis/R-284-analysis.md | runbook | project | 2 | false | false | false | 316 |  | R-284 Analysis: Promote Scaffolding Quality Improvements | During task promotion (`backlog promote`), three quality issues were observed: | 2026-07-18T02:33:19.565Z | 1.2KB |
 | backlog/analysis/R-285-analysis.md | runbook | project | 2 | false | false | false | 765 |  | R-285 Analysis: 跨任务陈旧 skill 证据隔离与失效 | 在 DocPath 的 Code Review 流程中，`review.json` 中保存的语言级 `skill_reviews`（例如 TypeScript 语言级审查通过证据）是工作区级持久的。 | 2026-07-18T05:07:49.969Z | 1.9KB |
+| backlog/analysis/R-286-analysis.md | runbook | project | 2 | false | false | false | 1545 |  | R-286 Analysis — 状态写入锁下沉: mutateCurrentState 唯一变更入口 | withLock 互斥目前只存在于 transitionWorkflow（src/engine/transitions.ts:262，锁文件 workspace/state.lock）。以下调用点全部绕过 FSM 直接调用不加锁的 writeCurrentState（src/utils/workspace.ts:116），且写入值均由「早先读取的 state | 2026-07-26T12:51:03.260Z | 4.4KB |
 | backlog/analysis/memory-layer-optimization-evidence.md | runbook | project | 2 | false | false | false | 1167 |  | 记忆层（Spec Memory Layer, §2.2）优化 - 核对证据 | 1. **删/实现"新 API 契约"**（文档准确性，零代码） | 2026-07-01T16:06:10.356Z | 3.2KB |
 | backlog/archived/R-208.md | runbook | project | 2 | false | false | false | 1557 |  | R-208 | 在非 force 模式下（即没有指定 `--force` 时），`docpath install` 命令在检测到目标目录中的文件内容与模板存在差异时，会为了保护用户的本地修改而选择跳过（skip）写入该文件。 | 2026-06-19T12:02:12.411Z | 4.1KB |
 | backlog/archived/R-211.md | runbook | project | 2 | false | false | false | 400 |  | R-211 | 09c6e0d 为消除 worktree 创建时 git 噪声，把被跟踪的 .docpath 资源改为副本，静默破坏了 backlog/rules 共享与 tasks 隔离契约；doctor 还把破坏判为 pass 掩盖问题。resolveSharedResource 等运行时重定向成死代码。 | 2026-06-19T11:45:53.573Z | 1.3KB |
@@ -143,7 +149,9 @@
 | backlog/archived/R-282.md | runbook | project | 2 | false | false | false | 804 |  | R-282 | R-276/R-277 两次实证: capture 后 edit --acceptance 填了 frontmatter 字段, promote 仍报'正文仍为空或包含占位内容'——字段编辑不改写 body 的 '## 验收 - 待补充' 节, 报错也不指明是正文哪节占位, 只能 --body-file 全量重写。我们需要让 edit 只替换指定节，且 pr | 2026-07-17T14:33:28.382Z | 2.2KB |
 | backlog/archived/R-283.md | runbook | project | 2 | false | false | false | 839 |  | R-283 | R-275/R-276 S3 认领两次被 dirty guard 拒 (本任务实现未提交是执行期常态), 只能走 docpath run start 恢复归属。我们需要对'当前任务的顺序下一步'认领放行本任务范围内脏文件。 | 2026-07-18T01:32:46.155Z | 2.1KB |
 | backlog/archived/R-284.md | runbook | project | 2 | false | false | false | 1056 |  | R-284 | 三次 promote 实证 (R-275/R-276/R-277): (1) AC 行 'AC-1: AC-1:' 双前缀——backlog 验收行自带编号再拼一次; (2) Decision Brief 解析出 '当前问题: ## 背景' 垃圾值——把节标题当正文; (3) 变更类型自动预勾两次不准 (R-275 勾架构/工作流, R-276 勾权限/范围 | 2026-07-18T03:04:51.921Z | 2.7KB |
-| backlog/backlog.md | runbook | project | 2 | false | false | false | 309 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-18T05:13:03.632Z | 1000B |
+| backlog/archived/R-285.md | runbook | project | 2 | false | false | false | 1144 |  | R-285 | R-279 收口实测 (2026-07-17): review.json 的 skill_reviews 是工作区级持久, 上一任务 (R-276, 6 个 TS 文件) 的 pass 证据在新任务 (R-279, 2 个 TS 文件) review 时因 file set mismatch 仅降级为 evidence_warnings, 审查仍 appro | 2026-07-18T05:22:07.487Z | 3.0KB |
+| backlog/archived/R-288.md | runbook | project | 2 | false | false | false | 1077 |  | R-288 | 2026-07-26 架构 review 发现 git-dirty-guard.ts 两处缺陷： | 2026-07-26T12:42:34.421Z | 3.0KB |
+| backlog/backlog.md | runbook | project | 2 | false | false | false | 571 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-26T12:51:40.831Z | 1.7KB |
 | commands/docpath-agent-done.md | reference | project | 3 | false | false | false | 280 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-07-16T16:53:46.631Z | 1.1KB |
 | commands/docpath-agent-enter.md | reference | project | 3 | false | false | false | 315 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-07-16T16:53:46.631Z | 1.2KB |
 | commands/docpath-agent-handoff.md | reference | project | 3 | false | false | false | 277 |  | /docpath-agent-handoff | Persist a compact handoff package for the next Claude Code session. | 2026-07-16T16:53:46.631Z | 1.1KB |
@@ -183,14 +191,14 @@
 | commands/docpath-write-journal.md | reference | project | 3 | false | false | false | 198 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task through the CLI. | 2026-07-16T16:53:46.641Z | 792B |
 | commands/docpath-write-plan.md | reference | project | 3 | false | false | false | 216 |  | /docpath-write-plan | Artifact sink: write an execution plan already generated by the current agent | 2026-07-16T16:53:46.641Z | 862B |
 | commands/docpath-write-spec.md | reference | project | 3 | false | false | false | 215 |  | /docpath-write-spec | Artifact sink: write spec content already generated by the current agent session | 2026-07-16T16:53:46.642Z | 859B |
-| docs.md | index | project | 2 | false | false | false | 81293 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-18T03:04:37.502Z | 268.9KB |
+| docs.md | index | project | 2 | false | false | false | 81934 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-18T05:18:13.120Z | 270.9KB |
 | harness.md | index | project | 2 | false | false | false | 252 |  | DocPath Harness Rules | - [ ] 读取 current.md 确认当前状态 | 2026-05-28T12:29:00.329Z | 786B |
 | protocols/AGENTS.md | index | project | 2 | false | false | false | 2512 |  | DocPath Agent Protocol | 1. Run `docpath next --agent` to read the `agent_view: next` route and the | 2026-07-16T16:53:46.629Z | 9.8KB |
 | protocols/CLAUDE.md | index | project | 2 | false | false | false | 2368 |  | DocPath Claude Code Protocol | 1. Run `/docpath-next` or `docpath next --agent` for the `agent_view: next` | 2026-07-16T16:53:46.630Z | 9.3KB |
 | protocols/OPENCODE.md | index | project | 2 | false | false | false | 1214 |  | DocPath OpenCode Protocol | 1. Run `docpath next --agent` for the `agent_view: next` route, | 2026-07-16T16:53:46.630Z | 4.7KB |
 | review-skills/javascript/SKILL.md | index | project | 2 | false | false | false | 423 |  | DocPath Review Skill: JavaScript | Use this skill only when `docpath review` emits a Review Skill Router requirement | 2026-06-20T15:45:09.124Z | 1.7KB |
 | review-skills/typescript/SKILL.md | index | project | 2 | false | false | false | 425 |  | DocPath Review Skill: TypeScript | Use this skill only when `docpath review` emits a Review Skill Router requirement | 2026-06-20T15:45:09.125Z | 1.7KB |
-| rules/architecture.md | reference | project | 2 | true | false | false | 1933 |  | DocPath Architecture Rules | - `.docpath/rules/style.md` 和 `.docpath/rules/architecture.md` 是 preferred 规则真源；`.docpath/spec/style.md` 和 `.docpath/spec/architecture.md` 仅作 legacy fallback。 | 2026-07-16T17:13:23.407Z | 5.2KB |
+| rules/architecture.md | reference | project | 2 | true | false | false | 2500 |  | DocPath Architecture Rules | - `.docpath/rules/style.md` 和 `.docpath/rules/architecture.md` 是 preferred 规则真源；`.docpath/spec/style.md` 和 `.docpath/spec/architecture.md` 仅作 legacy fallback。 | 2026-07-26T12:43:38.060Z | 6.6KB |
 | rules/style.md | reference | project | 2 | true | false | false | 2788 |  | DocPath Agent Style Rules | - Start/resume with `docpath next --agent`. Use `docpath status --agent` only | 2026-07-16T17:13:23.408Z | 7.8KB |
 | skills/caveman.md | index | project | 2 | false | false | false | 260 |  | Skill: Caveman Mode (省 token 模式) | 1. **回复极简** — 不解释已知信息，只说做了什么 | 2026-07-16T16:53:46.627Z | 646B |
 | skills/diagnose.md | index | project | 2 | false | false | false | 258 |  | Skill: Diagnose (诊断) | - 遇到编译错误/运行时异常 | 2026-07-16T16:53:46.628Z | 633B |
@@ -211,8 +219,12 @@
 | tasks/T-20260718-promote-ac-decision-brief/spec.md | runbook | task | 1 | false | false | false | 1600 | T-20260718-promote-ac-decision-brief | T-20260718-promote-ac-decision-brief - promote 脚手架质量: AC 双前缀 / Decision Brief 垃圾解析 / 变更类型误预勾 | 三次 promote 实证 (R-275/R-276/R-277): (1) AC 行 'AC-1: AC-1:' 双前缀——backlog 验收行自带编号再拼一次; (2) Decision Brief 解析出 '当前问题: ## 背景' 垃圾值——把节标题当正文; (3) 变更类型自动预勾两次不准 (R-275 勾架构/工作流, R-276 勾权限/范围 | 2026-07-18T03:01:07.690Z | 4.0KB |
 | tasks/T-20260718-skill-file-set-mismatch-review/plan.md | runbook | task | 1 | false | false | false | 911 | T-20260718-skill-file-set-mismatch-review | plan | - [x] S1: 梳理 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review | 2026-07-18T05:14:51.219Z | 2.3KB |
 | tasks/T-20260718-skill-file-set-mismatch-review/spec.md | runbook | task | 1 | false | false | false | 1702 | T-20260718-skill-file-set-mismatch-review | T-20260718-skill-file-set-mismatch-review - 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review | R-279 收口实测 (2026-07-17): review.json 的 skill_reviews 是工作区级持久, 上一任务 (R-276, 6 个 TS 文件) 的 pass 证据在新任务 (R-279, 2 个 TS 文件) review 时因 file set mismatch 仅降级为 evidence_warnings, 审查仍 appro | 2026-07-18T05:13:03.597Z | 4.3KB |
-| tasks/current/plan.md | runbook | task | 1 | true | false | false | 911 | T-20260718-skill-file-set-mismatch-review | plan | - [x] S1: 梳理 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review | 2026-07-18T05:14:51.219Z | 2.3KB |
-| tasks/current/spec.md | runbook | task | 1 | true | false | false | 1702 | T-20260718-skill-file-set-mismatch-review | T-20260718-skill-file-set-mismatch-review - 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review | R-279 收口实测 (2026-07-17): review.json 的 skill_reviews 是工作区级持久, 上一任务 (R-276, 6 个 TS 文件) 的 pass 证据在新任务 (R-279, 2 个 TS 文件) review 时因 file set mismatch 仅降级为 evidence_warnings, 审查仍 appro | 2026-07-18T05:13:03.597Z | 4.3KB |
+| tasks/T-20260726-git-dirty-guard-isdocpathworktree-symlin/plan.md | runbook | task | 1 | false | false | false | 889 | T-20260726-git-dirty-guard-isdocpathworktree-symlin | plan | - [x] S1: 梳理 git-dirty-guard 修缮: isDocpathWorktree symlink 死逻辑 + isActiveTask 阶段条件误拦回补 | 2026-07-26T12:49:47.918Z | 2.4KB |
+| tasks/T-20260726-git-dirty-guard-isdocpathworktree-symlin/spec.md | runbook | task | 1 | false | false | false | 1618 | T-20260726-git-dirty-guard-isdocpathworktree-symlin | T-20260726-git-dirty-guard-isdocpathworktree-symlin - git-dirty-guard 修缮: isDocpathWorktree symlink 死逻辑 + isActiveTask 阶段条件误拦回补 | 2026-07-26 架构 review 发现 git-dirty-guard.ts 两处缺陷： | 2026-07-26T12:15:55.462Z | 4.3KB |
+| tasks/T-20260726-mutatecurrentstate-8-rmw/plan.md | runbook | task | 1 | false | false | false | 943 | T-20260726-mutatecurrentstate-8-rmw | plan | - [x] S1: 梳理 状态写入锁下沉: mutateCurrentState 唯一变更入口, 消除 8 处无锁旁路 RMW | 2026-07-26T12:58:17.505Z | 2.4KB |
+| tasks/T-20260726-mutatecurrentstate-8-rmw/spec.md | runbook | task | 1 | false | false | false | 2176 | T-20260726-mutatecurrentstate-8-rmw | T-20260726-mutatecurrentstate-8-rmw - 状态写入锁下沉: mutateCurrentState 唯一变更入口, 消除 8 处无锁旁路 RMW | 2026-07-26 架构 review 实锤：withLock 互斥只覆盖 transitionWorkflow（src/engine/transitions.ts:262）这一条路，但存在 8 处绕过 FSM 直接调用 writeCurrentState 的旁路——go.ts:278、check.ts:146、quick.ts:168、agent.ts: | 2026-07-26T12:58:03.894Z | 5.8KB |
+| tasks/current/plan.md | runbook | task | 1 | true | false | false | 943 | T-20260726-mutatecurrentstate-8-rmw | plan | - [x] S1: 梳理 状态写入锁下沉: mutateCurrentState 唯一变更入口, 消除 8 处无锁旁路 RMW | 2026-07-26T12:58:17.505Z | 2.4KB |
+| tasks/current/spec.md | runbook | task | 1 | true | false | false | 2176 | T-20260726-mutatecurrentstate-8-rmw | T-20260726-mutatecurrentstate-8-rmw - 状态写入锁下沉: mutateCurrentState 唯一变更入口, 消除 8 处无锁旁路 RMW | 2026-07-26 架构 review 实锤：withLock 互斥只覆盖 transitionWorkflow（src/engine/transitions.ts:262）这一条路，但存在 8 处绕过 FSM 直接调用 writeCurrentState 的旁路——go.ts:278、check.ts:146、quick.ts:168、agent.ts: | 2026-07-26T12:58:03.894Z | 5.8KB |
 | tasks/done/T-20260528-agent-integration/plan.md | runbook | task | 3 | false | true | false | 929 | T-20260528-agent-integration | 执行计划 | ``` | 2026-05-28T14:53:27.931Z | 2.6KB |
 | tasks/done/T-20260528-agent-integration/spec.md | runbook | task | 3 | false | true | false | 847 | T-20260528-agent-integration | 规约: Agent Integration (Phase 1+2) | DocPath 需要面向 AI Agent 的接口层，使其能被 Claude Code / OpenCode 等工具原生使用。 | 2026-05-28T14:37:39.406Z | 2.4KB |
 | tasks/done/T-20260528-harness-lite/plan.md | runbook | task | 3 | false | true | false | 838 | T-20260528-harness-lite | Plan: Harness Lite Phase 1 | **目标**: 让 `docpath check` 能发现并运行 typecheck 相关脚本 | 2026-05-29T05:13:03.422Z | 2.5KB |
@@ -798,27 +810,31 @@
 | tasks/promote-backups/2026-07-18T02-33-42-064Z/spec.md | runbook | project | 2 | false | false | false | 1428 |  | T-20260717-go-step-run-start - go --step 认领当前任务下一步被本任务自身脏文件拦截, 需 run start 绕行 | R-275/R-276 S3 认领两次被 dirty guard 拒 (本任务实现未提交是执行期常态), 只能走 docpath run start 恢复归属。我们需要对'当前任务的顺序下一步'认领放行本任务范围内脏文件。 | 2026-07-18T02:33:42.068Z | 3.5KB |
 | tasks/promote-backups/2026-07-18T05-13-03-517Z/plan.md | runbook | project | 2 | false | false | false | 974 |  | plan | - [x] S1: 梳理 promote 脚手架质量: AC 双前缀 / Decision Brief 垃圾解析 / 变更类型误预勾 | 2026-07-18T05:13:03.518Z | 2.4KB |
 | tasks/promote-backups/2026-07-18T05-13-03-517Z/spec.md | runbook | project | 2 | false | false | false | 1600 |  | T-20260718-promote-ac-decision-brief - promote 脚手架质量: AC 双前缀 / Decision Brief 垃圾解析 / 变更类型误预勾 | 三次 promote 实证 (R-275/R-276/R-277): (1) AC 行 'AC-1: AC-1:' 双前缀——backlog 验收行自带编号再拼一次; (2) Decision Brief 解析出 '当前问题: ## 背景' 垃圾值——把节标题当正文; (3) 变更类型自动预勾两次不准 (R-275 勾架构/工作流, R-276 勾权限/范围 | 2026-07-18T05:13:03.519Z | 4.0KB |
+| tasks/promote-backups/2026-07-26T12-15-55-372Z/plan.md | runbook | project | 2 | false | false | false | 911 |  | plan | - [x] S1: 梳理 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review | 2026-07-26T12:15:55.374Z | 2.3KB |
+| tasks/promote-backups/2026-07-26T12-15-55-372Z/spec.md | runbook | project | 2 | false | false | false | 1702 |  | T-20260718-skill-file-set-mismatch-review - 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review | R-279 收口实测 (2026-07-17): review.json 的 skill_reviews 是工作区级持久, 上一任务 (R-276, 6 个 TS 文件) 的 pass 证据在新任务 (R-279, 2 个 TS 文件) review 时因 file set mismatch 仅降级为 evidence_warnings, 审查仍 appro | 2026-07-26T12:15:55.375Z | 4.3KB |
+| tasks/promote-backups/2026-07-26T12-51-40-723Z/plan.md | runbook | project | 2 | false | false | false | 889 |  | plan | - [x] S1: 梳理 git-dirty-guard 修缮: isDocpathWorktree symlink 死逻辑 + isActiveTask 阶段条件误拦回补 | 2026-07-26T12:51:40.725Z | 2.4KB |
+| tasks/promote-backups/2026-07-26T12-51-40-723Z/spec.md | runbook | project | 2 | false | false | false | 1618 |  | T-20260726-git-dirty-guard-isdocpathworktree-symlin - git-dirty-guard 修缮: isDocpathWorktree symlink 死逻辑 + isActiveTask 阶段条件误拦回补 | 2026-07-26 架构 review 发现 git-dirty-guard.ts 两处缺陷： | 2026-07-26T12:51:40.725Z | 4.3KB |
 | workflows/bugfix.md | index | project | 2 | false | false | false | 160 |  | Workflow: Bug Fix | - 收集错误信息 (日志、截图、复现步骤) | 2026-07-16T16:53:46.626Z | 463B |
 | workflows/debug.md | index | project | 2 | false | false | false | 145 |  | Workflow: Debug | - 收集症状 (日志、指标、复现步骤) | 2026-07-16T16:53:46.626Z | 416B |
 | workflows/feature.md | index | project | 2 | false | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-07-16T16:53:46.627Z | 753B |
 | workflows/refactor.md | index | project | 2 | false | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-07-16T16:53:46.627Z | 424B |
 | workflows/research.md | index | project | 2 | false | false | false | 146 |  | Workflow: Research | - 明确调研目标 | 2026-07-16T16:53:46.627Z | 409B |
-| workspace/breadcrumb.md | index | project | 0 | false | false | false | 624 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-18T05:14:51.215Z | 2.2KB |
+| workspace/breadcrumb.md | index | project | 0 | false | false | false | 892 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-26T12:58:17.500Z | 2.8KB |
 | workspace/compact-context.md | index | project | 0 | false | false | false | 3467 |  | Context Handoff — T-20260715-docpath-init-scan-existing | - ✅ PASS (2026-07-15T15:57:32.756Z) | 2026-07-15T16:06:13.998Z | 11.2KB |
-| workspace/current.md | index | project | 0 | true | false | false | 405 |  | 📍 当前工作流状态 | ```yaml | 2026-07-18T05:18:12.675Z | 1.2KB |
+| workspace/current.md | index | project | 0 | true | false | false | 496 |  | 📍 当前工作流状态 | ```yaml | 2026-07-26T13:02:13.624Z | 1.4KB |
 | workspace/decisions-2026-05.md | index | project | 0 | false | false | false | 16136 |  | 决策日志归档 — 2026-05 | --- | 2026-06-16T11:00:07.138Z | 46.7KB |
 | workspace/decisions-2026-06.md | index | project | 0 | false | false | false | 4794 |  | 决策日志归档 — 2026-06 | --- | 2026-07-14T11:14:31.428Z | 13.9KB |
-| workspace/decisions-2026-07.md | index | project | 0 | false | false | false | 3070 |  | 决策日志归档 — 2026-07 | --- | 2026-07-18T01:32:46.171Z | 8.9KB |
+| workspace/decisions-2026-07.md | index | project | 0 | false | false | false | 5896 |  | 决策日志归档 — 2026-07 | --- | 2026-07-26T12:42:34.438Z | 17.4KB |
 | workspace/decisions-2026-W23.md | index | project | 0 | false | false | false | 42918 |  | 决策日志归档 — 2026-W23 | --- | 2026-07-12T13:49:33.897Z | 121.9KB |
 | workspace/decisions-2026-W24.md | index | project | 0 | false | false | false | 22924 |  | 决策日志归档 — 2026-W24 | --- | 2026-07-12T13:49:33.903Z | 65.1KB |
 | workspace/decisions-2026-W25.md | index | project | 0 | false | false | false | 18387 |  | 决策日志归档 — 2026-W25 | --- | 2026-07-12T13:49:33.905Z | 51.8KB |
 | workspace/decisions-2026-W26.md | index | project | 0 | false | false | false | 2675 |  | 决策日志归档 — 2026-W26 | --- | 2026-07-12T13:49:33.906Z | 7.7KB |
-| workspace/decisions.md | log | project | 3 | false | true | false | 9050 |  | 决策日志 — DocPath ADR | --- | 2026-07-18T01:32:46.173Z | 25.8KB |
+| workspace/decisions.md | log | project | 3 | false | true | false | 6223 |  | 决策日志 — DocPath ADR | --- | 2026-07-26T12:42:34.441Z | 17.3KB |
 | workspace/journal.md | index | project | 0 | false | false | false | 120 |  | 📖 工作日志 | - 新增 write-design 命令 | 2026-06-10T04:44:31.299Z | 361B |
-| workspace/last-check.md | index | project | 0 | true | false | false | 171 |  | Last Check Evidence | **时间**: 2026-07-18T03:04:37.853Z | 2026-07-18T03:04:37.855Z | 504B |
-| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 6458 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-18T03:04:51.933Z | 21.0KB |
+| workspace/last-check.md | index | project | 0 | true | false | false | 93 |  | Last Check Evidence | **时间**: 2026-07-26T12:36:02.959Z | 2026-07-26T12:36:02.962Z | 325B |
+| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 6691 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-26T12:42:34.433Z | 21.9KB |
 | workspace/pending-done.md | index | project | 0 | false | false | false | 35 |  | pending-done | pending-done | 2026-07-17T02:10:39.986Z | 137B |
-| workspace/review.md | index | project | 0 | true | false | false | 237 |  | Code Review Report | **时间**: 2026-07-18T03:04:49.188Z | 2026-07-18T03:04:49.212Z | 801B |
+| workspace/review.md | index | project | 0 | true | false | false | 134 |  | Code Review Report | **时间**: 2026-07-26T12:41:57.150Z | 2026-07-26T12:41:57.169Z | 464B |
 
 ## 用途说明
 

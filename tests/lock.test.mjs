@@ -1,8 +1,9 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, existsSync, writeFileSync, readFileSync } from 'fs';
+import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { fileURLToPath } from 'url';
 
 let withLock;
 
@@ -105,5 +106,80 @@ describe('withLock', () => {
       /获取状态锁超时/,
     );
     rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('mutateCurrentState (R-286 锁下沉唯一变更入口)', () => {
+  let mutateCurrentState;
+  let readCurrentState;
+
+  before(async () => {
+    ({ mutateCurrentState, readCurrentState } = await import('../dist/utils/workspace.js'));
+  });
+
+  function mkStateWorkspace() {
+    const dir = mkdtempSync(join(tmpdir(), 'dp-mutate-'));
+    mkdirSync(join(dir, '.docpath', 'workspace'), { recursive: true });
+    mkdirSync(join(dir, '.docpath', 'tasks', 'current'), { recursive: true });
+    writeFileSync(join(dir, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+      level: 1,
+      workflow_profile: 'standard',
+      state: 'idle',
+      task_id: '',
+      task_title: '',
+      phase: 'idle',
+      gate: 'none',
+      current_step: 'waiting',
+      started_at: '2026-07-26T00:00:00.000Z',
+      updated_at: '2026-07-26T00:00:00.000Z',
+    }, null, 2), 'utf-8');
+    return dir;
+  }
+
+  it('serializes concurrent state mutations without lost updates', async () => {
+    const dir = mkStateWorkspace();
+    // N 个并发 RMW 各追加一个字符；无锁时后写覆盖先写（典型结果 < N），持锁必为 N。
+    const N = 6;
+    await Promise.all(Array.from({ length: N }, () =>
+      mutateCurrentState(dir, (previous) => ({
+        ...previous,
+        task_title: `${previous?.task_title || ''}x`,
+      }))));
+    const final = await readCurrentState(dir);
+    assert.equal(final.task_title, 'x'.repeat(N), '并发 mutate 不得丢失更新');
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('feeds the mutator the freshest state and returns the written state', async () => {
+    const dir = mkStateWorkspace();
+    const first = await mutateCurrentState(dir, (previous) => ({
+      ...previous,
+      current_step: 'step-1',
+    }));
+    assert.equal(first.current_step, 'step-1');
+    const second = await mutateCurrentState(dir, (previous) => ({
+      ...previous,
+      current_step: `${previous.current_step}+2`,
+    }));
+    assert.equal(second.current_step, 'step-1+2', 'mutator 必须收到上一次写入后的最新状态');
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('state write boundary (R-286 AC-1)', () => {
+  it('src/commands and src/hooks contain no direct writeCurrentState usage', () => {
+    const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+    const offenders = [];
+    for (const root of ['src/commands', 'src/hooks']) {
+      const base = join(repoRoot, root);
+      if (!existsSync(base)) continue;
+      for (const entry of readdirSync(base, { recursive: true })) {
+        const rel = String(entry);
+        if (!rel.endsWith('.ts')) continue;
+        const content = readFileSync(join(base, rel), 'utf-8');
+        if (/\bwriteCurrentState\b/.test(content)) offenders.push(`${root}/${rel}`);
+      }
+    }
+    assert.deepEqual(offenders, [], '命令/hook 层必须经 mutateCurrentState 或 transitionWorkflow 变更状态');
   });
 });

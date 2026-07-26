@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T12:58:03.894Z",
+    "updated_at": "2026-07-26T12:58:03.894Z",
+    "content_sha256": "c8e75637ef4825a70e2841a75807fc65ea6a67b40d5cab5b82ae1f0662e326f7"
+  },
+  "task_id": "T-20260726-mutatecurrentstate-8-rmw",
+  "backlog_id": "R-286",
+  "title": "T-20260726-mutatecurrentstate-8-rmw - 状态写入锁下沉: mutateCurrentState 唯一变更入口, 消除 8 处无锁旁路 RMW",
+  "generated_at": "2026-07-26T12:58:03.894Z",
+  "scope": {
+    "included": [
+      "状态写入锁下沉: mutateCurrentState 唯一变更入口, 消除 8 处无锁旁路 RMW"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "架构 / 模块边界"
+    ],
+    "user_confirmed": "已确认——2026-07-26 架构 review 后用户批准 P0 路线（会话记录「同意」），并以「continue」授权按 R-288→R-286 顺序实施；方案细节见 .docpath/backlog/analysis/R-286-analysis.md",
+    "decision_brief_markdown": "- 当前问题: 2026-07-26 架构 review 实锤：withLock 互斥只覆盖 transitionWorkflow（src/engine/transitions.ts:262）这一条路，但存在 8 处绕过 FSM 直接调用 writeCurrentState 的旁路——go.ts:278、check.ts:146、quick.ts:168、agent.ts:231、task.ts:36、init.ts:184/376、worktree.ts:339——而 writeCurrentState（src/utils/workspace.ts:116）本身不加锁。这些调用点全部是「早先读 state → 展开修改 → 写回」的无锁 read-modify-write，与 26cd064 修复的并发覆写（lost update）同构；该修复只堵了 FSM 正门。典型案例：quick.ts:163-172 先走带锁 transitionWorkflow，出锁后立刻用无锁 writeCurrentState 覆写补 level/profile，既开竞态窗口又可破坏 FSM 不变量。\n- 目标: 状态写入锁下沉: mutateCurrentState 唯一变更入口, 消除 8 处无锁旁路 RMW\n- 背景: 来自 backlog R-286\n- 可选方案:\n  - 方案 A: 锁下沉——workspace.ts 提供持锁唯一入口 mutateCurrentState，8 处旁路迁移，transitionWorkflow 共享同一 stateLockPath，writeCurrentState 保留导出但命令层禁用（测试 grep 断言固化）\n  - 方案 B: 各调用点自行包 withLock（不收敛入口，边界靠自觉，易再漏）\n- 推荐方案: 方案 A\n- 决策理由: 唯一入口使「新增状态写必然有锁」由结构保证而非纪律保证；quick.ts 的出锁覆写并入 transition payload 后彻底消除二次写\n- 不做什么: 不自动刷 updated_at、不在 mutate 内做 snapshot 刷新、不改 FSM 事件表与门禁语义、不扩大到 backlog 未声明范围\n- 成本: 中等（8 调用点机械迁移 + 并发/边界测试）\n- 风险: withLock 不可重入，mutator 内嵌套调用会自旋超时——以文档约定 + FSM 全量回归覆盖；锁竞争增加为毫秒级，5s 超时余量充足\n- 回滚方案: 逐调用点独立 revert，或整体回滚本任务提交\n- 用户确认: 已确认——2026-07-26 架构 review 后用户批准 P0 路线（会话记录「同意」），并以「continue」授权按 R-288→R-286 顺序实施；方案细节见 .docpath/backlog/analysis/R-286-analysis.md"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "状态写入锁下沉: mutateCurrentState 唯一变更入口, 消除 8 处无锁旁路 RMW",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "src/commands、src/hooks 下不存在对 writeCurrentState 的直接导入（grep 断言或 lint 规则固化）。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "8 处旁路调用点全部改走 mutateCurrentState，现有行为回归测试全绿。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "新增并发回归测试：两个并发 mutateCurrentState 做 RMW 不发生 lost update。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "transitionWorkflow 不因锁重入死锁（现有 FSM 测试保持通过，新增嵌套场景测试）。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "backlog 条目 R-286 与任务 T-20260726-mutatecurrentstate-8-rmw 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "2026-07-26 架构 review 实锤：withLock 互斥只覆盖 transitionWorkflow（src/engine/transitions.ts:262）这一条路，但存在 8 处绕过 FSM 直接调用 writeCurrentState 的旁路——go.ts:278、check.ts:146、quick.ts:168、agent.ts:231、task.ts:36、init.ts:184/376、worktree.ts:339——而 writeCurrentState（src/utils/workspace.ts:116）本身不加锁。这些调用点全部是「早先读 state → 展开修改 → 写回」的无锁 read-modify-write，与 26cd064 修复的并发覆写（lost update）同构；该修复只堵了 FSM 正门。典型案例：quick.ts:163-172 先走带锁 transitionWorkflow，出锁后立刻用无锁 writeCurrentState 覆写补 level/profile，既开竞态窗口又可破坏 FSM 不变量。",
+    "options": [
+      "- 方案 A: 锁下沉——workspace.ts 提供持锁唯一入口 mutateCurrentState，8 处旁路迁移，transitionWorkflow 共享同一 stateLockPath，writeCurrentState 保留导出但命令层禁用（测试 grep 断言固化）"
+    ],
+    "chosen": "方案 A",
+    "rationale": "唯一入口使「新增状态写必然有锁」由结构保证而非纪律保证；quick.ts 的出锁覆写并入 transition payload 后彻底消除二次写"
+  }
+}

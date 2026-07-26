@@ -2,13 +2,12 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-07-26T12:51:26.867Z
+> 扫描时间: 2026-07-26T13:03:01.925Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-286 | 状态写入锁下沉: mutateCurrentState 唯一变更入口, 消除 8 处无锁旁路 RMW | proposed | P0 | 2 |  |
 | R-287 | spec/plan 结构化字段单真源: MD managed block 自动重渲染, desync 由自愈取代告警 | proposed | P0 | 3 |  |
 | R-259 | High-value reliability optimizations | dropped | P1 | 2 |  |
 | R-289 | changes-report worktree_isolation 死功能: 重复 symlink 判定 + noise 分类语义违反 R-273 契约 | proposed | P1 | 2 |  |

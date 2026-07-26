@@ -19,7 +19,7 @@ import { join } from 'path';
 import { logger } from '../utils/logger.js';
 import { evaluateQuickScope } from '../engine/quick-guard.js';
 import { readActiveStructuredSpecDocument, canonicalTaskDir } from '../utils/task-files.js';
-import { writeCurrentState } from '../utils/workspace.js';
+import { mutateCurrentState } from '../utils/workspace.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 
 /**
@@ -137,13 +137,16 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
       logger.warn(`⚠️  检测到高等级属性、需求规格或超限变更，已自动将工作流 Profile 从 "${resolution.storedProfile}" 升级为 "${resolution.effectiveProfile}"`);
       resolution.reasons.forEach((reason) => logger.log(`   - ${reason}`));
 
-      current = {
-        ...current,
-        workflow_profile: resolution.effectiveProfile,
-        level: Math.max(current.level, 2) as any,
-        updated_at: new Date().toISOString(),
-      };
-      await writeCurrentState(cwd, current);
+      const fallback = current;
+      current = await mutateCurrentState(cwd, (previous) => {
+        const base = previous ?? fallback;
+        return {
+          ...base,
+          workflow_profile: resolution.effectiveProfile,
+          level: Math.max(base.level, 2),
+          updated_at: new Date().toISOString(),
+        };
+      });
       logger.log('👉 已更新 .docpath/workspace/state.json，后续检查将强制执行 standard 门禁（如 plan/spec 校验与代码审查）。\n');
 
       // 将 quick 风格的 spec.md 替换为 standard 模板

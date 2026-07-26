@@ -10,7 +10,7 @@ import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { BREADCRUMB_HEADER } from '../engine/breadcrumb.js';
-import { writeCurrentState, readCurrentState } from '../utils/workspace.js';
+import { mutateCurrentState, readCurrentState } from '../utils/workspace.js';
 import {
   isGitRepo,
   listWorktrees,
@@ -336,7 +336,7 @@ async function initWorktreeDocpath(mainRepoPath: string, worktreePath: string, n
     console.log(`  🧭 写入独立 runtime 初始状态...`);
     const mainState = await readCurrentState(mainRepoPath);
     const now = new Date().toISOString();
-    await writeCurrentState(worktreePath, {
+    await mutateCurrentState(worktreePath, () => ({
       level: mainState?.level || 2,
       workflow_profile: 'standard',
       state: 'idle',
@@ -347,7 +347,7 @@ async function initWorktreeDocpath(mainRepoPath: string, worktreePath: string, n
       current_step: '等待下一步',
       started_at: now,
       updated_at: now,
-    });
+    }));
     await writeFile(join(docpathDir, 'workspace', 'breadcrumb.md'), BREADCRUMB_HEADER, 'utf-8');
   }
 
