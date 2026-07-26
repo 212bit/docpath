@@ -70,6 +70,15 @@ try {
     process.exit(0);
   }
 
+  // R-304: 参数含换行会让 cac 解析错乱并直接输出 help（实测打崩），显式 fail-loud。
+  // 多行内容请走 --stdin / --body-file；--content 为已知多行合法通道，豁免。
+  const rawArgs = process.argv.slice(2);
+  const newlineArgIndex = rawArgs.findIndex((arg, i) => arg.includes('\n') && rawArgs[i - 1] !== '--content');
+  if (newlineArgIndex !== -1) {
+    console.error('❌  参数包含换行符（cac 解析会错乱）。多行内容请使用 --stdin 或 --body-file。');
+    process.exit(1);
+  }
+
   const parsed = cli.parse(process.argv, { run: false });
 
   // --help / --version 已在 parse() 内输出，直接结束。

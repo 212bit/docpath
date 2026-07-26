@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T18:43:43.222Z",
+    "updated_at": "2026-07-26T18:43:43.222Z",
+    "content_sha256": "3e9ce1251c47ccbd6288b7a9cf1ec615e1ec06b0c378585c1c47f20de6e2f022"
+  },
+  "task_id": "T-20260726-cli-fail-loud-promote",
+  "backlog_id": "R-303",
+  "title": "T-20260726-cli-fail-loud-promote - CLI 输出契约: 末行有意义+换行参数 fail-loud+promote 提示修正 (体感三摩擦)",
+  "generated_at": "2026-07-26T18:43:43.222Z",
+  "scope": {
+    "included": [
+      "CLI 输出契约: 末行有意义+换行参数 fail-loud+promote 提示修正 (体感三摩擦)"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "2026-07-27 用户「全部推进」授权二次 review 全部候选; 本项为 CLI 输出/参数契约变更(末行有意义/换行 fail-loud/提示修正), 行为面: 含换行参数由静默错乱转为显式拒绝",
+    "decision_brief_markdown": "- 当前问题: 二次 review 流程体感 Top 摩擦（三天 18 任务一手记录）：1) emitNextHint 尾随空行致链式脚本 tail 读空误判成败；2) 参数含换行把 cac 打崩直接输出 help（backlog edit 多行 evidence 实测）；3) promote 成熟度提示引导 --background/--acceptance，但 capture 占位正文实际只有 --body-file 全量重写才能通过（R-284 已知不替换占位段）。\n- 目标: CLI 输出契约: 末行有意义+换行参数 fail-loud+promote 提示修正 (体感三摩擦)\n- 背景: 来自 backlog R-303\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 2026-07-27 用户「全部推进」授权二次 review 全部候选; 本项为 CLI 输出/参数契约变更(末行有意义/换行 fail-loud/提示修正), 行为面: 含换行参数由静默错乱转为显式拒绝"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "CLI 输出契约: 末行有意义+换行参数 fail-loud+promote 提示修正 (体感三摩擦)",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "emitNextHint 末行非空且为 exit_criteria（单测捕获 console 验证）。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "换行参数命令非零退出并给出替代通道提示。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "成熟度错误文案以 --body-file 为首选路径；相关既有断言同步。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-303 与任务 T-20260726-cli-fail-loud-promote 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "二次 review 流程体感 Top 摩擦（三天 18 任务一手记录）：1) emitNextHint 尾随空行致链式脚本 tail 读空误判成败；2) 参数含换行把 cac 打崩直接输出 help（backlog edit 多行 evidence 实测）；3) promote 成熟度提示引导 --background/--acceptance，但 capture 占位正文实际只有 --body-file 全量重写才能通过（R-284 已知不替换占位段）。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

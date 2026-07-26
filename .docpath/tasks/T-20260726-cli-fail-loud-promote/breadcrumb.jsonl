@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-cli-fail-loud-promote","step":"S1","status":"in_progress","context":"开始执行: 梳理 CLI 输出契约: 末行有意义+换行参数 fail-loud+promote 提示修正 (体感三摩擦)","timestamp":"2026-07-26T18:41:53.956Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-cli-fail-loud-promote","step":"S1","status":"done","context":"三摩擦定位: emitNextHint 尾空行/换行参数打崩 cac/promote 提示误导","timestamp":"2026-07-26T18:42:07.214Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-cli-fail-loud-promote","step":"S2","status":"done","context":"末行契约+换行 fail-loud(--content 豁免)+提示改 --body-file 首选","timestamp":"2026-07-26T18:42:08.360Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-cli-fail-loud-promote","step":"S3","status":"done","context":"cli-positionals/backlog-command/next 85/85","timestamp":"2026-07-26T18:42:09.425Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-cli-fail-loud-promote","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-07-26T18:43:28.107Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-cli-fail-loud-promote","step":"review","status":"done","context":"代码审查: 0 错误, 7 警告, 0 提示","timestamp":"2026-07-26T18:45:32.534Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-cli-fail-loud-promote","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-07-26T18:45:34.895Z"}

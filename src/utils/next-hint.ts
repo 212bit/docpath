@@ -33,6 +33,6 @@ export async function emitNextHint(cwd: string): Promise<void> {
   }
 
   console.log('');
+  // R-304 输出契约：末行必须有意义——不再尾随空行（曾致链式脚本 tail 读空误判）。
   console.log(stringifyYaml({ next_hint: hint }, { lineWidth: 0 }).trimEnd());
-  console.log('');
 }

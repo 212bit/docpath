@@ -282,7 +282,8 @@ created_at: 2026-05-31
         const out = err.stdout || err.stderr || err.message || '';
         return /背景.*章节正文为空或包含占位内容/.test(out)
           && !/验收.*章节正文为空或包含占位内容/.test(out)
-          && /或者使用 --body-file 全量重写正文/.test(out);
+          && /--body-file/.test(out)
+          && /占位正文只有 --body-file 全量重写才能通过/.test(out);
       }
     );
 

@@ -184,6 +184,32 @@ describe('CLI positional argument guards', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('rejects newline-containing arguments loudly (R-304 输出契约)', () => {
+    const cwd = mkWorkspace();
+    const result = run("backlog edit R-1 --evidence-decision 'line1\nline2'", cwd);
+    assert.notEqual(result.code, 0);
+    assert.match(result.out, /参数包含换行符/);
+    assert.match(result.out, /--stdin 或 --body-file/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('emitNextHint ends with a meaningful final line, no trailing blank (R-304)', async () => {
+    const cwd = mkWorkspace();
+    const { emitNextHint } = await import('../dist/utils/next-hint.js');
+    const lines = [];
+    const original = console.log;
+    console.log = (msg = '') => lines.push(String(msg));
+    try {
+      await emitNextHint(cwd);
+    } finally {
+      console.log = original;
+    }
+    assert.ok(lines.length > 0);
+    assert.notEqual(lines[lines.length - 1], '', '末行不得为空行（曾致链式脚本 tail 读空误判）');
+    assert.match(lines[lines.length - 1], /exit_criteria/, '末行应为 next_hint 的收尾字段');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('removed commands fail loud as unknown (R-299 命令面收缩)', () => {
     const cwd = mkWorkspace();
 

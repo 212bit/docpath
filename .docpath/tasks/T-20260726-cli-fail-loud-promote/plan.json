@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T18:43:46.219Z",
+    "updated_at": "2026-07-26T18:43:46.219Z",
+    "content_sha256": "44e4ce46f7f7cf1b287bbe2adb6a146c54f89a67594df2ef70332d2afd67707f"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-07-26T18:43:46.219Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 CLI 输出契约: 末行有意义+换行参数 fail-loud+promote 提示修正 (体感三摩擦)",
+      "description": "根据 spec 明确 FR-1: CLI 输出契约: 末行有意义+换行参数 fail-loud+promote 提示修正 (体感三摩擦) 的实现边界和验收口径。",
+      "acceptance": "AC-1: emitNextHint 末行非空且为 exit_criteria（单测捕获 console 验证）。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 CLI 输出契约: 末行有意义+换行参数 fail-loud+promote 提示修正 (体感三摩擦)",
+      "description": "在现有架构内完成 FR-1: CLI 输出契约: 末行有意义+换行参数 fail-loud+promote 提示修正 (体感三摩擦) 的代码与文档更新。",
+      "acceptance": "FR-1 CLI 输出契约: 末行有意义+换行参数 fail-loud+promote 提示修正 (体感三摩擦) 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: emitNextHint 末行非空且为 exit_criteria（单测捕获 console 验证）。；AC-2: 换行参数命令非零退出并给出替代通道提示。；AC-3: 成熟度错误文案以 --body-file 为首选路径；相关既有断言同步。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-303 与任务 T-20260726-cli-fail-loud-promote 建立双向关联",
+      "acceptance": "AC-1: emitNextHint 末行非空且为 exit_criteria（单测捕获 console 验证）。；AC-2: 换行参数命令非零退出并给出替代通道提示。；AC-3: 成熟度错误文案以 --body-file 为首选路径；相关既有断言同步。；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-303 与任务 T-20260726-cli-fail-loud-promote 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

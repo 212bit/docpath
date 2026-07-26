@@ -300,8 +300,9 @@ function assertBacklogReadyForExecution(item: BacklogItem, action: 'accept' | 'p
   throw new Error([
     `docpath backlog ${action}: backlog 条目 ${item.id} 尚未达到可执行成熟度`,
     ...issues.map((issue) => `- ${issue}`),
-    `修复建议: docpath backlog edit ${item.id} --background <text> --acceptance <text> --readiness analyzed --evidence-analysis <path>`,
-    `或者使用 --body-file 全量重写正文: docpath backlog edit ${item.id} --body-file <path>`,
+    `修复建议(首选): docpath backlog edit ${item.id} --body-file <path> --readiness analyzed --evidence-analysis <path>`,
+    `  （capture 生成的占位正文只有 --body-file 全量重写才能通过成熟度检查；`,
+    `    --background/--acceptance 不替换占位段, 仅适用于正文已成型的增补）`,
     item.level >= 3
       ? `level 3 还需: --readiness confirmed --evidence-decision <ref> --user-confirmed <text>`
       : '',
