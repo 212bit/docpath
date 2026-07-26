@@ -83,3 +83,11 @@
 - templates/protocols/ 4 flavor canonical
 - src/utils/install-core.ts:211 / install.ts:609 / init.ts:384 读点
 - tests/build-scripts.test.mjs R-297 防复辟断言
+
+## rule: gate 写边界双教义——运行时/派生工件可自愈写, 手写源绝不写
+- rationale: R-287 与 R-300 分别确立了 gate 的两种漂移处理姿态, 边界以「工件是否手写源」划分: spec/plan 的 md/json、docs-index、state 升级属运行时/派生工件, gate(check/review)可自愈写并 loud 输出(🩹); templates/protocols(含 blocks)属手写源, gate 只 fail-loud 指向修复命令(render), 绝不代写。乱站边的后果: 自愈手写源=静默改作者文本(不可接受), 只告警运行时工件=退回 R-287 前的"检测即甩锅 agent"。
+触发: 为任何 gate/命令新增漂移检测或修复路径。期望行为: 先判定工件类别——派生/运行时(由命令生成、可从真源重建)→ 自愈写+loud; 手写源(人类编辑的模板/规则/协议块)→ fail-loud+指路。边界: advisory 只读路径(next/status)两类都不写, 只指路; 自愈必须零内容丢失(R-287 四象限先例)。
+### Evidence
+- src/commands/check.ts 入口: heal(运行时自愈) 与 protocol blocks 校验(手写源 fail-loud) 并存
+- src/commands/render.ts --view protocols 为手写源的显式修复命令
+- rules 本条来源: 2026-07-27 二次架构 review P2-c
