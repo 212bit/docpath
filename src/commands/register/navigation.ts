@@ -2,7 +2,6 @@ import type { CAC } from 'cac';
 import { configCommand } from '../config.js';
 import { diffCommand } from '../diff.js';
 import { learnCommand } from '../learn.js';
-import { resumeCommand } from '../resume.js';
 
 function registerConfigCommand(cli: CAC): void {
   cli.command('config [...args]', '查看/更新配置')
@@ -31,15 +30,6 @@ function registerConfigCommand(cli: CAC): void {
 }
 
 function registerResumeCommand(cli: CAC): void {
-  cli.command('resume', '断线恢复 — 跳到上次中断点')
-    .option('--cwd <path>', '项目目录')
-    .option('--verbose', '显示更详细的 checkpoint 上下文')
-    .action(async (options: { cwd?: string; verbose?: boolean }) => {
-      await resumeCommand({
-        cwd: options.cwd || process.cwd(),
-        verbose: options.verbose,
-      });
-    });
 }
 
 function registerDiffCommand(cli: CAC): void {

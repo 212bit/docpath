@@ -98,10 +98,11 @@ describe('go --auto-next', () => {
     state.current_step = 'S1';
     writeFileSync(statePath, JSON.stringify(state, null, 2));
 
-    const out = run('start S2', cwd);
+    // R-299: start 步进糖已删除，等价语义由 go --step 承载
+    const out = run('go --step S2', cwd);
     const nextState = JSON.parse(readFileSync(statePath, 'utf-8'));
 
-    assert.match(out, /已启动步骤: S2|执行子任务/);
+    assert.match(out, /已启动步骤: S2|执行子任务|子任务: S2/);
     assert.equal(nextState.current_step, 'S2');
     rmSync(cwd, { recursive: true, force: true });
   });

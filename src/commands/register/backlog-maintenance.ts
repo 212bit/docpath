@@ -4,6 +4,7 @@ import { gcDecisionsCommand } from '../gc-decisions.js';
 import { gcCommand } from '../gc.js';
 import { taskCommand } from '../task.js';
 import { tasksCommand } from '../tasks.js';
+import { warnDeprecatedCommand } from './command-metadata.js';
 
 export function registerBacklogMaintenanceCommands(cli: CAC): void {
   cli.command('backlog <action> [id]', '需求条目管理: capture | add | edit | list | groom | refresh | accept | plan | promote | done | drop')
@@ -46,10 +47,12 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
       });
     });
 
-  cli.command('tasks <action>', '任务文件别名管理: drift | sync')
+  // R-299: tasks 并入 task 子动作（同名易混）；tasks 保留一个版本周期的兼容转发。
+  cli.command('tasks <action>', '[deprecated] 用 task drift | task sync 替代')
     .option('--cwd <path>', '项目目录')
     .option('--from <source>', 'sync: 同步来源 canonical | current')
     .action(async (action: string, options: { cwd?: string; from?: 'canonical' | 'current' }) => {
+      warnDeprecatedCommand('tasks', `task ${action}`);
       await tasksCommand({
         cwd: options.cwd || process.cwd(),
         action,
@@ -57,9 +60,19 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
       });
     });
 
-  cli.command('task <action>', '当前任务生命周期管理: abort | reset | reopen')
+  cli.command('task <action>', '当前任务管理: abort | reset | reopen | drift | sync')
     .option('--cwd <path>', '项目目录')
-    .action(async (action: string, options: { cwd?: string }) => {
+    .option('--from <source>', 'sync: 同步来源 canonical | current')
+    .action(async (action: string, options: { cwd?: string; from?: 'canonical' | 'current' }) => {
+      const normalized = action?.trim().toLowerCase();
+      if (normalized === 'drift' || normalized === 'sync') {
+        await tasksCommand({
+          cwd: options.cwd || process.cwd(),
+          action: normalized,
+          from: options.from,
+        });
+        return;
+      }
       await taskCommand({
         cwd: options.cwd || process.cwd(),
         action,

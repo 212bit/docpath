@@ -113,7 +113,6 @@ describe('CLI positional argument guards', () => {
       ['context --max-tokens nope', /context --max-tokens: 参数非法/],
       ['reveal --level nope', /reveal --level: 参数非法/],
       ['reveal --level 4', /reveal --level: 参数非法/],
-      ['compact --max-entries nope', /compact --max-entries: 参数非法/],
       ['agent handoff --max-entries nope', /agent --max-entries: 参数非法/],
     ];
 
@@ -180,27 +179,22 @@ describe('CLI positional argument guards', () => {
     const deprecatedHelp = run('help deprecated', cwd);
     assert.equal(deprecatedHelp.code, 0);
     assert.match(deprecatedHelp.out, /Deprecated compatibility commands:/);
-    assert.match(deprecatedHelp.out, /brainstor\s+Typo compatibility alias/);
-    assert.match(deprecatedHelp.out, /tdd\s+Experimental parallel TDD workflow/);
+    assert.match(deprecatedHelp.out, /tasks\s+Deprecated forward to task drift/);
 
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('keeps deprecated commands callable while warning with replacements', () => {
+  it('removed commands fail loud as unknown (R-299 命令面收缩)', () => {
     const cwd = mkWorkspace();
 
-    const brainstor = run('brainstor req.md --dry-run', cwd);
-    assert.equal(brainstor.code, 0);
-    assert.match(brainstor.out, /deprecated; use brainstorm/i);
-    assert.match(brainstor.out, /需求/);
+    for (const removed of ['brainstor', 'disclosure', 'tdd', 'resume', 'stats', 'export', 'compact', 'discover', 'start', 'retry', 'unblock']) {
+      const result = run(removed, cwd);
+      assert.notEqual(result.code, 0, `${removed} 应已删除`);
+      assert.match(result.out, /未知命令/, `${removed} 应报未知命令`);
+    }
 
-    const disclosure = run('disclosure --level summary', cwd);
-    assert.equal(disclosure.code, 0);
-    assert.match(disclosure.out, /deprecated; use reveal or context/i);
-
-    const tdd = run('tdd', cwd);
-    assert.equal(tdd.code, 0);
-    assert.match(tdd.out, /deprecated; use plan, go, check, review/i);
+    const forwarded = run('tasks drift', cwd);
+    assert.match(forwarded.out, /deprecated; use task drift/i);
 
     rmSync(cwd, { recursive: true, force: true });
   });

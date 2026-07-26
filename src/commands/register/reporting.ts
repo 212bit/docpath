@@ -1,13 +1,8 @@
 import type { CAC } from 'cac';
 import { changesCommand } from '../changes.js';
 import { contextCommand } from '../context.js';
-import { deliverablesCommand } from '../deliverables.js';
-import { exportCommand } from '../export.js';
-import { promptAction } from '../prompt.js';
 import { projectsCommand } from '../projects.js';
 import { renderCommand } from '../render.js';
-import { rolesCommand } from '../roles.js';
-import { statsCommand } from '../stats.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 function parseScopeFiles(value: string | string[] | undefined): string[] {
@@ -67,74 +62,12 @@ function registerContextCommand(cli: CAC): void {
 }
 
 function registerDeliverablesCommand(cli: CAC): void {
-  cli.command('deliverables [action] [target]', '业务交付物模板、索引与 lifecycle profile')
-    .option('--cwd <path>', '项目目录')
-    .option('--template <id>', '模板 ID')
-    .option('--output <file>', '输出文件路径；省略时只渲染到 stdout')
-    .option('--force', '允许覆盖已存在文件')
-    .option('--json', '输出 JSON')
-    .option('--profile <name>', '项目生命周期配置 (lightweight|standard|regulated)')
-    .option('--stage <id>', '生成交付物时指定的阶段 ID')
-    .option('--stdin', '从标准输入读取生成的交付物内容')
-    .option('--dry-run', '只输出 prompt 契约载荷 JSON，不写入文件')
-    .action(async (
-      action: 'list' | 'render' | 'check' | 'init' | 'status' | 'generate' | undefined,
-      target: string | undefined,
-      options: {
-        cwd?: string;
-        template?: string;
-        output?: string;
-        force?: boolean;
-        json?: boolean;
-        profile?: string;
-        stage?: string;
-        stdin?: boolean;
-        dryRun?: boolean;
-        'dry-run'?: boolean;
-      }
-    ) => {
-      await deliverablesCommand({
-        cwd: options.cwd || process.cwd(),
-        action,
-        template: options.template || (action === 'render' ? target : undefined),
-        stage: options.stage || (action === 'generate' ? target : undefined),
-        output: options.output,
-        force: !!options.force,
-        json: !!options.json,
-        profile: options.profile || (action === 'init' ? target : undefined),
-        stdin: !!options.stdin,
-        dryRun: !!(options.dryRun || options['dry-run']),
-      });
-    });
 }
 
 function registerRolesCommand(cli: CAC): void {
-  cli.command('roles [action]', '角色 Profile 与 role-based context')
-    .option('--cwd <path>', '项目目录')
-    .option('--role <id>', '角色 ID')
-    .option('--json', '输出 JSON')
-    .action(async (action: 'list' | 'context' | undefined, options: { cwd?: string; role?: string; json?: boolean }) => {
-      await rolesCommand({
-        cwd: options.cwd || process.cwd(),
-        action,
-        role: options.role,
-        json: !!options.json,
-      });
-    });
 }
 
 function registerExportCommand(cli: CAC): void {
-  cli.command('export', '导出工作流状态为可分享的 standalone markdown')
-    .option('--cwd <path>', '项目目录')
-    .option('--output <file>', '输出文件路径 (默认 stdout)')
-    .option('--full', '包含完整 spec/plan (默认只摘要)')
-    .action(async (options: { cwd?: string; output?: string; full?: boolean }) => {
-      await exportCommand({
-        cwd: options.cwd || process.cwd(),
-        output: options.output,
-        full: !!options.full,
-      });
-    });
 }
 
 function registerRenderCommand(cli: CAC): void {
@@ -154,17 +87,6 @@ function registerRenderCommand(cli: CAC): void {
 }
 
 function registerStatsCommand(cli: CAC): void {
-  cli.command('stats', '项目统计面板')
-    .option('--cwd <path>', '项目目录')
-    .option('--format <format>', '输出格式: table(默认) | json')
-    .option('--agent', '输出 Agent 可读 YAML 状态')
-    .action(async (options: { cwd?: string; format?: string; agent?: boolean }) => {
-      await statsCommand({
-        cwd: options.cwd || process.cwd(),
-        format: options.format as 'table' | 'json' | undefined,
-        agent: !!options.agent,
-      });
-    });
 }
 
 function registerProjectsCommand(cli: CAC): void {
@@ -176,15 +98,6 @@ function registerProjectsCommand(cli: CAC): void {
 }
 
 function registerPromptCommand(cli: CAC): void {
-  cli.command('prompt', '输出结构化 prompt（支持 OMX 风格）')
-    .option('--cwd <path>', '项目目录')
-    .option('--style <style>', '输出风格: omx(默认)', { default: 'omx' })
-    .action(async (options: { cwd?: string; style?: string }) => {
-      await promptAction({
-        cwd: options.cwd || process.cwd(),
-        style: options.style,
-      });
-    });
 }
 
 export function registerReportingCommands(cli: CAC): void {

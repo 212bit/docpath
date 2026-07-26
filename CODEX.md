@@ -37,7 +37,7 @@
   file sync, state transition legality, plan/breadcrumb alignment, install
   health, and closeout evidence. Codex owns semantic recovery decisions: whether
   a drifted spec is a new task, an old task restore, or a user-confirmed reset.
-- If `next`, `status`, `check`, or `tasks drift` reports task identity drift, do
+- If `next`, `status`, `check`, or `task drift` reports task identity drift, do
   not repair it with `agent step`; choose a restore/reset/capture/promote path
   with explicit user intent.
 - `docpath next --agent` is read-only and advisory. Use it at session

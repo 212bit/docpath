@@ -103,10 +103,6 @@ export interface AgentOutput {
   generated_at: string;
 }
 
-export type TddStateSnapshot = {
-  phase?: string;
-};
-
 export type AgentOutputContext = {
   docpathDir: string;
   state: Awaited<ReturnType<typeof readCurrentState>>;
@@ -120,7 +116,6 @@ export type AgentOutputContext = {
   structuredMarkdownDrifts: StructuredMarkdownHashDrift[];
   backlogItems: BacklogItem[];
   pendingDone: Awaited<ReturnType<typeof readPendingDone>>;
-  tddState: TddStateSnapshot | null;
   historicalTaskDirCount: number;
   lessonSummary: { pendingCount: number; pendingKeys: string[] };
   hasIncompleteSpec: boolean;
@@ -422,16 +417,6 @@ export function summarizeUnlearnedLessonCandidates(
   };
 }
 
-export function parseTddState(raw: string): TddStateSnapshot | null {
-  if (!raw.trim()) return null;
-  try {
-    const parsed = JSON.parse(raw) as TddStateSnapshot;
-    return parsed && typeof parsed === 'object' ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function detectActiveStructuredMarkdownDrifts(
   docpathDir: string,
   taskId: string | undefined,
@@ -540,7 +525,6 @@ export function inferNextAction(
   drift: PlanBreadcrumbDrift,
   hasSpec: boolean,
   backlogItems: BacklogItem[],
-  tddState: TddStateSnapshot | null,
   historicalTaskDirCount: number,
   lessonSummary: { pendingCount: number; pendingKeys: string[] },
   hasIncompleteSpec: boolean,
@@ -662,21 +646,6 @@ export function inferNextAction(
     || currentState === 'check_fail'
     || (phase === 'checking' && lastCheckFailed);
   if (activeCheckFailure) {
-    if (tddState?.phase === 'check') {
-      const required = [
-        '.docpath/workspace/current.md',
-        '.docpath/workspace/last-check.md',
-        '.docpath/workspace/tdd-state.json',
-      ];
-      return withWorkflowConstraint({
-        next_action: '质量检查失败，先修复失败项后回到 TDD 循环推进',
-        recommended_command: 'docpath tdd next',
-        required_context: required,
-        required_files: required,
-        must_update: ['.docpath/workspace/last-check.md', '.docpath/workspace/tdd-state.json'],
-        exit_criteria: '修复失败项后重新通过 check，并推进 TDD 到下一阶段',
-      }, phase, gate);
-    }
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md', '.docpath/workspace/breadcrumb.md'];
     return withWorkflowConstraint({
       next_action: '修复质量检查失败项',
@@ -1034,7 +1003,6 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
   const structuredMarkdownDrifts = await detectActiveStructuredMarkdownDrifts(docpathDir, state?.task_id || undefined);
   const backlogItems = await listBacklogItems(cwd);
   const pendingDone = await handleStalePendingDoneWarning(cwd, state, await readPendingDone(cwd));
-  const tddState = parseTddState(await readOptionalFile(join(docpathDir, 'workspace', 'tdd-state.json')));
   const historicalTaskDirCount = await countHistoricalTaskDirs(docpathDir, state?.task_id || undefined);
   const lessonSummary = summarizeUnlearnedLessonCandidates(
     await readOptionalFile(join(docpathDir, 'workspace', 'lesson-candidates.md')),
@@ -1074,7 +1042,6 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
     structuredMarkdownDrifts,
     backlogItems,
     pendingDone,
-    tddState,
     historicalTaskDirCount,
     lessonSummary,
     hasIncompleteSpec: hasSpec ? isIncompleteSpec(specContent) : false,
@@ -1159,7 +1126,6 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
     context.drift,
     context.hasSpec,
     context.backlogItems,
-    context.tddState,
     context.historicalTaskDirCount,
     context.lessonSummary,
     context.hasIncompleteSpec,
@@ -1173,7 +1139,6 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
   const isTroubleshooting = hasDrift
     || inferred.recommended_command.startsWith('docpath debug')
     || inferred.recommended_command.startsWith('docpath recover')
-    || inferred.recommended_command.startsWith('docpath tdd')
     || (state?.gate === 'check_fail');
 
   if (shouldRouteToMajorChangeGate(context, inferred.recommended_command)) {

@@ -1096,27 +1096,6 @@ created_at: 2026-05-31
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('routes check failures in active tdd check phase back into tdd loop', () => {
-    const cwd = mkWorkspace({
-      phase: 'checking',
-      gate: 'check_fail',
-      lastCheck: '# Last Check Evidence\n\n**结果**: ❌ FAIL\n',
-    });
-    writeFileSync(join(cwd, '.docpath', 'workspace', 'tdd-state.json'), JSON.stringify({
-      phase: 'check',
-      started_at: '2026-05-29T00:00:00.000Z',
-      updated_at: '2026-05-29T00:00:00.000Z',
-      cycles: 1,
-    }, null, 2));
-
-    const output = nextAgent(cwd);
-
-    assert.equal(output.recommended_command, 'docpath tdd next');
-    assert.match(output.next_action, /TDD 循环推进/);
-    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/tdd-state.json'));
-    rmSync(cwd, { recursive: true, force: true });
-  });
-
   it('routes review_pass into journal', () => {
     const cwd = mkWorkspace({
       phase: 'reviewing',

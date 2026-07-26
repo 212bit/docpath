@@ -11,7 +11,6 @@ import { warnDeprecatedCommand } from './command-metadata.js';
 
 export function registerSpecCommands(cli: CAC): void {
   registerBrainstormCommand(cli, 'brainstorm', '输出需求澄清 prompt contract，由当前 Agent 生成 spec');
-  registerBrainstormCommand(cli, 'brainstor', 'brainstorm 的兼容别名');
   registerAnalyzeCommand(cli);
   registerRefineCommand(cli);
   registerWriteAnalysisCommand(cli);
@@ -30,7 +29,6 @@ function registerBrainstormCommand(cli: CAC, name: string, description: string):
     .option('--one-shot', '单次 prompt 模式：从 input 生成本地草稿，不进入交互循环')
     .option('--from-backlog <id>', '从 backlog 条目深化：加载已有 evidence 作为已知上下文（可与 --input 组合补充新信息）')
     .action(async (file: string | undefined, options: { cwd?: string; input?: string; file?: string; 'dry-run'?: boolean; dryRun?: boolean; oneShot?: boolean; fromBacklog?: string }) => {
-      if (name === 'brainstor') warnDeprecatedCommand('brainstor', 'brainstorm');
       await brainstormCommand({
         cwd: options.cwd || process.cwd(),
         input: options.input,

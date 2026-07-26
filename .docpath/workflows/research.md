@@ -20,10 +20,7 @@ docpath journal "调研发现"
 - 推荐方案
 
 ### 4. Report
-```bash
-docpath export
-```
-- 产出: 调研报告
+- 产出: 调研报告（写入 .docpath/tasks/<id>/ 任务目录，随 journal 归档）
 
 ### 5. Done
 ```bash

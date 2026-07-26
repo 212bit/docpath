@@ -122,7 +122,6 @@ const WORKFLOW_GATE_COMMAND_PREFIXES = [
   'docpath done',
   'docpath recover',
   'docpath debug reproduce',
-  'docpath tdd next',
 ] as const;
 
 export function isWorkflowGateCommand(command: string): boolean {
@@ -193,9 +192,6 @@ export function isWorkflowGateCommandAllowed(
   }
   if (cmd === 'docpath debug reproduce' || cmd.startsWith('docpath debug ')) {
     // troubleshooting pass-through when check/review failed, else allow if currently failing
-    return true;
-  }
-  if (cmd === 'docpath tdd next' || cmd.startsWith('docpath tdd ')) {
     return true;
   }
   return true;

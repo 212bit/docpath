@@ -155,6 +155,6 @@ export async function taskCommand(options: TaskCommandOptions): Promise<void> {
       await taskReopen(options);
       return;
     default:
-      throw new Error(`docpath task: unsupported action ${action || '(empty)'}（允许: abort|reset|reopen）`);
+      throw new Error(`docpath task: unsupported action ${action || '(empty)'}（允许: abort|reset|reopen|drift|sync）`);
   }
 }

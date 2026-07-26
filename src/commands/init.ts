@@ -486,8 +486,6 @@ workflow:
   auto_brainstorm: true
   # 自动触发 subagent (Level 2+ 有效)
   auto_subagent: true
-  # 强制 TDD (Phase 3 实现)
-  enforce_tdd: false
   # 强制 Code Review (Phase 3 实现)
   enforce_review: false
 ${scanPathsSection}${cmdSection}

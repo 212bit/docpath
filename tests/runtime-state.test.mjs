@@ -110,40 +110,6 @@ describe('docpath runtime lifecycle', () => {
     assert.match(out, /run-end|执行结束|done/i, `got: ${out.slice(0, 100)}`);
   });
 
-  it('compact produces context file', () => {
-    const out = run('compact', tmpDir);
-    assert.match(out, /compact|压缩|saved/i, `got: ${out.slice(0, 100)}`);
-  });
-
-  it('compact cleans workspace runtime state only when explicitly requested', () => {
-    const cwd = mkExecWorkspace();
-    const workspace = path.join(cwd, '.docpath', 'workspace');
-    writeCleanupArtifacts(cwd);
-
-    const defaultOut = run('compact', cwd);
-    assert.match(defaultOut, /compact|saved/i);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(workspace, 'check-history.json'), 'utf-8')).length, 35);
-    assert.equal(jsonlCount(path.join(workspace, 'breadcrumb.jsonl')), 510);
-    assert.equal(fs.readFileSync(path.join(workspace, 'breadcrumb.md'), 'utf-8'), '# breadcrumb.md\n');
-    assert.equal(fs.existsSync(path.join(workspace, 'sessions', 'old.json')), true);
-    assert.equal(fs.existsSync(path.join(workspace, 'leases', 'expired.json')), true);
-
-    const cleanupOut = run('compact --cleanup', cwd);
-    assert.match(cleanupOut, /check-history: rewrite 5 entries/);
-    assert.match(cleanupOut, /breadcrumb: rewrite 10 entries/);
-    assert.match(cleanupOut, /sessions: delete 1 files/);
-    assert.match(cleanupOut, /leases: delete 1 files/);
-    const history = JSON.parse(fs.readFileSync(path.join(workspace, 'check-history.json'), 'utf-8'));
-    assert.equal(history.length, 30);
-    assert.equal(history[0].index, 5);
-    assert.equal(jsonlCount(path.join(workspace, 'breadcrumb.jsonl')), 500);
-    assert.equal(fs.existsSync(path.join(workspace, 'sessions', 'old.json')), false);
-    assert.equal(fs.existsSync(path.join(workspace, 'sessions', 'live.json')), true);
-    assert.equal(fs.existsSync(path.join(workspace, 'leases', 'expired.json')), false);
-    assert.equal(fs.existsSync(path.join(workspace, 'leases', 'live.json')), true);
-    fs.rmSync(cwd, { recursive: true, force: true });
-  });
-
   it('read-only agent views do not run workspace cleanup', () => {
     const cwd = mkExecWorkspace();
     const workspace = path.join(cwd, '.docpath', 'workspace');
@@ -197,11 +163,6 @@ describe('docpath runtime lifecycle', () => {
     assert.equal(state.task_id, 'T-LEGACY');
     assert.equal(state.phase, 'executing');
     fs.rmSync(cwd, { recursive: true, force: true });
-  });
-
-  it('discover finds context files', () => {
-    const out = run('discover', tmpDir);
-    assert.match(out, /Discovery|state\.json|current\.md/i, `got: ${out.slice(0, 100)}`);
   });
 
   it('next suggests next command', () => {

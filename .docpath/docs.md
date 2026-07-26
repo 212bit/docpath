@@ -2,7 +2,7 @@
 
 > 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。
 
-> 扫描时间: 2026-07-26T16:50:51.333Z
+> 扫描时间: 2026-07-26T17:40:58.533Z
 
 ## 文档列表
 
@@ -29,7 +29,7 @@
 | backlog/R-268.md | runbook | project | 2 | false | false | false | 673 |  | R-268 | write-spec stdin 在同一已启动任务内重同步 spec 真源时不应重置 workflow phase。当前问题是相同 task_id 的 spec 同步会走 task created 转移，把 executing checking planning 误回到 drafting，并可能给出错误恢复提示。本次只处理同任务重同步和提示选择，不改变新任务 | 2026-07-15T17:48:15.618Z | 1.8KB |
 | backlog/R-292.md | runbook | project | 2 | false | false | false | 126 |  | R-292 | - 待补充 | 2026-07-26T12:51:22.686Z | 413B |
 | backlog/R-296.md | runbook | project | 2 | false | false | false | 139 |  | R-296 | - 待补充 | 2026-07-26T15:24:35.633Z | 442B |
-| backlog/R-298.md | runbook | project | 2 | false | false | false | 828 |  | R-298 | FSM 门禁事件 check.passed/check.failed/review.failed 的 from 数组含 'completed'，已完成任务可被门禁动作静默重入（transitions.ts:79-84）。这是 R-279（completed 上 go/agent step 半执行污染 breadcrumb）与 R-291（completed  | 2026-07-26T16:34:04.530Z | 2.4KB |
+| backlog/R-299.md | runbook | project | 2 | false | false | false | 864 |  | R-299 | 命令面 60 项（29 core/19 advanced/9 hidden/3 deprecated），1243 次 trace 实测仅 28 项承载全部使用、32 项零调用。2026-07-27 用户逐组勾选确认砍除方案：组A 零使用死命令 12 项（deprecated 三件套 brainstor/disclosure/tdd + 过时视图 resume | 2026-07-26T17:08:55.711Z | 2.5KB |
 | backlog/analysis/R-230-open-questions.md | runbook | project | 2 | false | false | false | 2239 |  | DocPath UI Design - Open Questions | - **背景**：当前 Dashboard 使用深色 Obsidian 主题，改造后计划使用温暖浅色 | 2026-06-21T17:43:53.174Z | 5.6KB |
 | backlog/analysis/R-230-product.md | runbook | project | 2 | false | false | false | 1453 |  | DocPath UI Design - Product Analysis | - **效率提升**：通过可视化仪表盘，2 秒内定位需要人工介入的阻塞点，而非逐个项目运行 `docpath status` | 2026-06-21T17:43:53.162Z | 3.6KB |
 | backlog/analysis/R-230-requirements.md | runbook | project | 2 | false | false | false | 1432 |  | DocPath UI Design - Requirements Analysis | DocPath 是一个渐进式文档驱动工作流 CLI 工具，专为大模型 Agent 和人类开发者设计。当前已有基础 Dashboard UI，使用 React + Tailwind CSS 4 + Vite 构建。 | 2026-06-21T17:43:53.158Z | 3.4KB |
@@ -162,7 +162,8 @@
 | backlog/archived/R-294.md | runbook | project | 2 | false | false | false | 1317 |  | R-294 | 2026-07-26 架构 review 定性的配置双真源：readDocPathConfig（src/utils/config.ts:17-34）只读 .docpath/config.json，而 init 只写 config.yaml——经 json 读取器消费的新字段永远看不到 init 写入的值（rules gotcha 记录的 S5 事故类）。目前 | 2026-07-26T15:08:40.328Z | 3.7KB |
 | backlog/archived/R-295.md | runbook | project | 2 | false | false | false | 1087 |  | R-295 | tsup.config.ts 维护 44 项手工 CLI_ENTRY 白名单，测试经 ../dist 导入的每个 src 文件必须列名，否则「构建成功但测试 ERR_MODULE_NOT_FOUND」（memory/rules 记录的既踩 footgun；本会话 R-286/R-287 均被迫补名单）。白名单与测试导入面的耦合是纯维护负担，且失败形态有欺骗性 | 2026-07-26T15:43:10.648Z | 2.9KB |
 | backlog/archived/R-297.md | runbook | project | 2 | false | false | false | 762 |  | R-297 | 协议契约存在 root/templates/templates-protocols/.docpath-protocols 多层载体，R-273/R-277/R-290 均为「修一层漏一层」事故。2026-07-27 勘察：root↔templates 已被 install manifest drift 治理；无人治理的是 templates/<flavor> | 2026-07-26T16:26:20.637Z | 2.2KB |
-| backlog/backlog.md | runbook | project | 2 | false | false | false | 433 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-26T16:34:04.554Z | 1.3KB |
+| backlog/archived/R-298.md | runbook | project | 2 | false | false | false | 843 |  | R-298 | FSM 门禁事件 check.passed/check.failed/review.failed 的 from 数组含 'completed'，已完成任务可被门禁动作静默重入（transitions.ts:79-84）。这是 R-279（completed 上 go/agent step 半执行污染 breadcrumb）与 R-291（completed  | 2026-07-26T16:51:33.005Z | 2.5KB |
+| backlog/backlog.md | runbook | project | 2 | false | false | false | 420 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-07-26T17:08:55.756Z | 1.3KB |
 | commands/docpath-agent-done.md | reference | project | 3 | false | false | false | 280 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-07-16T16:53:46.631Z | 1.1KB |
 | commands/docpath-agent-enter.md | reference | project | 3 | false | false | false | 315 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-07-16T16:53:46.631Z | 1.2KB |
 | commands/docpath-agent-handoff.md | reference | project | 3 | false | false | false | 277 |  | /docpath-agent-handoff | Persist a compact handoff package for the next Claude Code session. | 2026-07-16T16:53:46.631Z | 1.1KB |
@@ -170,16 +171,12 @@
 | commands/docpath-brainstorm.md | reference | project | 3 | false | false | false | 291 |  | /docpath-brainstorm | Emit a requirement-clarification prompt contract for the current agent session. | 2026-07-16T16:53:46.632Z | 1.1KB |
 | commands/docpath-changes.md | reference | project | 3 | false | false | false | 268 |  | docpath-changes | Run `docpath changes` to summarize the current git working tree, DocPath gate evidence, and a suggested commit message. | 2026-07-16T16:53:46.633Z | 1.0KB |
 | commands/docpath-check.md | reference | project | 3 | false | false | false | 229 |  | /docpath-check | Run DocPath quality gates and workspace consistency checks. | 2026-07-16T16:53:46.633Z | 916B |
-| commands/docpath-compact.md | reference | project | 3 | false | false | false | 202 |  | /docpath-compact | Persist a compact runtime context package. | 2026-07-16T16:53:46.634Z | 807B |
 | commands/docpath-config.md | reference | project | 3 | false | false | false | 148 |  | /docpath-config | Inspect or update DocPath configuration. | 2026-07-16T16:53:46.634Z | 592B |
 | commands/docpath-context.md | reference | project | 3 | false | false | false | 242 |  | /docpath-context | Get a budgeted DocPath context package through the CLI. | 2026-07-16T16:53:46.634Z | 968B |
 | commands/docpath-continue.md | reference | project | 3 | false | false | false | 242 |  | /docpath-continue | Resume an interrupted task through the DocPath CLI. | 2026-07-16T16:53:46.635Z | 965B |
 | commands/docpath-debug.md | reference | project | 3 | false | false | false | 149 |  | /docpath-debug | Run the systematic debugging workflow. | 2026-07-16T16:53:46.635Z | 596B |
 | commands/docpath-diff.md | reference | project | 3 | false | false | false | 168 |  | /docpath-diff | Inspect changes for the active task or step. | 2026-07-16T16:53:46.635Z | 672B |
-| commands/docpath-disclosure.md | reference | project | 3 | false | false | false | 160 |  | /docpath-disclosure | Show progressive disclosure output for the current project state. | 2026-07-16T16:53:46.635Z | 639B |
-| commands/docpath-discover.md | reference | project | 3 | false | false | false | 168 |  | /docpath-discover | Find the key DocPath context files for this project. | 2026-07-16T16:53:46.635Z | 669B |
 | commands/docpath-docs.md | reference | project | 3 | false | false | false | 158 |  | /docpath-docs | Manage the DocPath document asset index. | 2026-07-16T16:53:46.636Z | 629B |
-| commands/docpath-export.md | reference | project | 3 | false | false | false | 161 |  | /docpath-export | Export the DocPath workflow state as standalone markdown. | 2026-07-16T16:53:46.636Z | 642B |
 | commands/docpath-go.md | reference | project | 3 | false | false | false | 242 |  | /docpath-go | Start or continue execution from the current DocPath plan. | 2026-07-16T16:53:46.636Z | 966B |
 | commands/docpath-init.md | reference | project | 3 | false | false | false | 168 |  | /docpath-init | Initialize `.docpath/` in the current project. | 2026-07-16T16:53:46.636Z | 672B |
 | commands/docpath-install.md | reference | project | 3 | false | false | false | 186 |  | /docpath-install | Install DocPath agent protocol files into this project. | 2026-07-16T16:53:46.637Z | 743B |
@@ -190,19 +187,16 @@
 | commands/docpath-projects.md | reference | project | 3 | false | false | false | 156 |  | /docpath-projects | View local projects registered in the DocPath SQLite registry. | 2026-07-16T16:53:46.638Z | 622B |
 | commands/docpath-quick.md | reference | project | 3 | false | false | false | 240 |  | /docpath-quick | Create a fast-track DocPath task for a tiny low-risk change. | 2026-07-16T16:53:46.638Z | 960B |
 | commands/docpath-refine.md | reference | project | 3 | false | false | false | 209 |  | /docpath-refine | Emit a requirement-refinement prompt contract for the current agent session. | 2026-07-16T16:53:46.638Z | 833B |
-| commands/docpath-resume.md | reference | project | 3 | false | false | false | 167 |  | /docpath-resume | Resume from the last DocPath interruption point. | 2026-07-16T16:53:46.639Z | 667B |
 | commands/docpath-reveal.md | reference | project | 3 | false | false | false | 173 |  | /docpath-reveal | Reveal DocPath context at a controlled detail level. | 2026-07-16T16:53:46.639Z | 690B |
 | commands/docpath-review.md | reference | project | 3 | false | false | false | 170 |  | /docpath-review | Run a structured code review for the active task. | 2026-07-16T16:53:46.639Z | 679B |
 | commands/docpath-run.md | reference | project | 3 | false | false | false | 166 |  | /docpath-run | Record low-level DocPath runtime lifecycle events. | 2026-07-16T16:53:46.639Z | 661B |
-| commands/docpath-stats.md | reference | project | 3 | false | false | false | 143 |  | /docpath-stats | Show DocPath project statistics. | 2026-07-16T16:53:46.640Z | 570B |
 | commands/docpath-status.md | reference | project | 3 | false | false | false | 244 |  | /docpath-status | Show the current DocPath state without modifying files. | 2026-07-16T16:53:46.640Z | 973B |
-| commands/docpath-tdd.md | reference | project | 3 | false | false | false | 161 |  | /docpath-tdd | Drive the DocPath TDD workflow. | 2026-07-16T16:53:46.640Z | 643B |
 | commands/docpath-unlink.md | reference | project | 3 | false | false | false | 169 |  | /docpath-unlink | Remove the current project association from DocPath. | 2026-07-16T16:53:46.640Z | 675B |
 | commands/docpath-write-design.md | reference | project | 3 | false | false | false | 718 |  | /docpath-write-design | Artifact sink: write UI/UX design evidence already generated or selected by the | 2026-07-16T16:53:46.641Z | 2.8KB |
 | commands/docpath-write-journal.md | reference | project | 3 | false | false | false | 198 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task through the CLI. | 2026-07-16T16:53:46.641Z | 792B |
 | commands/docpath-write-plan.md | reference | project | 3 | false | false | false | 216 |  | /docpath-write-plan | Artifact sink: write an execution plan already generated by the current agent | 2026-07-16T16:53:46.641Z | 862B |
 | commands/docpath-write-spec.md | reference | project | 3 | false | false | false | 215 |  | /docpath-write-spec | Artifact sink: write spec content already generated by the current agent session | 2026-07-16T16:53:46.642Z | 859B |
-| docs.md | index | project | 2 | false | false | false | 89469 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-26T16:23:54.979Z | 294.5KB |
+| docs.md | index | project | 2 | false | false | false | 90172 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-07-26T16:50:51.335Z | 296.8KB |
 | harness.md | index | project | 2 | false | false | false | 252 |  | DocPath Harness Rules | - [ ] 读取 current.md 确认当前状态 | 2026-05-28T12:29:00.329Z | 786B |
 | protocols/AGENTS.md | index | project | 2 | false | false | false | 2555 |  | DocPath Agent Protocol | 1. Run `docpath next --agent` to read the `agent_view: next` route and the | 2026-07-26T14:31:33.690Z | 10.0KB |
 | protocols/CLAUDE.md | index | project | 2 | false | false | false | 2406 |  | DocPath Claude Code Protocol | 1. Run `/docpath-next` or `docpath next --agent` for the `agent_view: next` | 2026-07-26T14:31:33.690Z | 9.4KB |
@@ -230,6 +224,8 @@
 | tasks/T-20260718-promote-ac-decision-brief/spec.md | runbook | task | 1 | false | false | false | 1600 | T-20260718-promote-ac-decision-brief | T-20260718-promote-ac-decision-brief - promote 脚手架质量: AC 双前缀 / Decision Brief 垃圾解析 / 变更类型误预勾 | 三次 promote 实证 (R-275/R-276/R-277): (1) AC 行 'AC-1: AC-1:' 双前缀——backlog 验收行自带编号再拼一次; (2) Decision Brief 解析出 '当前问题: ## 背景' 垃圾值——把节标题当正文; (3) 变更类型自动预勾两次不准 (R-275 勾架构/工作流, R-276 勾权限/范围 | 2026-07-18T03:01:07.690Z | 4.0KB |
 | tasks/T-20260718-skill-file-set-mismatch-review/plan.md | runbook | task | 1 | false | false | false | 911 | T-20260718-skill-file-set-mismatch-review | plan | - [x] S1: 梳理 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review | 2026-07-18T05:14:51.219Z | 2.3KB |
 | tasks/T-20260718-skill-file-set-mismatch-review/spec.md | runbook | task | 1 | false | false | false | 1702 | T-20260718-skill-file-set-mismatch-review | T-20260718-skill-file-set-mismatch-review - 跨任务陈旧 skill 证据经 file-set-mismatch 降级警告放行 review | R-279 收口实测 (2026-07-17): review.json 的 skill_reviews 是工作区级持久, 上一任务 (R-276, 6 个 TS 文件) 的 pass 证据在新任务 (R-279, 2 个 TS 文件) review 时因 file set mismatch 仅降级为 evidence_warnings, 审查仍 appro | 2026-07-18T05:13:03.597Z | 4.3KB |
+| tasks/T-20260726-16-tasks-task-60-44/plan.md | runbook | task | 1 | false | false | false | 960 | T-20260726-16-tasks-task-60-44 | plan | - [x] S1: 梳理 命令面收缩: 删 16 项零使用命令+tasks 并入 task (用户逐组确认, 60→44) | 2026-07-26T17:37:07.587Z | 2.5KB |
+| tasks/T-20260726-16-tasks-task-60-44/spec.md | runbook | task | 1 | false | false | false | 2128 | T-20260726-16-tasks-task-60-44 | T-20260726-16-tasks-task-60-44 - 命令面收缩: 删 16 项零使用命令+tasks 并入 task (用户逐组确认, 60→44) | 命令面 60 项（29 core/19 advanced/9 hidden/3 deprecated），1243 次 trace 实测仅 28 项承载全部使用、32 项零调用。2026-07-27 用户逐组勾选确认砍除方案：组A 零使用死命令 12 项（deprecated 三件套 brainstor/disclosure/tdd + 过时视图 resume | 2026-07-26T17:08:55.665Z | 5.7KB |
 | tasks/T-20260726-changes-report-worktree-isolation-symlin/plan.md | runbook | task | 1 | false | false | false | 887 | T-20260726-changes-report-worktree-isolation-symlin | plan | - [x] S1: 梳理 changes-report worktree_isolation 死功能: 重复 symlink 判定 + noise 分类语义违反 R-273 契约 | 2026-07-26T13:26:19.577Z | 2.4KB |
 | tasks/T-20260726-changes-report-worktree-isolation-symlin/spec.md | runbook | task | 1 | false | false | false | 1800 | T-20260726-changes-report-worktree-isolation-symlin | T-20260726-changes-report-worktree-isolation-symlin - changes-report worktree_isolation 死功能: 重复 symlink 判定 + noise 分类语义违反 R-273 契约 | R-288 实施中发现 src/utils/changes-report.ts:152 存在 isDocpathWorktree 的完整重复实现，同样以「.docpath/backlog 与 .docpath/rules 是 symlink」识别 worktree——R-273 契约修正后永远 false，导致 changes --agent 的 workt | 2026-07-26T13:09:55.995Z | 4.9KB |
 | tasks/T-20260726-claude-md-lifecycle-agent-enter-go-cli-p/plan.md | runbook | task | 1 | false | false | false | 746 | T-20260726-claude-md-lifecycle-agent-enter-go-cli-p | plan | - [x] S1: 梳理 CLAUDE.md Lifecycle 顺序与实现矛盾: 文档 agent enter 在 go 之前, CLI 在 planning 阶段 fail-loud 要求先 go | 2026-07-26T14:36:44.574Z | 2.0KB |
@@ -252,8 +248,8 @@
 | tasks/T-20260726-templates-protocols-templates-a/spec.md | runbook | task | 1 | false | false | false | 1972 | T-20260726-templates-protocols-templates-a | T-20260726-templates-protocols-templates-a - 协议单源: templates/protocols 唯一手写层, 删除 templates 根层重复副本 (方案 A 收敛) | 协议契约存在 root/templates/templates-protocols/.docpath-protocols 多层载体，R-273/R-277/R-290 均为「修一层漏一层」事故。2026-07-27 勘察：root↔templates 已被 install manifest drift 治理；无人治理的是 templates/<flavor> | 2026-07-26T16:11:50.809Z | 5.2KB |
 | tasks/T-20260726-tsup-entry-glob-cli-entry-footgun/plan.md | runbook | task | 1 | false | false | false | 829 | T-20260726-tsup-entry-glob-cli-entry-footgun | plan | - [x] S1: 梳理 tsup entry glob 全量编译, 根除 CLI_ENTRY 白名单与测试导入 footgun | 2026-07-26T15:37:42.424Z | 2.2KB |
 | tasks/T-20260726-tsup-entry-glob-cli-entry-footgun/spec.md | runbook | task | 1 | false | false | false | 1621 | T-20260726-tsup-entry-glob-cli-entry-footgun | T-20260726-tsup-entry-glob-cli-entry-footgun - tsup entry glob 全量编译, 根除 CLI_ENTRY 白名单与测试导入 footgun | tsup.config.ts 维护 44 项手工 CLI_ENTRY 白名单，测试经 ../dist 导入的每个 src 文件必须列名，否则「构建成功但测试 ERR_MODULE_NOT_FOUND」（memory/rules 记录的既踩 footgun；本会话 R-286/R-287 均被迫补名单）。白名单与测试导入面的耦合是纯维护负担，且失败形态有欺骗性 | 2026-07-26T15:15:23.907Z | 4.1KB |
-| tasks/current/plan.md | runbook | task | 1 | true | false | false | 938 | T-20260726-fsm-completed-task-reopen-r-279-r-291-fs | plan | - [x] S1: 梳理 FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口) | 2026-07-26T16:47:07.224Z | 2.5KB |
-| tasks/current/spec.md | runbook | task | 1 | true | false | false | 2078 | T-20260726-fsm-completed-task-reopen-r-279-r-291-fs | T-20260726-fsm-completed-task-reopen-r-279-r-291-fs - FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口) | FSM 门禁事件 check.passed/check.failed/review.failed 的 from 数组含 'completed'，已完成任务可被门禁动作静默重入（transitions.ts:79-84）。这是 R-279（completed 上 go/agent step 半执行污染 breadcrumb）与 R-291（completed  | 2026-07-26T16:34:04.523Z | 5.5KB |
+| tasks/current/plan.md | runbook | task | 1 | true | false | false | 960 | T-20260726-16-tasks-task-60-44 | plan | - [x] S1: 梳理 命令面收缩: 删 16 项零使用命令+tasks 并入 task (用户逐组确认, 60→44) | 2026-07-26T17:37:07.587Z | 2.5KB |
+| tasks/current/spec.md | runbook | task | 1 | true | false | false | 2128 | T-20260726-16-tasks-task-60-44 | T-20260726-16-tasks-task-60-44 - 命令面收缩: 删 16 项零使用命令+tasks 并入 task (用户逐组确认, 60→44) | 命令面 60 项（29 core/19 advanced/9 hidden/3 deprecated），1243 次 trace 实测仅 28 项承载全部使用、32 项零调用。2026-07-27 用户逐组勾选确认砍除方案：组A 零使用死命令 12 项（deprecated 三件套 brainstor/disclosure/tdd + 过时视图 resume | 2026-07-26T17:08:55.665Z | 5.7KB |
 | tasks/done/T-20260528-agent-integration/plan.md | runbook | task | 3 | false | true | false | 929 | T-20260528-agent-integration | 执行计划 | ``` | 2026-05-28T14:53:27.931Z | 2.6KB |
 | tasks/done/T-20260528-agent-integration/spec.md | runbook | task | 3 | false | true | false | 847 | T-20260528-agent-integration | 规约: Agent Integration (Phase 1+2) | DocPath 需要面向 AI Agent 的接口层，使其能被 Claude Code / OpenCode 等工具原生使用。 | 2026-05-28T14:37:39.406Z | 2.4KB |
 | tasks/done/T-20260528-harness-lite/plan.md | runbook | task | 3 | false | true | false | 838 | T-20260528-harness-lite | Plan: Harness Lite Phase 1 | **目标**: 让 `docpath check` 能发现并运行 typecheck 相关脚本 | 2026-05-29T05:13:03.422Z | 2.5KB |
@@ -861,14 +857,16 @@
 | tasks/promote-backups/2026-07-26T16-11-50-743Z/spec.md | runbook | project | 2 | false | false | false | 1621 |  | T-20260726-tsup-entry-glob-cli-entry-footgun - tsup entry glob 全量编译, 根除 CLI_ENTRY 白名单与测试导入 footgun | tsup.config.ts 维护 44 项手工 CLI_ENTRY 白名单，测试经 ../dist 导入的每个 src 文件必须列名，否则「构建成功但测试 ERR_MODULE_NOT_FOUND」（memory/rules 记录的既踩 footgun；本会话 R-286/R-287 均被迫补名单）。白名单与测试导入面的耦合是纯维护负担，且失败形态有欺骗性 | 2026-07-26T16:11:50.745Z | 4.1KB |
 | tasks/promote-backups/2026-07-26T16-34-04-467Z/plan.md | runbook | project | 2 | false | false | false | 918 |  | plan | - [x] S1: 梳理 协议单源: templates/protocols 唯一手写层, 删除 templates 根层重复副本 (方案 A 收敛) | 2026-07-26T16:34:04.469Z | 2.4KB |
 | tasks/promote-backups/2026-07-26T16-34-04-467Z/spec.md | runbook | project | 2 | false | false | false | 1972 |  | T-20260726-templates-protocols-templates-a - 协议单源: templates/protocols 唯一手写层, 删除 templates 根层重复副本 (方案 A 收敛) | 协议契约存在 root/templates/templates-protocols/.docpath-protocols 多层载体，R-273/R-277/R-290 均为「修一层漏一层」事故。2026-07-27 勘察：root↔templates 已被 install manifest drift 治理；无人治理的是 templates/<flavor> | 2026-07-26T16:34:04.470Z | 5.2KB |
+| tasks/promote-backups/2026-07-26T17-08-55-606Z/plan.md | runbook | project | 2 | false | false | false | 938 |  | plan | - [x] S1: 梳理 FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口) | 2026-07-26T17:08:55.608Z | 2.5KB |
+| tasks/promote-backups/2026-07-26T17-08-55-606Z/spec.md | runbook | project | 2 | false | false | false | 2078 |  | T-20260726-fsm-completed-task-reopen-r-279-r-291-fs - FSM completed 重入收紧: 门禁事件禁入完成态, 新增显式 task reopen (R-279/R-291 家族 FSM 层收口) | FSM 门禁事件 check.passed/check.failed/review.failed 的 from 数组含 'completed'，已完成任务可被门禁动作静默重入（transitions.ts:79-84）。这是 R-279（completed 上 go/agent step 半执行污染 breadcrumb）与 R-291（completed  | 2026-07-26T17:08:55.608Z | 5.5KB |
 | workflows/bugfix.md | index | project | 2 | false | false | false | 160 |  | Workflow: Bug Fix | - 收集错误信息 (日志、截图、复现步骤) | 2026-07-16T16:53:46.626Z | 463B |
 | workflows/debug.md | index | project | 2 | false | false | false | 145 |  | Workflow: Debug | - 收集症状 (日志、指标、复现步骤) | 2026-07-16T16:53:46.626Z | 416B |
 | workflows/feature.md | index | project | 2 | false | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-07-16T16:53:46.627Z | 753B |
 | workflows/refactor.md | index | project | 2 | false | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-07-16T16:53:46.627Z | 424B |
-| workflows/research.md | index | project | 2 | false | false | false | 146 |  | Workflow: Research | - 明确调研目标 | 2026-07-16T16:53:46.627Z | 409B |
-| workspace/breadcrumb.md | index | project | 0 | false | false | false | 1348 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-26T16:47:07.221Z | 4.3KB |
+| workflows/research.md | index | project | 2 | false | false | false | 161 |  | Workflow: Research | - 明确调研目标 | 2026-07-26T17:37:04.917Z | 449B |
+| workspace/breadcrumb.md | index | project | 0 | false | false | false | 1072 |  | 面包屑 — 上下文恢复索引 | --- | 2026-07-26T17:37:07.583Z | 3.4KB |
 | workspace/compact-context.md | index | project | 0 | false | false | false | 3467 |  | Context Handoff — T-20260715-docpath-init-scan-existing | - ✅ PASS (2026-07-15T15:57:32.756Z) | 2026-07-15T16:06:13.998Z | 11.2KB |
-| workspace/current.md | index | project | 0 | true | false | false | 522 |  | 📍 当前工作流状态 | ```yaml | 2026-07-26T16:50:50.893Z | 1.5KB |
+| workspace/current.md | index | project | 0 | true | false | false | 441 |  | 📍 当前工作流状态 | ```yaml | 2026-07-26T17:40:57.972Z | 1.3KB |
 | workspace/decisions-2026-05.md | index | project | 0 | false | false | false | 16136 |  | 决策日志归档 — 2026-05 | --- | 2026-06-16T11:00:07.138Z | 46.7KB |
 | workspace/decisions-2026-06.md | index | project | 0 | false | false | false | 4794 |  | 决策日志归档 — 2026-06 | --- | 2026-07-14T11:14:31.428Z | 13.9KB |
 | workspace/decisions-2026-07.md | index | project | 0 | false | false | false | 6870 |  | 决策日志归档 — 2026-07 | --- | 2026-07-26T16:26:20.653Z | 20.1KB |
@@ -878,10 +876,10 @@
 | workspace/decisions-2026-W26.md | index | project | 0 | false | false | false | 2675 |  | 决策日志归档 — 2026-W26 | --- | 2026-07-12T13:49:33.906Z | 7.7KB |
 | workspace/decisions.md | log | project | 3 | false | true | false | 5995 |  | 决策日志 — DocPath ADR | --- | 2026-07-26T16:26:20.654Z | 16.7KB |
 | workspace/journal.md | index | project | 0 | false | false | false | 120 |  | 📖 工作日志 | - 新增 write-design 命令 | 2026-06-10T04:44:31.299Z | 361B |
-| workspace/last-check.md | index | project | 0 | true | false | false | 184 |  | Last Check Evidence | **时间**: 2026-07-26T16:23:55.552Z | 2026-07-26T16:23:55.554Z | 556B |
-| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 7992 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-26T16:26:20.649Z | 26.2KB |
+| workspace/last-check.md | index | project | 0 | true | false | false | 186 |  | Last Check Evidence | **时间**: 2026-07-26T16:50:51.866Z | 2026-07-26T16:50:51.868Z | 565B |
+| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 8097 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-07-26T16:51:33.016Z | 26.6KB |
 | workspace/pending-done.md | index | project | 0 | false | false | false | 35 |  | pending-done | pending-done | 2026-07-17T02:10:39.986Z | 137B |
-| workspace/review.md | index | project | 0 | true | false | false | 161 |  | Code Review Report | **时间**: 2026-07-26T16:25:25.080Z | 2026-07-26T16:25:25.101Z | 550B |
+| workspace/review.md | index | project | 0 | true | false | false | 175 |  | Code Review Report | **时间**: 2026-07-26T16:51:32.555Z | 2026-07-26T16:51:32.557Z | 606B |
 
 ## 用途说明
 

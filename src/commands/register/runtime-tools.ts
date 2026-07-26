@@ -1,34 +1,9 @@
 import type { CAC } from 'cac';
-import { compactCommand, discoverCommand, nextCommand } from '../runtime.js';
+import { nextCommand } from '../runtime.js';
 import { hooksStatusCommand } from '../../hooks/bridge.js';
 import { getOptionValue, normalizeEnumOption, normalizeTaskFileSyncSource, parseIntegerOption } from './shared.js';
-import { run as migrateBreadcrumbCommand } from '../migrate-breadcrumb.js';
 
 export function registerRuntimeToolCommands(cli: CAC): void {
-  cli.command('compact', '持久化压缩运行上下文到 workspace/compact-context.md')
-    .option('--cwd <path>', '项目目录')
-    .option('--max-entries <n>', '保留最近 breadcrumb 条数 (默认 20)')
-    .option('--dry-run', '只输出，不写文件')
-    .option('--cleanup', '显式执行 workspace 老化清理（与 docpath gc --force 使用同一 engine）')
-    .action(async (options: { cwd?: string; 'max-entries'?: string; maxEntries?: string; dryRun?: boolean; 'dry-run'?: boolean; cleanup?: boolean }) => {
-      await compactCommand({
-        cwd: options.cwd || process.cwd(),
-        maxEntries: parseIntegerOption(options.maxEntries || options['max-entries'], 'compact --max-entries', { min: 1 }),
-        dryRun: !!(options.dryRun || options['dry-run']),
-        cleanup: !!options.cleanup,
-      });
-    });
-
-  cli.command('discover', '发现 DocPath 关键上下文文件')
-    .option('--cwd <path>', '项目目录')
-    .option('--format <format>', 'text(默认) | json')
-    .action(async (options: { cwd?: string; format?: string }) => {
-      await discoverCommand({
-        cwd: options.cwd || process.cwd(),
-        format: normalizeEnumOption(options.format, 'discover --format', ['text', 'json'] as const),
-      });
-    });
-
   cli.command('next', '输出下一步建议')
     .option('--cwd <path>', '项目目录')
     .option('--agent', '输出 Agent YAML')
@@ -57,11 +32,4 @@ export function registerRuntimeToolCommands(cli: CAC): void {
       });
     });
 
-  cli.command('migrate-breadcrumb', '将全局 breadcrumb.jsonl 迁移到任务级文件')
-    .option('--cwd <path>', '项目目录')
-    .action(async (options: { cwd?: string }) => {
-      await migrateBreadcrumbCommand({
-        cwd: options.cwd || process.cwd(),
-      });
-    });
 }

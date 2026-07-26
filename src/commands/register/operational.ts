@@ -10,11 +10,9 @@
  */
 
 import type { CAC } from 'cac';
-import { startCommand } from '../start.js';
-import { stepCommand } from '../step.js';
 import { doneCommand } from '../done.js';
 import { quickCommand } from '../quick.js';
-import { recoverCommand, retryCommand, unblockCommand } from '../recovery.js';
+import { recoverCommand } from '../recovery.js';
 import { commitCommand } from '../commit.js';
 import { mergeDriverCommand } from '../merge-driver.js';
 
@@ -31,34 +29,7 @@ export function registerOperationalCommands(cli: CAC): void {
       });
     });
 
-  cli
-    .command('start <step>', '启动计划步骤（语义化包装，调用 go）')
-    .option('--cwd <path>', '项目目录')
-    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
-    .action(async (step: string, options: { cwd?: string; session?: string }) => {
-      await startCommand({
-        cwd: options.cwd || process.cwd(),
-        step,
-        session: options.session,
-      });
-    });
-
-  cli
-    .command('step <status>', '标记当前步骤状态（done/blocked/skipped）')
-    .option('--cwd <path>', '项目目录')
-    .option('--step <step>', '显式指定步骤（可选，自动推断）')
-    .option('--note <note>', '状态备注')
-    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
-    .action(async (status: 'done' | 'blocked' | 'skipped', options: { cwd?: string; step?: string; note?: string; session?: string }) => {
-      await stepCommand({
-        cwd: options.cwd || process.cwd(),
-        status,
-        step: options.step,
-        note: options.note,
-        session: options.session,
-      });
-    });
-
+  // R-299: start/step 步进糖已删除——go（原子认领）+ agent step --status 完全覆盖。
   cli
     .command('done', '完成任务（保留所有门禁：check → review → journal）')
     .option('--cwd <path>', '项目目录')
@@ -112,30 +83,7 @@ export function registerOperationalCommands(cli: CAC): void {
       });
     });
 
-  cli
-    .command('retry <step>', '重试 skipped 步骤')
-    .option('--cwd <path>', '项目目录')
-    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
-    .action(async (step: string, options: { cwd?: string; session?: string }) => {
-      await retryCommand({
-        cwd: options.cwd || process.cwd(),
-        step,
-        session: options.session,
-      });
-    });
-
-  cli
-    .command('unblock <step>', '显式解除阻塞并重新开始')
-    .option('--cwd <path>', '项目目录')
-    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
-    .action(async (step: string, options: { cwd?: string; session?: string }) => {
-      await unblockCommand({
-        cwd: options.cwd || process.cwd(),
-        step,
-        session: options.session,
-      });
-    });
-
+  // R-299: retry/unblock 步进糖已删除——recover 覆盖阻塞恢复语义。
   cli
     .command('commit', 'Git 收口包装：预览/暂存/提交（Phase 2）')
     .option('--cwd <path>', '项目目录')
