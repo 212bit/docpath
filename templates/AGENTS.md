@@ -90,8 +90,8 @@ Use lifecycle commands instead of manual state edits:
 
 ```bash
 docpath quick "Fix typo in docs"   # only for tiny low-risk changes
-docpath agent enter
 docpath go --step S1
+docpath agent enter   # optional session declaration; requires an executing step
 docpath agent step --step "S1" --status done
 docpath check
 docpath agent done --step "<task>"
@@ -100,7 +100,7 @@ docpath agent handoff
 
 Rules:
 
-- Run `docpath agent enter` before code or protocol edits in an executable task.
+- Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.
 - Use `docpath project capture` when the user has a brand-new project that
   starts from PPT-derived text, API docs, introductory docs, meeting notes, or a
   single rough requirements document. Do not force these raw materials into

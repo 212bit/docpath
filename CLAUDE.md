@@ -99,8 +99,8 @@ tail range.
 ## Lifecycle
 
 ```bash
-docpath agent enter
 docpath go --step S1
+docpath agent enter   # optional session declaration; requires an executing step
 docpath agent step --step "S1" --status done
 docpath check
 docpath agent done --step "<task>"
@@ -109,8 +109,8 @@ docpath agent handoff
 
 Workflow:
 
-1. Enter with `docpath agent enter` before code or protocol edits.
-2. Atomically claim/start the active step with `docpath go --step <id>`.
+1. Atomically claim/start the active step with `docpath go --step <id>`; this moves it into executing.
+2. Optionally declare the session with `docpath agent enter` (legal only after a step is executing).
 3. Make the scoped change.
 4. Record completion with `docpath agent step --step "<id>" --status done`.
 5. Run `docpath check` and `docpath agent done` before claiming completion.
@@ -171,9 +171,10 @@ export DOCPATH_SESSION=codex
 
 # Standard DocPath workflow
 docpath backlog promote R-xxx
-docpath agent enter
-docpath agent step --step S1
+docpath plan
+docpath go --step S1
 # ... develop ...
+docpath agent step --step S1 --status done
 docpath check
 git commit
 

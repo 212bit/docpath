@@ -51,8 +51,8 @@
 ## Lifecycle
 
 ```bash
-docpath agent enter
 docpath go --step S1
+docpath agent enter   # optional session declaration; requires an executing step
 docpath agent step --step "S1" --status done
 docpath check
 docpath agent done --step "<task>"
@@ -103,9 +103,10 @@ export DOCPATH_SESSION=codex
 
 # Standard DocPath workflow
 docpath backlog promote R-xxx
-docpath agent enter
-docpath agent step --step S1
+docpath plan
+docpath go --step S1
 # ... develop ...
+docpath agent step --step S1 --status done
 docpath check
 git commit
 

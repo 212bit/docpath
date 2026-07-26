@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T14:36:42.649Z",
+    "updated_at": "2026-07-26T14:36:42.649Z",
+    "content_sha256": "e1f22b8126e8ff32a6e6ad3cef42cdb7335a55c038354bc199c9fcb721d4cb0e"
+  },
+  "task_id": "T-20260726-claude-md-lifecycle-agent-enter-go-cli-p",
+  "backlog_id": "R-290",
+  "title": "T-20260726-claude-md-lifecycle-agent-enter-go-cli-p - CLAUDE.md Lifecycle 顺序与实现矛盾: 文档 agent enter 在 go 之前, CLI 在 planning 阶段 fail-loud 要求先 go",
+  "generated_at": "2026-07-26T14:36:42.649Z",
+  "scope": {
+    "included": [
+      "CLAUDE.md Lifecycle 顺序与实现矛盾: 文档 agent enter 在 go 之前, CLI 在 planning 阶段 fail-loud 要求先 go"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "2026-07-26 用户批准架构 review 后续路线并以 continue 授权实施 R-290（协议文档对齐 CLI 实际门禁语义, 纯文档修正无行为变更; 14 载体全链清扫符合 R-277 规则)",
+    "decision_brief_markdown": "- 当前问题: CLAUDE.md Lifecycle 把 agent enter 排在 go 之前, CLI 实际在 planning 阶段 fail-loud 要求先 go; worktree 示例缺 go。Agent 按文档执行必然撞门禁(2026-07-26 实测)。14 份协议载体同病。\n- 目标: CLAUDE.md Lifecycle 顺序与实现矛盾: 文档 agent enter 在 go 之前, CLI 在 planning 阶段 fail-loud 要求先 go\n- 背景: 来自 backlog R-290\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 2026-07-26 用户批准架构 review 后续路线并以 continue 授权实施 R-290（协议文档对齐 CLI 实际门禁语义, 纯文档修正无行为变更; 14 载体全链清扫符合 R-277 规则)"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "CLAUDE.md Lifecycle 顺序与实现矛盾: 文档 agent enter 在 go 之前, CLI 在 planning 阶段 fail-loud 要求先 go",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "全部载体顺序与 CLI 一致; grep 零残留; 仅文档变更",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-290 与任务 T-20260726-claude-md-lifecycle-agent-enter-go-cli-p 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "CLAUDE.md Lifecycle 把 agent enter 排在 go 之前, CLI 实际在 planning 阶段 fail-loud 要求先 go; worktree 示例缺 go。Agent 按文档执行必然撞门禁(2026-07-26 实测)。14 份协议载体同病。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

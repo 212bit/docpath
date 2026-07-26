@@ -68,7 +68,8 @@ tail range.
 
 ```bash
 docpath next --agent
-docpath agent enter  # only when the route points to an executable task
+docpath go --step <id>   # claim the active step first
+docpath agent enter      # optional; legal only after the step is executing
 ```
 
 ### Execute a Step

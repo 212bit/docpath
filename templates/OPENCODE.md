@@ -68,7 +68,8 @@ tail range.
 
 ```bash
 docpath next --agent
-docpath agent enter  # only when the route points to an executable task
+docpath go --step <id>   # claim the active step first
+docpath agent enter      # optional; legal only after the step is executing
 ```
 
 ### Execute a Step
@@ -137,9 +138,10 @@ export DOCPATH_SESSION=opencode
 
 # Standard DocPath workflow
 docpath backlog promote R-xxx
-docpath agent enter
-docpath agent step --step S1
+docpath plan
+docpath go --step S1
 # ... develop ...
+docpath agent step --step S1 --status done
 docpath check
 git commit
 
