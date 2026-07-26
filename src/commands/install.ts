@@ -114,19 +114,23 @@ async function writeManagedFile(
           });
           if (isCancel(shouldOverwrite) || shouldOverwrite !== true) {
             console.log(`⏭️  跳过覆写本地定制资产 ${label}。`);
+            skippedManagedFiles.push(`${label} (本地定制)`);
             return 'skipped';
           }
         } else {
           console.warn(`⚠️  警告: 检测到本地定制资产 ${label} 已被修改。在非交互模式下跳过覆写。若要重置，请先手动删除该文件。`);
+          skippedManagedFiles.push(`${label} (本地定制)`);
           return 'skipped';
         }
       } else {
+        skippedManagedFiles.push(label);
         console.log(`⏭️  ${label} 已存在，跳过。使用 --force 覆盖；差异预览:`);
         console.log(renderDiffHint(existing, content));
         return 'skipped';
       }
     } else {
       if (!force) {
+        skippedManagedFiles.push(label);
         console.log(`⏭️  ${label} 已存在，跳过。使用 --force 覆盖；差异预览:`);
         console.log(renderDiffHint(existing, content));
         return 'skipped';
@@ -553,6 +557,14 @@ async function writeInstallMetadata(context: InstallContext): Promise<void> {
 }
 
 function printInstallSummary(target: Target): void {
+  if (skippedManagedFiles.length > 0) {
+    console.log(`\n⚠️  安装完成但有 ${skippedManagedFiles.length} 项与模板不同且未覆盖（R-312 不再静默庆祝）:`);
+    for (const label of skippedManagedFiles.slice(0, 10)) console.log(`    - ${label}`);
+    if (skippedManagedFiles.length > 10) console.log(`    ... 共 ${skippedManagedFiles.length} 项`);
+    console.log('    覆盖陈旧副本: docpath install --force（本地定制资产会经确认/保留）');
+    console.log(`\n✅  其余资产已就绪 (target: ${target})。`);
+    return;
+  }
   console.log(`\n🎉  Agent 协议安装完成 (target: ${target})！`);
   if (target === 'claude') {
     console.log('    CLAUDE.md 和 .claude/commands/ 已就绪，在 Claude Code 中输入 /docpath-status 开始使用。');
@@ -598,6 +610,11 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
 }
 
 // ─── 内部工具 ───
+
+// R-312（SynapBuddy 实测）：非 force 安装静默跳过差异文件仍输出完成庆祝，
+// 三份陈旧协议副本被掩盖一天。跳过项收集器让终局输出诚实。
+const skippedManagedFiles: string[] = [];
+
 
 async function installProtocolFile(
   targetDir: string,

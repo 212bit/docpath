@@ -594,7 +594,19 @@ export async function buildInstallDoctorReport(options: InstallOptions = {}): Pr
 
 export async function createInstallContext(options: InstallOptions): Promise<InstallContext> {
   const cwd = options.cwd || process.cwd();
-  const target = normalizeTarget(options.target);
+  // R-311（SynapBuddy 实测）：未显式指定 target 时优先读安装元数据里记录的
+  // target——默认 universal 会让非 universal 项目的 --check 用错误期望资产集
+  // 产生跨 target 假漂移。显式 --target 仍最高优先。
+  let resolvedTarget = options.target;
+  if (!resolvedTarget) {
+    try {
+      const meta = await readInstallMetadata(join(options.cwd || process.cwd(), '.docpath'));
+      if (meta?.target && isInstallTarget(meta.target)) resolvedTarget = meta.target;
+    } catch {
+      // 元数据缺失/损坏 → 走默认
+    }
+  }
+  const target = normalizeTarget(resolvedTarget);
   const force = !!options.force;
   const targetDir = cwd;
   const docpathDir = join(targetDir, '.docpath');

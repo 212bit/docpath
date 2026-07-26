@@ -878,3 +878,28 @@ describe('install agent adapters', () => {
   });
 });
 
+describe('install real-world fixes (R-311/R-312, SynapBuddy 实测)', () => {
+  it('install --check defaults to the installed target from metadata (R-311)', () => {
+    const cwd = mkWorkspace();
+    run(`install --target codex`, cwd);
+
+    // 不带 --target 的 check 必须读元数据 target=codex, 而非默认 universal 产生假漂移
+    const out = run('install --check', cwd);
+    assert.match(out, /目标: codex/);
+    assert.match(out, /install manifest 检查通过 \(target: codex/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('non-force install reports skipped stale files instead of celebrating (R-312)', () => {
+    const cwd = mkWorkspace();
+    run('install --target codex', cwd);
+    // 制造陈旧副本: 改写一份受管文件后非 force 重装
+    writeFileSync(join(cwd, 'CODEX.md'), '# stale copy\n');
+
+    const out = run('install --target codex', cwd);
+    assert.match(out, /未覆盖/, '存在跳过项时终局输出必须警示');
+    assert.doesNotMatch(out, /🎉/, '有跳过项不得庆祝');
+    assert.match(out, /--force/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+});
