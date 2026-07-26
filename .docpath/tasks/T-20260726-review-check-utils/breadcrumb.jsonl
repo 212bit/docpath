@@ -1,0 +1,8 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-review-check-utils","step":"S1","status":"in_progress","context":"开始执行: 梳理 二次 review 遗留双项: check 入口顺序契约测试 + utils 分类法治理","timestamp":"2026-07-26T18:56:48.195Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-review-check-utils","step":"S1","status":"done","context":"方案定稿: 具名阶段+env 钩子+早退断言; utils 走分类法+完备性断言, 物理搬迁显式不做","timestamp":"2026-07-26T18:56:49.009Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-review-check-utils","step":"S2","status":"in_progress","context":"开始执行: 实现 二次 review 遗留双项: check 入口顺序契约测试 + utils 分类法治理","timestamp":"2026-07-26T18:56:49.753Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-review-check-utils","step":"S2","status":"done","context":"入口三阶段具名化+顺序契约注释; DOCPATH_TEMPLATES_DIR env 钩子; utils README 九域分类法+完备性断言","timestamp":"2026-07-26T19:02:18.340Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-review-check-utils","step":"S3","status":"done","context":"早退契约 CLI 断言过(漂移失败且无编译/测试段落); utils 55+2 文件全归类; 全量 675/675","timestamp":"2026-07-26T19:02:19.452Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-review-check-utils","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-07-26T19:03:46.948Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-review-check-utils","step":"review","status":"done","context":"代码审查: 0 错误, 4 警告, 7 提示","timestamp":"2026-07-26T19:03:48.166Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260726-review-check-utils","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-07-26T19:05:58.416Z"}

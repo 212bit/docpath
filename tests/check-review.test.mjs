@@ -1700,6 +1700,48 @@ describe('check and review commands', () => {
   });
 });
 
+describe('check entry stage ordering contract (R-305)', () => {
+  it('protocol blocks drift fails loud BEFORE expensive runners (早退契约)', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-order-'));
+    const { tasks } = mkExecWorkspace(cwd);
+    void tasks;
+    // fixture 模板根: blocks 源与 canonical 注入区人为分叉
+    const tplDir = join(cwd, 'fixture-templates');
+    mkdirSync(join(tplDir, 'protocols', 'blocks'), { recursive: true });
+    writeFileSync(join(tplDir, 'protocols', 'blocks', 'demo.md'), '块源新内容\n');
+    writeFileSync(join(tplDir, 'protocols', 'CLAUDE.md'), [
+      '# Fixture Protocol',
+      '',
+      '<!-- docpath:block demo -->',
+      '陈旧注入区内容',
+      '<!-- /docpath:block -->',
+      '',
+    ].join('\n'));
+
+    let out = '';
+    let code = 0;
+    try {
+      out = execSync(`node ${CLI} check --cwd ${cwd} --skip-tests --skip-lint`, {
+        cwd,
+        encoding: 'utf-8',
+        timeout: 20000,
+        env: { ...process.env, DOCPATH_TEMPLATES_DIR: tplDir },
+      });
+    } catch (error) {
+      code = error.status ?? 1;
+      out = `${error.stdout?.toString() || ''}${error.stderr?.toString() || ''}`;
+    }
+
+    assert.notEqual(code, 0, 'blocks 漂移必须使 check 失败');
+    assert.match(out, /协议共享契约注入区与块源不一致/);
+    assert.match(out, /docpath render --view protocols/);
+    // 早退契约: 失败必须发生在编译/测试 runner 之前
+    assert.doesNotMatch(out, /编译检查/, '不得进入编译检查段落');
+    assert.doesNotMatch(out, /测试检查/, '不得进入测试检查段落');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+});
+
 describe('healStructuredMarkdownDrift (R-287 方案 A 自愈原语)', () => {
   let writeActiveTaskFile;
   let healStructuredMarkdownDrift;

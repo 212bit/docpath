@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-07-26T19:04:12.828Z",
+    "updated_at": "2026-07-26T19:04:12.828Z",
+    "content_sha256": "dc929e8e01ae3c4db3a7aee37768b9affb675e1942ca55bb055466fa7df8427d"
+  },
+  "task_id": "T-20260726-review-check-utils",
+  "backlog_id": "R-305",
+  "title": "T-20260726-review-check-utils - 二次 review 遗留双项: check 入口顺序契约测试 + utils 分类法治理",
+  "generated_at": "2026-07-26T19:04:12.828Z",
+  "scope": {
+    "included": [
+      "二次 review 遗留双项: check 入口顺序契约测试 + utils 分类法治理"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "架构 / 模块边界"
+    ],
+    "user_confirmed": "2026-07-27 用户显式指令「继续处理 check 入口顺序契约测试和 utils sprawl」; check 入口重构为纯提取零行为变更, env 钩子仅测试用",
+    "decision_brief_markdown": "- 当前问题: 二次 review 两项遗留观察：P2-e check 入口段（R-287 heal → R-300 blocks 校验 → quick 升级）执行顺序有语义依赖（heal 必须先于 validators 否则漂移态误判；blocks 漂移应早退于昂贵 runner）但无契约测试；P3 utils/ 55 文件大杂烩——病根是无安置规则，物理搬迁（多深度相对导入 × 全部 dist 测试路径）收益/风险比不划算。\n- 目标: 二次 review 遗留双项: check 入口顺序契约测试 + utils 分类法治理\n- 背景: 来自 backlog R-305\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 2026-07-27 用户显式指令「继续处理 check 入口顺序契约测试和 utils sprawl」; check 入口重构为纯提取零行为变更, env 钩子仅测试用"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "二次 review 遗留双项: check 入口顺序契约测试 + utils 分类法治理",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "blocks 漂移 fixture 经环境覆盖可测：check 非零退出、含注入区错误、不含编译检查段落（早退证明）。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "入口三阶段为具名函数且调用顺序与契约注释一致。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "utils 全部文件在 README 分类内，完备性测试防未分类新增；全量套件绿。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-305 与任务 T-20260726-review-check-utils 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "二次 review 两项遗留观察：P2-e check 入口段（R-287 heal → R-300 blocks 校验 → quick 升级）执行顺序有语义依赖（heal 必须先于 validators 否则漂移态误判；blocks 漂移应早退于昂贵 runner）但无契约测试；P3 utils/ 55 文件大杂烩——病根是无安置规则，物理搬迁（多深度相对导入 × 全部 dist 测试路径）收益/风险比不划算。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

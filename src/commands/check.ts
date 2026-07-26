@@ -99,6 +99,33 @@ function normalizeHarnessOptions(options: CheckOptions): void {
   }
 }
 
+/** 入口阶段 1（R-287）：收敛 active task 的 spec/plan md/json 漂移。 */
+async function healActiveTaskDrift(docpathDir: string, taskId: string | undefined): Promise<void> {
+  if (!taskId) return;
+  for (const file of ['spec.md', 'plan.md'] as const) {
+    const healed = await healStructuredMarkdownDrift(docpathDir, taskId, file);
+    if (healed.healed) logger.log(`🩹  ${file} 机器真理源漂移已自愈: ${healed.reason}`);
+  }
+}
+
+/**
+ * 入口阶段 2（R-300）：协议共享契约注入区一致性。fail-loud 指向 render——
+ * gate 不写手写源；root↔canonical 归 install manifest drift 治理，不重叠。
+ */
+async function assertProtocolBlocksInSync(): Promise<void> {
+  const templatesDir = await resolveTemplate();
+  const blockReport = await syncProtocolBlocks(templatesDir, { write: false });
+  if (!blockReport.available) return;
+  const stale = blockReport.files.filter((f) => f.updated.length > 0 || f.unknown.length > 0);
+  if (stale.length === 0) return;
+  const detail = stale
+    .map((f) => `${f.file}: ${[...f.updated, ...f.unknown.map((n) => `${n}(缺块源)`)].join(', ')}`)
+    .join('; ');
+  logger.error(`❌  协议共享契约注入区与块源不一致: ${detail}`);
+  logger.log('    修复: docpath render --view protocols（重渲染注入区后提交 canonical）');
+  throw new Error('docpath check failed: protocol blocks drift');
+}
+
 function warnWhenOutsideAgentSession(current: Awaited<ReturnType<typeof readCurrentState>>, options: CheckOptions): void {
   if (current?.task_id || options.force) return;
   logger.warn('当前无活跃 agent 会话 (current.md 无 task_id)');
@@ -118,34 +145,16 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
   let current = await readCurrentState(cwd);
 
-  // R-287 方案 A：gate 入口先收敛 active task 的 spec/plan md/json 漂移
-  //（json 真源回写勾选态 + 吸收 md 内容），使「任意 gate 自动收敛」成立。
-  // 任务身份漂移会在写入层 fail-loud，自愈不掩盖身份问题。
-  if (current?.task_id) {
-    for (const file of ['spec.md', 'plan.md'] as const) {
-      const healed = await healStructuredMarkdownDrift(docpathDir, current.task_id, file);
-      if (healed.healed) logger.log(`🩹  ${file} 机器真理源漂移已自愈: ${healed.reason}`);
-    }
-  }
-
-  // R-300: 协议共享契约注入区一致性（templates/protocols/blocks 存在时生效）。
-  // fail-loud 指向 render 命令——gate 不写 templates 手写源（去写副作用原则）；
-  // root 副本 ↔ canonical 由 install manifest drift 治理，此处不重叠。
-  {
-    const templatesDir = await resolveTemplate();
-    const blockReport = await syncProtocolBlocks(templatesDir, { write: false });
-    if (blockReport.available) {
-      const stale = blockReport.files.filter((f) => f.updated.length > 0 || f.unknown.length > 0);
-      if (stale.length > 0) {
-        const detail = stale
-          .map((f) => `${f.file}: ${[...f.updated, ...f.unknown.map((n) => `${n}(缺块源)`)].join(', ')}`)
-          .join('; ');
-        logger.error(`❌  协议共享契约注入区与块源不一致: ${detail}`);
-        logger.log('    修复: docpath render --view protocols（重渲染注入区后提交 canonical）');
-        throw new Error('docpath check failed: protocol blocks drift');
-      }
-    }
-  }
+  // ── check 入口阶段顺序契约（R-305）──
+  // 顺序有语义依赖，调整前必读：
+  //   1. healActiveTaskDrift    —— 必须先于一切 validator/runner：漂移未收敛时
+  //      结构校验会把可自愈态误判为失败（R-287）。
+  //   2. assertProtocolBlocksInSync —— fail-loud 早退：必须先于昂贵的编译/测试
+  //      runner，避免为注定失败的 check 付全量套件成本（R-300）。
+  //   3. quick→standard 升级判定 —— 依赖已收敛的 spec 真源读取门禁声明。
+  // 早退性由 CLI 级契约测试固化（blocks 漂移输出不得含编译检查段落）。
+  await healActiveTaskDrift(docpathDir, current?.task_id);
+  await assertProtocolBlocksInSync();
 
   if (current && current.task_id && (current.workflow_profile === 'quick' || current.workflow_profile === 'instant')) {
     let spec: Awaited<ReturnType<typeof readActiveStructuredSpecDocument>> = null;

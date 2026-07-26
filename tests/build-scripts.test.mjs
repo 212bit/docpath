@@ -45,6 +45,17 @@ describe('build scripts', () => {
     }
   });
 
+  it('every utils file is classified in the domain taxonomy (R-305 反倾倒场)', () => {
+    const readme = readFileSync(join(repoRoot, 'src', 'utils', 'README.md'), 'utf-8');
+    const missing = [];
+    for (const entry of readdirSync(join(repoRoot, 'src', 'utils'), { recursive: true })) {
+      const rel = String(entry).replace(/\\/g, '/');
+      if (!rel.endsWith('.ts')) continue;
+      if (!readme.includes(rel)) missing.push(rel);
+    }
+    assert.deepEqual(missing, [], 'utils 新文件必须在 src/utils/README.md 域分类法中归类');
+  });
+
   it('tsup config carries no hand-maintained entry whitelist', () => {
     const config = readFileSync(join(repoRoot, 'tsup.config.ts'), 'utf-8');
     assert.match(config, /entry: \['src\/\*\*\/\*\.ts'\]/);

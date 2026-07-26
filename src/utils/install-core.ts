@@ -99,6 +99,15 @@ function templatePath(...segments: string[]): string {
 }
 
 export async function resolveTemplate(...segments: string[]): Promise<string> {
+  // R-305 可测试性钩子：显式覆盖模板根（测试用 fixture 模板目录驱动
+  // protocols/blocks 等依赖模板层的门禁路径）。生产不设置即走常规解析。
+  const override = process.env.DOCPATH_TEMPLATES_DIR;
+  if (override) {
+    const overridePath = join(override, ...segments);
+    if (await exists(overridePath)) return overridePath;
+    throw new Error(`模板文件未找到 (DOCPATH_TEMPLATES_DIR 覆盖): ${segments.join('/')}`);
+  }
+
   const devPath = templatePath(...segments);
   if (await exists(devPath)) return devPath;
 
