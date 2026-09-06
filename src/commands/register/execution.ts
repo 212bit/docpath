@@ -52,6 +52,7 @@ export function registerExecutionCommands(cli: CAC): void {
   cli.command('agent <action>', 'Agent lifecycle enforcement: enter | step | done')
     .option('--cwd <path>', '项目目录')
     .option('--step <step>', '当前步骤/子任务')
+    .option('--batch <step-ids>', '批量补账：逗号分隔的步骤 ID（如 S1,S2,S3），一次性完成多步骤')
     .option('--note <note>', '事件备注')
     .option('--status <status>', '状态: done | blocked | skipped')
     .option('--skip-check', 'done 时跳过 docpath check')
@@ -61,11 +62,12 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--approve-review', 'review 时手动批准')
     .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
     .option('--no-dirty-reminder', '不打印未提交业务文件提醒')
-    .action(async (action: 'enter' | 'step' | 'done', options: { cwd?: string; step?: string; note?: string; status?: 'done' | 'blocked' | 'skipped'; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; session?: string; dirtyReminder?: boolean; 'dirty-reminder'?: boolean }) => {
+    .action(async (action: 'enter' | 'step' | 'done', options: { cwd?: string; step?: string; batch?: string; note?: string; status?: 'done' | 'blocked' | 'skipped'; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; session?: string; dirtyReminder?: boolean; 'dirty-reminder'?: boolean }) => {
       await agentCommand({
         cwd: options.cwd || process.cwd(),
         action,
         step: options.step,
+        batch: options.batch,
         note: options.note,
         status: normalizeEnumOption(options.status, 'agent --status', ['done', 'blocked', 'skipped'] as const),
         skipCheck: !!(options.skipCheck || options['skip-check']),

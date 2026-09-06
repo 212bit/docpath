@@ -12,6 +12,31 @@ export function isTimeoutKill(err: unknown): boolean {
   return record.killed === true || record.signal === 'SIGTERM' || record.signal === 'SIGKILL';
 }
 
+/**
+ * 检测子进程输出是否表明失败原因是环境问题（命令缺失、依赖未装等），而非代码问题。
+ * 帮助 Agent 用最廉价的判定先排除工具链问题，避免用昂贵的 token 去诊断代码。
+ */
+export function looksLikeEnvironmentFailure(output: string): boolean {
+  const envPatterns = [
+    /command not found/i,
+    /ENOENT.*node_modules/,
+    /ENOENT.*\.bin/,
+    /Cannot find module/i,
+    /MODULE_NOT_FOUND/,
+    /is not recognized as (an )?internal or external command/i,
+    /no such file or directory.*node_modules/,
+    /spawn.*ENOENT/,
+    /sh: (line \d+: )?.+: command not found/,
+    /pnpm: command not found/i,
+    /npm: command not found/i,
+    /yarn: command not found/i,
+    /npx: command not found/i,
+    /Permission denied.*node_modules/,
+    /EACCES.*node_modules/,
+  ];
+  return envPatterns.some((pattern) => pattern.test(output));
+}
+
 export function pathEntries(value: string | undefined): string[] {
   return (value || '').split(delimiter).filter(Boolean);
 }
@@ -85,7 +110,15 @@ export function runCheck(
         category,
       };
     }
-    return { name, passed: false, output: errorOutput(err).slice(0, 500), category };
+    const rawOutput = errorOutput(err).slice(0, 500);
+    const isEnvFailure = looksLikeEnvironmentFailure(rawOutput);
+    return {
+      name,
+      passed: false,
+      output: rawOutput,
+      category,
+      ...(isEnvFailure ? { environment_failure: true } : {}),
+    };
   }
 }
 

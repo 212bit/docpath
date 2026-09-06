@@ -41,6 +41,8 @@ export interface CheckResult {
   output: string;
   category?: 'compile' | 'test' | 'lint' | 'plan' | 'analysis' | 'context' | 'preflight' | 'boundary' | 'pattern';
   severity?: 'error' | 'warning';
+  /** 失败是否由环境问题引起（命令缺失、依赖未安装等），而非代码问题 */
+  environment_failure?: boolean;
 }
 
 export interface GitBaseline {

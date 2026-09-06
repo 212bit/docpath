@@ -90,16 +90,19 @@ export async function generateAgentOutput(
       stored_workflow_profile: profileResolution.storedProfile,
       workflow_profile_upgrade_reasons: profileResolution.reasons,
     } : {}),
-    gate_policy: (() => {
-      const policy = gatePolicyForProfile(profileResolution.effectiveProfile);
-      return {
-        requires_spec: policy.requiresSpec,
-        requires_plan: policy.requiresPlan,
-        requires_check: policy.requiresCheck,
-        requires_review: policy.requiresReview,
-        journal_mode: policy.journalMode,
-      };
-    })(),
+    // gate_policy 是静态配置（由 profile 决定），常规输出省略，verbose 才展开。
+    ...(verbose ? {
+      gate_policy: (() => {
+        const policy = gatePolicyForProfile(profileResolution.effectiveProfile);
+        return {
+          requires_spec: policy.requiresSpec,
+          requires_plan: policy.requiresPlan,
+          requires_check: policy.requiresCheck,
+          requires_review: policy.requiresReview,
+          journal_mode: policy.journalMode,
+        };
+      })(),
+    } : {}),
     context_injection: {
       spec_summary: context.specSummary,
       recent_decisions: context.recentDecisions.length > 0 ? context.recentDecisions.map((d) => ({

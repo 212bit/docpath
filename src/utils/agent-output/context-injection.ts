@@ -25,8 +25,8 @@ export interface SpecSummary {
 
 // ── Context Injection 加载函数 ──
 
-const DECISIONS_MAX_LINES = 50;
-const DECISIONS_RECENT_COUNT = 5;
+const DECISIONS_MAX_LINES = 20;
+const DECISIONS_RECENT_COUNT = 2;
 
 /**
  * 从 decisions.jsonl 读取最近 N 条决策记录。

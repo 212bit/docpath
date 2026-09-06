@@ -1027,12 +1027,12 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
   if (shouldRouteToMajorChangeGate(context, inferred.recommended_command)) {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/spec.md'];
     return {
-      next_action: '重大变更门禁未完成，先补齐 spec Decision Brief 和用户确认',
-      recommended_command: 'docpath write-spec',
+      next_action: '重大变更门禁未完成，用 docpath write-spec --stdin 重写 spec 补齐 Decision Brief 和用户确认',
+      recommended_command: 'docpath write-spec --stdin',
       required_context: required,
       required_files: required,
-      must_update: ['.docpath/tasks/current/spec.md'],
-      exit_criteria: 'spec.md 的重大变更门禁已勾选“是，需要用户确认”，Decision Brief 已填写，用户确认已记录',
+      must_update: ['.docpath/tasks/current/spec.md', '.docpath/tasks/current/spec.json'],
+      exit_criteria: 'spec 的重大变更门禁勾选"是"，Decision Brief 和用户确认已填写，通过 write-spec --stdin 写入',
     };
   }
 

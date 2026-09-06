@@ -44,6 +44,7 @@ type AgentOptions = {
   cwd: string;
   action: AgentAction;
   step?: string;
+  batch?: string;
   note?: string;
   status?: 'done' | 'blocked' | 'skipped';
   skipCheck?: boolean;
@@ -275,6 +276,32 @@ async function handleAgentStep(options: AgentOptions): Promise<void> {
   }
   const taskId = await requireBoundTask('step', cwd);
   const session = resolveSessionContext(options.session);
+
+  // 批量补账模式：一次性处理多个步骤，避免 N*2 次调用往返。
+  if (options.batch) {
+    const steps = options.batch.split(',').map((s) => s.trim()).filter(Boolean);
+    if (steps.length === 0) {
+      throw new Error('docpath agent step --batch: 未提供步骤 ID（逗号分隔）');
+    }
+    const status = options.status || 'done';
+    console.log(`📦  批量补账: ${steps.length} 个步骤 (${steps.join(', ')})`);
+    for (const step of steps) {
+      await runCommand({
+        cwd,
+        action: 'end',
+        step,
+        status,
+        note: options.note || `agent-step-batch: ${step}`,
+        session: session.sessionId,
+      });
+      const sync = await markPlanStep(cwd, step, syncStatusForAgentStep(status));
+      if (!sync.updated) console.warn(`⚠️  plan checklist 未同步 [${step}]: ${sync.reason}`);
+      console.log(`  ✅  ${step} → ${status}`);
+    }
+    await emitNextHint(cwd);
+    return;
+  }
+
   const step = requireStep(options.action, options.step);
   const status = options.status || 'done';
   await runCommand({

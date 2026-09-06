@@ -152,6 +152,57 @@ describe('docpath agent lifecycle', () => {
     fs.rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('agent step --batch completes multiple steps in one call', () => {
+    const cwd = mkExecWorkspace();
+    // 写入含多步骤的 plan
+    const planPath = path.join(cwd, '.docpath', 'tasks', 'current', 'plan.md');
+    const canonicalPlanPath = path.join(cwd, '.docpath', 'tasks', 'T-AGENT', 'plan.md');
+    const multiPlan = [
+      '## 执行计划',
+      '',
+      '### S1: Step one',
+      '- [ ] S1: Step one',
+      '- **描述**: 第一步',
+      '- **验收条件**: 一完成',
+      '- **依赖**: 无',
+      '',
+      '### S2: Step two',
+      '- [ ] S2: Step two',
+      '- **描述**: 第二步',
+      '- **验收条件**: 二完成',
+      '- **依赖**: S1',
+      '',
+      '### S3: Step three',
+      '- [ ] S3: Step three',
+      '- **描述**: 第三步',
+      '- **验收条件**: 三完成',
+      '- **依赖**: S2',
+      '',
+    ].join('\n');
+    fs.writeFileSync(planPath, multiPlan);
+    fs.writeFileSync(canonicalPlanPath, multiPlan);
+
+    const out = run('agent step --batch S1,S2,S3 --status done', cwd);
+
+    assert.match(out, /批量补账.*3 个步骤/);
+    assert.match(out, /S1 → done/);
+    assert.match(out, /S2 → done/);
+    assert.match(out, /S3 → done/);
+
+    // 验证 plan checklist 已同步
+    const updatedPlan = fs.readFileSync(planPath, 'utf-8');
+    assert.match(updatedPlan, /- \[x\] S1/);
+    assert.match(updatedPlan, /- \[x\] S2/);
+    assert.match(updatedPlan, /- \[x\] S3/);
+
+    // 验证 breadcrumb 记录了三个步骤
+    const breadcrumb = fs.readFileSync(path.join(cwd, '.docpath', 'workspace', 'breadcrumb.md'), 'utf-8');
+    assert.match(breadcrumb, /S1/);
+    assert.match(breadcrumb, /S2/);
+    assert.match(breadcrumb, /S3/);
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('agent done completes task', () => {
     const out = run('agent done', tmpDir);
     assert.match(out, /done|完成|知识自动归档/i, `got: ${out.slice(0, 100)}`);

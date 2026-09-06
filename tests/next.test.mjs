@@ -44,13 +44,15 @@ function mkWorkspace({ phase = 'idle', gate = 'none', taskId = 'T-NEXT', taskTit
   return cwd;
 }
 
-function nextAgent(cwd) {
-  const output = execSync(`node ${BIN} next --cwd ${cwd} --agent`, { encoding: 'utf-8' });
+function nextAgent(cwd, opts = {}) {
+  const verbose = opts.verbose ? ' --verbose' : '';
+  const output = execSync(`node ${BIN} next --cwd ${cwd} --agent${verbose}`, { encoding: 'utf-8' });
   return parse(output);
 }
 
-function statusAgent(cwd) {
-  const output = execSync(`node ${BIN} status --cwd ${cwd} --agent`, { encoding: 'utf-8' });
+function statusAgent(cwd, opts = {}) {
+  const verbose = opts.verbose ? ' --verbose' : '';
+  const output = execSync(`node ${BIN} status --cwd ${cwd} --agent${verbose}`, { encoding: 'utf-8' });
   return parse(output);
 }
 
@@ -96,8 +98,13 @@ describe('next --agent routing', () => {
     assert.ok(status.context_refs.length > 0);
     assert.ok(typeof next.next_action === 'string' && next.next_action.length > 0);
     assert.ok(typeof status.next_action === 'string' && status.next_action.length > 0);
-    assert.ok(next.gate_policy.requires_check);
-    assert.ok(status.gate_policy.requires_review);
+    // gate_policy 是静态配置，常规输出省略，verbose 才展开
+    assert.equal(next.gate_policy, undefined, 'non-verbose next should omit gate_policy');
+    assert.equal(status.gate_policy, undefined, 'non-verbose status should omit gate_policy');
+    const verboseNext = nextAgent(cwd, { verbose: true });
+    assert.ok(verboseNext.gate_policy.requires_check);
+    const verboseStatus = statusAgent(cwd, { verbose: true });
+    assert.ok(verboseStatus.gate_policy.requires_review);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -113,9 +120,11 @@ describe('next --agent routing', () => {
     assert.equal(status.route_hint.recommended_command, next.recommended_command);
     assert.equal(status.route_hint.next_action, next.next_action);
     assert.equal(status.workflow_profile, 'standard');
-    assert.equal(status.gate_policy.requires_check, true);
-    assert.equal(status.gate_policy.requires_review, true);
-    assert.equal(status.gate_policy.journal_mode, 'full');
+    // gate_policy 常规省略，verbose 才展开
+    const verboseStatus = statusAgent(cwd, { verbose: true });
+    assert.equal(verboseStatus.gate_policy.requires_check, true);
+    assert.equal(verboseStatus.gate_policy.requires_review, true);
+    assert.equal(verboseStatus.gate_policy.journal_mode, 'full');
     assert.notDeepEqual(status, next);
     rmSync(cwd, { recursive: true, force: true });
   });

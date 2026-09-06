@@ -15,6 +15,7 @@ export interface CheckEvidenceItem {
   output: string;
   category?: string;
   severity?: string;
+  environment_failure?: boolean;
 }
 
 export interface LastCheckEvidence {

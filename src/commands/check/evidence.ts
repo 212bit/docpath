@@ -77,6 +77,17 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
     console.log('⚠️  未检测到可执行的检查项（无 tsconfig/package.json/Cargo.toml/go.mod）');
   }
 
+  // 环境失败诊断摘要：先分类环境/代码，帮助 Agent 用最廉价的判定排除工具链问题。
+  const envFailures = results.filter((r) => !r.passed && r.environment_failure);
+  if (envFailures.length > 0) {
+    console.log('\n🔧  环境诊断（以下失败看起来是工具链/环境问题，不是代码问题）:');
+    for (const r of envFailures) {
+      console.log(`  - ${r.name}: 命令缺失或依赖未安装`);
+    }
+    console.log('    👉  先修复环境再重跑 check: 确认 pnpm/npm/yarn 已安装，node_modules 已安装 (pnpm install)');
+    console.log('    这些失败与代码质量无关，用 token 诊断代码是浪费。\n');
+  }
+
   console.log(`\n${allPassed ? '✅  全部通过' : '❌  存在失败项'}\n`);
 }
 
@@ -119,6 +130,7 @@ export async function writeLastCheckEvidence(cwd: string, results: CheckResult[]
     output: shouldPersistPassedOutput(result) ? result.output : '',
     ...(result.category ? { category: result.category } : {}),
     ...(result.severity ? { severity: result.severity } : {}),
+    ...(result.environment_failure ? { environment_failure: true } : {}),
   }));
   await writeLastCheckEvidenceFiles(docpathDir, {
     schema_version: 1,

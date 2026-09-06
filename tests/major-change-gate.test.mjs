@@ -150,7 +150,7 @@ describe('major change preflight gate', () => {
     const result = runResult(`next --cwd ${cwd} --agent`, cwd);
     assert.equal(result.code, 0);
     const route = parse(result.out);
-    assert.equal(route.recommended_command, 'docpath write-spec');
+    assert.equal(route.recommended_command, 'docpath write-spec --stdin');
     assert.match(route.next_action, /重大变更门禁未完成/);
   });
 
@@ -191,9 +191,9 @@ describe('major change preflight gate', () => {
     const result = runResult(`go --cwd ${cwd} --step S1`, cwd);
     assert.notEqual(result.code, 0);
     assert.match(result.out, /检测到未提交的重大变更/);
-    assert.match(result.out, /重大变更门禁有两种合法出路/);
-    assert.match(result.out, /出路一：如果本次开发确属重大变更/);
-    assert.match(result.out, /出路二：如果本次开发不属重大变更/);
+    assert.match(result.out, /两种合法出路/);
+    assert.match(result.out, /docpath write-spec --stdin/);
+    assert.match(result.out, /手改 spec\.md 会被自愈覆盖/);
     assert.match(result.out, /git commit/);
   });
 });

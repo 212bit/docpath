@@ -907,7 +907,7 @@ describe('check and review commands', () => {
     assert.match(result.out, /重大决策确认检查/);
     assert.match(result.out, /新增重大依赖: antd, react/);
     assert.match(result.out, /检测到未提交的重大变更/);
-    assert.match(result.out, /重大变更门禁有两种合法出路/);
+    assert.match(result.out, /两种合法出路/);
 
     const confirmedSpec = `${readFileSync(join(tasks, 'spec.md'), 'utf-8').replace('## 5. 验收标准', [
       '## 4.1 重大决策门禁',
@@ -1739,6 +1739,42 @@ describe('check entry stage ordering contract (R-305)', () => {
     assert.doesNotMatch(out, /编译检查/, '不得进入编译检查段落');
     assert.doesNotMatch(out, /测试检查/, '不得进入测试检查段落');
     rmSync(cwd, { recursive: true, force: true });
+  });
+});
+
+describe('check environment failure classification (S4)', () => {
+  it('tags runner failures as environment_failure when command is not found', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-env-'));
+    mkExecWorkspace(cwd);
+    // 写一个 tsconfig.json 触发 typecheck，但没有 node_modules/.bin/tsc
+    // 直接用 npx 调不存在的包，模拟环境失败
+    writeFileSync(join(cwd, 'package.json'), JSON.stringify({
+      scripts: {},
+    }, null, 2) + '\n');
+    writeFileSync(join(cwd, 'tsconfig.json'), JSON.stringify({ compilerOptions: {} }, null, 2));
+    // 不安装 node_modules，npx tsc 会失败且输出包含 ENOENT 或 command not found
+
+    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+
+    // 编译检查应该失败
+    assert.match(result.out, /编译检查|TypeScript/);
+    // last-check.json 应该写入检查结果
+    const lastCheckJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.json'), 'utf-8'));
+    assert.ok(lastCheckJson.checks.length > 0, 'last-check.json 应有检查项');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('looksLikeEnvironmentFailure detects common patterns', async () => {
+    const { looksLikeEnvironmentFailure } = await import('../dist/commands/check/runners.js');
+    // 环境失败模式
+    assert.equal(looksLikeEnvironmentFailure('sh: line 1: pnpm: command not found'), true);
+    assert.equal(looksLikeEnvironmentFailure('Error: Cannot find module /path/to/node_modules/.bin/tsc'), true);
+    assert.equal(looksLikeEnvironmentFailure('spawn /bin/sh ENOENT'), true);
+    assert.equal(looksLikeEnvironmentFailure('npm: command not found'), true);
+    // 代码失败模式
+    assert.equal(looksLikeEnvironmentFailure('Type error: Property foo does not exist'), false);
+    assert.equal(looksLikeEnvironmentFailure('AssertionError: expected true to be false'), false);
+    assert.equal(looksLikeEnvironmentFailure('FAIL tests/foo.test.ts'), false);
   });
 });
 

@@ -59,8 +59,9 @@ function runResult(args, cwd) {
   }
 }
 
-function nextAgent(cwd) {
-  return parse(run(`next --cwd ${cwd} --agent`, cwd));
+function nextAgent(cwd, opts = {}) {
+  const verbose = opts.verbose ? ' --verbose' : '';
+  return parse(run(`next --cwd ${cwd} --agent${verbose}`, cwd));
 }
 
 function git(cwd, args) {
@@ -109,7 +110,9 @@ describe('docpath quick', () => {
     assert.equal(next.workflow_profile, 'standard');
     assert.equal(next.stored_workflow_profile, 'quick');
     assert.match(next.workflow_profile_upgrade_reasons.join('\n'), /任务复杂度级别为 L2/);
-    assert.equal(next.gate_policy.requires_review, true);
+    // gate_policy 常规省略，verbose 才展开
+    const verboseNext = nextAgent(cwd, { verbose: true });
+    assert.equal(verboseNext.gate_policy.requires_review, true);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -129,7 +132,9 @@ describe('docpath quick', () => {
     assert.equal(status.workflow_profile, 'standard');
     assert.equal(status.stored_workflow_profile, 'quick');
     assert.match(status.workflow_profile_upgrade_reasons.join('\n'), /工作流 \/ Agent 行为/);
-    assert.equal(status.gate_policy.requires_spec, true);
+    // gate_policy 常规省略，verbose 才展开
+    const verboseStatus = parse(run(`status --cwd ${cwd} --agent --verbose`, cwd));
+    assert.equal(verboseStatus.gate_policy.requires_spec, true);
     rmSync(cwd, { recursive: true, force: true });
   });
 
