@@ -2,14 +2,18 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-09-06T16:08:34.900Z
+> 扫描时间: 2026-09-06T17:18:16.208Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
+| R-318 | P0: go --step 顺序失效重试环 — 失败率 33%(49/147)，43/49 为步骤顺序不匹配；修失败消息直送合法 step id | proposed | P0 | 2 |  |
+| R-319 | P0: 会话隔离失效 — trace 最近 200 条 session 键全为 session-default，逼出 14.3% 重复确认 turn | proposed | P0 | 2 |  |
 | R-259 | High-value reliability optimizations | dropped | P1 | 2 |  |
 | R-316 | 待裁决大块收敛: project intake 平行工作流 / learn 与 lesson_summary 耦合 / config 命令归属 | proposed | P1 | 3 |  |
+| R-317 | Agent token 效率修复: 门禁指引/next 输出瘦身/批量补账/check 环境分类 | active | P1 | 1 | T-20260906-agent-token-next-check |
+| R-320 | P1: next --agent 状态哈希去重 — 无变化时返回单行，砍掉零信息增量确认 turn (R-317/S2 延伸) | proposed | P1 | 2 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-292 | plan 命令写盘先于 FSM 校验, completed 任务 plan.json 被改写后才报非法转移 | dropped | P2 | 2 |  |
 | R-296 | R-293 残余: stale 夺锁的判定-执行 TOCTOU, rename 可误夺判定后新获取的活锁(全量套件 4/5 实测) | dropped | P2 | 2 |  |
