@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-06T17:51:22.414Z",
+    "updated_at": "2026-09-06T17:51:22.414Z",
+    "content_sha256": "1d3f785edbbcd28b096dc07b8407e9481860faaa0badbf62a6f9697cabf4fea2"
+  },
+  "task_id": "T-20260906-p0-go-step-33-49-147-43-gate-none-dirty-",
+  "backlog_id": "R-318",
+  "title": "T-20260906-p0-go-step-33-49-147-43-gate-none-dirty- - P0: 修正 go 执行起始守卫误拦本任务改动导致 33% 失败重试环",
+  "generated_at": "2026-09-06T17:51:22.414Z",
+  "scope": {
+    "included": [
+      "`src/utils/git-dirty-guard.ts`：`isActiveTask` 归属判定放宽 + 失败消息可复制放行命令。",
+      "`src/commands/go.ts`：必要时微调守卫与 `startStep` 时序（仅服务 FR-1 主场景，避免波及其他入口）。",
+      "`tests/dirty-worktree-guard.test.mjs`：正反用例回归。"
+    ],
+    "excluded": [
+      "不修 R-319 会话隔离本身（仅在边界内解除其对 go 失败的正反馈叠加）。",
+      "不改对 untracked 陌生文件、跨任务改动的拦截策略。",
+      "不引入网络/LLM 依赖；不做 plan/go 的语义重构。"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "已确认 —— 2026-09-07 会话内用户回复\"确认方案 A\"，批准采用方案 A（放宽 isActiveTask 归属判定 + 失败即回送可复制放行命令）进入实现；实现首步仍按 FR-4 采样坐实 dirty-guard 占比后再收敛范围。",
+    "decision_brief_markdown": "- 当前问题: go 执行起始守卫把当前任务自己的 tracked 源码改动误判为\"无关变更\"并拦截，制造 33% 失败重试环（R-249 残留 + R-319 叠加）。\n- 目标: 消除本任务首步/本任务改动的误拦，把 go 失败率从 33% 降到 <10%，同时不削弱对跨任务/外部改动的保护。\n- 背景: 来自 backlog R-318；分析件 `.docpath/backlog/analysis/R-318-analysis.md`。\n- 可选方案:\n  - 方案 A: 放宽 `isActiveTask` 归属判定，纳入\"task_id 匹配的本任务首步（promoted/drafting/planning 相）\"，放行本任务 tracked 改动；untracked 陌生文件仍拦。\n  - 方案 B: 把守卫移到 `startStep`（置 executing）之后运行，从时序根除鸡生蛋；改动面更大，波及 promote/agent enter 语义。\n  - 方案 C: 仅在失败消息里更详细指路，不改判定；治标，重试环仍在。\n- 推荐方案: 方案 A\n- 决策理由: A 直击归属判定，改动局部、风险可控，保留拦截力；配合\"失败即回送可复制放行命令\"进一步把纠正压成单 turn。B 属时序级改动回归面过宽；C 不减失败次数，与降 turn 目标不符。\n- 不做什么: 不改 FSM 合法转移；不碰 check/review/重大变更/UI 门禁；不在此合并修 R-319；不放宽对 untracked 陌生文件的拦截。\n- 成本: 低—中，集中在单函数归属判定 + 一条失败消息；先采样验证占比再收敛。\n- 风险: 放宽归属可能放行\"同 taskId 但陈旧\"的改动 → 以 `state.task_id === options.taskId` 严格相等 + 仍拦 untracked 陌生文件兜底。\n- 回滚方案: 还原 `isActiveTask` 判定条件即恢复现状；或退回 backlog R-318 到 proposed。\n- 用户确认: 已确认 —— 2026-09-07 会话内用户回复\"确认方案 A\"，批准采用方案 A（放宽 isActiveTask 归属判定 + 失败即回送可复制放行命令）进入实现；实现首步仍按 FR-4 采样坐实 dirty-guard 占比后再收敛范围。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "放宽 `assertNoNonDocPathChangesForExecutionStart` 的\"本任务归属\"判定，使 `task_id` 匹配且 phase∈{promoted,drafting,planning} 的本任务首步场景，放行本任务 tracked 源码改动，`go --step S1` 成功开步。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "保留对**跨任务/外部** tracked 改动与**陌生 untracked 源码文件**的拦截，守卫保护力不降。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "确需人工放行时，失败输出含**一条可直接复制**且指向当前 step 的放行命令，Agent 无需额外 `next`/读 `current.md`。",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "实现前先采样确认 go 失败真实成因分布（dirty-guard 在 49 次失败中的实际占比），据此确认或收敛修复范围，防止按假设过度放宽。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "零行为回归；不改 FSM 合法转移语义，不触碰 check/review/重大变更/UI 门禁。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "改动局部、可回滚（还原 `isActiveTask` 判定条件即恢复现状）。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "任务刚 promote、phase 未进 executing、工作区仅含本任务 tracked 源码改动时，`docpath go --step S1` 成功开步，不再误拦。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "存在跨任务/外部 tracked 改动或陌生 untracked 源码文件时，守卫仍拦截（保护力不降）。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "确需人工放行时，失败输出一条可直接复制的放行命令，Agent 无需额外 `next`/读 `current.md`。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "plan 首步产出 go 失败真实成因占比采样，据此确认或收敛修复面（防止按错误假设过度放宽）。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "`tests/dirty-worktree-guard.test.mjs` 覆盖 AC-1/AC-2 正反用例；go 失败率复核（目标 33%→<10%，用 trace 验证）。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "全量测试与 typecheck 通过，零行为回归；不触碰 FSM 合法转移与其他门禁。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "go 执行起始守卫把当前任务自己的 tracked 源码改动误判为\"无关变更\"并拦截，制造 33% 失败重试环（R-249 残留 + R-319 叠加）。",
+    "options": [
+      "- 方案 A: 放宽 `isActiveTask` 归属判定，纳入\"task_id 匹配的本任务首步（promoted/drafting/planning 相）\"，放行本任务 tracked 改动；untracked 陌生文件仍拦。"
+    ],
+    "chosen": "方案 A",
+    "rationale": "A 直击归属判定，改动局部、风险可控，保留拦截力；配合\"失败即回送可复制放行命令\"进一步把纠正压成单 turn。B 属时序级改动回归面过宽；C 不减失败次数，与降 turn 目标不符。"
+  }
+}
