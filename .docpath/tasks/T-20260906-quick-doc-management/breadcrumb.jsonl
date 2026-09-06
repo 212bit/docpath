@@ -1,0 +1,4 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260906-quick-doc-management","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译, 构建, 测试","timestamp":"2026-09-06T15:42:50.518Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260906-quick-doc-management","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译, 构建, 测试","timestamp":"2026-09-06T15:43:04.223Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260906-quick-doc-management","step":"check","status":"done","context":"质量检查通过 (3 项)","timestamp":"2026-09-06T15:45:58.908Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260906-quick-doc-management","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-06T15:46:12.649Z"}
