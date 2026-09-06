@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-06T15:58:40.895Z",
+    "updated_at": "2026-09-06T15:58:40.895Z",
+    "content_sha256": "435f01ee21ddebedb8248c6d61ff67f7515200723b47d493b2035dcafc5fe0e8"
+  },
+  "task_id": "T-20260830-vite-tasks-dashboard",
+  "backlog_id": "R-314",
+  "title": "T-20260830-vite-tasks-dashboard - 死代码残留清理: vite 依赖 / 单字母别名 / tasks 转发 / dashboard 死分支",
+  "generated_at": "2026-09-06T15:58:40.895Z",
+  "scope": {
+    "included": [
+      "`package.json` 依赖结构修正（vite 移除、@types/prompts 归位）",
+      "单字母别名 `s` / `st` / `c` 全链删除",
+      "`tasks` deprecated 转发命令全链删除",
+      "`ui-gate.ts` 的 `dashboard` 死分支摘除",
+      "上述四项的模板 / 协议 / 元数据 / 测试同步清理 + fail-loud 断言"
+    ],
+    "excluded": [
+      "`trace` 命令（记录方，保留）",
+      "`init` / `doctor` / `commit` / `unlink` / `install` 等人类入口（采样盲区，不在本次收敛范围）",
+      "R-315（零使用命令）与 R-316（待裁决大块）—— 独立任务，互不阻塞",
+      "prompt emitter 家族与仪式压缩（C 档，本轮不做）"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "其他"
+    ],
+    "user_confirmed": "2026-08-30 用户确认执行 A+B 档收敛（trace 1460 条实证）；2026-09-06 用户指示\"继续，优化现有功能\"再次确认延续本任务",
+    "decision_brief_markdown": "- 问题: trace 遥测实证的死代码残留（vite dashboard 依赖 / 单字母别名 / tasks 转发 / ui-gate dashboard 死分支）增加维护面与命令规模\n- 方案:\n  - A 合并: 四项残留合并为一个任务全链删除（互不耦合，任一失败可独立回滚）\n  - B 拆四个 quick: 被否，跨 package.json 需重跑 install，不属 quick 语义\n  - C 只删 vite: 被否，勘察成本已沉没\n- 选择: A 合并\n- 理由: 四项均为纯删除死代码，无行为变更、无 API 契约变化；删除 public 命令触及命令面边界，按协议走重大变更确认\n- 风险: 别名删除影响人类脚本 → 已按 fail-loud 提示处理，本仓库与 SynapBuddy 均未发现依赖别名的脚本\n- 用户确认: 2026-08-30 用户确认执行 A+B 档收敛（trace 1460 条实证）；2026-09-06 用户指示\"继续，优化现有功能\"再次确认延续本任务"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "从 `package.json` dependencies 移除 `vite`，并把 `@types/prompts` 移入 devDependencies",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "注销 `s` / `st` / `c` 三个单字母别名，删除 `src/commands/register/aliases.ts` 及其注册调用点；调用别名时 fail-loud（非零退出 + 提示全名）",
+      "done": true
+    },
+    {
+      "id": "FR-3",
+      "text": "删除 `tasks` deprecated 转发命令与 `src/commands/tasks.ts` 实现文件；`task drift` / `task sync` 行为零变更",
+      "done": true
+    },
+    {
+      "id": "FR-4",
+      "text": "从 `src/utils/ui-gate.ts` 正则摘除 `dashboard` 关键词，其余关键词（`Figma|Stitch|v0|Framer|前端|组件|CSS` 等）保持不动",
+      "done": true
+    },
+    {
+      "id": "FR-5",
+      "text": "按 R-301 六维范式清理残留引用（注册 / 实现 / 元数据 / 模板 / 测试 / 协议），并对已删命令补 fail-loud 防复辟断言",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "`pnpm install` + `pnpm build` + `pnpm test` 全绿，typecheck 无错",
+      "done": true
+    },
+    {
+      "id": "NFR-2",
+      "text": "删除面严格限制在 A 档四项，`trace` 命令本身保留（它是本次决策的唯一实证来源）",
+      "done": true
+    },
+    {
+      "id": "NFR-3",
+      "text": "不触碰 `init` / `doctor` / `commit` / `unlink` 等人类入口命令（trace 零命中属采样盲区，见 R-315/R-316）",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`vite` 不在 dependencies；`pnpm install && pnpm build && pnpm test` 全绿",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "`@types/prompts` 位于 devDependencies",
+      "done": true
+    },
+    {
+      "id": "AC-3",
+      "text": "`docpath s` / `docpath st` / `docpath c` 均返回非零退出并提示对应全名",
+      "done": true
+    },
+    {
+      "id": "AC-4",
+      "text": "`ui-gate.ts` 正则无 `dashboard`，其余关键词完整保留（单测断言）",
+      "done": true
+    },
+    {
+      "id": "AC-5",
+      "text": "`docpath tasks` 返回非零退出；`docpath task drift` / `task sync` 行为与改动前一致（task-command 套件绿）",
+      "done": true
+    },
+    {
+      "id": "AC-6",
+      "text": "六维 grep 无残留引用；命令元数据条目数下降",
+      "done": true
+    },
+    {
+      "id": "AC-7",
+      "text": "全量测试 + typecheck 通过，零行为回归",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "trace 遥测实证的死代码残留（vite dashboard 依赖 / 单字母别名 / tasks 转发 / ui-gate dashboard 死分支）增加维护面与命令规模",
+    "options": [
+      "- A 合并: 四项残留合并为一个任务全链删除（互不耦合，任一失败可独立回滚）"
+    ],
+    "chosen": "A 合并",
+    "rationale": "四项均为纯删除死代码，无行为变更、无 API 契约变化；删除 public 命令触及命令面边界，按协议走重大变更确认"
+  }
+}

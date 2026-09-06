@@ -274,8 +274,8 @@ export function formatTaskIdentityDrift(drifts: TaskIdentityDrift[]): string {
     ]),
     '修复建议:',
     '  - 若这是新需求，不要在旧 task_id 下写入；先 capture/promote 新 backlog，或运行 docpath task abort / docpath task reset 清理当前任务。',
-    '  - 若 current 视图是正确内容，运行 docpath tasks sync --from current。',
-    '  - 若 canonical task 是正确内容，从 git/归档恢复 canonical task 文件，再运行 docpath tasks sync --from canonical。',
+    '  - 若 current 视图是正确内容，运行 docpath task sync --from current。',
+    '  - 若 canonical task 是正确内容，从 git/归档恢复 canonical task 文件，再运行 docpath task sync --from canonical。',
     '  - 如果 .docpath/workspace/sessions/default.json 仍指向旧 task_id，先用同一 session 继续，或完成/中止旧任务后再开启新任务。',
     '  - 修复前不要运行 docpath agent step；step 同名不能证明是同一个计划语义。',
   ].join('\n');

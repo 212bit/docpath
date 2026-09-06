@@ -248,22 +248,22 @@ describe('active task file drift', () => {
 
     const next = run(`next --cwd ${cwd} --agent`, cwd);
     assert.equal(next.code, 0);
-    assert.match(next.out, /recommended_command: docpath tasks drift/);
+    assert.match(next.out, /recommended_command: docpath task drift/);
     assert.match(next.out, /identity_drift_summary:/);
     assert.match(next.out, /declared_task_id: T-DRAFT-data-uniform/);
 
-    const tasksDrift = run(`tasks drift --cwd ${cwd}`, cwd);
+    const tasksDrift = run(`task drift --cwd ${cwd}`, cwd);
     assert.equal(tasksDrift.code, 1);
     assert.match(tasksDrift.out, /TASK IDENTITY DRIFT DETECTED/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('tasks drift fails loud on phantom active task state', () => {
+  it('task drift fails loud on phantom active task state', () => {
     const cwd = mkWorkspace();
     rmSync(join(cwd, '.docpath', 'tasks', 'current'), { recursive: true, force: true });
     rmSync(join(cwd, '.docpath', 'tasks', 'T-DRIFT'), { recursive: true, force: true });
 
-    const drift = run(`tasks drift --cwd ${cwd}`, cwd);
+    const drift = run(`task drift --cwd ${cwd}`, cwd);
 
     assert.equal(drift.code, 1);
     assert.match(drift.out, /幽灵任务漂移/);
@@ -318,9 +318,9 @@ describe('active task file drift', () => {
     assert.match(failed.out, /TASK FILE DRIFT DETECTED/);
     assert.match(failed.out, /current: .*\.docpath\/tasks\/current\/spec\.md/);
     assert.match(failed.out, /canonical: .*\.docpath\/tasks\/T-DRIFT\/spec\.md/);
-    assert.match(failed.out, /docpath tasks sync --from canonical/);
+    assert.match(failed.out, /docpath task sync --from canonical/);
 
-    const synced = run(`tasks sync --cwd ${cwd} --from canonical`, cwd);
+    const synced = run(`task sync --cwd ${cwd} --from canonical`, cwd);
     assert.equal(synced.code, 0);
     assert.match(synced.out, /canonical -> current/);
     assert.equal(
@@ -336,10 +336,10 @@ describe('active task file drift', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('tasks sync can write current content back to canonical', () => {
+  it('task sync can write current content back to canonical', () => {
     const cwd = mkWorkspace();
 
-    const synced = run(`tasks sync --cwd ${cwd} --from current`, cwd);
+    const synced = run(`task sync --cwd ${cwd} --from current`, cwd);
 
     assert.equal(synced.code, 0);
     assert.match(synced.out, /current -> canonical/);

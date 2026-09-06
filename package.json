@@ -21,25 +21,19 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.10.0",
-    "@types/prompts": "^2.4.9",
     "cac": "^6.7.14",
     "cli-table3": "^0.6.5",
     "minimatch": "^10.2.5",
     "ora": "^9.4.1",
     "picocolors": "^1.1.1",
     "prompts": "^2.4.2",
-    "vite": "6.3.5",
     "yaml": "^2.7.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
+    "@types/prompts": "^2.4.9",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
   },
-  "license": "MIT",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
-  }
+  "license": "MIT"
 }

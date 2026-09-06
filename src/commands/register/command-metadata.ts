@@ -33,7 +33,6 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'context', description: 'Build a budgeted agent context package', visibility: 'core' },
   { name: 'reveal', description: 'Progressively expand indexed context', visibility: 'core' },
   { name: 'docs', description: 'Scan and maintain the document index', visibility: 'core' },
-  { name: 'tasks', description: 'Deprecated forward to task drift | task sync', visibility: 'deprecated', replacement: 'task drift | task sync' },
   { name: 'task', description: 'Task lifecycle & diagnostics: abort | reset | reopen | drift | sync', visibility: 'advanced' },
   { name: 'doctor', description: 'Diagnose DocPath and Git workspace hygiene', visibility: 'advanced' },
   { name: 'config', description: 'Read or update DocPath configuration', visibility: 'advanced' },

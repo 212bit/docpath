@@ -27,7 +27,7 @@ export type UiDesignRequirement = 'required' | 'exempt' | 'unknown';
 
 /** 广义 UI/前端信号：只用于非阻塞 advisory，不直接触发硬门禁。 */
 export function isUiUxTaskText(text: string): boolean {
-  return /UI\/UX|\bUI\b|产品\s*UI|UX|用户界面|界面重构|页面重构|页面|layout|navigation|visual|视觉|设计预览|视觉验收|Design Preview|Visual Acceptance|responsive UI|响应式界面|Figma|Stitch|v0|Framer|frontend|front-end|前端|component|组件|dashboard|CSS/i.test(text);
+  return /UI\/UX|\bUI\b|产品\s*UI|UX|用户界面|界面重构|页面重构|页面|layout|navigation|visual|视觉|设计预览|视觉验收|Design Preview|Visual Acceptance|responsive UI|响应式界面|Figma|Stitch|v0|Framer|frontend|front-end|前端|component|组件|CSS/i.test(text);
 }
 
 export function isUiUxWorkflowOnlyTask(text: string): boolean {
