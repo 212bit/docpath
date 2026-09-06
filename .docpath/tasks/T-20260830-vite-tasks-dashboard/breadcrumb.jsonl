@@ -1,0 +1,16 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"S1","status":"in_progress","context":"开始执行: package.json 依赖结构修正","timestamp":"2026-08-30T10:16:53.985Z","sessionId":"claude-r314-r315-converge"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"check","status":"blocked","context":"质量检查失败: 测试, 重大决策确认检查, 子任务完成度 (0/5)","timestamp":"2026-09-06T15:55:13.284Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"check","status":"blocked","context":"质量检查失败: 测试, 重大决策确认检查, 子任务完成度 (0/5)","timestamp":"2026-09-06T15:56:49.564Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"check","status":"in_progress","context":"recovery-recover: 从 blocked 恢复执行","timestamp":"2026-09-06T15:58:59.264Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"S1","status":"in_progress","context":"开始执行: package.json 依赖结构修正","timestamp":"2026-09-06T16:05:32.596Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-06T16:05:37.783Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-09-06T16:05:38.543Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-09-06T16:05:39.140Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-09-06T16:05:39.714Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"S5","status":"in_progress","context":"开始执行: 六维残留扫描与全量验证","timestamp":"2026-09-06T16:05:40.688Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"S5","status":"in_progress","context":"开始执行: 六维残留扫描与全量验证","timestamp":"2026-09-06T16:05:50.347Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"S5","status":"done","context":"agent-step: S5","timestamp":"2026-09-06T16:05:50.882Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"check","status":"done","context":"质量检查通过 (10 项)","timestamp":"2026-09-06T16:07:30.131Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"review","status":"blocked","context":"代码审查: 0 错误, 5 警告, 0 提示","timestamp":"2026-09-06T16:08:06.717Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"review","status":"done","context":"手动批准","timestamp":"2026-09-06T16:08:31.063Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260830-vite-tasks-dashboard","step":"journal","status":"done","context":"知识归档完成 (5/5 步)","timestamp":"2026-09-06T16:08:34.901Z"}

@@ -945,11 +945,11 @@ export function generateQuickFix(context: AgentOutputContext): string | undefine
   const { drift, state, planContent } = context;
 
   if (context.identityDrifts.length > 0) {
-    return 'docpath tasks drift';
+    return 'docpath task drift';
   }
 
   if (planContent && !planContent.includes('## Checklist')) {
-    return 'docpath tasks sync --from current';
+    return 'docpath task sync --from current';
   }
 
   if (drift.breadcrumbDoneWithoutPlan.length > 0) {
@@ -958,7 +958,7 @@ export function generateQuickFix(context: AgentOutputContext): string | undefine
   }
 
   if (state?.gate === 'check_fail' && state.current_step?.includes('任务文件 current/canonical 漂移')) {
-    return 'docpath tasks sync --from current';
+    return 'docpath task sync --from current';
   }
 
   return undefined;
@@ -974,7 +974,7 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
     ];
     return {
       next_action: '检测到 task identity drift：state.task_id 与 spec H1 声明的 task id 不一致，先恢复任务身份再继续',
-      recommended_command: 'docpath tasks drift',
+      recommended_command: 'docpath task drift',
       required_context: required,
       required_files: required,
       must_update: ['.docpath/tasks/current/spec.md', ...(state?.task_id ? [`.docpath/tasks/${state.task_id}/spec.md`] : [])],

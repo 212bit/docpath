@@ -133,6 +133,37 @@ describe('CLI positional argument guards', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  // R-314: 单字母别名 s/st/c 是给人类省敲键盘的，Agent 一律走全名（trace 1460 次零命中）。
+  it('does not register the removed single-letter aliases', () => {
+    const cwd = mkWorkspace();
+
+    for (const alias of ['s', 'st', 'c']) {
+      const result = run(alias, cwd);
+      assert.equal(result.code, 1, alias);
+      assert.match(result.out, new RegExp(`未知命令: ${alias}`), alias);
+    }
+
+    const status = run('status', cwd);
+    assert.equal(status.code, 0, 'status 全名仍可用');
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  // R-314: tasks 是 R-299 的 deprecated 兼容转发，版本周期已过；drift/sync 实现已下沉到 task。
+  it('does not register the removed tasks forwarder', () => {
+    const cwd = mkWorkspace();
+
+    const drift = run('tasks drift', cwd);
+    assert.equal(drift.code, 1);
+    assert.match(drift.out, /未知命令: tasks/);
+
+    const sync = run('tasks sync', cwd);
+    assert.equal(sync.code, 1);
+    assert.match(sync.out, /未知命令: tasks/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('does not expose stale no-op command flags', () => {
     const cwd = mkWorkspace();
 
@@ -178,7 +209,7 @@ describe('CLI positional argument guards', () => {
     const deprecatedHelp = run('help deprecated', cwd);
     assert.equal(deprecatedHelp.code, 0);
     assert.match(deprecatedHelp.out, /Deprecated compatibility commands:/);
-    assert.match(deprecatedHelp.out, /tasks\s+Deprecated forward to task drift/);
+    assert.doesNotMatch(deprecatedHelp.out, /tasks\s+Deprecated forward to task drift/);
 
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -218,8 +249,9 @@ describe('CLI positional argument guards', () => {
       assert.match(result.out, /未知命令/, `${removed} 应报未知命令`);
     }
 
-    const forwarded = run('tasks drift', cwd);
-    assert.match(forwarded.out, /deprecated; use task drift/i);
+    const removedForward = run('tasks drift', cwd);
+    assert.notEqual(removedForward.code, 0, 'tasks 转发应已删除 (R-314)');
+    assert.match(removedForward.out, /未知命令: tasks/);
 
     rmSync(cwd, { recursive: true, force: true });
   });

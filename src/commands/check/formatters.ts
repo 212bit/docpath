@@ -42,8 +42,8 @@ export function formatTaskFileDrift(drifts: TaskFileDrift[]): string {
       return lines;
     }),
     '修复建议:',
-    '  - 以任务目录为准同步 current: docpath tasks sync --from canonical',
-    '  - 以 current 为准回写任务目录: docpath tasks sync --from current',
+    '  - 以任务目录为准同步 current: docpath task sync --from canonical',
+    '  - 以 current 为准回写任务目录: docpath task sync --from current',
   ].join('\n');
 }
 

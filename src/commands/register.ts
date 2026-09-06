@@ -14,7 +14,6 @@ import { registerTddDebugCommands } from './register/tdd-debug.js';
 import { registerWorktreeCommands } from './register/worktree.js';
 import { registerOperationalCommands } from './register/operational.js';
 import { registerProjectCommands } from './register/project.js';
-import { registerAliases } from './register/aliases.js';
 
 export function registerCommands(cli: CAC): void {
   registerCoreCommands(cli);
@@ -30,7 +29,4 @@ export function registerCommands(cli: CAC): void {
   registerTddDebugCommands(cli);
   registerWorktreeCommands(cli);
   registerProjectCommands(cli);
-
-  // 注册别名（必须在所有命令注册后）
-  registerAliases(cli);
 }
