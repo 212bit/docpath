@@ -132,12 +132,18 @@ try {
       const enabled = isTraceEnabledSync(traceCwd);
       if (enabled) {
         const durationMs = Date.now() - startMs;
-        writeTraceEntrySync(traceCwd, {
-          cmd: cmdName,
-          args: cmdArgs,
-          durationMs,
-          exitCode: code,
-        });
+        writeTraceEntrySync(
+          traceCwd,
+          {
+            cmd: cmdName,
+            args: cmdArgs,
+            durationMs,
+            exitCode: code,
+          },
+          // R-319: 透传 --session 选项值（trace 内部经 resolveSessionContext 统一解析），
+          // 使 trace 的 session 字段与 verifySessionCwd 使用同一会话身份真源。
+          parsed.options.session as string | undefined,
+        );
       }
     } catch {
       // 忽略

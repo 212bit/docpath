@@ -3,6 +3,7 @@ import { appendFile, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
 import { readCurrentState } from './workspace.js';
+import { resolveSessionContext } from './session.js';
 
 export interface TraceEntry {
   ts: string;
@@ -60,16 +61,14 @@ export function detectAgent(): string {
 }
 
 /**
- * 获取当前的 Session ID
+ * 获取当前的 Session ID。
+ * R-319: 单一真源——委托给会话隔离子系统 resolveSessionContext，使 trace 的
+ * session 字段与实际用于锁/跨目录校验的会话身份一致（尊重 --session 选项与
+ * DOCPATH_SESSION，无显式会话时默认串与隔离层统一为 'default'）。Agent 平台
+ * 归属改由 detectAgent() 独立记录，本函数不再兼职 CLAUDE_SESSION 等启发式。
  */
-export function getSessionId(): string {
-  return (
-    process.env.CLAUDE_SESSION ||
-    process.env.CODEX_SESSION ||
-    process.env.OPENCODE_SESSION ||
-    process.env.DOCPATH_SESSION ||
-    'session-default'
-  );
+export function getSessionId(explicitSession?: string): string {
+  return resolveSessionContext(explicitSession).sessionId;
 }
 
 /**
@@ -77,7 +76,8 @@ export function getSessionId(): string {
  */
 export async function writeTraceEntry(
   cwd: string,
-  entryData: Omit<TraceEntry, 'ts' | 'session' | 'agent' | 'phase' | 'gate' | 'taskId' | 'cwd'>
+  entryData: Omit<TraceEntry, 'ts' | 'session' | 'agent' | 'phase' | 'gate' | 'taskId' | 'cwd'>,
+  sessionId?: string
 ): Promise<void> {
   try {
     const docpathDir = await resolveDocpathDir(cwd);
@@ -100,7 +100,7 @@ export async function writeTraceEntry(
 
     const entry: TraceEntry = {
       ts: new Date().toISOString(),
-      session: getSessionId(),
+      session: getSessionId(sessionId),
       agent: detectAgent(),
       phase,
       gate,
@@ -181,7 +181,8 @@ export function isTraceEnabledSync(cwd: string): boolean {
  */
 export function writeTraceEntrySync(
   cwd: string,
-  entryData: Omit<TraceEntry, 'ts' | 'session' | 'agent' | 'phase' | 'gate' | 'taskId' | 'cwd'>
+  entryData: Omit<TraceEntry, 'ts' | 'session' | 'agent' | 'phase' | 'gate' | 'taskId' | 'cwd'>,
+  sessionId?: string
 ): void {
   try {
     const docpathDir = join(cwd, '.docpath');
@@ -206,7 +207,7 @@ export function writeTraceEntrySync(
 
     const entry: TraceEntry = {
       ts: new Date().toISOString(),
-      session: getSessionId(),
+      session: getSessionId(sessionId),
       agent: detectAgent(),
       phase,
       gate,

@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-06T18:13:31.728Z",
+    "updated_at": "2026-09-06T18:13:31.728Z",
+    "content_sha256": "23222a5cf5766b7edb54030d4b84370a09bb4f51377062f5ea265f9de2e4fa09"
+  },
+  "task_id": "T-20260906-p2-trace-getsessionid-session",
+  "backlog_id": "R-319",
+  "title": "T-20260906-p2-trace-getsessionid-session - P2: 统一 trace 会话身份到隔离真源（getSessionId 复用 resolveSessionContext 并透传 --session）",
+  "generated_at": "2026-09-06T18:13:31.728Z",
+  "scope": {
+    "included": [
+      "`src/utils/trace.ts`：`getSessionId` 收敛/删除，两处写入改用统一会话身份；新增可选 `sessionId` 入参。",
+      "`src/index.ts`：把 `resolveSessionContext(sessionOption).sessionId` 透传到 trace 写入闭包。",
+      "回归测试：覆盖 `--session` 透传与默认串一致性（`tests/`）。"
+    ],
+    "excluded": [
+      "不改会话隔离/锁/`touchSession`/`verifySessionCwd` 的强制语义（方案 B，已否决）。",
+      "不改 `next`/`status` 任务解析（本就与 session 无关）。",
+      "不做 R-320（next 去重）、不重开 R-318。",
+      "不改 trace 轮转、其他字段、config schema。"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "已确认 —— 2026-09-07 会话内用户选择方案 A（\"重塑为小而真的修复，统一 trace.getSessionId→resolveSessionContext，定级 P2，正常 promote→spec→实现\"），批准进入实现。",
+    "decision_brief_markdown": "- 当前问题: trace `session` 字段与隔离子系统两套会话身份背离（无视 `--session`、默认串不一致），按会话可观测性失真。\n- 目标: 让 trace 复用 `resolveSessionContext` 单一真源并透传 `--session`，隔离行为零变化。\n- 可选方案:\n  - 方案 A: 删 `getSessionId` env 旁路，trace 复用 `resolveSessionContext` + index 透传 `--session`（隔离零变化）。\n  - 方案 B: 进一步让 `resolveSessionContext` 读 `CLAUDE_SESSION` 等 → 平台会话驱动真实隔离，但改变隔离强制语义、可能对存量用户触发 `verifySessionCwd` 抛错。\n  - 方案 C: 仅统一默认串、不处理 `--session` 透传 → 半修，旁路仍在、`--session` 场景仍失真。\n- 推荐方案: 方案 A\n- 决策理由: A 直击单一真源、回归面最小；B 是 R-318 式过度放宽的翻版（越界改隔离语义）；C 治标不治本。\n- 不做什么: 不改隔离/锁/verifySessionCwd 语义；不扩到 next/status 或 R-320。\n- 成本: 低——两处 trace 写入 + 一处 index 透传 + 回归测试。\n- 风险: 移除 trace 对 `CLAUDE_SESSION` 的读取会改变曾依赖该字段做平台归类的下游；缓解：`agent` 字段仍由 `detectAgent()` 独立给出，`session` 职责收敛为隔离会话身份。\n- 回滚方案: 还原 `getSessionId` + 两处写入行 + index 透传即恢复现状。\n- 用户确认: 已确认 —— 2026-09-07 会话内用户选择方案 A（\"重塑为小而真的修复，统一 trace.getSessionId→resolveSessionContext，定级 P2，正常 promote→spec→实现\"），批准进入实现。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "移除 `getSessionId()` 的私有 env 旁路，trace 的 `session` 字段改为来自 `resolveSessionContext()` 单一真源。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "`index.ts` 将 `--session` 解析结果透传给 trace 写入（async 与 sync 两路径），使 `--session <id>` 时该条 trace `session === <id>`。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "无 `--session`/无 env 时，trace 默认标识与 `resolveSessionContext().sessionId` 逐字一致（消除 `'session-default'` vs `'default'` 分叉）。",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "`writeTraceEntry`/`writeTraceEntrySync` 增加可选 `sessionId` 入参并保持向后兼容（缺省时自解析）。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "隔离行为零变化——不改 `resolveSessionContext` 语义、不新增读取 `CLAUDE_SESSION` 等到隔离路径（避免 `verifySessionCwd` 对存量用户新增跨目录抛错）。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "`detectAgent()` 继续独立记录 Agent 平台归属；平台信息不因其从 session 字段移除而丢失。",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "保持与现有 DocPath 工作流/测试兼容，零回归。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`--session <id>` 执行任一被 trace 记录的命令时，`trace.jsonl` 该条 `session === <id>`（透传生效）。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "无 `--session` 且无 `DOCPATH_SESSION` 时，trace `session` 值与 `resolveSessionContext().sessionId` 逐字一致（默认串不再分叉为 `session-default`）。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "隔离行为零变化：`verifySessionCwd`/锁/`touchSession` 路径不受影响，`resolveSessionContext` 不新增读取平台 env。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "`getSessionId()` 私有 env 旁路被移除或收敛为委托 `resolveSessionContext`；`detectAgent()` 仍独立记录平台。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "新增回归测试覆盖 AC-1/AC-2；`writeTraceEntry` 向后兼容（既有 `tests/runtime-state.test.mjs` trace 轮转用例不破）。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "全量测试与 typecheck 通过，零行为回归。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "trace `session` 字段与隔离子系统两套会话身份背离（无视 `--session`、默认串不一致），按会话可观测性失真。",
+    "options": [
+      "- 方案 A: 删 `getSessionId` env 旁路，trace 复用 `resolveSessionContext` + index 透传 `--session`（隔离零变化）。"
+    ],
+    "chosen": "方案 A",
+    "rationale": "A 直击单一真源、回归面最小；B 是 R-318 式过度放宽的翻版（越界改隔离语义）；C 治标不治本。"
+  }
+}

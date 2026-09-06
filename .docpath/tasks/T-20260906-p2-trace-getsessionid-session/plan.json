@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-06T18:20:43.124Z",
+    "updated_at": "2026-09-06T18:20:43.124Z",
+    "content_sha256": "909a6945574e029c43ce22304d4b321fe7665cbe7062766c304e94e159519671"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-06T18:20:43.124Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 移除 `getSessionId()` 的私有 env 旁路，trace 的 `session` 字段改为来自 `resolveSessionContext()` 单一真源。",
+      "description": "根据 spec 明确 FR-1: 移除 `getSessionId()` 的私有 env 旁路，trace 的 `session` 字段改为来自 `resolveSessionContext()` 单一真源。 的实现边界和验收口径。",
+      "acceptance": "AC-1: `--session <id>` 执行任一被 trace 记录的命令时，`trace.jsonl` 该条 `session === <id>`（透传生效）。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 移除 `getSessionId()` 的私有 env 旁路，trace 的 `session` 字段改为来自 `resolveSessionContext()` 单一真源。",
+      "description": "在现有架构内完成 FR-1: 移除 `getSessionId()` 的私有 env 旁路，trace 的 `session` 字段改为来自 `resolveSessionContext()` 单一真源。 的代码与文档更新。",
+      "acceptance": "FR-1 移除 `getSessionId()` 的私有 env 旁路，trace 的 `session` 字段改为来自 `resolveSessionContext()` 单一真源。 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 `index.ts` 将 `--session` 解析结果透传给 trace 写入（async 与 sync 两路径），使 `--session <id>` 时该条 trace `session === <id>`。",
+      "description": "在现有架构内完成 FR-2: `index.ts` 将 `--session` 解析结果透传给 trace 写入（async 与 sync 两路径），使 `--session <id>` 时该条 trace `session === <id>`。。",
+      "acceptance": "FR-2 已实现，并保持现有工作流兼容。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 FR-3 无 `--session`/无 env 时，trace 默认标识与 `resolveSessionContext().sessionId` 逐字一致（消除 `'session-default'` vs `'default'` 分叉）。",
+      "description": "在现有架构内完成 FR-3: 无 `--session`/无 env 时，trace 默认标识与 `resolveSessionContext().sessionId` 逐字一致（消除 `'session-default'` vs `'default'` 分叉）。。",
+      "acceptance": "FR-3 已实现，并保持现有工作流兼容。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "实现 FR-4 `writeTraceEntry`/`writeTraceEntrySync` 增加可选 `sessionId` 入参并保持向后兼容（缺省时自解析）。",
+      "description": "在现有架构内完成 FR-4: `writeTraceEntry`/`writeTraceEntrySync` 增加可选 `sessionId` 入参并保持向后兼容（缺省时自解析）。。",
+      "acceptance": "FR-4 已实现，并保持现有工作流兼容。",
+      "dependencies": "S4",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: `--session <id>` 执行任一被 trace 记录的命令时，`trace.jsonl` 该条 `session === <id>`（透传生效）。；AC-2: 无 `--session` 且无 `DOCPATH_SESSION` 时，trace `session` 值与 `resolveSessionContext().sessionId` 逐字一致（默认串不再分叉为 `session-default`）。；AC-3: 隔离行为零变化：`verifySessionCwd`/锁/`touchSession` 路径不受影响，`resolveSessionContext` 不新增读取平台 env。；AC-4: `getSessionId()` 私有 env 旁路被移除或收敛为委托 `resolveSessionContext`；`detectAgent()` 仍独立记录平台。；AC-5: 新增回归测试覆盖 AC-1/AC-2；`writeTraceEntry` 向后兼容（既有 `tests/runtime-state.test.mjs` trace 轮转用例不破）。；AC-6: 全量测试与 typecheck 通过，零行为回归。",
+      "acceptance": "AC-1: `--session <id>` 执行任一被 trace 记录的命令时，`trace.jsonl` 该条 `session === <id>`（透传生效）。；AC-2: 无 `--session` 且无 `DOCPATH_SESSION` 时，trace `session` 值与 `resolveSessionContext().sessionId` 逐字一致（默认串不再分叉为 `session-default`）。；AC-3: 隔离行为零变化：`verifySessionCwd`/锁/`touchSession` 路径不受影响，`resolveSessionContext` 不新增读取平台 env。；AC-4: `getSessionId()` 私有 env 旁路被移除或收敛为委托 `resolveSessionContext`；`detectAgent()` 仍独立记录平台。；AC-5: 新增回归测试覆盖 AC-1/AC-2；`writeTraceEntry` 向后兼容（既有 `tests/runtime-state.test.mjs` trace 轮转用例不破）。；AC-6: 全量测试与 typecheck 通过，零行为回归。",
+      "dependencies": "S5",
+      "status": "done"
+    }
+  ]
+}
