@@ -1103,6 +1103,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   console.log(`✅  已 promote backlog 条目: ${item.id}`);
   console.log(`   task_id: ${taskId}`);
   console.log(`   spec: .docpath/${canonicalTaskRelativePath(taskId, 'spec.md')}`);
+  console.log(`   spec_seed: 已预填 backlog 背景/FR/AC/evidence —— 请在 seed 上增量修订，write-spec 全量重写仅用于推倒重来`);
   console.log(`   truth_sync: ${SPEC_TRUTH_SYNC_HINT}`);
   if (item.level <= 1) {
     console.log('   ⚡ level-1 提示: 可直接 docpath go --step S1（免 plan 直达单步计划, R-306）；下次微小改动可用 docpath quick（R-310）');

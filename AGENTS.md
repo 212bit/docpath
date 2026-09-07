@@ -32,7 +32,7 @@ DocPath is JSON-first internally and CLI-first for agents.
 | `.docpath/workspace/breadcrumb.jsonl` | Execution event truth | Use `next`, `status`, `reveal`, or `context`; direct tail only for debug. |
 | `.docpath/workspace/breadcrumb.md` | Human rendered progress view | Do not read by default. |
 | `.docpath/tasks/current/spec.json` | Structured task spec truth | Prefer CLI summaries; direct read only when schema detail is needed. |
-| `.docpath/tasks/current/spec.md` | Human spec view | Read on demand for full narrative requirements. |
+| `.docpath/tasks/current/spec.md` | Human spec view | Read on demand for full narrative requirements. `backlog promote` seeds spec.md with backlog background/FR/AC/evidence — edit the seed incrementally; reserve full `write-spec` rewrites for genuine resets. |
 | `.docpath/tasks/current/plan.json` | Structured task plan truth | Prefer `next`, `go`, and `reveal`. |
 | `.docpath/tasks/current/plan.md` | Human plan view | Do not parse manually by default. |
 | `.docpath/docs-index.json` | Document index truth | Never read in full; use CLI filtered summaries. |
@@ -119,7 +119,10 @@ Rules:
 - Use `docpath quick "<title>"` for tiny low-risk edits. It creates a lightweight
   task, requires check on closeout, and skips full review by quick profile.
   Escalate to the standard lifecycle when scope touches architecture, protocol,
-  permissions, migrations, CI/CD, or broad multi-file changes.
+  permissions, migrations, CI/CD, or broad multi-file changes. For full-cycle
+  tasks, pick the lowest fitting complexity level: estimated diff under ~100
+  lines, single module, no contract/workflow change → `level 1` (do not default
+  to `level 2` for small fixes).
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath agent done` before claiming a task is complete.
 ## Git Convention
