@@ -1,6 +1,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, existsSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -12,6 +12,7 @@ let nextBacklogId;
 let setBacklogStatus;
 let refreshBacklogIndex;
 let createBacklogItem;
+let detectBacklogIdCollisions;
 
 before(async () => {
   ({
@@ -23,6 +24,7 @@ before(async () => {
     setBacklogStatus,
     refreshBacklogIndex,
     createBacklogItem,
+    detectBacklogIdCollisions,
   } = await import('../dist/engine/backlog.js'));
 });
 
@@ -241,6 +243,143 @@ bad
     const index = readFileSync(indexPath, 'utf-8');
     assert.match(index, /# DocPath Backlog Index/);
     assert.doesNotMatch(index, /\| R-\d+/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  // ── R-321/FR-1: 新条目文件名带 CJK 容错 slug ──
+
+  it('creates new items with a CJK-tolerant slug filename', async () => {
+    const cwd = mkWorkspace();
+    const item = await createBacklogItem(cwd, sampleItem({ title: '状态哈希去重 next --agent' }));
+    assert.equal(item.id, 'R-001');
+    const files = readdirSync(join(cwd, '.docpath', 'backlog')).filter((f) => f.startsWith('R-001-'));
+    assert.equal(files.length, 1);
+    // 中文语义保留，ascii 小写，空白/连字符折叠
+    assert.equal(files[0].normalize('NFC'), 'R-001-状态哈希去重-next-agent.md'.normalize('NFC'));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('preserves pure-Chinese titles, truncates to 32 code points, and strips illegal chars', async () => {
+    const cwd = mkWorkspace();
+    const longTitle = '纯中文标题/需求: 一个非常非常非常非常非常非常非常非常非常非常长的标题用于验证截断';
+    await createBacklogItem(cwd, sampleItem({ title: longTitle }));
+    const files = readdirSync(join(cwd, '.docpath', 'backlog')).filter((f) => f.startsWith('R-001-'));
+    assert.equal(files.length, 1);
+    const slug = files[0].replace(/^R-001-/, '').replace(/\.md$/, '');
+    assert.ok(!slug.includes('item'), '纯中文标题不应退化为 item');
+    assert.ok(slug.includes('纯中文标题'), '中文语义应保留');
+    assert.ok(Array.from(slug).length <= 32, `slug 应 <=32 码点, 实际 ${Array.from(slug).length}`);
+    assert.ok(!/[\/\\:*?"<>|]/.test(slug), 'slug 不应含文件系统非法字符');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('still resolves legacy bare R-###.md filenames by id (FR-3 backward compat)', async () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-009.md'), `---
+id: R-009
+title: Legacy Bare
+status: proposed
+priority: P2
+level: 1
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-07-13
+---
+
+legacy body
+`);
+    const loaded = await readBacklogItem(cwd, 'R-009');
+    assert.ok(loaded);
+    assert.equal(loaded.title, 'Legacy Bare');
+    assert.equal(await nextBacklogId(cwd), 'R-010');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  // ── R-321/FR-2: 非破坏性 id 撞号检测 ──
+
+  it('detects active/archived same-id collisions non-destructively', async () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-005.md'), `---
+id: R-005
+title: Active Item
+status: done
+priority: P2
+level: 1
+source: test
+links:
+  task: T-active
+  spec: tasks/T-active/spec.md
+created_at: 2026-07-13
+---
+
+active body
+`);
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-005.md'), `---
+id: R-005
+title: Archived Item
+status: done
+priority: P1
+level: 2
+source: test
+links:
+  task: T-archived
+  spec: tasks/T-archived/spec.md
+created_at: 2026-07-12
+---
+
+archived body
+`);
+
+    const collisions = await detectBacklogIdCollisions(cwd);
+    assert.equal(collisions.length, 1);
+    assert.equal(collisions[0].id, 'R-005');
+    assert.equal(collisions[0].active_title, 'Active Item');
+    assert.equal(collisions[0].archived_title, 'Archived Item');
+    assert.equal(collisions[0].identical, false);
+    // 非破坏性：两侧文件均保留
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'R-005.md')));
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-005.md')));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('returns no collisions when ids are unique across active and archived', async () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-a.md'), `---
+id: R-001
+title: A
+status: proposed
+priority: P2
+level: 1
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-07-13
+---
+
+a
+`);
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-002-b.md'), `---
+id: R-002
+title: B
+status: done
+priority: P2
+level: 1
+source: test
+links:
+  task: T-b
+  spec: tasks/T-b/spec.md
+created_at: 2026-07-12
+---
+
+b
+`);
+    assert.deepEqual(await detectBacklogIdCollisions(cwd), []);
     rmSync(cwd, { recursive: true, force: true });
   });
 });

@@ -69,7 +69,10 @@ describe('backlog commands', () => {
     assert.match(out, /readiness: raw/);
     assert.match(out, /docpath analyze --dry-run --mode deep --content "记录一个想法"/);
     assert.doesNotMatch(out, /docpath analyze --mode deep --content "记录一个想法"/);
-    const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001.md'), 'utf-8');
+    const captureDir = join(cwd, '.docpath', 'backlog');
+    const captureFile = readdirSync(captureDir).find((name) => name === 'R-001.md' || /^R-001-.*\.md$/.test(name));
+    assert.ok(captureFile, 'R-001 item file should exist');
+    const item = readFileSync(join(captureDir, captureFile), 'utf-8');
     assert.match(item, /source: docpath backlog capture/);
     assert.match(item, /readiness: raw/);
     assert.match(item, /- 待补充/);
@@ -515,6 +518,72 @@ Old body
     assert.equal(parsed.issue_count, 3);
     assert.equal(parsed.issues[0].id, 'R-001');
     assert.match(parsed.issues[0].suggestion, /docpath backlog edit R-001/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  // ── R-321/FR-2: groom 将 id 撞号作非阻塞告警 ──
+
+  function writeCollisionFixture(cwd) {
+    mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-005.md'), `---
+id: R-005
+title: Active Done
+status: done
+priority: P2
+level: 1
+source: test
+links:
+  task: T-active
+  spec: tasks/T-active/spec.md
+created_at: 2026-07-13
+---
+
+active body
+`);
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-005.md'), `---
+id: R-005
+title: Archived Done
+status: done
+priority: P1
+level: 2
+source: test
+links:
+  task: T-archived
+  spec: tasks/T-archived/spec.md
+created_at: 2026-07-12
+---
+
+archived body
+`);
+  }
+
+  it('backlog groom warns on id collisions without failing (R-321/FR-2)', () => {
+    const cwd = mkWorkspace();
+    writeCollisionFixture(cwd);
+    run('backlog refresh', cwd);
+
+    const out = run('backlog groom', cwd);
+    assert.match(out, /健康检查通过/);
+    assert.match(out, /id 撞号/);
+    assert.match(out, /Active Done/);
+    assert.match(out, /Archived Done/);
+    // 非破坏性：两侧文件都还在
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'R-005.md')));
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-005.md')));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog groom --agent surfaces id_collisions without affecting passed/issue_count', () => {
+    const cwd = mkWorkspace();
+    writeCollisionFixture(cwd);
+    run('backlog refresh', cwd);
+
+    const parsed = parse(run('backlog groom --agent', cwd));
+    assert.equal(parsed.passed, true);
+    assert.equal(parsed.issue_count, 0);
+    assert.equal(parsed.id_collisions.length, 1);
+    assert.equal(parsed.id_collisions[0].id, 'R-005');
+    assert.equal(parsed.id_collisions[0].identical, false);
     rmSync(cwd, { recursive: true, force: true });
   });
 

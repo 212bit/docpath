@@ -9,10 +9,12 @@ import { isAbsolute, join, relative, resolve } from 'node:path';
 import {
   type BacklogItem,
   type BacklogEvidence,
+  type BacklogIdCollision,
   type BacklogPriority,
   type BacklogReadiness,
   type BacklogStatus,
   createBacklogItem,
+  detectBacklogIdCollisions,
   isBacklogReadiness,
   isBacklogPriority,
   listBacklogItems,
@@ -473,20 +475,29 @@ async function collectBacklogGroomIssues(options: BacklogCommandOptions): Promis
   return issues;
 }
 
-function renderGroomReport(issues: BacklogGroomIssue[]): string {
+function renderGroomReport(issues: BacklogGroomIssue[], collisions: BacklogIdCollision[] = []): string {
   const lines = ['', '🧹  Backlog 健康检查', ''];
   if (issues.length === 0) {
     lines.push('✅  Backlog 健康检查通过');
+  } else {
+    lines.push(`❌  发现 ${issues.length} 个问题`);
     lines.push('');
-    return lines.join('\n');
+    for (const issue of issues) {
+      lines.push(`- [${issue.id}] ${issue.field}: ${issue.message}`);
+      lines.push(`  修复建议: ${issue.suggestion}`);
+    }
   }
 
-  lines.push(`❌  发现 ${issues.length} 个问题`);
-  lines.push('');
-  for (const issue of issues) {
-    lines.push(`- [${issue.id}] ${issue.field}: ${issue.message}`);
-    lines.push(`  修复建议: ${issue.suggestion}`);
+  if (collisions.length > 0) {
+    lines.push('');
+    lines.push(`⚠️  检测到 ${collisions.length} 起 id 撞号（active 与 archived 同 id 并存；非破坏性告警，不计入健康检查失败）:`);
+    for (const collision of collisions) {
+      lines.push(`- [${collision.id}] active「${collision.active_title}」 vs archived「${collision.archived_title}」${collision.identical ? '（内容一致）' : '（内容不同=两条不同需求）'}`);
+    }
+    lines.push('  说明: 多为 R-273 前 worktree 号池 stale 的历史残留；refreshBacklogIndex 拒绝覆盖以保护两条记录。');
+    lines.push('  处理: 需经独立迁移条目重新分配 id 并修正 links，勿在本命令内自动改数据。');
   }
+
   lines.push('');
   return lines.join('\n');
 }
@@ -1217,15 +1228,19 @@ async function backlogRefresh(options: BacklogCommandOptions): Promise<void> {
 
 async function backlogGroom(options: BacklogCommandOptions): Promise<void> {
   const issues = await collectBacklogGroomIssues(options);
+  // R-321/FR-2：撞号检测为非破坏性告警，不计入 issues（不触发 groom 失败），
+  // 只把 refreshBacklogIndex 归档时的「静默跳过」显式暴露；数据迁移另走独立条目。
+  const collisions = await detectBacklogIdCollisions(options.cwd);
 
   if (options.agent) {
     console.log(stringify({
       passed: issues.length === 0,
       issue_count: issues.length,
       issues,
+      id_collisions: collisions,
     }));
   } else {
-    console.log(renderGroomReport(issues));
+    console.log(renderGroomReport(issues, collisions));
   }
 
   if (issues.length > 0) {

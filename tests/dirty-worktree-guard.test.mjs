@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse } from 'yaml';
@@ -213,7 +213,10 @@ describe('dirty worktree guard', () => {
         'Promote can consume its own dirty backlog files.',
       ], cwd);
       const out = run(['backlog', 'promote', 'R-001', '--draft'], cwd);
-      const item = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001.md'), 'utf-8');
+      const promoteDir = join(cwd, '.docpath', 'backlog');
+      const promoteFile = readdirSync(promoteDir).find((name) => name === 'R-001.md' || /^R-001-.*\.md$/.test(name));
+      assert.ok(promoteFile, 'R-001 item file should exist');
+      const item = readFileSync(join(promoteDir, promoteFile), 'utf-8');
       const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
 
       assert.match(out, /已 promote backlog 条目: R-001/);

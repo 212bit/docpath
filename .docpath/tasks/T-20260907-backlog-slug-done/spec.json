@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-07T15:54:46.420Z",
+    "updated_at": "2026-09-07T15:54:46.420Z",
+    "content_sha256": "38f4650606110a8f4560280d91cd0c5cdf1bfceaf1137edb6c39319f80653c44"
+  },
+  "task_id": "T-20260907-backlog-slug-done",
+  "backlog_id": "R-321",
+  "title": "T-20260907-backlog-slug-done - backlog 文件名卫生: 新条目加标题 slug + 撞号非破坏性检测",
+  "generated_at": "2026-09-07T15:54:46.420Z",
+  "scope": {
+    "included": [
+      "src/engine/backlog.ts: slugify 改 CJK 容错; createBacklogItem 占号-recheck-rename; refreshBacklogIndex 安全阀注释; detectBacklogIdCollisions; readFileOrSkip 并发容错",
+      "src/commands/backlog.ts: groom 渲染 + --agent 输出加非阻塞 id_collisions 告警",
+      "测试: CJK slug 生成/截断/非法字符、撞号检测、裸号兼容、groom 非阻塞告警、并发扫描容错"
+    ],
+    "excluded": [
+      "批量重命名存量 116 个裸号文件",
+      "5 起历史 id 撞号的数据迁移(id 重分配 + links 修正)—— 已拆分为独立条目 R-322,需自己的 Decision Brief",
+      "analysis 目录 R-###-section.md 命名",
+      "backlog FSM / workflow state / 任何模块分组层级",
+      "backlog list 视图语义"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "已确认(会话内 AskUserQuestion, 2026-09-07: D1=Unicode保留; D2 重定向=非破坏性撞号检测, 迁移另立条目)。",
+    "decision_brief_markdown": "- 当前问题: backlog 条目文件名为裸号, ls 无法辨识; 5 个 id 在 active/archived 撞号(R-273 前残留)。\n- 目标: 新条目 ls 即可辨识; 撞号非破坏性可见; 存量零迁移向后兼容; 不销毁任何数据。\n- 背景: 来自 backlog R-321。取证发现原 D2 前提(\"done 未归档=归档不幂等\")被证伪——实为 id 撞号, 两条不同需求共享一个 id; refreshBacklogIndex 的跳过是安全阀而非缺陷。\n- 可选方案:\n  - D1: A=Unicode保留 / B=纯ASCII / C=拼音转写\n  - D2(重定向前): A=清除active副本 / B=列表默认过滤  —— 均被证伪(会销毁数据或未治本)\n  - D2(重定向后): 非破坏性撞号检测 + 数据迁移拆独立条目\n- 推荐方案: D1=A Unicode保留; D2=非破坏性检测(groom 告警), 迁移拆 R-322。\n- 决策理由: D1-A 对中文仓自描述, findItemFile 走 id 前缀对 unicode 规范化不敏感; D2 清除/覆盖会销毁撞号中的一条合法需求, 故只检测不改数据, 迁移交独立条目审慎处理。\n- 不做什么: 不清除/覆盖任何撞号文件; 不批量迁移存量; 不引入模块分组层级; 不动 FSM。\n- 成本: 小, level-1 单模块 + 测试。\n- 风险: unicode 文件名在 macOS/Linux/git 无碍, Windows 非法字符已清洗; 瞬时 rename 窗口的并发扫描已由 FR-4 容错覆盖。\n- 回滚方案: 回滚本任务单提交; 新命名只影响新条目, 存量裸号照旧可读; 撞号检测为纯读, 无副作用。\n- 用户确认: 已确认(会话内 AskUserQuestion, 2026-09-07: D1=Unicode保留; D2 重定向=非破坏性撞号检测, 迁移另立条目)。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "新建 backlog 条目文件名带标题 slug,格式 R-###-<slug>.md,ls 即可辨识",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "id 撞号非破坏性检测(D2 重定向): 新增 detectBacklogIdCollisions,backlog groom 以**非阻塞告警**暴露 active/archived 同 id 并存(不计入 issue/不影响 passed);refreshBacklogIndex 保留安全阀跳过,绝不自动改数据",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "向后兼容: 存量裸号仍按 id 前缀被 findItemFile/readBacklogItem/nextBacklogId 正确解析,不批量迁移存量文件",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "并发扫描容错: 裸名->slug 名的瞬时 rename 窗口内,listBacklogItems 对消失文件(ENOENT)跳过而非崩溃",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容,不改 backlog FSM 与 id 键模型",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "新建 backlog 条目文件名为 R-###-<slug>.md, 中文标题语义保留(活体已验: R-322-解决-5-起历史-backlog-id-撞号...), ls 可辨识",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "backlog groom 非破坏性检出 active/archived 同 id 撞号并告警(活体已验: 真实仓库报出 5 起), 不计入 issue_count / 不改变 passed, 两侧文件均保留",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "存量裸号 R-###.md 仍可被 read/find/nextId 正确解析, promote/edit/list 不受影响",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "新增测试覆盖 slug 生成(中文/纯中文/非法字符/超长截断)、撞号检测、裸号兼容、groom 非阻塞告警、并发扫描 ENOENT 容错; 全量套件绿",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "5 起历史撞号的数据迁移已拆为独立条目 R-322; backlog R-321 与任务 T-20260907-backlog-slug-done 双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "backlog 条目文件名为裸号, ls 无法辨识; 5 个 id 在 active/archived 撞号(R-273 前残留)。",
+    "options": [
+      "- D1: A=Unicode保留 / B=纯ASCII / C=拼音转写"
+    ],
+    "chosen": "D1=A Unicode保留; D2=非破坏性检测(groom 告警), 迁移拆 R-322。",
+    "rationale": "D1-A 对中文仓自描述, findItemFile 走 id 前缀对 unicode 规范化不敏感; D2 清除/覆盖会销毁撞号中的一条合法需求, 故只检测不改数据, 迁移交独立条目审慎处理。"
+  }
+}

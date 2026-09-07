@@ -10,6 +10,7 @@ import {
   symlinkSync,
   writeFileSync,
   readFileSync,
+  readdirSync,
 } from 'node:fs';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -299,8 +300,10 @@ describe('worktree command', () => {
 
     const out = run(['backlog', 'capture', '--title', 'from worktree'], worktreePath).output;
     assert.match(out, /R-006/, 'worktree capture must see main pool max (R-005) and allocate R-006');
-    assert.equal(existsSync(join(worktreePath, '.docpath', 'backlog', 'R-006.md')), true, 'reservation lands in the worktree copy');
-    assert.equal(existsSync(join(cwd, '.docpath', 'backlog', 'R-006.md')), false, 'main pool is not written by worktree capture');
+    const wtHasR006 = readdirSync(join(worktreePath, '.docpath', 'backlog')).some((f) => /^R-006(-.*)?\.md$/.test(f));
+    const mainHasR006 = readdirSync(join(cwd, '.docpath', 'backlog')).some((f) => /^R-006(-.*)?\.md$/.test(f));
+    assert.equal(wtHasR006, true, 'reservation lands in the worktree copy');
+    assert.equal(mainHasR006, false, 'main pool is not written by worktree capture');
 
     // Main-side allocation is unchanged by worktree-local reservations (known
     // asymmetry, documented in nextBacklogId).

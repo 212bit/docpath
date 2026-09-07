@@ -8,7 +8,7 @@
  * 写入唯一入口：writeBacklogItem()（类比 writeCurrentState）。fail-loud：非法转移抛错。
  */
 
-import { readFile, writeFile, readdir, mkdir, rename } from 'node:fs/promises';
+import { readFile, writeFile, readdir, mkdir, rename, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname, resolve, isAbsolute } from 'node:path';
@@ -114,13 +114,24 @@ function archivedBacklogDir(docpathDir: string): string {
   return join(docpathDir, 'backlog', 'archived');
 }
 
-/** 标题转 ascii slug；无可用字符时回退 'item' */
+/**
+ * 标题转文件系统安全的 slug（R-321/FR-1，D1=Unicode 保留策略）。
+ *
+ * 保留中文等 unicode 字符，仅清洗文件系统非法字符 `/ \ : * ? " < > |` 与控制字符；
+ * 空白与非法字符转连字符并折叠；ascii 小写；按码点截断 32 字（不劈裂代理对）；
+ * 首尾去连字符；无可用字符时回退 'item'。
+ * 注：id 前缀查找（findItemFile / nextBacklogId 走 `R-###` 前缀）对 unicode NFC/NFD
+ * 规范化不敏感，故 slug 保留中文不影响解析。
+ */
 function slugify(title: string): string {
-  const slug = title
+  const cleaned = title
+    .normalize('NFC')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[/\\:*?"<>|\u0000-\u001f\s]+/g, '-')
+    .replace(/-{2,}/g, '-')
     .replace(/^-+|-+$/g, '');
-  return slug || 'item';
+  const truncated = Array.from(cleaned).slice(0, 32).join('').replace(/-+$/g, '');
+  return truncated || 'item';
 }
 
 function parseItem(content: string): BacklogItem {
@@ -279,6 +290,19 @@ function formatBacklogId(number: number): string {
 }
 
 /**
+ * 并发容错读取（R-321）：createBacklogItem 占号后会把裸名 R-###.md 瞬时 rename 成
+ * R-###-slug.md，扫描窗口内文件可能已消失；对 ENOENT 返回 null 由调用方跳过，而非崩溃。
+ */
+async function readFileOrSkip(path: string): Promise<string | null> {
+  try {
+    return await readFile(path, 'utf-8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+/**
  * 列出所有 backlog 条目（按 id 升序）。目录缺失时返回 []，不报错。
  */
 export async function listBacklogItems(cwd: string): Promise<BacklogItem[]> {
@@ -289,7 +313,8 @@ export async function listBacklogItems(cwd: string): Promise<BacklogItem[]> {
   for (const file of entries) {
     if (!file.endsWith('.md') || file === 'backlog.md') continue;
     if (!/^R-\d+/i.test(file)) continue;
-    const content = await readFile(join(dir, file), 'utf-8');
+    const content = await readFileOrSkip(join(dir, file));
+    if (content === null) continue;
     items.push(parseItem(content));
   }
   return items.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
@@ -318,8 +343,14 @@ export async function writeBacklogItem(cwd: string, item: BacklogItem): Promise<
 }
 
 /**
- * 原子创建新条目。通过 `wx` 独占创建目标文件占用候选 ID；
- * 并发进程命中同一 ID 时会收到 EEXIST，再递增重试。
+ * 原子创建新条目，文件名带标题 slug（R-321/FR-1）：`R-###-<slug>.md`，ls 即可辨识。
+ *
+ * 分三步保证 id 唯一 + 自描述命名：
+ * 1. `wx` 独占裸名 `${id}.md` 作为 per-id 原子锁——并发进程命中同一 id 必 EEXIST 后递增重试。
+ *    不用带 slug 的名占号，否则「同 id 不同标题」会生成不同文件名而双双写成功，破坏 id 唯一性。
+ * 2. 占号成功后复检是否已有同 id 的 slug 兄弟文件（极窄并发窗口下另一进程可能已占号并改名，
+ *    或 worktree 号池 stale）；命中则释放裸锁、递增重试，杜绝撞号。
+ * 3. 复检通过后把裸锁重命名为自描述 slug 名。
  */
 export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id'>): Promise<BacklogItem> {
   const dir = backlogDir(await resolveDocpathDir(cwd));
@@ -333,6 +364,17 @@ export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id
     try {
       const reservedPath = join(dir, reservedFileName);
       await writeFile(reservedPath, serializeItem(candidate), { encoding: 'utf-8', flag: 'wx' });
+      const entries = await readdir(dir);
+      const hasSluggedSibling = entries.some(
+        (f) => f !== reservedFileName && f.startsWith(`${id}-`) && f.endsWith('.md'),
+      );
+      if (hasSluggedSibling) {
+        await rm(reservedPath);
+        next += 1;
+        continue;
+      }
+      const finalFileName = `${id}-${slugify(item.title)}.md`;
+      await rename(reservedPath, join(dir, finalFileName));
       await refreshBacklogIndex(cwd);
       return candidate;
     } catch (error) {
@@ -417,6 +459,10 @@ export async function refreshBacklogIndex(cwd: string): Promise<void> {
     if (filename) {
       const sourcePath = join(dir, filename);
       const targetPath = join(archivedDir, filename);
+      // `!existsSync(targetPath)` 是有意的撞号安全阀（R-321/FR-2）：archived 已有同名副本时
+      // 拒绝覆盖——历史上 worktree 号池 stale 会让同 id 落在两条不同需求上（R-273 前残留），
+      // 覆盖会销毁其中一条。此类「静默跳过」由 detectBacklogIdCollisions / `backlog groom`
+      // 非破坏性暴露；真正的 id 重分配须走独立迁移条目，勿在此自动改数据。
       if (existsSync(sourcePath) && !existsSync(targetPath)) {
         await rename(sourcePath, targetPath);
       }
@@ -432,6 +478,66 @@ export async function refreshBacklogIndex(cwd: string): Promise<void> {
   });
 
   await writeFile(join(dir, 'backlog.md'), generateBacklogIndexMd(sorted), 'utf-8');
+}
+
+/** active 与 archived 同 id 并存的一起撞号（R-321/FR-2 非破坏性检测结果）。 */
+export interface BacklogIdCollision {
+  id: string;
+  active_file: string;
+  archived_file: string;
+  active_title: string;
+  archived_title: string;
+  /** 两侧内容是否字节一致（一致=可能真陈旧副本；不一致=两条不同需求撞号，绝不可覆盖） */
+  identical: boolean;
+}
+
+function frontmatterTitle(content: string): string {
+  const match = content.match(/^title:\s*(.+)$/m);
+  return match ? match[1].trim().replace(/^["']|["']$/g, '') : '';
+}
+
+/**
+ * 检测 active 与 archived 目录中同 id 并存的条目（R-321/FR-2：非破坏性撞号检测）。
+ *
+ * 只报告、不改数据：把 refreshBacklogIndex 归档时的「静默跳过」显式暴露给 `backlog groom`。
+ * 真正的 id 重分配（数据迁移）须走独立条目，因其会牵动 links.task/links.spec 与历史引用。
+ */
+export async function detectBacklogIdCollisions(cwd: string): Promise<BacklogIdCollision[]> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const dir = backlogDir(docpathDir);
+  const adir = archivedBacklogDir(docpathDir);
+  if (!existsSync(dir) || !existsSync(adir)) return [];
+
+  const idOf = (file: string): string => file.match(/^(R-\d+)/i)?.[1]?.toUpperCase() ?? '';
+  const isItemFile = (file: string): boolean => /^R-\d+.*\.md$/i.test(file) && file !== 'backlog.md';
+
+  const archivedById = new Map<string, string>();
+  for (const file of await readdir(adir)) {
+    if (!isItemFile(file)) continue;
+    const id = idOf(file);
+    if (id && !archivedById.has(id)) archivedById.set(id, file);
+  }
+
+  const collisions: BacklogIdCollision[] = [];
+  for (const file of await readdir(dir)) {
+    if (!isItemFile(file)) continue;
+    const id = idOf(file);
+    const archivedFile = id ? archivedById.get(id) : undefined;
+    if (!archivedFile) continue;
+    const activeContent = await readFileOrSkip(join(dir, file));
+    const archivedContent = await readFileOrSkip(join(adir, archivedFile));
+    if (activeContent === null || archivedContent === null) continue;
+    collisions.push({
+      id,
+      active_file: `backlog/${file}`,
+      archived_file: `backlog/archived/${archivedFile}`,
+      active_title: frontmatterTitle(activeContent),
+      archived_title: frontmatterTitle(archivedContent),
+      identical: activeContent === archivedContent,
+    });
+  }
+
+  return collisions.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 }
 
 /**

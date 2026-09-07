@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-07T15:57:34.914Z",
+    "updated_at": "2026-09-07T15:57:34.914Z",
+    "content_sha256": "b16d2329a1a7265200f521a64a40ac64b854581f1f15260c8e4e6547181d19c1"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-07T15:57:34.914Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 新建 backlog 条目文件名带标题 slug,格式 R-###-<slug>.md,ls 即可辨识",
+      "description": "完成 FR-1: 新建 backlog 条目文件名带标题 slug,格式 R-###-<slug>.md,ls 即可辨识；FR-2: refreshBacklogIndex 归档幂等(D2 已确认=修归档幂等): archived 已有同名时不再静默跳过,清除 active 陈旧 done 副本,消除物理重复；FR-3: 向后兼容: 存量裸号仍按 id 前缀被 findItemFile/readBacklogItem/nextBacklogId 正确解析,不批量迁移存量文件，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: 新建 backlog 条目文件名为 R-###-<slug>.md, 中文标题语义保留, ls 可辨识；AC-2: refreshBacklogIndex 对 archived 已有同名的 done 条目能清除 active 陈旧副本, 不再产生物理重复；AC-3: 存量裸号 R-###.md 仍可被 read/find/nextId 正确解析, promote/edit/list 不受影响；AC-4: 新增测试覆盖 slug 生成(中文/纯中文/非法字符/超长截断)、归档幂等、裸号兼容, 全绿；AC-5: backlog 条目 R-321 与任务 T-20260907-backlog-slug-done 双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
