@@ -1,4 +1,5 @@
 import { existsSync } from 'fs';
+import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import {
@@ -92,14 +93,26 @@ async function handleTraceConfigAction(cwd: string, action: 'clear' | 'enable' |
     return;
   }
 
-  const { configCommand } = await import('./config.js');
+  const docpathDir = join(cwd, '.docpath');
+  const configPath = join(docpathDir, 'config.yaml');
+  let content = existsSync(configPath) ? await readFile(configPath, 'utf-8') : '';
   if (action === 'enable') {
-    await configCommand({ cwd, set: 'trace', value: 'true' });
+    if (/^trace:\s*.*/m.test(content)) {
+      content = content.replace(/^trace:\s*.*/m, 'trace: true');
+    } else {
+      content = content ? `${content.trimEnd()}\ntrace: true\n` : 'trace: true\n';
+    }
+    await writeFile(configPath, content, 'utf-8');
     console.log('🚀 项目级 CLI 调用追踪已开启 (配置 trace: true)。\n此后 Agent 调用均会自动记录。可以使用 DOCPATH_TRACE=1 临时强制启用。');
     return;
   }
 
-  await configCommand({ cwd, set: 'trace', value: 'false' });
+  if (/^trace:\s*.*/m.test(content)) {
+    content = content.replace(/^trace:\s*.*/m, 'trace: false');
+  } else {
+    content = content ? `${content.trimEnd()}\ntrace: false\n` : 'trace: false\n';
+  }
+  await writeFile(configPath, content, 'utf-8');
   console.log('🛑 项目级 CLI 调用追踪已关闭 (配置 trace: false)。');
 }
 

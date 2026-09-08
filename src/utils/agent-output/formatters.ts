@@ -347,32 +347,6 @@ export function hasHealthRegressionWarning(installHealth: InstallDoctorReport | 
     || (installHealth.warnings ?? 0) > 0;
 }
 
-function buildLearnRoute(
-  lessonSummary: { pendingCount: number; pendingKeys: string[] },
-  hasHealthWarning: boolean,
-  globalRules: string[],
-): {
-  next_action: string;
-  recommended_command: string;
-  required_context: string[];
-  required_files: string[];
-  must_update: string[];
-  exit_criteria: string;
-} {
-  const learnRequired = ['.docpath/workspace/current.md', '.docpath/workspace/lesson-candidates.md'];
-  const warningHint = hasHealthWarning
-    ? '，且存在 install/health 或 regression 告警'
-    : '';
-  return {
-    next_action: `检测到 ${lessonSummary.pendingCount} 条待固化 lesson 候选${warningHint}，建议先预览并沉淀为全局规范`,
-    recommended_command: 'docpath learn --dry-run',
-    required_context: learnRequired,
-    required_files: learnRequired,
-    must_update: globalRules,
-    exit_criteria: '预览确认后运行 docpath learn，lesson 候选已合并或去重跳过',
-  };
-}
-
 
 function withWorkflowConstraint(
   route: {
@@ -643,9 +617,6 @@ export function inferNextAction(
         exit_criteria: `${acceptedBacklog.id} 已 promote 成活跃任务`,
       }, phase, gate);
     }
-    if (hasPendingLessonCandidates) {
-      return buildLearnRoute(lessonSummary, hasHealthWarning, globalRules);
-    }
     if (immatureAcceptedBacklog) {
       return withWorkflowConstraint({
         next_action: `backlog 条目尚未达到可执行成熟度: ${immatureAcceptedBacklog.id} ${immatureAcceptedBacklog.title}`,
@@ -703,13 +674,6 @@ export function inferNextAction(
         recommended_command = `docpath backlog promote ${acceptedBacklog.id}`;
         required_context = ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'];
         exit_criteria = `${acceptedBacklog.id} 已 promote 成活跃任务`;
-      } else if (hasPendingLessonCandidates) {
-        const learnRoute = buildLearnRoute(lessonSummary, hasHealthWarning, globalRules);
-        next_action = learnRoute.next_action;
-        recommended_command = learnRoute.recommended_command;
-        required_context = learnRoute.required_context;
-        must_update = learnRoute.must_update;
-        exit_criteria = learnRoute.exit_criteria;
       } else if (immatureAcceptedBacklog) {
         next_action = `backlog 条目尚未达到可执行成熟度: ${immatureAcceptedBacklog.id} ${immatureAcceptedBacklog.title}`;
         recommended_command = `docpath backlog edit ${immatureAcceptedBacklog.id} --readiness analyzed --evidence-analysis <path>`;

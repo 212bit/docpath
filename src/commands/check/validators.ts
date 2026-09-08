@@ -617,20 +617,7 @@ export async function checkRuleTruthSources(docpathDir: string): Promise<CheckRe
   return results;
 }
 
-function shouldCheckProjectStandards(cwd: string, docpathDir: string): boolean {
-  const intakeDir = join(docpathDir, 'project-intake');
-  const hasIntakePackage = (() => {
-    if (!existsSync(intakeDir)) return false;
-    try {
-      return readdirSync(intakeDir, { withFileTypes: true })
-        .some((entry) => entry.isDirectory() && existsSync(join(intakeDir, entry.name, 'intake.json')));
-    } catch {
-      return false;
-    }
-  })();
-
-  if (hasIntakePackage) return true;
-
+function shouldCheckProjectStandards(cwd: string, _docpathDir: string): boolean {
   return [
     join(cwd, 'docs', 'requirements.md'),
     join(cwd, 'requirements.md'),

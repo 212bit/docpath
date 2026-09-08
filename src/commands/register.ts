@@ -13,8 +13,6 @@ import { registerSpecCommands } from './register/spec.js';
 import { registerTddDebugCommands } from './register/tdd-debug.js';
 import { registerWorktreeCommands } from './register/worktree.js';
 import { registerOperationalCommands } from './register/operational.js';
-import { registerProjectCommands } from './register/project.js';
-
 export function registerCommands(cli: CAC): void {
   registerCoreCommands(cli);
   registerOperationalCommands(cli);
@@ -28,5 +26,4 @@ export function registerCommands(cli: CAC): void {
   registerDocsInstallCommands(cli);
   registerTddDebugCommands(cli);
   registerWorktreeCommands(cli);
-  registerProjectCommands(cli);
 }

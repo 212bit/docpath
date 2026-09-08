@@ -139,7 +139,7 @@ describe('next --agent routing', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('routes completed state with lesson candidates into learn before creating new backlog', () => {
+  it('does not route completed state with lesson candidates into learn (learn removed)', () => {
     const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
     writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
       '# Lesson Candidates',
@@ -151,18 +151,13 @@ describe('next --agent routing', () => {
       '',
       '### Lesson',
       '',
-      '当 docpath next 检测 lesson 候选时，必须只推荐 learn 处理可沉淀规则，避免低质量或跳过候选阻塞 backlog 路由。',
+      '当 docpath next 检测 lesson 候选时，由于 learn 已下线，不应死循环推荐 learn。',
       '',
     ].join('\n'));
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath learn --dry-run');
-    assert.match(output.next_action, /1 条待固化 lesson 候选/);
-    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/lesson-candidates.md'));
-    assert.equal(output.lesson_summary.pending_count, 1);
-    assert.equal(output.lesson_summary.pending_keys.length, 1);
-    assert.match(output.lesson_summary.pending_keys[0], /t-lesson-workflow/);
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -216,7 +211,7 @@ describe('next --agent routing', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('routes completed pending lessons ahead of proposed raw backlog shaping', () => {
+  it('routes completed state with proposed backlog directly when lessons exist', () => {
     const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
     writeFileSync(join(cwd, '.docpath', 'backlog', 'R-900.md'), `---
@@ -257,76 +252,13 @@ created_at: 2026-06-29
       '',
       '### Lesson',
       '',
-      '当 docpath next 检测 lesson 候选时，必须只推荐 learn 处理可沉淀规则，避免低质量或跳过候选阻塞 backlog 路由。',
+      'Lesson candidate.',
       '',
     ].join('\n'));
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath learn --dry-run');
-    assert.match(output.next_action, /待固化 lesson 候选/);
-    assert.ok(!String(output.recommended_command || '').includes('brainstorm'));
-    assert.ok(!String(output.recommended_command || '').includes('backlog accept'));
-    rmSync(cwd, { recursive: true, force: true });
-  });
-
-  it('keeps learn elevated when install health fails alongside pending lessons and proposed backlog', () => {
-    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass' });
-    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
-    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-900.md'), `---
-id: R-900
-title: Raw proposed item
-status: proposed
-priority: P0
-level: 2
-source: test
-readiness: raw
-evidence:
-  brainstorm: null
-  analysis: null
-  spec: null
-  decision_brief: null
-  user_confirmed: null
-links:
-  task: null
-  spec: null
-created_at: 2026-06-29
----
-
-## 背景
-
-- 待补充
-
-## 验收
-
-- 待补充
-`);
-    writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
-      '# Lesson Candidates',
-      '',
-      '## T-LESSON — 2026-06-01T00:00:00.000Z',
-      '',
-      '- task_id: T-LESSON',
-      '- key: T-LESSON-workflow',
-      '',
-      '### Lesson',
-      '',
-      '当 docpath next 检测 lesson 候选时，必须只推荐 learn 处理可沉淀规则，避免低质量或跳过候选阻塞 backlog 路由。',
-      '',
-    ].join('\n'));
-    // Missing install assets force install_health.passed=false in doctor report.
-    writeFileSync(join(cwd, '.docpath', '.install-meta.json'), JSON.stringify({
-      target: 'universal',
-      installed_at: '2026-06-01T00:00:00.000Z',
-      asset_hashes: {},
-    }, null, 2));
-
-    const output = nextAgent(cwd);
-
-    assert.equal(output.recommended_command, 'docpath learn --dry-run');
-    assert.match(output.next_action, /待固化 lesson 候选/);
-    assert.equal(output.install_health.passed, false);
-    assert.match(output.next_action, /install\/health|regression 告警/);
+    assert.ok(output.recommended_command.includes('brainstorm --dry-run'));
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -544,7 +476,7 @@ Ignored backlog
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('routes idle state with lesson candidates into learn when no backlog item is ready', () => {
+  it('routes idle state with lesson candidates directly to capture (learn removed)', () => {
     const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
     writeFileSync(join(cwd, '.docpath', 'workspace', 'lesson-candidates.md'), [
       '# Lesson Candidates',
@@ -556,15 +488,13 @@ Ignored backlog
       '',
       '### Lesson',
       '',
-      '当 docpath next 检测 idle lesson 候选时，必须先推荐 learn 处理可沉淀规则，避免新 backlog 捕获覆盖待固化规则。',
+      'Lesson candidate.',
       '',
     ].join('\n'));
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath learn --dry-run');
-    assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/lesson-candidates.md'));
-    assert.equal(output.lesson_summary.pending_count, 1);
+    assert.equal(output.recommended_command, 'docpath backlog capture --title <title>');
     rmSync(cwd, { recursive: true, force: true });
   });
 
