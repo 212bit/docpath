@@ -945,7 +945,7 @@ created_at: 2026-05-31
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('routes check failures into debug', () => {
+  it('routes check failures into check', () => {
     const cwd = mkWorkspace({
       phase: 'checking',
       gate: 'check_fail',
@@ -953,7 +953,7 @@ created_at: 2026-05-31
     });
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath debug reproduce');
+    assert.equal(output.recommended_command, 'docpath check');
     assert.match(output.next_action, /修复质量检查失败/);
     assert.ok(output.context_refs.some(ref => ref.path === '.docpath/workspace/last-check.md'));
     rmSync(cwd, { recursive: true, force: true });

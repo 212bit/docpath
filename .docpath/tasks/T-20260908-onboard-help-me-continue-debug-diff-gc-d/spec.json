@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-08T15:40:01.568Z",
+    "updated_at": "2026-09-08T15:40:01.568Z",
+    "content_sha256": "ba98b0e210eca4b4c6a2ea75707d4ec1bba0b92f74645c2084a3927bd66e0f2c"
+  },
+  "task_id": "T-20260908-onboard-help-me-continue-debug-diff-gc-d",
+  "backlog_id": "R-315",
+  "title": "T-20260908-onboard-help-me-continue-debug-diff-gc-d - 零使用命令删除: onboard / help-me / continue / debug / diff / gc-decisions (trace 1460 次零命中)",
+  "generated_at": "2026-09-08T15:40:01.568Z",
+  "scope": {
+    "included": [
+      "零使用命令删除: onboard / help-me / continue / debug / diff / gc-decisions (trace 1460 次零命中)"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "用户明确确认下线 R-315 所列 6 个零命中命令",
+    "decision_brief_markdown": "- 当前问题: 依据 `.docpath/workspace/trace.jsonl` 全量 1460 条真实调用记录（2026-07~2026-08，其中 1249 条来自 claude agent、211 条 agent=unknown），下列命令在**两个 agent 分组中均为零命中**。\n- 目标: 零使用命令删除: onboard / help-me / continue / debug / diff / gc-decisions (trace 1460 次零命中)\n- 背景: 来自 backlog R-315，Decision Brief 证据: ADR-20260908-002: 彻底移除 onboard/help-me/continue/debug/diff/gc-decisions 六个零使用命令\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 用户明确确认下线 R-315 所列 6 个零命中命令\n\n### 已有 Decision Brief (来自 backlog evidence)\n\nADR-20260908-002: 彻底移除 onboard/help-me/continue/debug/diff/gc-decisions 六个零使用命令"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "零使用命令删除: onboard / help-me / continue / debug / diff / gc-decisions (trace 1460 次零命中)",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "[ ] `onboard` `help-me` `continue` `debug` `diff` 五个命令及其实现文件全链删除；执行时返回非零退出与明确提示",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "[ ] `gc-decisions` 先核实与 R-302 trace 轮转的关系：若已被取代则一并删除，若仍承担独立职责则保留并在本条目记录结论",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "[ ] 命令元数据条目数与文档清单同步下降，六维无残留引用",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "[ ] 对已删命令补 fail-loud 断言（调用即非零退出），防复辟",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "[ ] 全量测试与 typecheck 通过，零行为回归",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "backlog 条目 R-315 与任务 T-20260908-onboard-help-me-continue-debug-diff-gc-d 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "依据 `.docpath/workspace/trace.jsonl` 全量 1460 条真实调用记录（2026-07~2026-08，其中 1249 条来自 claude agent、211 条 agent=unknown），下列命令在**两个 agent 分组中均为零命中**。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

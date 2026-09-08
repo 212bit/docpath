@@ -1,20 +1,10 @@
 import type { CAC } from 'cac';
 import { agentCommand } from '../agent.js';
-import { continueCommand } from '../continue.js';
 import { goCommand } from '../go.js';
 import { runCommand } from '../runtime.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 export function registerExecutionCommands(cli: CAC): void {
-  cli.command('continue', '断线重连 — 读取 breadcrumb 恢复执行，检查升级信号')
-    .option('--cwd <path>', '项目目录')
-    .option('--verbose', '显示详细上下文')
-    .action(async (options: { cwd?: string; verbose?: boolean }) => {
-      await continueCommand({
-        cwd: options.cwd || process.cwd(),
-        verbose: options.verbose,
-      });
-    });
 
   cli.command('go', '按 plan.md 逐个执行子任务')
     .option('--cwd <path>', '项目目录')

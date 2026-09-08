@@ -97,10 +97,6 @@ describe('CLI positional argument guards', () => {
     assert.equal(agent.code, 0);
     assert.match(agent.out, /agent_context|state|phase/i);
 
-    const debug = run('debug reproduce', cwd);
-    assert.equal(debug.code, 0);
-    assert.match(debug.out, /调试会话/);
-
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -108,8 +104,6 @@ describe('CLI positional argument guards', () => {
     const cwd = mkWorkspace();
     const cases = [
       ['review --scope stage', /review --scope: 参数非法/],
-      ['diff --scope unknown', /diff --scope: 参数非法/],
-      ['diff --scope step --step nope', /diff --step: 参数非法/],
       ['context --max-tokens nope', /context --max-tokens: 参数非法/],
       ['reveal --level nope', /reveal --level: 参数非法/],
       ['reveal --level 4', /reveal --level: 参数非法/],

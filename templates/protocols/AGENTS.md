@@ -155,7 +155,6 @@ Rules:
 | `docpath changes --agent` | Read-only git closeout and commit readiness view |
 | `docpath journal` | Knowledge archive |
 | `docpath gc` | Preview workspace cleanup candidates and inactive task archive candidates; `--force` executes |
-| `docpath gc-decisions` | Rotate old decision logs |
 
 ## Decision Log Aging
 

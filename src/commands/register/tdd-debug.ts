@@ -1,20 +1,7 @@
 import type { CAC } from 'cac';
-import { debugCommand } from '../debug.js';
 import { traceCommand } from '../trace.js';
 
-// R-299: tdd（实验性已弃）与 disclosure（legacy，reveal/context 替代）已删除。
 export function registerTddDebugCommands(cli: CAC): void {
-  cli.command('debug [phase]', '系统化调试工作流 — reproduce/isolate/hypothesize/verify/fix')
-    .option('--cwd <path>', '项目目录')
-    .action(async (phase: string | undefined, options: { cwd?: string }) => {
-      const cwd = options.cwd || process.cwd();
-      const validPhases = ['reproduce', 'isolate', 'hypothesize', 'verify', 'fix'] as const;
-      if (!phase || !validPhases.includes(phase as typeof validPhases[number])) {
-        console.log('用法: docpath debug <reproduce|isolate|hypothesize|verify|fix>');
-        return;
-      }
-      await debugCommand({ cwd, action: phase as typeof validPhases[number] });
-    });
 
   cli.command('trace [action] [matrixAction]', 'Trace & analyze agent command behavior — show|session|health|anomaly|clear|enable|disable|matrix')
     .option('--cwd <path>', '项目目录')

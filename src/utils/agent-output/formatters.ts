@@ -483,7 +483,7 @@ export function inferNextAction(
     const blocked = bc.entries.find(e => e.status === 'blocked');
     return withWorkflowConstraint({
       next_action: `处理阻塞步骤: ${blocked?.step || 'unknown'}`,
-      recommended_command: blocked?.step ? `docpath recover ${blocked.step}` : 'docpath debug reproduce',
+      recommended_command: blocked?.step ? `docpath recover ${blocked.step}` : 'docpath check',
       required_context: [
         '.docpath/workspace/current.md',
         '.docpath/workspace/breadcrumb.md',
@@ -506,7 +506,7 @@ export function inferNextAction(
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md', '.docpath/workspace/breadcrumb.md'];
     return withWorkflowConstraint({
       next_action: '修复质量检查失败项',
-      recommended_command: 'docpath debug reproduce',
+      recommended_command: 'docpath check',
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/workspace/last-check.md'],
@@ -984,7 +984,6 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
 
   const hasDrift = context.drift.planDoneWithoutBreadcrumb.length > 0 || context.drift.breadcrumbDoneWithoutPlan.length > 0;
   const isTroubleshooting = hasDrift
-    || inferred.recommended_command.startsWith('docpath debug')
     || inferred.recommended_command.startsWith('docpath recover')
     || (state?.gate === 'check_fail');
 

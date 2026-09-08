@@ -190,10 +190,6 @@ export function isWorkflowGateCommandAllowed(
     // FSM phase/gate alone cannot authorize or deny it — pass through.
     return true;
   }
-  if (cmd === 'docpath debug reproduce' || cmd.startsWith('docpath debug ')) {
-    // troubleshooting pass-through when check/review failed, else allow if currently failing
-    return true;
-  }
   return true;
 }
 

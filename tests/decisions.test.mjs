@@ -173,33 +173,6 @@ describe('structured decisions ADR', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('gc-decisions command rotates old decisions and reports a summary', () => {
-    const cwd = mkWorkspace();
-    const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');
-    writeFileSync(decisionsPath, [
-      '# 决策日志 — DocPath ADR',
-      '',
-      '> test decisions',
-      '',
-      '---',
-      '',
-      decisionBlock('ADR-20260410-001', '2026-04-10T00:00:00.000Z'),
-    ].join('\n'));
-
-    const output = execSync(`node ${BIN} gc-decisions --cwd ${cwd} --retention-days 30`, {
-      cwd,
-      encoding: 'utf-8',
-      timeout: 20000,
-    });
-
-    assert.match(output, /DocPath Decisions GC/);
-    assert.match(output, /归档条目: 1/);
-    assert.ok(existsSync(join(cwd, '.docpath', 'workspace', 'decisions.jsonl')));
-    assert.doesNotMatch(readFileSync(decisionsPath, 'utf-8'), /ADR-20260410-001/);
-    assert.match(readFileSync(join(cwd, '.docpath', 'workspace', 'decisions-2026-04.md'), 'utf-8'), /ADR-20260410-001/);
-    rmSync(cwd, { recursive: true, force: true });
-  });
-
   it('gcDecisions force-rotates oldest 50% when size exceeds maxSizeKb', async () => {
     const cwd = mkWorkspace();
     const decisionsPath = join(cwd, '.docpath', 'workspace', 'decisions.md');

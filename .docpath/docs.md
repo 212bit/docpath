@@ -2,7 +2,7 @@
 
 > 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。
 
-> 扫描时间: 2026-09-08T08:38:36.298Z
+> 扫描时间: 2026-09-08T16:29:01.339Z
 
 ## 文档列表
 
@@ -35,8 +35,7 @@
 | backlog/R-309.md | runbook | project | 2 | false | false | false | 149 |  | R-309 | 已随 1f3f8a9 完成（用户裁决批量推进, 2026-07-27）。条目关闭（drop=已解决关闭, 非放弃）。 | 2026-07-26T19:51:11.452Z | 477B |
 | backlog/R-310.md | runbook | project | 2 | false | false | false | 144 |  | R-310 | 已随 1f3f8a9 完成（用户裁决批量推进, 2026-07-27）。条目关闭（drop=已解决关闭, 非放弃）。 | 2026-07-26T19:51:11.855Z | 467B |
 | backlog/R-312.md | runbook | project | 2 | false | false | false | 192 |  | R-312 | 已随 R-311 任务一并修复（同域姊妹条目, 见任务 T-20260726-install-check 与对应提交）。条目关闭（drop=已解决关闭）。 | 2026-07-26T19:57:54.618Z | 576B |
-| backlog/R-315.md | runbook | project | 2 | false | false | false | 1009 |  | R-315 | 依据 `.docpath/workspace/trace.jsonl` 全量 1460 条真实调用记录（2026-07~2026-08，其中 1249 条来自 claude agent、211 条 agent=unknown），下列命令在**两个 agent 分组中均为零命中**。 | 2026-08-30T10:12:00.702Z | 2.7KB |
-| backlog/R-316.md | runbook | project | 2 | false | false | false | 1238 |  | R-316 | trace 1460 条记录中零命中的三个**大块/有耦合**命令。与 R-315（无耦合零使用命令）分开立项，因为每一项都需要先做耦合勘察或产品裁决，不能裸删。 | 2026-09-07T16:29:06.725Z | 3.3KB |
+| backlog/R-315.md | runbook | project | 2 | false | false | false | 1068 |  | R-315 | 依据 `.docpath/workspace/trace.jsonl` 全量 1460 条真实调用记录（2026-07~2026-08，其中 1249 条来自 claude agent、211 条 agent=unknown），下列命令在**两个 agent 分组中均为零命中**。 | 2026-09-08T15:40:01.576Z | 2.9KB |
 | backlog/R-318.md | runbook | project | 2 | false | false | false | 833 |  | R-318 | **【已关闭：按设计工作，非缺陷 — 2026-09-07】** 本条原始判断"执行起始守卫误拦本任务改动、制造 33% 失败重试环"经 AC-4 实现前采样复验**被证伪**： | 2026-09-06T18:02:33.910Z | 2.3KB |
 | backlog/R-320.md | runbook | project | 2 | false | false | false | 742 |  | R-320 | **关闭：前提证伪，非缺陷。** 完整取证见 `backlog/analysis/R-320-analysis.md`（证据引用已挂 analysis）。 | 2026-09-07T00:58:35.984Z | 2.0KB |
 | backlog/R-322-解决-5-起历史-backlog-id-撞号(active-ar.md | runbook | project | 2 | false | false | false | 296 |  | R-322-解决-5-起历史-backlog-id-撞号(active-ar | R-321 取证: R-260/261/262/263/268 在 active 与 archived 各存一条,是同 id 下两条不同需求(不同 title/task),非陈旧副本;根因 R-273 前 worktree 号池 stale 撞号。groom 已加非破坏性检测暴露。本条目负责真正的数据迁移。 | 2026-09-07T15:52:56.321Z | 850B |
@@ -89,6 +88,7 @@
 | backlog/analysis/R-291-analysis.md | runbook | project | 2 | false | false | false | 790 |  | R-291 Analysis — plan 命令写盘先于 FSM 校验（半执行污染） | planCommand（src/commands/plan.ts:329-350）的执行序为：写盘（writeGeneratedPlan → writeActiveTaskFile 双写 plan.md + plan.json）→ 再 transitionWorkflow('plan.ready')。FSM 在转移时才校验合法性，于是在 completed  | 2026-07-26T14:15:00.656Z | 2.2KB |
 | backlog/analysis/R-297-analysis.md | runbook | project | 2 | false | false | false | 1128 |  | R-297 Analysis — 协议单源：templates/protocols 为唯一手写层，重复层删除 | CLAUDE/AGENTS/CODEX/OPENCODE 是同一契约的不同措辞重写（AGENTS∩CLAUDE 仅 9% 行重叠，四方共有仅 10 行），非文本复制。语义级共享段注入为后续独立条目（方案 B），本任务不动 flavor 内容关系。 | 2026-07-26T16:11:24.050Z | 3.2KB |
 | backlog/analysis/R-314-analysis.md | runbook | project | 2 | false | false | false | 1579 |  | R-314 分析：死代码残留清理 | ```bash | 2026-09-06T16:09:15.402Z | 4.3KB |
+| backlog/analysis/R-315-analysis.md | runbook | project | 2 | false | false | false | 423 |  | R-315 零使用命令删除: onboard / help-me / continue / debug / diff / gc-decisions | 1. **`onboard`** (399 LOC): 交互式入门向导，Agent 侧由 `next --agent` 覆盖，人类用户走 README / 文档。彻底删除。 | 2026-09-08T15:39:56.150Z | 1.2KB |
 | backlog/analysis/R-316-analysis.md | runbook | project | 2 | false | false | false | 549 |  | R-316 待裁决大块收敛: project intake 平行工作流 / learn 与 lesson_summary 耦合 / config 命令归属 | - **分析**：全生命周期 0 次调用，与标准 `backlog promote → spec → plan` 主路径功能重叠，造成双轨认知负担。 | 2026-09-07T16:28:37.136Z | 1.5KB |
 | backlog/analysis/R-318-analysis.md | runbook | project | 2 | false | false | false | 3833 |  | R-318 Analysis — go --step 执行起始守卫误拦本任务合法改动，制造 33% 失败重试环 | `.docpath/workspace/trace.jsonl` 全量实测（本工作区，1506 条）：`go` 调用 147 次，失败 **49 次（33%）**，其中 **43/49 记录为 `gate=none`**（即非具名 review/check 门禁，属命令自身执行前守卫抛错）。每一次 go 失败都逼 Agent 再调 `next`/读 `cur | 2026-09-06T18:04:29.589Z | 10.3KB |
 | backlog/analysis/R-319-analysis.md | runbook | project | 2 | false | false | false | 2678 |  | R-319 Analysis — trace 会话身份与隔离子系统背离（`getSessionId` 独立 env 链，无视 `--session`） | `.docpath/workspace/trace.jsonl` 实测本工作区 `session` 键恒为 `session-default`。backlog 初稿把它归因为"P0 会话隔离失效 → `next`/`status` 返回错误 current task → 逼出 14.3% 重复确认 turn"。经实现前取证（AC 验证纪律，承 R-318 教 | 2026-09-06T18:14:03.148Z | 7.6KB |
@@ -188,10 +188,11 @@
 | backlog/archived/R-311.md | runbook | project | 2 | false | false | false | 994 |  | R-311 | SynapBuddy 首日实测（2026-07-27）：install --check 不读安装元数据 target 默认 universal，codex 项目被用 universal 期望资产集比对产生跨 target 假漂移（"模板漂移 5 项"实为期望集错配）。姊妹缺陷 R-312：非 force 安装对差异文件逐项打跳过后终局仍输出 🎉 完成，三份 | 2026-07-26T19:57:36.702Z | 2.7KB |
 | backlog/archived/R-313.md | runbook | project | 2 | false | false | false | 1119 |  | R-313 | SynapBuddy 实测（2026-07-27）：`backlog accept` 产生的条目/索引变更让 worktree 变脏，quick/promote/agent enter 的 dirty guard 拒绝开新任务，必须先手动 chore(backlog) 收口。本仓库同病：本轮工程为此打了 12+ 个绕行提交。定性：backlog 记账（cap | 2026-07-26T20:07:39.108Z | 3.0KB |
 | backlog/archived/R-314.md | runbook | project | 2 | false | false | false | 1111 |  | R-314 | DocPath 曾有 Web Dashboard（React/Vite UI），已于 commit 754d11b 整体删除，但清理不彻底，留下四处残留。这些是纯死代码，删除无任何行为变更。 | 2026-09-06T16:09:15.403Z | 3.0KB |
+| backlog/archived/R-316.md | runbook | project | 2 | false | false | false | 1252 |  | R-316 | trace 1460 条记录中零命中的三个**大块/有耦合**命令。与 R-315（无耦合零使用命令）分开立项，因为每一项都需要先做耦合勘察或产品裁决，不能裸删。 | 2026-09-08T13:38:12.011Z | 3.4KB |
 | backlog/archived/R-317.md | runbook | project | 2 | false | false | false | 1318 |  | R-317 | 2026-09-07 会话对 T-20260830 收口时的实证评估（trace 1486 条 + 一手体验）确认四项 token 浪费点，用户已确认修复： | 2026-09-06T17:37:12.608Z | 3.4KB |
 | backlog/archived/R-319.md | runbook | project | 2 | false | false | false | 1616 |  | R-319 | trace 记录里的 `session` 字段与 DocPath 真正的会话隔离子系统使用**两套不一致的会话身份来源**，导致按会话的可观测性/分析失真。 | 2026-09-06T18:24:20.568Z | 4.5KB |
 | backlog/archived/R-321.md | runbook | project | 2 | false | false | false | 1082 |  | R-321 | ls .docpath/backlog 全是裸号 R-###.md(20/20),task 目录却带 slug,不一致。根因: createBacklogItem 用 wx 占号裸名,使 writeBacklogItem 的 slug 分支成死代码。另 5 个 done 未及时归档,默认列表混终态噪声。 | 2026-09-07T16:01:07.618Z | 2.7KB |
-| backlog/backlog.md | runbook | project | 2 | false | false | false | 893 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-09-07T16:29:06.763Z | 2.6KB |
+| backlog/backlog.md | runbook | project | 2 | false | false | false | 842 |  | DocPath Backlog Index | - `id`: backlog 条目标识（R-###） | 2026-09-08T15:40:01.604Z | 2.4KB |
 | commands/docpath-agent-done.md | reference | project | 3 | false | false | false | 280 |  | /docpath-agent-done | Close the active DocPath task through quality gates. | 2026-07-26T19:50:21.072Z | 1.1KB |
 | commands/docpath-agent-enter.md | reference | project | 3 | false | false | false | 315 |  | /docpath-agent-enter | Enter a DocPath-managed Claude Code session. | 2026-07-26T19:50:21.072Z | 1.2KB |
 | commands/docpath-agent-step.md | reference | project | 3 | false | false | false | 482 |  | /docpath-agent-step | Record completion or blockage for one DocPath plan step. | 2026-07-26T19:50:21.073Z | 1.9KB |
@@ -223,7 +224,7 @@
 | commands/docpath-write-journal.md | reference | project | 3 | false | false | false | 198 |  | /docpath-write-journal | Append a generated knowledge record into the active DocPath task through the CLI. | 2026-07-26T19:50:21.079Z | 792B |
 | commands/docpath-write-plan.md | reference | project | 3 | false | false | false | 216 |  | /docpath-write-plan | Artifact sink: write an execution plan already generated by the current agent | 2026-07-26T19:50:21.079Z | 862B |
 | commands/docpath-write-spec.md | reference | project | 3 | false | false | false | 215 |  | /docpath-write-spec | Artifact sink: write spec content already generated by the current agent session | 2026-07-26T19:50:21.079Z | 859B |
-| docs.md | index | project | 2 | false | false | false | 99697 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-09-06T18:22:14.124Z | 325.4KB |
+| docs.md | index | project | 2 | false | false | false | 101316 |  | DocPath 文档索引 | - **type**: 文档类型 (reference|runbook|template|index|log) | 2026-09-08T08:38:36.301Z | 330.4KB |
 | harness.md | index | project | 2 | false | false | false | 252 |  | DocPath Harness Rules | - [ ] 读取 current.md 确认当前状态 | 2026-05-28T12:29:00.329Z | 786B |
 | protocols/AGENTS.md | index | project | 2 | false | false | false | 2551 |  | DocPath Agent Protocol | 1. Run `docpath next --agent` to read the `agent_view: next` route and the | 2026-07-26T19:50:21.071Z | 10.0KB |
 | protocols/CLAUDE.md | index | project | 2 | false | false | false | 2404 |  | DocPath Claude Code Protocol | 1. Run `/docpath-next` or `docpath next --agent` for the `agent_view: next` | 2026-07-26T19:50:21.071Z | 9.4KB |
@@ -270,8 +271,10 @@
 | tasks/T-20260907-project-intake-learn-lesson-summary-conf/spec.md | runbook | task | 1 | false | false | false | 2290 | T-20260907-project-intake-learn-lesson-summary-conf | T-20260907-project-intake-learn-lesson-summary-conf - 待裁决大块收敛: project intake 平行工作流 / learn 与 lesson_summary 耦合 / config 命令归属 | trace 1460 条记录中零命中的三个**大块/有耦合**命令。与 R-315（无耦合零使用命令）分开立项，因为每一项都需要先做耦合勘察或产品裁决，不能裸删。 | 2026-09-07T16:29:06.718Z | 5.9KB |
 | tasks/T-20260907-quick-agent-seed-spec/quick.md | runbook | task | 1 | false | false | false | 142 | T-20260907-quick-agent-seed-spec | Quick Task: T-20260907-quick-agent-seed-spec | - title: Agent 协议补 seed-spec 增量编辑与小任务降档指引 | 2026-09-07T03:47:20.677Z | 520B |
 | tasks/T-20260907-quick-agent-seed-spec/spec.md | runbook | task | 1 | false | false | false | 623 | T-20260907-quick-agent-seed-spec | T-20260907-quick-agent-seed-spec - Agent 协议补 seed-spec 增量编辑与小任务降档指引 | Quick task intent record. This task is intentionally lightweight and uses proportional gates. | 2026-09-07T03:47:20.671Z | 1.8KB |
-| tasks/current/plan.md | runbook | task | 1 | true | false | false | 873 | T-20260907-project-intake-learn-lesson-summary-conf | plan | - [x] S1: 梳理 待裁决大块收敛: project intake 平行工作流 / learn 与 lesson_summary 耦合 / config 命令归属 | 2026-09-08T08:37:27.684Z | 2.2KB |
-| tasks/current/spec.md | runbook | task | 1 | true | false | false | 2290 | T-20260907-project-intake-learn-lesson-summary-conf | T-20260907-project-intake-learn-lesson-summary-conf - 待裁决大块收敛: project intake 平行工作流 / learn 与 lesson_summary 耦合 / config 命令归属 | trace 1460 条记录中零命中的三个**大块/有耦合**命令。与 R-315（无耦合零使用命令）分开立项，因为每一项都需要先做耦合勘察或产品裁决，不能裸删。 | 2026-09-07T16:29:06.718Z | 5.9KB |
+| tasks/T-20260908-onboard-help-me-continue-debug-diff-gc-d/plan.md | runbook | task | 1 | false | false | false | 1076 | T-20260908-onboard-help-me-continue-debug-diff-gc-d | plan | - [x] S1: 梳理 零使用命令删除: onboard / help-me / continue / debug / diff / gc-decisions (trace 1460 次零命中) | 2026-09-08T16:27:31.619Z | 2.8KB |
+| tasks/T-20260908-onboard-help-me-continue-debug-diff-gc-d/spec.md | runbook | task | 1 | false | false | false | 2107 | T-20260908-onboard-help-me-continue-debug-diff-gc-d | T-20260908-onboard-help-me-continue-debug-diff-gc-d - 零使用命令删除: onboard / help-me / continue / debug / diff / gc-decisions (trace 1460 次零命中) | 依据 `.docpath/workspace/trace.jsonl` 全量 1460 条真实调用记录（2026-07~2026-08，其中 1249 条来自 claude agent、211 条 agent=unknown），下列命令在**两个 agent 分组中均为零命中**。 | 2026-09-08T15:40:01.568Z | 5.5KB |
+| tasks/current/plan.md | runbook | task | 1 | true | false | false | 1076 | T-20260908-onboard-help-me-continue-debug-diff-gc-d | plan | - [x] S1: 梳理 零使用命令删除: onboard / help-me / continue / debug / diff / gc-decisions (trace 1460 次零命中) | 2026-09-08T16:27:31.620Z | 2.8KB |
+| tasks/current/spec.md | runbook | task | 1 | true | false | false | 2107 | T-20260908-onboard-help-me-continue-debug-diff-gc-d | T-20260908-onboard-help-me-continue-debug-diff-gc-d - 零使用命令删除: onboard / help-me / continue / debug / diff / gc-decisions (trace 1460 次零命中) | 依据 `.docpath/workspace/trace.jsonl` 全量 1460 条真实调用记录（2026-07~2026-08，其中 1249 条来自 claude agent、211 条 agent=unknown），下列命令在**两个 agent 分组中均为零命中**。 | 2026-09-08T15:40:01.569Z | 5.5KB |
 | tasks/done/T-20260528-agent-integration/plan.md | runbook | task | 3 | false | true | false | 929 | T-20260528-agent-integration | 执行计划 | ``` | 2026-05-28T14:53:27.931Z | 2.6KB |
 | tasks/done/T-20260528-agent-integration/spec.md | runbook | task | 3 | false | true | false | 847 | T-20260528-agent-integration | 规约: Agent Integration (Phase 1+2) | DocPath 需要面向 AI Agent 的接口层，使其能被 Claude Code / OpenCode 等工具原生使用。 | 2026-05-28T14:37:39.406Z | 2.4KB |
 | tasks/done/T-20260528-harness-lite/plan.md | runbook | task | 3 | false | true | false | 838 | T-20260528-harness-lite | Plan: Harness Lite Phase 1 | **目标**: 让 `docpath check` 能发现并运行 typecheck 相关脚本 | 2026-05-29T05:13:03.422Z | 2.5KB |
@@ -942,15 +945,17 @@
 | tasks/promote-backups/2026-09-07T15-20-53-536Z/spec.md | runbook | project | 2 | false | false | false | 623 |  | T-20260907-quick-agent-seed-spec - Agent 协议补 seed-spec 增量编辑与小任务降档指引 | Quick task intent record. This task is intentionally lightweight and uses proportional gates. | 2026-09-07T15:20:53.537Z | 1.8KB |
 | tasks/promote-backups/2026-09-07T16-29-06-650Z/plan.md | runbook | project | 2 | false | false | false | 505 |  | plan | - [x] S1: 实现并验证 新建 backlog 条目文件名带标题 slug,格式 R-###-<slug>.md,ls 即可辨识 | 2026-09-07T16:29:06.652Z | 1.3KB |
 | tasks/promote-backups/2026-09-07T16-29-06-650Z/spec.md | runbook | project | 2 | false | false | false | 2866 |  | T-20260907-backlog-slug-done - backlog 文件名卫生: 新条目加标题 slug + 撞号非破坏性检测 | ls .docpath/backlog/ 全是裸号 R-###.md(active 20/20),不打开无法辨识内容;task 目录却带 slug,两者不一致。R-321 本条创建后仍为 R-321.md,当场复现。 | 2026-09-07T16:29:06.653Z | 7.1KB |
+| tasks/promote-backups/2026-09-08T15-40-01-504Z/plan.md | runbook | project | 2 | false | false | false | 873 |  | plan | - [x] S1: 梳理 待裁决大块收敛: project intake 平行工作流 / learn 与 lesson_summary 耦合 / config 命令归属 | 2026-09-08T15:40:01.507Z | 2.2KB |
+| tasks/promote-backups/2026-09-08T15-40-01-504Z/spec.md | runbook | project | 2 | false | false | false | 2290 |  | T-20260907-project-intake-learn-lesson-summary-conf - 待裁决大块收敛: project intake 平行工作流 / learn 与 lesson_summary 耦合 / config 命令归属 | trace 1460 条记录中零命中的三个**大块/有耦合**命令。与 R-315（无耦合零使用命令）分开立项，因为每一项都需要先做耦合勘察或产品裁决，不能裸删。 | 2026-09-08T15:40:01.508Z | 5.9KB |
 | workflows/bugfix.md | index | project | 2 | false | false | false | 160 |  | Workflow: Bug Fix | - 收集错误信息 (日志、截图、复现步骤) | 2026-07-26T19:50:21.069Z | 463B |
 | workflows/debug.md | index | project | 2 | false | false | false | 145 |  | Workflow: Debug | - 收集症状 (日志、指标、复现步骤) | 2026-07-26T19:50:21.069Z | 416B |
 | workflows/feature.md | index | project | 2 | false | false | false | 267 |  | Workflow: Feature Development | ```bash | 2026-07-26T19:50:21.069Z | 753B |
 | workflows/refactor.md | index | project | 2 | false | false | false | 148 |  | Workflow: Refactor | - 识别重构范围 | 2026-07-26T19:50:21.069Z | 424B |
 | workflows/research.md | index | project | 2 | false | false | false | 161 |  | Workflow: Research | - 明确调研目标 | 2026-07-26T19:50:21.070Z | 449B |
 | workspace/.backlog-scratch-R320-close.md | index | project | 0 | false | false | false | 620 |  | .backlog-scratch-R320-close | **关闭：前提证伪，非缺陷。** 完整取证见 `backlog/analysis/R-320-analysis.md`（证据引用已挂 analysis）。 | 2026-09-07T00:57:54.259Z | 1.6KB |
-| workspace/breadcrumb.md | index | project | 0 | false | false | false | 745 |  | 面包屑 — 上下文恢复索引 | --- | 2026-09-08T08:37:27.682Z | 2.5KB |
+| workspace/breadcrumb.md | index | project | 0 | false | false | false | 732 |  | 面包屑 — 上下文恢复索引 | --- | 2026-09-08T16:27:31.617Z | 2.5KB |
 | workspace/compact-context.md | index | project | 0 | false | false | false | 3467 |  | Context Handoff — T-20260715-docpath-init-scan-existing | - ✅ PASS (2026-07-15T15:57:32.756Z) | 2026-07-15T16:06:13.998Z | 11.2KB |
-| workspace/current.md | index | project | 0 | true | false | false | 449 |  | 📍 当前工作流状态 | ```yaml | 2026-09-08T08:38:35.819Z | 1.4KB |
+| workspace/current.md | index | project | 0 | true | false | false | 430 |  | 📍 当前工作流状态 | ```yaml | 2026-09-08T16:29:00.805Z | 1.3KB |
 | workspace/decisions-2026-05.md | index | project | 0 | false | false | false | 16136 |  | 决策日志归档 — 2026-05 | --- | 2026-06-16T11:00:07.138Z | 46.7KB |
 | workspace/decisions-2026-06.md | index | project | 0 | false | false | false | 4794 |  | 决策日志归档 — 2026-06 | --- | 2026-07-14T11:14:31.428Z | 13.9KB |
 | workspace/decisions-2026-07.md | index | project | 0 | false | false | false | 13461 |  | 决策日志归档 — 2026-07 | --- | 2026-09-06T15:46:12.658Z | 38.6KB |
@@ -960,10 +965,10 @@
 | workspace/decisions-2026-W26.md | index | project | 0 | false | false | false | 2675 |  | 决策日志归档 — 2026-W26 | --- | 2026-07-12T13:49:33.906Z | 7.7KB |
 | workspace/decisions.md | log | project | 3 | false | true | false | 1653 |  | 决策日志 — DocPath ADR | --- | 2026-09-07T16:01:07.633Z | 4.6KB |
 | workspace/journal.md | index | project | 0 | false | false | false | 120 |  | 📖 工作日志 | - 新增 write-design 命令 | 2026-06-10T04:44:31.299Z | 361B |
-| workspace/last-check.md | index | project | 0 | true | false | false | 88 |  | Last Check Evidence | **时间**: 2026-09-07T15:59:55.993Z | 2026-09-07T15:59:55.994Z | 302B |
-| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 9883 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-09-07T16:01:07.631Z | 32.8KB |
+| workspace/last-check.md | index | project | 0 | true | false | false | 174 |  | Last Check Evidence | **时间**: 2026-09-08T13:38:02.587Z | 2026-09-08T13:38:02.589Z | 532B |
+| workspace/lesson-candidates.md | log | project | 0 | false | false | false | 10018 |  | Lesson Candidates | - task_id: T-20260703-support-brand-new-project-intake-workflo | 2026-09-08T13:38:12.032Z | 33.3KB |
 | workspace/pending-done.md | index | project | 0 | false | false | false | 29 |  | pending-done | pending-done | 2026-09-07T15:26:30.182Z | 114B |
-| workspace/review.md | index | project | 0 | true | false | false | 378 |  | Code Review Report | **时间**: 2026-09-07T16:00:22.361Z | 2026-09-07T16:00:22.379Z | 1.2KB |
+| workspace/review.md | index | project | 0 | true | false | false | 445 |  | Code Review Report | **时间**: 2026-09-08T13:38:09.000Z | 2026-09-08T13:38:09.018Z | 1.5KB |
 
 ## 用途说明
 
