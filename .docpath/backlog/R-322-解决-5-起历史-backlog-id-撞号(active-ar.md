@@ -1,7 +1,7 @@
 ---
 id: R-322
 title: 解决 5 起历史 backlog id 撞号(active/archived 同 id 不同需求)
-status: proposed
+status: accepted
 priority: P2
 level: 2
 source: docpath backlog add
