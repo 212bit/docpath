@@ -5,13 +5,13 @@ status: proposed
 priority: P2
 level: 2
 source: docpath backlog add
-readiness: shaped
+readiness: confirmed
 evidence:
   brainstorm: null
-  analysis: null
+  analysis: .docpath/backlog/analysis/R-322-analysis.md
   spec: null
-  decision_brief: null
-  user_confirmed: null
+  decision_brief: "ADR-20260909-001: 5 起历史撞号重分配为 R-323~R-327 并完成归档与双向链接修复"
+  user_confirmed: 用户明确认可 R-323~R-327 唯一 ID 重分配与平滑迁移方案
 links:
   task: null
   spec: null
