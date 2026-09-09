@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-09-09T07:51:29.177Z",
-    "updated_at": "2026-09-09T07:51:29.177Z",
-    "content_sha256": "446b72cd15e3126da36730a6fad96743e8d4997e2f51f7a785217abe6448de07"
+    "created_at": "2026-09-09T09:57:15.202Z",
+    "updated_at": "2026-09-09T09:57:15.202Z",
+    "content_sha256": "2bd03a244f348de9aa0a9b93c3e532477cf412895e078ea902da1e7b3ef38227"
   },
   "title": "执行计划",
-  "generated_at": "2026-09-09T07:51:29.177Z",
+  "generated_at": "2026-09-09T09:57:15.202Z",
   "steps": [
     {
       "id": "S1",
@@ -16,7 +16,7 @@
       "description": "根据 spec 明确 FR-1: 解决 5 起历史 backlog id 撞号(active/archived 同 id 不同需求) 的实现边界和验收口径。",
       "acceptance": "AC-1: 1) 逐条定权威归属;2) 冲突方重分配唯一 id 或合并,修 links.task/spec 与历史引用;3) 迁移后 groom 无撞号告警;4) 需独立 Decision Brief+用户确认(改 id 牵动引用,非 trivial)。",
       "dependencies": "无",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S2",
@@ -24,7 +24,7 @@
       "description": "在现有架构内完成 FR-1: 解决 5 起历史 backlog id 撞号(active/archived 同 id 不同需求) 的代码与文档更新。",
       "acceptance": "FR-1 解决 5 起历史 backlog id 撞号(active/archived 同 id 不同需求) 已实现，并保持现有工作流兼容。",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "S3",
@@ -32,7 +32,7 @@
       "description": "验证 spec 中声明的验收标准：AC-1: 1) 逐条定权威归属;2) 冲突方重分配唯一 id 或合并,修 links.task/spec 与历史引用;3) 迁移后 groom 无撞号告警;4) 需独立 Decision Brief+用户确认(改 id 牵动引用,非 trivial)。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-322 与任务 T-20260908-5-backlog-id-active-archived-id 建立双向关联",
       "acceptance": "AC-1: 1) 逐条定权威归属;2) 冲突方重分配唯一 id 或合并,修 links.task/spec 与历史引用;3) 迁移后 groom 无撞号告警;4) 需独立 Decision Brief+用户确认(改 id 牵动引用,非 trivial)。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-322 与任务 T-20260908-5-backlog-id-active-archived-id 建立双向关联",
       "dependencies": "S2",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

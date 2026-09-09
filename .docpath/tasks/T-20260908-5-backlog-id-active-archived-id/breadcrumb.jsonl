@@ -1,0 +1,9 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260908-5-backlog-id-active-archived-id","step":"S1","status":"in_progress","context":"开始执行: 梳理 解决 5 起历史 backlog id 撞号(active/archived 同 id 不同需求)","timestamp":"2026-09-09T08:26:41.537Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260908-5-backlog-id-active-archived-id","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-09T09:16:57.572Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260908-5-backlog-id-active-archived-id","step":"S2","status":"in_progress","context":"开始执行: 实现 解决 5 起历史 backlog id 撞号(active/archived 同 id 不同需求)","timestamp":"2026-09-09T09:31:19.166Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260908-5-backlog-id-active-archived-id","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-09-09T09:54:49.421Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260908-5-backlog-id-active-archived-id","step":"S3","status":"in_progress","context":"开始执行: 验证验收标准","timestamp":"2026-09-09T09:55:12.961Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260908-5-backlog-id-active-archived-id","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-09-09T09:57:15.197Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260908-5-backlog-id-active-archived-id","step":"check","status":"done","context":"质量检查通过 (10 项)","timestamp":"2026-09-09T12:49:51.720Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260908-5-backlog-id-active-archived-id","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-09-09T12:52:05.495Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260908-5-backlog-id-active-archived-id","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-09-09T12:59:01.580Z"}

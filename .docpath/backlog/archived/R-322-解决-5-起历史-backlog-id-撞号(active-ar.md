@@ -1,7 +1,7 @@
 ---
 id: R-322
 title: 解决 5 起历史 backlog id 撞号(active/archived 同 id 不同需求)
-status: active
+status: done
 priority: P2
 level: 2
 source: docpath backlog add
@@ -9,7 +9,7 @@ readiness: confirmed
 evidence:
   brainstorm: null
   analysis: .docpath/backlog/analysis/R-322-analysis.md
-  spec: null
+  spec: tasks/T-20260908-5-backlog-id-active-archived-id/spec.md
   decision_brief: "ADR-20260909-001: 5 起历史撞号重分配为 R-323~R-327 并完成归档与双向链接修复"
   user_confirmed: 用户明确认可 R-323~R-327 唯一 ID 重分配与平滑迁移方案
 links:

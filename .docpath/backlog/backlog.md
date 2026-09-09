@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-09-08T16:48:21.860Z
+> 扫描时间: 2026-09-09T12:59:01.578Z
 
 ## 条目列表
 
@@ -14,7 +14,6 @@
 | R-292 | plan 命令写盘先于 FSM 校验, completed 任务 plan.json 被改写后才报非法转移 | dropped | P2 | 2 |  |
 | R-296 | R-293 残余: stale 夺锁的判定-执行 TOCTOU, rename 可误夺判定后新获取的活锁(全量套件 4/5 实测) | dropped | P2 | 2 |  |
 | R-312 | 非 force install 静默跳过差异文件仍输出完成庆祝, 无跳过清单 (SynapBuddy 实测: 三份陈旧协议副本被掩盖) | dropped | P2 | 2 |  |
-| R-322 | 解决 5 起历史 backlog id 撞号(active/archived 同 id 不同需求) | active | P2 | 2 | T-20260908-5-backlog-id-active-archived-id |
 | R-249 | go/promote 的 dirty worktree 拒绝未区分 DocPath 自身产物，频繁误拦 | dropped | P3 | 1 |  |
 | R-306 | 比例刻度加陡: level-1 任务 S 步骤仪式压缩 (评估: 虚构仪式占三四成) | dropped | P3 | 2 |  |
 | R-307 | 小 diff skill 证据豁免/自动化 (评估: 证据动作一半是仪式) | dropped | P3 | 2 |  |
