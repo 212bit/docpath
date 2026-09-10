@@ -18,6 +18,8 @@
 | 不做独立 Web 应用 | R-230 选了这条路，已 `dropped`（范围过大） |
 | 不做多项目聚合 | 首版只观察当前工程根 |
 | 不复制 CLI 的决策逻辑 | `recommended_command` 直接透传 `docpath` 给的，插件不复算 |
+| **不靠 `process.cwd()` 找工程** | 渲染进程 `sandbox: true` + `nodeIntegration: false`，主进程 cwd 是 DSH 应用目录而非用户工程。必须走 §4 三级兜底 |
+| **不做单 root 单例** | 侧边栏按会话渲染，host 必须按 `sessionId` 分桶，否则多工程互相污染 |
 
 **R-230 失败归因的复用**：R-230 规划 7 页面 + 暖色设计系统重做 + 独立应用，
 范围膨胀到无法收口。本次三个收敛动作 —— ① 嵌进已有侧边栏而非新建应用；
@@ -134,8 +136,16 @@ backlog n=328  avg=    188ms   max=  1,243ms
 **异常判定**：与全命令中位数比值 > 50× 标红（当前 `check` 约 300×，稳稳触发）。
 面板要能回答「什么时候开始慢的」→ 按 `ts` 分桶出趋势。
 
+**采样策略（原设计只说"取尾部 5000 条"，已细化）**：单纯取尾部 N 条在日志长期
+增长后会失真（尾部样本可能横跨数月）。改为**双约束**：先按 `ts` 过滤出默认时间窗
+（如近 30 天），再在窗内取最多 5000 条。这样"平均耗时"始终是当前窗口的真实语义，
+不随日志总量漂移。
+
 **trace.jsonl 是追加日志，会持续增长**：host 只读尾部 N 条（默认 5000），
-不整文件解析。
+不整文件解析。**当前实测 total 仅 1706 条，尾部 5000 条 = 全量**，所以现在"够用"；
+但这是无上限追加日志 —— **docpath 是否自带轮转/归档策略本次未验证**（见 §8），
+实现时若确认无轮转，需补「按 `ts` 窗口裁剪」而非单纯取尾部，
+否则长期运行后同一窗口内的样本会越来越稀疏（尾部 N 条可能横跨数年）。
 
 ### Tab 3 — 文档（Docs）
 
@@ -168,11 +178,20 @@ backlog n=328  avg=    188ms   max=  1,243ms
 | 决策 ADR | `workspace/decisions.jsonl` | `{id, taskId, category, context, decision, impact, alternatives[], createdAt}` |
 | 按任务过滤 | 两者 | `taskId` |
 
-**状态值实测**：`breadcrumb.status` 见 `done` / `blocked`；
-`decisions.category` 见 `policy.skip` / `architecture`。
+**状态值实测**：`breadcrumb.status` 共三种 —— `done`(136) / `in_progress`(53) /
+`blocked`(18)。原设计只写了 `done`/`blocked`，**漏了 `in_progress`**（占 26%）。
 
-**已知数据噪声**：存在 `taskId: "unknown"` 的条目（idle 期跑 `check` 产生）。
-UI 归到「未归属」分组，不混入当前任务时间线。
+**量级失衡（原设计缺陷，已修正）**：实测 `breadcrumb.jsonl` 207 条 vs
+`decisions.jsonl` **仅 8 条**，差两个数量级。原设计把两者平铺进同一条时间线，
+结果是 ADR 会被 207 条执行事件彻底淹没。修正：**Tab 4 内再分两个子视图** ——
+「执行流」（breadcrumb，主）与「决策」（decisions，次，默认折叠），
+ADR 不做无限滚动，直接全量展示（8 条量级无需分页）。
+
+**快照滞后可精确判定**：`agent-snapshot.json` 实测带 `updated_at` 字段（原设计漏列），
+可与 `state.json` 的 `updated_at` 直接比大小判定滞后，不必靠猜。
+
+**已知数据噪声**：`breadcrumb.jsonl` 中 `taskId: "unknown"` 的有 3 条
+（idle 期跑 `check` 产生）。UI 归到「未归属」分组，不混入当前任务时间线。
 
 ---
 
@@ -186,16 +205,41 @@ fs.watch('.docpath/', {recursive: true})  ──去抖 200ms──▶ refresh()
                                           kernel 解析 → 新快照 → watchers 广播
 ```
 
-- **去抖 200ms / 心跳 2000ms**：照搬 harness-lens 已验证参数。
+- **去抖 400ms / 心跳 5000ms**：原写 200ms/2s 是照搬 harness-lens（它观察小体积
+  `.mstar/`）。本插件要 parse 1MB 级 `docs-index.json`，**2s 心跳会持续吃 CPU** ——
+  改用 `dsh-plugin-doc-lens` 的参数（实测 `rescanIntervalMs ?? 5000`、
+  `watchDebounceMs ?? 400`），更贴合大文件场景。
 - **刷新不丢更新**：进行中又来触发 → 记 `pendingTrigger`，结束后补跑。
 - **异常不冒泡**：refresh 抛错只 `console.error` 并保留上次快照。
 - **首屏预算 < 200ms**（NFR-2）：直读 JSON 无子进程；实测 `status` CLI 单次 358ms，
   直读小文件 < 50ms，瓶颈只在 `docs-index`（已减载）。
 - **dispose**：清理 watcher + timer + 订阅，避免泄漏。
 
-**根探测**：从 `process.cwd()` 向上找 `.docpath/`（参考 harness-lens 的
-`resolveRoot`，最多 8 层）。注意 `~/.docpath/projects.sqlite` 全局注册表里有大量
-stale 条目（实测含已删除的 `/tmp/*` 临时项目），**首版不消费它**，避免展示失效路径。
+**工程根解析（关键，已修正）**：
+
+原设计写「从 `process.cwd()` 向上找 `.docpath/`」——**这是错的**。
+实测 `dsh-plugin-desktop/src/window-options.ts` 里渲染进程 `sandbox: true` +
+`nodeIntegration: false`，host 跑在**主进程**，其 `process.cwd()` 是 DSH 应用自身
+的工作目录，**不是用户工程目录**。向上探测 8 层会探测到 DSH 自己的目录去。
+
+正确解法照 `dsh-plugin-devflow/src/index.ts:85-155` 的三级兜底：
+
+| 优先级 | 来源 | 说明 |
+| --- | --- | --- |
+| ① | `sessions.get(sessionId)?.header?.cwd` | **会话工作区**（dsh-session 提供），最准 |
+| ② | `lastKnownWorkspace` | 最近一次成功解析的工作区，随每次解析刷新，兜住「Agent 调工具不带 sessionId」 |
+| ③ | `process.env.DOCPATH_HOST_CWD ?? process.cwd()` | 仅当该目录下确实存在 `.docpath/` 才采用 |
+
+三级都失败 → 面板显示「未定位到 DocPath 工程」空态，**不猜、不静默降级到错误目录**。
+
+**多会话隔离（原设计缺失，已补）**：侧边栏 Tab 是按会话渲染的
+（`component(props: { scope: { sessionId } })`），但 host 单例服务只绑一个 root ——
+两个会话开不同工程会互相污染。修正：**host 按 sessionId 维护
+`Map<sessionId, RootState>`**，每个会话独立快照、独立 watcher；
+`subscribe(sessionId, cb)` 带会话维度。会话 dispose 时清理对应条目。
+
+注意 `~/.docpath/projects.sqlite` 全局注册表含大量 stale 条目（实测有已删除的
+`/tmp/*` 临时项目），**首版不消费它**。
 
 ---
 
@@ -233,7 +277,7 @@ stale 条目（实测含已删除的 `/tmp/*` 临时项目），**首版不消�
 
 | 里程碑 | 内容 | 验收 |
 | --- | --- | --- |
-| **M0 骨架** | 包结构 + `cordis.patch.yml` + tsdown 双输出 + host provide + client 侧边栏 Tab 渲染真实 `state.json` 的 phase/gate | 插件可加载；侧边栏能看到真实工作流状态（非占位） |
+| **M0 骨架** | 包结构 + `cordis.patch.yml` + tsdown 双输出 + **三级工程根解析（含多会话分桶）** + host provide + client 侧边栏 Tab 渲染真实 `state.json` 的 phase/gate | 插件可加载；侧边栏能看到真实工作流状态（非占位）；**换一个会话/工程时数据与当前会话一致**（验证多会话隔离） |
 | **M1 kernel** | 纯函数：parse state/plan/breadcrumb/decisions + trace 聚合 + docs 减载 | `vitest` 通过，fixture 驱动，零 IO |
 | **M2 Tab-1 工作流** | 完整任务卡 + 步骤清单 + 进度 + 推荐命令 | 与本仓库真实任务比对一致 |
 | **M3 Tab-2 耗时** | trace 聚合 + 异常标红 + check-history 趋势 | 能复现本文实测基线数字 |
@@ -249,11 +293,14 @@ stale 条目（实测含已删除的 `/tmp/*` 临时项目），**首版不消�
 
 | 风险 | 影响 | 缓解 |
 | --- | --- | --- |
+| **host 主进程 cwd ≠ 用户工程目录** | 面板读到错误工程甚至读不到 | 三级兜底：会话 `header.cwd` → `lastKnownWorkspace` → 含 `.docpath/` 的 hostCwd；失败显示空态不猜 |
+| **多会话多工程互相污染** | 观察错乱（最易被忽略的 bug） | host 按 `sessionId` 分桶 `Map`，各会话独立快照/watcher/dispose |
 | 与 docpath 内部 schema 耦合 | docpath 升级后插件解析失败 | kernel 层容错 + `schema_version` 校验 + degraded 降级，不崩 |
-| `docs-index.json` 体积增长 | 首屏变慢 | 剥离 `content_terms` + 按 `size/updated_at` 缓存 + 检索下沉 host |
-| `trace.jsonl` 无限增长 | 解析变慢 | 只读尾部 N 条（默认 5000） |
+| `docs-index.json` 体积增长 | 首屏变慢、心跳吃 CPU | 剥离 `content_terms` + 按 `size/updated_at` 缓存 + 检索下沉 host + 心跳放宽到 5s |
+| `trace.jsonl` 无限增长 | 样本稀疏或解析变慢 | 尾部 N 条 + 按 `ts` 窗口裁剪（轮转策略待验证） |
 | host/client 就绪顺序不定 | `ctx.get` 拿不到服务 | 惰性 resolver 每次重取（harness-lens 已验证） |
-| `agent-snapshot.json` 滞后 | 展示过期信息 | 以 `state.json` 为准，不一致时标记「快照滞后」 |
+| `agent-snapshot.json` 滞后 | 展示过期信息 | 以 `state.json` 为准，用两者 `updated_at` 比对判定 |
+| 事件流量级失衡 | ADR 被执行事件淹没 | Tab 4 分子视图（执行流主 / 决策折叠） |
 | 全局 projects.sqlite 含 stale 路径 | 展示失效项目 | 首版不消费该表 |
 | 范围膨胀（R-230 重演） | 无法收口 | 只读 + 单面板 Tab + 不自带主题，M0 先验证链路 |
 
@@ -279,3 +326,16 @@ stale 条目（实测含已删除的 `/tmp/*` 临时项目），**首版不消�
 **新增一条待验证**：`inject` 数组里声明了 `betterSidebar`，但类型是
 `betterSidebar?: BetterSidebarLike`（可选）—— 说明**未组合时该依赖可能不存在**，
 代码必须先判 `undefined` 再降级，不可假定注入成功。
+
+### 8.1 实现前必须落实的未验证项
+
+挑刺后新暴露的，实现 M0/M3 前必须先查：
+
+1. **`sessions` 服务在主进程是否可用** —— devflow 的 `SessionsLike` 取
+   `sessions.get(id).header.cwd`，但那是 host 侧写法。需确认 cordis host 侧能
+   `ctx.get('sessions')`，否则工程根三级兜底的第一级就落空。
+2. **`trace.jsonl` 有无轮转/归档** —— 决定是否要按 `ts` 窗口裁剪（见 §3 Tab 2）。
+3. **`workspaces` 服务**（desktop client `inject` 里有）与 `sessions` 的关系 ——
+   主进程拿不到 client 的 `workspaces`，确认是否只能用 `sessions`。
+4. **多会话 dispose 时机** —— 会话关闭时 host 侧如何感知并清理 `Map` 条目，
+   否则长期运行会泄漏。

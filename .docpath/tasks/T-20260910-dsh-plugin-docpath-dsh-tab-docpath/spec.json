@@ -3,14 +3,14 @@
   "kind": "spec",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-09-10T14:31:10.203Z",
-    "updated_at": "2026-09-10T14:31:10.203Z",
-    "content_sha256": "6d719e2ae5f5ca7c86f2e250b16746efa8a57a486e30124f21d674934aa34f48"
+    "created_at": "2026-09-10T14:49:25.605Z",
+    "updated_at": "2026-09-10T14:49:25.605Z",
+    "content_sha256": "4d9146196eeca88c9bd5f96cffd1aa50db51dc6997acb62691ea04f13065939d"
   },
   "task_id": "T-20260910-dsh-plugin-docpath-dsh-tab-docpath",
   "backlog_id": "R-328",
   "title": "T-20260910-dsh-plugin-docpath-dsh-tab-docpath - 设计 dsh-plugin-docpath：在 DSH 侧边栏以 Tab 形式可视化 DocPath 工作流全景（工作流/耗时/文档/事件流）",
-  "generated_at": "2026-09-10T14:31:10.203Z",
+  "generated_at": "2026-09-10T14:49:25.605Z",
   "scope": {
     "included": [
       "设计文档：分层架构、数据契约（逐 Tab 到字段级）、UI 版式、里程碑拆分、风险登记。",
@@ -100,6 +100,16 @@
     {
       "id": "NFR-5",
       "text": "kernel 层纯函数单测覆盖解析/聚合/统计；不依赖真实 `.docpath/` 也能测（fixture 驱动）。",
+      "done": false
+    },
+    {
+      "id": "NFR-7",
+      "text": "多会话隔离 —— host 按 `sessionId` 分桶维护快照与 watcher，不同会话观察各自工程根，互不污染；会话关闭时清理。",
+      "done": false
+    },
+    {
+      "id": "NFR-8",
+      "text": "根解析正确性 —— 必须走「会话 `header.cwd` → `lastKnownWorkspace` → 含 `.docpath/` 的 hostCwd」三级兜底；禁止依赖主进程 `process.cwd()` 向上探测（渲染进程沙箱下主进程 cwd ≠ 用户工程目录）；三级皆失败显示空态。",
       "done": false
     },
     {

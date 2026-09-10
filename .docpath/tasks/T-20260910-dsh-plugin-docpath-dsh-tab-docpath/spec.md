@@ -72,6 +72,8 @@ DocPath 是纯 CLI 工作流引擎，AGENTS.md 明确「JSON/JSONL 是机器真�
 - [ ] NFR-3: 任何单个数据源读取失败只降级该 Tab 并标记 `degraded`，不整体崩溃；`schema_version` 不匹配时尽力解析。
 - [ ] NFR-4: 满足 cordis 三项契约检查 —— `client.inject` 声明依赖、`cordis.patch.yml` 存在且声明 insert、`host.provide` 桥可用。
 - [ ] NFR-5: kernel 层纯函数单测覆盖解析/聚合/统计；不依赖真实 `.docpath/` 也能测（fixture 驱动）。
+- [ ] NFR-7: 多会话隔离 —— host 按 `sessionId` 分桶维护快照与 watcher，不同会话观察各自工程根，互不污染；会话关闭时清理。
+- [ ] NFR-8: 根解析正确性 —— 必须走「会话 `header.cwd` → `lastKnownWorkspace` → 含 `.docpath/` 的 hostCwd」三级兜底；禁止依赖主进程 `process.cwd()` 向上探测（渲染进程沙箱下主进程 cwd ≠ 用户工程目录）；三级皆失败显示空态。
 - [ ] NFR-6: 面板是**辅助观察工具**，不复制 CLI 的决策逻辑，不提供写操作入口。
 
 ## 3. 范围界定
