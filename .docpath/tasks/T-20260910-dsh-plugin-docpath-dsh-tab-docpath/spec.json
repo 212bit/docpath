@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-10T14:31:10.203Z",
+    "updated_at": "2026-09-10T14:31:10.203Z",
+    "content_sha256": "6d719e2ae5f5ca7c86f2e250b16746efa8a57a486e30124f21d674934aa34f48"
+  },
+  "task_id": "T-20260910-dsh-plugin-docpath-dsh-tab-docpath",
+  "backlog_id": "R-328",
+  "title": "T-20260910-dsh-plugin-docpath-dsh-tab-docpath - 设计 dsh-plugin-docpath：在 DSH 侧边栏以 Tab 形式可视化 DocPath 工作流全景（工作流/耗时/文档/事件流）",
+  "generated_at": "2026-09-10T14:31:10.203Z",
+  "scope": {
+    "included": [
+      "设计文档：分层架构、数据契约（逐 Tab 到字段级）、UI 版式、里程碑拆分、风险登记。",
+      "参照实现 `dsh-plugin-harness-lens`（同构、已跑通）确定构建与注册方式。",
+      "基于本机实测数据（`trace.jsonl` 1699 条、`docs-index.json` 969 条目）给出性能预算。"
+    ],
+    "excluded": [
+      "**不产出可运行代码**（本次为设计交付，用户确认后再实现）。",
+      "不做写操作（不提供 `go`/`agent step`/`check` 等触发按钮）。",
+      "不做多项目聚合（首版只观察当前工程根；`~/.docpath/projects.sqlite` 全局注册表留作后续）。",
+      "不做远程/协作/告警。",
+      "不做独立 Web 应用（这是 R-230 被 dropped 的原因）。"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": ""
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "产出分层架构设计，遵循 DSH 插件预设 —— - `host`：只做文件 IO 与 `ctx.provide('docpathLens')` 桥，绝不做 UI； - `kernel`：零 IO 纯函数（解析/归一化/聚合/耗时统计/term 匹配），可单测； - `client`：只做渲染，经 `ctx.get('docpathLens')` 消费快照。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "为每个 Tab 标注消费的具体文件路径与字段，并给出 `schema_version` 不匹配 / 文件缺失时的降级策略；**不得设计未实测过的字段**。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "当前任务卡 —— `state.json` + `agent-snapshot.json` + `plan.json` 合成「任务标题 / phase / gate / 当前步骤 / 步骤清单（含 status）/ 进度 / `recommended_command` / `next_valid_events`」。",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "可观测面板 —— `trace.jsonl` 按 `cmd` 聚合 `{n, avg, p50, p95, max}`，标注量级异常（如 `check` 113s）；`check-history.json` 渲染门禁通过率趋势；支持按时间窗过滤。",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "`docs-index.json` 减载浏览 —— 首屏剥离 `content_terms`（1026KB→390KB），按 `scope`/`type`/`archive` 过滤，搜索走 host 侧 kernel 匹配而非整体下发。",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "`breadcrumb.jsonl` + `decisions.jsonl` 反序时间线，展示 `step/status/context` 与 ADR（`category/decision/impact`），支持按 `taskId` 过滤。",
+      "done": false
+    },
+    {
+      "id": "FR-7",
+      "text": "host 侧 `fs.watch` 监听 `.docpath/` 去抖（200ms）+ 兜底心跳（2s），跨 Electron 边界经快照广播；插件卸载时释放监听器。",
+      "done": false
+    },
+    {
+      "id": "FR-8",
+      "text": "client 优先 `betterSidebar.registerTab`，未组合时降级 `slots.register('conversation.view')`；中英文本地化（`locale.register`）。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "插件绝不写 `.docpath/` 任何文件，不绕过门禁，不替代 `docpath check` 的权威性。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "直读 JSON 不起子进程；首屏快照 < 200ms；`docs-index` 必须减载，不得整包传输。",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "任何单个数据源读取失败只降级该 Tab 并标记 `degraded`，不整体崩溃；`schema_version` 不匹配时尽力解析。",
+      "done": false
+    },
+    {
+      "id": "NFR-4",
+      "text": "满足 cordis 三项契约检查 —— `client.inject` 声明依赖、`cordis.patch.yml` 存在且声明 insert、`host.provide` 桥可用。",
+      "done": false
+    },
+    {
+      "id": "NFR-5",
+      "text": "kernel 层纯函数单测覆盖解析/聚合/统计；不依赖真实 `.docpath/` 也能测（fixture 驱动）。",
+      "done": false
+    },
+    {
+      "id": "NFR-6",
+      "text": "面板是**辅助观察工具**，不复制 CLI 的决策逻辑，不提供写操作入口。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "设计文档覆盖 FR-1～FR-8 全部条目，分层架构明确标出 host/client/kernel 各自职责与禁止事项。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "数据契约逐 Tab 标注到具体文件路径 + 字段名（如 `trace.jsonl.durationMs`），并给出缺失/版本不匹配的降级策略；**所有字段均来自实测，无臆造**。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "性能预算有实测依据 —— 首屏 < 200ms、`docs-index` 减载至 ≤ 390KB，并写明减载手段。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "cordis 三项契约检查（client.inject / cordis.patch.yml / host.provide）在设计中逐条给出落地方式。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "明确写出只读边界与「不做什么」，含 R-230 失败归因的复用。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "里程碑拆分到「一次验证能验收」的粒度，M0 能证明插件可加载 + 侧边栏可见真实状态。",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "设计经用户确认，未确认前不进入实现。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "保持 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
