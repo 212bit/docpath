@@ -279,7 +279,7 @@ fs.watch('.docpath/', {recursive: true})  ──去抖 200ms──▶ refresh()
 
 | 里程碑 | 内容 | 验收 |
 | --- | --- | --- |
-| **M0 骨架** | 包结构 + `cordis.patch.yml` + tsdown 双输出 + **三级工程根解析（含多会话分桶）** + host provide + client 侧边栏 Tab 渲染真实 `state.json` 的 phase/gate | 插件可加载；侧边栏能看到真实工作流状态（非占位）；**换一个会话/工程时数据与当前会话一致**（验证多会话隔离） |
+| **M0 骨架** ✅ **已完成**（包在 `/Users/mac/project/dsh-app/dsh-plugin-docpath`，19 项单测 + 冒烟验证通过） | 包结构 + `cordis.patch.yml` + tsdown 双输出 + **三级工程根解析（含多会话分桶）** + host provide + client 侧边栏 Tab 渲染真实 `state.json` 的 phase/gate | 插件可加载；侧边栏能看到真实工作流状态（非占位）；**换一个会话/工程时数据与当前会话一致**（验证多会话隔离） |
 | **M1 kernel** | 纯函数：parse state/plan/breadcrumb/decisions + trace 聚合 + docs 减载 | `vitest` 通过，fixture 驱动，零 IO |
 | **M2 Tab-1 工作流** | 完整任务卡 + 步骤清单 + 进度 + 推荐命令 | 与本仓库真实任务比对一致 |
 | **M3 Tab-2 耗时** | trace 聚合 + 异常标红 + check-history 趋势 + 历史归档合并开关 | 能复现本文实测基线数字（`check` avg 113s）；开启归档后趋势不因轮转断裂 |
