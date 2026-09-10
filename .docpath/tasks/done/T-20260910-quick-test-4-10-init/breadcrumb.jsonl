@@ -1,0 +1,4 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260910-quick-test-4-10-init","step":"check","status":"blocked","context":"质量检查失败: 任务身份一致性检查","timestamp":"2026-09-10T08:05:53.806Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260910-quick-test-4-10-init","step":"check","status":"blocked","context":"质量检查失败: 任务身份一致性检查","timestamp":"2026-09-10T09:11:53.227Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260910-quick-test-4-10-init","step":"check","status":"done","context":"质量检查通过 (1 项)","timestamp":"2026-09-10T11:50:40.406Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260910-quick-test-4-10-init","step":"task.abort","status":"done","context":"任务已废弃并回到 idle","timestamp":"2026-09-10T13:45:38.513Z"}
