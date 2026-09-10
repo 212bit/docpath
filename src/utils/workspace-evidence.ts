@@ -23,6 +23,8 @@ export interface LastCheckEvidence {
   kind: 'last-check';
   task_id?: string;
   timestamp: string;
+  /** R-276(补齐): 检查时的 git HEAD; 供 done 复用判定感知 check 后的新提交 (旧证据缺省, 向后兼容) */
+  head?: string;
   passed: boolean;
   check_count: number;
   git?: GitBaselineEvidence;

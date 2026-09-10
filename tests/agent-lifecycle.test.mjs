@@ -321,6 +321,91 @@ describe('docpath agent lifecycle', () => {
     fs.rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('agent done refuses to reuse check evidence after HEAD moved (R-276 补齐)', () => {
+    const cwd = mkExecWorkspace();
+    execSync('git init -q', { cwd, stdio: 'ignore' });
+    execSync('git config user.email t@example.com', { cwd, stdio: 'ignore' });
+    execSync('git config user.name test', { cwd, stdio: 'ignore' });
+    fs.writeFileSync(path.join(cwd, 'a.txt'), 'first\n');
+    execSync('git add -A && git commit -qm first', { cwd, stdio: 'ignore' });
+    const headAtCheck = execSync('git rev-parse HEAD', { cwd, encoding: 'utf8' }).trim();
+    // 制造新提交: 证据记录的 head 已过期
+    fs.writeFileSync(path.join(cwd, 'a.txt'), 'second\n');
+    execSync('git add -A && git commit -qm second', { cwd, stdio: 'ignore' });
+
+    const workspace = path.join(cwd, '.docpath', 'workspace');
+    const statePath = path.join(workspace, 'state.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    state.phase = 'executing';
+    state.gate = 'check_pass';
+    state.current_step = 'S1';
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+    fs.writeFileSync(path.join(workspace, 'last-check.json'), `${JSON.stringify({
+      schema_version: 1,
+      kind: 'last-check',
+      timestamp: new Date().toISOString(),
+      head: headAtCheck,
+      passed: true,
+      check_count: 1,
+      checks: [{ name: 'fixture', passed: true, output: '' }],
+    }, null, 2)}\n`);
+
+    const out = run('agent done', cwd);
+
+    assert.match(out, /HEAD moved since check evidence/, 'HEAD 变动后不得复用 check 证据');
+    assert.doesNotMatch(out, /check reused/);
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check writes git HEAD into last-check evidence (R-276 写入端)', () => {
+    const cwd = mkExecWorkspace();
+    execSync('git init -q', { cwd, stdio: 'ignore' });
+    execSync('git config user.email t@example.com', { cwd, stdio: 'ignore' });
+    execSync('git config user.name test', { cwd, stdio: 'ignore' });
+    fs.writeFileSync(path.join(cwd, 'a.txt'), 'first\n');
+    execSync('git add -A && git commit -qm first', { cwd, stdio: 'ignore' });
+    const head = execSync('git rev-parse HEAD', { cwd, encoding: 'utf8' }).trim();
+
+    run('check --skip-tests --skip-lint', cwd);
+
+    const evidence = JSON.parse(fs.readFileSync(path.join(cwd, '.docpath', 'workspace', 'last-check.json'), 'utf-8'));
+    assert.equal(evidence.head, head, 'check 证据必须绑定写入时的 git HEAD');
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('agent done still reuses headless check evidence for backward compatibility', () => {
+    const cwd = mkExecWorkspace();
+    execSync('git init -q', { cwd, stdio: 'ignore' });
+    execSync('git config user.email t@example.com', { cwd, stdio: 'ignore' });
+    execSync('git config user.name test', { cwd, stdio: 'ignore' });
+    fs.writeFileSync(path.join(cwd, 'a.txt'), 'first\n');
+    execSync('git add -A && git commit -qm first', { cwd, stdio: 'ignore' });
+    // 新提交: 但旧证据无 head 字段, 按 R-276 兼容策略维持时间窗判定
+    fs.writeFileSync(path.join(cwd, 'b.txt'), 'second\n');
+    execSync('git add -A && git commit -qm second', { cwd, stdio: 'ignore' });
+
+    const workspace = path.join(cwd, '.docpath', 'workspace');
+    const statePath = path.join(workspace, 'state.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+    state.phase = 'executing';
+    state.gate = 'check_pass';
+    state.current_step = 'S1';
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+    fs.writeFileSync(path.join(workspace, 'last-check.json'), `${JSON.stringify({
+      schema_version: 1,
+      kind: 'last-check',
+      timestamp: new Date().toISOString(),
+      passed: true,
+      check_count: 1,
+      checks: [{ name: 'fixture', passed: true, output: '' }],
+    }, null, 2)}\n`);
+
+    const out = run('agent done', cwd);
+
+    assert.match(out, /check reused/, '旧证据无 head 时维持时间窗判定, 向后兼容');
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('agent done recovers check gate when completed plan was reset to planning', () => {
     const cwd = mkExecWorkspace();
     const workspace = path.join(cwd, '.docpath', 'workspace');

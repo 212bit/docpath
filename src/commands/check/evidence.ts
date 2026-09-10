@@ -137,6 +137,8 @@ export async function writeLastCheckEvidence(cwd: string, results: CheckResult[]
     kind: 'last-check',
     task_id: taskId,
     timestamp: new Date().toISOString(),
+    // R-276(补齐): 绑定 HEAD, 使时间窗内的新提交不会被旧证据蒙混跳过
+    ...(gitBaseline ? { head: gitBaseline.ref } : {}),
     passed: allPassed,
     check_count: results.length,
     ...(gitBaseline ? {

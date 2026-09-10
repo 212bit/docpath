@@ -346,6 +346,13 @@ async function canReuseCheckGate(cwd: string, stateAtStart: Awaited<ReturnType<t
   if (!evidence) return 'last-check evidence missing';
   if (!evidence.passed) return 'last-check evidence did not pass';
   if (!isFreshEvidence(evidence.timestamp)) return 'last-check evidence is stale';
+  // R-276(补齐): 证据带 head 时绑定复用——check 之后有新提交则强制重跑
+  // (旧证据无 head 维持时间窗判定)。此前缺失该守卫, 导致窗口内提交后仍跳过
+  // 全量 check。
+  if (evidence.head) {
+    const head = currentGitHeadOptional(cwd);
+    if (head && evidence.head !== head) return 'HEAD moved since check evidence';
+  }
   return null;
 }
 
