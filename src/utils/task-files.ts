@@ -229,6 +229,20 @@ export interface TaskFileDrift {
   detail?: string;
 }
 
+/**
+ * 幽灵任务漂移的缺失文件描述（R-305 诊断文案修正）。
+ *
+ * phantom-task 是按「单个文件」判定的（detectActiveTaskFileDrift 逐个 file 过），
+ * 因此完全可能只有 plan.md 缺、而 spec.md 在两处都在。旧文案写死「spec.md/plan.md
+ * 全缺」与事实不符，会把排查引向「整个任务目录消失了」的错误方向 —— 实际目录
+ * 往往好好的，只是缺某个文件。这里改为按实际 drift 列出缺失文件，避免误导。
+ */
+export function formatPhantomMissingFiles(phantomDrifts: TaskFileDrift[]): string {
+  const files = phantomDrifts.map((drift) => drift.file);
+  if (files.length === 0) return 'current 与 canonical 任务文件均不存在。';
+  return `current 与 canonical 均缺失: ${files.join(', ')}（两处路径都不存在该文件）。`;
+}
+
 export interface TaskIdentityDrift {
   file: 'spec.md';
   location: 'current' | 'canonical';

@@ -16,6 +16,7 @@ import {
   clearCurrentTaskAlias,
   detectActiveTaskFileDrift,
   detectActiveTaskIdentityDrift,
+  formatPhantomMissingFiles,
   formatTaskIdentityDrift,
   syncActiveTaskFiles,
 } from '../utils/task-files.js';
@@ -182,7 +183,7 @@ export async function taskFileSyncCommand(options: { cwd: string; action: string
       console.log('❌  检测到幽灵任务漂移：state.task_id 指向当前 checkout 不存在的任务');
       console.log(`  state.task_id: ${current.task_id}`);
       console.log(`  phase: ${current.phase}`);
-      console.log('  current 别名与 canonical 任务目录均不存在（spec.md/plan.md 全缺）。');
+      console.log(`  ${formatPhantomMissingFiles(phantom)}`);
       console.log('  常见成因: 任务在另一分支完成并归档，但本地 gitignored 的 state.json 仍停在该任务。');
       console.log('\n修复建议（需明确用户意图，不要用 agent step 机械修复）:');
       console.log('  - 若该任务已在别处完成/归档: docpath task abort 清理陈旧状态，回到 idle。');

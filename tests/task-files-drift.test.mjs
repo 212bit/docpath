@@ -255,6 +255,13 @@ describe('active task file drift', () => {
     const tasksDrift = run(`task drift --cwd ${cwd}`, cwd);
     assert.equal(tasksDrift.code, 1);
     assert.match(tasksDrift.out, /TASK IDENTITY DRIFT DETECTED/);
+
+    // R-305: 身份漂移属不可自愈失败，须在昂贵的 runner 之前 fail-loud
+    const full = run(`check --cwd ${cwd}`, cwd);
+    assert.notEqual(full.code, 0);
+    assert.match(full.out, /TASK IDENTITY DRIFT DETECTED/);
+    assert.doesNotMatch(full.out, /编译检查/, '不得进入编译检查段落');
+    assert.doesNotMatch(full.out, /测试检查/, '不得进入测试检查段落');
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -268,7 +275,7 @@ describe('active task file drift', () => {
     assert.equal(drift.code, 1);
     assert.match(drift.out, /幽灵任务漂移/);
     assert.match(drift.out, /state\.task_id: T-DRIFT/);
-    assert.match(drift.out, /current 别名与 canonical 任务目录均不存在/);
+    assert.match(drift.out, /current 与 canonical 均缺失: spec\.md, plan\.md/);
     assert.match(drift.out, /不要用 agent step 机械修复/);
     assert.doesNotMatch(drift.out, /tasks sync --from canonical 或/);
     rmSync(cwd, { recursive: true, force: true });
@@ -284,6 +291,41 @@ describe('active task file drift', () => {
     assert.equal(check.code, 1);
     assert.match(check.out, /PHANTOM TASK DRIFT DETECTED/);
     assert.match(check.out, /docpath task abort/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('phantom drift names only the actually missing files (R-305 诊断文案)', () => {
+    const cwd = mkWorkspace();
+    // 只删 plan.md, spec.md 在 current 与 canonical 两处都保留 —— 旧文案会谎报
+    // "spec.md/plan.md 全缺", 把排查引向"整个目录消失"。
+    rmSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), { force: true });
+    rmSync(join(cwd, '.docpath', 'tasks', 'T-DRIFT', 'plan.md'), { force: true });
+
+    const drift = run(`task drift --cwd ${cwd}`, cwd);
+
+    assert.equal(drift.code, 1);
+    assert.match(drift.out, /plan\.md/, '必须点名实际缺失的 plan.md');
+    assert.doesNotMatch(drift.out, /spec\.md\/plan\.md 全缺/, '不得谎报两个文件全缺');
+
+    const check = run(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+    assert.equal(check.code, 1);
+    assert.match(check.out, /plan\.md/);
+    assert.doesNotMatch(check.out, /spec\.md\/plan\.md 全缺/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('check fails loud on phantom task BEFORE expensive runners (R-305 早退契约)', () => {
+    const cwd = mkWorkspace();
+    rmSync(join(cwd, '.docpath', 'tasks', 'current'), { recursive: true, force: true });
+    rmSync(join(cwd, '.docpath', 'tasks', 'T-DRIFT'), { recursive: true, force: true });
+
+    // 不带 --skip-tests: 早退契约必须生效，不得为注定失败的 check 跑测试套件
+    const check = run(`check --cwd ${cwd}`, cwd);
+
+    assert.notEqual(check.code, 0, '幽灵任务必须使 check 失败');
+    assert.match(check.out, /PHANTOM TASK DRIFT DETECTED/);
+    assert.doesNotMatch(check.out, /编译检查/, '不得进入编译检查段落');
+    assert.doesNotMatch(check.out, /测试检查/, '不得进入测试检查段落');
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -368,7 +410,7 @@ describe('active task file drift', () => {
   it('check interactively fixes drift from canonical when running in a TTY', () => {
     const cwd = mkWorkspace();
 
-    const fixed = runShell(`(sleep 0.5; printf '\\r') | script -q /dev/null node ${BIN} check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+    const fixed = runShell(`(sleep 1.5; printf '\\r') | script -q /dev/null node ${BIN} check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
 
     assert.equal(fixed.code, 0);
     assert.match(fixed.out, /已交互式同步 active task 文件 \(canonical\)/);

@@ -4,7 +4,7 @@ import { join } from 'path';
 import { checkCommandEnv, runCheck, DEFAULT_CHECK_TIMEOUT_MS } from './runners.js';
 import { readCurrentState, syncCurrentDocument, parsePlanTasks } from '../../utils/workspace.js';
 import { validatePlanContent, validateSpecContent } from '../../utils/doc-parser.js';
-import { detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatTaskIdentityDrift, readActiveTaskFile, syncActiveTaskFiles } from '../../utils/task-files.js';
+import { detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatPhantomMissingFiles, formatTaskIdentityDrift, readActiveTaskFile, syncActiveTaskFiles } from '../../utils/task-files.js';
 import { validateDeliverables } from '../../utils/deliverables.js';
 import { validateLifecycleDeliverables } from '../../utils/lifecycle.js';
 import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, shouldAdviseUiDesignOptIn } from '../../utils/ui-gate.js';
@@ -131,7 +131,20 @@ export function effectivePlanProgress(planTasks: Array<{ id: string; title: stri
   };
 }
 
-export async function checkTaskFileDrift(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
+/**
+ * 只读的身份类门禁判定（R-305 入口阶段 2.5）。
+ *
+ * 只覆盖「不可自愈」的身份失败：spec/plan 声明的 task_id 与 state 不一致，
+ * 以及 current/canonical 全缺的幽灵任务。这两类无论编译/测试跑多久都注定
+ * 失败，且不会被后续同步逻辑治愈 —— 因此在昂贵的 runner 之前 fail-loud，
+ * 避免为注定失败的 check 付全量套件成本。
+ *
+ * 可自愈的 missing-current / content-mismatch 走三方合并或交互式 prompt
+ * （有写副作用与人工介入），不属于本函数范围，保持原位执行。
+ *
+ * 纯只读：可安全地在 runner 之前调用。
+ */
+export async function detectFatalTaskIdentityResults(cwd: string, docpathDir: string): Promise<CheckResult[]> {
   const workflowState = await readCurrentState(cwd);
   if ((workflowState?.level || 0) < 2 || !workflowState?.task_id) return [];
   if (workflowState.phase === 'idle' || workflowState.phase === 'completed') return [];
@@ -146,8 +159,7 @@ export async function checkTaskFileDrift(cwd: string, docpathDir: string, option
     }];
   }
 
-  let drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
-
+  const drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
   const phantomDrifts = drifts.filter((drift) => drift.reason === 'phantom-task');
   if (phantomDrifts.length > 0) {
     return [{
@@ -157,7 +169,7 @@ export async function checkTaskFileDrift(cwd: string, docpathDir: string, option
         'PHANTOM TASK DRIFT DETECTED:',
         `  state.task_id: ${workflowState.task_id}`,
         `  phase: ${workflowState.phase}`,
-        '  current 别名与 canonical 任务目录均不存在（spec.md/plan.md 全缺）。',
+        `  ${formatPhantomMissingFiles(phantomDrifts)}`,
         '  常见成因: 任务在另一分支完成并归档，但本地 gitignored 的 state.json 仍停在该任务。',
         '修复建议（需明确用户意图，不要用 agent step 机械修复）:',
         '  - 若该任务已在别处完成/归档: docpath task abort 清理陈旧状态，回到 idle。',
@@ -167,6 +179,21 @@ export async function checkTaskFileDrift(cwd: string, docpathDir: string, option
       category: 'plan',
     }];
   }
+
+  return [];
+}
+
+export async function checkTaskFileDrift(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
+  const workflowState = await readCurrentState(cwd);
+  if ((workflowState?.level || 0) < 2 || !workflowState?.task_id) return [];
+  if (workflowState.phase === 'idle' || workflowState.phase === 'completed') return [];
+
+  // 不可自愈的身份失败已在入口阶段 2.5 提前 fail-loud；此处回放同一判定，
+  // 保证 --only-harness 等绕过前置的路径输出不丢失（单一真源，无重复分支）。
+  const fatalIdentity = await detectFatalTaskIdentityResults(cwd, docpathDir);
+  if (fatalIdentity.length > 0) return fatalIdentity;
+
+  let drifts = await detectActiveTaskFileDrift(docpathDir, workflowState.task_id);
 
   let driftOutput = drifts.length === 0 ? 'current 与 canonical 任务文件一致' : formatTaskFileDrift(drifts);
   const fixSource = drifts.length > 0

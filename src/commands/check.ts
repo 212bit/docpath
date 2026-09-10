@@ -126,6 +126,27 @@ async function assertProtocolBlocksInSync(): Promise<void> {
   throw new Error('docpath check failed: protocol blocks drift');
 }
 
+/**
+ * 入口阶段 2.5（R-305）：任务身份 fail-loud 早退。
+ *
+ * 身份类失败（spec/plan 声明的 task_id 与 state 不一致、current/canonical 全缺
+ * 的幽灵任务）不可自愈 —— 无论编译/测试跑多久都注定失败。原先它排在
+ * runProjectChecks 之后，导致一次注定失败的 check 仍要付全量测试套件成本
+ * （实测 40s+）。这里将其提到 runner 之前，只做只读判定，不放宽任何门禁。
+ *
+ * --only-harness 跳过常规检查路径，此时 runTaskDocumentChecks 不执行，
+ * 故前置门须同步跳过，避免对 harness-only 运行引入新失败面。
+ */
+async function assertTaskIdentityFatal(cwd: string, docpathDir: string, options: CheckOptions): Promise<void> {
+  if (options.onlyHarness) return;
+  const { detectFatalTaskIdentityResults } = await import('./check/validators.js');
+  const failures = await detectFatalTaskIdentityResults(cwd, docpathDir);
+  if (failures.length === 0) return;
+  logger.error(`❌  ${failures[0].name}`);
+  logger.log(failures[0].output || '');
+  throw new Error(`docpath check failed: ${failures[0].name}`);
+}
+
 function warnWhenOutsideAgentSession(current: Awaited<ReturnType<typeof readCurrentState>>, options: CheckOptions): void {
   if (current?.task_id || options.force) return;
   logger.warn('当前无活跃 agent 会话 (current.md 无 task_id)');
@@ -151,10 +172,14 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   //      结构校验会把可自愈态误判为失败（R-287）。
   //   2. assertProtocolBlocksInSync —— fail-loud 早退：必须先于昂贵的编译/测试
   //      runner，避免为注定失败的 check 付全量套件成本（R-300）。
+  //   2.5 assertTaskIdentityFatal —— 同类早退：任务身份（spec/plan 声明 id 不
+  //      一致 / 幽灵任务）属不可自愈失败，跑完 670 个 E2E 也不会变绿，故与
+  //      blocks 漂移并列在 runner 之前 fail-loud（R-305）。
   //   3. quick→standard 升级判定 —— 依赖已收敛的 spec 真源读取门禁声明。
   // 早退性由 CLI 级契约测试固化（blocks 漂移输出不得含编译检查段落）。
   await healActiveTaskDrift(docpathDir, current?.task_id);
   await assertProtocolBlocksInSync();
+  await assertTaskIdentityFatal(cwd, docpathDir, options);
 
   if (current && current.task_id && (current.workflow_profile === 'quick' || current.workflow_profile === 'instant')) {
     let spec: Awaited<ReturnType<typeof readActiveStructuredSpecDocument>> = null;
@@ -222,9 +247,32 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
   warnWhenOutsideAgentSession(current, options);
 
+  // ── B1: quick profile 测试降档（R-305）──
+  // quick 任务恒定付全量测试套件成本（实测 40s+），成本与改动范围脱钩。降档条件
+  // 同时成立才生效，任一不成立即回落全量（fail-safe 到慢，不放水）:
+  //   1. 未显式 --skip-tests/--lite（用户显式意图优先）
+  //   2. workflow_profile 仍为 quick（若上面已升级为 standard 则不降档）
+  //   3. evaluateQuickScope 判定在 quick 边界内: 未触碰 RISKY_PATH_PATTERNS
+  //      核心路径、未超改动文件数上限
+  // 复用现成的 lite 机制（typecheck + 结构门禁）而非自建「文件→测试子集」映射表,
+  // 避免引入第二个需与命令边界同步维护的真源。
+  let quickDowngraded = false;
+  if (!options.lite && !skipTests && current?.workflow_profile === 'quick') {
+    const verdict = evaluateQuickScope(cwd);
+    if (verdict.allowed) {
+      quickDowngraded = true;
+      options.lite = true;
+    }
+  }
+
   console.log('\n🔍  质量检查...\n');
   if (options.lite) {
-    console.log('⚡  lite 模式（instant profile）：跳过 build/test/lint，仅 typecheck + 结构门禁\n');
+    if (quickDowngraded) {
+      console.log('⚡  quick 降档：改动未触碰核心路径且未超 quick 边界，跳过 build/test/lint');
+      console.log('     （typecheck 与结构门禁照常执行；改到核心路径或超范围会自动回落全量）\n');
+    } else {
+      console.log('⚡  lite 模式（instant profile）：跳过 build/test/lint，仅 typecheck + 结构门禁\n');
+    }
   }
   const results: CheckResult[] = [];
   normalizeHarnessOptions(options);

@@ -1,3 +1,4 @@
+import './registry-isolation.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
@@ -77,6 +78,41 @@ function initGitRepo(cwd) {
 }
 
 describe('docpath quick', () => {
+  it('quick profile downgrades check to lite when change stays inside quick scope (B1)', () => {
+    const cwd = mkWorkspace();
+    execSync('git init -q', { cwd, stdio: 'ignore' });
+    execSync('git config user.email t@example.com', { cwd, stdio: 'ignore' });
+    execSync('git config user.name test', { cwd, stdio: 'ignore' });
+    execSync('git add -A && git commit -qm base', { cwd, stdio: 'ignore' });
+    run(`quick "Fix typo in docs" --cwd ${cwd}`, cwd);
+    // 改动落在非核心路径且数量在 quick 上限内
+    mkdirSync(join(cwd, 'docs'), { recursive: true });
+    writeFileSync(join(cwd, 'docs', 'note.md'), 'hello\n');
+
+    const out = run(`check --cwd ${cwd}`, cwd);
+
+    assert.match(out, /quick 降档/, 'quick 且未触核心路径时应降档');
+    assert.doesNotMatch(out, /测试检查/, '降档后不得跑测试检查');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('quick profile falls back to full check when change touches a core path (B1 fail-safe)', () => {
+    const cwd = mkWorkspace();
+    execSync('git init -q', { cwd, stdio: 'ignore' });
+    execSync('git config user.email t@example.com', { cwd, stdio: 'ignore' });
+    execSync('git config user.name test', { cwd, stdio: 'ignore' });
+    execSync('git add -A && git commit -qm base', { cwd, stdio: 'ignore' });
+    run(`quick "Fix typo in docs" --cwd ${cwd}`, cwd);
+    // 触碰核心工作流引擎路径 —— 必须回落全量, 不降档
+    mkdirSync(join(cwd, 'src', 'engine'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'engine', 'core.ts'), 'export const a = 1;\n');
+
+    const res = runResult(`check --cwd ${cwd} --skip-tests`, cwd);
+
+    assert.doesNotMatch(res.out, /quick 降档/, '触碰核心路径时不得降档');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('creates an active quick task and routes next directly to done', () => {
     const cwd = mkWorkspace();
 
