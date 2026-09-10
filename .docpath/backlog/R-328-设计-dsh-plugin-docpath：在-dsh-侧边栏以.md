@@ -8,7 +8,7 @@ source: docpath backlog capture
 readiness: analyzed
 evidence:
   brainstorm: null
-  analysis: null
+  analysis: .docpath/backlog/analysis/R-328-summary.md
   spec: null
   decision_brief: null
   user_confirmed: null
