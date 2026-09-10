@@ -141,11 +141,18 @@ backlog n=328  avg=    188ms   max=  1,243ms
 （如近 30 天），再在窗内取最多 5000 条。这样"平均耗时"始终是当前窗口的真实语义，
 不随日志总量漂移。
 
-**trace.jsonl 是追加日志，会持续增长**：host 只读尾部 N 条（默认 5000），
-不整文件解析。**当前实测 total 仅 1706 条，尾部 5000 条 = 全量**，所以现在"够用"；
-但这是无上限追加日志 —— **docpath 是否自带轮转/归档策略本次未验证**（见 §8），
-实现时若确认无轮转，需补「按 `ts` 窗口裁剪」而非单纯取尾部，
-否则长期运行后同一窗口内的样本会越来越稀疏（尾部 N 条可能横跨数年）。
+**trace.jsonl 有零丢失轮转（已查证，修正原假设）**：原设计假设它"无限增长"，
+**错了**。`src/utils/trace.ts:231-248` 实测：超过 2000 条时保留最近 1000 条，
+裁掉的旧条目**归档到月文件** `trace-YYYY-MM.jsonl`（非丢弃）。
+
+由此两个结论：
+
+1. **无需实现裁剪逻辑**：文件本身有上界（1000~2000 条），直接全量读即可，
+   单文件 < 1000 条时解析开销可忽略。原设计的"尾部 5000 条"设错了量级。
+2. **但历史会散落到月文件**：`trace.jsonl` 只反映**最近窗口**，
+   要做长期趋势必须合并读 `trace-YYYY-MM.jsonl`。
+   → **修正 Tab 2 的语义**：默认展示当前 `trace.jsonl`（近期），
+   趋势图提供「含历史归档」开关，按需合并月文件（懒加载，非首屏）。
 
 ### Tab 3 — 文档（Docs）
 
@@ -280,7 +287,7 @@ fs.watch('.docpath/', {recursive: true})  ──去抖 200ms──▶ refresh()
 | **M0 骨架** | 包结构 + `cordis.patch.yml` + tsdown 双输出 + **三级工程根解析（含多会话分桶）** + host provide + client 侧边栏 Tab 渲染真实 `state.json` 的 phase/gate | 插件可加载；侧边栏能看到真实工作流状态（非占位）；**换一个会话/工程时数据与当前会话一致**（验证多会话隔离） |
 | **M1 kernel** | 纯函数：parse state/plan/breadcrumb/decisions + trace 聚合 + docs 减载 | `vitest` 通过，fixture 驱动，零 IO |
 | **M2 Tab-1 工作流** | 完整任务卡 + 步骤清单 + 进度 + 推荐命令 | 与本仓库真实任务比对一致 |
-| **M3 Tab-2 耗时** | trace 聚合 + 异常标红 + check-history 趋势 | 能复现本文实测基线数字 |
+| **M3 Tab-2 耗时** | trace 聚合 + 异常标红 + check-history 趋势 + 历史归档合并开关 | 能复现本文实测基线数字（`check` avg 113s）；开启归档后趋势不因轮转断裂 |
 | **M4 Tab-3 文档** | 减载清单 + 过滤 + host 侧检索 | 首屏传输 ≤ 390KB |
 | **M5 Tab-4 事件流** | breadcrumb + decisions 时间线 + 按任务过滤 | 能区分 `unknown` 噪声条目 |
 | **M6 同步与打磨** | fs.watch 去抖 + 心跳 + dispose + 降级提示 + i18n | 改 `.docpath/` 后面板 2s 内自动更新；卸载无泄漏 |
@@ -297,7 +304,7 @@ fs.watch('.docpath/', {recursive: true})  ──去抖 200ms──▶ refresh()
 | **多会话多工程互相污染** | 观察错乱（最易被忽略的 bug） | host 按 `sessionId` 分桶 `Map`，各会话独立快照/watcher/dispose |
 | 与 docpath 内部 schema 耦合 | docpath 升级后插件解析失败 | kernel 层容错 + `schema_version` 校验 + degraded 降级，不崩 |
 | `docs-index.json` 体积增长 | 首屏变慢、心跳吃 CPU | 剥离 `content_terms` + 按 `size/updated_at` 缓存 + 检索下沉 host + 心跳放宽到 5s |
-| `trace.jsonl` 无限增长 | 样本稀疏或解析变慢 | 尾部 N 条 + 按 `ts` 窗口裁剪（轮转策略待验证） |
+| `trace.jsonl` 轮转丢历史 | 长期趋势失真（>2000 条时旧条目移到月文件） | 默认展示当前文件（近期）；趋势图提供「含历史归档」开关，懒加载合并 `trace-YYYY-MM.jsonl` |
 | host/client 就绪顺序不定 | `ctx.get` 拿不到服务 | 惰性 resolver 每次重取（harness-lens 已验证） |
 | `agent-snapshot.json` 滞后 | 展示过期信息 | 以 `state.json` 为准，用两者 `updated_at` 比对判定 |
 | 事件流量级失衡 | ADR 被执行事件淹没 | Tab 4 分子视图（执行流主 / 决策折叠） |
@@ -327,15 +334,13 @@ fs.watch('.docpath/', {recursive: true})  ──去抖 200ms──▶ refresh()
 `betterSidebar?: BetterSidebarLike`（可选）—— 说明**未组合时该依赖可能不存在**，
 代码必须先判 `undefined` 再降级，不可假定注入成功。
 
-### 8.1 实现前必须落实的未验证项
+### 8.1 未验证项 —— 挑刺后已查证结果
 
-挑刺后新暴露的，实现 M0/M3 前必须先查：
+| # | 原问题 | 查证结果 |
+| --- | --- | --- |
+| 1 | `sessions` 在主进程是否可用 | ✅ **可用**。`dsh-plugin-devflow/src/index.ts:511` 在 host 侧 `export const inject = ['tools', 'systemPrompt', 'sessions']`，`apply` 内直接 `ctx.sessions as SessionsLike`。三级兜底第一级成立 |
+| 2 | `trace.jsonl` 有无轮转 | ✅ **有零丢失轮转**（已修正 §3 Tab 2 的错误假设）。`src/utils/trace.ts:231-248`：>2000 条保留最近 1000，旧条目归档月文件 |
+| 3 | `workspaces` 与 `sessions` 的关系 | ⚠️ 未查证，但**已不影响设计** —— `workspaces` 是 client 侧 inject（`dsh-plugin-desktop/src/client/index.ts:26`），主进程不可用；host 侧只用 `sessions` 即可 |
+| 4 | 多会话 dispose 时机 | ⚠️ **仍未验证** —— 会话关闭时 host 如何感知。实现 M0 时需实测；兜底方案：LRU 上限（如 8 个会话）+ 空闲超时清理，避免无限增长 |
 
-1. **`sessions` 服务在主进程是否可用** —— devflow 的 `SessionsLike` 取
-   `sessions.get(id).header.cwd`，但那是 host 侧写法。需确认 cordis host 侧能
-   `ctx.get('sessions')`，否则工程根三级兜底的第一级就落空。
-2. **`trace.jsonl` 有无轮转/归档** —— 决定是否要按 `ts` 窗口裁剪（见 §3 Tab 2）。
-3. **`workspaces` 服务**（desktop client `inject` 里有）与 `sessions` 的关系 ——
-   主进程拿不到 client 的 `workspaces`，确认是否只能用 `sessions`。
-4. **多会话 dispose 时机** —— 会话关闭时 host 侧如何感知并清理 `Map` 条目，
-   否则长期运行会泄漏。
+**结论**：M0 的前置阻塞只剩第 4 项，且有兜底方案，不构成开工阻塞。
