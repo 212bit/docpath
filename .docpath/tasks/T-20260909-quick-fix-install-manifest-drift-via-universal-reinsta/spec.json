@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-09T16:56:28.072Z",
+    "updated_at": "2026-09-09T16:56:28.072Z",
+    "content_sha256": "90de4d4d73c0187de8bc29297d508e7ea35e12f7737bd70ea4b4959d4c5199f8"
+  },
+  "task_id": "T-20260909-quick-fix-install-manifest-drift-via-universal-reinsta",
+  "backlog_id": null,
+  "title": "T-20260909-quick-fix-install-manifest-drift-via-universal-reinsta - Fix install manifest drift via universal reinstall",
+  "generated_at": "2026-09-09T16:56:28.072Z",
+  "scope": {
+    "included": [
+      "Fix install manifest drift via universal reinstall"
+    ],
+    "excluded": [
+      "Full spec/plan ceremony for standard or strict tasks.",
+      "Architecture, protocol, migration, permission, or broad module changes."
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "`docpath quick` invocation.",
+    "decision_brief_markdown": "- 当前问题: Tiny task governance should be proportional.\n- 可选方案:\n  - 方案 A: 使用标准任务流程\n  - 方案 B: 使用 quick 轻量任务流程\n- 推荐方案: 方案 B\n- 决策理由: 方案 B 在保证 check 门禁的前提下显著降低了低风险任务的摩擦\n- 用户确认: `docpath quick` invocation."
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Fix install manifest drift via universal reinstall",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "Keep the change scoped and auditable.",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "The scoped change is completed.",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`docpath check` passes before closeout.",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "Review skip is recorded as quick-profile policy evidence.",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "Tiny task governance should be proportional.",
+    "options": [
+      "- 方案 A: 使用标准任务流程"
+    ],
+    "chosen": "方案 B",
+    "rationale": "方案 B 在保证 check 门禁的前提下显著降低了低风险任务的摩擦"
+  }
+}

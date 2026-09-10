@@ -32,7 +32,7 @@ DocPath is JSON-first internally and CLI-first for agents.
 | `.docpath/workspace/breadcrumb.jsonl` | Execution event truth | Use `next`, `status`, `reveal`, or `context`; direct tail only for debug. |
 | `.docpath/workspace/breadcrumb.md` | Human rendered progress view | Do not read by default. |
 | `.docpath/tasks/current/spec.json` | Structured task spec truth | Prefer CLI summaries; direct read only when schema detail is needed. |
-| `.docpath/tasks/current/spec.md` | Human spec view | Read on demand for full narrative requirements. |
+| `.docpath/tasks/current/spec.md` | Human spec view | Read on demand for full narrative requirements. `backlog promote` seeds spec.md with backlog background/FR/AC/evidence — edit the seed incrementally; reserve full `write-spec` rewrites for genuine resets. |
 | `.docpath/tasks/current/plan.json` | Structured task plan truth | Prefer `next`, `go`, and `reveal`. |
 | `.docpath/tasks/current/plan.md` | Human plan view | Do not parse manually by default. |
 | `.docpath/docs-index.json` | Document index truth | Never read in full; use CLI filtered summaries. |
@@ -76,8 +76,6 @@ tail range that answers the question.
 ## Project Context
 
 - `.docpath/backlog/` holds candidate work before it becomes an active task.
-- `.docpath/project-intake/` holds brand-new project intake packages created
-  from raw source materials before they become backlog/spec/plan work.
 - `.docpath/tasks/` holds task artifacts: spec, plan, review, journal, and
   structured JSON mirrors.
 - `.docpath/workspace/` holds runtime state, evidence, and rendered views.
@@ -105,26 +103,13 @@ docpath agent done --step "<task>"
 Rules:
 
 - Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.
-- Use `docpath project capture` when the user has a brand-new project that
-  starts from PPT-derived text, API docs, introductory docs, meeting notes, or a
-  single rough requirements document. Do not force these raw materials into
-  backlog. Treat project intake as a requirements-shaping workflow:
-  `capture -> analyze -> gap index/questions/decision cards -> brief with
-  approval gate -> settle requirements/architecture/phase scope/approval ->
-  backlog guidance`. Use `docpath project analyze`, `project brief`,
-  `project settle`, and confirmed `project backlog` guidance before creating
-  executable backlog items. Unapproved intake output is evidence, not a task.
-  Before development, the minimum frozen standards package is
-  `requirements.md` and `architecture.md`.
-  `open-questions.md`, `decisions/*.md`, and `style.md` are optional by
-  complexity. Do not require `phase-backlog.md`, checklist, or handoff docs;
-  backlog quality belongs to structured backlog items and gates belong in
-  DocPath checks. Do not treat inferred architecture or draft standards as
-  approved development rules.
 - Use `docpath quick "<title>"` for tiny low-risk edits. It creates a lightweight
   task, requires check on closeout, and skips full review by quick profile.
   Escalate to the standard lifecycle when scope touches architecture, protocol,
-  permissions, migrations, CI/CD, or broad multi-file changes.
+  permissions, migrations, CI/CD, or broad multi-file changes. For full-cycle
+  tasks, pick the lowest fitting complexity level: estimated diff under ~100
+  lines, single module, no contract/workflow change → `level 1` (do not default
+  to `level 2` for small fixes).
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath agent done` before claiming a task is complete.
 - Before any local `git commit`, run `docpath changes --agent`. Treat it as a
@@ -170,7 +155,6 @@ Rules:
 | `docpath changes --agent` | Read-only git closeout and commit readiness view |
 | `docpath journal` | Knowledge archive |
 | `docpath gc` | Preview workspace cleanup candidates and inactive task archive candidates; `--force` executes |
-| `docpath gc-decisions` | Rotate old decision logs |
 
 ## Decision Log Aging
 

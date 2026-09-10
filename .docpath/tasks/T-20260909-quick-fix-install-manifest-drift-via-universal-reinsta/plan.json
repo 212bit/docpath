@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-10T03:10:46.085Z",
+    "updated_at": "2026-09-10T03:10:46.085Z",
+    "content_sha256": "5ec083459ccd00589df5ae543be4ec4dde63b98278ed7c8c9d227b62769130f8"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-10T03:10:46.085Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 Fix install manifest drift via universal reinstall",
+      "description": "完成 FR-1: Fix install manifest drift via universal reinstall，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: The scoped change is completed.；AC-2: `docpath check` passes before closeout.；AC-3: Review skip is recorded as quick-profile policy evidence.",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
