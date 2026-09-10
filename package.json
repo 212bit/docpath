@@ -16,7 +16,7 @@
     "build:test": "tsup",
     "dev": "tsup --watch",
     "prepublishOnly": "pnpm build",
-    "test": "pnpm run build:test && node --test --test-concurrency=4 tests/*.test.mjs",
+    "test": "pnpm run build:test && node --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

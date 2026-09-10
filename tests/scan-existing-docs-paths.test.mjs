@@ -1,3 +1,4 @@
+import './registry-isolation.mjs';
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync, execFileSync } from 'node:child_process';
