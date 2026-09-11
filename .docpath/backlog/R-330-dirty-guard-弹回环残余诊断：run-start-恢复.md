@@ -1,7 +1,7 @@
 ---
 id: R-330
 title: dirty-guard 弹回环残余诊断：run start 恢复成功后 go 仍连败的成因定性
-status: proposed
+status: dropped
 priority: P1
 level: 2
 source: docpath backlog capture
