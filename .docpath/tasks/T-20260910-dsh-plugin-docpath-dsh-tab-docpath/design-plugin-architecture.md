@@ -282,10 +282,10 @@ fs.watch('.docpath/', {recursive: true})  ──去抖 200ms──▶ refresh()
 | **M0 骨架** ✅ **已完成**（包在 `/Users/mac/project/dsh-app/dsh-plugin-docpath`，19 项单测 + 冒烟验证通过） | 包结构 + `cordis.patch.yml` + tsdown 双输出 + **三级工程根解析（含多会话分桶）** + host provide + client 侧边栏 Tab 渲染真实 `state.json` 的 phase/gate | 插件可加载；侧边栏能看到真实工作流状态（非占位）；**换一个会话/工程时数据与当前会话一致**（验证多会话隔离） |
 | **M1 kernel** | 纯函数：parse state/plan/breadcrumb/decisions + trace 聚合 + docs 减载 | `vitest` 通过，fixture 驱动，零 IO |
 | **M2 Tab-1 工作流** | 完整任务卡 + 步骤清单 + 进度 + 推荐命令 | 与本仓库真实任务比对一致 |
-| **M3 Tab-2 耗时** | trace 聚合 + 异常标红 + check-history 趋势 + 历史归档合并开关 | 能复现本文实测基线数字（`check` avg 113s）；开启归档后趋势不因轮转断裂 |
-| **M4 Tab-3 文档** | 减载清单 + 过滤 + host 侧检索 | 首屏传输 ≤ 390KB |
-| **M5 Tab-4 事件流** | breadcrumb + decisions 时间线 + 按任务过滤 | 能区分 `unknown` 噪声条目 |
-| **M6 同步与打磨** | fs.watch 去抖(400ms) + 心跳(5s) + dispose + 降级提示 + i18n | 改 `.docpath/` 后面板 5s 内自动更新；卸载无泄漏；多会话切换不残留 watcher |
+| **M3 Tab-2 耗时** ✅ **已完成**（门禁医生+预测+排行，实测 check p95 231s 复现） | trace 聚合 + 异常标红 + check-history 趋势 + 历史归档合并开关 | 能复现本文实测基线数字（`check` avg 113s）；开启归档后趋势不因轮转断裂 |
+| **M4 Tab-3 文档** 🔲（数据就绪，UI 待填，Tab 现占位） | 减载清单 + 过滤 + host 侧检索 | 首屏传输 ≤ 390KB |
+| **M5 Tab-4 事件流** 🔲（数据就绪，UI 待填，Tab 现占位） | breadcrumb + decisions 时间线 + 按任务过滤 | 能区分 `unknown` 噪声条目 |
+| **M6 同步与打磨** ✅（fs.watch 去抖400ms+心跳5s+dispose+降级+i18n 已在 M0 落地） | fs.watch 去抖(400ms) + 心跳(5s) + dispose + 降级提示 + i18n | 改 `.docpath/` 后面板 5s 内自动更新；卸载无泄漏；多会话切换不残留 watcher |
 
 **M0 先行**：先证明「插件能加载 + 能看到真数据」，再堆功能 —— 避免 R-230 式范围失控。
 

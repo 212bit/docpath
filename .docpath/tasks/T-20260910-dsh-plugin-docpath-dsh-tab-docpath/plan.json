@@ -89,6 +89,22 @@
       "acceptance": "AC-1: 设计文档覆盖 FR-1～FR-8 全部条目，分层架构明确标出 host/client/kernel 各自职责与禁止事项。；AC-2: 数据契约逐 Tab 标注到具体文件路径 + 字段名（如 `trace.jsonl.durationMs`），并给出缺失/版本不匹配的降级策略；**所有字段均来自实测，无臆造**。；AC-3: 性能预算有实测依据 —— 首屏 < 200ms、`docs-index` 减载至 ≤ 390KB，并写明减载手段。；AC-4: cordis 三项契约检查（client.inject / cordis.patch.yml / host.provide）在设计中逐条给出落地方式。；AC-5: 明确写出只读边界与「不做什么」，含 R-230 失败归因的复用。；AC-6: 里程碑拆分到「一次验证能验收」的粒度，M0 能证明插件可加载 + 侧边栏可见真实状态。；AC-7: 设计经用户确认，未确认前不进入实现。",
       "dependencies": "S9",
       "status": "done"
+    },
+    {
+      "id": "M-A",
+      "name": "A 耗时医生：门禁弱项聚合(loader)+ 命令排行/门禁医生/预测 UI（Tab-2）",
+      "description": "基于 R-328 的 A 方向：解析 check-history.failedChecks 与 last-check.checks.category，纯函数聚合最弱 gate；predict 用 check p95。",
+      "acceptance": "Tab-2 能复现 check avg 113s 且标出历史最弱 gate 类别",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "M-B",
+      "name": "B 状态机可视化：内置 fsm.ts 快照 + 工作流 Tab 状态机聚焦卡片",
+      "description": "基于 R-328 的 B 方向：内置 transitions.ts 的 EVENT_TARGETS 快照（只读、不依赖 docpath 源码），高亮当前 phase/gate + 可走转移。",
+      "acceptance": "工作流 Tab 显示当前节点与 next_valid_events 可走边，与 agent-snapshot 一致",
+      "dependencies": "S1",
+      "status": "done"
     }
   ]
 }
