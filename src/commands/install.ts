@@ -44,6 +44,9 @@ const MERGE_DRIVER_ATTRIBUTES = [
   `.docpath/backlog/*.md merge=${MERGE_DRIVER_ID}`,
   `.docpath/backlog/archived/*.md merge=${MERGE_DRIVER_ID}`,
   `.docpath/rules/*.md merge=${MERGE_DRIVER_ID}`,
+  // R-335 FR-2: 机器生成的文档索引走 take-current 策略，避免并发收口必冲突
+  `.docpath/docs.md merge=${MERGE_DRIVER_ID}`,
+  `.docpath/docs-index.json merge=${MERGE_DRIVER_ID}`,
 ];
 
 // ─── 复制目录工具 ───

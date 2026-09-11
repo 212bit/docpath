@@ -181,8 +181,8 @@ function generateDocsMd(entries: ProjectDocumentIndexEntry[]): string {
     '',
     '> 自动生成。默认请先读本索引；正文按 `default_read`、当前任务、topic/task-id 或显式归档展开读取。',
     '',
-    `> 扫描时间: ${new Date().toISOString()}`,
-    '',
+    // R-335 FR-3: 不渲染扫描时间戳 —— 同状态重扫描必须字节一致（幂等），
+    // 否则并发 worktree 各自刷新后合并必冲突；时间真源在 docs-index.json generated_at。
     '## 文档列表',
     '',
     '| 路径 | type | scope | level | default_read | archive | stale | tokens | task_id | 标题 | 摘要 | 更新时间 | 大小 |',
@@ -263,7 +263,11 @@ async function buildDocEntries(
     entries.push(entry);
   };
 
+  // R-335 FR-3: 生成物不入索引 —— docs.md/docs-index.json 是本次扫描的输出，
+  // 自索引会让「更新时间=自身 mtime」随每次重写漂移，永不收敛（并发合并冲突源）。
+  const GENERATED_ARTIFACTS = new Set(['docs.md', 'docs-index.json']);
   for (const file of mdFiles) {
+    if (GENERATED_ARTIFACTS.has(file)) continue;
     await pushEntry(join(docpathDir, file), file);
   }
   // FR-5：外部文档以项目根相对路径进索引（默认 default_read=false，仅索引可检索）。

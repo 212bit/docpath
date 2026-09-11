@@ -9,8 +9,9 @@ import { cp, mkdir, rm, writeFile, readFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { BREADCRUMB_HEADER } from '../engine/breadcrumb.js';
+import { BREADCRUMB_HEADER, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { mutateCurrentState, readCurrentState } from '../utils/workspace.js';
+import { detectBinaryDrift, renderBinaryDriftWarning } from '../utils/version-drift.js';
 import {
   isGitRepo,
   listWorktrees,
@@ -23,10 +24,14 @@ const execFileAsync = promisify(execFile);
 
 interface WorktreeOptions {
   cwd: string;
-  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge';
+  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | 'sync';
   name?: string;
   force?: boolean;
   backlog?: string;
+  /** R-335 FR-5: list --agent 聚合视图 */
+  agent?: boolean;
+  /** R-335 FR-1: merge 时记录证据跳过 dirty 交集拒绝 */
+  allowDirtyMain?: string;
 }
 
 interface WorktreePaths {
@@ -139,7 +144,8 @@ async function runGit(cwd: string, args: string[]): Promise<void> {
 }
 
 async function runGitCapture(cwd: string, args: string[]): Promise<string> {
-  const { stdout } = await execFileAsync('git', args, { cwd, maxBuffer: 10 * 1024 * 1024 });
+  // R-334 FR-7 延续: 关闭 quotePath，CJK 路径保持 UTF-8 原文（并发树/backlog 文件名常见）
+  const { stdout } = await execFileAsync('git', ['-c', 'core.quotePath=false', ...args], { cwd, maxBuffer: 10 * 1024 * 1024 });
   return stdout.trimEnd();
 }
 
@@ -357,7 +363,7 @@ async function initWorktreeDocpath(mainRepoPath: string, worktreePath: string, n
 /**
  * worktree list — 列出所有 worktrees
  */
-async function worktreeList(cwd: string): Promise<void> {
+async function worktreeList(cwd: string, agentMode = false): Promise<void> {
   if (!(await isGitRepo(cwd))) {
     console.error('❌  当前目录不是 git 仓库');
     process.exit(1);
@@ -368,6 +374,48 @@ async function worktreeList(cwd: string): Promise<void> {
 
   if (worktrees.length === 0) {
     console.log('📭  没有 worktrees');
+    return;
+  }
+
+  // R-335 FR-5: --agent 聚合视图 —— 编排方一次读取所有树的 task/phase/合并态/建议动作
+  if (agentMode) {
+    const worktreesDir = join(repoRoot, '.worktrees');
+    const lines: string[] = ['worktrees:'];
+    for (const wt of worktrees) {
+      const isMain = samePath(wt.path, repoRoot);
+      const safeName = isMain ? 'main' : worktreeNameFromPath(worktreesDir, wt.path);
+      const branch = wt.detached ? `detached@${wt.head.substring(0, 7)}` : (wt.branch || 'unknown');
+      lines.push(`  - name: ${safeName}`);
+      lines.push(`    path: ${wt.path}`);
+      lines.push(`    branch: ${branch}`);
+      if (isMain) {
+        lines.push('    role: main');
+        continue;
+      }
+      const state = await readCurrentState(wt.path).catch(() => null);
+      const diagnostics = await getWorktreeDiagnostics(repoRoot, wt.path, safeName, isMain);
+      lines.push(`    task: ${state?.task_id || 'idle'}`);
+      lines.push(`    phase: ${state?.phase || 'idle'}`);
+      lines.push(`    dirty: ${diagnostics.dirty}`);
+      lines.push(`    merged_to_main: ${diagnostics.mergedToMain}`);
+      lines.push(`    managed: ${diagnostics.managed}`);
+      let action: string;
+      if (!diagnostics.managed) {
+        action = `docpath worktree repair ${safeName}`;
+      } else if (diagnostics.completed && diagnostics.mergedToMain && diagnostics.safeToRemove) {
+        action = `docpath worktree remove ${safeName}`;
+      } else if (diagnostics.completed && !diagnostics.mergedToMain && !diagnostics.dirty) {
+        action = 'docpath worktree merge';
+      } else if (diagnostics.completed && diagnostics.dirty) {
+        action = `commit/stash 后: docpath worktree merge`;
+      } else if (state?.task_id) {
+        action = `继续任务 (phase=${state.phase})，完成后 docpath check → review → agent done`;
+      } else {
+        action = 'docpath next --agent';
+      }
+      lines.push(`    suggested_action: ${action}`);
+    }
+    console.log(lines.join('\n'));
     return;
   }
 
@@ -699,6 +747,12 @@ async function worktreeDoctor(cwd: string, name?: string): Promise<void> {
     console.log(`  ℹ️ cleanup: ${diagnostics.cleanupCommand}`);
   }
 
+  // R-335 FR-4（落实 R-332）: agent 进入 worktree 的第一站检查执行二进制是否本地构建
+  const driftWarning = renderBinaryDriftWarning(await detectBinaryDrift(cwd));
+  if (driftWarning) {
+    console.log(driftWarning.split('\n').map((line) => `  ${line}`).join('\n'));
+  }
+
   if (errors > 0) {
     console.log(`\n❌  worktree doctor failed (${errors} errors, ${warnings} warnings)`);
     console.log('修复建议: 备份未提交变更后，用 `docpath worktree repair` 自动校准，或者用 `docpath worktree create <name>` 重新创建受管 worktree。');
@@ -934,8 +988,58 @@ async function worktreeRepair(cwd: string, name?: string): Promise<void> {
 /**
  * worktree merge [branch] — 自动合并 worktree 内的改动并合回主干
  */
-async function worktreeMerge(cwd: string, branchNameOrTarget?: string): Promise<void> {
+/**
+ * R-335 FR-5: 将 main 合入所有活跃 worktree —— main 前进后其他树一键同步，
+ * 替代文档场景 3 的手动逐树 `git merge main`。dirty 树跳过并报告（不动他人 in-flight 文件）。
+ */
+async function worktreeSync(cwd: string): Promise<void> {
   if (!(await isGitRepo(cwd))) {
+    console.error('❌  当前目录不是 git 仓库');
+    process.exit(1);
+  }
+  const repoRoot = await resolveWorktreeManagerRoot(cwd);
+  const worktrees = await listWorktrees(repoRoot);
+  const worktreesDir = join(repoRoot, '.worktrees');
+
+  console.log('=== worktree-sync：将 main 合入所有活跃 worktree ===');
+  let synced = 0;
+  let upToDate = 0;
+  let skipped = 0;
+  for (const wt of worktrees) {
+    if (samePath(wt.path, repoRoot)) continue;
+    const safeName = worktreeNameFromPath(worktreesDir, wt.path);
+    const branch = wt.detached ? null : wt.branch;
+    if (!branch) {
+      console.log(`  ⏭️  ${safeName}: detached HEAD，跳过`);
+      skipped++;
+      continue;
+    }
+    const dirty = (await runGitCapture(wt.path, ['status', '--porcelain=v1', '--untracked-files=all'])).trim().length > 0;
+    if (dirty) {
+      console.log(`  ⚠️  ${safeName}: 存在未提交变更，跳过（请先收口后重跑 sync）`);
+      skipped++;
+      continue;
+    }
+    try {
+      const { stdout } = await execFileAsync('git', ['-c', 'core.quotePath=false', 'merge', 'main', '--no-edit'], { cwd: wt.path, maxBuffer: 10 * 1024 * 1024 });
+      if (/Already up to date/i.test(stdout)) {
+        console.log(`  ✓ ${safeName}: 已是最新`);
+        upToDate++;
+      } else {
+        console.log(`  ✓ ${safeName}: 已合入 main`);
+        synced++;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`  ❌ ${safeName}: 合并失败（可能有冲突）—— ${message.split('\n').slice(-3).join(' ')}`);
+      console.error(`     请进入 ${wt.path} 解决冲突后 git merge --continue`);
+      skipped++;
+    }
+  }
+  console.log(`\n=== worktree-sync 完成: 合入 ${synced}，已最新 ${upToDate}，跳过/失败 ${skipped} ===`);
+}
+
+async function worktreeMerge(cwd: string, branchNameOrTarget?: string, allowDirtyMain?: string): Promise<void> {  if (!(await isGitRepo(cwd))) {
     console.error('❌  当前目录不是 git 仓库');
     process.exit(1);
   }
@@ -1102,12 +1206,52 @@ async function worktreeMerge(cwd: string, branchNameOrTarget?: string): Promise<
   // 6. 合并当前 worktree 分支回目标主分支 (FR-7)
   console.log(`\n[FR-7] 任务已标记为 completed，开始将分支合回 ${targetBranchEnv}...`);
   try {
-    // 校验 repoRoot 是否有 dirty 文件，如果有，拒绝自动合并
+    // R-335 FR-1: dirty 预检收窄——仅当「合并将触碰的文件 ∩ 主仓 dirty」非空时阻塞。
+    // 并发常态是 main 常有其他会话的 in-flight 文件；git merge/checkout 自身会拒绝
+    // 覆盖本地未提交改动，零交集的 dirty 与本次合并无关，降级为 warning 继续。
     const rootStatus = (await runGitCapture(repoRoot, ['status', '--porcelain=v1', '--untracked-files=all'])).trim();
     if (rootStatus.length > 0) {
-      console.error(`❌  主仓目录 ${repoRoot} 处于 dirty 状态，无法自动合回！`);
-      console.error('    请先在主仓目录提交或暂存变更 (git stash)，然后再重新运行本合并命令。');
-      process.exit(1);
+      const dirtyFiles = Array.from(new Set(rootStatus
+        .split('\n')
+        .map((line) => line.slice(3).trim())
+        .filter(Boolean)));
+      let overlapping: string[] | null = null;
+      try {
+        const mergeBase = (await runGitCapture(repoRoot, ['merge-base', targetBranchEnv, currentBranch])).trim();
+        const mergeTouch = (await runGitCapture(repoRoot, ['diff', '--name-only', `${mergeBase}..${currentBranch}`])).split('\n').filter(Boolean);
+        const repoRootBranch = (await runGitCapture(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
+        const checkoutTouch = repoRootBranch !== targetBranchEnv
+          ? (await runGitCapture(repoRoot, ['diff', '--name-only', `${repoRootBranch}..${targetBranchEnv}`])).split('\n').filter(Boolean)
+          : [];
+        const touchSet = new Set([...mergeTouch, ...checkoutTouch]);
+        overlapping = dirtyFiles.filter((file) => touchSet.has(file));
+      } catch {
+        overlapping = null; // merge-base/diff 失败 → 无法证明零交集，走保守拒绝
+      }
+
+      if (overlapping === null || overlapping.length > 0) {
+        const preview = (overlapping ?? dirtyFiles).slice(0, 12);
+        console.error(`❌  主仓 dirty 文件与本次合并将触碰的文件重叠${overlapping === null ? '（交集计算失败，保守拒绝）' : ''}，拒绝自动合回:`);
+        preview.forEach((file) => console.error(`     - ${file}`));
+        console.error('    请先在主仓收口这些文件（commit/stash），或确认归属后使用:');
+        console.error(`     docpath worktree merge --allow-dirty-main "合并与其他会话 in-flight 文件无实质冲突"`);
+        if (allowDirtyMain && allowDirtyMain.trim()) {
+          const state = await readCurrentState(cwd);
+          await writeBreadcrumb(cwd, {
+            taskId: state?.task_id || 'worktree-merge',
+            step: 'worktree-merge',
+            status: 'in_progress',
+            context: `worktree merge --allow-dirty-main: ${allowDirtyMain}（重叠文件: ${(overlapping ?? dirtyFiles).slice(0, 5).join(', ')}）`,
+          });
+          console.log(`⚠️  --allow-dirty-main 已记录 breadcrumb 证据: ${allowDirtyMain}，继续合并`);
+        } else {
+          process.exit(1);
+        }
+      } else {
+        console.log(`⚠️  主仓存在 ${dirtyFiles.length} 个 dirty 文件，但与本次合并将触碰的文件零重叠（并发会话 in-flight），继续合并:`);
+        dirtyFiles.slice(0, 12).forEach((file) => console.log(`     - ${file}`));
+        if (dirtyFiles.length > 12) console.log(`     ... 其余 ${dirtyFiles.length - 12} 个`);
+      }
     }
 
     // 切换到 main
@@ -1150,7 +1294,11 @@ export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
       break;
 
     case 'list':
-      await worktreeList(cwd);
+      await worktreeList(cwd, options.agent);
+      break;
+
+    case 'sync':
+      await worktreeSync(cwd);
       break;
 
     case 'doctor':
@@ -1162,7 +1310,7 @@ export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
       break;
 
     case 'merge':
-      await worktreeMerge(cwd, name);
+      await worktreeMerge(cwd, name, options.allowDirtyMain);
       break;
 
     case 'remove':

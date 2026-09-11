@@ -1,20 +1,38 @@
 ---
 id: R-335
 title: 并发开发收口：worktree merge 预检收窄/docs-index 合并治理/版本漂移防护/聚合视图与 sync
-status: proposed
+status: done
 priority: P1
 level: 2
 source: docpath backlog add
-readiness: shaped
+readiness: confirmed
 evidence:
   brainstorm: null
   analysis: null
-  spec: null
-  decision_brief: null
-  user_confirmed: null
+  spec: tasks/T-20260911-worktree-merge-docs-index-sync/spec.md
+  decision_brief: >-
+    - 当前问题: 并发开发三卡点——worktree merge 硬拒 dirty main、docs-index 必冲突、版本漂移零提示（R-334
+    并发实测）
+
+    - 可选方案: A 全量四项落地；B 只修 merge+docs；C 维持现状手动绕过
+
+    - 推荐方案: A
+
+    - 决策理由: 四项均为实测卡点，一次收口避免逐点打补丁（R-306/313/331/334 演进模式）
+
+    - 不做什么: 不动 id 分配 TOCTOU 与远端 PR 流程
+
+    - 成本: 中等
+
+    - 风险: 交集判定需准确计算合并触碰文件；docs 幂等化改变渲染输出（消费方为 agent 只读索引，风险低）
+
+    - 回滚方案: 回滚本任务提交
+
+    - 用户确认: 2026-09-11 用户经 AskUserQuestion 显式选择「全量落地 A-D（推荐）」（R-335 并发开发收口）
+  user_confirmed: 2026-09-11 用户经 AskUserQuestion 显式选择「全量落地 A-D（推荐）」（R-335 并发开发收口）
 links:
-  task: null
-  spec: null
+  task: T-20260911-worktree-merge-docs-index-sync
+  spec: tasks/T-20260911-worktree-merge-docs-index-sync/spec.md
 created_at: 2026-09-11
 ---
 

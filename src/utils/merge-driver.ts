@@ -17,7 +17,7 @@ export interface MergeDriverInput {
 
 export interface MergeDriverResult {
   content: string;
-  strategy: 'backlog-index' | 'markdown-insertions';
+  strategy: 'backlog-index' | 'markdown-insertions' | 'docs-index';
 }
 
 interface ParsedBacklogRows {
@@ -39,15 +39,35 @@ export function isBacklogIndexPath(filePath = ''): boolean {
     || normalized.endsWith('/.docpath/backlog/backlog.md');
 }
 
+/** R-335 FR-2: 机器生成的文档索引（docs.md / docs-index.json）——合并时任取一侧即可，
+ *  下一次 docs scan 会整体重生成；人工解冲突毫无意义。 */
+export function isDocsIndexPath(filePath = ''): boolean {
+  const normalized = normalizeMergePath(filePath);
+  return normalized === '.docpath/docs.md'
+    || normalized === '.docpath/docs-index.json'
+    || normalized.endsWith('/.docpath/docs.md')
+    || normalized.endsWith('/.docpath/docs-index.json');
+}
+
 export function isSupportedDocpathMergePath(filePath = ''): boolean {
   const normalized = normalizeMergePath(filePath);
   return normalized.startsWith('.docpath/backlog/')
     || normalized.includes('/.docpath/backlog/')
     || normalized.startsWith('.docpath/rules/')
-    || normalized.includes('/.docpath/rules/');
+    || normalized.includes('/.docpath/rules/')
+    || isDocsIndexPath(normalized);
 }
 
 export function resolveDocpathMerge(input: MergeDriverInput): MergeDriverResult {
+  // R-335 FR-2: docs 索引优先于 backlog-index 形状嗅探 —— 索引表行可能包含
+  // backlog 行片段，但语义是"生成物"，正确策略是 take-current 而非行级合并。
+  if (isDocsIndexPath(input.path)) {
+    return {
+      content: input.current,
+      strategy: 'docs-index',
+    };
+  }
+
   if (isBacklogIndexPath(input.path) || looksLikeBacklogIndex(input.ancestor, input.current, input.other)) {
     return {
       content: mergeBacklogIndex(input.ancestor, input.current, input.other),

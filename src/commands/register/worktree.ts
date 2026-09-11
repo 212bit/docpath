@@ -9,13 +9,17 @@ export function registerWorktreeCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--force', '强制删除（忽略未提交变更）')
     .option('--backlog <id>', 'create: 绑定目标 backlog 条目（例如 R-268）')
-    .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean; backlog?: string }) => {
+    .option('--allow-dirty-main <reason>', 'merge: 记录证据跳过 dirty 交集拒绝（R-335 并发恢复用）')
+    .option('--agent', 'list: 输出聚合编排视图（各树 task/phase/合并态/建议动作）')
+    .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean; backlog?: string; agent?: boolean; allowDirtyMain?: string; 'allow-dirty-main'?: string }) => {
       await worktreeCommand({
         cwd: options.cwd || process.cwd(),
-        action: action as 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | undefined,
+        action: action as 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | 'sync' | undefined,
         name,
         force: options.force,
         backlog: options.backlog,
+        agent: options.agent,
+        allowDirtyMain: options.allowDirtyMain ?? options['allow-dirty-main'],
       });
     });
 
@@ -24,11 +28,12 @@ export function registerWorktreeCommands(cli: CAC): void {
   docpath worktree [action] [name] [options]
 
   Actions:
-    list                List all worktrees (default)
+    list                List all worktrees (--agent for aggregated orchestration view)
     create <name>       Create a new worktree with isolated .docpath/
     doctor [name]       Check worktree readiness before development
     repair [name]       Automatically repair worktree contract drifts
-    merge [branch]      Automatically merge changes and closeout to main
+    merge [branch]      Automatically merge changes and closeout to main (--allow-dirty-main <reason> for concurrent recovery)
+    sync                Merge main into all active worktrees (R-335)
     remove <name>       Remove a worktree
     prune               Prune all completed, merged, and clean worktrees
 
