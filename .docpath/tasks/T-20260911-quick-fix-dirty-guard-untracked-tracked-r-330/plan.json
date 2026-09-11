@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-11T13:16:51.151Z",
+    "updated_at": "2026-09-11T13:16:51.151Z",
+    "content_sha256": "ac4cfaaf1ef4dd25173f8c01d810de67fe69c065761cf1db5749a14193bc7ce9"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-11T13:16:51.151Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 fix: dirty-guard 错误消息按 untracked/tracked 分支给恢复指引（R-330）",
+      "description": "完成 FR-1: fix: dirty-guard 错误消息按 untracked/tracked 分支给恢复指引（R-330），随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: The scoped change is completed.；AC-2: `docpath check` passes before closeout.；AC-3: Review skip is recorded as quick-profile policy evidence.",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

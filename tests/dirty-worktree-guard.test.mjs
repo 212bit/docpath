@@ -426,6 +426,55 @@ describe('dirty worktree guard', () => {
     }
   });
 
+  it('execution-start error suggests git add ownership claim for blocked untracked files (R-330)', () => {
+    const cwd = mkBaseWorkspace({ phase: 'executing', state: 'executing', taskId: 'T-TEST', taskTitle: 'Test' });
+    try {
+      initGitRepo(cwd);
+      writeFileSync(join(cwd, 'untracked-src.ts'), 'new file\n');
+
+      assert.throws(
+        () => assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+          taskId: 'T-TEST',
+          step: 'S1',
+        }),
+        (error) => {
+          const message = error instanceof Error ? error.message : String(error);
+          assert.match(message, /git add untracked-src\.ts/);
+          assert.match(message, /认领归属/);
+          return true;
+        }
+      );
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('execution-start error keeps run start suggestion for tracked-only blocked files (R-330)', () => {
+    const cwd = mkBaseWorkspace({ phase: 'planning', state: 'planning_done', taskId: 'T-TEST', taskTitle: 'Test' });
+    try {
+      initGitRepo(cwd);
+      writeFileSync(join(cwd, 'tracked-src.ts'), 'original\n');
+      git(cwd, ['add', 'tracked-src.ts']);
+      git(cwd, ['commit', '-m', 'add tracked-src.ts']);
+      writeFileSync(join(cwd, 'tracked-src.ts'), 'modified\n');
+
+      assert.throws(
+        () => assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+          taskId: 'T-TEST',
+          step: 'S1',
+        }),
+        (error) => {
+          const message = error instanceof Error ? error.message : String(error);
+          assert.match(message, /docpath run start --step S1 --note "recover current-task edits before go"/);
+          assert.doesNotMatch(message, /git add /);
+          return true;
+        }
+      );
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
   it('allows dirty untracked and tracked files for the same active task in a real linked git worktree (tracked-copy contract, no symlinks)', () => {
     const mainCwd = mkdtempSync(join(tmpdir(), 'dp-dirty-guard-main-'));
     try {

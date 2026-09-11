@@ -132,9 +132,26 @@ function buildDirtyWorktreeError(
     lines.push(
       '   正常启动步骤:',
       `     docpath go --step ${step}`,
-      '   如果这些源码/测试改动已确认属于当前任务，用恢复入口记录意图:',
-      `     docpath run start --step ${step} --note "recover current-task edits before go"`,
     );
+    // R-330: run start 只解锁 phase 门（planning→executing），对 untracked 新文件无效。
+    // 恢复指引必须按阻塞文件构成分支，否则 agent 照建议执行后仍会弹回。
+    const untrackedSet = new Set(report.untrackedFiles);
+    const blockedUntracked = files.filter((file) => untrackedSet.has(file));
+    if (blockedUntracked.length > 0) {
+      lines.push(
+        '   未跟踪新文件不会被自动归属到当前任务。若属于本任务，先 git add 认领归属后重试:',
+        ...blockedUntracked.slice(0, 5).map((file) => `     git add ${file}`),
+      );
+      if (blockedUntracked.length > 5) {
+        lines.push(`     （其余 ${blockedUntracked.length - 5} 个未跟踪文件同理）`);
+      }
+    }
+    if (blockedUntracked.length < files.length) {
+      lines.push(
+        '   如果这些已跟踪源码/测试改动已确认属于当前任务，用恢复入口记录意图:',
+        `     docpath run start --step ${step} --note "recover current-task edits before go"`,
+      );
+    }
   }
 
   lines.push(
