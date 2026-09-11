@@ -91,3 +91,23 @@
 - src/commands/check.ts 入口: heal(运行时自愈) 与 protocol blocks 校验(手写源 fail-loud) 并存
 - src/commands/render.ts --view protocols 为手写源的显式修复命令
 - rules 本条来源: 2026-07-27 二次架构 review P2-c
+
+## gotcha: 被门禁拦截禁止盲试错——先读门禁实现源码, 试错上限三次
+- rationale: R-329 实施期 go dirty-guard 拦截后连续 5 轮插桩试错(约 1M token), 最终发现语义在 src/utils/git-dirty-guard.ts 80 行内写得明明白白(untracked 新文件需 git add 认领归属, 已跟踪修改放行); 每轮试错的脚本+输出都会进入会话上下文并被后续所有调用重放, 试错是最贵的调试方式。
+触发: 任何 docpath 门禁报错拒绝(quick 溢出/dirty guard/R-305 分类法/major-change/状态机前置)。
+期望行为: 第一次被拦即读该门禁的 src 实现(commands/ 对应命令文件与 utils/ 守卫), 按实现语义走合法通道——预存改动用 `docpath run start --step <id> --note` 恢复入口; untracked 归属用 git add 认领; quick 溢出按提示升级标准生命周期。同一调试问题 3 次工具调用未解决 → 强制转读源码; 需运行时验证多个条件时, 单脚本一次打全所有条件与 filter 内部, 禁止增量试探。
+边界: 读源码仍无法定位时才用 DOCPATH_DEBUG=1 运行时诊断; 门禁实现确实有 bug 时走 task 流程修复而非绕过。
+### Evidence
+- 本仓库会话 2026-09-11: go guard 5 轮插桩记录(R-329 任务 T-20260911-trace-status)
+- src/utils/git-dirty-guard.ts assertNoNonDocPathChangesForExecutionStart
+- AGENTS.md Command Boundaries: CLI owns mechanical consistency checks
+
+## rule: agent 上下文预算纪律——早轮内容按剩余调用次数重放计费
+- rationale: 会话 token 的主体是历史重放而非新增内容(实测会话 8M 中新增内容 <5%); 早轮进入上下文的每 KB 会被后续所有模型调用重放, 第 3 轮塞入的 4K 文件 ≈ 4K × 30 次重放 = 120K 实际消耗, 感觉轻松的讨论前期是每 KB 最贵的阶段。
+触发: agent 在会话前期(前 10 轮)读取文件/执行命令/写代码。
+期望行为: read 默认定向(grep 定位 + offset/limit 切片), 不整读大文件; 大输出命令加 head/tail 限制; 跨会话交接用 backlog capture/key 记忆(500 token)替代会话史重放(200K); 独立批调用并行发起, 减少模型调用轮次。
+边界: 必要的全量理解(如首次读核心模块)不适用此条; 正确性优先于省 token, 不为省 token 跳过验收。
+### Evidence
+- 会话 token 尸检 2026-09-11: 8M 中固定重放税 ~40% / 调试螺旋 ~30% / 大文件进出 ~20%
+- R-329 backlog capture 实证: 讨论结论压缩为 500 token 自包含条目, 实现会话零讨论史依赖
+- .docpath/workspace/breadcrumb.jsonl: 弹回恢复循环是成本大头(与 120 份归档任务统计一致)
