@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-11T08:21:03.504Z",
+    "updated_at": "2026-09-11T08:21:03.504Z",
+    "content_sha256": "ce48cee4b69c5f27a0b9d936e0ccad08cbf94f4a39185afdff9387ef7bb59aed"
+  },
+  "task_id": "T-20260911-dsh-plugin-docpath-dsh-tab-docpath",
+  "backlog_id": "R-328",
+  "title": "T-20260911-dsh-plugin-docpath-dsh-tab-docpath - 设计 dsh-plugin-docpath：在 DSH 侧边栏以 Tab 形式可视化 DocPath 工作流全景（工作流/耗时/文档/事件流）",
+  "generated_at": "2026-09-11T08:21:03.504Z",
+  "scope": {
+    "included": [
+      "设计 dsh-plugin-docpath：在 DSH 侧边栏以 Tab 形式可视化 DocPath 工作流全景（工作流/耗时/文档/事件流）"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: DocPath 是纯 CLI 工作流引擎，AGENTS.md 明确「JSON/JSONL 是机器真源，Markdown 是渲染的人类视图，不作为 Agent 默认输入」。这带来一个结构性缺口：**工作流状态对人类不可见**。当前想看清状态只有两条路——\n- 目标: 设计 dsh-plugin-docpath：在 DSH 侧边栏以 Tab 形式可视化 DocPath 工作流全景（工作流/耗时/文档/事件流）\n- 背景: 来自 backlog R-328\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "设计 dsh-plugin-docpath：在 DSH 侧边栏以 Tab 形式可视化 DocPath 工作流全景（工作流/耗时/文档/事件流）",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "设计文档产出**：`.docpath/tasks/<task>/` 下产出完整设计，覆盖 —— 分层架构（host/client/kernel）、数据契约（每个 Tab 消费哪些文件、字段、兜底策略）、侧边栏 Tab 版式、里程碑拆分、风险与不做的事。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "架构合规**：分层遵循 DSH 插件开发预设——`host` 只做文件 IO 与 `ctx.provide` 桥、`kernel` 是零 IO 纯函数且可单测、`client` 只做 UI 渲染；明确写出 cordis 三项契约检查（client.inject 声明 / cordis.patch.yml / host.provide 桥）的落地方式。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "数据契约可验证**：每个 Tab 的数据来源必须标注到具体文件路径与字段，并给出 `schema_version` 不匹配或文件缺失时的降级策略；不得凭空设计未实测过的字段。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "性能约束明确**：直读 JSON（不起子进程拉 CLI），首屏数据 < 200ms；`docs-index.json` 必须给出减载方案（实测去 `content_terms` 后 1026KB→390KB），不得整包传输。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "只读边界**：设计明确插件为只读可观测，不写 `.docpath/`、不绕过 CLI 门禁、不替代 `docpath check` 的权威性。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "里程碑可交付**：拆分到「一次验证能验收」的粒度，M0 必须能证明链路通（插件可加载 + 侧边栏可见真实状态）。",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "本次为**设计交付**，不产出可运行代码；设计经用户确认后再进入实现。",
+      "done": false
+    },
+    {
+      "id": "AC-8",
+      "text": "- [ ] AC-9: 生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-10",
+      "text": "backlog 条目 R-328 与任务 T-20260911-dsh-plugin-docpath-dsh-tab-docpath 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "DocPath 是纯 CLI 工作流引擎，AGENTS.md 明确「JSON/JSONL 是机器真源，Markdown 是渲染的人类视图，不作为 Agent 默认输入」。这带来一个结构性缺口：**工作流状态对人类不可见**。当前想看清状态只有两条路——",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}
