@@ -1,19 +1,43 @@
 ---
 id: R-328
 title: 设计 dsh-plugin-docpath：在 DSH 侧边栏以 Tab 形式可视化 DocPath 工作流全景（工作流/耗时/文档/事件流）
-status: active
+status: done
 priority: P2
 level: 2
 source: docpath backlog capture
-readiness: analyzed
+readiness: confirmed
 evidence:
   brainstorm: null
   analysis: 实现已在 dsh-app/dsh-plugin-docpath 落地（M0 包骨架+三级根解析+多会话隔离+工作流 Tab；A 耗时医生
     PerfTab；B 状态机 FsmCard；M4 DocsTab；M5 EventsTab），全部 typecheck/build/vitest
     通过。设计文档已含『里程碑拆分』章节，与实现一致。
-  spec: null
-  decision_brief: null
-  user_confirmed: null
+  spec: tasks/T-20260911-dsh-plugin-docpath-dsh-tab-docpath/spec.md
+  decision_brief: >-
+    - 当前问题: DocPath 是纯 CLI 工作流引擎，AGENTS.md 明确「JSON/JSONL 是机器真源，Markdown
+    是渲染的人类视图，不作为 Agent 默认输入」。这带来一个结构性缺口：**工作流状态对人类不可见**。当前想看清状态只有两条路——
+
+    - 目标: 设计 dsh-plugin-docpath：在 DSH 侧边栏以 Tab 形式可视化 DocPath
+    工作流全景（工作流/耗时/文档/事件流）
+
+    - 背景: 来自 backlog R-328
+
+    - 可选方案:
+      - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程
+      - 方案 B: 补充分析，扩展本任务范围
+    - 推荐方案: 方案 A
+
+    - 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险
+
+    - 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围
+
+    - 成本: 中等，按 plan 拆分后逐步验证
+
+    - 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移
+
+    - 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed
+
+    - 用户确认: 待确认
+  user_confirmed: 待确认
 links:
   task: T-20260911-dsh-plugin-docpath-dsh-tab-docpath
   spec: tasks/T-20260911-dsh-plugin-docpath-dsh-tab-docpath/spec.md
