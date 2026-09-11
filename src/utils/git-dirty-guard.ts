@@ -35,7 +35,7 @@ interface ExecutionStartDirtyOptions {
 }
 
 function runGit(cwd: string, args: string[]): string {
-  return execFileSync('git', args, {
+  return execFileSync('git', ['-c', 'core.quotePath=false', ...args], {
     cwd,
     encoding: 'utf-8',
     timeout: 10000,
@@ -149,7 +149,13 @@ function buildDirtyWorktreeError(
     if (blockedUntracked.length < files.length) {
       lines.push(
         '   如果这些已跟踪源码/测试改动已确认属于当前任务，用恢复入口记录意图:',
-        `     docpath run start --step ${step} --note "recover current-task edits before go"`,
+        `     docpath go --step ${step} --accept-dirty "recover current-task edits before go"`,
+        `     或 docpath run start --step ${step} --note "recover current-task edits before go"`,
+      );
+    } else {
+      lines.push(
+        '   全部为未跟踪文件时也可用首等恢复旗标:',
+        `     docpath go --step ${step} --accept-dirty "recover current-task edits before go"`,
       );
     }
   }

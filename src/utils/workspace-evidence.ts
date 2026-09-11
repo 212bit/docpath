@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { readFileSafe, writeFileAtomic } from './file.js';
 import type { ReviewSkillEvidence, ReviewSkillGate, ReviewSkillSkip } from './review-skill-router.js';
+import { CHECK_CATEGORIES, CHECK_SEVERITIES, type CheckCategory, type CheckSeverity } from '../commands/check/types.js';
 
 export interface GitBaselineEvidence {
   ref: string;
@@ -9,13 +10,26 @@ export interface GitBaselineEvidence {
   worktree_dirty: boolean;
 }
 
+/** R-334: 窄 union —— 读侧校验器保证类型安全 */
 export interface CheckEvidenceItem {
   name: string;
   passed: boolean;
   output: string;
-  category?: string;
-  severity?: string;
+  category?: CheckCategory;
+  severity?: CheckSeverity;
   environment_failure?: boolean;
+}
+
+/** R-334: 宽 string → 窄 union 校验器；返回 undefined 表示非合法值（兼容旧证据） */
+export function parseCheckCategory(value: string | undefined): CheckCategory | undefined {
+  if (value === undefined) return undefined;
+  return (CHECK_CATEGORIES as readonly string[]).includes(value) ? (value as CheckCategory) : undefined;
+}
+
+/** R-334: severity 校验器 */
+export function parseCheckSeverity(value: string | undefined): CheckSeverity | undefined {
+  if (value === undefined) return undefined;
+  return (CHECK_SEVERITIES as readonly string[]).includes(value) ? (value as CheckSeverity) : undefined;
 }
 
 export interface LastCheckEvidence {

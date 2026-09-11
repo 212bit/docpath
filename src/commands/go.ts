@@ -23,6 +23,7 @@ import { readActiveStructuredSpecDocument, readActiveTaskFile, writeActiveTaskFi
 import { renderDraftPlan } from './plan.js';
 import { resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
+import { readDocPathConfig } from '../utils/config.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
 import { exitWithError } from '../utils/error-helpers.js';
@@ -40,6 +41,8 @@ interface GoOptions {
   dryRun?: boolean;
   /** agent/session 标识 */
   session?: string;
+  /** R-334: 首等恢复旗标——记录 breadcrumb 证据后跳过 dirty worktree 拦截 */
+  acceptDirty?: string;
 }
 
 interface GoContext {
@@ -256,6 +259,7 @@ export async function goCommand(options: GoOptions): Promise<void> {
   }
   await assertNoDriftLock(cwd, 'docpath go');
   let structuredSpec: Awaited<ReturnType<typeof readActiveStructuredSpecDocument>> = null;
+  const agentFlow = (await readDocPathConfig(cwd)).workflow?.agent_flow === true;
   if (!status) {
     structuredSpec = await readActiveStructuredSpecDocument(docpathDir, resolvedTaskId);
   }
@@ -282,13 +286,24 @@ export async function goCommand(options: GoOptions): Promise<void> {
       });
     }
   }
-  await assertMajorChangeGateReady(cwd, docpathDir, resolvedTaskId, 'go');
-  if (!status) {
+  await assertMajorChangeGateReady(cwd, docpathDir, resolvedTaskId, 'go', agentFlow);
+  if (!status && !options.acceptDirty) {
     assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
       taskId: resolvedTaskId,
       backlogId: current?.backlog_id ?? structuredSpec?.backlog_id,
       step: target.id,
     });
+  }
+  if (!status && options.acceptDirty) {
+    // R-334: 首等恢复旗标 —— 记录 breadcrumb 证据，替代隐藏的 run start --note 逃生口
+    await writeBreadcrumb(cwd, {
+      taskId: resolvedTaskId,
+      step: target.id,
+      status: 'in_progress',
+      context: `go --accept-dirty: ${options.acceptDirty}`,
+      sessionId: session.sessionId,
+    });
+    console.log(`⚠️  --accept-dirty 已记录 breadcrumb 证据: ${options.acceptDirty}`);
   }
   const uiRequirement = !status ? await resolveUiDesignRequirement(cwd) : 'exempt';
   const uiOptInAdvisory = !status && uiRequirement !== 'required'

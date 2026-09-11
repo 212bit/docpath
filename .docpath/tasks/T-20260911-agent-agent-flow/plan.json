@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-11T15:14:17.835Z",
+    "updated_at": "2026-09-11T15:14:17.835Z",
+    "content_sha256": "154227bb53a10822efce09f2b33414df5276fd6806ac8814b158a7bccd08507b"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-11T15:14:17.835Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 agent 辅助开发流程摩擦收口：agent_flow 配置面统一降级",
+      "description": "根据 spec 明确 FR-1~FR-7 的实现边界和验收口径。",
+      "acceptance": "spec 已含 7 个 FR + 9 个 AC + 4.1 Decision Brief 完整",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 FR-1 + FR-6 + FR-7（配置面 + evidence 类型 + CJK 解引用）",
+      "description": "实现 `config.ts` agent_flow 类型、`workspace-evidence.ts` 窄 union 校验器、`git-dirty-guard.ts` CJK 路径解引用（`-c core.quotePath=false`）；同时 `major-change.ts` 的 `parseChangedPaths` 也需要同步解引用。",
+      "acceptance": "AC-1, AC-6, AC-7 通过",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2 + FR-3 + FR-4 + FR-5（门禁降级 + 计划压缩 + 完成度 + go 恢复）",
+      "description": "major-change advisory 降级、plan 单步压缩、完成度 claimed-done 语义、`go --accept-dirty` 恢复旗标；每个改动需含相应 test case。",
+      "acceptance": "AC-2, AC-3, AC-4, AC-5 通过",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "验证验收标准",
+      "description": "跑全量 typecheck + test + docpath check + review；确认 agent_flow 配置下所有门禁如 spec 声明；确认非 agent_flow 行为不变。",
+      "acceptance": "AC-8 通过（typecheck/test/check 全绿）",
+      "dependencies": "S3",
+      "status": "done"
+    }
+  ]
+}

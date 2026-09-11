@@ -20,6 +20,20 @@ export interface ArtifactConfig {
  * DocPath 配置根对象
  */
 export interface DocPathConfig {
+  /**
+   * 工作流配置（R-334 起真正被读取；init 写入的历史字段如 auto_brainstorm 保持声明性兼容）。
+   * agent_flow: Agent 辅助开发模式——门禁降级为证据化软门禁（STRATEGIC 路径信号→advisory，
+   * 完成度改认领 done 即绿），plan level≤2 默认单步压缩，go 提供 --accept-dirty 恢复旗标。
+   * 默认缺省 false（用户项目不受影响）。
+   */
+  workflow?: {
+    agent_flow?: boolean;
+    auto_brainstorm?: boolean;
+    auto_subagent?: boolean;
+    enforce_tdd?: boolean;
+    enforce_review?: boolean;
+  };
+
   /** Artifact 生成策略 */
   artifacts?: ArtifactConfig;
 

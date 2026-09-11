@@ -4,6 +4,8 @@ import { readActiveStructuredSpecDocument, readActiveTaskFile } from './task-fil
 export interface MajorDecisionSignal {
   label: string;
   detail: string;
+  /** R-334: 工作流/Agent 内部路径信号，agent_flow 下降级为咨询（不要求 Decision Brief） */
+  advisory?: boolean;
 }
 
 export interface StructuredMajorChangeGate {
@@ -17,6 +19,8 @@ export interface MajorChangeGateStatus {
   signals: MajorDecisionSignal[];
   confirmed: boolean;
   output: string;
+  /** R-334: agent_flow 下全部信号降级为咨询，门禁仍绿 */
+  downgraded?: boolean;
 }
 
 const MAJOR_DEPENDENCY_PATTERNS = [
@@ -73,7 +77,7 @@ const STRATEGIC_CHANGE_FILE_PATTERNS: Array<{ pattern: RegExp; label: string }> 
 
 function runGitOptional(cwd: string, args: string[]): string | null {
   try {
-    return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trimEnd();
+    return execFileSync('git', ['-c', 'core.quotePath=false', ...args], { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trimEnd();
   } catch {
     return null;
   }
@@ -163,7 +167,7 @@ export function collectMajorDecisionSignals(cwd: string): MajorDecisionSignal[] 
     }
   }
   for (const [label, items] of strategicGroups) {
-    signals.push({ label, detail: Array.from(new Set(items)).slice(0, 12).join(', ') });
+    signals.push({ label, detail: Array.from(new Set(items)).slice(0, 12).join(', '), advisory: true });
   }
   return signals;
 }
@@ -192,10 +196,26 @@ export async function resolveMajorChangeGateStatus(
   cwd: string,
   docpathDir: string,
   taskId: string | undefined,
+  agentFlow = false,
 ): Promise<MajorChangeGateStatus> {
   const signals = collectMajorDecisionSignals(cwd);
   if (signals.length === 0) {
     return { signals, confirmed: true, output: '未检测到重大变更信号' };
+  }
+
+  // R-334: agent_flow 下工作流内部路径信号（advisory）不要求 Decision Brief，
+  // 但依赖/配置/UI 等硬信号仍走完整门禁（NFR-1 用户项目不受影响）。
+  if (agentFlow && signals.every((signal) => signal.advisory)) {
+    return {
+      signals,
+      confirmed: true,
+      downgraded: true,
+      output: [
+        `agent_flow 已降级为咨询: ${signals.length} 个工作流/Agent 内部路径信号不要求 Decision Brief。`,
+        ...signals.map((signal) => `- ${signal.label}: ${signal.detail}`),
+        '依赖/配置/UI 等硬信号仍走完整门禁。',
+      ].join('\n'),
+    };
   }
 
   const structuredSpec = await readActiveStructuredSpecDocument(docpathDir, taskId);
@@ -216,8 +236,9 @@ export async function assertMajorChangeGateReady(
   docpathDir: string,
   taskId: string | undefined,
   command: string,
+  agentFlow = false,
 ): Promise<void> {
-  const status = await resolveMajorChangeGateStatus(cwd, docpathDir, taskId);
+  const status = await resolveMajorChangeGateStatus(cwd, docpathDir, taskId, agentFlow);
   if (status.confirmed) return;
   throw new Error([
     `docpath ${command}: 重大变更门禁未完成`,

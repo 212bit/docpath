@@ -63,6 +63,14 @@ export async function readDocumentScanPaths(cwd: string): Promise<string[]> {
   return mergeDocumentScanPaths(config.document_scan_paths);
 }
 
+/**
+ * R-334: 读取 agent_flow 开关（缺省 false，用户项目不受影响）。
+ */
+export async function readAgentFlow(cwd: string): Promise<boolean> {
+  const config = await readDocPathConfig(cwd);
+  return config.workflow?.agent_flow === true;
+}
+
 /** 过滤出用户实际声明的路径列表；未声明/非数组/全空 → null。 */
 function normalizeDeclaredScanPaths(value: unknown): string[] | null {
   if (!Array.isArray(value)) return null;

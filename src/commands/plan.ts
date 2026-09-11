@@ -15,6 +15,7 @@ import { emitPrompt, readTaskFile } from '../utils/agent-prompt.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { readActiveAnalysisSummary, writeActiveTaskFile } from '../utils/task-files.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
+import { readDocPathConfig } from '../utils/config.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { readBacklogItem } from '../engine/backlog.js';
 
@@ -143,15 +144,15 @@ function assertGeneratedPlanCoverage(spec: string, plan: string): void {
   throw new Error(lines.join('\n'));
 }
 
-export function renderDraftPlan(spec: string, level = 2): string {
+export function renderDraftPlan(spec: string, level = 2, agentFlow = false): string {
   const title = extractFirstMatch(spec, /^#\s+(.+)$/m) || '当前任务';
   const features = extractChecklistEntries(spec, 'FR');
   const acceptances = extractChecklistEntries(spec, 'AC');
   const primaryFeature = features[0]?.text || title.replace(/^T-\d{8}-[a-z0-9-]+\s+-\s+/, '');
 
-  // R-306 比例刻度：level ≤1 任务生成单步计划——24 任务实测中三段式
-  // (梳理/实现/验证)对小任务是被走过场的虚构仪式。全部 FR/AC 并入单步以满足覆盖断言。
-  if (level <= 1) {
+  // R-306 比例刻度 + R-334：level ≤1 或 (agent_flow 且 level ≤2) 生成单步计划。
+  // R-306 实测中三段式(梳理/实现/验证)对小任务是虚构仪式；agent_flow 把压缩推广到 level-2。
+  if (level <= 1 || (agentFlow && level <= 2)) {
     const featureSummary = features.length > 0
       ? features.map((item) => `${item.id}: ${item.text}`).join('；')
       : primaryFeature;
@@ -162,7 +163,7 @@ export function renderDraftPlan(spec: string, level = 2): string {
       '## 执行计划',
       '',
       `### S1: 实现并验证 ${primaryFeature}`,
-      `- **描述**: 完成 ${featureSummary}，随做随验（level-1 压缩计划，R-306）。`,
+      `- **描述**: 完成 ${featureSummary}，随做随验（${level <= 1 ? 'level-1 压缩计划，R-306' : 'agent_flow 压缩计划，R-334'}）。`,
       `- **验收条件**: ${acceptanceSummary}`,
       '- **依赖**: 无',
       '',
@@ -337,10 +338,11 @@ function emitPlanPrompt(spec: string, analysis = '', backlogEvidence: BacklogEvi
 async function writeGeneratedPlan(cwd: string, docpathDir: string, spec: string): Promise<string> {
   const current = await readCurrentState(cwd);
   const taskId = current?.task_id || 'current';
+  const agentFlow = (await readDocPathConfig(cwd)).workflow?.agent_flow === true;
   const existingPlan = taskId === 'current'
     ? ''
     : await readCanonicalPlan(docpathDir, taskId);
-  const planContent = existingPlan.trim() ? existingPlan : renderDraftPlan(spec || '', current?.level ?? 2);
+  const planContent = existingPlan.trim() ? existingPlan : renderDraftPlan(spec || '', current?.level ?? 2, agentFlow);
   assertGeneratedPlanCoverage(spec, planContent);
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'plan.md', planContent);
   return canonicalPath;
@@ -377,7 +379,8 @@ export async function planCommand(options: PlanOptions): Promise<void> {
     );
   }
 
-  await assertMajorChangeGateReady(cwd, docpathDir, current?.task_id, 'plan');
+  const agentFlow = (await readDocPathConfig(cwd)).workflow?.agent_flow === true;
+  await assertMajorChangeGateReady(cwd, docpathDir, current?.task_id, 'plan', agentFlow);
 
   // 已有计划时同步 active alias；无计划时生成保守草案，避免 planning 状态缺 plan.md。
   const canonicalPath = await writeGeneratedPlan(cwd, docpathDir, spec);

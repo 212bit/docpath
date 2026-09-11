@@ -1,0 +1,14 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"S1","status":"in_progress","context":"开始执行: 梳理 agent 辅助开发流程摩擦收口：agent_flow 配置面统一降级","timestamp":"2026-09-11T14:26:47.752Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-11T14:52:59.564Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"S2","status":"in_progress","context":"开始执行: 实现 FR-1 + FR-6 + FR-7（配置面 + evidence 类型 + CJK 解引用）","timestamp":"2026-09-11T14:53:00.197Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-09-11T15:07:37.760Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-09-11T15:07:38.152Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"S4","status":"in_progress","context":"开始执行: 验证验收标准","timestamp":"2026-09-11T15:07:52.881Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"check","status":"blocked","context":"质量检查失败: 子任务完成度 (3/4)","timestamp":"2026-09-11T15:10:46.004Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"check","status":"blocked","context":"质量检查失败: 子任务完成度 (3/4)","timestamp":"2026-09-11T15:13:04.027Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-09-11T15:14:17.830Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"check","status":"done","context":"质量检查通过 (10 项)","timestamp":"2026-09-11T15:15:18.456Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"review","status":"blocked","context":"代码审查: 0 错误, 13 警告, 0 提示","timestamp":"2026-09-11T15:15:50.017Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"review","status":"blocked","context":"代码审查: 0 错误, 13 警告, 0 提示","timestamp":"2026-09-11T15:16:01.798Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"review","status":"done","context":"代码审查: 0 错误, 13 警告, 0 提示","timestamp":"2026-09-11T15:17:22.846Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-agent-agent-flow","step":"journal","status":"done","context":"知识归档完成 (4/4 步)","timestamp":"2026-09-11T15:17:28.818Z"}

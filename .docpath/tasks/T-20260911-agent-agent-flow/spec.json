@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-11T14:52:19.697Z",
+    "updated_at": "2026-09-11T14:52:19.697Z",
+    "content_sha256": "3bb3a948a820af29f939fb3e174cf277856e10d990722c7c69bef1e9151108eb"
+  },
+  "task_id": "T-20260911-agent-agent-flow",
+  "backlog_id": "R-334",
+  "title": "T-20260911-agent-agent-flow - agent 辅助开发流程摩擦收口：agent_flow 配置面统一降级",
+  "generated_at": "2026-09-11T14:52:19.697Z",
+  "scope": {
+    "included": [
+      "`src/types/config.ts`、`src/utils/config.ts`：agent_flow 类型与读取",
+      "`src/utils/major-change.ts`：advisory 信号分流",
+      "`src/commands/check/validators.ts`：完成度 claimed-done + advisory warning",
+      "`src/commands/plan.ts`：level≤2 单步压缩",
+      "`src/commands/go.ts` + `src/utils/git-dirty-guard.ts`：--accept-dirty + CJK unquote",
+      "`src/commands/check/types.ts` + `src/utils/workspace-evidence.ts`：窄 union + 校验器",
+      "tests/check-cache.test.mjs：原有测试 + 新增 agent_flow 行为断言"
+    ],
+    "excluded": [
+      "文档/模板/规则更新（跟随 backlog 收口）",
+      "level-1 压缩范围变更（R-306 已覆盖）"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "2026-09-11 用户经 AskUserQuestion 显式选择「全量落地（推荐）」，按该方向建档执行（R-334 dogfooding 决策确认）",
+    "decision_brief_markdown": "- 当前问题: dogfooding 实测四类流程阻碍（T-20260911 breadcrumb 同轮 check 四红：TypeScript 编译/重大决策确认/完成度 1-3/上下文预算）：1) 重大变更门禁把 docpath 自身 src/commands|engine|utils 路径当重大信号（major-change.ts STRATEGIC 路径判定、幅度无关），每个任务都要 Decision Brief 落 spec + 用户确认；2) 计划 level2+ 固定三段式（plan.ts renderDraftPlan），完成度门禁要求 doneCount===totalCount 才绿（validators.ts:301），中间态 1/3、2/3 永远红；3) docpath go 被 dirty worktree 拦截且逃生口隐藏（run start --note），同时 CJK 文件名 C-quoting 导致簿记豁免失效；4) evidence 宽 string 到窄 union 类型映射摩擦（R-331 实测一次 check 红）\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明全部验收条件，无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 2026-09-11 用户经 AskUserQuestion 显式选择「全量落地（推荐）」，按该方向建档执行（R-334 dogfooding 决策确认）"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "`workflow.agent_flow: true` 配置读取链（config.ts 类型 + config.yaml + readDocPathConfig）",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "major-change 门禁 agent_flow 降级（STRATEGIC 信号 → advisory warning，依赖/配置/UI 硬信号保留）",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "计划 level≤2 + agent_flow → 单步压缩（renderDraftPlan）",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "完成度门禁 claimed-done 语义（已认领步骤全部 done 即绿，agent done 仍强制 100%）",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "`docpath go --accept-dirty <reason>` 首等恢复旗标（breadcrumb 证据记录）",
+      "done": false
+    },
+    {
+      "id": "FR-6",
+      "text": "evidence category/severity 窄化为共享 const union + parse 校验器",
+      "done": false
+    },
+    {
+      "id": "FR-7",
+      "text": "git-dirty-guard CJK 路径解引用（`-c core.quotePath=false` 或手动 unquote）",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "非 agent_flow 行为完全不变（默认 `agent_flow: false` / 缺省 = 现有逻辑）",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "全量套件全绿（typecheck + test + check）",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`workflow.agent_flow: true` 在 config.yaml 中可读；`readDocPathConfig()` 返回 `agent_flow: true`",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "major-change 门禁：STRATEGIC 路径信号在 agent_flow 下为 advisory（check 警告不红）；依赖/配置信号不变",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "完成度门禁：agent_flow 下已认领步骤全部 done 即绿（1/3 → doneCount=1 但无 in_progress = 绿）；非 agent_flow 不变",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "plan level≤2 + agent_flow → 单步压缩（renderDraftPlan 单步）",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "`docpath go --accept-dirty \"reason\"` → 成功 + breadcrumb 记录 `go.accepted_dirty`；无 flag 行为不变",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "evidence `category`/`severity` 为 `CheckCategory`/`CheckSeverity` 窄 union；`parseCheckCategory()` 校验器可用",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "CJK 文件名在 dirty guard 和 major-change 信号中正确识别（backlog 簿记豁免有效）",
+      "done": false
+    },
+    {
+      "id": "AC-8",
+      "text": "全量套件全绿（typecheck + test + check）",
+      "done": false
+    },
+    {
+      "id": "AC-9",
+      "text": "backlog R-334 与 T-20260911-agent-agent-flow 双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "dogfooding 实测四类流程阻碍（T-20260911 breadcrumb 同轮 check 四红：TypeScript 编译/重大决策确认/完成度 1-3/上下文预算）：1) 重大变更门禁把 docpath 自身 src/commands|engine|utils 路径当重大信号（major-change.ts STRATEGIC 路径判定、幅度无关），每个任务都要 Decision Brief 落 spec + 用户确认；2) 计划 level2+ 固定三段式（plan.ts renderDraftPlan），完成度门禁要求 doneCount===totalCount 才绿（validators.ts:301），中间态 1/3、2/3 永远红；3) docpath go 被 dirty worktree 拦截且逃生口隐藏（run start --note），同时 CJK 文件名 C-quoting 导致簿记豁免失效；4) evidence 宽 string 到窄 union 类型映射摩擦（R-331 实测一次 check 红）",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明全部验收条件，无额外依赖风险"
+  }
+}

@@ -9,7 +9,9 @@ import { validateDeliverables } from '../../utils/deliverables.js';
 import { validateLifecycleDeliverables } from '../../utils/lifecycle.js';
 import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, shouldAdviseUiDesignOptIn } from '../../utils/ui-gate.js';
 import { resolveMajorChangeGateStatus } from '../../utils/major-change.js';
+import { readAgentFlow } from '../../utils/config.js';
 import { detectPlanBreadcrumbDrift } from '../../utils/plan-sync.js';
+import { readBreadcrumb } from '../../engine/breadcrumb.js';
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
   documentIndexStats,
@@ -49,8 +51,20 @@ export async function promptTaskFileDriftFix(): Promise<'canonical' | 'current' 
 export async function checkMajorDecisionGate(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
   const state = await readCurrentState(cwd);
   if ((state?.level || 0) < 2) return [];
-  const gate = await resolveMajorChangeGateStatus(cwd, docpathDir, state?.task_id);
+  const agentFlow = await readAgentFlow(cwd);
+  const gate = await resolveMajorChangeGateStatus(cwd, docpathDir, state?.task_id, agentFlow);
   if (gate.signals.length === 0) return [];
+
+  // R-334: agent_flow 下工作流内部路径信号降级为咨询 — check 黄不红
+  if (gate.downgraded) {
+    return [{
+      name: '重大决策确认检查',
+      passed: true,
+      output: gate.output,
+      category: 'plan',
+      severity: 'warning',
+    }];
+  }
 
   let passed = gate.confirmed;
   let output = gate.output;
@@ -109,6 +123,32 @@ export async function checkMajorDecisionGate(cwd: string, docpathDir: string, op
 
 export function isTerminalVerificationTask(task: { id: string; title: string; done: boolean }): boolean {
   return /验证门禁|质量门禁|check\/review\/journal|docpath check\/review\/journal/i.test(task.title);
+}
+
+/**
+ * R-334: 已认领但未完成的计划步骤 —— 最新 breadcrumb 状态为 in_progress/blocked 的步骤。
+ * 与 plan.md 的 checklist 无关（checklist 只区分 done/pending），breadcrumb 记录"被启动过"。
+ */
+export async function claimedPlanStepIds(
+  cwd: string,
+  planTasks: Array<{ id: string; title: string; done: boolean }>,
+): Promise<string[]> {
+  const breadcrumb = await readBreadcrumb(cwd);
+  const ids = new Set(planTasks.map((task) => task.id));
+  // 最新状态优先：同一 step 可能先 in_progress 后 done，只取最后一条。
+  const latest = new Map<string, string>();
+  for (const entry of breadcrumb.entries) {
+    if (!ids.has(entry.step)) continue;
+    if (entry.status === 'done') {
+      latest.set(entry.step, 'done');
+    } else if (!latest.has(entry.step)) {
+      latest.set(entry.step, entry.status);
+    }
+  }
+  return Array.from(latest.entries())
+    .filter(([, status]) => status === 'in_progress' || status === 'blocked')
+    .map(([step]) => step)
+    .sort();
 }
 
 export function effectivePlanProgress(planTasks: Array<{ id: string; title: string; done: boolean }>): {
@@ -298,16 +338,30 @@ export async function validateTaskDocuments(cwd: string, docpathDir: string, opt
   progress.planDoneCount = effectiveProgress.doneCount;
   progress.planTotalCount = effectiveProgress.totalCount;
   if (progress.planTotalCount > 0) {
-    const passed = progress.planDoneCount === progress.planTotalCount;
+    // R-334: agent_flow 下完成度改认领语义——已认领步骤全部 done 即绿（防跳步保留），
+    // 未认领步骤不阻塞中间 check；agent done/closeout 仍强制 100%，见 done 命令。
+    const agentFlow = await readAgentFlow(cwd);
+    let passed = progress.planDoneCount === progress.planTotalCount;
+    let output = passed
+      ? effectiveProgress.waivedTerminalVerification.length > 0
+        ? `terminal verification step 由 check/review/journal 生命周期门禁覆盖: ${effectiveProgress.waivedTerminalVerification.join(', ')}`
+        : '所有子任务已完成'
+      : `还有 ${progress.planTotalCount - progress.planDoneCount} 个子任务未完成`;
+    if (!passed && agentFlow) {
+      const claimedUnfinished = await claimedPlanStepIds(cwd, planTasks);
+      if (claimedUnfinished.length === 0 && progress.planDoneCount > 0) {
+        passed = true;
+        output = `agent_flow: 已认领子任务全部完成 (${progress.planDoneCount}/${progress.planTotalCount})，未认领步骤不阻塞中间 check`;
+      } else if (claimedUnfinished.length > 0) {
+        output = `还有已认领但未完成的子任务: ${claimedUnfinished.join(', ')}`;
+      }
+    }
     results.push({
       name: `子任务完成度 (${progress.planDoneCount}/${progress.planTotalCount})`,
       passed,
-      output: passed
-        ? effectiveProgress.waivedTerminalVerification.length > 0
-          ? `terminal verification step 由 check/review/journal 生命周期门禁覆盖: ${effectiveProgress.waivedTerminalVerification.join(', ')}`
-          : '所有子任务已完成'
-        : `还有 ${progress.planTotalCount - progress.planDoneCount} 个子任务未完成`,
+      output,
       category: 'plan',
+      ...(agentFlow && passed && progress.planDoneCount < progress.planTotalCount ? { severity: 'warning' as const } : {}),
     });
   }
 

@@ -12,13 +12,15 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--status <status>', '收尾状态: done | skipped | blocked')
     .option('--dry-run', '仅预览，不更新状态')
     .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
-    .action(async (options: { cwd?: string; step?: string; status?: 'done' | 'skipped' | 'blocked'; dryRun?: boolean; 'dry-run'?: boolean; session?: string }) => {
+    .option('--accept-dirty <reason>', 'R-334: 记录 breadcrumb 证据后跳过 dirty worktree 拦截（当前任务恢复用）')
+    .action(async (options: { cwd?: string; step?: string; status?: 'done' | 'skipped' | 'blocked'; dryRun?: boolean; 'dry-run'?: boolean; session?: string; acceptDirty?: string; 'accept-dirty'?: string }) => {
       await goCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
         status: normalizeEnumOption(options.status, 'go --status', ['done', 'skipped', 'blocked'] as const),
         dryRun: options.dryRun ?? options['dry-run'],
         session: options.session,
+        acceptDirty: options.acceptDirty ?? options['accept-dirty'],
       });
     });
 

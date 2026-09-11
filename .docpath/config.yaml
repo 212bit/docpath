@@ -4,6 +4,7 @@ workflow:
   auto_subagent: true
   enforce_tdd: false
   enforce_review: false
+  agent_flow: true
 project:
   name: "docpath"
   description: "文径 DocPath — 渐进式文档驱动工作流 (Document as Finite State Machine)"

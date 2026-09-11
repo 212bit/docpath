@@ -2,6 +2,12 @@
  * Type definitions for check command
  */
 
+/** R-334: 共享窄 union —— 写侧直接赋值安全，读侧用 parse 校验器收窄 */
+export const CHECK_CATEGORIES = ['compile', 'test', 'lint', 'plan', 'analysis', 'context', 'preflight', 'boundary', 'pattern'] as const;
+export type CheckCategory = (typeof CHECK_CATEGORIES)[number];
+export const CHECK_SEVERITIES = ['error', 'warning'] as const;
+export type CheckSeverity = (typeof CHECK_SEVERITIES)[number];
+
 export interface CheckOptions {
   cwd: string;
   /** 跳过测试，只检查编译 */
@@ -41,8 +47,8 @@ export interface CheckResult {
   name: string;
   passed: boolean;
   output: string;
-  category?: 'compile' | 'test' | 'lint' | 'plan' | 'analysis' | 'context' | 'preflight' | 'boundary' | 'pattern';
-  severity?: 'error' | 'warning';
+  category?: CheckCategory;
+  severity?: CheckSeverity;
   /** 失败是否由环境问题引起（命令缺失、依赖未安装等），而非代码问题 */
   environment_failure?: boolean;
 }
