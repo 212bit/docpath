@@ -347,7 +347,8 @@ describe('changes command', () => {
       assert.equal(parsed.worktree_isolation.commit_relevant_files.includes('.docpath/rules/style.md'), true);
       assert.equal(parsed.worktree_isolation.commit_relevant_files.includes('.docpath/tasks/done/T-OLD/spec.md'), true);
       assert.equal(parsed.worktree_isolation.commit_relevant_files.includes('src/feature.ts'), true);
-      assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/docs.md'), true);
+      // R-336: docs.md 已下线，不再属于隔离噪音名单（普通 tracked 文件语义）
+      assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/docs.md'), false);
       assert.equal(parsed.worktree_isolation.expected_noise_files.includes('.docpath/backlog/backlog.md'), false,
         'merge-mediated backlog 变更绝不能被归类为隔离噪音（R-271 数据丢失模式）');
       // isolated 运行时被 gitignore 隔离，根本不应出现在变更分组里
@@ -356,7 +357,8 @@ describe('changes command', () => {
 
       const agent = run('changes --agent', wtCwd);
       assert.match(agent, /worktree_isolation:/);
-      assert.match(agent, /expected_noise_count: [1-9]/);
+      // R-336: docs.md 下线后已无 tracked 派生视图；噪音类仅剩 gitignored 隔离运行时（不入 porcelain）
+      assert.match(agent, /expected_noise_count: 0/);
       assert.match(agent, /commit_relevant_files:/);
       assert.match(agent, /src\/feature\.ts/);
     } finally {

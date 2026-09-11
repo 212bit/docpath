@@ -347,11 +347,10 @@ async function writeInitialConfig(cwd: string, level: ComplexityLevel, projectIn
       commands = undefined;
     }
   }
-  await writeFileSafe(join(cwd, '.docpath/config.yaml'), generateConfig(level, projectInfo, { scanExisting, commands }));
+  await writeFileSafe(join(cwd, '.docpath/config.yaml'), generateConfig(level, projectInfo, { scanExisting }));
   if (scanExisting && commands) {
     const filled = ['test', 'build', 'format', 'lint'].filter((k) => (commands as ProjectCommands)[k as keyof ProjectCommands].command).length;
-    const todo = 4 - filled;
-    console.log(`  ✓  config.yaml (scan-existing: ${filled} 命令, ${todo} TODO)`);
+    console.log(`  ✓  config.yaml (scan-existing: 检测到 ${filled}/4 命令，仅提示未写入配置)`);
   } else {
     console.log('  ✓  config.yaml (已填充项目信息)');
   }
@@ -441,7 +440,7 @@ function printInitSummary(level: ComplexityLevel, levelSource: LevelSource, proj
   if (detected) console.log(`  🔍 检测到: ${detected}`);
 }
 
-function generateConfig(level: ComplexityLevel, projectInfo?: ProjectInfo, scanOptions?: { scanExisting?: boolean; commands?: ProjectCommands }): string {
+function generateConfig(level: ComplexityLevel, projectInfo?: ProjectInfo, scanOptions?: { scanExisting?: boolean }): string {
   const now = new Date().toISOString().split('T')[0];
   const name = projectInfo?.name || '';
   const desc = projectInfo?.description || '';
@@ -459,36 +458,13 @@ document_scan_paths:
   - "docs/"
 `
     : '';
-  // §4.c/FR-3：scan-existing 时把提取到的 test/build/format/lint 命令写入 config。
-  const cmds = scanOptions?.commands;
-  const cmdSection = scanOptions?.scanExisting && cmds
-    ? `
-# 项目命令（由 init --scan-existing 从 manifest 提取，FR-3）
-# 缺省字段表示未探测到，配合 CLAUDE.md 的 TODO 提示确认；勿编造。
-project_commands:
-  test: ${cmds.test.command ? `"${cmds.test.command}"` : ''}
-  build: ${cmds.build.command ? `"${cmds.build.command}"` : ''}
-  format: ${cmds.format.command ? `"${cmds.format.command}"` : ''}
-  lint: ${cmds.lint.command ? `"${cmds.lint.command}"` : ''}
-`
-    : '';
+  // R-336 FR-3: default_level / workflow.auto_* / paths / project_commands 不再写入 ——
+  // 四者经 grep 实证零消费方（level 实际来自 state.json；路径引擎硬编码；
+  // project_commands 从未被读取且会被下次 scan 语义冲掉）。用户 config 残留无行为影响。
 
   return `# DocPath 项目配置
 # 由 docpath:init 自动生成 (${now})
-
-# 默认复杂度级别 (0|1|2|3)
-# 0=即时响应, 1=轻量任务, 2=标准任务, 3=复杂任务
-default_level: ${level}
-
-# 工作流设置
-workflow:
-  # 自动触发 brainstorm (Level 2+ 有效)
-  auto_brainstorm: true
-  # 自动触发 subagent (Level 2+ 有效)
-  auto_subagent: true
-  # 强制 Code Review (Phase 3 实现)
-  enforce_review: false
-${scanPathsSection}${cmdSection}
+${scanPathsSection}
 # 项目元信息 (自动检测)
 project:
   name: "${name}"
@@ -497,14 +473,5 @@ project:
   language: "${lang}"
   framework: "${fw}"
   created_at: "${now}"
-
-# 路径门禁 (不可修改，由引擎维护)
-paths:
-  state: .docpath/workspace/current.md
-  breadcrumb: .docpath/workspace/breadcrumb.md
-  tasks: .docpath/tasks/
-  rules: .docpath/rules/
-  spec_templates: .docpath/spec/template/
-  journal: .docpath/journal/
 `;
 }

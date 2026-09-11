@@ -152,8 +152,8 @@ function classifyPath(path: string): ChangeGroupName {
 function isExpectedWorktreeIsolationNoise(path: string): boolean {
   return path.startsWith('.docpath/workspace/') ||
     path.startsWith('.docpath/tasks/current/') ||
-    path.startsWith('.docpath/journal/') ||
-    path === '.docpath/docs.md';
+    path.startsWith('.docpath/journal/');
+    // R-336: docs.md 已下线不再生成，不再列为隔离噪音
 }
 
 function parsePorcelainStatus(output: string): ChangedFile[] {

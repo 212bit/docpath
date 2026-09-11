@@ -280,7 +280,6 @@ async function buildDocEntries(
 
 async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentIndexEntry[]): Promise<string> {
   const docsIndexPath = join(docpathDir, 'docs-index.json');
-  const docsMdPath = join(docpathDir, 'docs.md');
 
   const compactEntries = entries.map(compactIndexEntry);
   await writeFile(docsIndexPath, `${JSON.stringify({
@@ -294,20 +293,24 @@ async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentInde
     },
     entries: compactEntries,
   })}\n`, 'utf-8');
-  // 保留 docs.md 作为人类可读兼容索引；机器读取以 docs-index.json 为准。
-  await writeFile(docsMdPath, generateDocsMd(entries), 'utf-8');
+  // R-336 FR-1: docs.md 不再生成 —— 人类视图按需 `docpath docs list --full` 渲染，
+  // 机器真源唯一为 docs-index.json（-310KB 仓库体积，少一个生成物与四处特判）。
 
   return docsIndexPath;
 }
 
 function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unknown> {
+  // R-336 FR-2: 索引瘦身 —— archive 条目（tasks/done、backlog/archived、legacy）
+  // 不落 summary/content_terms（占索引 548KB 中的 ~390KB）；archive 检索走
+  // task-id / include-archive 的显式读取，topic 全文搜索本就按需读原文。
+  const isArchive = entry.archive === true;
   const compact: Record<string, unknown> = {
     path: entry.path,
     type: entry.type,
     scope: entry.scope,
     level: entry.level,
     title: entry.title,
-    summary: entry.summary.slice(0, 140),
+    ...(isArchive ? {} : { summary: entry.summary.slice(0, 140) }),
     updated_at: entry.updated_at,
     size: entry.size,
     token_estimate: entry.token_estimate,
@@ -316,7 +319,10 @@ function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unk
   };
 
   if (entry.task_id) compact.task_id = entry.task_id;
-  if (entry.content_terms && entry.content_terms.length > 0) compact.content_terms = entry.content_terms;
+  if (!isArchive && entry.content_terms && entry.content_terms.length > 0) {
+    // live 条目限 16 词（实测均值 ~40 词/条，砍掉后搜索信号基本无损）
+    compact.content_terms = entry.content_terms.slice(0, 16);
+  }
   if (entry.generated_view === true) compact.generated_view = true;
   if (entry.index_only === true) compact.index_only = true;
   if (entry.stale === true) compact.stale = true;
@@ -408,29 +414,25 @@ function renderCompactDocsList(entries: ProjectDocumentIndexEntry[]): string {
   return lines.join('\n');
 }
 
-/** docs list — 列出注册文档摘要，--full 输出完整 human table */
+/** docs list — 列出注册文档摘要，--full 输出完整 human table（R-336: 从索引渲染，docs.md 已下线） */
 async function docsList(cwd: string, full = false): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
-  const docsMdPath = join(docpathDir, 'docs.md');
+  const index = await readProjectDocumentIndex(docpathDir);
 
-  if (!existsSync(docsMdPath)) {
-    console.error('❌  未找到 docs.md。请先运行 `docpath docs scan`');
+  if (!index?.entries.length) {
+    console.error('❌  未找到 docs-index.json 或索引为空。请先运行 `docpath docs scan`');
     process.exit(1);
   }
 
   if (!full) {
-    const index = await readProjectDocumentIndex(docpathDir);
-    if (index?.entries.length) {
-      console.log(renderCompactDocsList(index.entries));
-      return;
-    }
+    console.log(renderCompactDocsList(index.entries));
+    return;
   }
 
-  const content = await readFile(docsMdPath, 'utf-8');
-  console.log(content);
+  console.log(generateDocsMd(index.entries as ProjectDocumentIndexEntry[]));
 }
 
-/** docs add — 添加文档到索引 */
+/** docs add — 添加文档到索引（R-336: 纯索引操作；旧实现只写 docs.md 表格行，会被下次 scan 冲掉） */
 async function docsAdd(cwd: string, args: string[]): Promise<void> {
   if (args.length < 2) {
     console.error('❌  用法: docpath docs add <path> <kind> [scope] [level]');
@@ -441,31 +443,54 @@ async function docsAdd(cwd: string, args: string[]): Promise<void> {
   const [docPath, kind, scope = 'project', level = '0'] = args;
 
   const docpathDir = await resolveDocpathDir(cwd);
-  const docsMdPath = join(docpathDir, 'docs.md');
-
-  if (!existsSync(docsMdPath)) {
-    console.error('❌  未找到 docs.md。请先运行 `docpath docs scan`');
+  const docsIndexPath = join(docpathDir, 'docs-index.json');
+  if (!existsSync(docsIndexPath)) {
+    console.error('❌  未找到 docs-index.json。请先运行 `docpath docs scan`');
     process.exit(1);
   }
 
-  // 读取现有内容
-  const content = await readFile(docsMdPath, 'utf-8');
+  const raw = JSON.parse(await readFile(docsIndexPath, 'utf-8')) as {
+    version: number;
+    generated_at: string;
+    policy: Record<string, unknown>;
+    entries: Array<Record<string, unknown>>;
+  };
 
-  // 添加新行到表格
-  const lines = content.split('\n');
-  const tableEnd = lines.findIndex((line, i) => i > 5 && !line.startsWith('|'));
-
-  const newLine = `| ${docPath} | ${kind} | ${scope} | ${level} | false | false | false | 0 |  | ${basename(docPath, extname(docPath))} | - | ${formatDate(new Date())} | - |`;
-
-  if (tableEnd > 0) {
-    lines.splice(tableEnd, 0, newLine);
-  } else {
-    lines.push(newLine);
+  const normalizedPath = docPath.replace(/\\/g, '/').replace(/^\.\//, '');
+  if (raw.entries.some((entry) => entry.path === normalizedPath)) {
+    console.log(`ℹ️  已存在索引条目: ${normalizedPath}（如需刷新请重跑 docpath docs scan）`);
+    return;
   }
 
-  await writeFile(docsMdPath, lines.join('\n'), 'utf-8');
+  const absPath = join(docpathDir, normalizedPath);
+  let size = 0;
+  let updated = new Date().toISOString();
+  try {
+    const fileStat = await stat(absPath);
+    size = fileStat.size;
+    updated = fileStat.mtime.toISOString();
+  } catch {
+    // 文件不存在也允许登记（占位条目，scan 会校正）
+  }
 
-  console.log(`\n✅  已添加文档: ${docPath}`);
+  raw.entries.push({
+    path: normalizedPath,
+    type: kind,
+    scope,
+    level: Number.parseInt(level, 10) || 0,
+    title: basename(docPath, extname(docPath)),
+    summary: '',
+    updated_at: updated,
+    size,
+    token_estimate: 0,
+    default_read: false,
+    archive: false,
+  });
+  raw.generated_at = new Date().toISOString();
+
+  await writeFile(docsIndexPath, `${JSON.stringify(raw)}\n`, 'utf-8');
+
+  console.log(`\n✅  已添加文档到索引: ${normalizedPath}`);
   console.log(`   kind: ${kind}, scope: ${scope}, level: ${level}\n`);
 }
 

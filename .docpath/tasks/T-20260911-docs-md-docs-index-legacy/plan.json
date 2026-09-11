@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-11T17:27:02.626Z",
+    "updated_at": "2026-09-11T17:27:02.626Z",
+    "content_sha256": "2565a72866d1137e9f2726f4f28b8e5a1b68163a0295ae718424f258496b2142"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-11T17:27:02.626Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理删除/瘦身边界（审计结论落 spec）",
+      "description": "确认消费方清单与删除范围；project:/trace: 经复核为活配置需保留。",
+      "acceptance": "spec FR/AC/Decision Brief 完整",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "FR-1 删除 docs.md（生成下线 + 消费切换 + 特判简化）",
+      "description": "writeDocsIndexes 停写 docs.md；docs list --full 从索引渲染；docs add 纯索引化；git-dirty-guard/changes-report 的 docs.md 特判删除（docs-index.json 保留）；reveal 兼容读取保留；主仓 git rm docs.md；merge-driver/.gitattributes 保留 docs.md 兼容。",
+      "acceptance": "docs.md 不再生成；docs list --full 内容等价；全量测试绿",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "FR-2 索引瘦身",
+      "description": "compactIndexEntry 对 archive=true 条目不落 summary/content_terms；live 条目 content_terms 限 16 词；重跑 scan 验证体积。",
+      "acceptance": "索引 ≤700KB；reveal topic 对 live 文档搜索行为不变；测试绿",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "FR-3 惰性配置删除",
+      "description": "types/config.ts 删 workflow.auto_*/project_commands；init.ts 停写 default_level/workflow.auto_*/paths/project_commands（保留 project/trace/document_scan_paths/agent_flow）；更新 init.test 断言。",
+      "acceptance": "grep 零死字段写入；init 生成 config 仅含活字段；测试绿",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "FR-4 legacy 清理",
+      "description": "git rm archive/docs-legacy-20260613.md 与 spec-legacy/；worktree prune（仅 merged_to_main=true）。",
+      "acceptance": "归档删除；在制品树（feature-project-scan 等）不受影响",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "验证与收口",
+      "description": "全量 typecheck/test/check/review；重跑 docs scan 落地瘦身索引；commit/merge。",
+      "acceptance": "全绿；索引与仓库体积下降数据记入任务结果",
+      "dependencies": "S2,S3,S4,S5",
+      "status": "done"
+    }
+  ]
+}

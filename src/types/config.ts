@@ -21,17 +21,13 @@ export interface ArtifactConfig {
  */
 export interface DocPathConfig {
   /**
-   * 工作流配置（R-334 起真正被读取；init 写入的历史字段如 auto_brainstorm 保持声明性兼容）。
-   * agent_flow: Agent 辅助开发模式——门禁降级为证据化软门禁（STRATEGIC 路径信号→advisory，
-   * 完成度改认领 done 即绿），plan level≤2 默认单步压缩，go 提供 --accept-dirty 恢复旗标。
-   * 默认缺省 false（用户项目不受影响）。
+   * 工作流配置。R-336 FR-3: 历史声明性字段 auto_brainstorm/auto_subagent/
+   * enforce_tdd/enforce_review 因 grep 实证零消费方已删除（R-275 模式），
+   * 用户 config 残留无行为影响。当前唯一被读取的字段是 agent_flow。
    */
   workflow?: {
+    /** Agent 辅助开发模式——门禁降级为证据化软门禁（R-334） */
     agent_flow?: boolean;
-    auto_brainstorm?: boolean;
-    auto_subagent?: boolean;
-    enforce_tdd?: boolean;
-    enforce_review?: boolean;
   };
 
   /** Artifact 生成策略 */
@@ -50,16 +46,7 @@ export interface DocPathConfig {
    */
   document_scan_paths?: string[];
 
-  /**
-   * scan-existing 从项目 manifest 提取的命令（FR-3）。
-   * 每条可空（未探测到 → 该字段缺省，配合 CLAUDE.md 的 TODO 提示）。
-   */
-  project_commands?: {
-    test?: string;
-    build?: string;
-    format?: string;
-    lint?: string;
-  };
+  // R-336 FR-3: project_commands 已删除（grep 零消费方，init 不再写入）
 }
 
 /**
