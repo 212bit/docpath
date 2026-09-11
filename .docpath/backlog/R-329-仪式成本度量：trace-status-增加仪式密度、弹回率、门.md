@@ -1,7 +1,7 @@
 ---
 id: R-329
 title: 仪式成本度量：trace/status 增加仪式密度、弹回率、门禁时延占比三指标
-status: proposed
+status: active
 priority: P2
 level: 1
 source: docpath backlog capture
@@ -13,8 +13,8 @@ evidence:
   decision_brief: null
   user_confirmed: null
 links:
-  task: null
-  spec: null
+  task: T-20260911-trace-status
+  spec: tasks/T-20260911-trace-status/spec.md
 created_at: 2026-09-11
 ---
 
