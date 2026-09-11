@@ -3,6 +3,7 @@ import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
 import { gatePolicyForProfile, resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 import { selectCurrentFocus, summarizeDrift, loadAgentOutputContext, inferRouteFromContext, generateQuickFix } from './agent-output/formatters.js';
+import { detectBinaryDrift } from './version-drift.js';
 export type { AgentOutput } from './agent-output/formatters.js';
 
 /**
@@ -37,6 +38,7 @@ export async function generateAgentOutput(
   }
 
   const context = await loadAgentOutputContext(cwd, docpathDir);
+  const binaryDrift = await detectBinaryDrift(cwd);
   const inferred = inferRouteFromContext(context);
   const quickFix = generateQuickFix(context);
   const driftSummary = summarizeDrift(context.drift);
@@ -168,6 +170,14 @@ export async function generateAgentOutput(
           }
       : null,
     ...(context.contextIndex ? { context_index: context.contextIndex } : {}),
+    // R-335 FR-4 / R-332: 版本漂移提示——docpath 源码仓内用仓库外二进制时警告
+    ...(binaryDrift?.drifted ? {
+      version_drift: {
+        binary_path: binaryDrift.binary_path,
+        repo_local_build: binaryDrift.repo_local_build,
+        reason: binaryDrift.reason,
+      },
+    } : {}),
     ...(context.contextIndexTrunk && context.contextIndexTrunk.length > 0 ? { context_index_trunk: context.contextIndexTrunk } : {}),
     ...(context.contextIndexLeaves && context.contextIndexLeaves.length > 0 ? {
       context_index_leaves: context.contextIndexLeaves.map(leaf => ({

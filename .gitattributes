@@ -2,3 +2,6 @@
 .docpath/backlog/*.md merge=docpath-markdown
 .docpath/backlog/archived/*.md merge=docpath-markdown
 .docpath/rules/*.md merge=docpath-markdown
+# R-335: 机器生成的文档索引——take-current 策略，下次 docs scan 重生成
+.docpath/docs.md merge=docpath-markdown
+.docpath/docs-index.json merge=docpath-markdown

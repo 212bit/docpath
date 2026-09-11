@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-11T16:38:05.457Z",
+    "updated_at": "2026-09-11T16:38:05.457Z",
+    "content_sha256": "b3617cf4855213ce79b0714446187cdefd16676c1d5f6e2303c30e1a8e3885de"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-11T16:38:05.457Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理并发开发收口 FR-1~FR-5 实现边界",
+      "description": "按 spec 明确各 FR 的实现位置与验收口径。",
+      "acceptance": "spec 已含 5 FR + 6 AC + 4.1 Decision Brief",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 FR-1 worktree merge 预检收窄 + --allow-dirty-main",
+      "description": "worktree.ts merge 流程——计算合并将触碰的文件集（merge-base..branch 变更 ∪ checkout 副作用），与 dirty 交集非空才拒绝；零交集降级 warning 列文件；--allow-dirty-main <reason> 记录 breadcrumb 证据跳过交集拒绝。",
+      "acceptance": "AC-1",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现 FR-2+FR-3 docs-index 合并治理与幂等生成",
+      "description": "merge-driver 支持 docs-index.json/docs.md（take-current + regenerate 提示）；.gitattributes 补条目；生成点去除扫描时间戳使字节幂等。",
+      "acceptance": "AC-2, AC-3",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现 FR-4 版本漂移防护",
+      "description": "doctor/next --agent 检测执行二进制与 repo 本地构建（dist/index.js 或 bin）不一致时 warning + `node dist/index.js` 指引。",
+      "acceptance": "AC-4",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "实现 FR-5 worktree list --agent + sync",
+      "description": "list --agent 聚合输出各树 task/phase/merged_to_main/建议动作；sync 命令将 main 合入所有未完成 worktree（跳过 dirty 冲突树并报告）。",
+      "acceptance": "AC-5",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "name": "验证与收口",
+      "description": "全量 typecheck/test/check/review；dogfooding——用本任务的 FR-1 改进版 merge 完成 worktree 合回（主仓有另一会话 dirty 文件场景）。",
+      "acceptance": "AC-6",
+      "dependencies": "S3,S4,S5",
+      "status": "done"
+    }
+  ]
+}

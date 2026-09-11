@@ -1,0 +1,16 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"S1","status":"in_progress","context":"开始执行: 梳理并发开发收口 FR-1~FR-5 实现边界","timestamp":"2026-09-11T16:03:17.308Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-11T16:03:17.929Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"S2","status":"in_progress","context":"开始执行: 实现 FR-1 worktree merge 预检收窄 + --allow-dirty-main","timestamp":"2026-09-11T16:03:18.591Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-09-11T16:28:41.864Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-09-11T16:28:42.291Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-09-11T16:28:42.716Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"S5","status":"done","context":"agent-step: S5","timestamp":"2026-09-11T16:28:43.206Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"S6","status":"in_progress","context":"开始执行: 验证与收口","timestamp":"2026-09-11T16:28:43.915Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"check","status":"blocked","context":"质量检查失败: 子任务完成度 (5/6)","timestamp":"2026-09-11T16:37:47.751Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"review","status":"blocked","context":"代码审查: 0 错误, 12 警告, 0 提示","timestamp":"2026-09-11T16:37:49.641Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"S6","status":"done","context":"agent-step: S6","timestamp":"2026-09-11T16:38:05.452Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"check","status":"done","context":"质量检查通过 (10 项)","timestamp":"2026-09-11T16:39:07.045Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"review","status":"blocked","context":"代码审查: 0 错误, 12 警告, 0 提示","timestamp":"2026-09-11T16:39:09.073Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"review","status":"blocked","context":"代码审查: 0 错误, 12 警告, 0 提示","timestamp":"2026-09-11T16:39:42.480Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"review","status":"done","context":"代码审查: 0 错误, 12 警告, 0 提示","timestamp":"2026-09-11T16:40:01.992Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-worktree-merge-docs-index-sync","step":"journal","status":"done","context":"知识归档完成 (6/6 步)","timestamp":"2026-09-11T16:40:16.893Z"}

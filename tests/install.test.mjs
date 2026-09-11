@@ -725,10 +725,12 @@ describe('install agent adapters', () => {
     assert.match(attributes, /^\.docpath\/backlog\/\*\.md merge=docpath-markdown$/m);
     assert.match(attributes, /^\.docpath\/backlog\/archived\/\*\.md merge=docpath-markdown$/m);
     assert.match(attributes, /^\.docpath\/rules\/\*\.md merge=docpath-markdown$/m);
+    assert.match(attributes, /^\.docpath\/docs\.md merge=docpath-markdown$/m);
+    assert.match(attributes, /^\.docpath\/docs-index\.json merge=docpath-markdown$/m);
 
     run(`install --cwd ${cwd} --target codex`, cwd);
     const attributesAfter = readFileSync(join(cwd, '.gitattributes'), 'utf-8');
-    assert.equal((attributesAfter.match(/merge=docpath-markdown/g) || []).length, 3);
+    assert.equal((attributesAfter.match(/merge=docpath-markdown/g) || []).length, 5);
     rmSync(cwd, { recursive: true, force: true });
   });
 
