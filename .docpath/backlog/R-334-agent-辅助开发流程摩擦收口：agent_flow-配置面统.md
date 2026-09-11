@@ -1,7 +1,7 @@
 ---
 id: R-334
 title: agent 辅助开发流程摩擦收口：agent_flow 配置面统一降级
-status: proposed
+status: active
 priority: P1
 level: 2
 source: docpath backlog add
@@ -13,8 +13,8 @@ evidence:
   decision_brief: null
   user_confirmed: null
 links:
-  task: null
-  spec: null
+  task: T-20260911-agent-agent-flow
+  spec: tasks/T-20260911-agent-agent-flow/spec.md
 created_at: 2026-09-11
 ---
 
