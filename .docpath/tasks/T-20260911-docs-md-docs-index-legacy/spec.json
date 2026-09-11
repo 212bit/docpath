@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-11T17:05:05.047Z",
+    "updated_at": "2026-09-11T17:05:05.047Z",
+    "content_sha256": "18bd78be3b52f000a08a06db16bcda401141ef1a0b6d7e874cfb4088407c1e74"
+  },
+  "task_id": "T-20260911-docs-md-docs-index-legacy",
+  "backlog_id": "R-336",
+  "title": "T-20260911-docs-md-docs-index-legacy - 功能删除与瘦身：docs.md 下线/docs-index 瘦身/惰性配置删除/legacy 清理",
+  "generated_at": "2026-09-11T17:05:05.047Z",
+  "scope": {
+    "included": [
+      "功能删除与瘦身：docs.md 下线/docs-index 瘦身/惰性配置删除/legacy 清理"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 审计实证（R-335 后续）：1) docs.md 310KB 人类视图，程序侧唯一消费是 reveal 降级段与 docs list --full 的 cat，全部可从 docs-index.json 派生，另有 git-dirty-guard/changes-report 等四处特判为它存在；2) docs-index.json 1.15MB，867 条中 607 条为 archive（tasks/done+backlog/archived+legacy），content_terms 占 548KB（archive 387KB），topic 搜索对 archive 条目按 task-id/include-archive 走显式读取，全量摘要纯浪费；3) 惰性配置（grep 零消费方）：workflow.auto_brainstorm/auto_subagent/enforce_tdd/enforce_review、paths: 段、default_level（意外发现：level 实际来自 state.json）、project_commands；注意 project: 段（project-registry 消费）与 trace:（trace.ts 正则读取）是活的，保留；4) archive/docs-legacy-20260613.md 101KB + spec-legacy 模板集（6月归档，无引用）+ gc 扫出 11 棵已完成 worktree。\n- 目标: 功能删除与瘦身：docs.md 下线/docs-index 瘦身/惰性配置删除/legacy 清理\n- 背景: 来自 backlog R-336\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "功能删除与瘦身：docs.md 下线/docs-index 瘦身/惰性配置删除/legacy 清理",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "1) docs.md 不再生成/不再提交，docs list --full 从索引渲染同一张表，docs add 纯索引操作，reveal 兼容读取残留 docs.md；2) 索引 archive 条目不存 summary/content_terms，live 条目 content_terms 限 16 词，索引体积显著下降（1.15MB→约 600-700KB）；3) 惰性配置字段从类型与 init 写入点删除，用户 config 残留无行为影响（R-275 模式）；4) legacy 归档删除，merged_to_main=true 的 worktree prune（他会在制品树不动）；5) 全量套件全绿。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-336 与任务 T-20260911-docs-md-docs-index-legacy 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "审计实证（R-335 后续）：1) docs.md 310KB 人类视图，程序侧唯一消费是 reveal 降级段与 docs list --full 的 cat，全部可从 docs-index.json 派生，另有 git-dirty-guard/changes-report 等四处特判为它存在；2) docs-index.json 1.15MB，867 条中 607 条为 archive（tasks/done+backlog/archived+legacy），content_terms 占 548KB（archive 387KB），topic 搜索对 archive 条目按 task-id/include-archive 走显式读取，全量摘要纯浪费；3) 惰性配置（grep 零消费方）：workflow.auto_brainstorm/auto_subagent/enforce_tdd/enforce_review、paths: 段、default_level（意外发现：level 实际来自 state.json）、project_commands；注意 project: 段（project-registry 消费）与 trace:（trace.ts 正则读取）是活的，保留；4) archive/docs-legacy-20260613.md 101KB + spec-legacy 模板集（6月归档，无引用）+ gc 扫出 11 棵已完成 worktree。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

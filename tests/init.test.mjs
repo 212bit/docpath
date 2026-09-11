@@ -70,9 +70,10 @@ describe('init command', () => {
     assert.equal(existsSync(join(cwd, '.docpath', 'rules', 'architecture.md')), true);
     assert.equal(existsSync(join(cwd, '.docpath', 'spec', 'template', 'spec.template.md')), true);
 
+    // R-336: paths 段已从 config 移除（零消费方），规则/模板落盘即为契约
     const config = readFileSync(join(cwd, '.docpath', 'config.yaml'), 'utf-8');
-    assert.match(config, /rules: \.docpath\/rules\//);
-    assert.match(config, /spec_templates: \.docpath\/spec\/template\//);
+    assert.doesNotMatch(config, /paths:/);
+    assert.equal(existsSync(join(cwd, '.docpath', 'rules')), true);
     const projects = JSON.parse(execSync(`node ${BIN} projects --json`, {
       cwd,
       encoding: 'utf-8',
@@ -187,7 +188,8 @@ describe('init command', () => {
     assert.match(output, /Level 0 \(手动\)/);
     const config = readFileSync(join(cwd, '.docpath', 'config.yaml'), 'utf-8');
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
-    assert.match(config, /default_level: 0/);
+    // R-336: default_level 不再写入 config（零消费方），level 真源在 state.json
+    assert.doesNotMatch(config, /default_level/);
     assert.equal(state.level, 0);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -239,7 +241,7 @@ describe('init command', () => {
     assert.equal(result.code, 0);
     assert.equal(existsSync(join(cwd, '.docpath', 'config.yaml')), true);
     assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'state.json')), true);
-    assert.match(readFileSync(join(cwd, '.docpath', 'config.yaml'), 'utf-8'), /default_level: [0-3]/);
+    assert.doesNotMatch(readFileSync(join(cwd, '.docpath', 'config.yaml'), 'utf-8'), /default_level/);
     const projects = JSON.parse(execSync(`node ${BIN} projects --json`, {
       cwd,
       encoding: 'utf-8',

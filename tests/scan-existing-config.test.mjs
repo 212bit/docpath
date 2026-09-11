@@ -47,7 +47,7 @@ describe('config document_scan_paths + project_commands (S5 / FR-4)', () => {
 });
 
 describe('init generateConfig scan-existing fields (S5 E2E)', () => {
-  it('config.yaml contains document_scan_paths + project_commands when scan-existing', () => {
+  it('config.yaml contains document_scan_paths (project_commands retired by R-336) when scan-existing', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'dp-cfg-'));
     try {
       execFileSync('git', ['init', '-q'], { cwd, stdio: 'ignore' });
@@ -58,11 +58,8 @@ describe('init generateConfig scan-existing fields (S5 E2E)', () => {
       const cfg = readFileSync(join(cwd, '.docpath', 'config.yaml'), 'utf-8');
       assert.match(cfg, /document_scan_paths:/);
       assert.match(cfg, /README\.md/);
-      assert.match(cfg, /project_commands:/);
-      assert.match(cfg, /test: "npm run test"/);
-      assert.match(cfg, /build: "npm run build"/);
-      // format/lint 未探测到 → 空（不编造）
-      assert.ok(!/format: ".*"/.test(cfg), 'format should be empty, not fabricated');
+      // R-336: project_commands 零消费方已下线；命令检测仅提示不落盘
+      assert.ok(!/project_commands:/.test(cfg), 'project_commands must not be written (R-336)');
     } finally { rmSync(cwd, { recursive: true, force: true }); }
   });
 

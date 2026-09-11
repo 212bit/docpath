@@ -108,7 +108,8 @@ function isCurrentTaskExecutionPath(path: string, options: ExecutionStartDirtyOp
   if (isDocPathBookkeepingPath(file)) return true;
   // DocPath self-maintained index artifacts refreshed by check (R-270):
   // auto docs-index refresh must not block go/agent enter on the same task.
-  if (file === '.docpath/docs-index.json' || file === '.docpath/docs.md') return true;
+  // R-336: docs.md 已下线不再生成，白名单仅剩 docs-index.json。
+  if (file === '.docpath/docs-index.json') return true;
   return false;
 }
 

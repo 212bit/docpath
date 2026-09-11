@@ -374,17 +374,22 @@ describe('dirty worktree guard', () => {
       assert.match(res, /免责声明/);
     });
   });
-  it('allows docs-index.json and docs.md as closeout-owned paths during execution start', () => {
+  it('allows docs-index.json (docs.md retired by R-336) as closeout-owned paths during execution start', () => {
     const cwd = mkBaseWorkspace({ phase: 'executing', state: 'executing', taskId: 'T-TEST', taskTitle: 'Test' });
     try {
       initGitRepo(cwd);
       writeFileSync(join(cwd, '.docpath', 'docs-index.json'), '{"version":1,"entries":[]}\n');
-      writeFileSync(join(cwd, '.docpath', 'docs.md'), '# Docs\n');
       // Must not throw when only DocPath index artifacts are dirty
       assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
         taskId: 'T-TEST',
         step: 'S1',
       });
+      // R-336: docs.md 已下线不再生成，不再属于 closeout-owned 白名单（普通文件语义）
+      writeFileSync(join(cwd, '.docpath', 'docs.md'), '# Docs\n');
+      assert.throws(() => assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+        taskId: 'T-TEST',
+        step: 'S1',
+      }));
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

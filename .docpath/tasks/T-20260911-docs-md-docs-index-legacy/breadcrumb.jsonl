@@ -1,0 +1,8 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-docs-md-docs-index-legacy","step":"S1","status":"in_progress","context":"开始执行: 梳理删除/瘦身边界（审计结论落 spec）","timestamp":"2026-09-11T17:05:37.997Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-docs-md-docs-index-legacy","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-11T17:05:38.523Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-docs-md-docs-index-legacy","step":"S2","status":"in_progress","context":"开始执行: FR-1 删除 docs.md（生成下线 + 消费切换 + 特判简化）","timestamp":"2026-09-11T17:05:39.171Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-docs-md-docs-index-legacy","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-09-11T17:11:27.167Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-docs-md-docs-index-legacy","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-09-11T17:11:27.614Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-docs-md-docs-index-legacy","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-09-11T17:11:28.092Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-docs-md-docs-index-legacy","step":"S5","status":"done","context":"agent-step: S5","timestamp":"2026-09-11T17:27:02.202Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-docs-md-docs-index-legacy","step":"S6","status":"done","context":"agent-step: S6","timestamp":"2026-09-11T17:27:02.622Z","sessionId":"default"}

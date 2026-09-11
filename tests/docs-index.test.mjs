@@ -85,8 +85,10 @@ describe('structured docs index', () => {
     assert.equal(canonicalSpec?.task_id, 'T-DOCS');
     assert.equal(canonicalSpec?.default_read, false);
 
-    const docsMd = readFileSync(join(cwd, '.docpath', 'docs.md'), 'utf-8');
-    assert.match(docsMd, /\| 路径 \| type \| scope \| level \| default_read \| archive \| stale \| tokens \| task_id \| 标题 \| 摘要 \| 更新时间 \| 大小 \|/);
+    // R-336: docs.md 已下线 —— 全表视图按需 `docs list --full` 渲染
+    assert.equal(existsSync(join(cwd, '.docpath', 'docs.md')), false, 'docs.md 不应再被生成');
+    const fullView = run(`docs list --full --cwd ${cwd}`, cwd);
+    assert.match(fullView, /\| 路径 \| type \| scope \| level \| default_read \| archive \| stale \| tokens \| task_id \| 标题 \| 摘要 \| 更新时间 \| 大小 \|/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -176,8 +178,8 @@ describe('structured docs index', () => {
     const index = JSON.parse(readFileSync(join(cwd, '.docpath', 'docs-index.json'), 'utf-8'));
     const expiredEntry = index.entries.find((entry) => entry.path === 'tasks/done/T-OLD/notes.md');
     assert.equal(expiredEntry, undefined, 'expired archived task should be physically removed from docs-index');
-    const docsMd = readFileSync(join(cwd, '.docpath', 'docs.md'), 'utf-8');
-    assert.doesNotMatch(docsMd, /tasks\/done\/T-OLD\/notes\.md/);
+    assert.equal(index.entries.some((entry) => entry.path === 'tasks/done/T-OLD/notes.md'), false,
+      'expired archived task should be physically removed from rendered index');
 
     const contextResult = runResult(`context --cwd ${cwd} --format raw --max-tokens 900 --task-id T-OLD`, cwd);
     assert.equal(contextResult.ok, false);
@@ -211,11 +213,11 @@ describe('structured docs index', () => {
         `workspace/${dir} should be excluded from docs scan`,
       );
     }
-    const docsMd = readFileSync(join(cwd, '.docpath', 'docs.md'), 'utf-8');
-    assert.doesNotMatch(docsMd, /workspace\/commands\/nested\/runtime\.md/);
-    assert.doesNotMatch(docsMd, /workspace\/bin\/nested\/runtime\.md/);
-    assert.doesNotMatch(docsMd, /workspace\/leases\/nested\/runtime\.md/);
-    assert.doesNotMatch(docsMd, /workspace\/sessions\/nested\/runtime\.md/);
+    // R-336: docs.md 已下线，排除断言直接落在 docs-index.json 上
+    assert.equal(indexedPaths.some((path) => path.includes('workspace/commands/nested/runtime.md')), false);
+    assert.equal(indexedPaths.some((path) => path.includes('workspace/bin/nested/runtime.md')), false);
+    assert.equal(indexedPaths.some((path) => path.includes('workspace/leases/nested/runtime.md')), false);
+    assert.equal(indexedPaths.some((path) => path.includes('workspace/sessions/nested/runtime.md')), false);
     rmSync(cwd, { recursive: true, force: true });
   });
 

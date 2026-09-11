@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -70,17 +70,16 @@ describe('docs scan idempotency (FR-3)', () => {
     return cwd;
   }
 
-  it('two consecutive docs scans produce byte-identical docs.md', () => {
+  it('R-336: docs.md is retired; docs-index entries are stable across scans', () => {
     const cwd = initTmpRepo();
     const run = () => spawnSync('node', [BIN, 'docs', 'scan'], { cwd, encoding: 'utf-8' });
     run();
-    const first = readFileSync(join(cwd, '.docpath/docs.md'), 'utf-8');
-    // 间隔 50ms 保证若仍内嵌时间戳必然不同
+    assert.equal(existsSync(join(cwd, '.docpath/docs.md')), false, 'docs.md must not be generated anymore');
+    const first = JSON.parse(readFileSync(join(cwd, '.docpath/docs-index.json'), 'utf-8')).entries;
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
     run();
-    const second = readFileSync(join(cwd, '.docpath/docs.md'), 'utf-8');
-    assert.equal(first, second, 'docs.md must be byte-identical across scans of unchanged state');
-    assert.ok(!first.includes('扫描时间'), 'docs.md must not embed scan timestamp');
+    const second = JSON.parse(readFileSync(join(cwd, '.docpath/docs-index.json'), 'utf-8')).entries;
+    assert.deepEqual(second, first, 'docs-index entries must be stable across scans of unchanged state');
     rmSync(cwd, { recursive: true, force: true });
   });
 });

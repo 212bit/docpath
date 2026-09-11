@@ -1,7 +1,7 @@
 ---
 id: R-336
 title: 功能删除与瘦身：docs.md 下线/docs-index 瘦身/惰性配置删除/legacy 清理
-status: proposed
+status: active
 priority: P1
 level: 2
 source: docpath backlog add
@@ -13,8 +13,8 @@ evidence:
   decision_brief: null
   user_confirmed: null
 links:
-  task: null
-  spec: null
+  task: T-20260911-docs-md-docs-index-legacy
+  spec: tasks/T-20260911-docs-md-docs-index-legacy/spec.md
 created_at: 2026-09-11
 ---
 
