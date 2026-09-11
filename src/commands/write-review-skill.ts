@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { resolveDocpathDir } from '../utils/file.js';
+import { gitSync } from '../utils/git-run.js';
 import { readStdin } from '../utils/stdin.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { readReviewEvidence, writeReviewEvidence } from '../utils/workspace-evidence.js';
@@ -59,7 +60,7 @@ function parsePorcelainPaths(output: string): string[] {
 }
 
 function runGit(cwd: string, args: string[]): string {
-  return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000 });
+  return gitSync(cwd, args);
 }
 
 function taskCommitFiles(cwd: string, startedAt?: string): string[] {

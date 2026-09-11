@@ -107,9 +107,21 @@ export async function assertNoDriftLock(cwd: string, commandName: string): Promi
   if (!snapshot.drift_lock) return;
 
   const summary = snapshot.identity_drift_summary || snapshot.drift_summary || 'workflow drift detected';
+  // R-337 W2: 按漂移类型给直接修复命令 —— 通用指引曾把 agent 引入死胡同
+  // （实测: plan 预勾触发 drift_lock 后 agent 照通用建议仍被弹回）。
+  let recovery = 'run `docpath next --agent --verbose` to inspect drift, then resolve task/plan/breadcrumb sync before retrying.';
+  if (/缺少 breadcrumb/.test(summary)) {
+    recovery = [
+      'plan 已勾选完成但无 breadcrumb 记录，二选一:',
+      '  - 该步尚未实际完成 → `docpath write-plan --stdin` 重写计划取消勾选',
+      '  - 已完成但漏记 → `docpath go --step <step>` 认领后 `docpath agent step --step <step> --status done` 补账',
+    ].join('\n');
+  } else if (/breadcrumb.*未在 plan|breadcrumbDoneWithoutPlan|done 但 plan/.test(summary)) {
+    recovery = 'breadcrumb 有完成记录但 plan 未勾选: 用 `docpath agent step --step <step> --status done` 重新同步，或检查是否勾选了错误的步骤 id。';
+  }
   throw new Error(
     `${commandName}: drift_lock active; refusing state change.\n` +
     `reason: ${summary}\n` +
-    'recovery: run `docpath next --agent --verbose` to inspect drift, then resolve task/plan/breadcrumb sync before retrying.',
+    `recovery: ${recovery}`,
   );
 }

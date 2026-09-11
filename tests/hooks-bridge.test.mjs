@@ -101,7 +101,8 @@ describe('hooks snapshot bridge', () => {
 
     const out = runFail('go --step S2', cwd);
     assert.match(out, /drift_lock active/);
-    assert.match(out, /docpath next --agent --verbose/);
+    // R-337 W2: 按漂移类型给直接修复命令
+    assert.match(out, /write-plan --stdin|agent step --step/);
     fs.rmSync(cwd, { recursive: true, force: true });
   });
 

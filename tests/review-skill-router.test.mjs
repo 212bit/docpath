@@ -73,7 +73,9 @@ describe('Review Skill Router', () => {
     const result = run(['review', '--cwd', cwd, '--dry-run'], cwd);
 
     assert.equal(result.code, 0);
-    assert.match(result.out, /review_skill_gate: required/);
+    // R-337 R2: 干净 diff 无历史证据 → 自动 pass_with_skips（契约明细仍完整打印）
+    assert.match(result.out, /review_skill_gate: pass_with_skips/);
+    assert.match(result.out, /R-337: current_diff 无错误无警告/);
     assert.match(result.out, /skill: docpath-review-typescript/);
     assert.match(result.out, /language: typescript/);
     assert.match(result.out, /files: src\/feature\.ts/);
@@ -97,7 +99,7 @@ describe('Review Skill Router', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('standard review fails loud when required skill evidence is missing', () => {
+  it('clean diff without prior evidence auto-skips skill stamping (R-337 R2)', () => {
     const cwd = mkReviewWorkspace();
     installTypeScriptSkill(cwd);
 
@@ -105,15 +107,17 @@ describe('Review Skill Router', () => {
     const reviewJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'review.json'), 'utf-8'));
 
     assert.equal(result.code, 0);
-    assert.match(result.out, /missing_evidence: docpath-review-typescript/);
-    assert.equal(reviewJson.approved, false);
-    assert.equal(reviewJson.skill_review_gate.status, 'fail');
+    assert.match(result.out, /R-337: current_diff 无错误无警告/);
+    assert.equal(reviewJson.approved, true);
+    assert.equal(reviewJson.skill_review_gate.status, 'pass_with_skips');
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('review --approve cannot bypass a required Review Skill Gate', () => {
+  it('review --approve cannot bypass a failed Review Skill Gate (R-337 后 fail 证据仍硬阻塞)', () => {
     const cwd = mkReviewWorkspace();
     installTypeScriptSkill(cwd);
+    const failPayload = JSON.stringify({ status: 'fail', files: ['src/feature.ts'], findings: [], summary: 'issues found' });
+    run(['write-review-skill', '--cwd', cwd, '--skill', 'docpath-review-typescript', '--language', 'typescript', '--scope', 'task', '--content', failPayload], cwd);
 
     const result = run(['review', '--cwd', cwd, '--approve'], cwd);
 

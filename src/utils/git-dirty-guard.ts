@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import pc from 'picocolors';
 import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { gitSync } from './git-run.js';
 
 
 export interface DirtyWorktreeReport {
@@ -35,12 +36,7 @@ interface ExecutionStartDirtyOptions {
 }
 
 function runGit(cwd: string, args: string[]): string {
-  return execFileSync('git', ['-c', 'core.quotePath=false', ...args], {
-    cwd,
-    encoding: 'utf-8',
-    timeout: 10000,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  return gitSync(cwd, args);
 }
 
 function normalizeGitPath(path: string): string {
