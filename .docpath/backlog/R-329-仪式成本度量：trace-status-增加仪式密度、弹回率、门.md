@@ -5,7 +5,7 @@ status: proposed
 priority: P2
 level: 1
 source: docpath backlog capture
-readiness: raw
+readiness: shaped
 evidence:
   brainstorm: null
   analysis: null
