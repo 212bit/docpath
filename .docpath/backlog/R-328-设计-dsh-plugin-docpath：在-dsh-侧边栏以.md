@@ -1,7 +1,7 @@
 ---
 id: R-328
 title: 设计 dsh-plugin-docpath：在 DSH 侧边栏以 Tab 形式可视化 DocPath 工作流全景（工作流/耗时/文档/事件流）
-status: proposed
+status: accepted
 priority: P2
 level: 2
 source: docpath backlog capture
@@ -69,3 +69,81 @@ DocPath 是纯 CLI 工作流引擎，AGENTS.md 明确「JSON/JSONL 是机器真�
 5. **只读边界**：设计明确插件为只读可观测，不写 `.docpath/`、不绕过 CLI 门禁、不替代 `docpath check` 的权威性。
 6. **里程碑可交付**：拆分到「一次验证能验收」的粒度，M0 必须能证明链路通（插件可加载 + 侧边栏可见真实状态）。
 7. 本次为**设计交付**，不产出可运行代码；设计经用户确认后再进入实现。
+
+---
+
+## 里程碑拆分
+
+四个 Tab 的后续里程碑划分（与验收 #1/#3/#6 对齐）。**状态更新（2026-09-11）**：M0 / A / B 已提交；M4 / M5 代码已随本设计落地，文档章节于本轮补齐。
+
+| 里程碑 | 内容 | 消费数据源 | 状态 |
+| --- | --- | --- | --- |
+| **M0** | 包骨架 + 三级根解析 + 多会话隔离 + 工作流 Tab | state.json / plan.json / agent-snapshot.json | ✅ 已提交 |
+| **A（耗时医生）** | 门禁健康 + check 预测 + 命令耗时排行 | check-history.json / last-check.json / trace.jsonl | ✅ 已提交（PerfTab） |
+| **B（状态机可视化）** | 当前 phase/gate 高亮 + 合法转移 | state.json / agent-snapshot.json | ✅ 已提交（FsmCard，嵌工作流 Tab） |
+| **M4（文档）** | docs-index 减载渲染 + 检索 | docs-index.json | ✅ 已提交（DocsTab） |
+| **M5（事件流）** | breadcrumb + decisions 时间线 | breadcrumb.jsonl / decisions.jsonl | ✅ 已提交（EventsTab） |
+
+> 注：源码 `DocPathPanel.tsx` 中曾经标注 "M4 填充 / M5 填充" 的占位，已在 M4/M5 实现时删除并替换为真实组件；以下章节即这两处占位对应的设计补全。
+
+### M4 — 文档 Tab（Tab-3）
+
+**目标**：把首屏已减载（剥离 `content_terms`）的 `docs-index.json` 渲染为可检索列表，让"项目里有哪些文档、最近改了什么"在写代码的同一界面里可见。
+
+**数据源与字段**（已实测，不凭空设计）：
+
+- 路径：`{root}/.docpath/docs-index.json`，host 侧 `readDocsIndex()` 已剥离 `content_terms`，仅下发 `DocsIndexEntry`（见 model.ts）。
+- 消费字段：`path` / `type` / `scope` / `level` / `title` / `summary` / `updated_at` / `size` / `token_estimate` / `default_read` / `archive`。
+- 统计：`docsStats = { total, active, archived }`，由 host 计算后随快照下发。
+
+**版式**（侧栏 ~360px，沿用 `C` 配色与 `pane` 卡片）：
+
+1. 顶部三格统计：总 / 活跃 / 归档（数字 + 标签）。
+2. 控制行：关键词输入框（过滤 `title` / `summary` / `path`，全小写包含匹配）+ "含归档"开关（默认只显示 active）。
+3. 列表：每条文档一张卡片，含标题（★ 标 `default_read`）、摘要、`type`/`level`/`scope` chip、`token_estimate`、体积、`updated_at`、归档标记；默认按 `updated_at` 倒序。
+4. 性能护栏：`RENDER_CAP = 300`，命中上限时提示"仅显示前 300，请收窄关键词"，避免 969 条全量渲染卡顿。
+
+**降级策略**：
+
+- 文件缺失 → `Sourced.health = 'missing'`，Tab 显示"无文档索引（docs-index.json 缺失）"，不报错。
+- JSON 损坏 → `health = 'degraded'`，显示"文档索引不可用：{reason}"，不阻塞其他 Tab。
+- `schema_version` 不匹配 / 字段缺失：model 用 `??` 兜底（如 `summary` 为空则跳过摘要行），不整页崩溃（NFR-3）。
+
+**性能约束（验收 #4）**：`content_terms` 不进首屏（实测 1026KB→390KB）；检索只命中已下发的元数据，host 不去拉全文。
+
+**实现落点**：`src/view/DocsTab.tsx`；格式化助手 `formatBytes` / `formatDate` 抽进 `src/kernel/stats.ts`（纯函数、可单测、浏览器侧可用）。
+
+### M5 — 事件流 Tab（Tab-4）
+
+**目标**：把"最近发生了什么"做成时间线——执行面包屑 + 决策日志（ADR）合并呈现，按下钻到某次 check/review 之后发生了哪些状态转移与决策。
+
+**数据源与字段**（已实测）：
+
+- 执行面包屑：`{root}/.docpath/workspace/breadcrumb.jsonl`，loader 已 `slice(-300).reverse()`，反序（新→旧）。字段：`taskId` / `step` / `status`（实测取值 `done` / `in_progress` / `blocked`）/ `context` / `timestamp`。
+- 决策日志：`{root}/.docpath/workspace/decisions.jsonl`，同反序限 300。字段：`id` / `taskId` / `category` / `context` / `decision` / `impact` / `alternatives[]` / `createdAt`。
+
+**版式**：
+
+1. 顶部提示：事件流 N 条（面包屑 + 决策，归并时间序）。
+2. 两类事件行样式区分：
+   - **step**：左侧状态圆点（`done`=绿 / `in_progress`=紫 / `blocked`=红），行首 `step` 名 + `context`，下方 `task {taskId} · {status}`，右侧 `MM-DD HH:mm`。
+   - **decision**：左侧 `◆`（accent），行首 `id` / `category`，正文 `decision`，下方 `impact`、`task {taskId}`。
+3. 归并排序：两类事件按时间戳合并（`Date.parse` 失败者沉底），不区分来源。
+
+**降级策略**：
+
+- 两者皆缺失 → 显示"无事件流（breadcrumb / decisions 均缺失）"。
+- 任一 `degraded` 且另一非 ok → 显示不可用原因，不阻塞。
+- 时间戳缺失 / 非法：`formatTime` 返回空串，排序沉底，不误排。
+
+**只读边界（验收 #5）**：本 Tab 只渲染、不解析命令语义、不写 `.docpath/` 任何文件。
+
+**实现落点**：`src/view/EventsTab.tsx`；时间格式化 `formatTime` 抽进 `src/kernel/stats.ts`。
+
+### 风险与不做的事（全局）
+
+- **不做**独立 Web 应用 / 写操作入口 / 替代 CLI 门禁（沿用 R-328 范围收敛）。
+- **不做**全文检索：检索仅命中 docs-index 元数据，全文由 CLI 侧 `docpath reveal/context` 承担。
+- **风险**：`docs-index.json` 体积大（969 条），已靠剥离 `content_terms` + `RENDER_CAP` 双护栏缓解；若条目数持续膨胀，后续可加按 `scope`/`type` 分组折叠。
+- **风险**：多会话下各会话独立快照桶（NFR-7），切换会话时 Tab 数据随 `subscribe` 推送刷新，无跨会话串扰。
+- **不做**实时刷新之外的推送优化：host 侧 `fs.watch` 去抖 400ms + 心跳 5s 已覆盖写入频率，事件流/文档 Tab 无需额外轮询（client 侧 700ms 轮询兜底）。
