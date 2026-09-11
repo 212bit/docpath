@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-09-11T09:14:53.277Z",
-    "updated_at": "2026-09-11T09:14:53.277Z",
-    "content_sha256": "8f3131a1e97f6f8838e1b0d7bf427bf2af6c6803ec8309d881c0aa2d72959dc9"
+    "created_at": "2026-09-11T09:29:42.295Z",
+    "updated_at": "2026-09-11T09:29:42.295Z",
+    "content_sha256": "c9c89323fe045560843c16ce81b21cb3798ba6ae656bc136b6c91f674a753e7a"
   },
   "title": "执行计划",
-  "generated_at": "2026-09-11T09:14:53.277Z",
+  "generated_at": "2026-09-11T09:29:42.295Z",
   "steps": [
     {
       "id": "S1",
@@ -16,7 +16,7 @@
       "description": "完成 FR-1: 仪式成本度量：trace/status 增加仪式密度、弹回率、门禁时延占比三指标，随做随验（level-1 压缩计划，R-306）。",
       "acceptance": "AC-1: trace 或 status --agent 输出单任务三指标（仪式密度/弹回率/门禁时延占比）；2. 支持跨任务聚合（按 quick/标准 档位分组的中位数统计）；3. 数据源仅用现有 breadcrumb.jsonl 与 git diff，不引入新状态文件；4. 纯只读观测，不改变任何门禁或工作流行为。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-329 与任务 T-20260911-trace-status 建立双向关联",
       "dependencies": "无",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

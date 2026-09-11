@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-trace-status","step":"S1","status":"in_progress","context":"recover current-task edits before go: ceremony 实现（4 文件）先于 promote 产生（quick 溢出升级为标准任务），归属 T-20260911-trace-status","timestamp":"2026-09-11T09:16:46.069Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-trace-status","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 仪式成本度量：trace/status 增加仪式密度、弹回率、门禁时延占比三指标","timestamp":"2026-09-11T09:29:30.803Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-trace-status","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-11T09:29:42.291Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-trace-status","step":"check","status":"blocked","context":"质量检查失败: 测试","timestamp":"2026-09-11T09:30:44.469Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-trace-status","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-11T09:37:54.983Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-trace-status","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-09-11T09:38:00.456Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-trace-status","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-11T09:38:13.390Z"}
