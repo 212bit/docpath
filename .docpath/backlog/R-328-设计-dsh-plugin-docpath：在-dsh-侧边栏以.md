@@ -8,7 +8,9 @@ source: docpath backlog capture
 readiness: analyzed
 evidence:
   brainstorm: null
-  analysis: null
+  analysis: 实现已在 dsh-app/dsh-plugin-docpath 落地（M0 包骨架+三级根解析+多会话隔离+工作流 Tab；A 耗时医生
+    PerfTab；B 状态机 FsmCard；M4 DocsTab；M5 EventsTab），全部 typecheck/build/vitest
+    通过。设计文档已含『里程碑拆分』章节，与实现一致。
   spec: null
   decision_brief: null
   user_confirmed: null
