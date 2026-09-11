@@ -21,7 +21,7 @@ import {
 
 interface TraceOptions {
   cwd: string;
-  action?: 'show' | 'session' | 'health' | 'anomaly' | 'clear' | 'enable' | 'disable' | 'matrix';
+  action?: 'show' | 'session' | 'health' | 'anomaly' | 'clear' | 'enable' | 'disable' | 'matrix' | 'ceremony';
   matrixAction?: 'status' | 'generate' | 'check';
   session?: string;
   limit?: number;
@@ -283,6 +283,18 @@ export async function traceCommand(opts: TraceOptions): Promise<void> {
 
   if (action === 'matrix') {
     await handleTraceMatrix(cwd, opts.matrixAction, opts.json);
+    return;
+  }
+
+  // ceremony 只依赖 breadcrumb/git 数据，必须在遥测空提前返回之前处理
+  if (action === 'ceremony') {
+    const { buildCeremonyReport, renderCeremonyHuman } = await import('../utils/ceremony.js');
+    const report = await buildCeremonyReport(cwd);
+    if (opts.json) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+    for (const line of renderCeremonyHuman(report)) console.log(line);
     return;
   }
 
