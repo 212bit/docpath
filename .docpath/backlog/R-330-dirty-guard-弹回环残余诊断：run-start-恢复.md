@@ -25,3 +25,7 @@ created_at: 2026-09-11
 ## 验收
 
 1) buildDirtyWorktreeError 按 blockedFiles 是否含 untracked 分支输出恢复指引：untracked 场景主建议 git add 认领归属（或收口），仅 tracked 场景保留 run start 建议；2) 扩展 tests/dirty-worktree-guard.test.mjs：断言 untracked 场景消息含 git add 指引、且 active-task 下 untracked 仍被拦截（语义不变）；3) pnpm test 全绿；4) 不放宽守卫拦截语义。
+
+## 结果
+
+已随 8cbc176 完成（quick 任务 T-20260911-quick-fix-dirty-guard-untracked-tracked-r-330，守卫测试 23/23 全绿）。条目关闭（drop=已解决关闭, 非放弃）。
