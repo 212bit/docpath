@@ -278,10 +278,25 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   normalizeHarnessOptions(options);
 
   // 1-5. 常规检查（--only-harness 时跳过）
+  // R-331: scope 缓存——代码范围 digest 与上次绿色全量 check 一致时复用重 runner 判定，
+  // 结构门禁（runTaskDocumentChecks）照常新鲜执行。lite/only-harness 本就不跑重 runner，
+  // 不参与复用；--no-cache 强制全量。
+  let cacheReused = false;
   if (!options.onlyHarness) {
-    const { runProjectChecks } = await import('./check/runners.js');
     const { runTaskDocumentChecks } = await import('./check/validators.js');
-    results.push(...await runProjectChecks(cwd, { ...options, skipTests, skipLint }));
+    let cachedHeavy: CheckResult[] | null = null;
+    if (!options.lite && !options.noCache) {
+      const { tryReuseCachedHeavyChecks } = await import('./check/cache.js');
+      cachedHeavy = await tryReuseCachedHeavyChecks(docpathDir, cwd);
+    }
+    if (cachedHeavy && cachedHeavy.length > 0) {
+      cacheReused = true;
+      results.push(...cachedHeavy);
+      console.log('♻️  scope 缓存命中：代码范围自上次绿色 check 无变更，typecheck/build/test/lint 判定复用（--no-cache 强制全量）\n');
+    } else {
+      const { runProjectChecks } = await import('./check/runners.js');
+      results.push(...await runProjectChecks(cwd, { ...options, skipTests, skipLint }));
+    }
     results.push(...await runTaskDocumentChecks(cwd, docpathDir, options));
   }
 
@@ -296,7 +311,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   const { printCheckReport, persistCheckEvidence } = await import('./check/evidence.js');
   const allPassed = results.every(r => r.passed || r.severity === 'warning');
   printCheckReport(results, allPassed, options.verbose);
-  await persistCheckEvidence(cwd, docpathDir, current?.task_id || 'unknown', results, allPassed);
+  await persistCheckEvidence(cwd, docpathDir, current?.task_id || 'unknown', results, allPassed, { cacheReused });
 
   if (!allPassed) {
     console.log('请修复失败项后重新运行 `docpath check`\n');

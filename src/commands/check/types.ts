@@ -33,6 +33,8 @@ export interface CheckOptions {
   withReview?: boolean;
   /** 禁用交互式提示（脚本/CI 环境） */
   nonInteractive?: boolean;
+  /** R-331: 禁用 scope 缓存复用，强制全量执行重 runner */
+  noCache?: boolean;
 }
 
 export interface CheckResult {

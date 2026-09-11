@@ -19,7 +19,8 @@ export function registerQualityCommands(cli: CAC): void {
     .option('--verbose', '显示所有检查项（包括成功项）')
     .option('--with-review', '检查通过后自动运行 review')
     .option('--non-interactive', '禁用交互式提示（脚本/CI 环境）')
-    .action(async (options: { cwd?: string; 'skip-tests'?: boolean; 'skip-lint'?: boolean; harness?: boolean; preflight?: boolean; boundary?: boolean; 'only-harness'?: boolean; 'fix-drift'?: string; fixDrift?: string; verbose?: boolean; 'with-review'?: boolean; withReview?: boolean; 'non-interactive'?: boolean; nonInteractive?: boolean }) => {
+    .option('--no-cache', 'R-331: 禁用 scope 缓存复用，强制全量执行重 runner')
+    .action(async (options: { cwd?: string; 'skip-tests'?: boolean; 'skip-lint'?: boolean; harness?: boolean; preflight?: boolean; boundary?: boolean; 'only-harness'?: boolean; 'fix-drift'?: string; fixDrift?: string; verbose?: boolean; 'with-review'?: boolean; withReview?: boolean; 'non-interactive'?: boolean; nonInteractive?: boolean; 'no-cache'?: boolean; noCache?: boolean }) => {
       const argv = process.argv.slice(2);
       const hasFlag = (flag: string) => argv.includes(flag);
       const skipTests = options['skip-tests'] || hasFlag('--skip-tests');
@@ -32,6 +33,7 @@ export function registerQualityCommands(cli: CAC): void {
       const verbose = options.verbose || hasFlag('--verbose');
       const withReview = options['with-review'] || options.withReview || hasFlag('--with-review');
       const nonInteractive = options['non-interactive'] || options.nonInteractive || hasFlag('--non-interactive');
+      const noCache = options['no-cache'] || options.noCache || hasFlag('--no-cache');
 
       await checkCommand({
         cwd: options.cwd || process.cwd(),
@@ -45,6 +47,7 @@ export function registerQualityCommands(cli: CAC): void {
         verbose,
         withReview,
         nonInteractive,
+        noCache,
       });
     });
 

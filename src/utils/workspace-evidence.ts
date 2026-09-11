@@ -27,6 +27,10 @@ export interface LastCheckEvidence {
   head?: string;
   passed: boolean;
   check_count: number;
+  /** R-331: 代码范围 digest（HEAD + scope status 联合哈希）；scope 缓存复用判定键 */
+  code_scope_digest?: string;
+  /** R-331: 重 runner 判定是否来自缓存复用（链式命中仍可信：digest 等值是唯一有效性判据） */
+  cached?: boolean;
   git?: GitBaselineEvidence;
   checks: CheckEvidenceItem[];
 }

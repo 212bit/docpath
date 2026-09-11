@@ -1,0 +1,10 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-check-init-sqlite","step":"S1","status":"in_progress","context":"recover promote-link-backfill of R-331.md (backlog bookkeeping) before go","timestamp":"2026-09-11T13:37:56.709Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-check-init-sqlite","step":"S1","status":"in_progress","context":"开始执行: 梳理 check 门禁时延优化：结果缓存/增量执行 + init 用例 sqlite 竞态隔离（同根）","timestamp":"2026-09-11T13:37:57.151Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-check-init-sqlite","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-11T13:46:42.581Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-check-init-sqlite","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译, 重大决策确认检查, 子任务完成度 (1/3), 默认上下文预算超限","timestamp":"2026-09-11T13:47:34.852Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-check-init-sqlite","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-09-11T13:49:46.140Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-check-init-sqlite","step":"check","status":"blocked","context":"质量检查失败: 子任务完成度 (2/3)","timestamp":"2026-09-11T13:50:54.387Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-check-init-sqlite","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-09-11T13:51:25.393Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-check-init-sqlite","step":"check","status":"done","context":"质量检查通过 (10 项)","timestamp":"2026-09-11T13:52:35.547Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-check-init-sqlite","step":"review","status":"done","context":"代码审查: 0 错误, 4 警告, 0 提示","timestamp":"2026-09-11T13:53:12.266Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-check-init-sqlite","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-09-11T13:53:13.313Z"}

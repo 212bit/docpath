@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-11T13:51:25.398Z",
+    "updated_at": "2026-09-11T13:51:25.398Z",
+    "content_sha256": "e8947c8ea648c152a068b17a9b3950b1747e33cb8833244a2aba4f4efd91cb33"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-11T13:51:25.398Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "梳理 check 门禁时延优化：结果缓存/增量执行 + init 用例 sqlite 竞态隔离（同根）",
+      "description": "根据 spec 明确 FR-1: check 门禁时延优化：结果缓存/增量执行 + init 用例 sqlite 竞态隔离（同根） 的实现边界和验收口径。",
+      "acceptance": "AC-1: 1) tests/check-cache.test.mjs：digest 稳定性三态断言 + e2e（全量绿→docs 变更命中缓存→src 变更回落全量）；2) last-check.json 落 code_scope_digest/cached 字段；3) 未触及 src 的变更二次 check 时延显著下降（对照数字记入任务结果，基线 51.9s）；4) 代码变更路径仍付全量、门禁不放宽；5) 全量套件全绿。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现 check 门禁时延优化：结果缓存/增量执行 + init 用例 sqlite 竞态隔离（同根）",
+      "description": "在现有架构内完成 FR-1: check 门禁时延优化：结果缓存/增量执行 + init 用例 sqlite 竞态隔离（同根） 的代码与文档更新。",
+      "acceptance": "FR-1 check 门禁时延优化：结果缓存/增量执行 + init 用例 sqlite 竞态隔离（同根） 已实现，并保持现有工作流兼容。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "验证验收标准",
+      "description": "验证 spec 中声明的验收标准：AC-1: 1) tests/check-cache.test.mjs：digest 稳定性三态断言 + e2e（全量绿→docs 变更命中缓存→src 变更回落全量）；2) last-check.json 落 code_scope_digest/cached 字段；3) 未触及 src 的变更二次 check 时延显著下降（对照数字记入任务结果，基线 51.9s）；4) 代码变更路径仍付全量、门禁不放宽；5) 全量套件全绿。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-331 与任务 T-20260911-check-init-sqlite 建立双向关联",
+      "acceptance": "AC-1: 1) tests/check-cache.test.mjs：digest 稳定性三态断言 + e2e（全量绿→docs 变更命中缓存→src 变更回落全量）；2) last-check.json 落 code_scope_digest/cached 字段；3) 未触及 src 的变更二次 check 时延显著下降（对照数字记入任务结果，基线 51.9s）；4) 代码变更路径仍付全量、门禁不放宽；5) 全量套件全绿。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-331 与任务 T-20260911-check-init-sqlite 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

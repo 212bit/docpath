@@ -119,7 +119,12 @@ async function hasCompletedPlan(cwd: string): Promise<boolean> {
   return tasks.length > 0 && tasks.every((task) => task.done);
 }
 
-export async function writeLastCheckEvidence(cwd: string, results: CheckResult[], allPassed: boolean): Promise<void> {
+export async function writeLastCheckEvidence(
+  cwd: string,
+  results: CheckResult[],
+  allPassed: boolean,
+  meta?: { cacheReused?: boolean },
+): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
   const gitBaseline = readGitBaseline(cwd);
   const workflowState = await readCurrentState(cwd);
@@ -132,6 +137,7 @@ export async function writeLastCheckEvidence(cwd: string, results: CheckResult[]
     ...(result.severity ? { severity: result.severity } : {}),
     ...(result.environment_failure ? { environment_failure: true } : {}),
   }));
+  const { computeCodeScopeDigest } = await import('./cache.js');
   await writeLastCheckEvidenceFiles(docpathDir, {
     schema_version: 1,
     kind: 'last-check',
@@ -139,6 +145,9 @@ export async function writeLastCheckEvidence(cwd: string, results: CheckResult[]
     timestamp: new Date().toISOString(),
     // R-276(补齐): 绑定 HEAD, 使时间窗内的新提交不会被旧证据蒙混跳过
     ...(gitBaseline ? { head: gitBaseline.ref } : {}),
+    // R-331: scope 缓存判定键 + 复用标记
+    code_scope_digest: computeCodeScopeDigest(cwd) ?? undefined,
+    ...(meta?.cacheReused ? { cached: true } : {}),
     passed: allPassed,
     check_count: results.length,
     ...(gitBaseline ? {
@@ -195,9 +204,16 @@ export async function updateCheckHistory(cwd: string, docpathDir: string, result
   }
 }
 
-export async function persistCheckEvidence(cwd: string, docpathDir: string, taskId: string, results: CheckResult[], allPassed: boolean): Promise<void> {
+export async function persistCheckEvidence(
+  cwd: string,
+  docpathDir: string,
+  taskId: string,
+  results: CheckResult[],
+  allPassed: boolean,
+  meta?: { cacheReused?: boolean },
+): Promise<void> {
   await updateCheckWorkflowState(cwd, allPassed, results);
-  await writeLastCheckEvidence(cwd, results, allPassed);
+  await writeLastCheckEvidence(cwd, results, allPassed, meta);
   await writeCheckBreadcrumb(cwd, taskId, results, allPassed);
   await syncCurrentDocument(cwd);
   await updateCheckHistory(cwd, docpathDir, results, allPassed);
