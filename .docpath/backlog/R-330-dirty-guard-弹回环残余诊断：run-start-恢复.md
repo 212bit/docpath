@@ -5,10 +5,10 @@ status: proposed
 priority: P1
 level: 2
 source: docpath backlog capture
-readiness: raw
+readiness: analyzed
 evidence:
   brainstorm: null
-  analysis: null
+  analysis: .docpath/backlog/analysis/R-330-analysis.md
   spec: null
   decision_brief: null
   user_confirmed: null
@@ -20,8 +20,8 @@ created_at: 2026-09-11
 
 ## 背景
 
-前提（R-318 证伪结论，2026-09-07）：执行起始守卫按设计工作、非缺陷，失败消息已内置 run start 恢复命令（+1 命令逃生）。但 2026-09-11 trace 实测（16:56-17:18 段）：17:16:46 run start --step S1 --note 成功后，17:16:46 与 17:18:14 go --step S1 仍连败 2 次，恢复环未收敛。需定性残余弹回成因：(a) agent 侧未采用逃生入口（教育问题，转 R-249 重定位建议的协议约定）；(b) run start 记录恢复意图后 go 语义未解锁（守卫/恢复链缺陷）；(c) R-319 会话隔离失效导致 task_id 误判放大。若为 (b)/(c) 转修复任务。
+【已定性 2026-09-11，证据链见 analysis】组合成因，主因=恢复链消息缺口：run start --note 只解锁 phase 门（transitions.ts:74 planning→executing），对 untracked 新文件完全无效；buildDirtyWorktreeError 恢复指引只建议 run start、从未提 git add 归属认领。实测链条：go 4 连败（17:15 planning 全拦 ×2 → run start 后 untracked 仍拦 ×2）→ agent git add 后 17:29:30 成功。守卫拦截语义正确（不推翻 R-318/R-249），缺陷在消息层。
 
 ## 验收
 
-1) 用 trace 复现 17:15-17:18 失败序列并出具成因定性结论（三选一或组合）；2) 若为 agent 教育问题：在本仓库 AGENTS.md 落「被拒先收口/run start 恢复」条款；3) 若为链路缺陷：修复后 trace ceremony 复测该场景弹回为 0；4) 不放宽守卫拦截语义（不推翻 R-318/R-249 结论）。
+1) buildDirtyWorktreeError 按 blockedFiles 是否含 untracked 分支输出恢复指引：untracked 场景主建议 git add 认领归属（或收口），仅 tracked 场景保留 run start 建议；2) 扩展 tests/dirty-worktree-guard.test.mjs：断言 untracked 场景消息含 git add 指引、且 active-task 下 untracked 仍被拦截（语义不变）；3) pnpm test 全绿；4) 不放宽守卫拦截语义。
