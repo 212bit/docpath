@@ -16,8 +16,8 @@ import { transitionWorkflow } from '../engine/transitions.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { parsePlanSteps, type PlanStep } from '../utils/doc-parser.js';
-import { markPlanStep, type PlanStepStatus } from '../utils/plan-sync.js';
-import { runCommand } from './runtime.js';
+import { markPlanStep } from '../utils/plan-sync.js';
+import { endStepExecution } from './runtime.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
 import { readActiveStructuredSpecDocument, readActiveTaskFile, writeActiveTaskFile } from '../utils/task-files.js';
 import { renderDraftPlan } from './plan.js';
@@ -164,19 +164,15 @@ async function finalizeStep(
   taskId: string,
   sessionId: string,
 ): Promise<void> {
-  await runCommand({
+  const sync = await endStepExecution({
     cwd,
-    action: 'end',
     step: target.id,
     status,
     note: `go-status: ${target.id} -> ${status}`,
     session: sessionId,
   });
-
-  const syncStatus: PlanStepStatus = status === 'done' ? 'done' : status === 'skipped' ? 'skipped' : 'blocked';
-  const sync = await markPlanStep(cwd, target.id, syncStatus);
-  if (!sync.updated) {
-    console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
+  if (!sync.planSynced) {
+    console.warn(`⚠️  plan checklist 未同步: ${sync.planSyncReason}`);
   }
   await refreshAgentSnapshot(cwd);
 

@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { gitSync } from './git-run.js';
 
 export interface GitHygieneReport {
   isGitRepo: boolean;
@@ -40,11 +41,7 @@ function buildCleanupCommand(files: string[]): string | null {
 }
 
 function readTrackedIgnoredFiles(repoRoot: string): string[] {
-  const out = execFileSync('git', ['ls-files', '-ci', '--exclude-standard', '-z'], {
-    cwd: repoRoot,
-    encoding: 'utf-8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const out = gitSync(repoRoot, ['ls-files', '-ci', '--exclude-standard', '-z']);
   return out.split('\0')
     .map((file) => normalizeGitPath(file.trim()))
     .filter(Boolean)
@@ -54,11 +51,7 @@ function readTrackedIgnoredFiles(repoRoot: string): string[] {
 export function detectGitHygiene(cwd: string): GitHygieneReport {
   let repoRoot: string;
   try {
-    repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }).trim();
+    repoRoot = gitSync(cwd, ['rev-parse', '--show-toplevel']).trim();
   } catch {
     return {
       isGitRepo: false,
@@ -99,11 +92,7 @@ export function untrackGitRuntimeNoise(cwd: string): GitHygieneCleanupResult {
     };
   }
 
-  execFileSync('git', ['rm', '--cached', '--', ...untrackedFiles], {
-    cwd: repoRoot,
-    encoding: 'utf-8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  gitSync(repoRoot, ['rm', '--cached', '--', ...untrackedFiles]);
 
   return {
     initialReport,

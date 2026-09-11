@@ -8,6 +8,7 @@
  */
 
 import { existsSync, readFileSync } from 'fs';
+import { gitSync } from '../utils/git-run.js';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { execFileSync } from 'child_process';
@@ -98,7 +99,7 @@ function isReviewableFile(file: string): boolean {
 }
 
 function runGit(cwd: string, args: string[]): string {
-  return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000 });
+  return gitSync(cwd, args);
 }
 
 /** R-276: 证据记录审查时的 HEAD, 供 done 复用判定感知 review 后的新提交。 */
@@ -502,13 +503,30 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     normalizeSkillSkipList(opts.skipSkillReview),
     opts.skipSkillReviewReason,
   );
+  // R-337 R2: current_diff 零错误零警告且「该 skill 完全没有历史证据」时，
+  // 自动 pass_with_skips——盖章仪式的价值在有 finding 时留痕；干净 diff 的
+  // boilerplate 盖章是纯仪式（R-307 同族）。已有证据的 skill 一律走原校验：
+  // stale/fail/file-set-mismatch 照常 fail-loud，不被干净 diff 静默跳过。
+  const currentDiffFindings = findings.filter((finding) => finding.finding_scope === 'current_diff');
+  const currentDiffClean = !currentDiffFindings.some((finding) => finding.severity === 'error' || finding.severity === 'warn');
+  const knownEvidenceSkills = new Set((previousReview?.skill_reviews || []).map((review) => review.skill));
+  const autoSkips = currentDiffClean && enabled && previewGate.invalid_evidence.length === 0
+    ? previewGate.requirements
+        .filter((requirement) =>
+          !knownEvidenceSkills.has(requirement.skill)
+          && requestedSkips.every((skip) => skip.skill !== requirement.skill))
+        .map((requirement) => createReviewSkillSkip(requirement, effectiveScope, 'R-337: current_diff 无错误无警告，干净 diff 自动跳过语言级 skill 盖章'))
+    : [];
   const skillReviewGate = evaluateReviewSkillGate({
     enabled,
     requirements,
     skillReviews: previousReview?.skill_reviews,
-    skillSkips: [...(previousReview?.skill_review_skips || []), ...requestedSkips],
+    skillSkips: [...(previousReview?.skill_review_skips || []), ...requestedSkips, ...autoSkips],
     scope: effectiveScope,
   });
+  if (autoSkips.length > 0) {
+    console.log('⚡  R-337: current_diff 无错误无警告，语言级 skill 证据自动跳过（pass_with_skips）');
+  }
   if (opts.dryRun) {
     printReviewSkillGate(
       enabled && requirements.length > 0 && skillReviewGate.status === 'fail'
@@ -529,7 +547,22 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     return;
   }
   const approved = groups.errors.length === 0 && (skillReviewGate.status === 'pass' || skillReviewGate.status === 'pass_with_skips' || skillReviewGate.status === 'not_required' || skillReviewGate.status === 'disabled');
-  console.log(`\n${approved ? '✅ 审查通过' : '❌ 需要修改'} (${groups.errors.length} 错误, ${groups.warns.length} 警告)`);
+  // R-337 R3: 消息纠偏 —— 警告不阻塞审批（approved 只看 errors+gate），旧消息把
+  // baseline 风格警告当 headline 误导 agent（实测: "❌ 需要修改 (0 错误, 13 警告)"
+  // 真实阻塞是 skill gate 缺证据）。
+  if (approved) {
+    console.log(`\n✅ 审查通过 (${groups.errors.length} 错误, ${groups.warns.length} 警告)`);
+  } else {
+    const blockers: string[] = [];
+    if (groups.errors.length > 0) blockers.push(`${groups.errors.length} 个错误`);
+    if (!(skillReviewGate.status === 'pass' || skillReviewGate.status === 'pass_with_skips' || skillReviewGate.status === 'not_required' || skillReviewGate.status === 'disabled')) {
+      blockers.push(`review skill gate ${skillReviewGate.status}${skillReviewGate.missing_evidence.length > 0 ? `（缺证据: ${skillReviewGate.missing_evidence.join(', ')}）` : ''}`);
+    }
+    console.log(`\n❌ 需要修改 — 阻塞原因: ${blockers.join('；') || '未知'}`);
+    if (groups.errors.length === 0 && groups.warns.length > 0) {
+      console.log(`   （${groups.warns.length} 项警告不阻塞审批，多为 baseline 整文件风格提示；修复后重跑 docpath review）`);
+    }
+  }
   await persistReviewResult(opts.cwd, taskId, groups, approved);
   const finding_scope_counts = countFindingScopes(findings);
   await writeReviewEvidence(docpathDir, {

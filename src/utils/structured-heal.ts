@@ -7,6 +7,7 @@
 
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
+import { gitSync } from './git-run.js';
 import { join } from 'path';
 import {
   canonicalTaskDir,
@@ -161,7 +162,7 @@ export async function tryThreeWayMerge(
   try {
     // git merge-file <current> <base> <canonical>
     // 如果返回 0，无冲突顺利合并；如果返回非 0 且带正值，表示有冲突但已写入冲突标记
-    execFileSync('git', ['merge-file', '--quiet', tempCurrent, tempBase, tempCanonical]);
+    gitSync(process.cwd(), ['merge-file', '--quiet', tempCurrent, tempBase, tempCanonical]);
   } catch (err: any) {
     conflict = true;
   }

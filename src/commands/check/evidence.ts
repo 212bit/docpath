@@ -2,6 +2,7 @@ import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execFileSync } from 'child_process';
+import { gitSyncOptional } from '../../utils/git-run.js';
 import type { CheckResult, GitBaseline, CheckOptions } from './types.js';
 import { readCurrentState, syncCurrentDocument } from '../../utils/workspace.js';
 import { resolveDocpathDir } from '../../utils/file.js';
@@ -13,11 +14,8 @@ import { groupCheckResults, formatFailedOutput } from './formatters.js';
 import { resolveEffectivePlanTasks } from '../../utils/plan-sync.js';
 
 export function runGitOptional(cwd: string, args: string[]): string | null {
-  try {
-    return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-  } catch {
-    return null;
-  }
+  const out = gitSyncOptional(cwd, args);
+  return out === null ? null : out.trim();
 }
 
 export function readGitBaseline(cwd: string): GitBaseline | null {

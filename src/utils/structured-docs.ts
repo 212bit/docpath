@@ -1,4 +1,4 @@
-import { existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { createHash } from 'crypto';
 import { join } from 'path';
@@ -801,6 +801,39 @@ export function formatStructuredMarkdownHashDrift(drift: StructuredMarkdownHashD
     `json_source_sha256: ${drift.expectedHash}`,
     `修复建议: 运行 docpath check 或 docpath review 将自动收敛（自愈）；也可手动控制——Markdown 最新用 ${writeCommand}，JSON 最新用 docpath render --view ${view}`,
   ].join('\n');
+}
+
+/**
+ * R-337 W1: 真源漂移提示去重标记。R-287 约束 next/status 只读（不自愈），
+ * 但同一内容 sha 每次都完整提示等于刷屏。此标记只记录"该内容已提示过"，
+ * 是 gitignored 运行时状态，无工作流语义，不违反 R-287 的 advisory 写盘禁令。
+ */
+function structuredDriftNagPath(docpathDir: string): string {
+  return join(docpathDir, 'workspace', 'structured-drift-nag.json');
+}
+
+export function readStructuredDriftNag(docpathDir: string, file: StructuredTaskMarkdownFile): string | null {
+  try {
+    const raw = JSON.parse(readFileSync(structuredDriftNagPath(docpathDir), 'utf-8')) as Record<string, string>;
+    return raw[file] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeStructuredDriftNag(docpathDir: string, file: StructuredTaskMarkdownFile, hash: string): void {
+  let state: Record<string, string> = {};
+  try {
+    state = JSON.parse(readFileSync(structuredDriftNagPath(docpathDir), 'utf-8')) as Record<string, string>;
+  } catch {
+    state = {};
+  }
+  state[file] = hash;
+  try {
+    writeFileSync(structuredDriftNagPath(docpathDir), `${JSON.stringify(state)}\n`, 'utf-8');
+  } catch {
+    // 标记失败不影响路由
+  }
 }
 
 async function readStructuredTaskJson(dir: string, file: StructuredTaskMarkdownFile): Promise<StructuredTaskDocument | null> {

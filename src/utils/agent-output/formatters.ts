@@ -5,7 +5,7 @@ import { readCurrentState, readOptionalFile } from '../workspace.js';
 import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../../engine/breadcrumb.js';
 import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from '../plan-sync.js';
 import { canonicalTaskDir, currentTaskDir, detectActiveTaskIdentityDrift, readActiveStructuredSpecDocument, readActiveTaskFile, type TaskIdentityDrift } from '../task-files.js';
-import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift, type StructuredMarkdownHashDrift, type StructuredTaskMarkdownFile } from '../structured-docs.js';
+import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift, readStructuredDriftNag, writeStructuredDriftNag, type StructuredMarkdownHashDrift, type StructuredTaskMarkdownFile } from '../structured-docs.js';
 import { listBacklogItems, type BacklogItem } from '../../engine/backlog.js';
 import { handleStalePendingDoneWarning, readPendingDone } from '../pending-done.js';
 import { readRuleFile, ruleDisplayPaths } from '../rules.js';
@@ -953,10 +953,17 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
       drift.markdownPath.replace(`${context.docpathDir}/`, '.docpath/'),
       drift.jsonPath.replace(`${context.docpathDir}/`, '.docpath/'),
     ])));
+    // R-337 W1: 同一内容 sha 只完整提示一次 —— R-287 只读约束下不自愈，但重复刷屏是噪音
+    const nagged = readStructuredDriftNag(context.docpathDir, first.file);
+    const repeated = nagged === first.actualHash;
+    if (!repeated) writeStructuredDriftNag(context.docpathDir, first.file, first.actualHash);
+    const detail = repeated
+      ? '（同内容已提示过，等待 check/review 自愈收敛）'
+      : `（下一次 check/review 将自愈收敛；如需手动控制可用 ${command}）：${formatStructuredMarkdownHashDrift(first).split('\n')[0]}`;
     return {
       // R-287：next/status 保持只读，不在 advisory 路径写盘；漂移由下一次
       // check/review 门禁自愈收敛，此处仅指路。手动控制路径（write-spec/plan）仍合法。
-      next_action: `检测到 ${first.file} 与 ${first.file.replace('.md', '.json')} 机器真理源不同步（下一次 check/review 将自愈收敛；如需手动控制可用 ${command}）：${formatStructuredMarkdownHashDrift(first).split('\n')[0]}`,
+      next_action: `检测到 ${first.file} 与 ${first.file.replace('.md', '.json')} 机器真理源不同步${detail}`,
       recommended_command: command,
       required_context: required,
       required_files: required,

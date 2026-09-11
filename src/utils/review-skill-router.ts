@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
+import { gitSync } from './git-run.js';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { readDocPathConfig } from './config.js';
@@ -80,7 +81,7 @@ const EXCLUDED_SOURCE_PATHS = [
 ];
 
 function runGit(cwd: string, args: string[]): string {
-  return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000 });
+  return gitSync(cwd, args);
 }
 
 /**

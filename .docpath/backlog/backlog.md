@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-09-11T17:41:17.562Z
+> 扫描时间: 2026-09-11T18:22:16.368Z
 
 ## 条目列表
 
@@ -11,7 +11,6 @@
 | R-318 | P0: go --step 执行起始守卫误拦本任务改动 — 失败率33%(49/147),43为gate=none;根因=dirty-worktree守卫isActiveTask判定(git-dirty-guard.ts:221) | dropped | P0 | 2 | T-20260906-p0-go-step-33-49-147-43-gate-none-dirty- |
 | R-259 | High-value reliability optimizations | dropped | P1 | 2 |  |
 | R-330 | dirty-guard 弹回环残余诊断：run start 恢复成功后 go 仍连败的成因定性 | dropped | P1 | 2 |  |
-| R-337 | 工作流/Review/架构优化包 1+2：漂移自愈提示/恢复指引/CLI 旗标/skill gate 干净跳过/消息纠偏 + git 共享原语/收尾路径收敛/worktree 拆分 | proposed | P1 | 2 |  |
 | R-230 | Design UI for DocPath workflow dashboard | dropped | P2 | 2 | T-20260621-design-ui-for-docpath-workflow-dashboard |
 | R-292 | plan 命令写盘先于 FSM 校验, completed 任务 plan.json 被改写后才报非法转移 | dropped | P2 | 2 |  |
 | R-296 | R-293 残余: stale 夺锁的判定-执行 TOCTOU, rename 可误夺判定后新获取的活锁(全量套件 4/5 实测) | dropped | P2 | 2 |  |

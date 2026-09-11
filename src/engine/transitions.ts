@@ -260,7 +260,11 @@ export async function transitionWorkflow(
     const previous = await readCurrentState(cwd) || fallbackState();
     if (!target.from.includes(previous.phase)) {
       const allowedFrom = target.from.join(', ');
-      const suggested = preferredWorkflowCommand(previous);
+      // R-337 W2: step 类事件在 planning 阶段的通用建议是死胡同（实测 agent step
+      // 在 planning 报"建议 docpath check"后无路可走），指路 go 认领。
+      const suggested = event.startsWith('step.') && previous.phase === 'planning'
+        ? 'docpath go --step <step>（planning 阶段需先认领步骤进入 executing）'
+        : preferredWorkflowCommand(previous);
       throw new Error(
         `[docpath] Illegal workflow transition: ${event} cannot run from phase=${previous.phase}` +
         `（允许来源: ${allowedFrom}；建议下一步: ${suggested}）`,

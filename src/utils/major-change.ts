@@ -1,5 +1,6 @@
 import { execFileSync } from 'child_process';
 import { readActiveStructuredSpecDocument, readActiveTaskFile } from './task-files.js';
+import { gitSyncOptional } from './git-run.js';
 
 export interface MajorDecisionSignal {
   label: string;
@@ -76,11 +77,8 @@ const STRATEGIC_CHANGE_FILE_PATTERNS: Array<{ pattern: RegExp; label: string }> 
 ];
 
 function runGitOptional(cwd: string, args: string[]): string | null {
-  try {
-    return execFileSync('git', ['-c', 'core.quotePath=false', ...args], { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trimEnd();
-  } catch {
-    return null;
-  }
+  const out = gitSyncOptional(cwd, args);
+  return out === null ? null : out.trimEnd();
 }
 
 function parseChangedPaths(statusOutput: string): string[] {

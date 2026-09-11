@@ -1,0 +1,9 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-review-1-2-cli-skill-gate-git-worktree","step":"S1","status":"in_progress","context":"开始执行: 包 1 五项实测摩擦（W1/W2/R1/R2/R3）","timestamp":"2026-09-11T17:42:07.906Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-review-1-2-cli-skill-gate-git-worktree","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-11T18:20:18.687Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-review-1-2-cli-skill-gate-git-worktree","step":"S2","status":"done","context":"agent-step: S2","timestamp":"2026-09-11T18:20:19.027Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-review-1-2-cli-skill-gate-git-worktree","step":"S3","status":"done","context":"agent-step: S3","timestamp":"2026-09-11T18:20:19.372Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-review-1-2-cli-skill-gate-git-worktree","step":"S4","status":"done","context":"agent-step: S4","timestamp":"2026-09-11T18:20:19.714Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-review-1-2-cli-skill-gate-git-worktree","step":"S5","status":"done","context":"agent-step: S5","timestamp":"2026-09-11T18:20:20.056Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-review-1-2-cli-skill-gate-git-worktree","step":"check","status":"done","context":"质量检查通过 (11 项)","timestamp":"2026-09-11T18:21:03.231Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-review-1-2-cli-skill-gate-git-worktree","step":"review","status":"done","context":"代码审查: 0 错误, 29 警告, 0 提示","timestamp":"2026-09-11T18:21:41.220Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260911-review-1-2-cli-skill-gate-git-worktree","step":"journal","status":"done","context":"知识归档完成 (5/5 步)","timestamp":"2026-09-11T18:22:16.373Z"}

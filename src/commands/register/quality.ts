@@ -59,7 +59,8 @@ export function registerQualityCommands(cli: CAC): void {
     .option('--force', '允许在无活跃 agent 会话时独立运行')
     .option('--skip-skill-review <skill>', '按 skill 粒度临时跳过 Review Skill Gate，可用逗号分隔')
     .option('--reason <reason>', 'skip skill review 的必填原因')
-    .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean; force?: boolean; 'skip-skill-review'?: string | string[] | boolean; skipSkillReview?: string | string[] | boolean; reason?: string }) => {
+    .option('--non-interactive', 'R-337: 与 check 对齐的旗标面（review 本无交互路径，接受即为兼容）')
+    .action(async (options: { cwd?: string; scope?: string; ai?: boolean; approve?: boolean; 'dry-run'?: boolean; dryRun?: boolean; force?: boolean; 'skip-skill-review'?: string | string[] | boolean; skipSkillReview?: string | string[] | boolean; reason?: string; 'non-interactive'?: boolean; nonInteractive?: boolean }) => {
       await reviewCommand({
         cwd: options.cwd || process.cwd(),
         // R-276: 缺省时不强制 all, 由 reviewCommand 按活跃任务解析默认口径。

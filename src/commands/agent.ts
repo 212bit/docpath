@@ -15,7 +15,7 @@ import { execFileSync } from 'node:child_process';
 import { checkCommand } from './check.js';
 import { journalCommand } from './journal.js';
 import { reviewCommand } from './review.js';
-import { runCommand } from './runtime.js';
+import { endStepExecution, runCommand } from './runtime.js';
 import { writeHybridContextIndex } from '../utils/context-index.js';
 import { goCommand } from './go.js';
 import { assertWorktreeContract } from './worktree.js';
@@ -94,15 +94,6 @@ function requireSkipReason(flag: '--skip-tests' | '--skip-check' | '--skip-revie
   return note.trim();
 }
 
-function syncStatusForAgentStep(status: NonNullable<AgentOptions['status']>): 'done' | 'blocked' | 'skipped' | 'pending' {
-  return status === 'done'
-    ? 'done'
-    : status === 'skipped'
-      ? 'skipped'
-      : status === 'blocked'
-        ? 'blocked'
-        : 'pending';
-}
 
 
 async function writeWipNoteFile(
@@ -286,16 +277,14 @@ async function handleAgentStep(options: AgentOptions): Promise<void> {
     const status = options.status || 'done';
     console.log(`📦  批量补账: ${steps.length} 个步骤 (${steps.join(', ')})`);
     for (const step of steps) {
-      await runCommand({
+      const sync = await endStepExecution({
         cwd,
-        action: 'end',
         step,
         status,
         note: options.note || `agent-step-batch: ${step}`,
         session: session.sessionId,
       });
-      const sync = await markPlanStep(cwd, step, syncStatusForAgentStep(status));
-      if (!sync.updated) console.warn(`⚠️  plan checklist 未同步 [${step}]: ${sync.reason}`);
+      if (!sync.planSynced) console.warn(`⚠️  plan checklist 未同步 [${step}]: ${sync.planSyncReason}`);
       console.log(`  ✅  ${step} → ${status}`);
     }
     await emitNextHint(cwd);
@@ -304,17 +293,14 @@ async function handleAgentStep(options: AgentOptions): Promise<void> {
 
   const step = requireStep(options.action, options.step);
   const status = options.status || 'done';
-  await runCommand({
+  const sync = await endStepExecution({
     cwd,
-    action: 'end',
     step,
     status,
     note: options.note || `agent-step: ${step}`,
     session: session.sessionId,
   });
-
-  const sync = await markPlanStep(cwd, step, syncStatusForAgentStep(status));
-  if (!sync.updated) console.warn(`⚠️  plan checklist 未同步: ${sync.reason}`);
+  if (!sync.planSynced) console.warn(`⚠️  plan checklist 未同步: ${sync.planSyncReason}`);
 
   if (status !== 'done') {
     await runCommand({

@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { gitSyncOptional } from './git-run.js';
 import { spawnSync } from 'child_process';
 import { readTraceEntries, TraceEntry } from './trace.js';
 
@@ -125,13 +126,9 @@ export function collectWorkingTreeFiles(cwd: string): Set<string> {
   const files = new Set<string>();
   if (!existsSync(join(cwd, '.git'))) return files;
   const run = (args: string[]): string[] => {
-    try {
-      const res = spawnSync('git', args, { cwd, encoding: 'utf-8' });
-      if (res.status !== 0 || typeof res.stdout !== 'string') return [];
-      return res.stdout.split('\n').map((l) => l.trim()).filter(Boolean);
-    } catch {
-      return [];
-    }
+    const out = gitSyncOptional(cwd, args);
+    if (out === null) return [];
+    return out.split('\n').map((l) => l.trim()).filter(Boolean);
   };
   for (const f of run(['diff', '--name-only', 'HEAD'])) files.add(f);
   for (const line of run(['status', '--porcelain'])) {

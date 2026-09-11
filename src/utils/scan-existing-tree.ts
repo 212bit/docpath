@@ -13,6 +13,7 @@
 
 import { readdir, stat } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
+import { gitSync } from './git-run.js';
 import { join, relative, sep } from 'node:path';
 
 /**
@@ -44,7 +45,7 @@ export interface TreeNode {
 /** 判定某路径是否被项目 .gitignore 忽略（git 无仓库时返回 false，退回纯黑名单）。 */
 function isGitIgnored(cwd: string, absPath: string): boolean {
   try {
-    execFileSync('git', ['check-ignore', '-q', '--no-index', '--', absPath], { cwd, stdio: 'ignore' });
+    gitSync(cwd, ['check-ignore', '-q', '--no-index', '--', absPath]);
     return true;
   } catch {
     return false;

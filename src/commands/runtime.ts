@@ -11,6 +11,7 @@ import { parse as parseYaml } from 'yaml';
 import { readCurrentState, readOptionalFile } from '../utils/workspace.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
+import { markPlanStep } from '../utils/plan-sync.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import type { WorkflowEvent, TransitionPayload } from '../engine/transitions.js';
@@ -143,6 +144,36 @@ export async function runCommand(options: RunOptions): Promise<void> {
     console.log(`status: ${breadcrumb.latest.status}`);
     console.log(`context: ${breadcrumb.latest.context}`);
   }
+}
+
+/** R-337 W3: 步骤收尾单一原语的结果 */
+export interface EndStepResult {
+  planSynced: boolean;
+  planSyncReason: string;
+}
+
+/**
+ * R-337 W3: 步骤收尾单一原语 —— runtime end（breadcrumb + 状态转移）与
+ * plan checklist 同步此前是两条平行实现（go --status 与 agent step 各写一份，
+ * 行为漂移风险）。go/agent 统一走本原语。
+ */
+export async function endStepExecution(options: {
+  cwd: string;
+  step: string;
+  status: 'done' | 'blocked' | 'skipped';
+  note?: string;
+  session?: string;
+}): Promise<EndStepResult> {
+  await runCommand({
+    cwd: options.cwd,
+    action: 'end',
+    step: options.step,
+    status: options.status,
+    note: options.note,
+    session: options.session,
+  });
+  const sync = await markPlanStep(options.cwd, options.step, options.status);
+  return { planSynced: sync.updated, planSyncReason: sync.reason };
 }
 
 function uniqueLatestByStep(entries: Awaited<ReturnType<typeof readBreadcrumb>>['entries']) {

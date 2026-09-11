@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
+import { gitSync } from './git-run.js';
 import { readFileSafe } from './file.js';
 
 export type IgnoredEvidenceCheck = 'checked' | 'skipped';
@@ -22,12 +23,7 @@ export interface GitCloseoutSummary {
 }
 
 export function runGit(cwd: string, args: string[]): string {
-  return execFileSync('git', args, {
-    cwd,
-    encoding: 'utf-8',
-    timeout: 10000,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  return gitSync(cwd, args);
 }
 
 export function shellQuotePath(path: string): string {

@@ -1,5 +1,6 @@
 import { execFileSync, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { gitSync } from './git-run.js';
 import { join } from 'node:path';
 import { minimatch } from 'minimatch';
 import { buildChangesReport } from './changes-report.js';
@@ -41,7 +42,7 @@ function uniqueCandidates(candidates: StageCandidate[]): StageCandidate[] {
 
 function isIgnored(cwd: string, file: string): boolean {
   try {
-    execFileSync('git', ['check-ignore', '-q', '--no-index', '--', file], { cwd, stdio: 'ignore' });
+    gitSync(cwd, ['check-ignore', '-q', '--no-index', '--', file]);
     return true;
   } catch {
     return false;
@@ -155,11 +156,7 @@ export async function stageRecommendedFiles(options: StageOptions): Promise<Stag
       try {
         const status = candidate.force
           ? (existsSync(join(options.cwd, file)) ? 'ignored' : '')
-          : execFileSync('git', ['status', '--porcelain', '--', file], {
-              cwd: options.cwd,
-              encoding: 'utf-8',
-              stdio: ['ignore', 'pipe', 'pipe'],
-            }).trim();
+          : gitSync(options.cwd, ['status', '--porcelain', '--', file]).trim();
 
         if (status) {
           validFiles.push(candidate);
@@ -187,10 +184,7 @@ export async function stageRecommendedFiles(options: StageOptions): Promise<Stag
     for (const candidate of validFiles) {
       const file = candidate.path;
       try {
-        execFileSync('git', ['add', ...(candidate.force ? ['-f'] : []), '--', file], {
-          cwd: options.cwd,
-          stdio: ['ignore', 'pipe', 'pipe'],
-        });
+        gitSync(options.cwd, ['add', ...(candidate.force ? ['-f'] : []), '--', file]);
         result.stagedFiles.push(file);
         if (candidate.force) result.forceAddedFiles.push(file);
       } catch (error) {

@@ -97,7 +97,7 @@ describe('review task scope default (R-276)', () => {
     assert.equal(result.code, 0);
     assert.match(result.out, /活跃任务默认走 task 累计 diff 审查/);
     assert.match(result.out, /scope: task/);
-    assert.match(result.out, /review_skill_gate: required/);
+    assert.match(result.out, /review_skill_gate: pass_with_skips/); // R-337 R2: 干净 diff 无历史证据自动跳过
     assert.match(result.out, /files: src\/feature\.ts/);
     assert.doesNotMatch(result.out, /baseline\.ts/);
     assert.match(result.out, /--scope task --stdin/);
@@ -143,7 +143,7 @@ describe('review task scope default (R-276)', () => {
 
     assert.equal(result.code, 0);
     assert.match(result.out, /scope: task/);
-    assert.match(result.out, /review_skill_gate: required/);
+    assert.match(result.out, /review_skill_gate: pass_with_skips/); // R-337 R2: 干净 diff 无历史证据自动跳过
     assert.match(result.out, /files: src\/feature\.ts/);
     rmSync(cwd, { recursive: true, force: true });
   });
