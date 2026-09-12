@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T04:53:12.728Z",
+    "updated_at": "2026-09-12T04:53:12.728Z",
+    "content_sha256": "201723372377b858edc884274750377c1312bd0ef81564221fc4e7386b69407b"
+  },
+  "task_id": "T-20260912-agents-md-claude-codex",
+  "backlog_id": "R-341",
+  "title": "T-20260912-agents-md-claude-codex - 协议文件单一真源与瘦客户端重构：确立 AGENTS.md 为唯一真源，CLAUDE/CODEX 降级为瘦代理",
+  "generated_at": "2026-09-12T04:53:12.728Z",
+  "scope": {
+    "included": [
+      "协议文件单一真源与瘦客户端重构：确立 AGENTS.md 为唯一真源，CLAUDE/CODEX 降级为瘦代理"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "用户显式要求「完成 R-341」并授权执行单一真源与瘦客户端重构方案",
+    "decision_brief_markdown": "- 当前问题: 当前 docpath install --target universal 会在项目根目录同时生成 AGENTS.md、CLAUDE.md、CODEX.md、OPENCODE.md 四个完整大文件（每个近 10KB），85% 以上内容重复。导致根目录污染、多协议加载下的 Token 翻倍浪费、以及规则变动时的跨端维护漂移地狱。\n- 目标: 协议文件单一真源与瘦客户端重构：确立 AGENTS.md 为唯一真源，CLAUDE/CODEX 降级为瘦代理\n- 背景: 来自 backlog R-341\n- 可选方案:\n  - 方案 A: 确立 AGENTS.md 为全局唯一完备协议真源，CLAUDE.md 与 CODEX.md 降级为瘦代理（<30 行）指向 @AGENTS.md，更新 install/render 校验与测试\n  - 方案 B: 维持多端全量大文件，依赖 protocol blocks 注入同步\n- 推荐方案: 方案 A\n- 决策理由: 彻底消除多端协议内容重复与维护漂移，大幅节约上下文 Token，同时兼容各端 CLI 原生调用\n- 不做什么: 不废除 universal 目标，不改变 OpenCode 运行机制\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 旧版项目单独安装 claude 时需补齐 AGENTS.md 依赖（install 自动完成）\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 用户显式要求「完成 R-341」并授权执行单一真源与瘦客户端重构方案"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "协议文件单一真源与瘦客户端重构：确立 AGENTS.md 为唯一真源，CLAUDE/CODEX 降级为瘦代理",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "确立 AGENTS.md 为全局唯一完备协议真源；2. CLAUDE.md 与 CODEX.md 降级为瘦代理（<30 行），仅保留专属命令映射并显式指向 @AGENTS.md；3. 重构 templates/protocols 模板与 docpath install / render 校验逻辑；4. 全量测试与 install manifest 检查保持通过。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-341 与任务 T-20260912-agents-md-claude-codex 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "当前 docpath install --target universal 会在项目根目录同时生成 AGENTS.md、CLAUDE.md、CODEX.md、OPENCODE.md 四个完整大文件（每个近 10KB），85% 以上内容重复。导致根目录污染、多协议加载下的 Token 翻倍浪费、以及规则变动时的跨端维护漂移地狱。",
+    "options": [
+      "- 方案 A: 确立 AGENTS.md 为全局唯一完备协议真源，CLAUDE.md 与 CODEX.md 降级为瘦代理（<30 行）指向 @AGENTS.md，更新 install/render 校验与测试"
+    ],
+    "chosen": "方案 A",
+    "rationale": "彻底消除多端协议内容重复与维护漂移，大幅节约上下文 Token，同时兼容各端 CLI 原生调用"
+  }
+}

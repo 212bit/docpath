@@ -180,7 +180,7 @@ export async function listReviewSkillNames(): Promise<string[]> {
 function entryProtocolFiles(target: Target): string[] {
   if (target === 'universal') return ['CLAUDE.md', 'AGENTS.md', 'CODEX.md', 'OPENCODE.md'];
   if (target === 'codex') return ['AGENTS.md', 'CODEX.md'];
-  if (target === 'claude') return ['CLAUDE.md'];
+  if (target === 'claude') return ['AGENTS.md', 'CLAUDE.md'];
   return ['OPENCODE.md'];
 }
 

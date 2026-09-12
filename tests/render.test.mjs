@@ -221,11 +221,18 @@ describe('protocol shared contract blocks (R-300 方案 B)', () => {
     assert.equal(report.available, true);
 
     const byFile = Object.fromEntries(report.files.map((f) => [f.file, f]));
-    // 覆盖面契约（blocks/README）：lifecycle 3/4 + worktree 3/4，每 flavor ≥1 块
-    assert.deepEqual(byFile['CLAUDE.md'].present.sort(), ['lifecycle-commands', 'worktree-isolation']);
-    assert.deepEqual(byFile['CODEX.md'].present.sort(), ['lifecycle-commands', 'worktree-isolation']);
-    assert.deepEqual(byFile['AGENTS.md'].present, ['lifecycle-commands']);
+    // 覆盖面契约（R-341）：确立 AGENTS.md 为唯一完备真源，CLAUDE/CODEX 降级为瘦代理（无块）
+    assert.deepEqual(byFile['CLAUDE.md'].present, []);
+    assert.deepEqual(byFile['CODEX.md'].present, []);
+    assert.deepEqual(byFile['AGENTS.md'].present.sort(), ['lifecycle-commands', 'worktree-isolation']);
     assert.deepEqual(byFile['OPENCODE.md'].present, ['worktree-isolation']);
+    // 瘦代理契约（R-341）：行数严格 < 30 行且指向 @AGENTS.md
+    const claudeContent = readFileSync(join(repoRoot, 'templates', 'protocols', 'CLAUDE.md'), 'utf-8');
+    const codexContent = readFileSync(join(repoRoot, 'templates', 'protocols', 'CODEX.md'), 'utf-8');
+    assert.ok(claudeContent.split('\n').length < 30, 'CLAUDE.md 瘦代理必须小于 30 行');
+    assert.ok(codexContent.split('\n').length < 30, 'CODEX.md 瘦代理必须小于 30 行');
+    assert.match(claudeContent, /@AGENTS\.md/, 'CLAUDE.md 必须显式引用 @AGENTS.md');
+    assert.match(codexContent, /@AGENTS\.md/, 'CODEX.md 必须显式引用 @AGENTS.md');
     // 仓库内注入区必须与块源同步（check 门禁同款校验）
     for (const f of report.files) {
       assert.deepEqual(f.updated, [], `${f.file} 注入区与块源不得漂移`);

@@ -124,10 +124,23 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 - Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath agent done` before claiming a task is complete.
-- Before any local `git commit`, run `docpath changes --agent`. Treat it as a
-  read-only closeout report; only force-add exact canonical evidence paths it
-  recommends, and do not force-add `.docpath/tasks/current/*` alias evidence by
-  default.
+
+## Git Convention
+
+- **Auto-commit after `agent done`**: Once `docpath agent done` completes and
+  all gates pass (check, review, journal), commit automatically. Do not commit
+  mid-task on intermediate verification passes.
+- **Run `docpath changes --agent` before each commit**: Treat it as the commit
+  readiness report. Use its closeout summary as the commit message title;
+  append sub-change bullet points in the body.
+- **Stage all modified tracked files**: Include both source/test files and any
+  tracked `.docpath/` files (backlog, rules, AGENTS.md) that changed during the
+  work. The `.gitignore` already excludes pure runtime state (workspace/,
+  tasks/current/) — there's no risk of staging transient data.
+- **Atomic by logical unit**: One commit per coherent change. If a change spans
+  multiple independent concerns (e.g., fix + refactor in different modules),
+  split into separate commits.
+- **Do not push**: Commits are local. Pushing requires explicit user request.
 
 ## Required Gates
 
@@ -167,6 +180,82 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath changes --agent` | Read-only git closeout and commit readiness view |
 | `docpath journal` | Knowledge archive |
 | `docpath gc` | Preview workspace cleanup candidates and inactive task archive candidates; `--force` executes |
+
+## Worktree Concurrent Development
+
+DocPath supports true concurrent development via Git Worktrees. Use when multiple
+agents need to develop different features simultaneously without conflicts.
+
+### When to Use Worktrees
+
+Use `docpath worktree create <name>` when:
+- User explicitly requests concurrent development
+- Developing Feature A while another agent/session develops Feature B
+- Need complete isolation (separate workspace/, tasks/, state)
+
+Do NOT use worktrees for:
+- Single-agent sequential development (use normal workflow)
+- Quick testing or verification (use session isolation with DOCPATH_SESSION)
+
+### Worktree Workflow
+
+```bash
+# Create worktree for Feature A
+docpath worktree create feature-a
+cd .worktrees/feature-a
+
+# Set session ID (optional but recommended)
+export DOCPATH_SESSION=codex
+
+# Standard DocPath workflow
+docpath backlog promote R-xxx
+docpath plan
+docpath go --step S1
+# ... develop ...
+docpath agent step --step S1 --status done
+docpath check
+git commit
+
+# Merge back to main
+cd ../../
+git merge feature-a
+docpath worktree remove feature-a
+```
+
+### Worktree Isolation
+
+<!-- docpath:block worktree-isolation -->
+Resources are split by sharing model (R-238 Option B, reaffirmed by R-273 —
+do NOT symlink tracked directories: git records the swap as mass deletion and
+merging it back deletes main's files):
+
+**Merge-mediated** (tracked copy — shared via branch merges, not live):
+- `.docpath/backlog/` - requirement pool; tracked in main, each worktree gets a
+  snapshot copy. Snapshots can go stale (known limitation; merge reconciles).
+  Backlog id allocation is single-pool at the CLI layer: `capture`/`add` inside
+  a worktree also scans the main checkout's backlog to avoid id collisions.
+- `.docpath/rules/` - rules; tracked, each worktree gets a snapshot, reconciled on merge
+- `.docpath/tasks/done/` - completed-task archives; tracked, reconciled on merge
+
+**Isolated** (independent per worktree — gitignored runtime):
+- `.docpath/workspace/` - each worktree has its own state.json
+- `.docpath/tasks/current/` - each worktree has its own active task runtime
+- `.docpath/journal/` - independent archives
+
+**Result**: Each worktree runs as an independent DocPath workspace; backlog,
+rules, and completed tasks reconcile at merge. `docpath worktree doctor`
+reports each resource against its expected model (merge-mediated / isolated)
+and fails a symlinked backlog over tracked files (repair with
+`docpath worktree repair`).
+<!-- /docpath:block -->
+
+### Commands
+
+- `docpath worktree list` - list all worktrees
+- `docpath worktree create <name>` - create new worktree
+- `docpath worktree remove <name>` - delete worktree
+
+See `docs/features/worktree-workflow.md` for detailed usage guide.
 
 ## Decision Log Aging
 

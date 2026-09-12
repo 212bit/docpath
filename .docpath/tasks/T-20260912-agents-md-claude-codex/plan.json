@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T04:58:29.792Z",
+    "updated_at": "2026-09-12T04:58:29.792Z",
+    "content_sha256": "536ad866a03af5ebb4ef57d5e0c57ebde4eca49eb6f9be6bfd1e2cddc42c5511"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-12T04:58:29.792Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "AGENTS.md 唯一真源化与完备性补全",
+      "description": "将 templates/protocols/AGENTS.md 与根目录 AGENTS.md 确立为全局唯一完备协议真源，补齐 Worktree Concurrent Development（内嵌 worktree-isolation 注入块）等缺失段落。",
+      "acceptance": "templates/protocols/AGENTS.md 与项目根目录 AGENTS.md 内容完备，包含所有核心规范与 worktree 章节。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "CLAUDE.md 与 CODEX.md 瘦代理重构",
+      "description": "将 templates/protocols/CLAUDE.md、CODEX.md 及根目录对应文件降级为瘦代理（<30 行），保留各自专属命令与说明，显式指向 @AGENTS.md。",
+      "acceptance": "CLAUDE.md 与 CODEX.md 行数均严格小于 30 行，且显式声明 @AGENTS.md。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "重构 install 与 render 校验逻辑",
+      "description": "调整 src/utils/install-core.ts 与 src/commands/install.ts 中的 entryProtocolFiles，claude 目标补齐 AGENTS.md；更新 templates/protocols/blocks/README.md 覆盖面说明。",
+      "acceptance": "claude 目标期望资产包含 AGENTS.md，render --view protocols 正常同步且不报错。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "测试用例适配与全量门禁验证",
+      "description": "更新 tests/render.test.mjs、tests/install.test.mjs 中关于 CLAUDE.md/CODEX.md 的断言，添加瘦代理行数与引用断言，运行全量 docpath check。",
+      "acceptance": "全量测试套件、install manifest 校验与 check 门禁全部通过。",
+      "dependencies": "S3",
+      "status": "done"
+    }
+  ]
+}

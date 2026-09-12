@@ -412,6 +412,7 @@ async function installEntryProtocols(context: InstallContext): Promise<void> {
     await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
     await installProtocolFile(targetDir, 'CODEX.md', projectName, force);
   } else if (target === 'claude') {
+    await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
     await installProtocolFile(targetDir, 'CLAUDE.md', projectName, force);
   } else if (target === 'opencode') {
     await installProtocolFile(targetDir, 'OPENCODE.md', projectName, force);
@@ -570,7 +571,7 @@ function printInstallSummary(target: Target): void {
   }
   console.log(`\n🎉  Agent 协议安装完成 (target: ${target})！`);
   if (target === 'claude') {
-    console.log('    CLAUDE.md 和 .claude/commands/ 已就绪，在 Claude Code 中输入 /docpath-status 开始使用。');
+    console.log('    CLAUDE.md / AGENTS.md 和 .claude/commands/ 已就绪，在 Claude Code 中输入 /docpath-status 开始使用。');
   } else if (target === 'opencode') {
     console.log('    OPENCODE.md 和 .opencode/commands/ 已就绪，可在 OpenCode 中调用 DocPath 命令。');
   } else if (target === 'codex') {
