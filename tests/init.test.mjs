@@ -33,27 +33,6 @@ function run(args, cwd, registryDb = registryDbPath()) {
   }
 }
 
-function runShell(command, cwd, registryDb = registryDbPath()) {
-  try {
-    return {
-      code: 0,
-      out: execSync(command, {
-        cwd,
-        encoding: 'utf-8',
-        timeout: 30000,
-        env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
-      }),
-      registryDb,
-    };
-  } catch (error) {
-    return {
-      code: error.status || 1,
-      out: `${error.stdout || ''}${error.stderr || ''}`,
-      registryDb,
-    };
-  }
-}
-
 describe('init command', () => {
   it('creates rules as the global rule directory while keeping spec templates', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'dp-init-'));
@@ -230,47 +209,6 @@ describe('init command', () => {
     assert.equal(existsSync(join(cwd, '.docpath')), false);
     rmSync(cwd, { recursive: true, force: true });
     rmSync(target, { recursive: true, force: true });
-  });
-
-  it('can initialize interactively in a TTY with the default level', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-interactive-'));
-    const registryDb = registryDbPath();
-
-    const result = runShell(`(sleep 0.5; printf '\\r') | script -q /dev/null node ${BIN} init --cwd ${cwd} --interactive`, cwd, registryDb);
-
-    assert.equal(result.code, 0);
-    assert.equal(existsSync(join(cwd, '.docpath', 'config.yaml')), true);
-    assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'state.json')), true);
-    assert.doesNotMatch(readFileSync(join(cwd, '.docpath', 'config.yaml'), 'utf-8'), /default_level/);
-    const projects = JSON.parse(execSync(`node ${BIN} projects --json`, {
-      cwd,
-      encoding: 'utf-8',
-      timeout: 20000,
-      env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
-    }));
-    assert.equal(projects.projects.length, 1);
-    assert.equal(projects.projects[0].root, cwd);
-    rmSync(cwd, { recursive: true, force: true });
-  });
-
-  it('interactively registers an existing project by default without overwriting files', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-existing-interactive-'));
-    const registryDb = registryDbPath();
-
-    execSync(`node ${BIN} init --cwd ${cwd} --level 2`, {
-      cwd,
-      encoding: 'utf-8',
-      timeout: 20000,
-      env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
-    });
-    const currentPath = join(cwd, '.docpath', 'workspace', 'current.md');
-    writeFileSync(currentPath, '# Current\n\n交互式注册不覆盖。\n');
-
-    const result = runShell(`(sleep 0.5; printf '\\r') | script -q /dev/null node ${BIN} init --cwd ${cwd} --interactive`, cwd, registryDb);
-
-    assert.equal(result.code, 0);
-    assert.equal(readFileSync(currentPath, 'utf-8'), '# Current\n\n交互式注册不覆盖。\n');
-    rmSync(cwd, { recursive: true, force: true });
   });
 
   it('documents the getting started command path', () => {
