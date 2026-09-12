@@ -171,8 +171,8 @@ async function analyzeChangedFile(cwd: string, file: string): Promise<ReviewFind
     if (/:\s*any\b/.test(line)) {
       findings.push({ file, severity: 'warn', line: i + 1, message: `L${i + 1}: 使用了 any 类型` });
     }
-    // 硬编码路径
-    if (/['"]\/(Users|home|tmp)\//.test(line)) {
+    // 硬编码路径（与 console.log 规则同口径：测试/命令文件豁免，避免误伤 join(sep,...) 等可移植写法）
+    if (/['"]\/(Users|home|tmp)\//.test(line) && !file.includes('test') && !file.includes('src/commands/')) {
       findings.push({ file, severity: 'error', line: i + 1, message: `L${i + 1}: 硬编码绝对路径` });
     }
   }

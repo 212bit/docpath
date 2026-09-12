@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T06:09:54.260Z",
+    "updated_at": "2026-09-12T06:09:54.260Z",
+    "content_sha256": "6c05d0c0dd8fb8d4139790d07650dedd59c3e0ee374e675da876f16923cd6eae"
+  },
+  "task_id": "T-20260912-review-console-log",
+  "backlog_id": "R-342",
+  "title": "T-20260912-review-console-log - review 硬编码绝对路径规则对齐 console.log 测试豁免口径",
+  "generated_at": "2026-09-12T06:09:54.260Z",
+  "scope": {
+    "included": [
+      "review 硬编码绝对路径规则对齐 console.log 测试豁免口径"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: src/commands/review.ts:174-176 的硬编码绝对路径规则对所有文件零豁免发 error；其上方 console.log 规则(167行)已对 test/src-commands 豁免且为 warn。review.ts:549 的 approved=groups.errors.length===0 使 error 不论 current_diff/baseline 都阻塞 review，进而卡死 review→check→journal。历史遗留的 /Users/... 测试字面量（baseline 范围）也会误伤。采用 O1：镜像 console.log 豁免口径，测试/命令文件零产出，非测试文件保持 error 严格。\n- 目标: review 硬编码绝对路径规则对齐 console.log 测试豁免口径\n- 背景: 来自 backlog R-342\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "review 硬编码绝对路径规则对齐 console.log 测试豁免口径",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "review.ts 硬编码路径规则对 test/src-commands 文件豁免（镜像 console.log 规则 167 行）；非测试文件仍发 error；tests/check-review.test.mjs:628 不受影响仍通过；node bin/docpath.js check 全绿。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-342 与任务 T-20260912-review-console-log 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "src/commands/review.ts:174-176 的硬编码绝对路径规则对所有文件零豁免发 error；其上方 console.log 规则(167行)已对 test/src-commands 豁免且为 warn。review.ts:549 的 approved=groups.errors.length===0 使 error 不论 current_diff/baseline 都阻塞 review，进而卡死 review→check→journal。历史遗留的 /Users/... 测试字面量（baseline 范围）也会误伤。采用 O1：镜像 console.log 豁免口径，测试/命令文件零产出，非测试文件保持 error 严格。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险"
+  }
+}

@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-review-console-log","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 review 硬编码绝对路径规则对齐 console.log 测试豁免口径","timestamp":"2026-09-12T06:10:20.277Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-review-console-log","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-12T06:14:42.382Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-review-console-log","step":"check","status":"blocked","context":"质量检查失败: 测试","timestamp":"2026-09-12T06:15:58.194Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-review-console-log","step":"check","status":"blocked","context":"质量检查失败: 测试","timestamp":"2026-09-12T06:19:22.333Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-review-console-log","step":"review","status":"done","context":"代码审查: 0 错误, 3 警告, 7 提示","timestamp":"2026-09-12T06:22:19.740Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-review-console-log","step":"check","status":"done","context":"质量检查通过 (3 项)","timestamp":"2026-09-12T06:26:57.137Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-review-console-log","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-12T06:27:43.692Z"}

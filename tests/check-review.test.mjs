@@ -630,6 +630,41 @@ describe('check and review commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('review exempts hardcoded absolute path in test files (mirrors console.log rule)', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-test-exempt-'));
+    mkExecWorkspace(cwd);
+    markReadyForReview(cwd);
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
+    execSync('git add baseline.ts', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'legacy.test.ts'), "const p = '/Users/foo/bar';\nexport const x = p;\n");
+    const out = run(`review --cwd ${cwd}`, cwd);
+    assert.doesNotMatch(out, /硬编码绝对路径/);
+    assert.match(out, /审查通过/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('review still flags hardcoded absolute path in non-test source files', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-nontest-strict-'));
+    mkExecWorkspace(cwd);
+    markReadyForReview(cwd);
+    writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
+    execSync('git init', { cwd, encoding: 'utf-8' });
+    execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+    execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
+    execSync('git add baseline.ts', { cwd, encoding: 'utf-8' });
+    execSync('git commit -m baseline', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'legacy.ts'), "const p = '/Users/foo/bar';\nexport const x = p;\n");
+    const out = run(`review --cwd ${cwd}`, cwd);
+    assert.match(out, /硬编码绝对路径/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('review result does not write ordinary review summaries into decisions', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-no-decisions-'));
     mkExecWorkspace(cwd);

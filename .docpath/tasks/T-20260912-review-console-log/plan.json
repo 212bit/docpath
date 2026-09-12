@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T06:14:42.386Z",
+    "updated_at": "2026-09-12T06:14:42.386Z",
+    "content_sha256": "1707a18804efc7e2a4ffd1bb23ce03de1b04b883ee8fa4bae0337e918b8c4e49"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-12T06:14:42.386Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 review 硬编码绝对路径规则对齐 console.log 测试豁免口径",
+      "description": "完成 FR-1: review 硬编码绝对路径规则对齐 console.log 测试豁免口径，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: review.ts 硬编码路径规则对 test/src-commands 文件豁免（镜像 console.log 规则 167 行）；非测试文件仍发 error；tests/check-review.test.mjs:628 不受影响仍通过；node bin/docpath.js check 全绿。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-342 与任务 T-20260912-review-console-log 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
