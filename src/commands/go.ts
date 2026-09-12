@@ -204,7 +204,7 @@ async function startStep(
   });
 
   console.log('─── Claude Code 指令 ───');
-  console.log('请执行子任务 ' + target.id + '，完成后运行 `docpath agent step --step ' + target.id + ' --status done` 记录完成，再用 `docpath next --agent` 查看后续路由。');
+  console.log('请执行子任务 ' + target.id + '，完成后运行 `docpath step-pass` 一步收尾并启动下一步（等价 agent step done + go），或 `docpath agent step --step ' + target.id + ' --status done` 后再 `docpath next --agent`。');
   console.log('💡 提示：开始执行任务。请在开发中随时在 spec.md 中补充 decision_brief，确保决策被即时固化。');
   await emitNextHint(cwd);
 }
