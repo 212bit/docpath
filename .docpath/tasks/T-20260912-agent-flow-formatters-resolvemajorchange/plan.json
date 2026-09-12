@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T09:34:39.531Z",
+    "updated_at": "2026-09-12T09:34:39.531Z",
+    "content_sha256": "ce8b6048c217235aadabb532ad493f4ff7b9490e6c6c2860ee4c029bef213ae2"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-12T09:34:39.531Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 路由门禁提示忽略 agent_flow 降级：formatters 调 resolveMajorChangeGateStatus 未传 agentFlow",
+      "description": "完成 FR-1: 路由门禁提示忽略 agent_flow 降级：formatters 调 resolveMajorChangeGateStatus 未传 agentFlow，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: 路由与命令端门禁判定一致：agent_flow=true 且全 advisory 信号时，next/status 不再输出重大变更门禁路由；补回归测试锁定 formatters 传参。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-343 与任务 T-20260912-agent-flow-formatters-resolvemajorchange 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

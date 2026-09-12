@@ -155,6 +155,18 @@ describe('major change preflight gate', () => {
     assert.match(route.next_action, /重大变更门禁未完成/);
   });
 
+  it('next --agent honors agent_flow advisory downgrade (R-343 regression)', () => {
+    const cwd = mkWorkspace({ phase: 'planning', confirmed: false });
+    // 与上例同 fixture，仅开启 agent_flow：全 advisory 信号应被 R-334 降级，
+    // 路由不得再建议 write-spec 补 Decision Brief（与 go/done 实际判定一致）。
+    writeFileSync(join(cwd, '.docpath', 'config.yaml'), 'project:\n  name: major-gate-test\nworkflow:\n  agent_flow: true\n');
+    const result = runResult(`next --cwd ${cwd} --agent`, cwd);
+    assert.equal(result.code, 0);
+    const route = parse(result.out);
+    assert.doesNotMatch(`${route.recommended_command}`, /write-spec/);
+    assert.doesNotMatch(route.next_action, /重大变更门禁未完成/);
+  });
+
   it('plan fails before writing when major change gate is unconfirmed', () => {
     const cwd = mkWorkspace({ phase: 'drafting', confirmed: false });
     const result = runResult(`plan --cwd ${cwd}`, cwd);

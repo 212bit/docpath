@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-09-12T07:27:28.222Z
+> 扫描时间: 2026-09-12T09:36:19.078Z
 
 ## 条目列表
 
@@ -24,7 +24,6 @@
 | R-320 | P1→关闭: next --agent 状态哈希去重 — 前提证伪（FR-4 取证） | dropped | P3 | 2 |  |
 | R-332 | 全局安装与仓库开发版漂移提示：PATH 旧版无感知，双轨易踩行为差异 | proposed | P3 | 2 |  |
 | R-333 | check CLI 未注册 --force 选项：CheckOptions.force 存在但传参缺失，用户带 --force 报 Unknown option（trace 16:25:48 实测 FAILED 1ms） | proposed | P3 | 2 |  |
-| R-343 | 路由门禁提示忽略 agent_flow 降级：formatters 调 resolveMajorChangeGateStatus 未传 agentFlow | proposed | P2 | 2 |  |
 
 ## 用途说明
 

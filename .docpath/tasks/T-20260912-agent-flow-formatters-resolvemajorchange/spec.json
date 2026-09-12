@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T09:32:13.986Z",
+    "updated_at": "2026-09-12T09:32:13.986Z",
+    "content_sha256": "0c44b6a01cf71b8ba22e1fbc470d3b00033551ce2dea0e962660ee441323f1d7"
+  },
+  "task_id": "T-20260912-agent-flow-formatters-resolvemajorchange",
+  "backlog_id": "R-343",
+  "title": "T-20260912-agent-flow-formatters-resolvemajorchange - 路由门禁提示忽略 agent_flow 降级：formatters 调 resolveMajorChangeGateStatus 未传 agentFlow",
+  "generated_at": "2026-09-12T09:32:13.986Z",
+  "scope": {
+    "included": [
+      "路由门禁提示忽略 agent_flow 降级：formatters 调 resolveMajorChangeGateStatus 未传 agentFlow"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: shouldRouteToMajorChangeGate 依赖 context.majorChangeGate.confirmed，而 loadAgentOutputContext 调用时未传 agentFlow（默认 false），R-334 的 advisory 信号降级在路由端失效。go/done 实际可通过，next --agent 却持续建议 write-spec 补 Decision Brief，误导 Agent 白跑修复轮次。\n- 目标: 路由门禁提示忽略 agent_flow 降级：formatters 调 resolveMajorChangeGateStatus 未传 agentFlow\n- 背景: 来自 backlog R-343\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "路由门禁提示忽略 agent_flow 降级：formatters 调 resolveMajorChangeGateStatus 未传 agentFlow",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "路由与命令端门禁判定一致：agent_flow=true 且全 advisory 信号时，next/status 不再输出重大变更门禁路由；补回归测试锁定 formatters 传参。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-343 与任务 T-20260912-agent-flow-formatters-resolvemajorchange 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "shouldRouteToMajorChangeGate 依赖 context.majorChangeGate.confirmed，而 loadAgentOutputContext 调用时未传 agentFlow（默认 false），R-334 的 advisory 信号降级在路由端失效。go/done 实际可通过，next --agent 却持续建议 write-spec 补 Decision Brief，误导 Agent 白跑修复轮次。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

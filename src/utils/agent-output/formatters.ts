@@ -13,6 +13,7 @@ import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } f
 import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridContextIndexLeaves, type HybridContextIndexSummary, type HybridContextIndexEntry } from '../context-index.js';
 import { readGitCloseoutSummary, type GitCloseoutSummary } from '../git-closeout.js';
 import { resolveMajorChangeGateStatus, type MajorChangeGateStatus } from '../major-change.js';
+import { readAgentFlow } from '../config.js';
 import { readLastCheckMarkdown } from '../workspace-evidence.js';
 import { isQuickProfile } from '../../engine/workflow-profile.js';
 import { constrainRecommendedCommandToWorkflow } from '../../engine/transitions.js';
@@ -861,7 +862,9 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
     ? await readGitCloseoutSummary(cwd, docpathDir, state?.task_id || undefined)
     : null;
   const dirtyWorktree = detectDirtyWorktree(cwd);
-  const majorChangeGate = await resolveMajorChangeGateStatus(cwd, docpathDir, state?.task_id || undefined);
+  // R-343: 路由端必须与 go/done/check 同口径传 agentFlow，否则 R-334 advisory
+  // 降级在 next/status 失效，门禁 hint 与实际可通行状态矛盾。
+  const majorChangeGate = await resolveMajorChangeGateStatus(cwd, docpathDir, state?.task_id || undefined, await readAgentFlow(cwd));
   let structuredSpec: StructuredSpecDocument | null = null;
   try {
     structuredSpec = await readActiveStructuredSpecDocument(docpathDir, state?.task_id || undefined);
