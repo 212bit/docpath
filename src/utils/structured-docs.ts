@@ -302,7 +302,7 @@ export function parseDecisionBrief(text: string): StructuredDecisionBrief | unde
     problem,
     options: options.length > 0 ? options : (chosen ? [chosen] : []),
     chosen,
-    rationale: rationale || '保持 backlog 声明的全部验收条件，且无额外依赖风险',
+    rationale: rationale || '满足 backlog 声明的全部验收条件，且无额外依赖风险',
   };
 }
 

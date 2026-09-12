@@ -887,7 +887,7 @@ function renderMajorDecisionGate(item: BacklogItem, cwd?: string): string[] {
     '  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程',
     '  - 方案 B: 补充分析，扩展本任务范围',
     '- 推荐方案: 方案 A',
-    '- 决策理由: 方案 A 满足 backlog 声明 of 全部验收条件，且无额外依赖风险',
+    '- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险',
     '- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围',
     '- 成本: 中等，按 plan 拆分后逐步验证',
     '- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移',
