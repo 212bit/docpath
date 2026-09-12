@@ -12,7 +12,7 @@
 import { agentCommand } from './agent.js';
 import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { resolveSessionContext } from '../utils/session.js';
-import { gatePolicyForProfile, isQuickProfile, isInstantProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
+import { resolveGatePolicy, isQuickProfile, isInstantProfile, normalizeWorkflowProfile } from '../engine/workflow-profile.js';
 import { isInWorktree } from '../utils/worktree.js';
 import { exitWithError } from '../utils/error-helpers.js';
 import { detectUncommittedNonDocPathFiles, renderCommitReminder } from '../utils/git-dirty-guard.js';
@@ -41,7 +41,8 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
   const profile = normalizeWorkflowProfile(stateAtStart?.workflow_profile);
   const quickProfile = isQuickProfile(profile);
   const instantProfile = isInstantProfile(profile);
-  const policy = gatePolicyForProfile(profile);
+  // R-338: 门禁策略按风险档位取地板（缺省 R1 时与原 gatePolicyForProfile 等价）
+  const policy = resolveGatePolicy({ profile, riskTier: stateAtStart?.risk_tier }).policy;
 
   // 前置检查：必须有已绑定的 task_id
   const taskId = await resolveBoundTaskId(cwd);

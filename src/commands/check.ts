@@ -24,6 +24,9 @@ import { mutateCurrentState } from '../utils/workspace.js';
 import { syncProtocolBlocks } from '../utils/protocol-blocks.js';
 import { resolveTemplate } from '../utils/install-core.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
+import { reassessRiskTier, riskPolicyFromConfig } from '../engine/risk.js';
+import { recordRiskEscalation } from '../engine/policy.js';
+import { readRiskPolicyConfig } from '../utils/config.js';
 
 /**
  * 为升级后的 standard 任务渲染标准 spec.md。
@@ -181,6 +184,33 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   await assertProtocolBlocksInSync();
   await assertTaskIdentityFatal(cwd, docpathDir, options);
 
+  // ── R-338 S4: check 期风险复评（所有 profile，只升不降）──
+  // 基于实际 diff（evaluateQuickScope 的变更文件集）+ 任务标题文本信号复评风险，
+  // 与创建期记录的 risk_tier 取 max。升级时落盘 state 并写入 governance decisions
+  // 审计；未评估过的旧任务以 R1 为基线（缺省行为不变）。
+  let riskTier: number | undefined = current?.risk_tier;
+  if (current?.task_id) {
+    const riskPolicy = riskPolicyFromConfig(await readRiskPolicyConfig(cwd));
+    const reassessment = reassessRiskTier(current.risk_tier, {
+      files: evaluateQuickScope(cwd).guardedFiles,
+      text: current.task_title || '',
+      policy: riskPolicy,
+    });
+    riskTier = reassessment.tier;
+    if (reassessment.escalated) {
+      const escalated = current;
+      current = await mutateCurrentState(cwd, (previous) => ({
+        ...(previous ?? escalated),
+        risk_tier: riskTier,
+        updated_at: new Date().toISOString(),
+      }));
+      logger.warn(`⚠️  风险复评升级: R${reassessment.baseline} → R${reassessment.tier}（只升不降）`);
+      reassessment.reasons.forEach((reason) => logger.log(`   - ${reason}`));
+      await recordRiskEscalation(cwd, reassessment.baseline, reassessment.tier, reassessment.reasons);
+      logger.log('');
+    }
+  }
+
   if (current && current.task_id && (current.workflow_profile === 'quick' || current.workflow_profile === 'instant')) {
     let spec: Awaited<ReturnType<typeof readActiveStructuredSpecDocument>> = null;
     try {
@@ -193,6 +223,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     const resolution = resolveEffectiveWorkflowProfile({
       profile: current.workflow_profile,
       level: current.level,
+      riskTier,
       majorChangeRequired: spec?.major_change_gate?.required,
       majorChangeTypes: spec?.major_change_gate?.types,
       uiGateRequired: spec?.ui_gate?.state === 'required',

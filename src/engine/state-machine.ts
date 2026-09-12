@@ -223,6 +223,8 @@ export interface StateRegister {
   updated_at: string | null;
   /** Escalation 评估状态（由 escalation engine 填充） */
   escalation?: EscalationState;
+  /** 任务风险档位 R0–R3（R-338；缺省未评估，读取侧按 R1 兜底） */
+  risk_tier?: number;
 }
 
 /** 默认状态寄存器 */

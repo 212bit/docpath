@@ -7,7 +7,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { parse as parseYaml } from 'yaml';
 import { resolveDocpathDir } from './file.js';
-import { DEFAULT_ARTIFACT_CONFIG, mergeArtifactConfig, mergeDocumentScanPaths, type ArtifactConfig, type DocPathConfig } from '../types/config.js';
+import { DEFAULT_ARTIFACT_CONFIG, mergeArtifactConfig, mergeDocumentScanPaths, type ArtifactConfig, type DocPathConfig, type RiskPolicyConfig } from '../types/config.js';
 
 /**
  * 读取 DocPath 配置 —— 唯一出口（R-294 合一）。
@@ -90,4 +90,13 @@ function normalizeDeclaredScanPaths(value: unknown): string[] | null {
 export async function readDeclaredDocumentScanPaths(cwd: string): Promise<string[] | null> {
   const config = await readDocPathConfig(cwd);
   return normalizeDeclaredScanPaths(config.document_scan_paths);
+}
+
+/**
+ * R-338: 读取任务风险分级规则覆盖（engine/risk.ts 的确定性评估信号）。
+ * 未声明时返回 {}，由 normalizeRiskPolicy 回退内置默认。
+ */
+export async function readRiskPolicyConfig(cwd: string): Promise<RiskPolicyConfig> {
+  const config = await readDocPathConfig(cwd);
+  return config.risk ?? {};
 }

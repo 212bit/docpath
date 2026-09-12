@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T03:10:15.121Z",
+    "updated_at": "2026-09-12T03:10:15.121Z",
+    "content_sha256": "5f7658ec177fc9d4e8813d409795edb61e1ad1ffd72d5133e62853d0a1dc2278"
+  },
+  "task_id": "T-20260912-task",
+  "backlog_id": "R-338",
+  "title": "T-20260912-task - 风险分级门禁（包 1）：风险模型 + risk × level 门禁策略 + check 期风险复评",
+  "generated_at": "2026-09-12T03:10:15.121Z",
+  "scope": {
+    "included": [
+      "`src/engine/` 新增风险评估模块（含 config 覆盖）",
+      "`src/engine/workflow-profile.ts` 策略函数化及所有消费点适配（`done.ts`、`agent.ts`、`check.ts`、`journal.ts` 等）",
+      "check 期风险复评与升级路径、审计留痕",
+      "risk × gate 矩阵不变量测试 + 相关单测"
+    ],
+    "excluded": [
+      "包 2：spec 播种、plan 草稿默认化、journal ADR propose-only（另立条目）",
+      "包 3：`engine/escalation.ts` 接线或移除（另立条目）",
+      "对外 CLI 命令名/参数的破坏性变更",
+      "UI/产品功能"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "架构 / 模块边界",
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "用户于 2026-09-12 会话中明确回复\"同意\"确认方向与分期",
+    "decision_brief_markdown": "- 当前问题: 门禁强度与流程阶段挂钩而非与任务风险挂钩，强模型时代阶段仪式成为纯成本，高风险小任务与低风险大任务无法区分对待。\n- 目标: 引入任务级风险维度 R0–R3，门禁策略 risk × level 函数化，check 期风险复评只升不降。\n- 背景: 来自 backlog R-338；用户于 2026-09-12 会话确认三支柱方向与分期。\n- 可选方案:\n  - 方案 A: risk × level 策略函数 + 复评升级（本任务）\n  - 方案 B: 仅扩展 quick/standard 二分 —— 无法表达\"高风险小任务\"与\"低风险大任务\"，放弃\n  - 方案 C: 门禁判定交宿主 agent 自评 —— 违反\"验证不归执行者\"，放弃\n- 推荐方案: 方案 A\n- 决策理由: 确定性、可测试、兼容表内重排；复评机制有 check.ts 既有先例可泛化\n- 不做什么: 不改对外命令名；不引入 LLM 进程内；不覆盖包 2/包 3 范围\n- 成本: 中等；引擎策略层 + 各消费点适配 + 测试\n- 风险: 默认策略变化可能影响既有任务体验 —— 以 NFR-2 兼容约束与不变量测试兜底\n- 回滚方案: 回滚本任务提交；策略函数保留 profile 查表 fallback\n- 用户确认: 用户于 2026-09-12 会话中明确回复\"同意\"确认方向与分期"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "任务级风险维度 R0–R3 评估器：确定性规则评估触碰路径类别（扩展 `RISKY_PATH_PATTERNS`）、契约/API/schema/迁移/CI 触碰、影响面（变更文件数）；规则可经 `.docpath/config.yaml` 覆盖，风格沿用现有 `quick:` 配置块模式。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "门禁策略函数化：`PROFILE_POLICIES` 由 profile 静态查表扩展为 `risk × level` 函数；quick/standard/strict/instant 四档对外命令名与行为兼容性不变。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "check 期风险复评：基于实际 diff 复评风险，风险只升不降；升级泛化现有 quick→standard 自动升级机制，并写入审计记录（governance decisions）。",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "risk × gate 矩阵不变量测试：断言同 level 下风险越高门禁强度单调不减（spec/plan/check/review/journal 各项要求）。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不引入 LLM 到 CLI 进程内，风险评估保持确定性规则。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "保持与现有 DocPath 工作流兼容：既有任务、既有 profile 名、既有命令行为不因默认策略变化而破坏。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "任务级风险维度 R0–R3 由确定性规则在任务创建时评估，规则可经 `.docpath/config.yaml` 覆盖。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "门禁策略为 `risk × level` 函数；quick/standard/strict/instant 四档对外命令名与兼容性不变。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "check 期基于实际 diff 复评风险，只升不降；升级有审计记录。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "risk × gate 矩阵存在不变量测试（同 level 下风险越高门禁强度单调不减）。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "现有测试套件全绿，`docpath check` 门禁通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "门禁强度与流程阶段挂钩而非与任务风险挂钩，强模型时代阶段仪式成为纯成本，高风险小任务与低风险大任务无法区分对待。",
+    "options": [
+      "- 方案 A: risk × level 策略函数 + 复评升级（本任务）"
+    ],
+    "chosen": "方案 A",
+    "rationale": "确定性、可测试、兼容表内重排；复评机制有 check.ts 既有先例可泛化"
+  }
+}

@@ -46,7 +46,26 @@ export interface DocPathConfig {
    */
   document_scan_paths?: string[];
 
+  /** 任务风险分级规则覆盖（R-338）：追加/调整 engine/risk.ts 的确定性评估信号 */
+  risk?: RiskPolicyConfig;
+
   // R-336 FR-3: project_commands 已删除（grep 零消费方，init 不再写入）
+}
+
+/**
+ * 任务风险分级规则配置（R-338）
+ */
+export interface RiskPolicyConfig {
+  /** 追加的 R3 高危路径 glob */
+  critical_patterns?: string[];
+  /** 追加的 R2 较高风险路径 glob */
+  high_patterns?: string[];
+  /** 追加的文本关键词：命中至少升到 R2 */
+  high_keywords?: string[];
+  /** 追加的文本关键词：命中至少升到 R3 */
+  critical_keywords?: string[];
+  /** 影响面阈值：变更文件数达到该值至少升到 R2；默认 20 */
+  high_risk_file_count?: number;
 }
 
 /**

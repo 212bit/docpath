@@ -7,6 +7,8 @@ import { parse as parseYaml } from 'yaml';
 export interface QuickScopeVerdict {
   allowed: boolean;
   changedFiles: string[];
+  /** 变更中未被 allow_patterns 豁免的守卫文件（R-338: 风险复评输入应使用本字段） */
+  guardedFiles: string[];
   ignoredDocpathFiles: string[];
   reasons: string[];
   policy: QuickScopePolicy;
@@ -122,6 +124,7 @@ export function evaluateQuickScope(cwd: string): QuickScopeVerdict {
   return {
     allowed: reasons.length === 0,
     changedFiles,
+    guardedFiles,
     ignoredDocpathFiles,
     reasons,
     policy,
