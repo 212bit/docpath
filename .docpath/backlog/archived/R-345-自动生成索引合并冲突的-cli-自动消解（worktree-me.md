@@ -1,7 +1,7 @@
 ---
 id: R-345
 title: 自动生成索引合并冲突的 CLI 自动消解（worktree merge 增强）
-status: proposed
+status: done
 priority: P2
 level: 2
 source: docpath backlog add
@@ -9,12 +9,12 @@ readiness: confirmed
 evidence:
   brainstorm: null
   analysis: null
-  spec: null
+  spec: tasks/T-20260912-cli-worktree-merge/spec.md
   decision_brief: R-344 收口实战发现（会话内 Decision Brief，2026-09-12）
   user_confirmed: 用户于 2026-09-12 会话中明确引用改进建议并要求捕获
 links:
-  task: null
-  spec: null
+  task: T-20260912-cli-worktree-merge
+  spec: tasks/T-20260912-cli-worktree-merge/spec.md
 created_at: 2026-09-12
 ---
 

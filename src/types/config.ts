@@ -49,6 +49,12 @@ export interface DocPathConfig {
   /** 任务风险分级规则覆盖（R-338）：追加/调整 engine/risk.ts 的确定性评估信号 */
   risk?: RiskPolicyConfig;
 
+  /** worktree 行为配置（R-345）：合并冲突自动消解的可重建路径扩展 */
+  worktree?: {
+    /** 追加的可自动消解冲突路径（在内置 docs-index.json/backlog.md 之外） */
+    auto_resolve_paths?: string[];
+  };
+
   // R-336 FR-3: project_commands 已删除（grep 零消费方，init 不再写入）
 }
 

@@ -12,6 +12,7 @@ import { isGitRepo, isInWorktree, listWorktrees } from '../../utils/worktree.js'
 import {
   getWorktreeDiagnostics,
   parsePorcelainPaths,
+  resolveIndexConflicts,
   resolveMergeTarget,
   resolveWorktreeManagerRoot,
   runGit,
@@ -134,14 +135,28 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
     const unmergedFiles = (await runGitCapture(cwd, ['diff', '--name-only', '--diff-filter=U'])).trim();
     if (unmergedFiles.length > 0) {
       hasConflicts = true;
-      console.error(`❌  合并目标分支 ${targetMergeBranch} 时发生冲突!`);
-      console.error('未合并的文件:');
-      const lines = unmergedFiles.split('\n');
-      for (const line of lines) {
-        console.error(`  - ${line}`);
+      const conflictFiles = unmergedFiles.split('\n').filter(Boolean);
+      // R-345: 冲突全部命中可重建索引时自动消解并完成合并
+      const resolution = await resolveIndexConflicts(cwd, conflictFiles);
+      if (resolution.resolved.length > 0) {
+        console.log(`[FR-3] 冲突文件全部为可重建索引，自动消解并完成合并:`);
+        resolution.resolved.forEach((file) => console.log(`  - ${file}${resolution.rebuilds.some((r) => r.path === file) ? '（已重建）' : ''}`));
+        await execFileAsync('git', ['commit', '--no-edit'], { cwd });
+        console.log(`  ✓ 同步合并完成（自动消解）`);
+      } else {
+        console.error(`❌  合并目标分支 ${targetMergeBranch} 时发生冲突!`);
+        console.error('未合并的文件:');
+        conflictFiles.forEach((line) => console.error(`  - ${line}`));
+        // R-345 FR-3: 不可消解时不再遗留 mid-merge 现场（与 WT-1 哲学一致）
+        try {
+          await execFileAsync('git', ['merge', '--abort'], { cwd });
+          console.error('✅ 已执行 git merge --abort，工作区恢复合并前状态。');
+        } catch {
+          console.error(`❌ git merge --abort 失败，请手工执行: git -C ${cwd} merge --abort`);
+        }
+        console.error('\n⚠️ 请先在另一侧收口上述文件后重试，或手工合并后重跑本命令。');
+        process.exit(1);
       }
-      console.error('\n⚠️ 请在当前工作区解决上述冲突（推荐由 Agent 现场读取冲突标记智能解决），执行 git add 标记已解决，然后重新运行 docpath worktree merge 完成合并流程。');
-      process.exit(1);
     } else {
       console.error(`❌ git merge 失败: ${err instanceof Error ? err.message : String(err)}`);
       process.exit(1);
@@ -265,7 +280,20 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
     // 合并 worktree 分支回 main
     console.log(`  在主仓合并分支 ${currentBranch} 到 ${targetBranchEnv}...`);
     const mergeMsg = `Merge branch '${currentBranch}' into ${targetBranchEnv}`;
-    await runGit(repoRoot, ['merge', currentBranch, '--no-ff', '-m', mergeMsg]);
+    try {
+      await runGit(repoRoot, ['merge', currentBranch, '--no-ff', '-m', mergeMsg]);
+    } catch (mergeErr) {
+      // R-345: 冲突全部命中可重建索引时自动消解并完成合并，否则上抛走 WT-1 恢复
+      const unmerged = (await runGitCapture(repoRoot, ['diff', '--name-only', '--diff-filter=U'])).trim();
+      const conflictFiles = unmerged.split('\n').filter(Boolean);
+      if (conflictFiles.length === 0) throw mergeErr;
+      const resolution = await resolveIndexConflicts(repoRoot, conflictFiles);
+      if (resolution.resolved.length === 0) throw mergeErr;
+      console.log(`  冲突文件全部为可重建索引，自动消解:`);
+      resolution.resolved.forEach((file) => console.log(`    - ${file}${resolution.rebuilds.some((r) => r.path === file) ? '（已重建）' : ''}`));
+      await execFileAsync('git', ['commit', '--no-edit'], { cwd: repoRoot });
+      console.log('  ✓ 合并已完成（自动消解）');
+    }
 
     const mergeHash = (await runGitCapture(repoRoot, ['log', '-1', '--format=%H'])).trim();
     
