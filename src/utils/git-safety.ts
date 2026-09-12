@@ -17,8 +17,12 @@ export interface GitSafetyResult {
 
 /**
  * Check Git repository safety before performing operations
+ *
+ * @param stagingCandidates R-347: 即将被 stage 的文件（changes report 分组平铺）。
+ *   出现在候选集里的未跟踪源码文件已被任务归属，不再视为「重要未跟踪文件」——
+ *   否则 `commit --stage` 会拒绝 `changes --agent` 刚推荐的文件，口径打架。
  */
-export function checkGitSafety(cwd: string): GitSafetyResult {
+export function checkGitSafety(cwd: string, stagingCandidates: readonly string[] = []): GitSafetyResult {
   const result: GitSafetyResult = {
     safe: true,
     isDetachedHead: false,
@@ -97,7 +101,10 @@ export function checkGitSafety(cwd: string): GitSafetyResult {
       if (untracked) {
         const untrackedLines = untracked.split('\n').filter(Boolean);
         const importantExtensions = ['.ts', '.js', '.tsx', '.jsx', '.go', '.py', '.java', '.rs', '.c', '.cpp', '.h'];
+        const candidateSet = new Set(stagingCandidates.map((file) => file.replace(/\\/g, '/').replace(/^\.\/+/, '')));
         const importantFiles = untrackedLines.filter(file => {
+          // R-347: already claimed by the staging plan → not an orphan
+          if (candidateSet.has(file)) return false;
           // Check if in src/ directory or similar
           const inSourceDir = file.startsWith('src/') || file.startsWith('lib/') || file.startsWith('pkg/');
           // Check if has important extension

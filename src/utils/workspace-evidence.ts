@@ -18,6 +18,8 @@ export interface CheckEvidenceItem {
   category?: CheckCategory;
   severity?: CheckSeverity;
   environment_failure?: boolean;
+  /** R-347: 实际执行的外部命令 */
+  command?: string;
 }
 
 /** R-334: 宽 string → 窄 union 校验器；返回 undefined 表示非合法值（兼容旧证据） */

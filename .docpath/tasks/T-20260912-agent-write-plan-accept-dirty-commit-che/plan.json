@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T15:43:26.081Z",
+    "updated_at": "2026-09-12T15:43:26.081Z",
+    "content_sha256": "fee87db7cca5e5ac536bd00ca7d89779a6c89ac42967a6b0dea88909e229d90f"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-12T15:43:26.081Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "协议文本第 4 条 + 根 AGENTS.md 同步",
+      "description": "templates/protocols/AGENTS.md Token Economy Rules 新增第 4 条；根 AGENTS.md 同步；install --check 通过。",
+      "acceptance": "AC-1。",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "write-plan --accept-dirty",
+      "description": "register/spec.ts 加 option；write-plan.ts 有旗标则写 breadcrumb 跳过 guard；tests/dirty-worktree-guard 补两用例。",
+      "acceptance": "AC-2。",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "commit 与 changes 口径统一",
+      "description": "checkGitSafety 接受 stagingCandidates；commit.ts 先取 changes report 分组传入；tests/commit-injection 补正反用例。",
+      "acceptance": "AC-3。",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "check 命令清单",
+      "description": "CheckResult/CheckEvidenceItem 加可选 command；runCheck 填充；printCheckReport 通过时打印清单；evidence 写入；tests/check-review 补断言。",
+      "acceptance": "AC-4。",
+      "dependencies": "S3",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "name": "回归 + 门禁 + commit",
+      "description": "build + 全量 test；check → review → journal；commit。",
+      "acceptance": "AC-5。",
+      "dependencies": "S4",
+      "status": "done"
+    }
+  ]
+}

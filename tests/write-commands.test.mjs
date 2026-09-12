@@ -491,6 +491,33 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('write-plan --accept-dirty bypasses the dirty guard with a breadcrumb receipt (R-347)', () => {
+    // completed 态 + 脏源码：不带旗标被 dirty guard 拦；带旗标写入成功且留证据。
+    const cwd = mkWorkspace({ phase: 'completed', gate: 'review_pass', taskId: 'T-DONE' });
+    execSync('git init && git config user.email t@e.com && git config user.name T && git add . && git commit -qm init', { cwd, encoding: 'utf-8' });
+    writeFileSync(join(cwd, 'app.ts'), 'export const changed = 1;\n');
+    const content = [
+      '## 执行计划',
+      '',
+      '### S1: plan after code',
+      '- **描述**: 代码先落盘',
+      '- **验收条件**: plan 可写',
+      '- **依赖**: 无',
+      '',
+    ].join('\n');
+
+    const blocked = runResultWithInput(`write-plan --cwd ${cwd} --stdin`, cwd, content);
+    assert.notEqual(blocked.code, 0);
+    assert.match(blocked.out, /拒绝在 dirty worktree 上启动新任务/);
+
+    const output = runWithInput(`write-plan --cwd ${cwd} --stdin --accept-dirty "code landed before plan"`, cwd, content);
+    assert.match(output, /--accept-dirty 已记录 breadcrumb 证据: code landed before plan/);
+    assert.match(output, /plan\.md 已写入/);
+    const crumbs = readFileSync(join(cwd, '.docpath', 'tasks', 'T-DONE', 'breadcrumb.jsonl'), 'utf-8');
+    assert.match(crumbs, /write-plan --accept-dirty: code landed before plan/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('go reads plan.json before stale plan.md and still fails loud on corrupt plan.json', () => {
     const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
     const content = [

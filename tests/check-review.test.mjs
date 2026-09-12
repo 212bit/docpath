@@ -384,6 +384,13 @@ describe('check and review commands', () => {
       assert.match(result.out, /测试/);
       assert.match(result.out, /Lint/);
       assert.match(result.out, /全部通过/);
+      // R-347: 门禁列出实际执行的外部命令，agent 据此不再手动重跑
+      assert.match(result.out, /已执行命令（门禁已跑过，无需手动重复）/);
+      assert.match(result.out, /TypeScript 编译: tsc --noEmit/);
+      const lastCheck = JSON.parse(readFileSync(join(worktree, '.docpath', 'workspace', 'last-check.json'), 'utf-8'));
+      const withCommand = lastCheck.checks.filter((c) => typeof c.command === 'string' && c.command.length > 0);
+      assert.ok(withCommand.length >= 4, `last-check.json checks[] should carry command: ${JSON.stringify(lastCheck.checks)}`);
+      assert.ok(withCommand.every((c) => !/2>&1\s*$/.test(c.command)), 'command should not keep the internal 2>&1 suffix');
     } finally {
       try { execSync(`git worktree remove --force ${JSON.stringify(worktree)}`, { cwd: main, encoding: 'utf-8' }); } catch { /* ignore cleanup */ }
       rmSync(main, { recursive: true, force: true });

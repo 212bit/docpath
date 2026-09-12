@@ -145,11 +145,13 @@ function registerWritePlanCommand(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--content <content>', 'plan 内容（Markdown）')
     .option('--stdin', '从 stdin 读取内容')
-    .action(async (options: { cwd?: string; content?: string; stdin?: boolean }) => {
+    .option('--accept-dirty <reason>', '与 go 同语义：记录 breadcrumb 证据后跳过 dirty worktree 拦截（代码先于 plan 落盘时用）')
+    .action(async (options: { cwd?: string; content?: string; stdin?: boolean; acceptDirty?: string; 'accept-dirty'?: string }) => {
       await writePlanCommand({
         cwd: options.cwd || process.cwd(),
         content: options.content,
         stdin: options.stdin,
+        acceptDirty: options.acceptDirty ?? options['accept-dirty'],
       });
     });
 }

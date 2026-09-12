@@ -14,6 +14,7 @@ import { canonicalTaskDir, currentTaskDir, writeActiveTaskFile } from '../utils/
 import { readCurrentState } from '../utils/workspace.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 import { readStdin } from '../utils/stdin.js';
+import { writeBreadcrumb } from '../engine/breadcrumb.js';
 
 interface WritePlanOptions {
   cwd: string;
@@ -21,6 +22,8 @@ interface WritePlanOptions {
   content?: string;
   /** 从 stdin 读取 */
   stdin?: boolean;
+  /** R-347: 与 go 同语义 —— 记录 breadcrumb 证据后跳过 dirty guard（代码先于 plan 落盘时用）。 */
+  acceptDirty?: string;
 }
 
 export async function writePlanCommand(options: WritePlanOptions): Promise<void> {
@@ -60,10 +63,21 @@ export async function writePlanCommand(options: WritePlanOptions): Promise<void>
   }
 
   const current = await readCurrentState(cwd);
-  if (!current?.task_id || current.phase === 'idle' || current.phase === 'completed') {
+  const needsCleanGuard = !current?.task_id || current.phase === 'idle' || current.phase === 'completed';
+  if (needsCleanGuard && !options.acceptDirty) {
     assertCleanWorktreeForNewTask(cwd, 'docpath write-plan');
   }
   const taskId = current?.task_id || 'current';
+  if (needsCleanGuard && options.acceptDirty) {
+    // R-347: 首等恢复旗标 —— 与 go --accept-dirty 同语义，记录 breadcrumb 证据后放行。
+    await writeBreadcrumb(cwd, {
+      taskId,
+      step: 'plan',
+      status: 'in_progress',
+      context: `write-plan --accept-dirty: ${options.acceptDirty}`,
+    });
+    console.log(`⚠️  --accept-dirty 已记录 breadcrumb 证据: ${options.acceptDirty}`);
+  }
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'plan.md', planContent);
 
   console.log(`✅  plan.md 已写入: ${canonicalPath}`);

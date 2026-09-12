@@ -86,6 +86,15 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
     console.log('    这些失败与代码质量无关，用 token 诊断代码是浪费。\n');
   }
 
+  // R-347: 列出门禁实际执行的外部命令，agent 据此不再在 check 前后手动重跑同一套验证。
+  const executed = results.filter((r) => r.command);
+  if (executed.length > 0) {
+    console.log('\n🧾  已执行命令（门禁已跑过，无需手动重复）:');
+    for (const r of executed) {
+      console.log(`  ${r.passed ? '✅' : '❌'}  ${r.name}: ${r.command}`);
+    }
+  }
+
   console.log(`\n${allPassed ? '✅  全部通过' : '❌  存在失败项'}\n`);
 }
 
@@ -134,6 +143,7 @@ export async function writeLastCheckEvidence(
     ...(result.category ? { category: result.category } : {}),
     ...(result.severity ? { severity: result.severity } : {}),
     ...(result.environment_failure ? { environment_failure: true } : {}),
+    ...(result.command ? { command: result.command } : {}),
   }));
   const { computeCodeScopeDigest } = await import('./cache.js');
   await writeLastCheckEvidenceFiles(docpathDir, {

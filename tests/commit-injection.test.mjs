@@ -61,3 +61,34 @@ describe('docpath commit — shell injection guard', () => {
     assert.equal(existsSync(marker), false, 'backtick substitution executed — injection!');
   });
 });
+
+describe('docpath commit — untracked source parity with changes --agent (R-347)', () => {
+  it('stages an untracked src file that changes --agent already grouped as source, instead of refusing it', () => {
+    const cwd = mkRepo();
+    git(cwd, ['commit', '-m', 'baseline']);
+    mkdirSync(join(cwd, 'src'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'new-module.ts'), 'export const x = 1;\n');
+
+    const out = dp(cwd, ['commit', '--stage']);
+
+    assert.doesNotMatch(out, /Important untracked files detected/);
+    const staged = git(cwd, ['diff', '--cached', '--name-only']).trim().split('\n');
+    assert.ok(staged.includes('src/new-module.ts'), `expected src/new-module.ts staged, got: ${staged.join(', ')}`);
+  });
+
+  it('checkGitSafety still flags an untracked src file that no staging plan claims', async () => {
+    const { checkGitSafety } = await import('../dist/utils/git-safety.js');
+    const cwd = mkRepo();
+    git(cwd, ['commit', '-m', 'baseline']);
+    mkdirSync(join(cwd, 'src'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'orphan.ts'), 'export const y = 2;\n');
+
+    const unclaimed = checkGitSafety(cwd, []);
+    assert.equal(unclaimed.safe, false);
+    assert.deepEqual(unclaimed.untrackedImportantFiles, ['src/orphan.ts']);
+
+    const claimed = checkGitSafety(cwd, ['src/orphan.ts']);
+    assert.equal(claimed.safe, true);
+    assert.deepEqual(claimed.untrackedImportantFiles, []);
+  });
+});

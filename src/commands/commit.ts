@@ -1,6 +1,19 @@
 import { execFileSync } from 'node:child_process';
 import { checkGitSafety, formatSafetyResult } from '../utils/git-safety.js';
 import { stageRecommendedFiles, formatStageResult, getStagedFiles } from '../utils/git-staging.js';
+import { buildChangesReport } from '../utils/changes-report.js';
+
+/** R-347: changes report 分组平铺（含 worktree 隔离下的 commit_relevant_files）；报告失败时退回空集，不放宽任何文件。 */
+async function stagingCandidateFiles(cwd: string): Promise<string[]> {
+  try {
+    const report = await buildChangesReport(cwd);
+    return report.worktree_isolation.active
+      ? report.worktree_isolation.commit_relevant_files
+      : Object.values(report.groups).flat();
+  } catch {
+    return [];
+  }
+}
 
 interface CommitOptions {
   dryRun: boolean;
@@ -20,7 +33,8 @@ export async function commitCommand(options: CommitOptions): Promise<void> {
 
   // Step 1: Safety checks
   console.log('🔍 Checking Git safety...\n');
-  const safetyResult = checkGitSafety(cwd);
+  // R-347: 用 changes report 的分组作为「已归属」白名单，与 changes --agent 口径一致。
+  const safetyResult = checkGitSafety(cwd, await stagingCandidateFiles(cwd));
 
   if (!safetyResult.safe) {
     console.error(formatSafetyResult(safetyResult));

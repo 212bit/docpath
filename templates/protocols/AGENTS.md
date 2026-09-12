@@ -121,6 +121,11 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
      - `docpath reveal --topic <keyword> --level 1`
      - `docpath context --max-tokens 2000 --topic <keyword>`
 
+4. **Failure Handling & Verification Dedup (失败处理与验证去重)**:
+   - **Environment-level failures stop after two attempts**: when a tool call is refused by the harness itself (permission denied, sandbox/classifier unavailable, command blocked) rather than by the command's own output, retry at most once. On the second failure, stop, report the exact error and what remains undone, and let the user decide. Re-sending an identical large payload ten times costs more than the task it was meant to finish.
+   - **Do not re-run what the gate already ran**: `docpath check` and `docpath done` execute typecheck / test / build and print the commands they ran. Do not run those by hand immediately before or after the gate "to be sure"; run targeted checks during iteration, then let the gate be the single full run.
+   - **Edit with the editor tool, not with scripts**: prefer the harness's file-edit tool over `sed` / heredoc / python rewrites. Script edits make the harness re-inject the whole changed file into context on the next turn; a targeted edit does not. Fall back to scripts only for mechanical multi-site renames the editor cannot express.
+
 ### Lifecycle Rules
 
 - Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.

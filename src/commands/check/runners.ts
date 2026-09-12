@@ -101,6 +101,8 @@ export function runCheck(
   category?: CheckResult['category'],
   timeoutMs: number = DEFAULT_CHECK_TIMEOUT_MS,
 ): CheckResult {
+  // R-347: 记录到 CheckResult 的命令去掉内部拼接的 stderr 重定向，给 agent 看的是它能照抄的命令。
+  const command = cmd.replace(/\s+2>&1\s*$/, '');
   try {
     const output = execSync(cmd, {
       cwd,
@@ -110,7 +112,7 @@ export function runCheck(
       maxBuffer: 10 * 1024 * 1024,
       env: checkCommandEnv(cwd),
     });
-    return { name, passed: true, output: output.slice(0, 500), category };
+    return { name, passed: true, output: output.slice(0, 500), category, command };
   } catch (err: unknown) {
     if (isTimeoutKill(err)) {
       const seconds = Math.round(timeoutMs / 1000);
@@ -120,6 +122,7 @@ export function runCheck(
         output: `命令超时（>${seconds}s）被终止，并非检查失败。命令: ${cmd}\n` +
           `若该命令本身耗时较长，请提高其超时上限或拆分检查。`,
         category,
+        command,
       };
     }
     const rawOutput = errorOutput(err).slice(0, 500);
@@ -129,6 +132,7 @@ export function runCheck(
       passed: false,
       output: rawOutput,
       category,
+      command,
       ...(isEnvFailure ? { environment_failure: true } : {}),
     };
   }
