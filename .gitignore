@@ -16,6 +16,7 @@
 /.claude/
 /.sisyphus/
 /.opencode/node_modules/
+/.dsh-vision-router/
 
 # DocPath worktrees
 /.worktrees/

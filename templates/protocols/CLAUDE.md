@@ -97,21 +97,29 @@ tail range.
 
 <!-- docpath:block lifecycle-commands -->
 ```bash
+docpath quick "Fix typo in docs"   # mandatory for tiny low-risk changes (< 50 lines diff)
 docpath go --step S1
-docpath agent enter   # optional session declaration; requires an executing step
 docpath agent step --step "S1" --status done
 docpath check
 docpath agent done --step "<task>"
 ```
 <!-- /docpath:block -->
 
+### Lightweighting & Token Economy (轻量化与 Token 预算准则)
+
+- **Mandatory Workflow Tiering**:
+  - `Diff < 50 行` (文案、配置、局部 Bugfix): **必须**使用 `/docpath-quick "<title>"` 或 `docpath quick`。跳过 promotion/spec/plan 阶段，单步进入执行态，减少 70% 交互往返。
+  - `Diff < 100 行` (单模块功能、无契约变更): **必须**使用 `--level 1`，精简掉冗余的审查与知识归档仪式。
+  - 重大架构/多模块/协议变更: 仅在必要时使用 `level 2` / Standard 流程。
+- **Atomic Operations**: 使用 `docpath go --step <id>` 一步认领并启动步骤；中间编码调试阶段避免频繁调用全量 `docpath check`，全量 check 仅在收尾前触发。
+- **Context Window Protection**: 严禁全文读取 `plan.md`、`spec.md`、`current.md` 等人类渲染视图；始终消费紧凑机器视图或带 Token 限制的命令 (`/docpath-context`、`docpath reveal --level 1`)。
+
 Workflow:
 
 1. Atomically claim/start the active step with `docpath go --step <id>`; this moves it into executing.
-2. Optionally declare the session with `docpath agent enter` (legal only after a step is executing).
-3. Make the scoped change.
-4. Record completion with `docpath agent step --step "<id>" --status done`.
-5. Run `docpath check` and `docpath agent done` before claiming completion.
+2. Make the scoped change.
+3. Record completion with `docpath agent step --step "<id>" --status done`.
+4. Run `docpath check` and `docpath agent done` before claiming completion.
 
 ## Required Gates
 

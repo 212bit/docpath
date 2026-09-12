@@ -87,24 +87,39 @@ tail range that answers the question.
 Use lifecycle commands instead of manual state edits:
 
 ```bash
-docpath quick "Fix typo in docs"   # only for tiny low-risk changes
+docpath quick "Fix typo in docs"   # mandatory for tiny low-risk changes (< 50 lines diff)
 docpath go --step S1
-docpath agent enter   # optional session declaration; requires an executing step
 docpath agent step --step "S1" --status done
 docpath check
 docpath agent done --step "<task>"
 ```
 
-Rules:
+### Lightweighting & Token Economy Rules (轻量化与 Token 预算准则)
+
+To avoid heavy ceremony, unnecessary round-trip latency, and context window bloat:
+
+1. **Mandatory Workflow Tiering (强制分级，严禁越级大炮打蚊子)**:
+   - **Ultra-light / Quick Fixes (Estimated diff < 50 lines, single config, docs typo, localized bugfix)**:
+     **MUST** use `docpath quick "<title>"`. Bypasses backlog promotion, spec, and plan ceremonies; directly claims execution; preserves quality baseline with `check` on closeout. Reduces CLI round-trips by 70%.
+   - **Small/Medium Tasks (Estimated diff < 100 lines, single module, no contract/architecture changes)**:
+     **MUST** use `--level 1` (e.g. `docpath backlog add --level 1` or `init --level 1`). Prunes redundant formal review and heavy journal ceremonies.
+   - **Architecture / Cross-module / Breaking Changes**:
+     Only escalate to `level 2` / Standard Profile when scope touches core architecture, multi-module contracts, protocol changes, permissions, or migrations.
+
+2. **Atomic Execution & Incremental Gates (减少往返与门禁等待)**:
+   - **Atomic Step Claim**: Use `docpath go --step <id>` directly to claim and start the step in one shot. Avoid extra round-trips with redundant `agent enter` declarations unless multi-session tracking is explicitly required.
+   - **Incremental Verification During Coding**: During iterative development and debugging, avoid running full-suite `docpath check` in loops. Run targeted tests or fast validation; run the full `docpath check` suite once before `agent done`.
+
+3. **Strict Context Budget & Anti-bloat (严格控制上下文消耗)**:
+   - **NEVER** read full human-rendered Markdown files (`current.md`, `breadcrumb.md`, `plan.md`, `spec.md`, `docs-index.json`).
+   - Always consume compact machine routes (`docpath next --agent`, `docpath status --agent`).
+   - When retrieving topic details, strictly use token-budgeted commands:
+     - `docpath reveal --topic <keyword> --level 1`
+     - `docpath context --max-tokens 2000 --topic <keyword>`
+
+### Lifecycle Rules
 
 - Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.
-- Use `docpath quick "<title>"` for tiny low-risk edits. It creates a lightweight
-  task, requires check on closeout, and skips full review by quick profile.
-  Escalate to the standard lifecycle when scope touches architecture, protocol,
-  permissions, migrations, CI/CD, or broad multi-file changes. For full-cycle
-  tasks, pick the lowest fitting complexity level: estimated diff under ~100
-  lines, single module, no contract/workflow change → `level 1` (do not default
-  to `level 2` for small fixes).
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath agent done` before claiming a task is complete.
 ## Git Convention
