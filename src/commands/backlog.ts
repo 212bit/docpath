@@ -1030,7 +1030,14 @@ async function assertNotActiveInOtherWorktrees(cwd: string, backlogId: string): 
           );
         }
       } catch (err) {
+        // R-344 WT-2: 活跃性阻断继续上抛；读取/解析失败不再静默吞掉——
+        // 否则并发 promote 防重等于裸奔（state.json 损坏时永远验证通过）。
         if (err instanceof Error && err.message.includes('promote')) throw err;
+        const wtName = wt.path.split(/[\\/]/).filter(Boolean).at(-1) || wt.path;
+        throw new Error(
+          `docpath backlog promote: 无法验证工作区 '${wtName}' 的任务活跃性（${err instanceof Error ? err.message : String(err)}）。` +
+          `请检查该工作区 .docpath/workspace/state.json 后重试。`
+        );
       }
     }
   }

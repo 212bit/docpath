@@ -214,16 +214,23 @@ export async function getWorktreeDiagnostics(
   let mergedToMain = isMain;
   let branchUniqueCommits = 0;
   if (!isMain) {
+    // R-344 WT-5: 与解析后的合并目标比较，而非主 checkout 当前所在分支
+    // （主 checkout 临时切到其他分支时旧实现会把已合并误判为未合并）。
+    let mergeTarget = 'main';
+    try {
+      mergeTarget = await resolveMergeTarget(repoRoot);
+    } catch {
+      mergeTarget = 'main';
+    }
     try {
       const head = (await runGitCapture(wtPath, ['rev-parse', 'HEAD'])).trim();
-      await execFileAsync('git', ['merge-base', '--is-ancestor', head, 'HEAD'], { cwd: repoRoot });
+      await execFileAsync('git', ['merge-base', '--is-ancestor', head, mergeTarget], { cwd: repoRoot });
       mergedToMain = true;
     } catch {
       mergedToMain = false;
     }
     try {
-      const mainHead = (await runGitCapture(repoRoot, ['rev-parse', 'HEAD'])).trim();
-      branchUniqueCommits = Number((await runGitCapture(wtPath, ['rev-list', '--count', 'HEAD', '--not', mainHead])).trim());
+      branchUniqueCommits = Number((await runGitCapture(wtPath, ['rev-list', '--count', 'HEAD', '--not', mergeTarget])).trim());
     } catch {
       branchUniqueCommits = 0;
     }
@@ -242,3 +249,57 @@ export async function getWorktreeDiagnostics(
   };
 }
 
+/**
+ * R-344 WT-3: 统一合并目标解析（merge 与 sync 共用）。
+ * 显式参数 → 本地存在直接用；否则尝试 origin/<x>；缺省走 CODE_MERGE_TARGET || 'main'。
+ */
+export async function resolveMergeTarget(cwd: string, branchNameOrTarget?: string): Promise<string> {
+  const verify = async (ref: string): Promise<boolean> => {
+    try {
+      await execFileAsync('git', ['rev-parse', '--verify', '--quiet', ref], { cwd });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const fallback = process.env.CODE_MERGE_TARGET || 'main';
+  const explicit = branchNameOrTarget?.trim();
+  if (explicit) {
+    if (await verify(explicit)) return explicit;
+    if (!explicit.startsWith('origin/')) return `origin/${explicit}`;
+    return explicit;
+  }
+  const remoteFallback = `origin/${fallback}`;
+  if (await verify(remoteFallback)) return remoteFallback;
+  return fallback;
+}
+
+/**
+ * R-344 WT-4: 解析 git status --porcelain 输出中的文件路径。
+ * - rename/copy 条目（`R  old -> new`）返回两侧路径；
+ * - git C 风格引号路径（"..."）去引号并展开常用转义。
+ */
+export function parsePorcelainPaths(raw: string): string[] {
+  const files: string[] = [];
+  for (const line of raw.split('\n')) {
+    const trimmed = line.trimEnd();
+    if (!trimmed) continue;
+    let path = trimmed.slice(3);
+    if (!path) continue;
+    if (path.startsWith('"') && path.endsWith('"') && path.length >= 2) {
+      path = path.slice(1, -1)
+        .replace(/\\\\/g, '\\')
+        .replace(/\\"/g, '"')
+        .replace(/\\t/g, '\t')
+        .replace(/\\n/g, '\n');
+    }
+    if (path.includes(' -> ')) {
+      const [from, to] = path.split(' -> ');
+      if (from) files.push(from);
+      if (to) files.push(to);
+    } else {
+      files.push(path);
+    }
+  }
+  return Array.from(new Set(files.filter(Boolean)));
+}

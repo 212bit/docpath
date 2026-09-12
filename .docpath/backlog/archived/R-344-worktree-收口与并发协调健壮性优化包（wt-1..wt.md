@@ -1,7 +1,7 @@
 ---
 id: R-344
 title: worktree 收口与并发协调健壮性优化包（WT-1..WT-5）
-status: proposed
+status: done
 priority: P1
 level: 2
 source: docpath backlog add
@@ -9,12 +9,12 @@ readiness: confirmed
 evidence:
   brainstorm: null
   analysis: null
-  spec: null
+  spec: tasks/T-20260912-worktree-wt-1-wt-5/spec.md
   decision_brief: worktree 功能审查（会话内 Decision Brief，2026-09-12）
   user_confirmed: 用户于 2026-09-12 会话中审查结论后明确回复'同意'捕获并实施
 links:
-  task: null
-  spec: null
+  task: T-20260912-worktree-wt-1-wt-5
+  spec: tasks/T-20260912-worktree-wt-1-wt-5/spec.md
 created_at: 2026-09-12
 ---
 
