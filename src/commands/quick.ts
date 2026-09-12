@@ -2,6 +2,8 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { transitionWorkflow } from '../engine/transitions.js';
+import { evaluateTaskRisk, riskPolicyFromConfig, riskTierName } from '../engine/risk.js';
+import { readRiskPolicyConfig } from '../utils/config.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { clearCurrentTaskAlias, currentTaskDir, canonicalTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState } from '../utils/workspace.js';
@@ -162,17 +164,27 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
   });
   // level/profile 直接随 FSM 转移落盘（R-286）：此前是出锁后无锁覆写 patch，
   // 既开竞态窗口，也可能覆盖并发转移的结果。
+  // R-338: 创建期风险评估（文本信号：标题），落盘 state.risk_tier；
+  // R2+ 的地板会在 check/done 时自动强制 review/journal full，无需在此拒绝。
+  const riskPolicy = riskPolicyFromConfig(await readRiskPolicyConfig(cwd));
+  const riskVerdict = evaluateTaskRisk({ text: title, policy: riskPolicy });
+
   await transitionWorkflow(cwd, 'step.started', {
     taskId,
     taskTitle: title,
     currentStep: options.instant ? 'instant task active' : 'quick task active',
     level: options.instant ? 0 : 1,
     workflowProfile: profile,
+    riskTier: riskVerdict.tier,
   });
 
   console.log(`✅  ${profile} task 已创建: ${taskId}`);
   console.log(`   title: ${title}`);
   console.log(`   profile: ${profile}`);
+  console.log(`   risk: ${riskTierName(riskVerdict.tier)}${riskVerdict.reasons.length > 0 ? `（${riskVerdict.reasons.join('；')}）` : ''}`);
+  if (riskVerdict.tier >= 2) {
+    console.log('   ⚠️  风险 R2+：done 时将强制 check + review +完整 journal，quick 快车道不适用');
+  }
   if (options.instant) {
     console.log('   gates: lite check (typecheck + 结构门禁,跳 build/test), review skipped');
   } else {

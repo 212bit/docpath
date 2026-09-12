@@ -52,6 +52,8 @@ export interface CurrentState {
   updated_at: string;
   /** Escalation 引擎评估结果（可选） */
   escalation?: EscalationInfo;
+  /** 任务风险档位 R0–R3（R-338；缺省未评估，读取侧按 R1 兜底） */
+  risk_tier?: number;
 }
 
 // ── 核心读写函数 ──
@@ -216,6 +218,7 @@ function normalizeStoredState(raw: Partial<CurrentState> & { state?: string; pha
     started_at: raw.started_at || new Date().toISOString(),
     updated_at: raw.updated_at || new Date().toISOString(),
     escalation: raw.escalation,
+    risk_tier: raw.risk_tier,
   };
 }
 

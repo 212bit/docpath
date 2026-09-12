@@ -32,7 +32,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { join } from 'node:path';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { emitNextHint } from '../utils/next-hint.js';
-import { isQuickProfile, isInstantProfile, gatePolicyForProfile } from '../engine/workflow-profile.js';
+import { isQuickProfile, isInstantProfile, gatePolicyForProfile, resolveGatePolicy } from '../engine/workflow-profile.js';
 import { assertQuickScope } from '../engine/quick-guard.js';
 import { readLastCheckEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
 import { assertCleanWorktreeForNewTask, assertNoNonDocPathChangesForExecutionStart, detectDirtyWorktree, detectUncommittedNonDocPathFiles, renderCommitReminder } from '../utils/git-dirty-guard.js';
@@ -378,7 +378,8 @@ async function runAgentCheckGate(options: AgentOptions, stateAtStart: Awaited<Re
   }
 
   // instant profile: 跳 build+test+lint,仅跑 typecheck + 结构门禁(lite check)。
-  if (gatePolicyForProfile(stateAtStart?.workflow_profile).liteCheck) {
+  // R-338: 风险 R2+ 的地板会关闭 liteCheck,高危任务不得走 lite 通道。
+  if (resolveGatePolicy({ profile: stateAtStart?.workflow_profile, riskTier: stateAtStart?.risk_tier }).policy.liteCheck) {
     try {
       console.log('⚡  instant profile: lite check (typecheck + 结构门禁,跳 build/test)');
       await checkCommand({ cwd, lite: true });

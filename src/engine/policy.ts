@@ -54,3 +54,21 @@ export async function recordSkipReason(
     reason || `用户显式使用 --skip-${gate}`,
   );
 }
+
+/**
+ * R-338 S4: check 期风险复评升级的审计留痕。
+ * 只在 evaluated tier 超过已记录基线时调用（只升不降）。
+ */
+export async function recordRiskEscalation(
+  cwd: string,
+  fromTier: number,
+  toTier: number,
+  reasons: string[],
+): Promise<void> {
+  await appendDecision(
+    cwd,
+    'risk.escalation',
+    `check 风险复评升级 R${fromTier} → R${toTier}`,
+    reasons.length > 0 ? reasons.join('\n') : '基于实际 diff 的确定性风险复评',
+  );
+}

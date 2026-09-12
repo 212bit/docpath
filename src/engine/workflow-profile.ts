@@ -1,3 +1,5 @@
+import { normalizeRiskTier } from './risk.js';
+
 export type WorkflowProfile = 'quick' | 'standard' | 'strict' | 'instant';
 
 export interface GatePolicy {
@@ -63,6 +65,8 @@ export function gatePolicyForProfile(profile: unknown): GatePolicy {
 export interface WorkflowProfileResolutionInput {
   profile?: unknown;
   level?: number | null;
+  /** 任务风险档位（R-338）；接受宽松 number，缺省按 R1 处理，不改变既有行为 */
+  riskTier?: number | null;
   requiresSpec?: boolean;
   requiresPlan?: boolean;
   majorChangeRequired?: boolean;
@@ -87,6 +91,10 @@ export function resolveEffectiveWorkflowProfile(input: WorkflowProfileResolution
 
   if (level >= 2) {
     reasons.push(`任务复杂度级别为 L${level}（quick/instant 限制在 L0/L1）`);
+  }
+  const riskTier = normalizeRiskTier(input.riskTier);
+  if ((storedProfile === 'quick' || storedProfile === 'instant') && riskTier >= 2) {
+    reasons.push(`任务风险达到 R${riskTier}（quick/instant 仅限 R0/R1）`);
   }
   if (input.requiresSpec) {
     reasons.push('任务需要 spec 门禁');
@@ -122,4 +130,70 @@ export function isQuickProfile(profile: unknown): boolean {
 
 export function isInstantProfile(profile: unknown): boolean {
   return normalizeWorkflowProfile(profile) === 'instant';
+}
+
+/**
+ * R-338: 门禁策略解析 —— risk × level 函数化入口。
+ *
+ * 先走 resolveEffectiveWorkflowProfile（quick/instant 在风险 R2+ 时升级
+ * standard），再对解析出的 effectiveProfile 施加风险地板：
+ * - R2+：必须 check + review，journal full；
+ * - R3+：还必须 spec + plan，禁用 liteCheck。
+ * 地板只增不减，保证同 level 下风险越高门禁强度单调不减。
+ */
+export interface ResolveGatePolicyInput extends WorkflowProfileResolutionInput {
+}
+
+export interface GatePolicyResolution {
+  policy: GatePolicy;
+  storedProfile: WorkflowProfile;
+  effectiveProfile: WorkflowProfile;
+  upgraded: boolean;
+  reasons: string[];
+  riskTier: number;
+}
+
+export function resolveGatePolicy(input: ResolveGatePolicyInput): GatePolicyResolution {
+  const resolution = resolveEffectiveWorkflowProfile(input);
+  const riskTier = normalizeRiskTier(input.riskTier);
+  const policy: GatePolicy = { ...PROFILE_POLICIES[resolution.effectiveProfile] };
+  const floorReasons: string[] = [];
+
+  if (riskTier >= 2) {
+    if (!policy.requiresCheck) {
+      policy.requiresCheck = true;
+      floorReasons.push(`风险 R${riskTier} 强制 check 门禁`);
+    }
+    if (!policy.requiresReview) {
+      policy.requiresReview = true;
+      floorReasons.push(`风险 R${riskTier} 强制 review 门禁`);
+    }
+    if (policy.journalMode !== 'full') {
+      policy.journalMode = 'full';
+      floorReasons.push(`风险 R${riskTier} 强制完整 journal`);
+    }
+    if (policy.liteCheck) {
+      policy.liteCheck = false;
+      floorReasons.push(`风险 R${riskTier} 禁用 liteCheck`);
+    }
+  }
+  if (riskTier >= 3) {
+    if (!policy.requiresSpec) {
+      policy.requiresSpec = true;
+      floorReasons.push(`风险 R${riskTier} 强制 spec 门禁`);
+    }
+    if (!policy.requiresPlan) {
+      policy.requiresPlan = true;
+      floorReasons.push(`风险 R${riskTier} 强制 plan 门禁`);
+    }
+  }
+
+  return {
+    policy,
+    storedProfile: resolution.storedProfile,
+    effectiveProfile: resolution.effectiveProfile,
+    upgraded: resolution.upgraded || floorReasons.length > 0,
+    reasons: [...resolution.reasons, ...floorReasons],
+    riskTier,
+  };
 }

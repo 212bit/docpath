@@ -29,6 +29,8 @@ export interface TransitionPayload {
   backlogId?: string | null;
   level?: number;
   workflowProfile?: WorkflowProfile;
+  /** 任务风险档位 R0–R3（R-338）；创建期评估，缺省视为未评估 */
+  riskTier?: number;
 }
 
 interface TransitionTarget {
@@ -306,6 +308,12 @@ export async function transitionWorkflow(
         ? 1
         : previous.level;
 
+    const nextRiskTier = payload.riskTier !== undefined
+      ? payload.riskTier
+      : createsDifferentTask
+        ? undefined
+        : previous.risk_tier;
+
     const next: CurrentState = {
       ...previous,
       level: nextLevel,
@@ -316,6 +324,7 @@ export async function transitionWorkflow(
       task_id: payload.taskId ?? previous.task_id,
       task_title: payload.taskTitle ?? previous.task_title,
       ...(payload.backlogId !== undefined ? { backlog_id: payload.backlogId } : {}),
+      ...(nextRiskTier !== undefined ? { risk_tier: nextRiskTier } : {}),
       current_step: payload.currentStep ?? DEFAULT_STEP[event],
       updated_at: nowIso(),
     };

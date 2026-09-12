@@ -27,6 +27,8 @@ import {
 import { today, resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
+import { evaluateTaskRisk, riskPolicyFromConfig, riskTierName } from '../engine/risk.js';
+import { readRiskPolicyConfig } from '../utils/config.js';
 import { archivedTaskDir, backupCurrentTaskAlias, canonicalTaskRelativePath, canonicalTaskDir, clearCurrentTaskAlias, writeActiveTaskFile } from '../utils/task-files.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertCleanWorktreeForNewTask, detectDirtyWorktree } from '../utils/git-dirty-guard.js';
@@ -1102,17 +1104,23 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   item.links.spec = canonicalTaskRelativePath(taskId, 'spec.md');
   await writeBacklogItem(options.cwd, item);
   await refreshBacklogIndex(options.cwd);
+  // R-338: 创建期风险评估（文本信号：标题 + backlog 正文），落盘 state.risk_tier
+  const riskPolicy = riskPolicyFromConfig(await readRiskPolicyConfig(options.cwd));
+  const riskVerdict = evaluateTaskRisk({ text: `${item.title}\n${item.body}`, policy: riskPolicy });
+
   await transitionWorkflow(options.cwd, 'task.created', {
     taskId,
     taskTitle: item.title,
     backlogId: item.id,
     level: item.level,
     workflowProfile: 'standard',
+    riskTier: riskVerdict.tier,
     currentStep: `backlog promote ${item.id} 完成，下一步: docpath plan`,
   });
 
   console.log(`✅  已 promote backlog 条目: ${item.id}`);
   console.log(`   task_id: ${taskId}`);
+  console.log(`   risk: ${riskTierName(riskVerdict.tier)}${riskVerdict.reasons.length > 0 ? `（${riskVerdict.reasons.join('；')}）` : ''}`);
   console.log(`   spec: .docpath/${canonicalTaskRelativePath(taskId, 'spec.md')}`);
   console.log(`   spec_seed: 已预填 backlog 背景/FR/AC/evidence —— 请在 seed 上增量修订，write-spec 全量重写仅用于推倒重来`);
   console.log(`   truth_sync: ${SPEC_TRUTH_SYNC_HINT}`);
