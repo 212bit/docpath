@@ -2,14 +2,18 @@
 id: R-333
 title: check CLI 未注册 --force 选项：CheckOptions.force 存在但传参缺失，用户带 --force 报 Unknown
   option（trace 16:25:48 实测 FAILED 1ms）
-status: proposed
+status: accepted
 priority: P3
 level: 2
 source: docpath backlog capture
-readiness: raw
+readiness: analyzed
 evidence:
   brainstorm: null
-  analysis: null
+  analysis: 复现成立：check 注册块无 --force（59-70 行的 force 属 review
+    块），CheckOptions.force(types.ts:33)与 warnWhenOutsideAgentSession
+    消费方俱在，警告文案引导的 flag 实测报 Unknown option。修复=注册+hasFlag 兜底透传；契约测试双向锁（带 flag 无
+    Unknown+警告压制，不带警告照常）。quick 任务 T-20260912-quick-check-cli-force-r-333 已完成，提交
+    e49fe12。
   spec: null
   decision_brief: null
   user_confirmed: null

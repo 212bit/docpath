@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-09-12T10:48:52.158Z
+> 扫描时间: 2026-09-12T11:22:13.451Z
 
 ## 条目列表
 
@@ -15,6 +15,7 @@
 | R-292 | plan 命令写盘先于 FSM 校验, completed 任务 plan.json 被改写后才报非法转移 | dropped | P2 | 2 |  |
 | R-296 | R-293 残余: stale 夺锁的判定-执行 TOCTOU, rename 可误夺判定后新获取的活锁(全量套件 4/5 实测) | dropped | P2 | 2 |  |
 | R-312 | 非 force install 静默跳过差异文件仍输出完成庆祝, 无跳过清单 (SynapBuddy 实测: 三份陈旧协议副本被掩盖) | dropped | P2 | 2 |  |
+| R-346 | backlog 状态机缝隙：quick 闭环的条目无合法路径到 done（→active 仅 promote，与 quick 强制分级冲突） | proposed | P2 | 2 |  |
 | R-249 | go/promote 的 dirty worktree 拒绝未区分 DocPath 自身产物，频繁误拦 | dropped | P3 | 1 |  |
 | R-306 | 比例刻度加陡: level-1 任务 S 步骤仪式压缩 (评估: 虚构仪式占三四成) | dropped | P3 | 2 |  |
 | R-307 | 小 diff skill 证据豁免/自动化 (评估: 证据动作一半是仪式) | dropped | P3 | 2 |  |
@@ -22,7 +23,7 @@
 | R-309 | lease/handoff 层数据裁决式去留 (评估: 24 任务零使用恒空) | dropped | P3 | 2 |  |
 | R-310 | quick 通道可发现性: next/promote 主动建议轻量路径 | dropped | P3 | 2 |  |
 | R-320 | P1→关闭: next --agent 状态哈希去重 — 前提证伪（FR-4 取证） | dropped | P3 | 2 |  |
-| R-333 | check CLI 未注册 --force 选项：CheckOptions.force 存在但传参缺失，用户带 --force 报 Unknown option（trace 16:25:48 实测 FAILED 1ms） | proposed | P3 | 2 |  |
+| R-333 | check CLI 未注册 --force 选项：CheckOptions.force 存在但传参缺失，用户带 --force 报 Unknown option（trace 16:25:48 实测 FAILED 1ms） | accepted | P3 | 2 |  |
 
 ## 用途说明
 
