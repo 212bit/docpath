@@ -17,6 +17,8 @@ pnpm link --global
 docpath --help
 ```
 
+注意双轨事实：`pnpm link --global` 生效前，PATH 上的 `docpath` 仍解析到旧的全局安装——在仓库内直接运行它会静默使用旧行为（同版本号也可能落后于未发布的提交）。仓库内验证请显式 `node bin/docpath.js <command>`；开发版首次检测到这种 PATH 影子会给一行提示（同一影子状态只提示一次），并可在 `docpath install --doctor` 的 `global-version-drift` 条目随时核对。
+
 ## 2. 初始化项目
 
 首次使用推荐显式交互式初始化：

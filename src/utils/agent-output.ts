@@ -3,7 +3,7 @@ import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
 import { gatePolicyForProfile, resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 import { selectCurrentFocus, summarizeDrift, loadAgentOutputContext, inferRouteFromContext, generateQuickFix, routeStepTopic } from './agent-output/formatters.js';
-import { detectBinaryDrift } from './version-drift.js';
+import { detectBinaryDrift, detectPathShadowing, takePathShadowAdvisory } from './version-drift.js';
 export type { AgentOutput } from './agent-output/formatters.js';
 
 /**
@@ -55,6 +55,12 @@ export async function generateAgentOutput(
 
   const context = await loadAgentOutputContext(cwd, docpathDir);
   const binaryDrift = await detectBinaryDrift(cwd);
+  // R-332: 旧全局二进制不含检测模块（0.1.1 实测在仓库内静默），由开发版侧
+  // 首见 nag-once 报 PATH 影子；drifted 分支（R-335）已有机器字段，不重复提示。
+  if (!binaryDrift?.drifted) {
+    const shadowAdvisory = takePathShadowAdvisory(await detectPathShadowing(cwd));
+    if (shadowAdvisory) console.warn(shadowAdvisory);
+  }
   const inferred = inferRouteFromContext(context);
   const quickFix = generateQuickFix(context);
   const driftSummary = summarizeDrift(context.drift);

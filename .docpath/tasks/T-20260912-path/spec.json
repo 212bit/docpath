@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T09:48:14.662Z",
+    "updated_at": "2026-09-12T09:48:14.662Z",
+    "content_sha256": "8f11283ba743e8831e989465bb2441fc0dba5bc1102fb64f102a3499429f5826"
+  },
+  "task_id": "T-20260912-path",
+  "backlog_id": "R-332",
+  "title": "T-20260912-path - 全局安装与仓库开发版漂移提示：PATH 旧版无感知，双轨易踩行为差异",
+  "generated_at": "2026-09-12T09:48:14.662Z",
+  "scope": {
+    "included": [
+      "全局安装与仓库开发版漂移提示：PATH 旧版无感知，双轨易踩行为差异"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 本机 PATH 的 docpath 为全局旧安装（~/.npm-global），本仓库开发必须 node bin/docpath.js；开发者在仓库目录误用全局旧版时无任何提示，新功能验证易踩旧行为。方向：(a) bin 入口（仓库 checkout 内启动时）检测 PATH docpath 版本差并在 doctor/next 输出提示；(b) 或提供 npm link/落 shim 的引导；(c) 文档明示双轨事实。\n- 目标: 全局安装与仓库开发版漂移提示：PATH 旧版无感知，双轨易踩行为差异\n- 背景: 来自 backlog R-332\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "全局安装与仓库开发版漂移提示：PATH 旧版无感知，双轨易踩行为差异",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "1) install-core 新增 checkGlobalVersionDrift（warn 级）：docpath 源码 checkout 内 PATH docpath 版本与仓库 package.json 版本不一致时产出 global-version-drift issue，install --doctor 可见；2) next --agent 首次检测到新漂移状态给一行 advisory 提示（nag-once，同版本对不重复），指明 node bin/docpath.js 正确调用；3) getting-started 补双轨说明；4) 非 docpath 项目/无全局安装/版本一致三种场景零噪音；5) 回归测试锁定",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-332 与任务 T-20260912-path 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "本机 PATH 的 docpath 为全局旧安装（~/.npm-global），本仓库开发必须 node bin/docpath.js；开发者在仓库目录误用全局旧版时无任何提示，新功能验证易踩旧行为。方向：(a) bin 入口（仓库 checkout 内启动时）检测 PATH docpath 版本差并在 doctor/next 输出提示；(b) 或提供 npm link/落 shim 的引导；(c) 文档明示双轨事实。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

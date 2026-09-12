@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-path","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 全局安装与仓库开发版漂移提示：PATH 旧版无感知，双轨易踩行为差异","timestamp":"2026-09-12T09:48:29.483Z","sessionId":"r343-fix"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-path","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译, 子任务完成度 (0/1)","timestamp":"2026-09-12T10:11:12.532Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-path","step":"check","status":"blocked","context":"质量检查失败: 子任务完成度 (0/1)","timestamp":"2026-09-12T10:13:47.737Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-path","step":"S1","status":"done","context":"R-332：PATH 影子检测（version-drift 扩展）+ doctor issue + nag-once advisory + 文档，8 项测试绿","timestamp":"2026-09-12T10:14:26.739Z","sessionId":"r343-fix"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-path","step":"check","status":"done","context":"质量检查通过 (10 项)","timestamp":"2026-09-12T10:15:33.002Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-path","step":"review","status":"done","context":"代码审查: 0 错误, 2 警告, 0 提示","timestamp":"2026-09-12T10:15:34.187Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260912-path","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-12T10:15:34.823Z"}

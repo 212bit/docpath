@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T10:14:26.743Z",
+    "updated_at": "2026-09-12T10:14:26.743Z",
+    "content_sha256": "36e49bbcdf4a0172894190fb421a2f9ec81f423559f536504b3a0ed100027c06"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-12T10:14:26.743Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 全局安装与仓库开发版漂移提示：PATH 旧版无感知，双轨易踩行为差异",
+      "description": "完成 FR-1: 全局安装与仓库开发版漂移提示：PATH 旧版无感知，双轨易踩行为差异，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 1) install-core 新增 checkGlobalVersionDrift（warn 级）：docpath 源码 checkout 内 PATH docpath 版本与仓库 package.json 版本不一致时产出 global-version-drift issue，install --doctor 可见；2) next --agent 首次检测到新漂移状态给一行 advisory 提示（nag-once，同版本对不重复），指明 node bin/docpath.js 正确调用；3) getting-started 补双轨说明；4) 非 docpath 项目/无全局安装/版本一致三种场景零噪音；5) 回归测试锁定；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-332 与任务 T-20260912-path 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

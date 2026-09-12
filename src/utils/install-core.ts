@@ -13,6 +13,7 @@ import { createHash } from 'node:crypto';
 import { parse as parseYaml } from 'yaml';
 import { exists } from './file.js';
 import { detectProject, type ProjectInfo } from './detect.js';
+import { detectPathShadowing } from './version-drift.js';
 
 export type Target = 'codex' | 'claude' | 'opencode' | 'universal';
 type HookMode = 'check' | 'agent-done';
@@ -561,6 +562,20 @@ async function checkManifestDoctor(context: InstallContext): Promise<DoctorIssue
   }
 }
 
+// ─── R-332: 全局安装与仓库开发版双轨漂移 ───
+
+async function checkGlobalVersionDrift(context: InstallContext): Promise<DoctorIssue[]> {
+  const shadow = await detectPathShadowing(context.cwd);
+  if (!shadow) return [];
+  const same = shadow.shadow_version !== null && shadow.shadow_version === shadow.repo_version;
+  return [{
+    severity: 'warn',
+    id: 'global-version-drift',
+    message: `PATH 上的 docpath${shadow.shadow_version ? ` (${shadow.shadow_version})` : ''} 指向 ${shadow.shadow_path}，与本仓库开发版${shadow.repo_version ? ` (${shadow.repo_version})` : ''} 双轨并存${same ? '——同版本号不代表同行为，未合并提交即有差异' : '，仓库行为以本地构建为准'}`,
+    suggestion: '运行 node bin/docpath.js <command>（仓库内），或 pnpm link --global 注册开发版',
+  }];
+}
+
 function buildDoctorReport(context: InstallContext, issues: DoctorIssue[]): InstallDoctorReport {
   const errors = issues.filter((issue) => issue.severity === 'error').length;
   const warnings = issues.filter((issue) => issue.severity === 'warn').length;
@@ -582,6 +597,7 @@ export async function buildInstallDoctorReportFromContext(context: InstallContex
     ...await checkShimExecutable(context),
     ...await checkCodexConfigRisk(context),
     ...await checkCodexSkillFrontmatter(context),
+    ...await checkGlobalVersionDrift(context),
   ];
   return buildDoctorReport(context, issues);
 }
