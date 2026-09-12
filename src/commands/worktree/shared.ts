@@ -303,3 +303,73 @@ export function parsePorcelainPaths(raw: string): string[] {
   }
   return Array.from(new Set(files.filter(Boolean)));
 }
+
+/**
+ * R-345 FR-1: 可重建索引的合并冲突自动消解。
+ *
+ * 内置集合：.docpath/docs-index.json（docs scan 重建）、.docpath/backlog/backlog.md
+ * （backlog refresh 重建）。config `worktree.auto_resolve_paths:` 可追加路径——
+ * 追加项命中时同样从冲突集合中消解（checkout --theirs 侧），但不做内容重建
+ * （仅两个内置索引有确定性重建原语）。
+ *
+ * all-or-nothing：任一冲突文件不在集合内即返回空清单，调用方回退人工路径。
+ */
+export const REBUILDABLE_INDEX_PATHS: Record<string, 'backlog' | 'docs'> = {
+  '.docpath/backlog/backlog.md': 'backlog',
+  '.docpath/docs-index.json': 'docs',
+};
+
+export async function readAutoResolvePaths(cwd: string): Promise<string[]> {
+  try {
+    const { readDocPathConfig } = await import('../../utils/config.js');
+    const config = await readDocPathConfig(cwd);
+    const extra = config.worktree?.auto_resolve_paths;
+    return Array.isArray(extra) ? extra.filter((item) => typeof item === 'string' && item.trim().length > 0) : [];
+  } catch {
+    return [];
+  }
+}
+
+export interface IndexConflictResolution {
+  resolved: string[];
+  rebuilds: Array<{ path: string; kind: 'backlog' | 'docs' }>;
+}
+
+/**
+ * 判定冲突文件是否可全部自动消解；可以则执行 checkout --theirs + 重建调度。
+ * 返回 resolved 为空表示不可消解（调用方回退 abort/人工路径）。
+ */
+export async function resolveIndexConflicts(
+  cwd: string,
+  unmergedFiles: string[],
+): Promise<IndexConflictResolution> {
+  const extraPaths = await readAutoResolvePaths(cwd);
+  const resolvable = (file: string): boolean =>
+    file in REBUILDABLE_INDEX_PATHS || extraPaths.includes(file);
+  if (unmergedFiles.length === 0 || !unmergedFiles.every(resolvable)) {
+    return { resolved: [], rebuilds: [] };
+  }
+
+  for (const file of unmergedFiles) {
+    await execFileAsync('git', ['checkout', '--theirs', '--', file], { cwd });
+  }
+
+  const rebuilds: Array<{ path: string; kind: 'backlog' | 'docs' }> = [];
+  for (const file of unmergedFiles) {
+    const kind = REBUILDABLE_INDEX_PATHS[file];
+    if (kind === 'backlog') {
+      const { refreshBacklogIndex } = await import('../../engine/backlog.js');
+      await refreshBacklogIndex(cwd);
+      rebuilds.push({ path: file, kind });
+    } else if (kind === 'docs') {
+      const { resolveDocpathDir } = await import('../../utils/file.js');
+      const { refreshProjectDocumentIndex } = await import('../../commands/docs.js');
+      const docpathDir = await resolveDocpathDir(cwd);
+      await refreshProjectDocumentIndex(docpathDir, cwd);
+      rebuilds.push({ path: file, kind });
+    }
+  }
+
+  await execFileAsync('git', ['add', '--', ...unmergedFiles], { cwd });
+  return { resolved: [...unmergedFiles], rebuilds };
+}
