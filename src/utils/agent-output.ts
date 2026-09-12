@@ -2,20 +2,25 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
 import { gatePolicyForProfile, resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
-import { selectCurrentFocus, summarizeDrift, loadAgentOutputContext, inferRouteFromContext, generateQuickFix } from './agent-output/formatters.js';
+import { selectCurrentFocus, summarizeDrift, loadAgentOutputContext, inferRouteFromContext, generateQuickFix, routeStepTopic } from './agent-output/formatters.js';
 import { detectBinaryDrift } from './version-drift.js';
 export type { AgentOutput } from './agent-output/formatters.js';
 
 /**
  * 生成 Agent YAML 输出
+ *
+ * - compact: R-339 超紧凑机器模式——只输出核心路由字段
+ *   （state / next_action / recommended_command / step_id），
+ *   将单次状态视图压至 200 Token 以内；非关键信息走 reveal 按需查询。
  */
 export async function generateAgentOutput(
   cwd: string,
-  options: { view?: 'status' | 'next'; verbose?: boolean } = {},
+  options: { view?: 'status' | 'next'; verbose?: boolean; compact?: boolean } = {},
 ): Promise<string> {
   const { stringify } = await import('yaml');
   const view = options.view || 'next';
   const verbose = options.verbose === true;
+  const compact = options.compact === true;
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
@@ -24,6 +29,17 @@ export async function generateAgentOutput(
       recommended_command: 'docpath init',
       exit_criteria: '项目已初始化并生成 .docpath 工作流目录',
     };
+    if (compact) {
+      return stringify({
+        agent_view: view,
+        state: 'uninitialized',
+        next_action: view === 'status'
+          ? '项目未初始化；需要执行路线时运行 docpath next --agent'
+          : routeHint.next_action,
+        recommended_command: view === 'status' ? 'docpath next --agent' : routeHint.recommended_command,
+        step_id: '',
+      }, { indent: 2 });
+    }
     // 无 .docpath 时返回最小状态
     return stringify({
       agent_view: view,
@@ -78,6 +94,19 @@ export async function generateAgentOutput(
         required_files: [...inferred.required_files],
         must_update: [...inferred.must_update],
       };
+
+  // R-339: 超紧凑机器模式——跳过非核心元数据与活跃会话探测，
+  // 只输出核心路由字段。token 消耗从 500+ 压至 200 Token 以内（减少 60%+）。
+  if (compact) {
+    const stepId = routeStepTopic(routeFields.recommended_command) || context.state?.current_step || '';
+    return stringify({
+      agent_view: view,
+      state: context.state?.state || 'unknown',
+      next_action: routeFields.next_action,
+      recommended_command: routeFields.recommended_command,
+      step_id: stepId,
+    }, { indent: 2 });
+  }
 
   const { buildContextRefs, buildCommandEffects } = await import('./agent-output/formatters.js');
   const refs = buildContextRefs(routeFields);

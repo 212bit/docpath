@@ -1029,6 +1029,33 @@ docpath next --explain
 
 This is important because agents need operational guidance, not just descriptive output.
 
+### 15.1 Ultra-compact route output (R-339)
+
+Agents call `next --agent` frequently; the full YAML (context injection, refs,
+progress, diagnostics) costs ~500+ tokens per call. For hot-path routing use:
+
+```bash
+docpath next --agent --compact
+```
+
+`--compact` renders only the core routing fields (`agent_view`, `state`,
+`next_action`, `recommended_command`, `step_id`), cutting token consumption by
+60%+ (well under 200 tokens per call). Non-core metadata stays available on
+demand via `docpath reveal` / `docpath status --agent`.
+
+Example:
+
+```yaml
+agent_view: next
+state: executing
+next_action: 执行下一个未完成步骤: S2 implement routing
+recommended_command: docpath go --step S2
+step_id: S2
+```
+
+`step_id` is derived from the recommended command's `--step` argument, falling
+back to `state.current_step` when the route has no step.
+
 ---
 
 ## 16. Risks and Design Constraints

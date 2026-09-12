@@ -46,9 +46,26 @@ function mkWorkspace({ phase = 'idle', gate = 'none', taskId = 'T-NEXT', taskTit
 }
 
 function nextAgent(cwd, opts = {}) {
-  const verbose = opts.verbose ? ' --verbose' : '';
-  const output = execSync(`node ${BIN} next --cwd ${cwd} --agent${verbose}`, { encoding: 'utf-8' });
+  const flags = [
+    opts.verbose ? ' --verbose' : '',
+    opts.compact ? ' --compact' : '',
+  ].join('');
+  const output = execSync(`node ${BIN} next --cwd ${cwd} --agent${flags}`, { encoding: 'utf-8' });
   return parse(output);
+}
+
+function nextAgentRaw(cwd, opts = {}) {
+  const flags = [
+    opts.verbose ? ' --verbose' : '',
+    opts.compact ? ' --compact' : '',
+  ].join('');
+  return execSync(`node ${BIN} next --cwd ${cwd} --agent${flags}`, { encoding: 'utf-8' });
+}
+
+// 与 src/utils/document-index.ts estimateTokens 保持一致的估算口径
+function estimateTokens(text) {
+  const cjk = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+  return Math.ceil(cjk * 1.5 + (text.length - cjk) / 4);
 }
 
 function statusAgent(cwd, opts = {}) {
@@ -106,6 +123,71 @@ describe('next --agent routing', () => {
     assert.ok(verboseNext.gate_policy.requires_check);
     const verboseStatus = statusAgent(cwd, { verbose: true });
     assert.ok(verboseStatus.gate_policy.requires_review);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('renders --compact as core routing fields only', () => {
+    const plan = [
+      '## 执行计划',
+      '',
+      '### S1: Contract step',
+      '- [ ] S1: Contract step',
+      '- **描述**: 验证 compact 输出契约',
+      '- **验收条件**: 只保留核心路由字段',
+      '- **依赖**: 无',
+      '',
+    ].join('\n');
+    const cwd = mkWorkspace({ phase: 'planning', gate: 'none', plan });
+    const normal = nextAgent(cwd);
+    const compact = nextAgent(cwd, { compact: true });
+
+    assert.deepEqual(
+      Object.keys(compact).sort(),
+      ['agent_view', 'next_action', 'recommended_command', 'state', 'step_id'],
+    );
+    assert.equal(compact.agent_view, 'next');
+    assert.equal(compact.state, normal.state);
+    assert.equal(compact.next_action, normal.next_action);
+    assert.equal(compact.recommended_command, normal.recommended_command);
+    assert.equal(compact.recommended_command, 'docpath go --step S1');
+    assert.equal(compact.step_id, 'S1');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('falls back to state.current_step for compact step_id when the route has no step', () => {
+    const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
+    const compact = nextAgent(cwd, { compact: true });
+
+    assert.equal(compact.recommended_command, 'docpath backlog capture --title <title>');
+    assert.equal(compact.step_id, 'routing');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('cuts next --agent tokens by 60%+ and stays under 200 tokens in compact mode', () => {
+    const cwd = mkWorkspace({ phase: 'idle', gate: 'none' });
+    const normalTokens = estimateTokens(nextAgentRaw(cwd));
+    const compactTokens = estimateTokens(nextAgentRaw(cwd, { compact: true }));
+
+    assert.ok(normalTokens > 300, `expected a sizeable normal output, got ${normalTokens} tokens`);
+    assert.ok(compactTokens < 200, `expected compact under 200 tokens, got ${compactTokens}`);
+    assert.ok(
+      compactTokens <= normalTokens * 0.4,
+      `expected >=60% token reduction, got ${compactTokens}/${normalTokens}`,
+    );
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('keeps compact output minimal for uninitialized projects', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-next-empty-'));
+    const compact = nextAgent(cwd, { compact: true });
+
+    assert.deepEqual(
+      Object.keys(compact).sort(),
+      ['agent_view', 'next_action', 'recommended_command', 'state', 'step_id'],
+    );
+    assert.equal(compact.state, 'uninitialized');
+    assert.equal(compact.recommended_command, 'docpath init');
+    assert.equal(compact.step_id, '');
     rmSync(cwd, { recursive: true, force: true });
   });
 

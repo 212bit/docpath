@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T07:25:48.142Z",
+    "updated_at": "2026-09-12T07:25:48.142Z",
+    "content_sha256": "2160f9b9e9661f2f9db23c434a3263b2cc48786e0d491666a1cddafb4a682742"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-12T07:25:48.142Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 Ultra-compact --agent 紧凑路由输出：裁剪冗余上下文，将单次状态视图压至 200 Token 以内",
+      "description": "完成 FR-1: Ultra-compact --agent 紧凑路由输出：裁剪冗余上下文，将单次状态视图压至 200 Token 以内，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: next --agent 输出精简到核心路由字段（state, next_action, recommended_command, step_id），token 消耗减少 60% 以上。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-339 与任务 T-20260912-ultra-compact-agent-200-token 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

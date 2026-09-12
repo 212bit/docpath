@@ -55,6 +55,7 @@ type NextOptions = {
   agent?: boolean;
   autoFix?: 'canonical' | 'current' | 'merge';
   verbose?: boolean;
+  compact?: boolean;
 };
 
 function nowIso(): string {
@@ -680,7 +681,7 @@ export async function nextCommand(options: NextOptions): Promise<void> {
       }
     }
   }
-  const output = await generateAgentOutput(options.cwd, { view: 'next', verbose: options.verbose });
+  const output = await generateAgentOutput(options.cwd, { view: 'next', verbose: options.verbose, compact: options.compact });
   if (options.agent) {
     console.log(output);
     return;
