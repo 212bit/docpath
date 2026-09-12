@@ -2,6 +2,8 @@ import type { CAC } from 'cac';
 import { agentCommand } from '../agent.js';
 import { goCommand } from '../go.js';
 import { runCommand } from '../runtime.js';
+import { stepPassCommand } from '../step-pass.js';
+import { quickDoneCommand } from '../quick-done.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 export function registerExecutionCommands(cli: CAC): void {
@@ -21,6 +23,46 @@ export function registerExecutionCommands(cli: CAC): void {
         dryRun: options.dryRun ?? options['dry-run'],
         session: options.session,
         acceptDirty: options.acceptDirty ?? options['accept-dirty'],
+      });
+    });
+
+  cli.command('step-pass', '复合生命周期：完成当前步骤并自动启动下一步（agent step done + go）')
+    .option('--cwd <path>', '项目目录')
+    .option('--step <step>', '要收尾的步骤；缺省取 state.current_step')
+    .option('--note <note>', '收尾事件备注')
+    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
+    .option('--accept-dirty <reason>', '透传给内部 go：记录证据后跳过 dirty worktree 拦截')
+    .action(async (options: { cwd?: string; step?: string; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string }) => {
+      await stepPassCommand({
+        cwd: options.cwd || process.cwd(),
+        step: options.step,
+        note: options.note,
+        session: options.session,
+        acceptDirty: options.acceptDirty ?? options['accept-dirty'],
+      });
+    });
+
+  cli.command('quick-done', '一键收口：done 门禁序列（check/review/journal）+ 提交准备报告')
+    .option('--cwd <path>', '项目目录')
+    .option('--note <note>', '事件备注（跳过门禁时必填原因）')
+    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
+    .option('--skip-check', '跳过 docpath check（须给 --note 原因）')
+    .option('--skip-review', '跳过 docpath review（须给 --note 原因）')
+    .option('--skip-tests', 'check 时跳过 tests')
+    .option('--skip-lint', 'check 时跳过 lint')
+    .option('--approve-review', 'review 时手动批准')
+    .option('--no-dirty-reminder', '不打印未提交业务文件提醒')
+    .action(async (options: { cwd?: string; note?: string; session?: string; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; dirtyReminder?: boolean; 'dirty-reminder'?: boolean }) => {
+      await quickDoneCommand({
+        cwd: options.cwd || process.cwd(),
+        note: options.note,
+        session: options.session,
+        skipCheck: !!(options.skipCheck || options['skip-check']),
+        skipReview: !!(options.skipReview || options['skip-review']),
+        skipTests: !!(options.skipTests || options['skip-tests']),
+        skipLint: !!(options.skipLint || options['skip-lint']),
+        approveReview: !!(options.approveReview || options['approve-review']),
+        noDirtyReminder: options.dirtyReminder === false || options['dirty-reminder'] === false,
       });
     });
 
