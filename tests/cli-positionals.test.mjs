@@ -250,3 +250,45 @@ describe('CLI positional argument guards', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 });
+
+// R-333: check 的 --force（压制无会话警告）曾只在 CheckOptions 存在而未注册，
+// 警告文案还引导用户加这个 flag —— 纯 CLI 契约缺口，双向锁行为。
+describe('check --force registration (R-333)', () => {
+  function mkIdleWorkspace() {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-force-idle-'));
+    const dp = join(cwd, '.docpath');
+    mkdirSync(join(dp, 'workspace'), { recursive: true });
+    mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
+    writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: force-test\n');
+    writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
+      level: 1,
+      task_id: null,
+      task_title: null,
+      phase: 'idle',
+      gate: 'none',
+      current_step: '',
+      started_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z',
+    }, null, 2));
+    writeFileSync(join(dp, 'workspace', 'current.md'), '# Current\n');
+    return cwd;
+  }
+
+  it('accepts --force and suppresses the no-session warning', () => {
+    const cwd = mkIdleWorkspace();
+    const result = run('check --force --skip-tests --skip-lint', cwd);
+
+    assert.doesNotMatch(result.out, /Unknown option/);
+    assert.doesNotMatch(result.out, /无活跃 agent 会话/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('still warns without --force (flag carries real behavior)', () => {
+    const cwd = mkIdleWorkspace();
+    const result = run('check --skip-tests --skip-lint', cwd);
+
+    assert.match(result.out, /无活跃 agent 会话/);
+    assert.match(result.out, /--force/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+});
