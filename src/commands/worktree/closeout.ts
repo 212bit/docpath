@@ -1,16 +1,18 @@
-import { existsSync, lstatSync } from 'node:fs';
-import { cp, mkdir, rm, writeFile, readFile } from 'node:fs/promises';
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
-import { BREADCRUMB_HEADER, writeBreadcrumb } from '../../engine/breadcrumb.js';
+import { writeBreadcrumb } from '../../engine/breadcrumb.js';
 import { readCurrentState } from '../../utils/workspace.js';
 import { gitAsync } from '../../utils/git-run.js';
 import { isGitRepo, isInWorktree, listWorktrees } from '../../utils/worktree.js';
 import {
   getWorktreeDiagnostics,
+  parsePorcelainPaths,
+  resolveMergeTarget,
   resolveWorktreeManagerRoot,
   runGit,
   runGitCapture,
@@ -26,8 +28,10 @@ export async function worktreeSync(cwd: string): Promise<void> {
   const repoRoot = await resolveWorktreeManagerRoot(cwd);
   const worktrees = await listWorktrees(repoRoot);
   const worktreesDir = join(repoRoot, '.worktrees');
+  // R-344 WT-3: 与 worktree merge 共用目标解析（CODE_MERGE_TARGET），不再硬编码 main
+  const syncTarget = await resolveMergeTarget(cwd);
 
-  console.log('=== worktree-sync：将 main 合入所有活跃 worktree ===');
+  console.log(`=== worktree-sync：将 ${syncTarget} 合入所有活跃 worktree ===`);
   let synced = 0;
   let upToDate = 0;
   let skipped = 0;
@@ -47,7 +51,7 @@ export async function worktreeSync(cwd: string): Promise<void> {
       continue;
     }
     try {
-      const stdout = await gitAsync(wt.path, ['merge', 'main', '--no-edit']);
+      const stdout = await gitAsync(wt.path, ['merge', syncTarget, '--no-edit']);
       if (/Already up to date/i.test(stdout)) {
         console.log(`  ✓ ${safeName}: 已是最新`);
         upToDate++;
@@ -82,34 +86,9 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
   const repoRoot = await resolveWorktreeManagerRoot(cwd);
   const currentBranch = (await runGitCapture(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
 
-  // 解析目标分支 (支持从环境变量或参数传入，支持本地和远端分支解析)
-  const targetBranchEnv = process.env.CODE_MERGE_TARGET || 'main'; // 默认主干为 main
-  
-  let targetMergeBranch = '';
-  if (branchNameOrTarget) {
-    const trimmed = branchNameOrTarget.trim();
-    let exists = false;
-    try {
-      await execFileAsync('git', ['rev-parse', '--verify', trimmed], { cwd });
-      exists = true;
-    } catch {}
-    
-    if (exists) {
-      targetMergeBranch = trimmed;
-    } else if (!trimmed.startsWith('origin/')) {
-      targetMergeBranch = `origin/${trimmed}`;
-    } else {
-      targetMergeBranch = trimmed;
-    }
-  } else {
-    const remoteBranch = `origin/${targetBranchEnv}`;
-    let remoteExists = false;
-    try {
-      await execFileAsync('git', ['rev-parse', '--verify', remoteBranch], { cwd });
-      remoteExists = true;
-    } catch {}
-    targetMergeBranch = remoteExists ? remoteBranch : targetBranchEnv;
-  }
+  // R-344 WT-3: 目标解析统一走 resolveMergeTarget（参数 → origin/<x> → CODE_MERGE_TARGET || 'main'）
+  const targetMergeBranch = await resolveMergeTarget(cwd, branchNameOrTarget);
+  const targetBranchEnv = targetMergeBranch.replace(/^origin\//, '');
 
   console.log(`=== worktree-merge 启动 ===`);
   console.log(`  worktree 路径: ${cwd}`);
@@ -238,10 +217,8 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
     // 覆盖本地未提交改动，零交集的 dirty 与本次合并无关，降级为 warning 继续。
     const rootStatus = (await runGitCapture(repoRoot, ['status', '--porcelain=v1', '--untracked-files=all'])).trim();
     if (rootStatus.length > 0) {
-      const dirtyFiles = Array.from(new Set(rootStatus
-        .split('\n')
-        .map((line) => line.slice(3).trim())
-        .filter(Boolean)));
+      // R-344 WT-4: rename 条目与引号路径交给共享解析器处理
+      const dirtyFiles = parsePorcelainPaths(rootStatus);
       let overlapping: string[] | null = null;
       try {
         const mergeBase = (await runGitCapture(repoRoot, ['merge-base', targetBranchEnv, currentBranch])).trim();
@@ -300,6 +277,28 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
     console.log(` · 退出码: 0`);
   } catch (err) {
     console.error(`❌  合回 ${targetBranchEnv} 失败: ${err instanceof Error ? err.message : String(err)}`);
+    // R-344 WT-1: 主仓不得残留 mid-merge 现场（否则 dirty guard 卡死后续所有任务）
+    let midMerge = false;
+    try {
+      await execFileAsync('git', ['rev-parse', '--verify', '--quiet', 'MERGE_HEAD'], { cwd: repoRoot });
+      midMerge = true;
+    } catch {
+      midMerge = false;
+    }
+    if (midMerge) {
+      const unmerged = (await runGitCapture(repoRoot, ['diff', '--name-only', '--diff-filter=U'])).trim();
+      if (unmerged) {
+        console.error('冲突文件:');
+        unmerged.split('\n').filter(Boolean).forEach((file) => console.error(`  - ${file}`));
+      }
+      try {
+        await execFileAsync('git', ['merge', '--abort'], { cwd: repoRoot });
+        console.error('✅ 已执行 git merge --abort，主仓恢复合并前状态。');
+        console.error(`   请在 worktree 分支解决与 ${targetBranchEnv} 的冲突后重跑 docpath worktree merge。`);
+      } catch (abortErr) {
+        console.error(`❌ git merge --abort 失败，主仓仍处于 mid-merge 状态，请手工执行: git -C ${repoRoot} merge --abort`);
+      }
+    }
     process.exit(1);
   }
 }

@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-12T09:44:46.238Z",
+    "updated_at": "2026-09-12T09:44:46.238Z",
+    "content_sha256": "b91dc4648d29f4c3cf06e56ed807d64d3a6e50c5f9b892cf8a87ed37974f3030"
+  },
+  "task_id": "T-20260912-worktree-wt-1-wt-5",
+  "backlog_id": "R-344",
+  "title": "T-20260912-worktree-wt-1-wt-5 - worktree 收口与并发协调健壮性优化包（WT-1..WT-5）",
+  "generated_at": "2026-09-12T09:44:46.238Z",
+  "scope": {
+    "included": [
+      "closeout.ts / lifecycle.ts / shared.ts / query.ts / backlog.ts 上述修复",
+      "对应测试（每项 AC 至少一个用例）",
+      "顺带清理：本次触碰函数内的死导入与 `process.exit` → 抛错（P3 限定范围）"
+    ],
+    "excluded": [
+      "跨 worktree promote 文件锁（方案 B）",
+      "worktree 五模块全面重构（P3 全量清理）"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "用户于 2026-09-12 会话中审查结论后明确回复\"同意\"",
+    "decision_brief_markdown": "- 当前问题: worktree merge 失败残留 mid-merge、promote 跨工作区防重 TOCTOU + 吞错、sync 目标不一致、porcelain 解析脆弱、mergedToMain 诊断失真。\n- 目标: WT-1..WT-5 逐项修复并配套测试。\n- 背景: R-344 Decision Brief（worktree 功能审查，2026-09-12）。\n- 可选方案:\n  - 方案 A: 逐项修复，WT-2 只做 fail-loud（采用）\n  - 方案 B: promote 引入跨 worktree 文件锁（推迟）\n- 推荐方案: 方案 A\n- 决策理由: 修复面局部、风险可控；锁方案成本不成比例\n- 不做什么: 不动隔离策略；不做 worktree 模块全面重构\n- 成本: 低-中；五个局部修复 + 测试\n- 风险: merge --abort 在用户已手工解冲突的现场会丢弃解冲突结果 —— abort 前检测 unmerged files 存在且输出明确指引\n- 回滚方案: 回滚本任务提交\n- 用户确认: 用户于 2026-09-12 会话中审查结论后明确回复\"同意\""
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "`worktree merge` 在主仓库执行合并失败时执行 `git merge --abort`（或等价恢复），不残留 mid-merge 状态；输出冲突文件列表与处置指引。实现于 `src/commands/worktree/closeout.ts`。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "`backlog promote` 跨 worktree 活跃性扫描遇到 state.json 不可读/损坏时 fail-loud，列出无法验证的工作区；不再静默吞错。实现于 `src/commands/backlog.ts` 的 `assertNotActiveInOtherWorktrees`。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "`worktree sync` 与 `worktree merge` 使用同一合并目标解析逻辑（含 `CODE_MERGE_TARGET`），sync 不再硬编码 main。",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "dirty-main 文件列表解析正确处理 rename 条目（`R  old -> new`）与带引号路径，改用 `-z` 或按状态码解析；影响 `closeout.ts` 的重叠判定。",
+      "done": false
+    },
+    {
+      "id": "FR-5",
+      "text": "`mergedToMain`/`safe_to_remove` 诊断基于解析后的合并目标（复用 FR-3 的目标解析）而非主 checkout 当前分支。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不改变 worktree 隔离策略与既有命令对外行为（除缺陷修复本身）。",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "WT-2 初版不引入跨 worktree 进程锁（方案 B 推迟）。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "主仓库 merge 失败时 main 不残留 mid-merge 状态，输出冲突文件与处置指引；有测试。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "其他 worktree state.json 不可读/损坏时 promote fail-loud 并列出无法验证的工作区；有测试。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "sync 与 merge 使用同一合并目标解析（含 CODE_MERGE_TARGET）。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "dirty 文件解析正确处理 rename 与带引号路径；有测试。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "mergedToMain/safe_to_remove 基于解析后的合并目标；有测试。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "全量测试通过，docpath check 通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "worktree merge 失败残留 mid-merge、promote 跨工作区防重 TOCTOU + 吞错、sync 目标不一致、porcelain 解析脆弱、mergedToMain 诊断失真。",
+    "options": [
+      "- 方案 A: 逐项修复，WT-2 只做 fail-loud（采用）"
+    ],
+    "chosen": "方案 A",
+    "rationale": "修复面局部、风险可控；锁方案成本不成比例"
+  }
+}
