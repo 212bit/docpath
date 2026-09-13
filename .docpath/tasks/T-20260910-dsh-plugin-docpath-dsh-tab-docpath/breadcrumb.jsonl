@@ -21,3 +21,4 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260910-dsh-plugin-docpath-dsh-tab-docpath","step":"S10","status":"done","context":"agent-step: S10","timestamp":"2026-09-10T14:35:04.837Z","sessionId":"agent-r328-docpath-plugin"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260910-dsh-plugin-docpath-dsh-tab-docpath","step":"check","status":"done","context":"质量检查通过 (11 项)","timestamp":"2026-09-10T14:35:49.139Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260910-dsh-plugin-docpath-dsh-tab-docpath","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-09-10T14:44:11.753Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260910-dsh-plugin-docpath-dsh-tab-docpath","step":"journal","status":"done","context":"知识归档完成 (10/10 步)","timestamp":"2026-09-13T16:44:53.246Z"}

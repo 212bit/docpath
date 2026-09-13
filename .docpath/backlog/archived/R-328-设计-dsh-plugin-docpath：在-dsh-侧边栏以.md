@@ -1,7 +1,7 @@
 ---
 id: R-328
 title: 设计 dsh-plugin-docpath：在 DSH 侧边栏以 Tab 形式可视化 DocPath 工作流全景（工作流/耗时/文档/事件流）
-status: active
+status: done
 priority: P2
 level: 2
 source: docpath backlog capture
@@ -9,7 +9,7 @@ readiness: analyzed
 evidence:
   brainstorm: null
   analysis: .docpath/backlog/analysis/R-328-summary.md
-  spec: null
+  spec: tasks/T-20260910-dsh-plugin-docpath-dsh-tab-docpath/spec.md
   decision_brief: null
   user_confirmed: null
 links:
