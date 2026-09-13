@@ -117,12 +117,25 @@ describe('detectBinaryDrift (FR-4)', async () => {
 
 describe('worktree list --agent (FR-5)', () => {
   it('outputs aggregated YAML with main role and suggested actions', () => {
-    const out = execFileSync('node', [BIN, 'worktree', 'list', '--agent'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf-8',
-    });
-    assert.ok(out.includes('worktrees:'), 'must output YAML list');
-    assert.ok(out.includes('role: main'), 'main worktree must be marked');
-    assert.ok(out.includes('suggested_action:'), 'each entry must carry a suggested action');
+    // main 条目按设计只输出 role（编排位，无 suggested_action），动作字段落在子树上。
+    // 原用例赌"宿主仓恰好有遗留 worktree"——r328 收口后主仓只剩 main，断言随即失效（R-346 期发现）。
+    // 改为自建确定性子 worktree，断言不再耦合仓库状态。
+    const base = mkdtempSync(join(tmpdir(), 'r335-wtlist-'));
+    const wtPath = join(base, 'feature-x');
+    try {
+      execFileSync('git', ['worktree', 'add', '-q', '--detach', wtPath, 'HEAD'], { cwd: REPO_ROOT, stdio: 'pipe' });
+      const out = execFileSync('node', [BIN, 'worktree', 'list', '--agent'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf-8',
+      });
+      assert.ok(out.includes('worktrees:'), 'must output YAML list');
+      assert.ok(out.includes('role: main'), 'main worktree must be marked');
+      assert.ok(out.includes(wtPath), '子 worktree 应出现在聚合视图');
+      const childSection = out.slice(out.indexOf(wtPath));
+      assert.match(childSection, /suggested_action:/, '子树条目必须带建议动作');
+    } finally {
+      execFileSync('git', ['worktree', 'remove', '--force', wtPath], { cwd: REPO_ROOT, stdio: 'pipe' });
+      rmSync(base, { recursive: true, force: true });
+    }
   });
 });

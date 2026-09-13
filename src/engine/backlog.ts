@@ -60,11 +60,13 @@ export interface BacklogItem {
 // ── 合法状态转移矩阵 ──
 // 主干：proposed → accepted → planned → active → done
 // fast-track：proposed → active（配合 `promote --draft` 跳过成熟度门禁直达执行）
+// 旁路终态（R-346）：非终态 → done 也接受"已被 quick 等旁路闭环"的条目，但矩阵本身
+// 保持纯净——任务证据（links.task 非空 + 任务目录存在）由 setBacklogStatus 统一校验。
 // 任意非终态 → dropped；dropped 可复活为 proposed；done 为终态。
 const BACKLOG_TRANSITIONS: Record<BacklogStatus, BacklogStatus[]> = {
-  proposed: ['accepted', 'active', 'dropped'],
-  accepted: ['planned', 'active', 'dropped'],
-  planned: ['active', 'dropped'],
+  proposed: ['accepted', 'active', 'dropped', 'done'],
+  accepted: ['planned', 'active', 'dropped', 'done'],
+  planned: ['active', 'dropped', 'done'],
   active: ['done', 'dropped'],
   done: [],
   dropped: ['proposed'],
@@ -540,14 +542,63 @@ export async function detectBacklogIdCollisions(cwd: string): Promise<BacklogIdC
   return collisions.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 }
 
+/** 任务 id 形态：防路径穿越（--task 值来自用户输入） */
+const TASK_ID_PATTERN = /^T-[A-Za-z0-9_-]+$/;
+
+/** R-346: 任务证据存在性——旁路闭环必须能在 tasks/ 或 tasks/done/ 下找到真实执行痕迹。 */
+async function hasTaskEvidence(cwd: string, taskId: string): Promise<boolean> {
+  if (!TASK_ID_PATTERN.test(taskId)) return false;
+  const dir = await resolveDocpathDir(cwd);
+  const roots = [join(dir, 'tasks', taskId), join(dir, 'tasks', 'done', taskId)];
+  return roots.some((root) =>
+    existsSync(join(root, 'breadcrumb.jsonl'))
+    || existsSync(join(root, 'spec.json'))
+    || existsSync(join(root, 'plan.json')),
+  );
+}
+
+export interface SetBacklogStatusOptions {
+  /**
+   * R-346 旁路闭环：为 quick（或其它绕过 promote 的路径）关联已执行任务作为
+   * done 的证据。值必须对应真实存在的任务目录；条目已有链接且不同值时 fail-loud。
+   */
+  linkTask?: string;
+}
+
 /**
  * 读取 → 转移 → 写回（组合 FSM 与 I/O 的单一入口）。
  * 条目不存在或非法转移时 fail-loud 抛错。返回更新后的条目。
+ *
+ * done 转移一律要求任务证据（R-346）：promote 链由 links.task 自动满足；
+ * quick 等旁路闭环经 opts.linkTask 补录并校验任务目录真实存在。
  */
-export async function setBacklogStatus(cwd: string, id: string, to: BacklogStatus): Promise<BacklogItem> {
+export async function setBacklogStatus(
+  cwd: string,
+  id: string,
+  to: BacklogStatus,
+  opts?: SetBacklogStatusOptions,
+): Promise<BacklogItem> {
   const item = await readBacklogItem(cwd, id);
   if (!item) {
     throw new Error(`[docpath] backlog 条目不存在: ${id}`);
+  }
+  if (opts?.linkTask) {
+    const linkTask = opts.linkTask.trim();
+    if (item.links.task && item.links.task !== linkTask) {
+      throw new Error(`[docpath] backlog --task 冲突：${id} 已链接任务 ${item.links.task}，拒绝覆盖为 ${linkTask}`);
+    }
+    if (!(await hasTaskEvidence(cwd, linkTask))) {
+      throw new Error(`[docpath] backlog --task: 任务证据不存在: ${linkTask}（tasks/${linkTask}/ 或 tasks/done/${linkTask}/ 应含 breadcrumb/spec/plan 之一）`);
+    }
+    item.links.task = linkTask;
+  }
+  if (to === 'done') {
+    if (!item.links.task) {
+      throw new Error('[docpath] backlog done 需要任务证据：条目未链接任务。quick/旁路闭环请加 --task <任务 id>，或经 promote 链执行');
+    }
+    if (!(await hasTaskEvidence(cwd, item.links.task))) {
+      throw new Error(`[docpath] backlog done: 任务证据缺失：${item.links.task} 在 tasks/ 或 tasks/done/ 下无执行痕迹（疑似手工链接或目录被清理）`);
+    }
   }
   item.status = transitionBacklog(item.status, to);
   await writeBacklogItem(cwd, item);

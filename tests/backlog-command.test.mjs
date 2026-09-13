@@ -1246,6 +1246,9 @@ Alpha
     const cwd = mkWorkspace();
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
     mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
+    // R-346: done 校验任务证据——active 条目链接的 T-001 需要真实存在
+    mkdirSync(join(cwd, '.docpath', 'tasks', 'T-001'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'T-001', 'spec.json'), '{}');
     writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
 id: R-001
 title: Alpha

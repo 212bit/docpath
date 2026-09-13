@@ -59,7 +59,10 @@ describe('backlog engine', () => {
     assert.equal(transitionBacklog('accepted', 'planned'), 'planned');
     assert.equal(transitionBacklog('active', 'done'), 'done');
     assert.equal(transitionBacklog('planned', 'planned'), 'planned');
-    assert.throws(() => transitionBacklog('proposed', 'done'), /Illegal backlog transition/);
+    // R-346: 矩阵放行旁路终态；任务证据校验统一在 setBacklogStatus 层，保持矩阵纯净
+    assert.equal(transitionBacklog('proposed', 'done'), 'done');
+    assert.equal(transitionBacklog('accepted', 'done'), 'done');
+    assert.equal(transitionBacklog('planned', 'done'), 'done');
     assert.throws(() => transitionBacklog('done', 'active'), /Illegal backlog transition/);
   });
 
@@ -208,8 +211,49 @@ Archived body
     assert.equal(updated.status, 'planned');
     assert.equal((await readBacklogItem(cwd, 'R-001'))?.status, 'planned');
     await assert.rejects(() => setBacklogStatus(cwd, 'R-404', 'planned'), /backlog 条目不存在/);
-    await assert.rejects(() => setBacklogStatus(cwd, 'R-001', 'done'), /Illegal backlog transition/);
+    await assert.rejects(() => setBacklogStatus(cwd, 'R-001', 'done'), /需要任务证据/);
     rmSync(cwd, { recursive: true, force: true });
+  });
+
+  // R-346: quick 等旁路闭环的条目——done 必须携带真实任务证据，矩阵只负责放行、证据统一校验。
+  describe('backlog bypass closeout with task evidence (R-346)', () => {
+    function mkTaskEvidence(cwd, taskId) {
+      mkdirSync(join(cwd, '.docpath', 'tasks', taskId), { recursive: true });
+      writeFileSync(join(cwd, '.docpath', 'tasks', taskId, 'breadcrumb.jsonl'), '{"event":"run end"}\n');
+    }
+
+    it('closes accepted item with --task evidence and persists the link', async () => {
+      const cwd = mkWorkspace();
+      await writeBacklogItem(cwd, sampleItem({ status: 'accepted' }));
+      mkTaskEvidence(cwd, 'T-900-quick');
+      const item = await setBacklogStatus(cwd, 'R-001', 'done', { linkTask: 'T-900-quick' });
+      assert.equal(item.status, 'done');
+      assert.equal(item.links.task, 'T-900-quick');
+      // done 条目被 refreshBacklogIndex 自动归档——回读验证落盘与链接持久化
+      const archivedDir = join(cwd, '.docpath', 'backlog', 'archived');
+      const archived = readdirSync(archivedDir).filter((f) => f.startsWith('R-001'));
+      assert.equal(archived.length, 1, 'done 条目应归档且仅一份');
+      const content = readFileSync(join(archivedDir, archived[0]), 'utf-8');
+      assert.match(content, /status: done/);
+      assert.match(content, /task: T-900-quick/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+
+    it('rejects forged evidence: missing task dir or malformed task id', async () => {
+      const cwd = mkWorkspace();
+      await writeBacklogItem(cwd, sampleItem({ status: 'accepted' }));
+      await assert.rejects(() => setBacklogStatus(cwd, 'R-001', 'done', { linkTask: 'T-404' }), /任务证据不存在/);
+      await assert.rejects(() => setBacklogStatus(cwd, 'R-001', 'done', { linkTask: '../evil' }), /任务证据不存在/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+
+    it('refuses silent overwrite of an existing different link', async () => {
+      const cwd = mkWorkspace();
+      await writeBacklogItem(cwd, sampleItem({ status: 'accepted', links: { task: 'T-800', spec: null } }));
+      mkTaskEvidence(cwd, 'T-900-quick');
+      await assert.rejects(() => setBacklogStatus(cwd, 'R-001', 'done', { linkTask: 'T-900-quick' }), /冲突/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
   });
 
   it('fails loud on invalid frontmatter schema', async () => {

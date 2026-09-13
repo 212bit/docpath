@@ -19,9 +19,10 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .option('--evidence-decision <ref>', 'add/edit: Decision Brief 证据引用')
     .option('--user-confirmed <text>', 'add/edit: 用户确认依据')
     .option('--status <status>', 'list: 状态过滤')
+    .option('--task <id>', 'done: 旁路闭环任务证据（quick 等绕过 promote 时链接已执行任务 id）')
     .option('--agent', 'list/groom: 输出 agent YAML')
     .option('--draft', 'promote: 跳过成熟度检查，快速通道推送')
-    .action(async (action: string, id: string | undefined, options: { cwd?: string; title?: string; priority?: string; level?: string; background?: string; acceptance?: string; bodyFile?: string; readiness?: string; evidenceBrainstorm?: string; evidenceAnalysis?: string; evidenceSpec?: string; evidenceDecision?: string; userConfirmed?: string; status?: string; agent?: boolean; draft?: boolean }) => {
+    .action(async (action: string, id: string | undefined, options: { cwd?: string; title?: string; priority?: string; level?: string; background?: string; acceptance?: string; bodyFile?: string; readiness?: string; evidenceBrainstorm?: string; evidenceAnalysis?: string; evidenceSpec?: string; evidenceDecision?: string; userConfirmed?: string; status?: string; task?: string; agent?: boolean; draft?: boolean }) => {
       await backlogCommand({
         cwd: options.cwd || process.cwd(),
         action,
@@ -39,6 +40,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         evidenceDecision: options.evidenceDecision,
         userConfirmed: options.userConfirmed,
         status: options.status,
+        task: options.task,
         agent: !!options.agent,
         draft: !!options.draft,
       });

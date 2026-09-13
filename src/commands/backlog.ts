@@ -52,6 +52,7 @@ interface BacklogCommandOptions {
   evidenceDecision?: string;
   userConfirmed?: string;
   status?: string;
+  task?: string;
   agent?: boolean;
   draft?: boolean;
   nonInteractive?: boolean;
@@ -1175,10 +1176,15 @@ async function backlogUpdateTerminalStatus(
   if (!options.id?.trim()) {
     throw new Error(`docpath backlog ${target === 'done' ? 'done' : 'drop'} requires <id>`);
   }
+  if (options.task?.trim() && target !== 'done') {
+    throw new Error('docpath backlog --task 仅适用于 done（drop 不需要任务证据）');
+  }
 
-  const item = await setBacklogStatus(options.cwd, options.id.trim(), target);
+  const item = await setBacklogStatus(options.cwd, options.id.trim(), target, {
+    linkTask: options.task?.trim() || undefined,
+  });
   await refreshBacklogIndex(options.cwd);
-  console.log(`✅  backlog 条目已更新: ${item.id} → ${item.status}`);
+  console.log(`✅  backlog 条目已更新: ${item.id} → ${item.status}${item.links.task ? `（任务 ${item.links.task}）` : ''}`);
 }
 
 function renderListTable(items: BacklogItem[]): string {
