@@ -2,7 +2,7 @@
 id: R-333
 title: check CLI 未注册 --force 选项：CheckOptions.force 存在但传参缺失，用户带 --force 报 Unknown
   option（trace 16:25:48 实测 FAILED 1ms）
-status: accepted
+status: done
 priority: P3
 level: 2
 source: docpath backlog capture
@@ -18,7 +18,7 @@ evidence:
   decision_brief: null
   user_confirmed: null
 links:
-  task: null
+  task: T-20260912-quick-check-cli-force-r-333
   spec: null
 created_at: 2026-09-11
 ---
