@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260914-check-maven-pom-xml-mvn-compile","step":"S1","status":"in_progress","context":"go --accept-dirty: R-348 实现已先行完成（quick 被 core lifecycle 风险路径拒绝后转标准生命周期）：runners.ts Maven 分支 + evidence 警告文案 + 定向测试已过","timestamp":"2026-09-14T03:18:33.602Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260914-check-maven-pom-xml-mvn-compile","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 check 接入 Maven 编译检查（pom.xml → mvn compile）","timestamp":"2026-09-14T03:18:33.606Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260914-check-maven-pom-xml-mvn-compile","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-14T03:18:43.985Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260914-check-maven-pom-xml-mvn-compile","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-14T03:19:55.785Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260914-check-maven-pom-xml-mvn-compile","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-09-14T03:20:04.760Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260914-check-maven-pom-xml-mvn-compile","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-14T03:20:11.304Z"}

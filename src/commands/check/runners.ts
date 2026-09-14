@@ -8,6 +8,9 @@ import { errorOutput } from './formatters.js';
 
 export const DEFAULT_CHECK_TIMEOUT_MS = 60000;
 
+/** 重检查（构建/测试、Java 工具链首编译）超时上限：首跑常伴随依赖解析，60s 不够。 */
+export const HEAVY_CHECK_TIMEOUT_MS = 300000;
+
 /** runner 探针默认超时：健康环境实测 <1s，坏 shim（如 Electron 包装）会挂起，5s 足够判定。 */
 export const RUNNER_PROBE_TIMEOUT_MS = 5000;
 
@@ -408,6 +411,11 @@ export async function runCompileChecks(cwd: string, pkgPath: string, nodeCommand
 
   if (existsSync(cargoPath)) return [runCheck('Rust 编译', 'cargo check 2>&1', cwd)];
   if (existsSync(goModPath)) return [runCheck('Go 编译', 'go build ./... 2>&1', cwd)];
+  // Java/Maven 项目此前零编译检查（results 空数组 → check 空洞通过 exit 0）：
+  // 接入 mvn compile；mvn 缺失时按 environment_failure 诊断，不再静默通过。
+  if (existsSync(join(cwd, 'pom.xml'))) {
+    return [runCheck('Java 编译 (Maven)', 'mvn -q compile 2>&1', cwd, 'compile', HEAVY_CHECK_TIMEOUT_MS)];
+  }
   return [];
 }
 
@@ -418,7 +426,6 @@ export async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeC
   if (options.lite) return [];
 
   const results: CheckResult[] = [];
-  const HEAVY_CHECK_TIMEOUT_MS = 300000;
   const scripts = pkg.scripts;
 
   const resolveOrSkip = async (

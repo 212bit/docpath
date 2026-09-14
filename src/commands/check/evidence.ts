@@ -72,7 +72,7 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
   }
 
   if (results.length === 0) {
-    console.log('⚠️  未检测到可执行的检查项（无 tsconfig/package.json/Cargo.toml/go.mod）');
+    console.log('⚠️  未检测到可执行的检查项（无 tsconfig/package.json/Cargo.toml/go.mod/pom.xml）');
   }
 
   // 环境失败诊断摘要：先分类环境/代码，帮助 Agent 用最廉价的判定排除工具链问题。
