@@ -111,3 +111,11 @@
 - 会话 token 尸检 2026-09-11: 8M 中固定重放税 ~40% / 调试螺旋 ~30% / 大文件进出 ~20%
 - R-329 backlog capture 实证: 讨论结论压缩为 500 token 自包含条目, 实现会话零讨论史依赖
 - .docpath/workspace/breadcrumb.jsonl: 弹回恢复循环是成本大头(与 120 份归档任务统计一致)
+
+## gotcha: check_fail 是既有事实：--skip-check 只记审计不改 gate；收口命令写 review 类事件前必须 FSM 预检
+- rationale: R-349 初版把崩溃归因为「--skip-check 把 gate 置为 check_fail」——事实错误：recordSkipReason 只 appendDecision('policy.skip')，历史各版本与当前代码都不改 gate。真实触发条件是 done 时 gate 仍不是 check_pass（none/check_fail），review 类事件的 requiredGate 不满足。这类归因错误会直接推导出错误修复方案（给失败态开 skip 口子）。
+触发：任务处于 gate=none/check_fail 时执行 agent done（含 --skip-check）、或 quick/instant profile 自动跳 review。期望行为：命令层先调 assertWorkflowEventLegal(cwd, event) / workflowEventBlockReason({phase,gate}, event) 判定，非法则输出 WORKFLOW_EVENT_BLOCKED 结构化诊断（含 gate/phase、允许集合、恢复命令 docpath check）并 exit≠0；blocked closeout 走 agent.blocked 而非 review.failed。边界：FSM 预检只负责「别抛裸异常、讲清原因」，不得放宽 requiredGate 或用 --skip-* 越过已失败的检查结论；需要「环境性 check 无法运行」的出口时另开契约级需求裁定。
+### Evidence
+- src/engine/policy.ts recordSkipReason（仅 appendDecision，无 transition）
+- src/engine/transitions.ts:88-93 requiredGate 表 + :279-286 门禁前置执行
+- 本机复现：gate=check_fail + agent done --skip-check → 修复前 Illegal workflow transition，修复后可操作诊断

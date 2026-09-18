@@ -1,17 +1,40 @@
 ---
 id: R-349
 title: agent done 失败路径硬走 review 事件，gate/phase 不合法时抛 Illegal workflow transition
-status: active
+status: done
 priority: P1
 level: 1
 source: docpath backlog add
-readiness: analyzed
+readiness: confirmed
 evidence:
   brainstorm: null
   analysis: .docpath/backlog/analysis/R-349-analysis.md
-  spec: null
-  decision_brief: null
-  user_confirmed: null
+  spec: tasks/T-20260918-agent-done-review-gate-phase-illegal-wor/spec.md
+  decision_brief: >-
+    - 当前问题: `docpath agent done` 在收尾时会依次走 check 门禁与 review 门禁。当 review 门禁的
+
+    - 目标: agent done 失败路径硬走 review 事件，gate/phase 不合法时抛 Illegal workflow
+    transition
+
+    - 背景: 来自 backlog R-349
+
+    - 可选方案:
+      - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程
+      - 方案 B: 补充分析，扩展本任务范围
+    - 推荐方案: 方案 A
+
+    - 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险
+
+    - 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围
+
+    - 成本: 中等，按 plan 拆分后逐步验证
+
+    - 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移
+
+    - 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed
+
+    - 用户确认: 待确认
+  user_confirmed: 待确认
 links:
   task: T-20260918-agent-done-review-gate-phase-illegal-wor
   spec: tasks/T-20260918-agent-done-review-gate-phase-illegal-wor/spec.md
