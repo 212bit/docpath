@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-18T02:33:43.015Z",
+    "updated_at": "2026-09-18T02:33:43.015Z",
+    "content_sha256": "c5272be698a885c68da7fb5f8c49d1d53f7408f9170572251c6b6454212e339c"
+  },
+  "task_id": "T-20260918-agent-done-review-gate-phase-illegal-wor",
+  "backlog_id": "R-349",
+  "title": "T-20260918-agent-done-review-gate-phase-illegal-wor - agent done 失败路径硬走 review 事件，gate/phase 不合法时抛 Illegal workflow transition",
+  "generated_at": "2026-09-18T02:33:43.015Z",
+  "scope": {
+    "included": [
+      "agent done 失败路径硬走 review 事件，gate/phase 不合法时抛 Illegal workflow transition"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: `docpath agent done` 在收尾时会依次走 check 门禁与 review 门禁。当 review 门禁的\n- 目标: agent done 失败路径硬走 review 事件，gate/phase 不合法时抛 Illegal workflow transition\n- 背景: 来自 backlog R-349\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "agent done 失败路径硬走 review 事件，gate/phase 不合法时抛 Illegal workflow transition",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "gate ∈ {none, check_fail} × {standard + `--skip-check`、quick + `--skip-check`、",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`--status blocked`} 执行 `agent done`，输出中不出现 `Illegal workflow transition` /",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`未预期的错误`，exit≠0 且给出明确的恢复命令。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "`--status blocked` 不再产生 `gate=review_fail` / `phase=reviewing`，而是写入",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "可达的 blocked 状态（且 `docpath status` 能正确渲染）。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "新增/修改的转换规则有单测覆盖（`tests/` 现对 `agent done --status blocked` 零覆盖）；",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "既有正常路径（gate=check_pass 全量 done、quick 经 check 后收口）不回归。",
+      "done": false
+    },
+    {
+      "id": "AC-8",
+      "text": "`check_fail` 仍被拒绝归档（F5 契约不回退）。",
+      "done": false
+    },
+    {
+      "id": "AC-9",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-10",
+      "text": "backlog 条目 R-349 与任务 T-20260918-agent-done-review-gate-phase-illegal-wor 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "`docpath agent done` 在收尾时会依次走 check 门禁与 review 门禁。当 review 门禁的",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

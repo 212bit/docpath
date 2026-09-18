@@ -20,7 +20,7 @@ import { writeHybridContextIndex } from '../utils/context-index.js';
 import { goCommand } from './go.js';
 import { assertWorktreeContract } from './worktree.js';
 import { generateAgentOutput } from '../utils/agent-output.js';
-import { transitionWorkflow } from '../engine/transitions.js';
+import { transitionWorkflow, assertWorkflowEventLegal } from '../engine/transitions.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { recordSkipReason } from '../engine/policy.js';
 import { markPlanStep } from '../utils/plan-sync.js';
@@ -37,6 +37,7 @@ import { assertQuickScope } from '../engine/quick-guard.js';
 import { readLastCheckEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
 import { assertCleanWorktreeForNewTask, assertNoNonDocPathChangesForExecutionStart, detectDirtyWorktree, detectUncommittedNonDocPathFiles, renderCommitReminder } from '../utils/git-dirty-guard.js';
 import { readBreadcrumb } from '../engine/breadcrumb.js';
+import { DocPathError } from '../utils/error-helpers.js';
 
 type AgentAction = 'enter' | 'step' | 'done';
 
@@ -427,6 +428,9 @@ async function runAgentReviewGate(options: AgentOptions, stateAtStart: Awaited<R
       throw new Error('docpath agent done --enforce: instant profile review skip not allowed');
     }
     await recordSkipReason(cwd, 'review', 'instant profile: review skipped; lite check (typecheck) already run');
+    // R-349: review.skipped 同样受门禁前置约束（gate 须为 check_pass/review_skipped），
+    // 直接 transition 会在检查未过/阶段不匹配时抛裸 Illegal transition（掩盖原因）。
+    await assertWorkflowEventLegal(cwd, 'review.skipped');
     await transitionWorkflow(cwd, 'review.skipped', {
       currentStep: 'review skipped by instant profile',
     });
@@ -438,6 +442,7 @@ async function runAgentReviewGate(options: AgentOptions, stateAtStart: Awaited<R
       throw new Error('docpath agent done --enforce: quick profile review skip not allowed');
     }
     await recordSkipReason(cwd, 'review', 'quick profile: full review skipped; check gate remains required');
+    await assertWorkflowEventLegal(cwd, 'review.skipped');
     await transitionWorkflow(cwd, 'review.skipped', {
       currentStep: 'review skipped by quick profile',
     });
@@ -466,8 +471,26 @@ async function runAgentReviewGate(options: AgentOptions, stateAtStart: Awaited<R
       approve: !!options.approveReview,
     });
   } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    // R-349: 失败路径必须先确认 review.failed 在当前 phase/gate 下合法。gate=check_fail
+    // （检查曾失败）时该事件被 FSM 拒绝，旧实现会抛出二次裸异常 "Illegal workflow
+    // transition"，把 review 的原始失败语义（错误数 / skill 证据缺失）彻底掩盖。
+    let blockReason: string | null = null;
+    try {
+      await assertWorkflowEventLegal(cwd, 'review.failed');
+    } catch (guardError) {
+      if (!(guardError instanceof DocPathError)) throw guardError;
+      blockReason = guardError.context?.detail || guardError.message;
+    }
+    if (blockReason) {
+      // review 内部已给出结构化诊断（同为门禁非法）时原样透出，避免嵌套重复整段提示。
+      if (error instanceof DocPathError) throw error;
+      throw new DocPathError('WORKFLOW_EVENT_BLOCKED', {
+        detail: `${blockReason}\n   review 失败原因: ${detail}`,
+      });
+    }
     await transitionWorkflow(cwd, 'review.failed', {
-      currentStep: `审查失败: ${error instanceof Error ? error.message : String(error)}`,
+      currentStep: `审查失败: ${detail}`,
     });
     throw error;
   }
@@ -485,7 +508,11 @@ async function finishAgentDoneTask(options: AgentOptions, finalStatus: NonNullab
   }
 
   if (finalStatus === 'blocked') {
-    await transitionWorkflow(cwd, 'review.failed', {
+    // R-349: blocked closeout 走独立事件（gate=blocked / state=blocked），不再复用
+    // review.failed——旧实现把阻塞写成 phase=reviewing + gate=review_fail，既非完成也非
+    // 阻塞，污染后续 next/review 路由，且 exit 0 静默成功。
+    await assertWorkflowEventLegal(cwd, 'agent.blocked');
+    await transitionWorkflow(cwd, 'agent.blocked', {
       currentStep: options.note || `agent-done: ${finalStatus}`,
     });
     return;

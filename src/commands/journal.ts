@@ -12,7 +12,7 @@ import { readCurrentState, readWorkspaceMeta, parsePlanTasks, type CurrentState 
 import { MAX_ENTRIES, readBreadcrumb, truncateBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 
 import { resolveDocpathDir } from '../utils/file.js';
-import { transitionWorkflow } from '../engine/transitions.js';
+import { transitionWorkflow, assertWorkflowEventLegal } from '../engine/transitions.js';
 import { evaluateCompletionPolicy } from '../engine/policy.js';
 import { isQuickProfile } from '../engine/workflow-profile.js';
 import { appendDecision, gcDecisions, splitArchiveIfBloated } from '../governance/decisions.js';
@@ -357,6 +357,9 @@ async function finalizeJournal(
   quiet: boolean = false,
 ): Promise<void> {
   if (context.current?.gate === 'check_pass' && isQuickProfile(context.current.workflow_profile)) {
+    // R-349: 与 agent/review 同源——写 review 类事件前做一次 FSM 合法性校验，
+    // 避免 phase/gate 组合意外时抛裸 Illegal transition。
+    await assertWorkflowEventLegal(cwd, 'review.skipped');
     await transitionWorkflow(cwd, 'review.skipped', {
       currentStep: 'review skipped by quick profile',
     });

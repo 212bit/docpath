@@ -258,6 +258,21 @@ export const ERROR_CATALOG: Record<string, ErrorMessage> = {
     ],
     exitCode: 2,
   },
+
+  WORKFLOW_EVENT_BLOCKED: {
+    code: 'E021',
+    message: '当前工作流状态不允许该动作',
+    causes: [
+      '前置门禁未通过（如 gate=check_fail / gate=none 时尝试评审或收口）',
+      '阶段不匹配（事件的允许来源阶段与当前 phase 不一致）',
+    ],
+    solutions: [
+      '查看当前状态的推荐命令：docpath next --agent',
+      '检查未通过时先修复并重跑：docpath check（--skip-tests / --skip-lint 可减负）',
+      '失败态（check_fail）不得归档：--skip-check 不能越过已失败的检查结论',
+    ],
+    exitCode: 1,
+  },
 };
 
 /**

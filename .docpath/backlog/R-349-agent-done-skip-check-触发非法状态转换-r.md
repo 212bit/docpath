@@ -1,0 +1,98 @@
+---
+id: R-349
+title: agent done 失败路径硬走 review 事件，gate/phase 不合法时抛 Illegal workflow transition
+status: active
+priority: P1
+level: 1
+source: docpath backlog add
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: .docpath/backlog/analysis/R-349-analysis.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: T-20260918-agent-done-review-gate-phase-illegal-wor
+  spec: tasks/T-20260918-agent-done-review-gate-phase-illegal-wor/spec.md
+created_at: 2026-09-18
+---
+
+# Bug: `agent done` 失败路径硬走 review 事件，gate/phase 不合法时抛 Illegal workflow transition
+
+## 背景
+
+`docpath agent done` 在收尾时会依次走 check 门禁与 review 门禁。当 review 门禁的
+失败/跳过路径要写入 review 类事件（`review.failed` / `review.skipped`），而当前
+workflow 状态不满足这些事件的 FSM 前置约束（`requiredGate` / `from`）时，命令会抛出
+
+```
+❌ 未预期的错误
+   [docpath] Illegal workflow transition: review.failed cannot run with gate=check_fail
+   （允许门禁: check_pass, review_pass, review_fail；建议下一步: docpath check）
+```
+
+用户看到的是"未预期错误 + 非法转换"，而非"检查未通过，不能这样收口"的可操作诊断；
+任务被卡在无法 closeout 的状态，错误信息还会掩盖 review 自身的失败原因（语言级审查
+未通过 / skill 证据缺失等）。
+
+**根因校正（与初版描述不同）**：`--skip-check` **不会**把 gate 置为 `check_fail`。
+它只写审计决策日志、不产生任何状态转换（`src/commands/agent.ts:370-378` →
+`src/engine/policy.ts:45-56`，git 历史各版本同形）。真实触发条件是
+**`agent done` 执行时 gate 仍不是 `check_pass`**（`none` / `check_fail`），此时 review 类事件
+的 `requiredGate`（`transitions.ts:88-90` = `check_pass` / `review_pass` / `review_fail`）
+不满足。`--skip-check` 只是用户在这种状态下习惯性追加的旗标，与成因无因果关系。
+
+## 机制核验
+
+| # | 事实 | 证据 |
+| --- | --- | --- |
+| F1 | `--skip-check` 只记审计，不转换状态 | agent.ts:370-378；policy.ts:45-56（仅 `appendDecision('policy.skip')`） |
+| F2 | review 事件受 requiredGate 约束，FSM 层 fail-loud 拒绝 | transitions.ts:88-90 声明；:279-286 执行 |
+| F3 | `agent done` 失败路径无条件尝试这些事件 | agent.ts:469-471（review 抛错→review.failed）、:430-443（quick/instant→review.skipped）、:488-490（blocked→review.failed） |
+| F4 | 无 diff 时 review 提前返回不转移，于是改为在 journal 门禁干净失败 | review.ts:469-473；journal.ts:293-295；policy.ts:30 |
+| F5 | "check_fail 不得归档"是刻意契约，不是缺陷 | transitions.ts:92 注释；policy.ts:30-37 allowedCompletionGates |
+
+## 复现（本次实测，dist 构建 2026-09-14 = 初版报告同一构建）
+
+| 用例 | 初始态 | 命令 | 结果 |
+| --- | --- | --- | --- |
+| A | phase=checking gate=check_fail（有 diff） | `agent done --step S7 --skip-check --note repro` | ❌ `review.failed cannot run with gate=check_fail`，exit 1，状态卡住 |
+| B | 同 A | 追加 `--skip-review` | ✅ 干净失败 `归档门禁未通过 - gate 为 check_fail，不能完成任务` |
+| C | gate=check_pass | `agent done --status blocked --skip-check --skip-review` | ⚠️ exit **0** 静默成功，state 变 `phase=reviewing gate=review_fail`（blocked 语义被污染） |
+| D | profile=quick gate=check_fail | `agent done --skip-check --note x` | ❌ `review.skipped cannot run with gate=check_fail` |
+| E | profile=quick phase=executing gate=none（真实 quick 流） | 同上 | ❌ `review.skipped cannot run from phase=executing`（比 A 更常见的入口） |
+
+## 修复建议（本条目范围）
+
+1. review / blocked 失败路径改为 **FSM 感知**：写入事件前判定 `listValidWorkflowEvents`，
+   不合法时不尝试转换，直接以可操作文案 fail-loud（示例：`检查未通过（gate=check_fail），
+   不能以 --skip-check 收口；请先 docpath check 修复（--skip-tests/--skip-lint 可减负）`），
+   且保留原始失败语义，不再抛二次异常。
+2. `agent done --status blocked` 与 `review.failed` 解耦，落**可达的 blocked 语义**
+   （新增转换目标 gate=blocked，并让 state 渲染为 blocked 而非 check_fail）。
+3. 保持门禁强度不变：不给"检查已失败仍可完成"开口子（`check_fail` 依旧不可归档）。
+
+## 验收
+
+- AC-1: gate ∈ {none, check_fail} × {standard + `--skip-check`、quick + `--skip-check`、
+  `--status blocked`} 执行 `agent done`，输出中不出现 `Illegal workflow transition` /
+  `未预期的错误`，exit≠0 且给出明确的恢复命令。
+- AC-2: `--status blocked` 不再产生 `gate=review_fail` / `phase=reviewing`，而是写入
+  可达的 blocked 状态（且 `docpath status` 能正确渲染）。
+- AC-3: 新增/修改的转换规则有单测覆盖（`tests/` 现对 `agent done --status blocked` 零覆盖）；
+  既有正常路径（gate=check_pass 全量 done、quick 经 check 后收口）不回归。
+- AC-4: `check_fail` 仍被拒绝归档（F5 契约不回退）。
+
+## 影响范围
+
+- 任何在 gate=`check_fail`（检查曾失败）或 phase=executing（quick 任务未跑 check）状态下
+  执行 `agent done` 的任务都会被卡住，且错误信息误导。
+- `--status blocked` 会把任务静默写成"审查失败"（exit 0），污染后续 next/review 路由。
+
+## 范围外（另开条目裁定）
+
+环境性 check 失败（工具链缺失/Docker 不可用，check/evidence.ts:78-87 只做诊断不放行）
+没有任何 sanctioned 出口，是"手工 commit 绕过 closeout"的真实痛点。是否引入
+`check_skipped` 通道或让环境性失败不计入 gate，属门禁契约变更，需用户单独裁定，
+不在本条目内实施。

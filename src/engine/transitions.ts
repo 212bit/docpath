@@ -6,6 +6,7 @@
 
 import { readCurrentState, stateLockPath, writeCurrentState, type CurrentState } from '../utils/workspace.js';
 import { withLock } from '../utils/lock.js';
+import { DocPathError } from '../utils/error-helpers.js';
 import { normalizeWorkflowSnapshot, type GateStatus, type WorkflowPhase } from './state-machine.js';
 import { normalizeWorkflowProfile, type WorkflowProfile } from './workflow-profile.js';
 
@@ -20,6 +21,7 @@ export type WorkflowEvent =
   | 'review.passed'
   | 'review.skipped'
   | 'review.failed'
+  | 'agent.blocked'
   | 'journal.archived';
 
 export interface TransitionPayload {
@@ -65,6 +67,7 @@ const EVENT_RECOVERY_COMMAND: Record<WorkflowEvent, string> = {
   'review.passed': 'docpath journal',
   'review.skipped': 'docpath journal',
   'review.failed': 'docpath review',
+  'agent.blocked': 'docpath go --step <id>',
   'journal.archived': 'docpath check 或 docpath review',
 };
 
@@ -88,6 +91,10 @@ const EVENT_TARGETS: Record<WorkflowEvent, TransitionTarget> = {
   'review.passed': { phase: 'reviewing', gate: 'review_pass', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
   'review.skipped': { phase: 'reviewing', gate: 'review_skipped', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_skipped'] },
   'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
+  // R-349: 任务级阻塞 closeout 的独立语义——不再复用 review.failed（旧实现把 blocked
+  // 写成 gate=review_fail/phase=reviewing，既非完成也非阻塞，污染 next/review 路由）。
+  // 目标阶段回到 executing（工作未完成），gate=blocked 使归档门禁继续拒绝该任务。
+  'agent.blocked': { phase: 'executing', gate: 'blocked', from: ['idle', 'drafting', 'planning', 'executing', 'checking', 'reviewing'] },
   // 归档前置：评审已通过（review_pass），或 quick profile 跳过评审后检查已通过（check_pass）。
   // 仍拒绝 check_fail / review_fail——失败态不得归档。
   'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'], requiredGate: ['review_pass', 'review_skipped', 'check_pass'] },
@@ -114,6 +121,43 @@ export function listValidWorkflowEvents(previous: Pick<CurrentState, 'phase' | '
 /** Suggested CLI after a named workflow event succeeds (or when recovering that event). */
 export function workflowEventSuggestedCommand(event: WorkflowEvent): string {
   return EVENT_RECOVERY_COMMAND[event] || 'docpath next --agent';
+}
+
+/**
+ * R-349: 判断某事件在当前 phase/gate 下是否可执行；不可执行时返回人类可读的原因。
+ *
+ * 命令层在**写入 review/收口类事件前**应先问一次，避免直接调用 transitionWorkflow
+ * 撞上 FSM 的 Illegal workflow transition 裸异常——那种二次异常会掩盖原始失败语义
+ * （如"语言级审查证据缺失"），让 Agent 只看到"未预期的错误"。
+ */
+export function workflowEventBlockReason(
+  previous: Pick<CurrentState, 'phase' | 'gate'>,
+  event: WorkflowEvent,
+): string | null {
+  const target = EVENT_TARGETS[event];
+  if (!target) return `未知工作流事件: ${event}`;
+  if (listValidWorkflowEvents(previous).some((item) => item.event === event)) return null;
+
+  const reasons: string[] = [];
+  if (!target.from.includes(previous.phase)) {
+    reasons.push(`${event} 不能从 phase=${previous.phase} 执行（允许来源: ${target.from.join(', ')}）`);
+  }
+  if (target.requiredGate && !target.requiredGate.includes(previous.gate)) {
+    reasons.push(`${event} 不能在前置门禁 gate=${previous.gate} 下执行（允许门禁: ${target.requiredGate.join(', ')}）`);
+  }
+  const suggested = preferredWorkflowCommand(previous);
+  return `当前状态 phase=${previous.phase} gate=${previous.gate}: ${reasons.join('；')}；建议下一步: ${suggested}`;
+}
+
+/**
+ * R-349: 事件不可执行时抛 DocPathError（顶层渲染为可操作诊断，而非"未预期的错误"）。
+ * 可执行时静默返回，调用方随后正常 transitionWorkflow。
+ */
+export async function assertWorkflowEventLegal(cwd: string, event: WorkflowEvent): Promise<void> {
+  const state = await readCurrentState(cwd);
+  const previous = { phase: state?.phase ?? 'idle', gate: state?.gate ?? 'none' };
+  const reason = workflowEventBlockReason(previous, event);
+  if (reason) throw new DocPathError('WORKFLOW_EVENT_BLOCKED', { detail: reason });
 }
 
 /** Gate-progression CLI verbs that must stay consistent with FSM legality. */
@@ -220,6 +264,7 @@ const DEFAULT_STEP: Record<WorkflowEvent, string> = {
   'review.passed': '审查通过，下一步: docpath journal',
   'review.skipped': '审查已按工作流策略跳过，下一步: docpath journal',
   'review.failed': '审查未通过，请修复审查问题',
+  'agent.blocked': '任务因阻塞停止，解除阻塞后继续: docpath go --step <id>',
   'journal.archived': '知识归档完成',
 };
 

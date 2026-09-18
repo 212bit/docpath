@@ -15,7 +15,7 @@ import { execFileSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { readCurrentState } from '../utils/workspace.js';
-import { transitionWorkflow } from '../engine/transitions.js';
+import { transitionWorkflow, assertWorkflowEventLegal } from '../engine/transitions.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { writeReviewEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
 import { healStructuredMarkdownDrift } from '../utils/structured-heal.js';
@@ -420,6 +420,8 @@ async function handleApprove(cwd: string, docpathDir: string, taskId: string): P
     manual: true,
   });
   if (!await alreadyReviewed(cwd)) {
+    // R-349: 写入前先校验 FSM 合法性——gate 未过 check 时不撞裸 Illegal transition。
+    await assertWorkflowEventLegal(cwd, 'review.passed');
     await transitionWorkflow(cwd, 'review.passed', { currentStep: '审查通过，下一步: docpath journal' });
   }
 }
@@ -434,9 +436,14 @@ async function persistReviewResult(cwd: string, taskId: string, groups: FindingG
   });
   if (approved) {
     if (!await alreadyReviewed(cwd)) {
+      // R-349: 检查未过（gate=check_fail/none）时 review.passed 不合法，先给出可操作诊断。
+      await assertWorkflowEventLegal(cwd, 'review.passed');
       await transitionWorkflow(cwd, 'review.passed', { currentStep: '审查通过，下一步: docpath journal' });
     }
   } else {
+    // R-349: 同理，review.failed 在 gate=check_fail 下也不合法；若直接 transition 会抛
+    // Illegal workflow transition 并掩盖上面的审查结论（错误数 / skill 证据缺失）。
+    await assertWorkflowEventLegal(cwd, 'review.failed');
     await transitionWorkflow(cwd, 'review.failed', { currentStep: `审查失败: ${errors.length} 错误, ${warns.length} 警告` });
   }
 }

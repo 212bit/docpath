@@ -100,6 +100,7 @@ export type RuntimeWorkflowState =
   | 'review_pass'
   | 'review_skipped'
   | 'build_pass'
+  | 'blocked'
   | 'archived';
 
 export const VALID_WORKFLOW_STATES = new Set<RuntimeWorkflowState>([
@@ -122,6 +123,7 @@ export const VALID_WORKFLOW_STATES = new Set<RuntimeWorkflowState>([
   'review_pass',
   'review_skipped',
   'build_pass',
+  'blocked',
   'journaling',
   'completed',
   'archived',
@@ -153,6 +155,9 @@ const STATE_TO_SNAPSHOT: Record<RuntimeWorkflowState, WorkflowSnapshot> = {
   checking: { phase: 'checking', gate: 'none', state: 'checking' },
   check_pass: { phase: 'checking', gate: 'check_pass', state: 'check_pass' },
   check_fail: { phase: 'checking', gate: 'check_fail', state: 'check_fail' },
+  // R-349: blocked 是可被 agent.blocked 事件写入的一等状态——任务因阻塞停止，
+  // 阶段回到 executing（工作未完成），gate=blocked 阻断归档（失败/阻塞态不得归档）。
+  blocked: { phase: 'executing', gate: 'blocked', state: 'blocked' },
   reviewing: { phase: 'reviewing', gate: 'check_pass', state: 'reviewing' },
   review_pass: { phase: 'reviewing', gate: 'review_pass', state: 'review_pass' },
   review_skipped: { phase: 'reviewing', gate: 'review_skipped', state: 'review_skipped' },
@@ -166,13 +171,13 @@ const STATE_TO_SNAPSHOT: Record<RuntimeWorkflowState, WorkflowSnapshot> = {
 };
 
 const PHASE_GATE_TO_STATE: Record<WorkflowPhase, Partial<Record<GateStatus, RuntimeWorkflowState>>> = {
-  idle: { none: 'idle', blocked: 'check_fail' },
-  drafting: { none: 'drafting', blocked: 'check_fail' },
-  planning: { none: 'planning_done', blocked: 'check_fail' },
-  executing: { none: 'executing', blocked: 'check_fail' },
-  checking: { none: 'checking', check_pass: 'check_pass', check_fail: 'check_fail', blocked: 'check_fail' },
-  reviewing: { none: 'reviewing', check_pass: 'reviewing', review_pass: 'review_pass', review_skipped: 'review_skipped', review_fail: 'check_fail', blocked: 'check_fail' },
-  journaling: { none: 'journaling', review_pass: 'journaling', review_skipped: 'journaling', blocked: 'check_fail' },
+  idle: { none: 'idle', blocked: 'blocked' },
+  drafting: { none: 'drafting', blocked: 'blocked' },
+  planning: { none: 'planning_done', blocked: 'blocked' },
+  executing: { none: 'executing', blocked: 'blocked' },
+  checking: { none: 'checking', check_pass: 'check_pass', check_fail: 'check_fail', blocked: 'blocked' },
+  reviewing: { none: 'reviewing', check_pass: 'reviewing', review_pass: 'review_pass', review_skipped: 'review_skipped', review_fail: 'check_fail', blocked: 'blocked' },
+  journaling: { none: 'journaling', review_pass: 'journaling', review_skipped: 'journaling', blocked: 'blocked' },
   completed: { none: 'completed', check_pass: 'completed', review_pass: 'completed', review_skipped: 'completed' },
 };
 
