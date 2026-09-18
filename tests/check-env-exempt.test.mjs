@@ -104,6 +104,12 @@ describe('R-350 check 环境豁免（AC-1 / AC-3 / AC-4）', () => {
       const lastCheck = readFileSync(join(dir, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
       assert.match(lastCheck, /PASS \(环境豁免\)/);
 
+      // 路由回归：gate=check_env_exempt 时 next --agent 必须指向 review，
+      // 而不是把豁免态当"未检查"或"已完成"（须在 review 之前断言）
+      const next = run(['next', '--agent'], dir);
+      assert.match(next.out, /质量检查含环境豁免，执行审查/);
+      assert.match(next.out, /recommended_command:\s*docpath review/);
+
       // 豁免后必须能继续走评审（requiredGate 视同 check_pass）
       const review = run(['review', '--force'], dir);
       assert.doesNotMatch(review.out, /Illegal workflow transition/);
@@ -148,6 +154,27 @@ describe('R-350 check 环境豁免（AC-1 / AC-3 / AC-4）', () => {
       assert.equal(readState(dir).gate, 'check_fail');
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('权限类输出（Permission denied / EACCES）不豁免（B3 收紧 2026-09-18）', () => {
+    for (const output of [
+      'EACCES: permission denied, open \'./node_modules/.bin/tsc\'',
+      'sh: 1: cannot create temp file for here-document: Permission denied',
+    ]) {
+      const { dir } = mkExecWorkspace();
+      try {
+        writePackageScripts(dir, { test: nodeFailScript(dir, output) });
+        syncCanonicalTaskFiles(dir);
+        writeState(dir, { phase: 'executing', gate: 'none' });
+        initGitWithDiff(dir);
+
+        const res = run(['check'], dir);
+        assert.notEqual(res.code, 0, `权限类失败不应豁免: ${output}`);
+        assert.equal(readState(dir).gate, 'check_fail', `权限类失败应落 check_fail: ${output}`);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
     }
   });
 

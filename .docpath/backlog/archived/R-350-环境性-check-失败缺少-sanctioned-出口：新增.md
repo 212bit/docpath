@@ -59,7 +59,9 @@ runners.ts:184-265 真跑临时目录探针；文本启发式 runners.ts:34-53 �
 - 方向 A：环境失败不计入 gate，但**只对确定性可证的环境类失败**生效。
 - 可豁免集 = **B3 收紧版**：探针类 ∪ 工具链语义明确的文本模式
   （`command not found`、`not recognized as an internal or external command`、
-  `spawn .* ENOENT`、`Permission denied.*node_modules`）；
+  `spawn .* ENOENT`）；
+  （2026-09-18 追加收紧：`Permission denied.*node_modules` / `EACCES.*node_modules` 移出可豁免集——
+   权限错误也可能是环境配置/目录所有权问题，非「工具链缺失」；仅保留在环境诊断宽集中）
   **歧义模式保持阻塞**（`Cannot find module`、`MODULE_NOT_FOUND`、
   `ENOENT.*node_modules` —— 其恢复动作是 `pnpm install` 或改代码，不是豁免）。
 - 结构性保障：结构门禁（`runTaskDocumentChecks`）与 harness 规则

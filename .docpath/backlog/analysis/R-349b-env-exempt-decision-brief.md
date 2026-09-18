@@ -39,7 +39,8 @@
 
 - **B1 严格**：仅**探针类**可豁免。最安全，但覆盖不到"项目脚本里 `docker: command not found`"这类（R-023 场景）——那类走文本启发式。
 - **B2 宽松（原文描述）**：任何 `environment_failure` 均可豁免（含 `Cannot find module` 一族）。覆盖面最广，但存在上述误放过真实失败的风险。
-- **B3 收紧版（推荐）**：可豁免集 = 探针类 ∪ **工具链不可用语义明确的**文本模式（`command not found` / `not recognized as an internal or external command` / `spawn .* ENOENT` / `Permission denied.*node_modules`）；而 `Cannot find module` / `MODULE_NOT_FOUND` / `ENOENT.*node_modules` 这类**歧义模式保留为阻塞**（其恢复动作是 `pnpm install` 或修代码，不是豁免）。覆盖面≈B2，风险≈B1。
+- **B3 收紧版（推荐）**：可豁免集 = 探针类 ∪ **工具链不可用语义明确的**文本模式（`command not found` / `not recognized as an internal or external command` / `spawn .* ENOENT`）；而 `Cannot find module` / `MODULE_NOT_FOUND` / `ENOENT.*node_modules` 这类**歧义模式保留为阻塞**（其恢复动作是 `pnpm install` 或修代码，不是豁免）。覆盖面≈B2，风险≈B1。
+- **B3 追加收紧（2026-09-18 用户同意）**：`Permission denied.*node_modules` / `EACCES.*node_modules` **移出**可豁免集——权限错误也可能是环境配置/目录所有权问题（可修），不是"工具链缺失"；保留在宽集 `environment_failure` 中维持环境诊断显示。
 
 ### 2.2 落状态与审计
 

@@ -67,8 +67,6 @@ export function looksLikeToolchainUnavailable(output: string): boolean {
     /command not found/i,
     /is not recognized as (an )?internal or external command/i,
     /spawn.*ENOENT/,
-    /Permission denied.*node_modules/,
-    /EACCES.*node_modules/,
   ];
   return toolchainPatterns.some((pattern) => pattern.test(output));
 }

@@ -585,10 +585,13 @@ export function inferNextAction(
     }, phase, gate);
   }
 
-  if (!isCompleted && gate === 'check_pass') {
+  if (!isCompleted && (gate === 'check_pass' || gate === 'check_env_exempt')) {
+    const envExempted = gate === 'check_env_exempt';
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md'];
     return withWorkflowConstraint({
-      next_action: '质量检查已通过，执行审查',
+      // R-350: 环境豁免态与 check_pass 同路——下一步都是评审，但文案必须点明豁免，
+      // 避免 agent 误以为检查真的全绿（豁免只表达"失败项为工具链不可用"）。
+      next_action: envExempted ? '质量检查含环境豁免，执行审查' : '质量检查已通过，执行审查',
       recommended_command: 'docpath review',
       required_context: required,
       required_files: required,
