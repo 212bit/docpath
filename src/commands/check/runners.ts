@@ -52,6 +52,27 @@ export function looksLikeEnvironmentFailure(output: string): boolean {
   return envPatterns.some((pattern) => pattern.test(output));
 }
 
+/**
+ * R-350: 环境豁免（check_env_exempt）专用的**收紧**判定集。
+ *
+ * `looksLikeEnvironmentFailure` 是"环境诊断"用的宽集，其中 `Cannot find module` /
+ * `MODULE_NOT_FOUND` / `ENOENT.*node_modules` 也可能来自真实缺依赖或代码问题；若拿它
+ * 直接放行整单 check，一个真实的缺依赖失败会被误判成环境问题而豁免通过。
+ *
+ * 这里只保留**语义上只可能是工具链不可用**的模式：命令不存在 / 无法派生进程 /
+ * 二进制不可执行。其余一律不豁免（其恢复动作是 pnpm install 或修代码，不是豁免）。
+ */
+export function looksLikeToolchainUnavailable(output: string): boolean {
+  const toolchainPatterns = [
+    /command not found/i,
+    /is not recognized as (an )?internal or external command/i,
+    /spawn.*ENOENT/,
+    /Permission denied.*node_modules/,
+    /EACCES.*node_modules/,
+  ];
+  return toolchainPatterns.some((pattern) => pattern.test(output));
+}
+
 export function pathEntries(value: string | undefined): string[] {
   return (value || '').split(delimiter).filter(Boolean);
 }
@@ -130,6 +151,8 @@ export function runCheck(
     }
     const rawOutput = errorOutput(err).slice(0, 500);
     const isEnvFailure = looksLikeEnvironmentFailure(rawOutput);
+    // R-350: 环境诊断用宽集，环境豁免用收紧集（见 looksLikeToolchainUnavailable 注释）。
+    const isExemptible = isEnvFailure && looksLikeToolchainUnavailable(rawOutput);
     return {
       name,
       passed: false,
@@ -137,6 +160,7 @@ export function runCheck(
       category,
       command,
       ...(isEnvFailure ? { environment_failure: true } : {}),
+      ...(isExemptible ? { environment_exemptible: true } : {}),
     };
   }
 }
@@ -257,6 +281,8 @@ function runnerUnavailableResult(
     passed: false,
     category,
     environment_failure: true,
+    // R-350: 探针类环境失败是**自验证**的（临时目录真跑过探针），可进入环境豁免集。
+    environment_exemptible: true,
     output: [
       `包管理器 "${nodeCommands.pkgRunner}" 探针失败（${probe.detail || '未知原因'}）。`,
       `脚本 "${scriptName}" 含无法安全内联展开的 runner 调用，已跳过本次检查（否则将空耗超时时长）。`,

@@ -81,6 +81,9 @@ export async function tryReuseCachedHeavyChecks(docpathDir: string, cwd: string)
     return null;
   }
   if (!evidence || !evidence.passed) return null;
+  // R-350: 环境豁免的"通过"来自工具链不可用，不是真实判定——不作为缓存源，
+  // 否则下次会拿豁免结果当绿色基线复用，环境修好后仍显示豁免（--no-cache 同理）。
+  if (evidence.env_exempt) return null;
   // 只有全量运行的证据才可作为缓存源：lite/降档产物没有 test 判定，复用它会放水。
   if (!evidence.checks.some((check) => check.category === 'test')) return null;
   if (!evidence.code_scope_digest || evidence.code_scope_digest !== digest) return null;
@@ -94,6 +97,7 @@ export async function tryReuseCachedHeavyChecks(docpathDir: string, cwd: string)
     category: (REUSABLE_CATEGORIES.has(check.category || '') ? check.category : undefined) as CheckResult['category'],
     severity: check.severity === 'error' || check.severity === 'warning' ? check.severity : undefined,
     environment_failure: check.environment_failure,
+    environment_exemptible: check.environment_exemptible,
     output: '♻️  缓存复用：代码范围（src/tests/构建配置）自上次绿色 check 无变更，判定沿用该次结果。--no-cache 可强制重跑。',
   }));
 }

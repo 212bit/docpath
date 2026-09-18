@@ -32,7 +32,7 @@ export function shouldPersistPassedOutput(result: CheckResult): boolean {
   return result.passed && /terminal verification step/i.test(result.output);
 }
 
-export function printCheckReport(results: CheckResult[], allPassed: boolean, verbose = false): void {
+export function printCheckReport(results: CheckResult[], allPassed: boolean, verbose = false, envExempt = false): void {
   const categoryNames: Record<string, string> = {
     compile: '📝 编译检查',
     test: '🧪 测试检查',
@@ -95,29 +95,77 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
     }
   }
 
-  console.log(`\n${allPassed ? '✅  全部通过' : '❌  存在失败项'}\n`);
+  // R-350: 环境豁免——全部失败项都是确定性可证的工具链故障时，不落 check_fail，
+  // 而是落 check_env_exempt（可继续 review/归档，但必须显著可见 + 审计留痕）。
+  if (envExempt) {
+    console.log('\n🛠️  环境豁免（check_env_exempt）: 本次全部失败项都是工具链不可用，非代码问题:');
+    for (const r of results.filter((item) => !item.passed && item.severity !== 'warning')) {
+      console.log(`  - ${r.name}`);
+    }
+    console.log('    豁免依据: 探针证明 runner 不可用，或输出为命令不存在/无法派生进程/二进制不可执行。');
+    console.log('    审计: 已记入 workspace/decisions.md (policy.env_exempt)，gate=check_env_exempt。');
+    console.log('    想按失败处理请重跑: docpath check --no-env-exempt\n');
+  }
+
+  console.log(`\n${allPassed ? '✅  全部通过' : envExempt ? '⚠️  通过（环境豁免）' : '❌  存在失败项'}\n`);
 }
 
-export async function updateCheckWorkflowState(cwd: string, allPassed: boolean, results: CheckResult[]): Promise<void> {
+/**
+ * R-350: 环境豁免判定（纯函数，便于单测）。
+ *
+ * 语义：一次 check 的**全部阻塞性失败**（passed=false 且 severity≠warning）都是
+ * **确定性可证**的环境类失败（environment_exemptible）时，允许落 check_env_exempt
+ * 而非 check_fail —— 让"不是代码问题"的工具链故障不再把任务卡死。
+ *
+ * 边界（B3 收紧版，用户裁定）：
+ * - 空失败集（真的全过）不适用豁免，返回 false（走正常 check.passed）。
+ * - 只要有一个失败项不是环境豁免类（结构门禁/harness 规则/真实编译测试失败），
+ *   整单仍是失败——混合失败永不豁免。
+ * - `--no-env-exempt` 强制关闭豁免。
+ */
+export function evaluateEnvironmentExemption(
+  results: CheckResult[],
+  options?: { noEnvExempt?: boolean },
+): { exempt: boolean; failures: CheckResult[]; reason: string } {
+  const failures = results.filter((r) => !r.passed && r.severity !== 'warning');
+  if (failures.length === 0) return { exempt: false, failures, reason: 'no-blocking-failure' };
+  if (options?.noEnvExempt) return { exempt: false, failures, reason: 'disabled-by-flag' };
+  const allExemptible = failures.every((r) => r.environment_exemptible === true);
+  return allExemptible
+    ? { exempt: true, failures, reason: 'all-failures-are-toolchain' }
+    : { exempt: false, failures, reason: 'non-environment-failure-present' };
+}
+
+export async function updateCheckWorkflowState(
+  cwd: string,
+  allPassed: boolean,
+  results: CheckResult[],
+  envExempt = false,
+): Promise<void> {
   const workflowState = await readCurrentState(cwd);
-  const alreadyPastCheck = allPassed && (
+  const passLike = allPassed || envExempt;
+  const alreadyPastCheck = passLike && (
     (workflowState?.phase === 'reviewing' && workflowState?.gate === 'review_pass')
     || workflowState?.phase === 'completed'
   );
   if (alreadyPastCheck) return;
   const phase = workflowState?.phase || 'idle';
-  const planningDone = allPassed && phase === 'planning'
+  const planningDone = passLike && phase === 'planning'
     ? await hasCompletedPlan(cwd)
     : false;
-  const eventAllowed = allPassed
+  const eventAllowed = passLike
     ? ['executing', 'checking', 'completed'].includes(phase) || planningDone
     : ['executing', 'checking', 'reviewing', 'completed'].includes(phase);
   if (!eventAllowed) return;
 
-  await transitionWorkflow(cwd, allPassed ? 'check.passed' : 'check.failed', {
-    currentStep: allPassed
-      ? `质量检查通过 (${results.length} 项)，下一步: docpath review`
-      : `质量检查失败: ${results.filter(result => !result.passed).map(result => result.name).join(', ')}`,
+  // R-350: 环境豁免走独立事件/gate（check_env_exempt），审计可辨，非"假装通过"。
+  const event = envExempt ? 'check.env_exempt' : allPassed ? 'check.passed' : 'check.failed';
+  await transitionWorkflow(cwd, event, {
+    currentStep: envExempt
+      ? `质量检查环境豁免 (${results.length} 项，失败项均为工具链不可用)，下一步: docpath review`
+      : allPassed
+        ? `质量检查通过 (${results.length} 项)，下一步: docpath review`
+        : `质量检查失败: ${results.filter(result => !result.passed).map(result => result.name).join(', ')}`,
   });
 }
 
@@ -130,7 +178,7 @@ export async function writeLastCheckEvidence(
   cwd: string,
   results: CheckResult[],
   allPassed: boolean,
-  meta?: { cacheReused?: boolean },
+  meta?: { cacheReused?: boolean; envExempt?: boolean },
 ): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
   const gitBaseline = readGitBaseline(cwd);
@@ -143,6 +191,7 @@ export async function writeLastCheckEvidence(
     ...(result.category ? { category: result.category } : {}),
     ...(result.severity ? { severity: result.severity } : {}),
     ...(result.environment_failure ? { environment_failure: true } : {}),
+    ...(result.environment_exemptible ? { environment_exemptible: true } : {}),
     ...(result.command ? { command: result.command } : {}),
   }));
   const { computeCodeScopeDigest } = await import('./cache.js');
@@ -156,7 +205,9 @@ export async function writeLastCheckEvidence(
     // R-331: scope 缓存判定键 + 复用标记
     code_scope_digest: computeCodeScopeDigest(cwd) ?? undefined,
     ...(meta?.cacheReused ? { cached: true } : {}),
-    passed: allPassed,
+    // R-350: 环境豁免——passed 视为 true（否则收口策略会拦），但显式标记豁免来源
+    ...(meta?.envExempt ? { env_exempt: true } : {}),
+    passed: allPassed || Boolean(meta?.envExempt),
     check_count: results.length,
     ...(gitBaseline ? {
       git: {
@@ -169,14 +220,16 @@ export async function writeLastCheckEvidence(
   });
 }
 
-export async function writeCheckBreadcrumb(cwd: string, taskId: string, results: CheckResult[], allPassed: boolean): Promise<void> {
+export async function writeCheckBreadcrumb(cwd: string, taskId: string, results: CheckResult[], allPassed: boolean, envExempt = false): Promise<void> {
   await writeBreadcrumb(cwd, {
     taskId,
     step: 'check',
-    status: allPassed ? 'done' : 'blocked',
-    context: allPassed
-      ? `质量检查通过 (${results.length} 项)`
-      : `质量检查失败: ${results.filter(result => !result.passed).map(result => result.name).join(', ')}`,
+    status: allPassed || envExempt ? 'done' : 'blocked',
+    context: envExempt
+      ? `质量检查环境豁免 (${results.length} 项，失败项均为工具链不可用)`
+      : allPassed
+        ? `质量检查通过 (${results.length} 项)`
+        : `质量检查失败: ${results.filter(result => !result.passed).map(result => result.name).join(', ')}`,
   });
 }
 
@@ -218,13 +271,14 @@ export async function persistCheckEvidence(
   taskId: string,
   results: CheckResult[],
   allPassed: boolean,
-  meta?: { cacheReused?: boolean },
+  meta?: { cacheReused?: boolean; envExempt?: boolean },
 ): Promise<void> {
-  await updateCheckWorkflowState(cwd, allPassed, results);
+  const envExempt = Boolean(meta?.envExempt);
+  await updateCheckWorkflowState(cwd, allPassed, results, envExempt);
   await writeLastCheckEvidence(cwd, results, allPassed, meta);
-  await writeCheckBreadcrumb(cwd, taskId, results, allPassed);
+  await writeCheckBreadcrumb(cwd, taskId, results, allPassed, envExempt);
   await syncCurrentDocument(cwd);
-  await updateCheckHistory(cwd, docpathDir, results, allPassed);
+  await updateCheckHistory(cwd, docpathDir, results, allPassed || envExempt);
 }
 
 export async function writeMajorChangeConfirmation(docpathDir: string, taskId: string | undefined, reason: string): Promise<void> {

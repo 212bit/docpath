@@ -30,7 +30,7 @@ export async function evaluateCompletionPolicy(
   if (state?.gate === 'check_fail') reasons.push('当前 gate 为 check_fail，不能完成任务');
   const allowedCompletionGates = options.requireReview
     ? ['check_pass', 'review_pass']
-    : ['check_pass', 'review_pass', 'review_skipped'];
+    : ['check_pass', 'review_pass', 'review_skipped', 'check_env_exempt'];
 
   if (state && !allowedCompletionGates.includes(state.gate) && state.phase !== 'completed') {
     reasons.push(`当前 gate 为 ${state.gate}，需要 check_pass${options.requireReview ? ' / review_pass' : ''}`);
@@ -52,6 +52,39 @@ export async function recordSkipReason(
     'policy.skip',
     `跳过 ${gate}`,
     reason || `用户显式使用 --skip-${gate}`,
+  );
+}
+
+/**
+ * R-350: 环境豁免（check_env_exempt）的审计留痕。
+ *
+ * 与 recordSkipReason 的区别：skip 是"用户显式跳过门禁"，豁免是"门禁跑了，
+ * 但全部失败项都被确定性判定为工具链不可用"。留痕必须能回答"到底哪些检查没通过、
+ * 原始报错是什么、判定依据是哪一类"，否则豁免就退化成无痕放行。
+ */
+export async function recordEnvExemption(
+  cwd: string,
+  failures: Array<{ name: string; output?: string; command?: string }>,
+): Promise<void> {
+  const details = failures.map((failure) => {
+    const firstLine = (failure.output || '').split('\n').map((line) => line.trim()).find((line) => line.length > 0);
+    const origin = /command not found|not recognized as|spawn.*ENOENT|Permission denied|EACCES/i.test(failure.output || '')
+      ? 'toolchain-output'
+      : 'runner-probe';
+    return `- ${failure.name} [${origin}]${failure.command ? ` (${failure.command})` : ''}: ${firstLine || '无输出'}`;
+  });
+  await appendDecision(
+    cwd,
+    'policy.env_exempt',
+    `环境豁免 ${failures.length} 项检查`,
+    [
+      'check 的全部失败项均为确定性可证的工具链不可用（探针失败或命令不存在/不可执行），',
+      '按 R-350 落 gate=check_env_exempt 而非 check_fail，允许继续 review/归档。',
+      '豁免项与判定依据:',
+      ...details,
+      '恢复动作: 修复环境后重跑 `docpath check`（豁免非粘性，下次真实失败立即回落 check_fail）。',
+      '如需按失败处理: `docpath check --no-env-exempt`。',
+    ].join('\n'),
   );
 }
 

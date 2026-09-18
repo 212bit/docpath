@@ -217,7 +217,7 @@ describe('R-349 FSM 转换规则单测（AC-3）', () => {
 
     const gateBlocked = transitions.workflowEventBlockReason({ phase: 'checking', gate: 'check_fail' }, 'review.failed');
     assert.match(gateBlocked, /gate=check_fail/);
-    assert.match(gateBlocked, /允许门禁: check_pass, review_pass, review_fail/);
+    assert.match(gateBlocked, /允许门禁: check_pass, check_env_exempt, review_pass, review_fail/);
 
     const phaseBlocked = transitions.workflowEventBlockReason({ phase: 'executing', gate: 'none' }, 'review.skipped');
     assert.match(phaseBlocked, /phase=executing/);

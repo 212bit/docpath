@@ -23,6 +23,7 @@ import { healStructuredMarkdownDrift } from '../utils/structured-heal.js';
 import { mutateCurrentState } from '../utils/workspace.js';
 import { syncProtocolBlocks } from '../utils/protocol-blocks.js';
 import { resolveTemplate } from '../utils/install-core.js';
+import { recordEnvExemption } from '../engine/policy.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 import { reassessRiskTier, riskPolicyFromConfig } from '../engine/risk.js';
 import { recordRiskEscalation } from '../engine/policy.js';
@@ -339,12 +340,18 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     results.push(...harnessResults);
   }
 
-  const { printCheckReport, persistCheckEvidence } = await import('./check/evidence.js');
+  const { printCheckReport, persistCheckEvidence, evaluateEnvironmentExemption } = await import('./check/evidence.js');
   const allPassed = results.every(r => r.passed || r.severity === 'warning');
-  printCheckReport(results, allPassed, options.verbose);
-  await persistCheckEvidence(cwd, docpathDir, current?.task_id || 'unknown', results, allPassed, { cacheReused });
+  // R-350: 环境豁免判定（B3 收紧集 + --no-env-exempt 反向开关）
+  const exemption = evaluateEnvironmentExemption(results, { noEnvExempt: options.noEnvExempt });
+  const envExempt = !allPassed && exemption.exempt;
+  printCheckReport(results, allPassed, options.verbose, envExempt);
+  await persistCheckEvidence(cwd, docpathDir, current?.task_id || 'unknown', results, allPassed, { cacheReused, envExempt });
+  if (envExempt) {
+    await recordEnvExemption(cwd, exemption.failures);
+  }
 
-  if (!allPassed) {
+  if (!allPassed && !envExempt) {
     console.log('请修复失败项后重新运行 `docpath check`\n');
     throw new Error(`docpath check failed: ${results.filter(r => !r.passed && r.severity !== 'warning').map(r => r.name).join(', ')}`);
   } else {

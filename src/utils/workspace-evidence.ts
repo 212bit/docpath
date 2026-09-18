@@ -18,6 +18,8 @@ export interface CheckEvidenceItem {
   category?: CheckCategory;
   severity?: CheckSeverity;
   environment_failure?: boolean;
+  /** R-350: 该环境失败是否确定性可证（可用于 check_env_exempt 豁免） */
+  environment_exemptible?: boolean;
   /** R-347: 实际执行的外部命令 */
   command?: string;
 }
@@ -42,6 +44,8 @@ export interface LastCheckEvidence {
   /** R-276(补齐): 检查时的 git HEAD; 供 done 复用判定感知 check 后的新提交 (旧证据缺省, 向后兼容) */
   head?: string;
   passed: boolean;
+  /** R-350: 本次 check 通过是否来自环境豁免（gate=check_env_exempt 而非 check_pass） */
+  env_exempt?: boolean;
   check_count: number;
   /** R-331: 代码范围 digest（HEAD + scope status 联合哈希）；scope 缓存复用判定键 */
   code_scope_digest?: string;
@@ -121,7 +125,11 @@ function formatCheckOutput(output: string): string[] {
 export function renderLastCheckMarkdown(evidence: LastCheckEvidence): string {
   const lines: string[] = ['# Last Check Evidence', ''];
   lines.push(`**时间**: ${evidence.timestamp}`);
-  lines.push(`**结果**: ${evidence.passed ? '✅ PASS' : '❌ FAIL'}`);
+  // R-350: 环境豁免的 PASS 必须自证来源，避免读侧把它当成普通 check_pass
+  lines.push(`**结果**: ${evidence.passed ? (evidence.env_exempt ? '✅ PASS (环境豁免)' : '✅ PASS') : '❌ FAIL'}`);
+  if (evidence.env_exempt) {
+    lines.push('env_exempt: true');
+  }
   lines.push(`**检查项**: ${evidence.check_count}`);
   if (evidence.task_id) {
     lines.push(`task_id: ${evidence.task_id}`);
@@ -174,7 +182,8 @@ export async function readLastCheckEvidence(docpathDir: string): Promise<LastChe
   if (taskId !== undefined && taskId !== expectedTaskId) return null;
 
   const timestamp = markdown.match(/^\*\*时间\*\*:\s*(.+)$/m)?.[1]?.trim() || '';
-  const passed = /^\*\*结果\*\*:\s*✅\s*PASS\s*$/m.test(markdown);
+  const passed = /^\*\*结果\*\*:\s*✅\s*PASS(?:\s*\(环境豁免\))?\s*$/m.test(markdown);
+  const envExempt = markdown.match(/^env_exempt:\s*(true|false)$/m)?.[1];
   const checkCount = Number.parseInt(markdown.match(/^\*\*检查项\*\*:\s*(\d+)$/m)?.[1] || '0', 10);
   const ref = markdown.match(/^(?:git_ref|ref|commit):\s*`?([a-f0-9]{7,40}|HEAD(?:~\d+)?|[\w./-]+)`?/im)?.[1];
   const branch = markdown.match(/^branch:\s*(.+)$/m)?.[1]?.trim();
@@ -185,6 +194,7 @@ export async function readLastCheckEvidence(docpathDir: string): Promise<LastChe
     task_id: taskId || 'check',
     timestamp,
     passed,
+    ...(envExempt === 'true' ? { env_exempt: true } : {}),
     check_count: Number.isFinite(checkCount) ? checkCount : 0,
     ...(ref ? { git: { ref, branch: branch || 'HEAD', worktree_dirty: dirty === 'true' } } : {}),
     checks: [],

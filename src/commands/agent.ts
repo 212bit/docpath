@@ -325,7 +325,7 @@ function isFreshEvidence(timestamp: string | undefined): boolean {
 }
 
 async function canReuseCheckGate(cwd: string, stateAtStart: Awaited<ReturnType<typeof readCurrentState>>): Promise<string | null> {
-  if (stateAtStart?.gate !== 'check_pass' && stateAtStart?.gate !== 'review_pass' && stateAtStart?.gate !== 'review_skipped') {
+  if (stateAtStart?.gate !== 'check_pass' && stateAtStart?.gate !== 'check_env_exempt' && stateAtStart?.gate !== 'review_pass' && stateAtStart?.gate !== 'review_skipped') {
     return `state gate is ${stateAtStart?.gate || 'none'}`;
   }
   const docpathDir = await resolveDocpathDir(cwd);

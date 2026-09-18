@@ -18,6 +18,7 @@ export type WorkflowEvent =
   | 'step.completed'
   | 'check.passed'
   | 'check.failed'
+  | 'check.env_exempt'
   | 'review.passed'
   | 'review.skipped'
   | 'review.failed'
@@ -63,6 +64,8 @@ const EVENT_RECOVERY_COMMAND: Record<WorkflowEvent, string> = {
   'step.started': 'docpath next --agent',
   'step.completed': 'docpath next --agent',
   'check.passed': 'docpath review',
+  // R-350: 环境豁免与 check_pass 同路——下一步仍是评审（豁免只表达"检查结论受环境阻塞"）
+  'check.env_exempt': 'docpath review',
   'check.failed': 'docpath check',
   'review.passed': 'docpath journal',
   'review.skipped': 'docpath journal',
@@ -87,17 +90,22 @@ const EVENT_TARGETS: Record<WorkflowEvent, TransitionTarget> = {
   'task.reopened': { phase: 'executing', gate: 'none', from: ['completed'] },
   'check.passed': { phase: 'checking', gate: 'check_pass', from: ['planning', 'executing', 'checking'] },
   'check.failed': { phase: 'checking', gate: 'check_fail', from: ['executing', 'checking', 'reviewing'] },
-  // 评审前置：检查必须已通过（check_pass），或在评审内重入（review_pass/review_fail）。
-  'review.passed': { phase: 'reviewing', gate: 'review_pass', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
-  'review.skipped': { phase: 'reviewing', gate: 'review_skipped', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_skipped'] },
-  'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'review_pass', 'review_fail'] },
+  // R-350: 环境豁免——check 确实跑了，但全部失败项被确定性判定为工具链不可用
+  // （探针证明 runner 不可用，或输出为命令不存在/无法派生进程/二进制不可执行）。
+  // 它不是"跳过检查"（--skip-check 不产生事件、不改 gate），而是"检查结论为环境阻塞"，
+  // 故下游视同 check_pass 可继续评审/归档；失败态语义（check_fail）不受影响。
+  'check.env_exempt': { phase: 'checking', gate: 'check_env_exempt', from: ['planning', 'executing', 'checking'] },
+  // 评审前置：检查必须已通过（check_pass / check_env_exempt），或在评审内重入（review_pass/review_fail）。
+  'review.passed': { phase: 'reviewing', gate: 'review_pass', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'check_env_exempt', 'review_pass', 'review_fail'] },
+  'review.skipped': { phase: 'reviewing', gate: 'review_skipped', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'check_env_exempt', 'review_skipped'] },
+  'review.failed': { phase: 'reviewing', gate: 'review_fail', from: ['checking', 'reviewing'], requiredGate: ['check_pass', 'check_env_exempt', 'review_pass', 'review_fail'] },
   // R-349: 任务级阻塞 closeout 的独立语义——不再复用 review.failed（旧实现把 blocked
   // 写成 gate=review_fail/phase=reviewing，既非完成也非阻塞，污染 next/review 路由）。
   // 目标阶段回到 executing（工作未完成），gate=blocked 使归档门禁继续拒绝该任务。
   'agent.blocked': { phase: 'executing', gate: 'blocked', from: ['idle', 'drafting', 'planning', 'executing', 'checking', 'reviewing'] },
   // 归档前置：评审已通过（review_pass），或 quick profile 跳过评审后检查已通过（check_pass）。
   // 仍拒绝 check_fail / review_fail——失败态不得归档。
-  'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'], requiredGate: ['review_pass', 'review_skipped', 'check_pass'] },
+  'journal.archived': { phase: 'completed', gate: 'review_pass', from: ['checking', 'reviewing', 'journaling', 'completed'], requiredGate: ['review_pass', 'review_skipped', 'check_pass', 'check_env_exempt'] },
 };
 
 export function listWorkflowTransitions(): WorkflowTransitionMetadata[] {
@@ -188,8 +196,8 @@ export function preferredWorkflowCommand(previous: Pick<CurrentState, 'phase' | 
   if ((gate === 'review_pass' || gate === 'review_skipped') && valid.has('journal.archived')) {
     return 'docpath journal';
   }
-  // Check passed, review not yet done → review (or quick done path leaves journal also legal)
-  if (gate === 'check_pass' && (valid.has('review.passed') || valid.has('review.skipped') || valid.has('review.failed'))) {
+  // Check passed（含 R-350 环境豁免），review not yet done → review (or quick done path leaves journal also legal)
+  if ((gate === 'check_pass' || gate === 'check_env_exempt') && (valid.has('review.passed') || valid.has('review.skipped') || valid.has('review.failed'))) {
     return 'docpath review';
   }
   if (gate === 'review_fail' && (valid.has('review.passed') || valid.has('review.failed'))) {
@@ -260,6 +268,7 @@ const DEFAULT_STEP: Record<WorkflowEvent, string> = {
   'step.started': '步骤执行中',
   'step.completed': '步骤已完成，继续下一步',
   'check.passed': '质量检查通过，下一步: docpath review',
+  'check.env_exempt': '质量检查环境豁免（失败项均为工具链不可用），下一步: docpath review',
   'check.failed': '质量检查失败，请修复失败项',
   'review.passed': '审查通过，下一步: docpath journal',
   'review.skipped': '审查已按工作流策略跳过，下一步: docpath journal',

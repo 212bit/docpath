@@ -566,6 +566,7 @@ export function inferNextAction(
     !isCompleted
     && allPlanDone
     && gate !== 'check_pass'
+    && gate !== 'check_env_exempt'
     && gate !== 'review_pass'
     && gate !== 'review_skipped'
     && gate !== 'review_fail'

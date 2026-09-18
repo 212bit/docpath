@@ -162,7 +162,7 @@ describe('transitionWorkflow', () => {
     );
     await assert.rejects(
       () => transitionWorkflow(cwd, 'review.passed'),
-      /允许门禁: check_pass, review_pass, review_fail/,
+      /允许门禁: check_pass, check_env_exempt, review_pass, review_fail/,
     );
     rmSync(cwd, { recursive: true, force: true });
   });

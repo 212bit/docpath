@@ -68,6 +68,7 @@ export type GateStatus =
   | 'none'
   | 'check_pass'
   | 'check_fail'
+  | 'check_env_exempt'
   | 'review_pass'
   | 'review_skipped'
   | 'review_fail'
@@ -97,6 +98,7 @@ export type RuntimeWorkflowState =
   | 'verifying'
   | 'check_pass'
   | 'check_fail'
+  | 'check_env_exempt'
   | 'review_pass'
   | 'review_skipped'
   | 'build_pass'
@@ -119,6 +121,7 @@ export const VALID_WORKFLOW_STATES = new Set<RuntimeWorkflowState>([
   'checking',
   'check_pass',
   'check_fail',
+  'check_env_exempt',
   'reviewing',
   'review_pass',
   'review_skipped',
@@ -155,6 +158,8 @@ const STATE_TO_SNAPSHOT: Record<RuntimeWorkflowState, WorkflowSnapshot> = {
   checking: { phase: 'checking', gate: 'none', state: 'checking' },
   check_pass: { phase: 'checking', gate: 'check_pass', state: 'check_pass' },
   check_fail: { phase: 'checking', gate: 'check_fail', state: 'check_fail' },
+  // R-350: 环境豁免态——check 跑了，全部失败项被确定性判定为工具链不可用。
+  check_env_exempt: { phase: 'checking', gate: 'check_env_exempt', state: 'check_env_exempt' },
   // R-349: blocked 是可被 agent.blocked 事件写入的一等状态——任务因阻塞停止，
   // 阶段回到 executing（工作未完成），gate=blocked 阻断归档（失败/阻塞态不得归档）。
   blocked: { phase: 'executing', gate: 'blocked', state: 'blocked' },
@@ -175,7 +180,7 @@ const PHASE_GATE_TO_STATE: Record<WorkflowPhase, Partial<Record<GateStatus, Runt
   drafting: { none: 'drafting', blocked: 'blocked' },
   planning: { none: 'planning_done', blocked: 'blocked' },
   executing: { none: 'executing', blocked: 'blocked' },
-  checking: { none: 'checking', check_pass: 'check_pass', check_fail: 'check_fail', blocked: 'blocked' },
+  checking: { none: 'checking', check_pass: 'check_pass', check_fail: 'check_fail', check_env_exempt: 'check_env_exempt', blocked: 'blocked' },
   reviewing: { none: 'reviewing', check_pass: 'reviewing', review_pass: 'review_pass', review_skipped: 'review_skipped', review_fail: 'check_fail', blocked: 'blocked' },
   journaling: { none: 'journaling', review_pass: 'journaling', review_skipped: 'journaling', blocked: 'blocked' },
   completed: { none: 'completed', check_pass: 'completed', review_pass: 'completed', review_skipped: 'completed' },
@@ -192,7 +197,7 @@ export function normalizeWorkflowPhase(phase: string): WorkflowPhase | null {
 }
 
 export function normalizeGateStatus(gate: string): GateStatus | null {
-  const valid: GateStatus[] = ['none', 'check_pass', 'check_fail', 'review_pass', 'review_skipped', 'review_fail', 'blocked'];
+  const valid: GateStatus[] = ['none', 'check_pass', 'check_fail', 'check_env_exempt', 'review_pass', 'review_skipped', 'review_fail', 'blocked'];
   return valid.includes(gate as GateStatus) ? gate as GateStatus : null;
 }
 

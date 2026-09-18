@@ -60,14 +60,20 @@ export function formatSyncedTaskFiles(synced: Array<{ file: string; fromPath: st
 
 export function errorOutput(err: unknown): string {
   if (err instanceof Error) {
-    if ('stderr' in err && typeof (err as { stderr?: unknown }).stderr === 'string') {
-      const stderr = (err as { stderr: string }).stderr.trim();
-      return stderr || err.message;
-    }
-    if ('stdout' in err && typeof (err as { stdout?: unknown }).stdout === 'string') {
-      const stdout = (err as { stdout: string }).stdout.trim();
-      return stdout || err.message;
-    }
+    const stderr = 'stderr' in err && typeof (err as { stderr?: unknown }).stderr === 'string'
+      ? (err as { stderr: string }).stderr.trim()
+      : '';
+    const stdout = 'stdout' in err && typeof (err as { stdout?: unknown }).stdout === 'string'
+      ? (err as { stdout: string }).stdout.trim()
+      : '';
+    // R-350: runCheck 的命令一律带 `2>&1`（见 runners.ts runCheck），此时子进程 stderr
+    // 为空、真实输出去到了 stdout。旧实现先判 `'stderr' in err` 即返回空的 stderr，
+    // 于是所有 runCheck 失败都退化成通用文案 "Command failed: <cmd>"——
+    // 环境类失败因此永远无法被 looksLikeEnvironmentFailure 识别（R-023 那类
+    // "docker: command not found" 被当成代码失败，任务卡在无法 closeout）。
+    // 修法：按"哪个流有内容用哪个"，两者都空才退回 err.message。
+    if (stderr) return stderr;
+    if (stdout) return stdout;
     return err.message;
   }
   return String(err);
