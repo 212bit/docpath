@@ -7,17 +7,21 @@ import { unlinkCommand } from '../unlink.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 export function registerDocsInstallCommands(cli: CAC): void {
-  cli.command('docs [action] [...query]', '文档资产管理 (scan | list | lint | search)')
+  cli.command('docs [action] [...query]', '文档资产管理与自愈 (scan | list | lint | doctor | fix | search)')
     .option('--cwd <path>', '项目目录')
     .option('--scan', '扫描文档生成索引')
     .option('--list', '列出所有注册文档')
     .option('--lint', '巡检文档健康度（检查断链、空文件等）')
+    .option('--doctor', '全景体检文档生态健康度')
+    .option('--fix', '一键自愈修复死链、缺失标题与未索引文档')
+    .option('--dry-run', '预览自愈修复操作，不修改文件')
     .option('--search <query>', '根据关键词检索文档')
     .option('--full', 'list: 输出完整表格')
     .option('--add <path>', '添加文档到索引')
     .option('--agent', 'Agent 模式输出结构化 YAML')
-    .action(async (action: string | undefined, query: string[] | undefined, options: { cwd?: string; scan?: boolean; list?: boolean; lint?: boolean; full?: boolean; add?: string; search?: string; agent?: boolean }) => {
-      const sub = action || (options.scan ? 'scan' : options.lint ? 'lint' : options.search ? 'search' : options.add ? 'add' : 'list');
+    .option('--json', '输出 JSON 格式')
+    .action(async (action: string | undefined, query: string[] | undefined, options: { cwd?: string; scan?: boolean; list?: boolean; lint?: boolean; doctor?: boolean; fix?: boolean; 'dry-run'?: boolean; dryRun?: boolean; json?: boolean; full?: boolean; add?: string; search?: string; agent?: boolean }) => {
+      const sub = action || (options.fix ? 'fix' : options.doctor ? 'doctor' : options.scan ? 'scan' : options.lint ? 'lint' : options.search ? 'search' : options.add ? 'add' : 'list');
       const queryArgs = query && query.length > 0 ? query : options.search ? [options.search] : options.add ? [options.add] : [];
       await docsCommand({
         cwd: options.cwd || process.cwd(),
@@ -25,6 +29,8 @@ export function registerDocsInstallCommands(cli: CAC): void {
         args: queryArgs,
         full: !!options.full,
         agent: !!options.agent,
+        dryRun: !!(options.dryRun || options['dry-run']),
+        json: !!options.json,
       });
     });
 

@@ -1,0 +1,420 @@
+/**
+ * 活文档全景体检与自愈修复引擎 (Living Docs Doctor & Self-Healing Engine)
+ *
+ * 针对 Markdown 文档生态进行深度巡检：
+ * 1. 死链检测与智能重定向/自愈 (Broken links resolution)
+ * 2. 未索引文档自动捕获与 docs-index.json 索引同步
+ * 3. 缺失一级标题 (# Title) 自动提炼与修复
+ * 4. 空文档/无效占位符检测与清理
+ * 5. 废弃或过时索引条目自动对齐
+ */
+
+import { existsSync } from 'node:fs';
+import { readFile, writeFile, readdir, rm } from 'node:fs/promises';
+import { join, relative, extname, basename, dirname, resolve } from 'node:path';
+import { resolveDocpathDir, readFileSafe, writeFileAtomic } from './file.js';
+import {
+  readProjectDocumentIndex,
+  normalizeDocPath,
+  type ProjectDocumentIndexEntry,
+} from './document-index.js';
+import { refreshProjectDocumentIndex } from '../commands/docs.js';
+
+export type DocIssueType =
+  | 'broken-link'
+  | 'empty-doc'
+  | 'missing-heading'
+  | 'unindexed'
+  | 'stale-index'
+  | 'stale-archive';
+
+export interface DocIssue {
+  file: string;
+  absPath: string;
+  type: DocIssueType;
+  message: string;
+  autoFixable: boolean;
+  fixDetail?: string;
+  linkData?: {
+    originalText: string;
+    originalTarget: string;
+    suggestedTarget?: string;
+  };
+}
+
+export interface DocHealthReport {
+  scannedCount: number;
+  indexedCount: number;
+  healthy: boolean;
+  issues: DocIssue[];
+  stats: {
+    brokenLinks: number;
+    unindexed: number;
+    missingHeadings: number;
+    emptyDocs: number;
+    staleIndex: number;
+  };
+}
+
+export interface DocFixResult {
+  fixedCount: number;
+  healedHeadings: string[];
+  repairedLinks: Array<{ file: string; from: string; to: string }>;
+  refreshedIndex: boolean;
+  cleanedEmptyDocs: string[];
+  remainingIssues: DocIssue[];
+}
+
+/**
+ * 递归收集目录下的所有 .md 文件
+ */
+async function collectMarkdownFiles(dir: string): Promise<string[]> {
+  const results: string[] = [];
+  if (!existsSync(dir)) return results;
+
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules' && !entry.name.startsWith('.')) {
+          const sub = await collectMarkdownFiles(full);
+          results.push(...sub);
+        }
+      } else if (entry.isFile() && extname(entry.name) === '.md') {
+        results.push(full);
+      }
+    }
+  } catch {
+    // 忽略权限错误
+  }
+
+  return results;
+}
+
+/**
+ * 诊断活文档全景健康度
+ */
+export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthReport> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const projectRoot = dirname(resolve(docpathDir));
+
+  const issues: DocIssue[] = [];
+  const scannedFiles: Array<{ abs: string; rel: string }> = [];
+
+  // 1. 扫描 docs/, .docpath/rules/, 根目录 README.md 以及 config 声明路径
+  const scanDirs = [
+    join(projectRoot, 'docs'),
+    join(docpathDir, 'rules'),
+  ];
+
+  const allMarkdownAbsPaths = new Set<string>();
+  for (const dir of scanDirs) {
+    const files = await collectMarkdownFiles(dir);
+    for (const f of files) allMarkdownAbsPaths.add(f);
+  }
+
+  const rootReadme = join(projectRoot, 'README.md');
+  if (existsSync(rootReadme)) {
+    allMarkdownAbsPaths.add(rootReadme);
+  }
+
+  // 收集可用于死链重定向匹配的目标全集
+  const taskDoneFiles = await collectMarkdownFiles(join(docpathDir, 'tasks', 'done'));
+  const allKnownMarkdown = new Set([...allMarkdownAbsPaths, ...taskDoneFiles]);
+
+  const allFilesBaseMap = new Map<string, string>(); // basename -> absPath
+  for (const abs of allKnownMarkdown) {
+    const bName = basename(abs).toLowerCase();
+    allFilesBaseMap.set(bName, abs);
+  }
+
+  // 2. 逐一检查每个文件内容
+  for (const abs of allMarkdownAbsPaths) {
+    const rel = normalizeDocPath(relative(projectRoot, abs));
+    scannedFiles.push({ abs, rel });
+
+    try {
+      const content = await readFile(abs, 'utf-8');
+      const trimmed = content.trim();
+
+      // 空文档检查
+      if (trimmed.length === 0) {
+        issues.push({
+          file: rel,
+          absPath: abs,
+          type: 'empty-doc',
+          message: '文档内容为空',
+          autoFixable: true,
+          fixDetail: '生成基础标题脚手架',
+        });
+        continue;
+      }
+
+      // 一级标题检查
+      if (!/^#\s+/m.test(content)) {
+        const inferredTitle = basename(abs, extname(abs))
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+        issues.push({
+          file: rel,
+          absPath: abs,
+          type: 'missing-heading',
+          message: '缺少一级标题 (# 标题)',
+          autoFixable: true,
+          fixDetail: `添加 H1 标题: "# ${inferredTitle}"`,
+        });
+      }
+
+      // Markdown 链接与死链检查
+      const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+      let match: RegExpExecArray | null;
+      while ((match = linkRegex.exec(content)) !== null) {
+        const originalText = match[1];
+        const linkTarget = match[2].trim();
+
+        // 跳过外部链接、锚点、mailto
+        if (
+          linkTarget.startsWith('http://') ||
+          linkTarget.startsWith('https://') ||
+          linkTarget.startsWith('#') ||
+          linkTarget.startsWith('mailto:')
+        ) {
+          continue;
+        }
+
+        let targetFilePath = '';
+        if (linkTarget.startsWith('file://')) {
+          targetFilePath = linkTarget.replace(/^file:\/\//, '').split('#')[0];
+        } else {
+          const cleanPath = linkTarget.split('#')[0];
+          if (!cleanPath) continue;
+          targetFilePath = resolve(dirname(abs), cleanPath);
+        }
+
+        if (targetFilePath && !existsSync(targetFilePath)) {
+          // 尝试根据文件名模糊寻找重命名或移动后的目标
+          const targetBase = basename(targetFilePath).toLowerCase();
+          const candidateAbs = allFilesBaseMap.get(targetBase);
+          let suggestedTarget: string | undefined;
+
+          if (candidateAbs && existsSync(candidateAbs)) {
+            suggestedTarget = relative(dirname(abs), candidateAbs);
+            if (!suggestedTarget.startsWith('.')) {
+              suggestedTarget = `./${suggestedTarget}`;
+            }
+          }
+
+          issues.push({
+            file: rel,
+            absPath: abs,
+            type: 'broken-link',
+            message: `死链: [${originalText}](${linkTarget}) 目标文件不存在`,
+            autoFixable: !!suggestedTarget,
+            fixDetail: suggestedTarget ? `重定向至匹配文件: ${suggestedTarget}` : '无法推断有效目标',
+            linkData: {
+              originalText,
+              originalTarget: linkTarget,
+              suggestedTarget,
+            },
+          });
+        }
+      }
+    } catch {
+      // 容错
+    }
+  }
+
+  // 3. 索引对齐检查 (Unindexed / Stale Index)
+  const index = await readProjectDocumentIndex(docpathDir);
+  const indexedPaths = new Set(index?.entries.map((e) => e.path) || []);
+
+  for (const item of scannedFiles) {
+    if (item.rel.startsWith('docs/') && !indexedPaths.has(item.rel)) {
+      issues.push({
+        file: item.rel,
+        absPath: item.abs,
+        type: 'unindexed',
+        message: '未被 docs-index.json 索引',
+        autoFixable: true,
+        fixDetail: '重新扫描并加入文档索引',
+      });
+    }
+  }
+
+  // 检查索引中是否存在已被删除的幽灵文档
+  if (index?.entries) {
+    for (const entry of index.entries) {
+      if (entry.path.startsWith('docs/')) {
+        const full = join(projectRoot, entry.path);
+        if (!existsSync(full)) {
+          issues.push({
+            file: entry.path,
+            absPath: full,
+            type: 'stale-index',
+            message: '索引中包含已删除或不存在的幽灵文档',
+            autoFixable: true,
+            fixDetail: '刷新索引清除幽灵条目',
+          });
+        }
+      }
+    }
+  }
+
+  const stats = {
+    brokenLinks: issues.filter((i) => i.type === 'broken-link').length,
+    unindexed: issues.filter((i) => i.type === 'unindexed').length,
+    missingHeadings: issues.filter((i) => i.type === 'missing-heading').length,
+    emptyDocs: issues.filter((i) => i.type === 'empty-doc').length,
+    staleIndex: issues.filter((i) => i.type === 'stale-index').length,
+  };
+
+  return {
+    scannedCount: scannedFiles.length,
+    indexedCount: index?.entries.length || 0,
+    healthy: issues.length === 0,
+    issues,
+    stats,
+  };
+}
+
+/**
+ * 自动修复活文档中的可自愈问题
+ */
+export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean } = {}): Promise<DocFixResult> {
+  const { dryRun = false } = options;
+  const docpathDir = await resolveDocpathDir(cwd);
+  const report = await diagnoseDocumentHealth(cwd);
+
+  const healedHeadings: string[] = [];
+  const repairedLinks: Array<{ file: string; from: string; to: string }> = [];
+  const cleanedEmptyDocs: string[] = [];
+  let refreshedIndex = false;
+
+  let fixedCount = 0;
+
+  // 1. 修复空文档与缺失的一级标题
+  for (const issue of report.issues) {
+    if (issue.type === 'empty-doc' && issue.autoFixable) {
+      const inferredTitle = basename(issue.absPath, extname(issue.absPath))
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      const scaffold = `# ${inferredTitle}\n\n> 本文档自动初始化。\n\n## 概述\n\n`;
+      if (!dryRun) {
+        await writeFile(issue.absPath, scaffold, 'utf-8');
+      }
+      cleanedEmptyDocs.push(issue.file);
+      fixedCount++;
+    } else if (issue.type === 'missing-heading' && issue.autoFixable) {
+      try {
+        const content = (await readFileSafe(issue.absPath)) || '';
+        const inferredTitle = basename(issue.absPath, extname(issue.absPath))
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+        const newContent = `# ${inferredTitle}\n\n${content.trimStart()}`;
+        if (!dryRun) {
+          await writeFile(issue.absPath, newContent, 'utf-8');
+        }
+        healedHeadings.push(issue.file);
+        fixedCount++;
+      } catch {
+        // 容错
+      }
+    }
+  }
+
+  // 2. 修复可重定向的死链
+  const brokenLinkIssues = report.issues.filter((i) => i.type === 'broken-link' && i.autoFixable && i.linkData?.suggestedTarget);
+  for (const issue of brokenLinkIssues) {
+    try {
+      const content = (await readFileSafe(issue.absPath)) || '';
+      const originalTarget = issue.linkData!.originalTarget;
+      const suggestedTarget = issue.linkData!.suggestedTarget!;
+
+      // 替换死链目标
+      const escapedTarget = originalTarget.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const targetRegex = new RegExp(`\\]\\(${escapedTarget}\\)`, 'g');
+      const updatedContent = content.replace(targetRegex, `](${suggestedTarget})`);
+
+      if (updatedContent !== content) {
+        if (!dryRun) {
+          await writeFile(issue.absPath, updatedContent, 'utf-8');
+        }
+        repairedLinks.push({
+          file: issue.file,
+          from: originalTarget,
+          to: suggestedTarget,
+        });
+        fixedCount++;
+      }
+    } catch {
+      // 容错
+    }
+  }
+
+  // 3. 刷新活文档索引 (如果有未索引或幽灵索引条目)
+  const needsIndexRefresh = report.stats.unindexed > 0 || report.stats.staleIndex > 0;
+  if (needsIndexRefresh) {
+    if (!dryRun) {
+      await refreshProjectDocumentIndex(docpathDir, cwd);
+    }
+    refreshedIndex = true;
+    fixedCount += report.stats.unindexed + report.stats.staleIndex;
+  }
+
+  // 4. 重新诊断剩余未自愈问题
+  const afterReport = dryRun ? report : await diagnoseDocumentHealth(cwd);
+
+  return {
+    fixedCount,
+    healedHeadings,
+    repairedLinks,
+    refreshedIndex,
+    cleanedEmptyDocs,
+    remainingIssues: afterReport.issues,
+  };
+}
+
+/**
+ * 渲染诊断与健康度终端视图
+ */
+export function renderDocHealthTable(report: DocHealthReport): string {
+  const lines: string[] = [];
+
+  const statusBadge = report.healthy ? '🟢 HEALTHY (健康)' : '🟡 ISSUES_FOUND (存在待治理项)';
+
+  lines.push('');
+  lines.push(`📚  DocPath 活文档全景体检报告 [状态: ${statusBadge}]`);
+  lines.push(`    扫描文档: ${report.scannedCount} 个 | 索引有效: ${report.indexedCount} 个 | 待治理项: ${report.issues.length} 个`);
+  lines.push('');
+
+  lines.push('─'.repeat(72));
+  lines.push('📊 巡检指标概览:');
+  lines.push('');
+  lines.push(`  - 死链检查 (Broken Links)       : ${report.stats.brokenLinks === 0 ? '✅ 0 处断链' : `❌ ${report.stats.brokenLinks} 处断链`}`);
+  lines.push(`  - 未索引文档 (Unindexed)        : ${report.stats.unindexed === 0 ? '✅ 全部同步' : `⚠️  ${report.stats.unindexed} 个文档未入索引`}`);
+  lines.push(`  - 缺失一级标题 (Missing H1)     : ${report.stats.missingHeadings === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.missingHeadings} 个文档缺少 H1`}`);
+  lines.push(`  - 空白占位文档 (Empty Docs)     : ${report.stats.emptyDocs === 0 ? '✅ 无空文档' : `⚠️  ${report.stats.emptyDocs} 个空文档`}`);
+  lines.push(`  - 幽灵过期索引 (Stale Index)    : ${report.stats.staleIndex === 0 ? '✅ 索引纯净' : `⚠️  ${report.stats.staleIndex} 个幽灵条目`}`);
+  lines.push('');
+
+  if (report.issues.length > 0) {
+    lines.push('─'.repeat(72));
+    lines.push('🔍 详细待治理项明细:');
+    lines.push('');
+    for (const issue of report.issues) {
+      const fixTag = issue.autoFixable ? '✨ [可自愈]' : '⚠️ [需手动]';
+      lines.push(`  - ${fixTag} [${issue.type}] ${issue.file}: ${issue.message}`);
+      if (issue.fixDetail) {
+        lines.push(`    修复方案: ${issue.fixDetail}`);
+      }
+      lines.push('');
+    }
+    lines.push('💡 运行 `docpath docs fix` 可一键自动自愈修复所有标记为 ✨[可自愈] 的问题！\n');
+  } else {
+    lines.push('─'.repeat(72));
+    lines.push('✅  所有文档链接完整，格式正常，索引已同步！\n');
+  }
+
+  return lines.join('\n');
+}

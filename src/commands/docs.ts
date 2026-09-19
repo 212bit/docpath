@@ -24,10 +24,17 @@ import {
   sortDocumentEntries,
   type ProjectDocumentIndexEntry,
 } from '../utils/document-index.js';
+import {
+  diagnoseDocumentHealth,
+  fixDocumentHealth,
+  renderDocHealthTable,
+  type DocHealthReport,
+  type DocFixResult,
+} from '../utils/docs-doctor.js';
 
-interface DocsOptions {
+export interface DocsOptions {
   cwd: string;
-  /** 子命令：scan | list | add | lint | search */
+  /** 子命令：scan | list | add | lint | search | doctor | fix */
   action?: string;
   /** add/search 命令的参数 */
   args?: string[];
@@ -37,6 +44,10 @@ interface DocsOptions {
   query?: string;
   /** Agent 模式输出结构化 YAML */
   agent?: boolean;
+  /** 预览模式 */
+  dryRun?: boolean;
+  /** JSON 格式输出 */
+  json?: boolean;
 }
 
 /** 从 markdown 中提取标题 */
@@ -498,114 +509,91 @@ async function docsAdd(cwd: string, args: string[]): Promise<void> {
   console.log(`   kind: ${kind}, scope: ${scope}, level: ${level}\n`);
 }
 
-interface LintIssue {
-  file: string;
-  type: 'broken-link' | 'empty-doc' | 'missing-heading' | 'unindexed';
-  message: string;
+/** docs lint / doctor — 巡检文档健康度：检查死链、空文件、缺少标题与索引对齐 */
+async function docsDoctor(cwd: string, agent = false, json = false): Promise<void> {
+  const report = await diagnoseDocumentHealth(cwd);
+
+  if (json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  if (agent) {
+    const { stringify } = await import('yaml');
+    console.log(
+      stringify({
+        agent_view: 'docs_doctor',
+        healthy: report.healthy,
+        scanned_count: report.scannedCount,
+        indexed_count: report.indexedCount,
+        stats: report.stats,
+        issues: report.issues.map((i) => ({
+          file: i.file,
+          type: i.type,
+          message: i.message,
+          auto_fixable: i.autoFixable,
+          fix_detail: i.fixDetail,
+        })),
+      }),
+    );
+    return;
+  }
+
+  console.log(renderDocHealthTable(report));
 }
 
-/** docs lint — 巡检文档健康度：检查死链、空文件、缺少标题与索引丢失 */
-async function docsLint(cwd: string): Promise<void> {
-  const docpathDir = await resolveDocpathDir(cwd);
-  const projectRoot = dirname(resolve(docpathDir));
-  console.log('\n🔍  文档健康度巡检 (Doc Lint)...\n');
+/** docs fix — 一键自愈修复活文档问题 */
+async function docsFix(
+  cwd: string,
+  options: { dryRun?: boolean; agent?: boolean; json?: boolean } = {},
+): Promise<void> {
+  const { dryRun = false, agent = false, json = false } = options;
+  const fixResult = await fixDocumentHealth(cwd, { dryRun });
 
-  const issues: LintIssue[] = [];
-  const scannedFiles: string[] = [];
-
-  const checkFile = async (absPath: string, relPath: string): Promise<void> => {
-    scannedFiles.push(relPath);
-    try {
-      const content = await readFile(absPath, 'utf-8');
-      if (content.trim().length === 0) {
-        issues.push({ file: relPath, type: 'empty-doc', message: '文档为空文件' });
-        return;
-      }
-      if (!/^#\s+/m.test(content)) {
-        issues.push({ file: relPath, type: 'missing-heading', message: '缺少一级标题 (# 标题)' });
-      }
-
-      const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-      let match: RegExpExecArray | null;
-      while ((match = linkRegex.exec(content)) !== null) {
-        const linkTarget = match[2].trim();
-        if (
-          linkTarget.startsWith('http://')
-          || linkTarget.startsWith('https://')
-          || linkTarget.startsWith('#')
-          || linkTarget.startsWith('mailto:')
-        ) {
-          continue;
-        }
-
-        let targetFilePath = '';
-        if (linkTarget.startsWith('file://')) {
-          targetFilePath = linkTarget.replace(/^file:\/\//, '').split('#')[0];
-        } else {
-          const cleanPath = linkTarget.split('#')[0];
-          if (!cleanPath) continue;
-          targetFilePath = resolve(dirname(absPath), cleanPath);
-        }
-
-        if (targetFilePath && !existsSync(targetFilePath)) {
-          issues.push({
-            file: relPath,
-            type: 'broken-link',
-            message: `断链: [${match[1]}](${match[2]}) 目标文件不存在`,
-          });
-        }
-      }
-    } catch {
-      // ignore
-    }
-  };
-
-  const walk = async (dir: string): Promise<void> => {
-    if (!existsSync(dir)) return;
-    try {
-      const entries = await readdir(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        const full = join(dir, entry.name);
-        if (entry.isDirectory()) {
-          if (entry.name !== 'node_modules' && !entry.name.startsWith('.')) {
-            await walk(full);
-          }
-        } else if (entry.isFile() && extname(entry.name) === '.md') {
-          await checkFile(full, normalizeDocPath(relative(projectRoot, full)));
-        }
-      }
-    } catch {
-      // ignore
-    }
-  };
-
-  await walk(join(projectRoot, 'docs'));
-  await walk(join(docpathDir, 'rules'));
-  if (existsSync(join(projectRoot, 'README.md'))) {
-    await checkFile(join(projectRoot, 'README.md'), 'README.md');
+  if (json) {
+    console.log(JSON.stringify(fixResult, null, 2));
+    return;
   }
 
-  const index = await readProjectDocumentIndex(docpathDir);
-  const indexedPaths = new Set(index?.entries.map((e) => e.path) || []);
-  for (const scanned of scannedFiles) {
-    if (scanned.startsWith('docs/') && !indexedPaths.has(scanned)) {
-      issues.push({
-        file: scanned,
-        type: 'unindexed',
-        message: '未被 docs-index.json 索引（可运行 docpath docs scan 刷新）',
-      });
-    }
+  if (agent) {
+    const { stringify } = await import('yaml');
+    console.log(
+      stringify({
+        agent_view: 'docs_fix',
+        dry_run: dryRun,
+        fixed_count: fixResult.fixedCount,
+        healed_headings: fixResult.healedHeadings,
+        repaired_links: fixResult.repairedLinks,
+        refreshed_index: fixResult.refreshedIndex,
+        cleaned_empty_docs: fixResult.cleanedEmptyDocs,
+        remaining_issues_count: fixResult.remainingIssues.length,
+      }),
+    );
+    return;
   }
 
-  console.log(`📊 扫描文档总数: ${scannedFiles.length} 个`);
-  if (issues.length === 0) {
-    console.log('✅  所有文档链接完整，格式正常，索引已同步！\n');
+  if (dryRun) {
+    console.log('\n🧹  [dry-run] 活文档自愈修复预览:');
+    console.log(`    - 拟修复一级标题 (# H1): ${fixResult.healedHeadings.length} 个文件`);
+    for (const h of fixResult.healedHeadings) console.log(`      + ${h}`);
+    console.log(`    - 拟修复死链重定向: ${fixResult.repairedLinks.length} 处`);
+    for (const r of fixResult.repairedLinks) console.log(`      + ${r.file}: [${r.from}] -> [${r.to}]`);
+    console.log(`    - 拟初始化空白文档: ${fixResult.cleanedEmptyDocs.length} 个`);
+    for (const c of fixResult.cleanedEmptyDocs) console.log(`      + ${c}`);
+    console.log(`    - 拟刷新文档索引: ${fixResult.refreshedIndex ? '是' : '否'}`);
+    console.log('\n[dry-run] 预览结束，未修改任何文件。运行 `docpath docs fix` 执行实际修复。\n');
+    return;
+  }
+
+  console.log('\n✨  活文档自愈修复完成！');
+  console.log(`    - 修复/补齐 H1 标题: ${fixResult.healedHeadings.length} 个文档`);
+  console.log(`    - 修复/重定向死链: ${fixResult.repairedLinks.length} 处`);
+  console.log(`    - 补充空白文档脚手架: ${fixResult.cleanedEmptyDocs.length} 个`);
+  console.log(`    - 活文档索引 (docs-index.json): ${fixResult.refreshedIndex ? '已全量同步' : '已是最新'}`);
+  if (fixResult.remainingIssues.length > 0) {
+    console.log(`\n⚠️  尚有 ${fixResult.remainingIssues.length} 个需要手动确认的问题（运行 docpath docs doctor 查看明细）。\n`);
   } else {
-    console.log(`⚠️  发现 ${issues.length} 个健康度提示:`);
-    for (const issue of issues) {
-      console.log(`  - [${issue.type}] ${issue.file}: ${issue.message}`);
-    }
-    console.log('');
+    console.log('\n🎉  全部活文档已恢复 100% 健康规范状态！\n');
   }
 }
 
@@ -680,7 +668,7 @@ async function docsSearch(cwd: string, query: string, agent = false): Promise<vo
 
 /** 主命令入口 */
 export async function docsCommand(options: DocsOptions): Promise<void> {
-  const { cwd, action, args = [], full = false, query, agent = false } = options;
+  const { cwd, action, args = [], full = false, query, agent = false, dryRun = false, json = false } = options;
 
   switch (action) {
     case 'scan':
@@ -693,7 +681,13 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
       await docsAdd(cwd, args);
       break;
     case 'lint':
-      await docsLint(cwd);
+    case 'doctor':
+    case 'check':
+      await docsDoctor(cwd, agent, json);
+      break;
+    case 'fix':
+    case 'repair':
+      await docsFix(cwd, { dryRun, agent, json });
       break;
     case 'search':
     case 'find':
