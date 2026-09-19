@@ -120,6 +120,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
    - When retrieving topic details, strictly use token-budgeted commands:
      - `docpath reveal --topic <keyword> --level 1`
      - `docpath context --max-tokens 2000 --topic <keyword>`
+   - When context token usage is heavy or sessions run long, run `docpath budget --agent` or `docpath budget --suggest` to analyze token distribution, and use `docpath budget --prune` to slim down context.
 
 4. **Failure Handling & Verification Dedup (失败处理与验证去重)**:
    - **Environment-level failures stop after two attempts**: when a tool call is refused by the harness itself (permission denied, sandbox/classifier unavailable, command blocked) rather than by the command's own output, retry at most once. On the second failure, stop, report the exact error and what remains undone, and let the user decide. Re-sending an identical large payload ten times costs more than the task it was meant to finish.
@@ -187,9 +188,12 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath quick-done` | Compound closeout with optional `--gotcha <text>` capture |
 | `docpath learn` | Promote validated lessons into durable rules (`--agent` / `--dry-run`) |
 | `docpath milestone` | Aggregate completed tasks and generate release summaries (`--dry-run` / `--agent`) |
-| `docpath budget` | Analyze context token consumption breakdown & pruning suggestions (`--agent` / `--suggest`) |
+| `docpath budget` | Analyze context token consumption breakdown & pruning suggestions (`--agent` / `--suggest` / `--prune`) |
+| `docpath docs doctor` / `fix` | Living documentation diagnostics & automatic self-healing (broken links, unindexed files) |
 | `docpath docs search <topic>` | Fast topic search across living project documentation |
 | `docpath docs lint` | Living documentation integrity check (broken links & unindexed files) |
+| `docpath worktree matrix` | Live progress matrix across concurrent agents and worktrees (`--agent` / `--json`) |
+| `docpath worktree broadcast <msg>` | Broadcast breaking changes/announcements to all active worktrees |
 | `docpath journal` | Knowledge archive |
 | `docpath gc` | Preview workspace cleanup candidates and inactive task archive candidates; `--force` executes |
 
@@ -234,6 +238,12 @@ git merge feature-a
 docpath worktree remove feature-a
 ```
 
+### Multi-Agent Collaboration & Matrix
+
+When multiple agents operate across parallel worktrees:
+- Run `docpath worktree matrix` (or `docpath worktree matrix --agent`) to inspect active agents (`session`), assigned tasks, current step progress, and dirty file status across all branches.
+- When introducing breaking architectural changes, schema migrations, or shared contract updates, run `docpath worktree broadcast "<announcement>"` to dispatch high-priority notifications to all other worktrees' event streams.
+
 ### Worktree Isolation
 
 <!-- docpath:block worktree-isolation -->
@@ -263,6 +273,8 @@ and fails a symlinked backlog over tracked files (repair with
 
 ### Commands
 
+- `docpath worktree matrix` - view live collaboration matrix across all agents/worktrees (`--agent` / `--json`)
+- `docpath worktree broadcast <msg>` - broadcast notification across all active worktrees
 - `docpath worktree list` - list all worktrees
 - `docpath worktree create <name>` - create new worktree
 - `docpath worktree remove <name>` - delete worktree

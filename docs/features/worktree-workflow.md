@@ -222,6 +222,29 @@ docpath worktree create bugfix-123
     branch: refs/heads/feature-a
 ```
 
+### `docpath worktree matrix [--agent] [--json]`
+
+实时聚合多 Agent 在各个 Worktree 的进度与协作矩阵（Task ID, 步骤进度, Session, 脏文件数, 就绪状态与建议动作）。
+
+**参数**：
+- `--agent`: 输出供 Agent/LLM 消费的 YAML 矩阵
+- `--json`: 输出 JSON 格式结构体
+
+**示例**：
+```bash
+docpath worktree matrix
+docpath worktree matrix --agent
+```
+
+### `docpath worktree broadcast "<message>" [--agent]`
+
+向所有活跃的 Git Worktree 广播通知（例如架构变更、公共 API 升级），自动写入各 Worktree 的 `breadcrumb.jsonl` 事件流，供并行 Agent 在 `next --agent` 时即时感知。
+
+**示例**：
+```bash
+docpath worktree broadcast "Auth 模块已升级至 v2"
+```
+
 ### `docpath worktree doctor [name]`
 
 只读检查 worktree 是否适合开始或收尾开发。
