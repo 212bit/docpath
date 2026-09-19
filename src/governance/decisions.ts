@@ -255,7 +255,7 @@ function validateDecisionRecord(value: unknown, line: number): DecisionJsonlReco
   return record as DecisionJsonlRecord;
 }
 
-async function readDecisionJsonl(workspaceDir: string): Promise<DecisionJsonlRecord[] | null> {
+export async function readDecisionJsonl(workspaceDir: string): Promise<DecisionJsonlRecord[] | null> {
   const path = decisionsJsonlPath(workspaceDir);
   if (!existsSync(path)) return null;
   const content = await readFile(path, 'utf-8');

@@ -3,6 +3,7 @@ import { changesCommand } from '../changes.js';
 import { contextCommand } from '../context.js';
 import { projectsCommand } from '../projects.js';
 import { renderCommand } from '../render.js';
+import { milestoneCommand } from '../milestone.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 function parseScopeFiles(value: string | string[] | undefined): string[] {
@@ -11,6 +12,41 @@ function parseScopeFiles(value: string | string[] | undefined): string[] {
   return values.flatMap((item) => item.split(','))
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function registerMilestoneCommand(cli: CAC): void {
+  cli.command('milestone [action] [version]', '版本/阶段性里程碑总结：聚合已归档任务与架构决策并生成发布简报')
+    .option('--cwd <path>', '项目目录')
+    .option('--title <title>', '里程碑标题描述')
+    .option('--dry-run', '预览发布简报，不写盘')
+    .option('--agent', '输出 Agent 可读 YAML 状态')
+    .option('--json', '输出 JSON')
+    .action(async (actionOrVersion: string | undefined, versionArg: string | undefined, options: { cwd?: string; title?: string; dryRun?: boolean; agent?: boolean; json?: boolean }) => {
+      let action: 'create' | 'list' | 'show' = 'create';
+      let version = versionArg;
+
+      if (actionOrVersion === 'list') {
+        action = 'list';
+      } else if (actionOrVersion === 'show') {
+        action = 'show';
+      } else if (actionOrVersion === 'create') {
+        action = 'create';
+      } else if (actionOrVersion) {
+        // e.g. docpath milestone v0.2.0
+        action = 'create';
+        version = actionOrVersion;
+      }
+
+      await milestoneCommand({
+        cwd: options.cwd || process.cwd(),
+        action,
+        version,
+        title: options.title,
+        dryRun: !!options.dryRun,
+        agent: !!options.agent,
+        json: !!options.json,
+      });
+    });
 }
 
 function registerChangesCommand(cli: CAC): void {
@@ -101,6 +137,7 @@ function registerPromptCommand(cli: CAC): void {
 }
 
 export function registerReportingCommands(cli: CAC): void {
+  registerMilestoneCommand(cli);
   registerChangesCommand(cli);
   registerContextCommand(cli);
   registerDeliverablesCommand(cli);
