@@ -5,6 +5,8 @@ import { ensureDir, readFileSafe } from './file.js';
 export type StandardRuleName = 'style' | 'architecture';
 export type RuleName = StandardRuleName | string;
 
+export const RULE_FILE_LINE_BUDGET = 200;
+
 export interface ResolvedRuleFile {
   name: string;
   path: string;

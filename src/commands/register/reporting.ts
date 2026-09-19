@@ -4,6 +4,7 @@ import { contextCommand } from '../context.js';
 import { projectsCommand } from '../projects.js';
 import { renderCommand } from '../render.js';
 import { milestoneCommand } from '../milestone.js';
+import { budgetCommand } from '../budget.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 function parseScopeFiles(value: string | string[] | undefined): string[] {
@@ -133,10 +134,31 @@ function registerProjectsCommand(cli: CAC): void {
     });
 }
 
+function registerBudgetCommand(cli: CAC): void {
+  cli.command('budget', '上下文 Token 预算透视看板与智能剪枝建议')
+    .option('--cwd <path>', '项目目录')
+    .option('--agent', '输出 Agent 可读紧凑 YAML 预算分析')
+    .option('--json', '输出 JSON 格式预算分析')
+    .option('--suggest', '仅输出剪枝与优化建议')
+    .option('--prune', '自动执行瞬态事件与历史决策安全剪枝')
+    .option('--dry-run', '配合 --prune 预览剪枝操作')
+    .action(async (options: { cwd?: string; agent?: boolean; json?: boolean; suggest?: boolean; prune?: boolean; dryRun?: boolean }) => {
+      await budgetCommand({
+        cwd: options.cwd || process.cwd(),
+        agent: !!options.agent,
+        json: !!options.json,
+        suggest: !!options.suggest,
+        prune: !!options.prune,
+        dryRun: !!options.dryRun,
+      });
+    });
+}
+
 function registerPromptCommand(cli: CAC): void {
 }
 
 export function registerReportingCommands(cli: CAC): void {
+  registerBudgetCommand(cli);
   registerMilestoneCommand(cli);
   registerChangesCommand(cli);
   registerContextCommand(cli);

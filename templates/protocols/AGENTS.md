@@ -187,6 +187,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath quick-done` | Compound closeout with optional `--gotcha <text>` capture |
 | `docpath learn` | Promote validated lessons into durable rules (`--agent` / `--dry-run`) |
 | `docpath milestone` | Aggregate completed tasks and generate release summaries (`--dry-run` / `--agent`) |
+| `docpath budget` | Analyze context token consumption breakdown & pruning suggestions (`--agent` / `--suggest`) |
 | `docpath docs search <topic>` | Fast topic search across living project documentation |
 | `docpath docs lint` | Living documentation integrity check (broken links & unindexed files) |
 | `docpath journal` | Knowledge archive |
