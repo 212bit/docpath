@@ -16,6 +16,7 @@ import { transitionWorkflow } from '../engine/transitions.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { parsePlanSteps, type PlanStep } from '../utils/doc-parser.js';
+import { buildPlanTopology, renderAsciiTopology } from '../utils/plan-topology.js';
 import { markPlanStep } from '../utils/plan-sync.js';
 import { endStepExecution } from './runtime.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
@@ -117,21 +118,42 @@ function selectTargetStep(
 ): PlanStep | undefined {
   const normalizedStep = step?.trim();
   const implicitStep = status ? currentStep : undefined;
-  return normalizedStep
-    ? tasks.find(t => t.id.toLowerCase() === normalizedStep.toLowerCase())
-    : implicitStep
-      ? tasks.find(t => t.id.toLowerCase() === implicitStep.toLowerCase())
-      : tasks.find(t => !t.done);
+  if (normalizedStep) {
+    return tasks.find(t => t.id.toLowerCase() === normalizedStep.toLowerCase());
+  }
+  if (implicitStep) {
+    return tasks.find(t => t.id.toLowerCase() === implicitStep.toLowerCase());
+  }
+  const topology = buildPlanTopology(tasks);
+  if (topology.readySteps.length > 0) {
+    const readyId = topology.readySteps[0];
+    const readyStep = tasks.find(t => t.id === readyId);
+    if (readyStep) return readyStep;
+  }
+  return tasks.find(t => !t.done);
 }
 
 async function renderExecutionContext(cwd: string, tasks: PlanStep[], target: PlanStep, level: number): Promise<void> {
-  // Level 0-1: 简单输出
-  // Level 2+: 结构化上下文 + breadcrumb 历史
+  const topology = buildPlanTopology(tasks);
+  const targetNode = topology.nodes.get(target.id);
+
   console.log('\n🚀  执行子任务\n');
   console.log(`📌  子任务: ${target.id} — ${target.name}`);
   console.log(`📋  描述: ${target.description}`);
   console.log(`✅  验收: ${target.acceptance}`);
   console.log(`🔗  依赖: ${target.dependencies}`);
+
+  if (targetNode && targetNode.unmetDependencies.length > 0) {
+    console.log(`⚠️  前置依赖尚未完成: ${targetNode.unmetDependencies.join(', ')}（建议优先推进就绪前置）`);
+  }
+  if (topology.parallelTracks.length > 0) {
+    const currentTrack = topology.parallelTracks.find(track => track.includes(target.id));
+    if (currentTrack && currentTrack.length > 1) {
+      const parallelPeers = currentTrack.filter(id => id !== target.id);
+      console.log(`⚡  可并行步骤: [${parallelPeers.join(', ')}] 与当前步骤同属一层，可并发执行`);
+    }
+  }
+
   console.log(`📊  当前级别: Level ${level}\n`);
 
   if (level >= 2) {
@@ -145,6 +167,11 @@ async function renderExecutionContext(cwd: string, tasks: PlanStep[], target: Pl
       }
       console.log('');
     }
+
+    // 输出依赖拓扑图
+    console.log('─── 计划依赖拓扑 ───');
+    console.log(renderAsciiTopology(topology));
+    console.log('');
 
     // 输出剩余任务概览
     const remaining = tasks.filter(t => !t.done);
@@ -177,6 +204,24 @@ async function finalizeStep(
   await refreshAgentSnapshot(cwd);
 
   console.log(`✅  已记录步骤状态: ${target.id} -> ${status}`);
+
+  if (status === 'done') {
+    try {
+      const docpathDir = await resolveDocpathDir(cwd);
+      const planContent = await readActiveTaskFile(docpathDir, taskId, 'plan.md');
+      const allSteps = parsePlanSteps(planContent);
+      const remaining = allSteps.filter((t) => !t.done);
+      if (remaining.length === 0) {
+        console.log('\n🎉  所有计划步骤均已完成！');
+        console.log('👉  推荐收尾路线:');
+        console.log('    - 一键快速收口: `docpath quick-done` (推荐)');
+        console.log('    - 逐步验证门禁: `docpath check` -> `docpath review` -> `docpath agent done`');
+      }
+    } catch {
+      // 容错处理
+    }
+  }
+
   await emitNextHint(cwd);
 }
 

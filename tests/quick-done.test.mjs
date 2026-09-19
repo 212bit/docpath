@@ -108,4 +108,35 @@ describe('docpath quick-done (R-340)', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('records lesson candidate when --gotcha is provided', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-quick-done-gotcha-'));
+    try {
+      mkExecWorkspace(cwd);
+      tuneForDone(cwd);
+      initGitRepo(cwd);
+
+      const result = run(
+        [
+          'quick-done',
+          '--skip-check',
+          '--skip-review',
+          '--note',
+          'test: skip gates',
+          '--no-dirty-reminder',
+          '--gotcha',
+          '在处理文件路径时必须使用 path.join 避免跨平台路径分隔符错误',
+        ],
+        cwd,
+      );
+      assert.equal(result.code, 0, `quick-done failed: ${result.out}`);
+      assert.match(result.out, /Lesson\/Gotcha 候选已记录/);
+
+      const candidateContent = spawnSync('cat', [join(cwd, '.docpath', 'workspace', 'lesson-candidates.md')], { encoding: 'utf-8' }).stdout;
+      assert.match(candidateContent, /跨平台路径分隔符错误/);
+      assert.match(candidateContent, /source: quick-done/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });

@@ -30,7 +30,7 @@ Or, more product-facing:
 
 DocPath should become an **agent-native workflow substrate** for multi-person and multi-agent development teams.
 
-Current product positioning is narrowed in [DocPath 多人团队定位与协作路线图](./team-workflow-positioning.md): DocPath is the AI workflow state layer for teams, not a personal-only helper and not an enterprise compliance platform. The main product promise is that a team can know where a task is, who should take over, whether it can continue, and how to recover when context is interrupted.
+Current product positioning is narrowed in [DocPath 产品全景图](../product-panorama.md): DocPath is the AI workflow state layer for teams, not a personal-only helper and not an enterprise compliance platform. The main product promise is that a team can know where a task is, who should take over, whether it can continue, and how to recover when context is interrupted.
 
 Claude Code, OpenCode, Cursor, Aider, GenericAgent, and future coding agents are execution surfaces. DocPath should sit underneath them as the shared workflow, memory, and verification layer.
 

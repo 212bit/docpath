@@ -18,9 +18,10 @@
 - **tasks/current/plan.md** — 执行计划
 - **tasks/current/context-index.json** — 任务级索引 (trunk/leaves)
 
-### 全局规范
-- **rules/architecture.md** — 架构规范
-- **rules/style.md** — 代码风格
+### 全局规范与活文档
+- **rules/architecture.md** — Agent 实时架构约束与防踩坑规则
+- **rules/style.md** — Agent 编码风格与规范
+- **../docs/README.md** — 项目持久化活文档中心 (系统架构、功能设计、API 契约)
 
 ### 需求池
 - **backlog/backlog.md** — 需求索引 (108 条)

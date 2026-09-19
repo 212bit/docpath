@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import { existsSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { join, dirname, resolve } from 'path';
 import { checkCommandEnv, runCheck, DEFAULT_CHECK_TIMEOUT_MS } from './runners.js';
 import { readCurrentState, syncCurrentDocument, parsePlanTasks } from '../../utils/workspace.js';
 import { validatePlanContent, validateSpecContent } from '../../utils/doc-parser.js';
@@ -19,6 +19,7 @@ import {
   readProjectDocumentIndex,
 } from '../../utils/document-index.js';
 import { resolveRulePaths, type RuleName } from '../../utils/rules.js';
+import { gitSyncOptional } from '../../utils/git-run.js';
 import { readFile, stat } from 'fs/promises';
 import { select, isCancel } from '@clack/prompts';
 import { refreshProjectDocumentIndex } from '../docs.js';
@@ -614,34 +615,35 @@ export async function checkCurrentTaskContextFiles(cwd: string, docpathDir: stri
     }];
   }
 
-  const required = [
-    join(docpathDir, 'tasks', 'current', 'spec.md'),
-    join(docpathDir, 'tasks', 'current', 'plan.md'),
-  ];
-  const missing = required.filter((path) => !existsSync(path));
-  if (missing.length === 0) {
+  const currentDir = join(docpathDir, 'tasks', 'current');
+  const hasSpec = existsSync(join(currentDir, 'spec.md')) || existsSync(join(currentDir, 'spec.json'));
+  const hasPlan = existsSync(join(currentDir, 'plan.md')) || existsSync(join(currentDir, 'plan.json'));
+
+  if (hasSpec && hasPlan) {
     return [{
       name: '当前任务上下文文件完整性',
       passed: true,
-      output: 'tasks/current/spec.md 与 tasks/current/plan.md 均存在',
+      output: 'tasks/current spec 与 plan 均存在（支持 Markdown 与 JSON 真源）',
       category: 'context',
     }];
   }
 
   const workflowState = await readCurrentState(cwd);
-  const archivedRequired = workflowState?.task_id ? [
-    join(docpathDir, 'tasks', 'done', workflowState.task_id, 'spec.md'),
-    join(docpathDir, 'tasks', 'done', workflowState.task_id, 'plan.md'),
-  ] : [];
-  const archivedComplete = archivedRequired.length > 0 && archivedRequired.every((path) => existsSync(path));
-  if (workflowState?.phase === 'completed' && workflowState.gate === 'review_pass' && archivedComplete) {
+  const archivedDir = workflowState?.task_id ? join(docpathDir, 'tasks', 'done', workflowState.task_id) : null;
+  const archivedHasSpec = archivedDir && (existsSync(join(archivedDir, 'spec.md')) || existsSync(join(archivedDir, 'spec.json')));
+  const archivedHasPlan = archivedDir && (existsSync(join(archivedDir, 'plan.md')) || existsSync(join(archivedDir, 'plan.json')));
+  if (workflowState?.phase === 'completed' && workflowState.gate === 'review_pass' && archivedHasSpec && archivedHasPlan) {
     return [{
       name: '当前任务上下文文件完整性',
       passed: true,
-      output: `任务已归档，使用 tasks/done/${workflowState.task_id}/spec.md 与 plan.md 作为完成态上下文`,
+      output: `任务已归档，使用 tasks/done/${workflowState.task_id} spec 与 plan 作为完成态上下文`,
       category: 'context',
     }];
   }
+
+  const missing: string[] = [];
+  if (!hasSpec) missing.push(join(currentDir, 'spec.md (或 spec.json)'));
+  if (!hasPlan) missing.push(join(currentDir, 'plan.md (或 plan.json)'));
 
   return [contextFailureResult(
     '当前任务上下文文件缺失',
@@ -657,40 +659,57 @@ export async function checkRuleTruthSources(docpathDir: string): Promise<CheckRe
   const paths = resolveRulePaths(docpathDir);
   const results: CheckResult[] = [];
 
-  for (const name of ['style', 'architecture'] as RuleName[]) {
+  for (const rule of paths.allRules) {
+    const name = rule.name;
     const preferredPath = join(paths.rulesDir, `${name}.md`);
     const legacyPath = join(paths.legacySpecDir, `${name}.md`);
     const hasPreferred = existsSync(preferredPath);
     const hasLegacy = existsSync(legacyPath);
-    if (!hasPreferred || !hasLegacy) continue;
+    if (!hasPreferred && !hasLegacy) continue;
 
-    const [preferredContent, legacyContent, preferredStat, legacyStat] = await Promise.all([
-      readFile(preferredPath, 'utf-8').catch(() => ''),
-      readFile(legacyPath, 'utf-8').catch(() => ''),
-      stat(preferredPath).catch(() => null),
-      stat(legacyPath).catch(() => null),
-    ]);
+    if (hasPreferred && hasLegacy) {
+      const [preferredContent, legacyContent, preferredStat, legacyStat] = await Promise.all([
+        readFile(preferredPath, 'utf-8').catch(() => ''),
+        readFile(legacyPath, 'utf-8').catch(() => ''),
+        stat(preferredPath).catch(() => null),
+        stat(legacyPath).catch(() => null),
+      ]);
 
-    if (!preferredContent.trim() && legacyContent.trim()) {
-      results.push(contextFailureResult(
-        `规则真源冲突: ${name}`,
-        `.docpath/rules/${name}.md 为空但 legacy .docpath/spec/${name}.md 仍有内容。修复建议: 迁移高信号规则到 .docpath/rules/${name}.md，legacy 只作兼容回退。`,
-      ));
-      continue;
+      if (!preferredContent.trim() && legacyContent.trim()) {
+        results.push(contextFailureResult(
+          `规则真源冲突: ${name}`,
+          `.docpath/rules/${name}.md 为空但 legacy .docpath/spec/${name}.md 仍有内容。修复建议: 迁移高信号规则到 .docpath/rules/${name}.md，legacy 只作兼容回退。`,
+        ));
+        continue;
+      }
+
+      if (preferredStat && legacyStat && legacyStat.mtimeMs > preferredStat.mtimeMs + 1000) {
+        results.push(contextFailureResult(
+          `规则真源冲突: ${name}`,
+          `.docpath/spec/${name}.md 比 preferred .docpath/rules/${name}.md 更新，存在双真源风险。修复建议: 将有效变更迁移到 .docpath/rules/${name}.md，避免继续写 legacy 规则。`,
+        ));
+        continue;
+      }
     }
 
-    if (preferredStat && legacyStat && legacyStat.mtimeMs > preferredStat.mtimeMs + 1000) {
-      results.push(contextFailureResult(
-        `规则真源冲突: ${name}`,
-        `.docpath/spec/${name}.md 比 preferred .docpath/rules/${name}.md 更新，存在双真源风险。修复建议: 将有效变更迁移到 .docpath/rules/${name}.md，避免继续写 legacy 规则。`,
-      ));
-      continue;
+    if (hasPreferred) {
+      const content = await readFile(preferredPath, 'utf-8').catch(() => '');
+      const lines = content.split('\n').length;
+      if (lines > 200) {
+        results.push({
+          name: `规则预算预警: ${name}`,
+          passed: true,
+          output: `⚠️ .docpath/rules/${name}.md 已达 ${lines} 行（建议运行 docpath learn groom 精炼）`,
+          category: 'context',
+        });
+        continue;
+      }
     }
 
     results.push({
       name: `规则真源: ${name}`,
       passed: true,
-      output: `.docpath/rules/${name}.md 为 preferred；legacy .docpath/spec/${name}.md 仅作兼容回退`,
+      output: `.docpath/rules/${name}.md 为 preferred${hasLegacy ? '；legacy .docpath/spec 仅作兼容回退' : ''}`,
       category: 'context',
     });
   }
@@ -803,6 +822,106 @@ export async function checkProjectStandardsPackage(cwd: string, docpathDir: stri
   }];
 }
 
+const LIVING_DOC_CHECK_MAPPINGS: Array<{ pattern: RegExp; doc: string; title: string }> = [
+  { pattern: /(?:src|tests)\/.*worktree/i, doc: 'docs/features/worktree-workflow.md', title: 'Worktree 并行机制' },
+  { pattern: /(?:src|tests)\/.*(?:agent|context-injection|token-budget)/i, doc: 'docs/design/agent-integration.md', title: 'Agent 集成与上下文协议' },
+  { pattern: /(?:src|tests)\/.*(?:session)/i, doc: 'docs/design/session-isolation-mvp.md', title: 'Session 隔离机制' },
+  { pattern: /(?:src|tests)\/.*(?:error-codes|error-helpers)/i, doc: 'docs/error-codes.md', title: '错误码字典' },
+  { pattern: /(?:src|tests)\/.*(?:transitions|policy|workflow-profile)/i, doc: 'docs/design/state-machine-correctness-analysis.md', title: '状态机与门禁策略' },
+  { pattern: /(?:src|tests)\/.*(?:breadcrumb)/i, doc: 'docs/architecture/breadcrumb-task-level-architecture.md', title: 'Breadcrumb 架构' },
+  { pattern: /(?:src|tests)\/.*(?:learn|lesson-candidates)/i, doc: 'docs/features/knowledge-accumulation.md', title: '经验沉淀与学习流' },
+];
+
+export async function checkLivingDocsHealth(cwd: string, docpathDir: string): Promise<CheckResult[]> {
+  const projectRoot = dirname(resolve(docpathDir));
+  const docsReadmePath = join(projectRoot, 'docs', 'README.md');
+  if (!existsSync(docsReadmePath)) return [];
+
+  const results: CheckResult[] = [];
+
+  try {
+    const content = await readFile(docsReadmePath, 'utf-8');
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const brokenLinks: string[] = [];
+    let match: RegExpExecArray | null;
+    while ((match = linkRegex.exec(content)) !== null) {
+      const linkTarget = match[2].trim();
+      if (
+        linkTarget.startsWith('http://')
+        || linkTarget.startsWith('https://')
+        || linkTarget.startsWith('#')
+        || linkTarget.startsWith('mailto:')
+      ) {
+        continue;
+      }
+      let targetFilePath = '';
+      if (linkTarget.startsWith('file://')) {
+        targetFilePath = linkTarget.replace(/^file:\/\//, '').split('#')[0];
+      } else {
+        const cleanPath = linkTarget.split('#')[0];
+        if (!cleanPath) continue;
+        targetFilePath = resolve(dirname(docsReadmePath), cleanPath);
+      }
+      if (targetFilePath && !existsSync(targetFilePath)) {
+        brokenLinks.push(`[${match[1]}](${match[2]})`);
+      }
+    }
+
+    if (brokenLinks.length > 0) {
+      results.push({
+        name: 'Living docs integrity gate',
+        passed: false,
+        output: `docs/README.md 存在 ${brokenLinks.length} 个失效链接:\n${brokenLinks.map((l) => `  - ${l}`).join('\n')}\n请运行 docpath docs lint 诊断修复。`,
+        category: 'context',
+        severity: 'warning',
+      });
+    } else {
+      results.push({
+        name: 'Living docs integrity gate',
+        passed: true,
+        output: 'docs/README.md 活文档中心索引完整有效',
+        category: 'context',
+      });
+    }
+
+    // 检查代码变更与活文档同步
+    const gitStatus = gitSyncOptional(cwd, ['status', '--porcelain']);
+    if (gitStatus) {
+      const lines = gitStatus.split('\n').filter(Boolean);
+      const hasDocChanges = lines.some((l) => /\s+docs\//.test(l));
+      if (!hasDocChanges) {
+        const changedFiles = lines
+          .map((l) => l.slice(3).trim())
+          .filter((f) => /^(?:src|lib|package\.json)/.test(f));
+
+        if (changedFiles.length > 0) {
+          const suggestedDocs = new Set<string>();
+          for (const file of changedFiles) {
+            for (const mapping of LIVING_DOC_CHECK_MAPPINGS) {
+              if (mapping.pattern.test(file)) {
+                suggestedDocs.add(`- ${mapping.doc} (${mapping.title})`);
+              }
+            }
+          }
+
+          if (suggestedDocs.size > 0) {
+            results.push({
+              name: 'Living docs sync hint',
+              passed: true,
+              output: `本次变更修改了核心模块代码，建议确认是否需同步更新活文档:\n${[...suggestedDocs].map((d) => `  ${d}`).join('\n')}`,
+              category: 'context',
+            });
+          }
+        }
+      }
+    }
+
+    return results;
+  } catch {
+    return results;
+  }
+}
+
 export async function checkContextHealth(cwd: string, docpathDir: string): Promise<CheckResult[]> {
   const workflowState = await readCurrentState(cwd);
   if ((workflowState?.level || 0) < 2) return [];
@@ -811,6 +930,7 @@ export async function checkContextHealth(cwd: string, docpathDir: string): Promi
     ...await checkContextIndexHealth(docpathDir, workflowState?.task_id),
     ...await checkRuleTruthSources(docpathDir),
     ...await checkProjectStandardsPackage(cwd, docpathDir),
+    ...await checkLivingDocsHealth(cwd, docpathDir),
   ];
 }
 

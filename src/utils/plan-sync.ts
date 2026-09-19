@@ -66,6 +66,8 @@ export async function resolveEffectivePlanTasks(cwd: string): Promise<EffectiveP
 async function planPathFor(cwd: string): Promise<string> {
   const docpathDir = await resolveDocpathDir(cwd);
   const state = await readCurrentState(cwd);
+  const jsonPath = resolveActiveTaskDocPath(docpathDir, state?.task_id, 'plan.json');
+  if (existsSync(jsonPath)) return jsonPath;
   return resolveActiveTaskDocPath(docpathDir, state?.task_id, 'plan.md');
 }
 
@@ -78,7 +80,7 @@ function markerForStatus(status: PlanStepStatus): 'x' | ' ' | '~' | '!' {
 
 export async function markPlanStep(cwd: string, step: string, status: PlanStepStatus): Promise<PlanSyncResult> {
   const planPath = await planPathFor(cwd);
-  if (!existsSync(planPath)) return { updated: false, reason: 'plan.md 不存在' };
+  if (!existsSync(planPath)) return { updated: false, reason: 'plan.json / plan.md 不存在' };
 
   const state = await readCurrentState(cwd);
   const docpathDir = await resolveDocpathDir(cwd);
@@ -87,10 +89,10 @@ export async function markPlanStep(cwd: string, step: string, status: PlanStepSt
   await mkdir(dirname(lockPath), { recursive: true });
   return withLock(lockPath, async () => {
     const content = await readActiveTaskFile(docpathDir, state?.task_id, 'plan.md');
-    if (!content.trim()) return { updated: false, reason: 'plan.md 不存在' };
+    if (!content.trim()) return { updated: false, reason: 'plan.json / plan.md 不存在' };
     const steps = parsePlanSteps(content);
     const target = steps.find((item) => item.id.toLowerCase() === step.toLowerCase());
-    if (!target) return { updated: false, reason: `plan.md 未找到步骤 ${step}` };
+    if (!target) return { updated: false, reason: `plan 未找到步骤 ${step}` };
 
     let next = content;
     const mark = markerForStatus(status);

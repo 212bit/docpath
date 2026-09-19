@@ -338,6 +338,32 @@ export async function detectActiveTaskFileDrift(
     const hasCurrent = existsSync(currentPath);
     const hasCanonical = existsSync(canonicalPath);
 
+    const jsonFile = isStructuredTaskMarkdownFile(file) ? structuredJsonFileFor(file) : null;
+    if (!hasCurrent && !hasCanonical && jsonFile) {
+      const currentJsonPath = join(currentTaskDir(docpathDir), jsonFile);
+      const canonicalJsonPath = join(canonicalTaskDir(docpathDir, taskId), jsonFile);
+      const hasCurrentJson = existsSync(currentJsonPath);
+      const hasCanonicalJson = existsSync(canonicalJsonPath);
+      if (hasCurrentJson || hasCanonicalJson) {
+        if (!hasCurrentJson) {
+          drifts.push({ file, currentPath: currentJsonPath, canonicalPath: canonicalJsonPath, reason: 'missing-current' });
+          continue;
+        }
+        if (!hasCanonicalJson) {
+          drifts.push({ file, currentPath: currentJsonPath, canonicalPath: canonicalJsonPath, reason: 'missing-canonical' });
+          continue;
+        }
+        const [currentJson, canonicalJson] = await Promise.all([
+          readFile(currentJsonPath, 'utf-8'),
+          readFile(canonicalJsonPath, 'utf-8'),
+        ]);
+        if (currentJson !== canonicalJson) {
+          drifts.push({ file, currentPath: currentJsonPath, canonicalPath: canonicalJsonPath, reason: 'content-mismatch' });
+        }
+        continue;
+      }
+    }
+
     if (!hasCurrent && !hasCanonical) {
       // 既无 current 别名、又无 canonical 目录 = 幽灵任务:state.task_id 指向
       // 当前 checkout 上不存在的任务(典型成因:任务在别的分支完成并归档,
@@ -381,11 +407,21 @@ export async function syncActiveTaskFiles(
     const canonicalPath = join(canonicalTaskDir(docpathDir, taskId), file);
     const fromPath = from === 'canonical' ? canonicalPath : currentPath;
     const toPath = from === 'canonical' ? currentPath : canonicalPath;
+
+    const structuredFile = isStructuredTaskMarkdownFile(file) ? file : null;
+    const jsonFile = structuredFile ? structuredJsonFileFor(structuredFile) : null;
+    const sourceJsonPath = jsonFile ? join(dirname(fromPath), jsonFile) : '';
+    const targetJsonPath = jsonFile ? join(dirname(toPath), jsonFile) : '';
+
     if (!existsSync(fromPath)) {
+      if (sourceJsonPath && existsSync(sourceJsonPath)) {
+        await copyFile(sourceJsonPath, targetJsonPath);
+        synced.push({ file, fromPath: sourceJsonPath, toPath: targetJsonPath });
+        continue;
+      }
       throw new Error(`无法同步 ${file}: 源文件不存在 ${fromPath}`);
     }
 
-    const structuredFile = isStructuredTaskMarkdownFile(file) ? file : null;
     const structuredContent = structuredFile
       ? await readStructuredTaskMarkdownView(dirname(fromPath), structuredFile)
       : null;

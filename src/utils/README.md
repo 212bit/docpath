@@ -10,7 +10,7 @@
 workspace.ts, lock.ts, session.ts, pending-done.ts, lifecycle.ts, current-step-inference.ts
 
 ### task-docs — 任务文档（别名/结构化真源/漂移消解）
-task-files.ts, structured-docs.ts, structured-heal.ts, plan-sync.ts, doc-parser.ts, workspace-evidence.ts
+task-files.ts, structured-docs.ts, structured-heal.ts, plan-sync.ts, plan-topology.ts, doc-parser.ts, workspace-evidence.ts
 
 ### gates — 门禁与守卫
 git-dirty-guard.ts, ui-gate.ts, major-change.ts, review-skill-router.ts

@@ -27,12 +27,16 @@ import {
 
 interface DocsOptions {
   cwd: string;
-  /** 子命令：scan | list | add */
+  /** 子命令：scan | list | add | lint | search */
   action?: string;
-  /** add 命令的参数 */
+  /** add/search 命令的参数 */
   args?: string[];
   /** list: print the full generated docs.md table */
   full?: boolean;
+  /** search/find 关键词 */
+  query?: string;
+  /** Agent 模式输出结构化 YAML */
+  agent?: boolean;
 }
 
 /** 从 markdown 中提取标题 */
@@ -494,9 +498,189 @@ async function docsAdd(cwd: string, args: string[]): Promise<void> {
   console.log(`   kind: ${kind}, scope: ${scope}, level: ${level}\n`);
 }
 
+interface LintIssue {
+  file: string;
+  type: 'broken-link' | 'empty-doc' | 'missing-heading' | 'unindexed';
+  message: string;
+}
+
+/** docs lint — 巡检文档健康度：检查死链、空文件、缺少标题与索引丢失 */
+async function docsLint(cwd: string): Promise<void> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const projectRoot = dirname(resolve(docpathDir));
+  console.log('\n🔍  文档健康度巡检 (Doc Lint)...\n');
+
+  const issues: LintIssue[] = [];
+  const scannedFiles: string[] = [];
+
+  const checkFile = async (absPath: string, relPath: string): Promise<void> => {
+    scannedFiles.push(relPath);
+    try {
+      const content = await readFile(absPath, 'utf-8');
+      if (content.trim().length === 0) {
+        issues.push({ file: relPath, type: 'empty-doc', message: '文档为空文件' });
+        return;
+      }
+      if (!/^#\s+/m.test(content)) {
+        issues.push({ file: relPath, type: 'missing-heading', message: '缺少一级标题 (# 标题)' });
+      }
+
+      const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+      let match: RegExpExecArray | null;
+      while ((match = linkRegex.exec(content)) !== null) {
+        const linkTarget = match[2].trim();
+        if (
+          linkTarget.startsWith('http://')
+          || linkTarget.startsWith('https://')
+          || linkTarget.startsWith('#')
+          || linkTarget.startsWith('mailto:')
+        ) {
+          continue;
+        }
+
+        let targetFilePath = '';
+        if (linkTarget.startsWith('file://')) {
+          targetFilePath = linkTarget.replace(/^file:\/\//, '').split('#')[0];
+        } else {
+          const cleanPath = linkTarget.split('#')[0];
+          if (!cleanPath) continue;
+          targetFilePath = resolve(dirname(absPath), cleanPath);
+        }
+
+        if (targetFilePath && !existsSync(targetFilePath)) {
+          issues.push({
+            file: relPath,
+            type: 'broken-link',
+            message: `断链: [${match[1]}](${match[2]}) 目标文件不存在`,
+          });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const walk = async (dir: string): Promise<void> => {
+    if (!existsSync(dir)) return;
+    try {
+      const entries = await readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== 'node_modules' && !entry.name.startsWith('.')) {
+            await walk(full);
+          }
+        } else if (entry.isFile() && extname(entry.name) === '.md') {
+          await checkFile(full, normalizeDocPath(relative(projectRoot, full)));
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  await walk(join(projectRoot, 'docs'));
+  await walk(join(docpathDir, 'rules'));
+  if (existsSync(join(projectRoot, 'README.md'))) {
+    await checkFile(join(projectRoot, 'README.md'), 'README.md');
+  }
+
+  const index = await readProjectDocumentIndex(docpathDir);
+  const indexedPaths = new Set(index?.entries.map((e) => e.path) || []);
+  for (const scanned of scannedFiles) {
+    if (scanned.startsWith('docs/') && !indexedPaths.has(scanned)) {
+      issues.push({
+        file: scanned,
+        type: 'unindexed',
+        message: '未被 docs-index.json 索引（可运行 docpath docs scan 刷新）',
+      });
+    }
+  }
+
+  console.log(`📊 扫描文档总数: ${scannedFiles.length} 个`);
+  if (issues.length === 0) {
+    console.log('✅  所有文档链接完整，格式正常，索引已同步！\n');
+  } else {
+    console.log(`⚠️  发现 ${issues.length} 个健康度提示:`);
+    for (const issue of issues) {
+      console.log(`  - [${issue.type}] ${issue.file}: ${issue.message}`);
+    }
+    console.log('');
+  }
+}
+
+/** docs search — 根据关键词或同义词快速检索文档条目 */
+async function docsSearch(cwd: string, query: string, agent = false): Promise<void> {
+  const { normalizeTopic } = await import('../utils/topic-synonyms.js');
+  const docpathDir = await resolveDocpathDir(cwd);
+  const index = await readProjectDocumentIndex(docpathDir);
+
+  if (!index?.entries.length) {
+    if (agent) {
+      const { stringify } = await import('yaml');
+      console.log(stringify({ agent_view: 'docs_search', query, results_count: 0, results: [] }));
+    } else {
+      console.error('❌  未找到 docs-index.json 或索引为空。请先运行 `docpath docs scan`');
+    }
+    return;
+  }
+
+  const trimmed = query.trim();
+  if (!trimmed) {
+    console.log('ℹ️  请输入检索关键词: docpath docs search <keyword>');
+    return;
+  }
+
+  const synonyms = normalizeTopic(trimmed);
+  const matched = index.entries.filter((entry) => {
+    const text = `${entry.path} ${entry.title} ${entry.summary} ${entry.topic_tags?.join(' ') || ''} ${(entry.content_terms || []).join(' ')}`.toLowerCase();
+    return synonyms.some((syn) => text.includes(syn));
+  });
+
+  const sorted = sortDocumentEntries(matched as ProjectDocumentIndexEntry[]);
+
+  if (agent) {
+    const { stringify } = await import('yaml');
+    console.log(stringify({
+      agent_view: 'docs_search',
+      query: trimmed,
+      synonyms,
+      results_count: sorted.length,
+      results: sorted.slice(0, 10).map((e) => ({
+        path: e.path,
+        title: e.title,
+        summary: e.summary,
+        type: e.type,
+        scope: e.scope,
+        level: e.level,
+        token_estimate: e.token_estimate,
+        default_read: e.default_read,
+        archive: e.archive,
+      })),
+    }));
+    return;
+  }
+
+  console.log(`\n🔍  文档检索: "${trimmed}" (匹配 ${sorted.length} 个文档)\n`);
+  if (sorted.length === 0) {
+    console.log('   未找到匹配的文档条目。可尝试更换关键词或运行 docpath docs scan 刷新索引。\n');
+    return;
+  }
+
+  for (const entry of sorted.slice(0, 10)) {
+    const flags = [
+      entry.default_read ? 'default' : '',
+      entry.archive ? 'archive' : '',
+      entry.task_id ? `task:${entry.task_id}` : '',
+    ].filter(Boolean).join(', ') || 'indexed';
+    console.log(`  📄 ${entry.path} [${flags}] (~${entry.token_estimate} tokens)`);
+    console.log(`     ${entry.title} — ${entry.summary || '无摘要'}\n`);
+  }
+}
+
 /** 主命令入口 */
 export async function docsCommand(options: DocsOptions): Promise<void> {
-  const { cwd, action, args = [], full = false } = options;
+  const { cwd, action, args = [], full = false, query, agent = false } = options;
 
   switch (action) {
     case 'scan':
@@ -507,6 +691,14 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
       break;
     case 'add':
       await docsAdd(cwd, args);
+      break;
+    case 'lint':
+      await docsLint(cwd);
+      break;
+    case 'search':
+    case 'find':
+    case 'query':
+      await docsSearch(cwd, args.join(' ') || query || '', agent);
       break;
     default:
       // 默认执行 scan

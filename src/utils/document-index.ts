@@ -12,6 +12,8 @@ export const PROJECT_DOCS_SCAN_EXCLUDED_DIRS = [
   'workspace/bin',
   'workspace/leases',
   'workspace/sessions',
+  'tasks/promote-backups',
+  'promote-backups',
 ];
 
 export interface ProjectDocumentIndexEntry {
@@ -420,12 +422,17 @@ export function documentPriority(entry: ProjectDocumentIndexEntry): number {
   if (entry.default_read) score += 120;
   if (entry.scope === 'task') score += 100;
   if (path.includes('tasks/current/')) score += 90;
-  if (entry.task_id && path.includes(`tasks/${entry.task_id}/`)) score += 75;
+  if (path === 'docs/README.md' || path === 'README.md') score += 85;
   if (path === 'workspace/current.md') score += 80;
+  if (entry.task_id && path.includes(`tasks/${entry.task_id}/`)) score += 75;
+  if (path.startsWith('docs/architecture/') || path.startsWith('docs/features/') || path.startsWith('docs/workflows/') || path.startsWith('docs/design/')) score += 75;
+  if (path.startsWith('docs/')) score += 70;
   if (path === 'workspace/breadcrumb.md') score += 70;
   if (path === 'workspace/last-check.md') score += 60;
   if (path.includes('rules/style.md') || path.includes('rules/architecture.md')) score += 55;
   if (path.includes('spec/style.md') || path.includes('spec/architecture.md')) score += 50;
+  if (path.startsWith('backlog/analysis/')) score -= 20;
+  if (path.startsWith('backlog/archived/')) score -= 40;
   if (entry.archive) score -= 120;
   if (isIndexOnlyDocument(entry)) score -= 90;
   if (entry.token_estimate > DEFAULT_CONTEXT_TOKEN_BUDGET) score -= 35;

@@ -52,7 +52,9 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--skip-lint', 'check 时跳过 lint')
     .option('--approve-review', 'review 时手动批准')
     .option('--no-dirty-reminder', '不打印未提交业务文件提醒')
-    .action(async (options: { cwd?: string; note?: string; session?: string; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; dirtyReminder?: boolean; 'dirty-reminder'?: boolean }) => {
+    .option('--gotcha <text>', '记录本次快速修复的踩坑点/经验')
+    .option('--lesson <text>', '记录本次任务的经验总结')
+    .action(async (options: { cwd?: string; note?: string; session?: string; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; dirtyReminder?: boolean; 'dirty-reminder'?: boolean; gotcha?: string; lesson?: string }) => {
       await quickDoneCommand({
         cwd: options.cwd || process.cwd(),
         note: options.note,
@@ -63,6 +65,8 @@ export function registerExecutionCommands(cli: CAC): void {
         skipLint: !!(options.skipLint || options['skip-lint']),
         approveReview: !!(options.approveReview || options['approve-review']),
         noDirtyReminder: options.dirtyReminder === false || options['dirty-reminder'] === false,
+        gotcha: options.gotcha,
+        lesson: options.lesson,
       });
     });
 

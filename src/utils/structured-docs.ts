@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import { join } from 'path';
 import { parsePlanSteps, type PlanStep } from './doc-parser.js';
 import { readArtifactConfig } from './config.js';
+import { buildPlanTopology, renderPlanDependencyGraph } from './plan-topology.js';
 
 export const STRUCTURED_DOC_SCHEMA_VERSION = 1;
 
@@ -593,7 +594,7 @@ export function renderPlanMarkdownFromDocument(doc: StructuredPlanDocument): str
     ...doc.steps.map((step) => `- [${markerFromStatus(step.status)}] ${step.id}`),
     '',
     '## 依赖关系图',
-    doc.steps.map((step) => step.id).join(' → '),
+    renderPlanDependencyGraph(buildPlanTopology(doc.steps)),
     '',
   ];
   return lines.join('\n');

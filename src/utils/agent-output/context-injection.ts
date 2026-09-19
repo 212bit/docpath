@@ -25,14 +25,18 @@ export interface SpecSummary {
 
 // ── Context Injection 加载函数 ──
 
-const DECISIONS_MAX_LINES = 20;
+const DECISIONS_MAX_LINES = 50;
 const DECISIONS_RECENT_COUNT = 2;
 
 /**
- * 从 decisions.jsonl 读取最近 N 条决策记录。
- * 文件按追加顺序写入，尾部是最新记录。
+ * 从 decisions.jsonl 读取与当前上下文相关或最近的 N 条决策记录。
+ * 文件按追加顺序写入，尾部是最新记录。若提供 queryKeywords 则按相关性优先排序。
  */
-export async function loadRecentDecisions(docpathDir: string, count: number = DECISIONS_RECENT_COUNT): Promise<DecisionEntry[]> {
+export async function loadRecentDecisions(
+  docpathDir: string,
+  count: number = DECISIONS_RECENT_COUNT,
+  queryKeywords?: string[],
+): Promise<DecisionEntry[]> {
   const jsonlPath = join(docpathDir, 'workspace', 'decisions.jsonl');
   if (!existsSync(jsonlPath)) return [];
 
@@ -40,12 +44,12 @@ export async function loadRecentDecisions(docpathDir: string, count: number = DE
     const content = await readFile(jsonlPath, 'utf-8');
     const lines = content.split('\n').filter(Boolean);
     const tail = lines.slice(-Math.min(lines.length, DECISIONS_MAX_LINES));
-    const decisions: DecisionEntry[] = [];
+    const allDecisions: DecisionEntry[] = [];
     for (const line of tail) {
       try {
         const parsed = JSON.parse(line);
         if (parsed.kind === 'decision' && parsed.id) {
-          decisions.push({
+          allDecisions.push({
             id: parsed.id,
             taskId: parsed.taskId || '',
             category: parsed.category || '',
@@ -57,7 +61,48 @@ export async function loadRecentDecisions(docpathDir: string, count: number = DE
         // skip malformed lines
       }
     }
-    return decisions.slice(-count);
+
+    if (!queryKeywords || queryKeywords.length === 0) {
+      return allDecisions.slice(-count);
+    }
+
+    const lowerKeywords = queryKeywords
+      .map((k) => k.toLowerCase().trim())
+      .filter((k) => k.length > 1);
+
+    if (lowerKeywords.length === 0) {
+      return allDecisions.slice(-count);
+    }
+
+    // 计算相关性得分
+    const scored = allDecisions.map((d, index) => {
+      const targetText = `${d.id} ${d.taskId} ${d.category} ${d.conclusion}`.toLowerCase();
+      let matchCount = 0;
+      for (const kw of lowerKeywords) {
+        if (targetText.includes(kw)) {
+          matchCount++;
+        }
+      }
+      return { decision: d, score: matchCount, index };
+    });
+
+    const matched = scored
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score || b.index - a.index)
+      .map((s) => s.decision);
+
+    const result: DecisionEntry[] = [...matched.slice(0, count)];
+    if (result.length < count) {
+      const addedIds = new Set(result.map((r) => r.id));
+      for (let i = allDecisions.length - 1; i >= 0 && result.length < count; i--) {
+        if (!addedIds.has(allDecisions[i].id)) {
+          result.push(allDecisions[i]);
+          addedIds.add(allDecisions[i].id);
+        }
+      }
+    }
+
+    return result;
   } catch {
     return [];
   }

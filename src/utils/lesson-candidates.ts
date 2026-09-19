@@ -120,9 +120,13 @@ export function parseCandidateBlocks(content: string): CandidateBlock[] {
     const typeValue = block.match(/^- type:\s*(.+)$/m)?.[1]?.trim();
     const targetValue = block.match(/^- target:\s*(.+)$/m)?.[1]?.trim();
     const source = block.match(/^- source:\s*(.+)$/m)?.[1]?.trim() || 'lesson-candidates';
-    const description = block.match(/^### Lesson\s*\n([\s\S]*?)(?=\n###|\n---|$)/m)?.[1]?.trim()
-      || block.match(/^### 经验\s*\n([\s\S]*?)(?=\n###|\n---|$)/m)?.[1]?.trim()
-      || title;
+    let description = title;
+    const lessonMatch = block.match(/^### (?:Lesson|经验)\s*\r?\n([\s\S]*)/im);
+    if (lessonMatch && lessonMatch[1]) {
+      const rest = lessonMatch[1];
+      const endIdx = rest.search(/\n### (?:Evidence|证据)|\n---/i);
+      description = (endIdx >= 0 ? rest.slice(0, endIdx) : rest).trim() || title;
+    }
     const keyword = block.match(/^- key:\s*(.+)$/m)?.[1]?.trim() || extractKeyword(description) || title;
 
     candidates.push({

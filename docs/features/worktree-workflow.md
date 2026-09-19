@@ -575,9 +575,6 @@ project/
 ## 进一步阅读
 
 - [Git Worktree 官方文档](https://git-scm.com/docs/git-worktree)
-- [DocPath Session 隔离](./session-isolation-mvp.md)
-- [DocPath 架构设计](./architecture.md)
-
----
-
-**需要帮助？** 在 GitHub Issues 提问或查看 [FAQ](./faq.md)。
+- [DocPath Session 隔离](../design/session-isolation-mvp.md)
+- [DocPath 架构设计](../architecture/breadcrumb-task-level-architecture.md)
+- [快速上手指南](../getting-started.md)

@@ -12,6 +12,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readLastCheckMarkdown } from '../utils/workspace-evidence.js';
+import { readActiveTaskFile } from '../utils/task-files.js';
 
 // ── 结果接口 ──
 
@@ -27,14 +28,12 @@ export interface ContinuationDecision {
 
 export async function analyzeContinuation(cwd: string): Promise<ContinuationDecision> {
   const docpathDir = await resolveDocpathDir(cwd);
-  const tasksDir = join(docpathDir, 'tasks', 'current');
 
-  // 1. 解析 plan.md 中的未完成子任务
-  const planPath = join(tasksDir, 'plan.md');
+  // 1. 解析 plan 中的未完成子任务（优先从 plan.json 机器真源获取）
   const pendingTasks: string[] = [];
+  const planContent = await readActiveTaskFile(docpathDir, undefined, 'plan.md');
 
-  if (existsSync(planPath)) {
-    const planContent = await readFile(planPath, 'utf-8');
+  if (planContent.trim()) {
     const uncheckedRegex = /^- \[ \] (.+)$/gm;
     let match;
     while ((match = uncheckedRegex.exec(planContent)) !== null) {

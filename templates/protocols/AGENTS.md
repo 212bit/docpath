@@ -184,7 +184,10 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath go --step S1` | Atomically claim/start the selected plan step |
 | `docpath check` | Quality gates |
 | `docpath review` | Structured review |
-| `docpath changes --agent` | Read-only git closeout and commit readiness view |
+| `docpath quick-done` | Compound closeout with optional `--gotcha <text>` capture |
+| `docpath learn` | Promote validated lessons into durable rules (`--agent` / `--dry-run`) |
+| `docpath docs search <topic>` | Fast topic search across living project documentation |
+| `docpath docs lint` | Living documentation integrity check (broken links & unindexed files) |
 | `docpath journal` | Knowledge archive |
 | `docpath gc` | Preview workspace cleanup candidates and inactive task archive candidates; `--force` executes |
 

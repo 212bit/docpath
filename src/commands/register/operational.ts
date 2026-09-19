@@ -15,8 +15,22 @@ import { quickCommand } from '../quick.js';
 import { recoverCommand } from '../recovery.js';
 import { commitCommand } from '../commit.js';
 import { mergeDriverCommand } from '../merge-driver.js';
+import { learnCommand } from '../learn.js';
 
 export function registerOperationalCommands(cli: CAC): void {
+  cli
+    .command('learn [action]', '经验规约固化流水线：将候选经验固化为 rules 规约')
+    .option('--cwd <path>', '项目目录')
+    .option('--dry-run', '仅预览待固化规则，不修改文件')
+    .option('--agent', 'Agent 机器输出模式（YAML）')
+    .action(async (action: string | undefined, options: { cwd?: string; dryRun?: boolean; 'dry-run'?: boolean; agent?: boolean }) => {
+      await learnCommand({
+        cwd: options.cwd || process.cwd(),
+        dryRun: !!(options.dryRun || options['dry-run']),
+        action: action === 'groom' || action === 'prune' ? action : 'learn',
+        agent: !!options.agent,
+      });
+    });
   cli
     .command('quick <title>', '创建快车道任务（微型改动，压缩生命周期）')
     .option('--cwd <path>', '项目目录')

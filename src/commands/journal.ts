@@ -28,6 +28,7 @@ import {
 } from '../utils/task-files.js';
 import type { StructuredSpecDocument } from '../utils/structured-docs.js';
 import { emitNextHint } from '../utils/next-hint.js';
+import { gitSync } from '../utils/git-run.js';
 
 interface JournalOptions {
   cwd: string;
@@ -370,6 +371,7 @@ async function finalizeJournal(
   try {
     await rm(join(context.docpathDir, 'workspace', 'wip-note.md'), { force: true });
   } catch { /* 清理失败不阻断归档 */ }
+  checkLivingDocSync(cwd);
   await completeLinkedBacklog(cwd, context.taskId, context.spec, context.structuredSpec);
   await writeBreadcrumb(cwd, {
     taskId: context.taskId,
@@ -386,6 +388,50 @@ async function finalizeJournal(
     console.log('所有步骤已归档。运行 `docpath init` 开始新任务。');
   }
   await emitNextHint(cwd);
+}
+
+const LIVING_DOC_MAPPINGS: Array<{ pattern: RegExp; doc: string; title: string }> = [
+  { pattern: /(?:src|tests)\/.*worktree/i, doc: 'docs/features/worktree-workflow.md', title: 'Worktree 并行机制' },
+  { pattern: /(?:src|tests)\/.*(?:agent|context-injection|token-budget)/i, doc: 'docs/design/agent-integration.md', title: 'Agent 集成与上下文协议' },
+  { pattern: /(?:src|tests)\/.*(?:session)/i, doc: 'docs/design/session-isolation-mvp.md', title: 'Session 隔离机制' },
+  { pattern: /(?:src|tests)\/.*(?:error-codes|error-helpers)/i, doc: 'docs/error-codes.md', title: '错误码字典' },
+  { pattern: /(?:src|tests)\/.*(?:transitions|policy|workflow-profile)/i, doc: 'docs/design/state-machine-correctness-analysis.md', title: '状态机与门禁策略' },
+  { pattern: /(?:src|tests)\/.*(?:breadcrumb)/i, doc: 'docs/architecture/breadcrumb-task-level-architecture.md', title: 'Breadcrumb 架构' },
+];
+
+function checkLivingDocSync(cwd: string): void {
+  try {
+    const stdout = gitSync(cwd, ['status', '--porcelain']);
+    const lines = stdout.split('\n').filter(Boolean);
+    const hasDocChanges = lines.some((l: string) => /\s+docs\//.test(l));
+    if (hasDocChanges) return;
+
+    const changedFiles = lines
+      .map((l: string) => l.slice(3).trim())
+      .filter((f: string) => /^(?:src|lib|package\.json)/.test(f));
+
+    if (changedFiles.length === 0) return;
+
+    const suggestedDocs = new Set<string>();
+    for (const file of changedFiles) {
+      for (const mapping of LIVING_DOC_MAPPINGS) {
+        if (mapping.pattern.test(file)) {
+          suggestedDocs.add(`- ${mapping.doc} (${mapping.title})`);
+        }
+      }
+    }
+
+    if (suggestedDocs.size > 0) {
+      console.log('💡  活文档提示: 本次任务修改了核心模块代码，建议同步更新关联文档:');
+      for (const doc of suggestedDocs) {
+        console.log(`   ${doc}`);
+      }
+    } else {
+      console.log('💡  活文档提示: 本次任务包含核心代码变更但未修改 docs/，若产生持久契约请及时沉淀至 docs/');
+    }
+  } catch {
+    // 忽略 git 检查异常
+  }
 }
 
 async function archiveCurrentTask(

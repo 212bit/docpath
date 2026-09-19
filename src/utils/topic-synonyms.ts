@@ -13,9 +13,11 @@
  */
 export const TOPIC_SYNONYMS: Record<string, string[]> = {
   // 记忆与知识
-  'memory': ['memory', '记忆', '知识沉淀', 'knowledge', 'context', '上下文'],
+  'memory': ['memory', '记忆', '知识沉淀', 'knowledge', 'context', '上下文', '沉淀'],
   'context': ['context', '上下文', '背景', 'memory', '记忆'],
-  'knowledge': ['knowledge', '知识', '记忆', 'memory', 'learnings'],
+  'knowledge': ['knowledge', '知识', '记忆', 'memory', 'learnings', 'learn', '沉淀', 'gotcha', '经验'],
+  'learn': ['learn', '学习', '经验', '固化', '沉淀', 'lesson', 'gotcha', 'knowledge', 'rules'],
+  'worktree': ['worktree', '工作树', '并行', '并发', '分支', '隔离', 'branch', 'isolation'],
   
   // 架构与设计
   'architecture': ['architecture', '架构', '设计', 'design', '结构'],

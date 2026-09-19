@@ -335,5 +335,5 @@ DOCPATH_DEBUG=1 docpath <command>
 ## 相关文档
 
 - [DocPath 用户指南](../README.md)
-- [故障排除指南](./troubleshooting.md)
-- [API 参考](./api-reference.md)
+- [快速上手指南](./getting-started.md)
+- [产品全景图](./product-panorama.md)

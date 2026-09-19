@@ -878,10 +878,17 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
   const contextIndex = await readHybridContextIndexSummary(cwd);
   const contextIndexTrunk = await readHybridContextIndexTrunk(cwd);
   const contextIndexLeaves = await readHybridContextIndexLeaves(cwd);
-  const [recentDecisions] = await Promise.all([
-    loadRecentDecisions(docpathDir),
-  ]);
   const specSummary = specContent ? extractSpecSummary(specContent) : null;
+  const keywords: string[] = [];
+  if (state?.task_title) {
+    keywords.push(...state.task_title.split(/[\s_\-–—,，。：:（）\(\)\[\]]+/u).filter((t) => t.length > 1));
+  }
+  if (specSummary?.title) {
+    keywords.push(...specSummary.title.split(/[\s_\-–—,，。：:（）\(\)\[\]]+/u).filter((t) => t.length > 1));
+  }
+  const [recentDecisions] = await Promise.all([
+    loadRecentDecisions(docpathDir, 2, keywords),
+  ]);
 
   return {
     docpathDir,

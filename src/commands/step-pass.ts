@@ -99,8 +99,10 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
   const stepsAfter = await loadPlanSteps(cwd, taskId);
   const remaining = stepsAfter ? stepsAfter.filter((t) => !t.done).map((t) => t.id) : null;
   if (remaining && remaining.length === 0) {
-    console.log('🎉  所有计划步骤均已完成。');
-    console.log('    一键收口（check + done + 提交准备）: docpath quick-done');
+    console.log('\n🎉  所有计划步骤均已完成！');
+    console.log('👉  推荐收尾路线:');
+    console.log('    - 一键快速收口 (门禁 + 评审 + 提交准备): `docpath quick-done` (推荐)');
+    console.log('    - 逐步验证门禁: `docpath check` -> `docpath review` -> `docpath agent done`');
     await emitNextHint(cwd);
     return;
   }

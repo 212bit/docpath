@@ -19,3 +19,6 @@ paths:
   spec: .docpath/spec/
   journal: .docpath/journal/
 trace: true
+document_scan_paths:
+  - README.md
+  - docs
