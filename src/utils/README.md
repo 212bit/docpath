@@ -13,13 +13,13 @@ workspace.ts, lock.ts, session.ts, pending-done.ts, lifecycle.ts, current-step-i
 task-files.ts, structured-docs.ts, structured-heal.ts, plan-sync.ts, plan-topology.ts, doc-parser.ts, workspace-evidence.ts
 
 ### gates — 门禁与守卫
-git-dirty-guard.ts, ui-gate.ts, major-change.ts, review-skill-router.ts
+git-dirty-guard.ts, ui-gate.ts, major-change.ts, review-skill-router.ts, semantic-verify.ts
 
 ### git — Git 集成与收口
 git-closeout.ts, git-hygiene.ts, git-safety.ts, git-staging.ts, changes-report.ts, merge-driver.ts, worktree.ts, worktree-collaboration.ts
 
 ### context — 上下文构建与索引
-context-index.ts, context.ts, document-index.ts, topic-synonyms.ts, milestone.ts, budget.ts, docs-doctor.ts, payload.ts, rules.ts, lesson-candidates.ts, deliverables.ts, roles.ts
+context-index.ts, context.ts, document-index.ts, topic-synonyms.ts, milestone.ts, budget.ts, docs-doctor.ts, smart-context.ts, payload.ts, rules.ts, lesson-candidates.ts, deliverables.ts, roles.ts
 
 ### agent-io — Agent 输出/提示/路由
 agent-output.ts, agent-output/formatters.ts, agent-output/context-injection.ts, agent-prompt.ts, next-hint.ts, output-formatter.ts, contextual-help.ts, error-messages.ts, error-helpers.ts, logger.ts

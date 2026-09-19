@@ -2,6 +2,7 @@ import type { CAC } from 'cac';
 import { checkCommand } from '../check.js';
 import { journalCommand } from '../journal.js';
 import { reviewCommand } from '../review.js';
+import { verifyCommand } from '../verify.js';
 import { writeReviewSkillCommand } from '../write-review-skill.js';
 import { writeJournalCommand } from '../write-journal.js';
 import { getOptionValue, normalizeEnumOption, normalizeTaskFileSyncSource } from './shared.js';
@@ -103,6 +104,18 @@ export function registerQualityCommands(cli: CAC): void {
         summary: options.summary,
         content: options.content,
         stdin: options.stdin,
+      });
+    });
+
+  cli.command('verify', '语义反漂移与需求闭环门禁 (Scope 边界/FR 闭环/步骤真实性)')
+    .option('--cwd <path>', '项目目录')
+    .option('--agent', '输出 Agent 消费的结构化 YAML 格式')
+    .option('--json', '输出 JSON 格式')
+    .action(async (options: { cwd?: string; agent?: boolean; json?: boolean }) => {
+      await verifyCommand({
+        cwd: options.cwd || process.cwd(),
+        agent: options.agent,
+        json: options.json,
       });
     });
 

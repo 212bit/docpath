@@ -71,8 +71,9 @@ function registerChangesCommand(cli: CAC): void {
 }
 
 function registerContextCommand(cli: CAC): void {
-  cli.command('context', '生成 Claude Code 可消费的上下文包')
+  cli.command('context', '生成 Claude Code / Agent 可消费的上下文包')
     .option('--cwd <path>', '项目目录')
+    .option('--smart', '智能关联与精准规则投喂 (根据活跃任务与改动文件自动匹配相关规则与文档)')
     .option('--max-tokens <n>', '最大 token 预算 (默认 8000)')
     .option('--format <format>', '输出格式: prompt(默认) | raw')
     .option('--no-spec', '不包含 spec')
@@ -82,9 +83,10 @@ function registerContextCommand(cli: CAC): void {
     .option('--include-archive', '允许归档正文参与预算竞争')
     .option('--output <file>', '保存到文件')
     .option('--agent', '输出 Agent 可读 YAML 状态')
-    .action(async (options: { cwd?: string; 'max-tokens'?: string; maxTokens?: string; format?: string; spec?: boolean; plan?: boolean; topic?: string; taskId?: string; 'task-id'?: string; includeArchive?: boolean; 'include-archive'?: boolean; output?: string; agent?: boolean }) => {
+    .action(async (options: { cwd?: string; smart?: boolean; 'max-tokens'?: string; maxTokens?: string; format?: string; spec?: boolean; plan?: boolean; topic?: string; taskId?: string; 'task-id'?: string; includeArchive?: boolean; 'include-archive'?: boolean; output?: string; agent?: boolean }) => {
       await contextCommand({
         cwd: options.cwd || process.cwd(),
+        smart: !!options.smart,
         maxTokens: parseIntegerOption(options.maxTokens || options['max-tokens'], 'context --max-tokens', { min: 1 }),
         format: normalizeEnumOption(options.format, 'context --format', ['prompt', 'raw'] as const),
         withSpec: options.spec !== false,

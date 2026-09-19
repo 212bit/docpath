@@ -119,6 +119,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
    - Always consume compact machine routes (`docpath next --agent`, `docpath status --agent`).
    - When retrieving topic details, strictly use token-budgeted commands:
      - `docpath reveal --topic <keyword> --level 1`
+     - `docpath context --smart --max-tokens 2000` (prefer smart rule/doc routing over manual search)
      - `docpath context --max-tokens 2000 --topic <keyword>`
    - When context token usage is heavy or sessions run long, run `docpath budget --agent` or `docpath budget --suggest` to analyze token distribution, and use `docpath budget --prune` to slim down context.
 
@@ -131,6 +132,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 
 - Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.
 - Run `docpath agent step` after each meaningful sub-task or major decision.
+- Run `docpath verify` to confirm requirement completeness and scope boundaries before final closeout.
 - Run `docpath agent done` before claiming a task is complete.
 
 ## Git Convention
@@ -181,9 +183,11 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath next --agent` | Default agent start/resume route with command contract and compact state snapshot |
 | `docpath status --agent` | Diagnostic workflow state snapshot and health indexes |
 | `docpath reveal --level N --topic <keyword>` | Progressive context expansion |
+| `docpath context --smart` | Smart path- and topic-affine rule & document routing package (`--agent` / `--raw`) |
 | `docpath context --max-tokens 5000 --topic <keyword>` | Budgeted context package |
 | `docpath go --step S1` | Atomically claim/start the selected plan step |
 | `docpath check` | Quality gates |
+| `docpath verify` | Semantic anti-drift, scope boundaries, and requirement completeness gate (`--agent` / `--json`) |
 | `docpath review` | Structured review |
 | `docpath quick-done` | Compound closeout with optional `--gotcha <text>` capture |
 | `docpath learn` | Promote validated lessons into durable rules (`--agent` / `--dry-run`) |

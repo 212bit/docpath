@@ -15,6 +15,7 @@ import { readActiveTaskFile } from '../utils/task-files.js';
 import { compactRuleContent, readRuleFile } from '../utils/rules.js';
 import { readLastCheckMarkdown } from '../utils/workspace-evidence.js';
 import { getTopicRelevantDecisions } from '../governance/decisions.js';
+import { buildSmartContext } from '../utils/smart-context.js';
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
   assertDocumentIndexContainsTaskId,
@@ -37,6 +38,8 @@ interface ContextOptions {
   format?: 'prompt' | 'raw';
   /** 最大 token 估算数（默认 8000） */
   maxTokens?: number;
+  /** 是否使用智能关联与精准规则投喂 */
+  smart?: boolean;
   /** 是否包含 spec */
   withSpec?: boolean;
   /** 是否包含 plan */
@@ -171,13 +174,59 @@ async function renderIndexedDocs(
 }
 
 export async function contextCommand(options: ContextOptions): Promise<void> {
-  const { cwd, format = 'prompt', maxTokens = DEFAULT_CONTEXT_TOKEN_BUDGET } = options;
+  const { cwd, format = 'prompt', maxTokens = DEFAULT_CONTEXT_TOKEN_BUDGET, smart = false } = options;
   validateTaskId(options.taskId);
   const docpathDir = await resolveDocpathDir(cwd);
 
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
     process.exit(1);
+  }
+
+  // ── 智能精准上下文路由 (--smart) ──
+  if (smart) {
+    const report = await buildSmartContext(cwd, maxTokens);
+    if (options.agent) {
+      const { stringify } = await import('yaml');
+      console.log(
+        stringify({
+          agent_view: 'smart_context',
+          task_id: report.taskId,
+          task_title: report.taskTitle,
+          estimated_tokens: report.totalEstimatedTokens,
+          max_tokens_budget: report.maxTokensBudget,
+          matched_items: report.items.map((i) => ({
+            id: i.id,
+            type: i.type,
+            title: i.title,
+            path: i.path,
+            score: i.score,
+            matched_by: i.matchReasons,
+            tokens: i.tokenEstimate,
+          })),
+          context_payload: report.markdownBundle,
+        }),
+      );
+      return;
+    }
+
+    if (format === 'raw') {
+      console.log(report.markdownBundle);
+    } else {
+      console.log(`\n🧠  DocPath 智能精准上下文包 (--smart)\n`);
+      console.log(`📊  估算 token: ~${report.totalEstimatedTokens} / ${maxTokens} | 命中规则/文档: ${report.items.length} 个`);
+      console.log(`${'─'.repeat(50)}\n`);
+      console.log(report.markdownBundle);
+      console.log(`\n${'─'.repeat(50)}`);
+      console.log(`💡  已根据当前活跃任务与修改文件完成领域规范精准路由\n`);
+    }
+
+    if (options.output) {
+      const { writeFile } = await import('fs/promises');
+      await writeFile(options.output, report.markdownBundle, 'utf-8');
+      console.log(`✅  已保存到 ${options.output}`);
+    }
+    return;
   }
 
   const maxChars = Math.floor(maxTokens * 3); // 粗略 1 token ≈ 3 chars
