@@ -5,20 +5,24 @@ import { worktreeCommand } from '../worktree.js';
 
 export function registerWorktreeCommands(cli: CAC): void {
   const worktree = cli
-    .command('worktree [action] [name]', 'Git Worktree 并发开发管理')
+    .command('worktree [action] [name]', 'Git Worktree 并发开发与多 Agent 协同管理')
     .option('--cwd <path>', '项目目录')
     .option('--force', '强制删除（忽略未提交变更）')
     .option('--backlog <id>', 'create: 绑定目标 backlog 条目（例如 R-268）')
     .option('--allow-dirty-main <reason>', 'merge: 记录证据跳过 dirty 交集拒绝（R-335 并发恢复用）')
-    .option('--agent', 'list: 输出聚合编排视图（各树 task/phase/合并态/建议动作）')
-    .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean; backlog?: string; agent?: boolean; allowDirtyMain?: string; 'allow-dirty-main'?: string }) => {
+    .option('--agent', '输出 Agent 编排/矩阵视图 YAML')
+    .option('--json', '输出 JSON 格式')
+    .option('--message <text>', 'broadcast: 跨 Worktree 广播的消息内容')
+    .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean; backlog?: string; agent?: boolean; json?: boolean; message?: string; allowDirtyMain?: string; 'allow-dirty-main'?: string }) => {
       await worktreeCommand({
         cwd: options.cwd || process.cwd(),
-        action: action as 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | 'sync' | undefined,
+        action: action as any,
         name,
         force: options.force,
         backlog: options.backlog,
         agent: options.agent,
+        json: options.json,
+        message: options.message,
         allowDirtyMain: options.allowDirtyMain ?? options['allow-dirty-main'],
       });
     });
@@ -29,6 +33,8 @@ export function registerWorktreeCommands(cli: CAC): void {
 
   Actions:
     list                List all worktrees (--agent for aggregated orchestration view)
+    matrix / status     Show live Multi-Agent worktree progress and collaboration matrix
+    broadcast <msg>     Broadcast message to all active worktrees
     create <name>       Create a new worktree with isolated .docpath/
     doctor [name]       Check worktree readiness before development
     repair [name]       Automatically repair worktree contract drifts
@@ -38,6 +44,8 @@ export function registerWorktreeCommands(cli: CAC): void {
     prune               Prune all completed, merged, and clean worktrees
 
   Examples:
+    $ docpath worktree matrix
+    $ docpath worktree broadcast "v1.0.0 released"
     $ docpath worktree list
     $ docpath worktree create feature-auth
     $ docpath worktree create feature-auth --backlog R-123

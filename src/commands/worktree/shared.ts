@@ -25,12 +25,16 @@ const execFileAsync = promisify(execFile);
 
 export interface WorktreeOptions {
   cwd: string;
-  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | 'sync';
+  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | 'sync' | 'matrix' | 'status' | 'broadcast';
   name?: string;
   force?: boolean;
   backlog?: string;
   /** R-335 FR-5: list --agent 聚合视图 */
   agent?: boolean;
+  /** JSON 格式输出 */
+  json?: boolean;
+  /** 跨 Agent 广播内容 */
+  message?: string;
   /** R-335 FR-1: merge 时记录证据跳过 dirty 交集拒绝 */
   allowDirtyMain?: string;
 }
