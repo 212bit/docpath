@@ -131,6 +131,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 - Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath agent done` before claiming a task is complete.
+
 ## Git Convention
 
 - **Auto-commit after `agent done`**: Once `docpath agent done` completes and
