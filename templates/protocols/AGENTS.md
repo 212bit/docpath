@@ -105,6 +105,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 1. **Mandatory Workflow Tiering (强制分级，严禁越级大炮打蚊子)**:
    - **Ultra-light / Quick Fixes (Estimated diff < 50 lines, single config, docs typo, localized bugfix)**:
      **MUST** use `docpath quick "<title>"`. Bypasses backlog promotion, spec, and plan ceremonies; directly claims execution; preserves quality baseline with `check` on closeout. Reduces CLI round-trips by 70%.
+     - *Post-hoc adoption (事后补录)*: If code edits were already made before starting the task, use `docpath quick "<title>" --adopt` to claim existing uncommitted changes directly into the quick task without resetting the worktree.
    - **Small/Medium Tasks (Estimated diff < 100 lines, single module, no contract/architecture changes)**:
      **MUST** use `--level 1` (e.g. `docpath backlog add --level 1` or `init --level 1`). Prunes redundant formal review and heavy journal ceremonies.
    - **Architecture / Cross-module / Breaking Changes**:

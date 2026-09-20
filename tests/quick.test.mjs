@@ -339,4 +339,55 @@ describe('docpath quick', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('rejects quick on dirty worktree without --adopt and offers recovery guidance', () => {
+    const cwd = mkWorkspace();
+    initGitRepo(cwd);
+    writeFileSync(join(cwd, 'app.txt'), 'early modification\n');
+
+    const result = runResult(`quick "Post hoc task" --cwd ${cwd}`, cwd);
+
+    assert.notEqual(result.code, 0);
+    assert.match(result.out, /拒绝在 dirty worktree 上启动新任务/);
+    assert.match(result.out, /docpath quick "<title>" --adopt/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('allows quick --adopt on dirty worktree when modifications stay within quick boundaries', () => {
+    const cwd = mkWorkspace();
+    initGitRepo(cwd);
+    writeFileSync(join(cwd, 'app.txt'), 'early modification\n');
+
+    const result = runResult(`quick "Post hoc task" --adopt --cwd ${cwd}`, cwd);
+
+    assert.equal(result.code, 0, result.out);
+    assert.match(result.out, /quick task 已创建/);
+    assert.match(result.out, /已认领当前工作区现有未提交变更（事后补录模式）/);
+
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.workflow_profile, 'quick');
+    assert.equal(state.phase, 'executing');
+
+    const quickMd = readFileSync(join(cwd, '.docpath', 'tasks', state.task_id, 'quick.md'), 'utf-8');
+    assert.match(quickMd, /adopted_existing_changes: true/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('rejects quick --adopt when existing modifications exceed quick boundaries', () => {
+    const cwd = mkWorkspace();
+    initGitRepo(cwd);
+    for (const file of ['a.txt', 'b.txt', 'c.txt', 'd.txt']) {
+      writeFileSync(join(cwd, file), 'early change\n');
+    }
+
+    const result = runResult(`quick "Excessive task" --adopt --cwd ${cwd}`, cwd);
+
+    assert.notEqual(result.code, 0);
+    assert.match(result.out, /scope exceeds quick profile boundaries/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
+

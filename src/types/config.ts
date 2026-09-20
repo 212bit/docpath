@@ -49,6 +49,9 @@ export interface DocPathConfig {
   /** 任务风险分级规则覆盖（R-338）：追加/调整 engine/risk.ts 的确定性评估信号 */
   risk?: RiskPolicyConfig;
 
+  /** 自定义 check 门禁命令配置 */
+  check?: CheckConfig;
+
   /** worktree 行为配置（R-345）：合并冲突自动消解的可重建路径扩展 */
   worktree?: {
     /** 追加的可自动消解冲突路径（在内置 docs-index.json/backlog.md 之外） */
@@ -56,6 +59,30 @@ export interface DocPathConfig {
   };
 
   // R-336 FR-3: project_commands 已删除（grep 零消费方，init 不再写入）
+}
+
+/**
+ * 自定义 check 检查项配置
+ */
+export interface CheckCommandItem {
+  /** 检查项名称（展示用） */
+  name?: string;
+  /** 可执行命令 */
+  command: string;
+  /** 类别：compile | lint | test */
+  category?: 'compile' | 'lint' | 'test';
+  /** 超时时间（毫秒） */
+  timeout_ms?: number;
+}
+
+/**
+ * 自定义 check 门禁配置
+ */
+export interface CheckConfig {
+  /** 单条自定义 check 命令（如 "make check"） */
+  command?: string;
+  /** 多条自定义 check 命令列表 */
+  commands?: Array<string | CheckCommandItem>;
 }
 
 /**

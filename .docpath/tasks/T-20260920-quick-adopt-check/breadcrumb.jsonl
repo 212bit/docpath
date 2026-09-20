@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260920-quick-adopt-check","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 quick 支持 --adopt 事后补录与 check 门禁自适应配置","timestamp":"2026-09-20T08:10:55.565Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260920-quick-adopt-check","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-20T08:18:13.808Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260920-quick-adopt-check","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译","timestamp":"2026-09-20T08:19:26.010Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260920-quick-adopt-check","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-20T08:21:03.474Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260920-quick-adopt-check","step":"review","status":"done","context":"代码审查: 0 错误, 10 警告, 0 提示","timestamp":"2026-09-20T08:21:13.911Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260920-quick-adopt-check","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-20T08:21:16.697Z"}

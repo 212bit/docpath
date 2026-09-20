@@ -1,5 +1,5 @@
 import { execSync, execFileSync } from 'child_process';
-import { existsSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, rmSync, writeFileSync, readFileSync } from 'fs';
 import { mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { delimiter, dirname, isAbsolute, join, resolve, sep } from 'path';
@@ -489,11 +489,129 @@ export async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeC
   return results;
 }
 
+import { readCheckConfig } from '../../utils/config.js';
+import type { CheckCommandItem } from '../../types/config.js';
+
+export function detectMakefileCheck(cwd: string): { tool: string; targets: Set<string> } | null {
+  const candidates = [
+    { file: 'Makefile', tool: 'make' },
+    { file: 'makefile', tool: 'make' },
+    { file: 'justfile', tool: 'just' },
+  ];
+  for (const c of candidates) {
+    const p = join(cwd, c.file);
+    if (existsSync(p)) {
+      try {
+        const raw = readFileSync(p, 'utf-8');
+        const targets = new Set<string>();
+        for (const line of raw.split('\n')) {
+          const m = line.match(/^([a-zA-Z0-9_.-]+)\s*:(?!=)/);
+          if (m) targets.add(m[1]);
+        }
+        return { tool: c.tool, targets };
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return null;
+}
+
+export async function runCustomCheckConfig(cwd: string, options: CheckOptions): Promise<CheckResult[] | null> {
+  const checkConfig = await readCheckConfig(cwd);
+  if (!checkConfig) return null;
+
+  const items: CheckCommandItem[] = [];
+  if (typeof checkConfig.command === 'string' && checkConfig.command.trim()) {
+    items.push({ command: checkConfig.command.trim(), name: `自定义门禁 (${checkConfig.command.trim()})`, category: 'compile' });
+  }
+  if (Array.isArray(checkConfig.commands)) {
+    for (const entry of checkConfig.commands) {
+      if (typeof entry === 'string' && entry.trim()) {
+        items.push({ command: entry.trim(), name: `自定义门禁 (${entry.trim()})`, category: 'compile' });
+      } else if (entry && typeof entry === 'object' && typeof entry.command === 'string' && entry.command.trim()) {
+        items.push({
+          command: entry.command.trim(),
+          name: entry.name || `自定义门禁 (${entry.command.trim()})`,
+          category: entry.category || 'compile',
+          timeout_ms: entry.timeout_ms,
+        });
+      }
+    }
+  }
+
+  if (items.length === 0) return null;
+
+  const results: CheckResult[] = [];
+  for (const item of items) {
+    const category = item.category || 'compile';
+    if (options.lite && category !== 'compile') continue;
+    if (options.skipTests && category === 'test') continue;
+    if (options.skipLint && category === 'lint') continue;
+
+    const timeout = item.timeout_ms || (category === 'test' || category === 'compile' ? HEAVY_CHECK_TIMEOUT_MS : DEFAULT_CHECK_TIMEOUT_MS);
+    results.push(runCheck(item.name || item.command, `${item.command} 2>&1`, cwd, category, timeout));
+  }
+  return results;
+}
+
+export function runNativeLanguageChecks(cwd: string, options: CheckOptions): CheckResult[] {
+  if (options.lite) return [];
+  const results: CheckResult[] = [];
+
+  const cargoPath = join(cwd, 'Cargo.toml');
+  const goModPath = join(cwd, 'go.mod');
+  const pomPath = join(cwd, 'pom.xml');
+
+  if (existsSync(cargoPath)) {
+    if (!options.skipLint) {
+      results.push(runCheck('Rust 代码检查 (Clippy)', 'cargo clippy 2>&1', cwd, 'lint', HEAVY_CHECK_TIMEOUT_MS));
+    }
+    if (!options.skipTests) {
+      results.push(runCheck('Rust 单元测试', 'cargo test 2>&1', cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
+    }
+  } else if (existsSync(goModPath)) {
+    if (!options.skipLint) {
+      results.push(runCheck('Go 代码检查 (go vet)', 'go vet ./... 2>&1', cwd, 'lint', DEFAULT_CHECK_TIMEOUT_MS));
+    }
+    if (!options.skipTests) {
+      results.push(runCheck('Go 单元测试', 'go test ./... 2>&1', cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
+    }
+  } else if (existsSync(pomPath)) {
+    if (!options.skipTests) {
+      results.push(runCheck('Java 单元测试 (Maven)', 'mvn -q test 2>&1', cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
+    }
+  }
+
+  return results;
+}
+
 export async function runProjectChecks(cwd: string, options: CheckOptions): Promise<CheckResult[]> {
+  // 1. 优先使用用户在 .docpath/config.yaml 中显式配置的 check 门禁
+  const customResults = await runCustomCheckConfig(cwd, options);
+  if (customResults !== null && customResults.length > 0) {
+    return customResults;
+  }
+
   const pkgPath = join(cwd, 'package.json');
   const nodeCommands = detectNodeCommandConfig(cwd);
+  const makefileCheck = detectMakefileCheck(cwd);
+
+  // 2. 若存在 Makefile/justfile 且包含 check 目标，优先执行 make check 作为聚合质量门禁
+  if (makefileCheck && makefileCheck.targets.has('check') && !options.lite) {
+    const makeResults: CheckResult[] = [
+      runCheck(`${makefileCheck.tool} 质量门禁 (${makefileCheck.tool} check)`, `${makefileCheck.tool} check 2>&1`, cwd, 'compile', HEAVY_CHECK_TIMEOUT_MS),
+    ];
+    if (existsSync(pkgPath)) {
+      makeResults.push(...await runPackageScriptChecks(cwd, pkgPath, nodeCommands, options));
+    }
+    return makeResults;
+  }
+
   return [
     ...await runCompileChecks(cwd, pkgPath, nodeCommands),
     ...await runPackageScriptChecks(cwd, pkgPath, nodeCommands, options),
+    ...runNativeLanguageChecks(cwd, options),
   ];
 }
+

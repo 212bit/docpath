@@ -3,6 +3,7 @@ import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { evaluateTaskRisk, riskPolicyFromConfig, riskTierName } from '../engine/risk.js';
+import { assertQuickScope } from '../engine/quick-guard.js';
 import { readRiskPolicyConfig } from '../utils/config.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { clearCurrentTaskAlias, currentTaskDir, canonicalTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
@@ -15,6 +16,8 @@ interface QuickOptions {
   title: string;
   /** 即时档：跳 check(build/test)，仅 typecheck + 结构门禁；跳 review。比 quick 更轻。 */
   instant?: boolean;
+  /** 事后补录：认领当前未提交的微型改动（跳过 clean worktree 拦截） */
+  adopt?: boolean;
 }
 
 function slugifyTitle(title: string): string {
@@ -105,7 +108,7 @@ function renderQuickSpec(taskId: string, title: string, profile: 'quick' | 'inst
   ].join('\n');
 }
 
-function renderQuickEvidence(taskId: string, title: string, profile: 'quick' | 'instant'): string {
+function renderQuickEvidence(taskId: string, title: string, profile: 'quick' | 'instant', adopted?: boolean): string {
   const instant = profile === 'instant';
   return [
     `# ${instant ? 'Instant' : 'Quick'} Task: ${taskId}`,
@@ -113,6 +116,7 @@ function renderQuickEvidence(taskId: string, title: string, profile: 'quick' | '
     `- title: ${title}`,
     `- workflow_profile: ${profile}`,
     '- created_by: docpath quick',
+    ...(adopted ? ['- adopted_existing_changes: true'] : []),
     '- gates:',
     instant
       ? '  - check: lite (typecheck + 结构门禁,跳 build/test)'
@@ -144,7 +148,13 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
   if (current && current.phase !== 'idle' && current.phase !== 'completed') {
     throw new Error(`docpath quick: 当前已有活跃任务（phase=${current.phase}），请先 done 或 task reset`);
   }
-  assertCleanWorktreeForNewTask(cwd, 'docpath quick');
+
+  if (options.adopt) {
+    // 认领模式下校验已有未提交改动是否在 quick 边界内（<=3 个非 DocPath 文件、未触碰核心高危路径）
+    assertQuickScope(cwd);
+  } else {
+    assertCleanWorktreeForNewTask(cwd, 'docpath quick');
+  }
 
   const taskId = await generateQuickTaskId(docpathDir, title);
   const profile: 'quick' | 'instant' = options.instant ? 'instant' : 'quick';
@@ -153,7 +163,7 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
 
   await mkdir(canonicalTaskDir(docpathDir, taskId), { recursive: true });
   await mkdir(currentTaskDir(docpathDir), { recursive: true });
-  const quickEvidence = renderQuickEvidence(taskId, title, profile);
+  const quickEvidence = renderQuickEvidence(taskId, title, profile, options.adopt);
   await writeFile(join(canonicalTaskDir(docpathDir, taskId), 'quick.md'), quickEvidence, 'utf-8');
   await writeFile(join(currentTaskDir(docpathDir), 'quick.md'), quickEvidence, 'utf-8');
 
@@ -181,6 +191,9 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
   console.log(`✅  ${profile} task 已创建: ${taskId}`);
   console.log(`   title: ${title}`);
   console.log(`   profile: ${profile}`);
+  if (options.adopt) {
+    console.log('   📦 已认领当前工作区现有未提交变更（事后补录模式）');
+  }
   console.log(`   risk: ${riskTierName(riskVerdict.tier)}${riskVerdict.reasons.length > 0 ? `（${riskVerdict.reasons.join('；')}）` : ''}`);
   if (riskVerdict.tier >= 2) {
     console.log('   ⚠️  风险 R2+：done 时将强制 check + review +完整 journal，quick 快车道不适用');

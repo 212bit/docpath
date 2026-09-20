@@ -100,3 +100,12 @@ export async function readRiskPolicyConfig(cwd: string): Promise<RiskPolicyConfi
   const config = await readDocPathConfig(cwd);
   return config.risk ?? {};
 }
+
+/**
+ * 读取自定义 check 门禁配置
+ */
+export async function readCheckConfig(cwd: string): Promise<DocPathConfig['check'] | null> {
+  const config = await readDocPathConfig(cwd);
+  return config.check ?? null;
+}
+

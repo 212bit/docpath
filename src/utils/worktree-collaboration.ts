@@ -63,7 +63,7 @@ export async function collectWorktreeMatrix(cwd: string): Promise<WorktreeMatrix
 
     try {
       state = await readCurrentState(wt.path);
-      activeSessions = await readActiveSessions(wt.path);
+      activeSessions = await listActiveSessions(wt.path);
     } catch {
       // 容错
     }

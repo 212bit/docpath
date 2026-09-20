@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-20T08:21:16.364Z",
+    "updated_at": "2026-09-20T08:21:16.364Z",
+    "content_sha256": "2ddef63612aa5f456ceb2cb8a5743d0a94060811fb7ee7b91a63a42e54f31a74"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-20T08:21:16.364Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 quick 支持 --adopt 事后补录与 check 门禁自适应配置",
+      "description": "完成 FR-1: quick 支持 --adopt 事后补录与 check 门禁自适应配置，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: quick 支持 --adopt 认领已有小额变动；2. check 支持 config.yaml 配置与 Makefile 优先及 Rust 完整套件；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-351 与任务 T-20260920-quick-adopt-check 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

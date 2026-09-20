@@ -42,7 +42,7 @@ export async function budgetCommand(options: BudgetOptions): Promise<void> {
     if (dryRun) {
       const plan = await planWorkspaceCleanup(cwd);
       console.log('\n🧹  [dry-run] 上下文安全剪枝计划预览:');
-      console.log(`    - 待清理项: ${plan.summary.length} 项`);
+      console.log(`    - 待清理项: ${plan.candidates.length} 项`);
       console.log('    (使用 `docpath budget --prune` 执行实际清理)\n');
     } else {
       await cleanupWorkspace(cwd);

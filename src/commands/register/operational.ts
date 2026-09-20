@@ -35,11 +35,13 @@ export function registerOperationalCommands(cli: CAC): void {
     .command('quick <title>', '创建快车道任务（微型改动，压缩生命周期）')
     .option('--cwd <path>', '项目目录')
     .option('--instant', '即时档：跳 build/test，仅 typecheck + 结构门禁，跳 review')
-    .action(async (title: string, options: { cwd?: string; instant?: boolean }) => {
+    .option('--adopt', '事后补录：认领当前未提交的微型改动（跳过 clean worktree 拦截）')
+    .action(async (title: string, options: { cwd?: string; instant?: boolean; adopt?: boolean }) => {
       await quickCommand({
         cwd: options.cwd || process.cwd(),
         title,
         instant: options.instant,
+        adopt: options.adopt,
       });
     });
 

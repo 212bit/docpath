@@ -124,6 +124,13 @@ function buildDirtyWorktreeError(
     formatDirtySummary(report, files),
   ];
 
+  if (mode === 'new-task' && command.includes('quick')) {
+    lines.push(
+      '   若这些未提交变动属于即将登记的微型任务，请使用事后补录认领现有改动:',
+      '     docpath quick "<title>" --adopt',
+    );
+  }
+
   if (mode === 'execution-start') {
     const step = options.step?.trim() || '<step>';
     lines.push(
