@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T20:11:02.442Z",
+    "updated_at": "2026-09-23T20:11:02.442Z",
+    "content_sha256": "4b1bd86de06f7629124df834faaf14d148a43dba581025ecd96fafcad3edc5a8"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T20:11:02.442Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 生命周期闭环加固：Start 智能认领避免误创 Worktree、Check 失败精准提取定向调试命令与 Done 快速自愈",
+      "description": "完成 FR-1: 生命周期闭环加固：Start 智能认领避免误创 Worktree、Check 失败精准提取定向调试命令与 Done 快速自愈，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-382 与任务 T-20260923-start-worktree-check-done 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

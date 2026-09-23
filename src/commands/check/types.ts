@@ -52,6 +52,8 @@ export interface CheckOptions {
   testScope?: 'full' | 'touched';
   /** 强制运行全量测试（等价于 testScope='full'） */
   allTests?: boolean;
+  /** 自动修复模式（如自动执行 lint --fix） */
+  fix?: boolean;
 }
 
 export interface CheckResult {

@@ -10,7 +10,7 @@ import { transitionWorkflow } from '../../engine/transitions.js';
 import { writeBreadcrumb } from '../../engine/breadcrumb.js';
 import { writeLastCheckEvidence as writeLastCheckEvidenceFiles, type CheckEvidenceItem } from '../../utils/workspace-evidence.js';
 import { CHECK_HISTORY_MAX_ENTRIES } from '../../utils/workspace-cleanup.js';
-import { groupCheckResults, formatFailedOutput } from './formatters.js';
+import { groupCheckResults, formatFailedOutput, extractActionableFixSuggestions } from './formatters.js';
 import { resolveEffectivePlanTasks } from '../../utils/plan-sync.js';
 
 export function runGitOptional(cwd: string, args: string[]): string | null {
@@ -127,6 +127,20 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
   }
 
   console.log(`\n${allPassed ? '✅  全部通过' : envExempt ? '⚠️  通过（环境豁免）' : '❌  存在失败项'}\n`);
+
+  if (!allPassed && !envExempt) {
+    const codeFailures = results.filter((r) => !r.passed && r.severity !== 'warning' && !r.environment_failure);
+    if (codeFailures.length > 0) {
+      const suggestions = extractActionableFixSuggestions(codeFailures);
+      if (suggestions.length > 0) {
+        console.log('🎯  定向调试与修复建议:');
+        for (const item of suggestions) {
+          console.log(`  👉  ${item.label}: \`${item.command}\``);
+        }
+        console.log('  🔧  修复后直接再次运行 `docpath done --commit` 即可一键通过质量门禁并完成提交。\n');
+      }
+    }
+  }
 }
 
 /**

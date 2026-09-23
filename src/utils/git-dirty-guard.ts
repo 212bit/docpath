@@ -124,11 +124,19 @@ function buildDirtyWorktreeError(
     formatDirtySummary(report, files),
   ];
 
-  if (mode === 'new-task' && command.includes('quick')) {
-    lines.push(
-      '   若这些未提交变动属于即将登记的微型任务，请使用事后补录认领现有改动:',
-      '     docpath quick "<title>" --adopt',
-    );
+  if (mode === 'new-task') {
+    if (command.includes('quick')) {
+      lines.push(
+        '   若这些未提交变动属于即将登记的微型任务，请使用事后补录认领现有改动:',
+        '     docpath quick "<title>" --adopt',
+      );
+    } else {
+      lines.push(
+        '   若这些未提交变动属于即将启动的新任务，请添加 --adopt 参数认领现有改动:',
+        '     docpath start <id> --adopt',
+        '     或 docpath backlog promote <id> --adopt',
+      );
+    }
   }
 
   if (mode === 'execution-start') {

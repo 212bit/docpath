@@ -1159,13 +1159,13 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
 
   const isInteractive = process.stdout.isTTY && !options.nonInteractive;
 
-  if (!options.adopt && (activeTaskExists || isDirty) && isInteractive) {
+  if (!options.adopt && activeTaskExists && isInteractive) {
     const safeWtName = `wt-${item.id.toLowerCase()}`;
     const paths = await resolveWorktreePaths(options.cwd, safeWtName);
     worktreePath = paths.worktreePath;
     inWorktree = true;
 
-    console.warn(`\n⚠️  检测到当前有活跃任务或 Git 处于非干净状态，将自动启动隔离开发区 (Git Worktree)...`);
+    console.warn(`\n⚠️  检测到当前已有活跃任务进行中，自动启动隔离开发区 (Git Worktree)...`);
     
     await worktreeCommand({
       action: 'create',

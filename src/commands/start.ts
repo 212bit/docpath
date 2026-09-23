@@ -14,6 +14,7 @@ import { planCommand } from './plan.js';
 import { goCommand } from './go.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { createBacklogItem, refreshBacklogIndex } from '../engine/backlog.js';
+import { detectDirtyWorktree } from '../utils/git-dirty-guard.js';
 
 export interface StartOptions {
   cwd: string;
@@ -29,6 +30,18 @@ export async function startCommand(options: StartOptions): Promise<void> {
   let targetId = options.id?.trim();
   if (!targetId) {
     throw new Error('docpath start 需要提供 Backlog 条目 ID 或任务标题，例如: docpath start R-101 或 docpath start "优化生命周期"');
+  }
+
+  // 智能认领已有工作区改动：如果没有活跃任务且用户未显式指定 adopt，且检测到 dirty 文件，则自动启用 adopt
+  let adopt = options.adopt;
+  const currentState = await readCurrentState(cwd);
+  const activeTaskExists = Boolean(currentState && currentState.phase !== 'completed');
+  if (!activeTaskExists && adopt === undefined) {
+    const dirtyReport = detectDirtyWorktree(cwd);
+    if (dirtyReport.isGitRepo && dirtyReport.dirty) {
+      adopt = true;
+      console.log(`💡  检测到当前工作区存在未提交改动，已自动认领纳入当前任务 (--adopt)\n`);
+    }
   }
 
   // 如果传入的不是 R-xxx 格式，则判定为按标题一键拉起新任务（自动捕获 Backlog）
@@ -60,7 +73,7 @@ export async function startCommand(options: StartOptions): Promise<void> {
     id: targetId,
     draft: options.draft,
     agent: options.agent,
-    adopt: options.adopt,
+    adopt,
   };
   await backlogCommand(promoteOptions);
   const effectiveCwd = promoteOptions.cwd;
@@ -76,7 +89,7 @@ export async function startCommand(options: StartOptions): Promise<void> {
   await goCommand({
     cwd: effectiveCwd,
     step: stepToStart,
-    acceptDirty: options.adopt ? 'start --adopt: claim workspace edits' : undefined,
+    acceptDirty: adopt ? 'start --adopt: claim workspace edits' : undefined,
   });
 
   console.log(`\n🎉  任务 ${targetId} 已拉起并启动步骤 ${stepToStart}！`);

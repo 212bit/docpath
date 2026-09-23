@@ -86,6 +86,7 @@ export function registerOperationalCommands(cli: CAC): void {
     .option('--test-scope <scope>', '测试减载级别 full|touched（默认 touched）')
     .option('--all', '强制执行全量测试（等价于 --test-scope=full）')
     .option('--full-tests', '强制执行全量测试')
+    .option('--fix', '自动修复模式（如先执行 lint --fix）')
     .action(async (options: {
       cwd?: string;
       skipCheck?: boolean;
@@ -108,6 +109,7 @@ export function registerOperationalCommands(cli: CAC): void {
       all?: boolean;
       'full-tests'?: boolean;
       fullTests?: boolean;
+      fix?: boolean;
     }) => {
       const argv = process.argv.slice(2);
       const hasFlag = (flag: string) => argv.includes(flag);
@@ -128,6 +130,7 @@ export function registerOperationalCommands(cli: CAC): void {
         commit: options.commit,
         testScope,
         allTests: isAll,
+        fix: options.fix || hasFlag('--fix'),
       });
     });
 

@@ -111,6 +111,64 @@ export function groupCheckResults(results: CheckResult[]): Record<string, CheckR
   return ordered;
 }
 
+export interface ActionableFixSuggestion {
+  label: string;
+  command: string;
+}
+
+export function extractActionableFixSuggestions(failures: CheckResult[]): ActionableFixSuggestion[] {
+  const suggestions: ActionableFixSuggestion[] = [];
+  const seenCommands = new Set<string>();
+
+  const addSuggestion = (label: string, command: string) => {
+    if (!seenCommands.has(command)) {
+      seenCommands.add(command);
+      suggestions.push({ label, command });
+    }
+  };
+
+  for (const failure of failures) {
+    if (failure.passed || failure.severity === 'warning') continue;
+    const cat = failure.category || '';
+    const name = failure.name.toLowerCase();
+    const output = failure.output || '';
+
+    // 1. 测试失败检测与单测提取
+    if (cat === 'test' || name.includes('测试') || name.includes('test')) {
+      const testFileRegex = /(?:tests?\/[a-zA-Z0-9_\-\./]+\.(?:test|spec)\.(?:mjs|ts|js|jsx|tsx)|[a-zA-Z0-9_\-\./]+_test\.go|tests?\/test_[a-zA-Z0-9_\-\.]+\.py)/gi;
+      const matchedFiles = Array.from(new Set(output.match(testFileRegex) || []));
+
+      if (matchedFiles.length > 0) {
+        for (const file of matchedFiles.slice(0, 3)) {
+          if (file.endsWith('.mjs') || file.endsWith('.js')) {
+            addSuggestion(`单用例测试 (${file})`, `node --test ${file}`);
+          } else if (file.endsWith('.ts') || file.endsWith('.tsx')) {
+            addSuggestion(`单用例测试 (${file})`, `npx vitest run ${file}`);
+          } else if (file.endsWith('_test.go')) {
+            addSuggestion(`单用例 Go 测试 (${file})`, `go test -v ./${file}`);
+          } else if (file.endsWith('.py')) {
+            addSuggestion(`单用例 Python 测试 (${file})`, `pytest ${file}`);
+          }
+        }
+      } else if (failure.command) {
+        addSuggestion(`复现失败测试 (${failure.name})`, failure.command);
+      }
+    }
+
+    // 2. Lint 失败检测
+    if (cat === 'lint' || name.includes('lint') || name.includes('eslint')) {
+      addSuggestion('自动修复 Lint 问题', 'npm run lint -- --fix');
+    }
+
+    // 3. 编译 / 类型检查失败检测
+    if (cat === 'compile' || name.includes('编译') || name.includes('typecheck') || name.includes('tsc')) {
+      addSuggestion('定向运行类型检查', 'npx tsc --noEmit');
+    }
+  }
+
+  return suggestions;
+}
+
 export function printCheckReport(results: CheckResult[], allPassed: boolean, verbose = false): void {
   const grouped = groupCheckResults(results);
   const categoryLabel: Record<string, string> = {
@@ -146,5 +204,16 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
   } else {
     const failedCount = results.filter((r) => !r.passed).length;
     console.log(`❌ ${failedCount} 项检查未通过\n`);
+    const codeFailures = results.filter((r) => !r.passed && r.severity !== 'warning' && !r.environment_failure);
+    if (codeFailures.length > 0) {
+      const suggestions = extractActionableFixSuggestions(codeFailures);
+      if (suggestions.length > 0) {
+        console.log('🎯  定向调试与修复建议:');
+        for (const item of suggestions) {
+          console.log(`  👉  ${item.label}: \`${item.command}\``);
+        }
+        console.log('  🔧  修复后直接再次运行 `docpath done --commit` 即可一键通过质量门禁并完成提交。\n');
+      }
+    }
   }
 }

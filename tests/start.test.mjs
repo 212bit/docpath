@@ -82,5 +82,25 @@ describe('docpath start: 一键冷启动任务', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('start "<title>" 在工作区存在未提交改动时智能自动开启 adopt 并启动执行', () => {
+    const cwd = mkRepo();
+    try {
+      // 在起手前先修改一个文件（模拟用户/Agent 先写了代码后 start）
+      writeFileSync(join(cwd, 'uncommitted.ts'), 'export const hello = "world";\n');
+
+      // 执行 docpath start "<title>" --draft（未显式传递 --adopt）
+      const out = run(['start', '已有未提交改动直接一键认领启动', '--draft'], cwd);
+      assert.match(out, /检测到当前工作区存在未提交改动，已自动认领纳入当前任务 \(--adopt\)/);
+      assert.match(out, /已拉起并启动步骤 S1/);
+
+      // 验证状态机正常处于 executing
+      const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+      assert.equal(state.phase, 'executing');
+      assert.equal(state.current_step, 'S1');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
 
