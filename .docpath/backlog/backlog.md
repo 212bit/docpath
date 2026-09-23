@@ -2,7 +2,7 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-09-23T13:23:50.265Z
+> 扫描时间: 2026-09-23T13:23:51.655Z
 
 ## 条目列表
 
@@ -10,7 +10,6 @@
 |----|-------|--------|----------|-------|------|
 | R-356 | worktree backlog 快照过期根治（重复登记根因：merge-mediated 快照无实时共享） | proposed | P2 | 2 |  |
 | R-360 | go --step 对未跟踪文件的 dirty guard 报错信息不够明确 | proposed | P3 | 1 |  |
-| R-361 | install --doctor 在 npm-link 自引用场景下增加漂移说明 | proposed | P3 | 1 |  |
 | R-362 | check 测试执行优化包：--test-scope 影响面减载、受控并发与进程隔离、quick-guard porcelain 路径 bug 修复 | proposed | P1 | 2 |  |
 
 ## 用途说明
