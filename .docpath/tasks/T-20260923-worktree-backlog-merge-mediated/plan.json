@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T13:57:11.906Z",
+    "updated_at": "2026-09-23T13:57:11.906Z",
+    "content_sha256": "4fccbc55442da72f38d83faa04d0499e2383e625459a4aa8738f336add8056b2"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T13:57:11.906Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 worktree backlog 快照过期根治（重复登记根因：merge-mediated 快照无实时共享）",
+      "description": "完成 FR-1: worktree backlog 快照过期根治（重复登记根因：merge-mediated 快照无实时共享），随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 多 worktree 并行 capture 时，任一会话能感知其他活跃 worktree 已存在的同标题/同 id 条目并在产生时提示；不再产生结构性重复登记。决策记录（Decision Brief）+ 用户确认后实现（涉及共享模型变更，可能推翻 R-238 Option B/R-273 资源分层，属重大变更门禁）。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-356 与任务 T-20260923-worktree-backlog-merge-mediated 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

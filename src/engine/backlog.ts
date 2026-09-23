@@ -14,6 +14,13 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname, resolve, isAbsolute } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { resolveDocpathDir } from '../utils/file.js';
+import {
+  findRegistryIdHolders,
+  findRegistryTitleHolders,
+  listWorktreeDocpathDirs,
+  readBacklogRegistry,
+  registerBacklogEntry,
+} from '../utils/backlog-registry.js';
 
 export type BacklogStatus = 'proposed' | 'accepted' | 'planned' | 'active' | 'done' | 'dropped';
 export type BacklogPriority = 'P0' | 'P1' | 'P2' | 'P3';
@@ -400,6 +407,9 @@ export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id
       await rename(reservedPath, join(dir, finalFileName));
       // 分配成功 → 推进权威计数器（O(1) 写），下次分配不再全目录扫描
       await writeBacklogIdCounter(docpathDir, next);
+      // R-356：登记到跨 worktree 共享注册表，让兄弟 worktree 并行 capture 时可见
+      // （fail-open：写失败不阻断创建，兜底仍是实时扫兄弟 worktree）
+      await registerBacklogEntry(cwd, { id, title: item.title, worktree: cwd });
       return candidate;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
@@ -461,7 +471,12 @@ async function writeBacklogIdCounter(docpathDir: string, max: number): Promise<v
 }
 
 /**
- * 扫描本 checkout + 主 checkout 的 active/archived 取全局 max 编号（R-273/FR-3，id 单池种子）。
+ * 扫描本 checkout + 主 checkout + **所有兄弟 worktree** 的 active/archived 取全局 max 编号
+ * （R-273/FR-3，id 单池种子；R-356 扩展到全 worktree）。
+ *
+ * R-356：原实现只覆盖「本 + 主 checkout」，兄弟 worktree 不可见 → 并行 capture 各取相同
+ * max 产生同号。现经 listWorktreeDocpathDirs 枚举所有 worktree 的 .docpath（含主 checkout），
+ * 并叠加共享注册表里已登记的编号，取全局 max。
  */
 async function scanBacklogMaxId(cwd: string): Promise<number> {
   const docpathDir = await resolveDocpathDir(cwd);
@@ -469,6 +484,17 @@ async function scanBacklogMaxId(cwd: string): Promise<number> {
   const mainDocpathDir = resolveMainCheckoutDocpathDir(cwd);
   if (mainDocpathDir && resolve(mainDocpathDir) !== resolve(docpathDir)) {
     dirs.push(backlogDir(mainDocpathDir), archivedBacklogDir(mainDocpathDir));
+  }
+  // R-356：兄弟 worktree 的 backlog 目录（去重；本/主 checkout 已在上面加入，
+  // 这里用 resolve 去重避免重复扫描）
+  const seenDirs = new Set(dirs.map((dir) => resolve(dir)));
+  for (const wtDocpathDir of listWorktreeDocpathDirs(cwd)) {
+    for (const dir of [backlogDir(wtDocpathDir), archivedBacklogDir(wtDocpathDir)]) {
+      const key = resolve(dir);
+      if (seenDirs.has(key)) continue;
+      seenDirs.add(key);
+      dirs.push(dir);
+    }
   }
   let max = 0;
   for (const dir of dirs) {
@@ -481,6 +507,14 @@ async function scanBacklogMaxId(cwd: string): Promise<number> {
         if (num > max) max = num;
       }
     }
+  }
+  // R-356：共享注册表里已登记的编号同样计入（兄弟 worktree 可能尚未把文件落到本 checkout，
+  // 但已在注册表上留痕——这是并行 capture 防撞号的最后一道保险）
+  for (const entry of await readBacklogRegistry(cwd)) {
+    const match = entry.id.match(/^R-(\d+)$/i);
+    if (!match) continue;
+    const num = parseInt(match[1], 10);
+    if (num > max) max = num;
   }
   return max;
 }
@@ -668,10 +702,24 @@ export async function detectBacklogDuplicates(
       { label: 'main.backlog/archived', dir: join(mainDocpathDir, 'backlog', 'archived'), isActive: false },
     );
   }
+  // R-356：兄弟 worktree 的 active/archived 也纳入（原先只扫本 + 主 checkout，
+  // 并行 worktree 里已存在的同标题条目不可见 → 结构性重复登记）
+  const seenRootDirs = new Set(roots.map((root) => resolve(root.dir)));
+  for (const wtDocpathDir of listWorktreeDocpathDirs(cwd)) {
+    const wtActive = join(wtDocpathDir, 'backlog');
+    const wtArchived = join(wtDocpathDir, 'backlog', 'archived');
+    if (resolve(wtActive) === resolve(docpathDir)) continue; // 本 checkout 已加
+    for (const [dir, isActive] of [[wtActive, true], [wtArchived, false]] as const) {
+      const key = resolve(dir);
+      if (seenRootDirs.has(key)) continue;
+      seenRootDirs.add(key);
+      roots.push({ label: `worktree:${dir}`, dir, isActive });
+    }
+  }
 
   const selfLocalFile = (await findItemFile(join(docpathDir, 'backlog'), item.id)) ?? '';
   const seen = new Set<string>();
-  const peers: Array<{ label: string; file: string; title: string }> = [];
+  const peers: Array<{ label: string; file: string; title: string; isActive: boolean }> = [];
   for (const root of roots) {
     if (!existsSync(root.dir)) continue;
     for (const file of await readdir(root.dir)) {
@@ -686,20 +734,24 @@ export async function detectBacklogDuplicates(
       const key = `${root.label}:${file}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      peers.push({ label: root.label, file, title });
+      peers.push({ label: root.label, file, title, isActive: root.isActive });
     }
   }
 
   for (const peer of peers) {
-    const archived = peer.label.endsWith('/archived');
+    // R-356：label 可能是 worktree:<dir>（兄弟 worktree 的 active/archived），
+    // 归档与否改看 isActive 语义，不再依赖 label 字符串形状。
+    const isLocalActive = peer.label === 'backlog';
     reports.push({
       id: item.id,
       kind: 'same-title',
-      active_file: peer.label === 'backlog' ? `backlog/${peer.file}` : selfLocalFile,
-      archived_file: archived ? `${peer.label}/${peer.file}` : null,
-      active_title: peer.label === 'backlog' ? peer.title : item.title,
-      archived_title: archived ? peer.title : null,
-      identical: archived && peer.label === 'backlog/archived',
+      active_file: peer.isActive
+        ? (isLocalActive ? `backlog/${peer.file}` : `${peer.label}/${peer.file}`)
+        : (selfLocalFile || item.id),
+      archived_file: peer.isActive ? null : `${peer.label}/${peer.file}`,
+      active_title: peer.isActive && !isLocalActive ? peer.title : item.title,
+      archived_title: peer.isActive ? null : peer.title,
+      identical: !peer.isActive && peer.label === 'backlog/archived',
     });
   }
 
@@ -721,6 +773,58 @@ export async function detectBacklogDuplicates(
         });
       }
     }
+  }
+
+  // R-356：兄弟 worktree 与「本条」同 id 的撞号（文件可能尚未落到本 checkout）
+  const seenPeerIds = new Set(reports.filter((r) => r.kind === 'same-id').map((r) => r.active_file));
+  for (const wtDocpathDir of listWorktreeDocpathDirs(cwd)) {
+    if (resolve(wtDocpathDir) === resolve(docpathDir)) continue;
+    const wtActive = join(wtDocpathDir, 'backlog');
+    if (!existsSync(wtActive)) continue;
+    const wtFile = await findItemFile(wtActive, item.id);
+    if (!wtFile) continue;
+    const label = `worktree:${wtActive}/${wtFile}`;
+    if (seenPeerIds.has(label)) continue;
+    const content = await readFileOrSkip(join(wtActive, wtFile));
+    if (content === null) continue;
+    reports.push({
+      id: item.id,
+      kind: 'same-id',
+      active_file: label,
+      archived_file: null,
+      active_title: frontmatterTitle(content),
+      archived_title: null,
+      identical: false,
+    });
+  }
+
+  // R-356：共享注册表探测——兄弟 worktree 已登记但文件尚未可见时仍能提示。
+  for (const holder of await findRegistryIdHolders(cwd, item.id)) {
+    if (resolve(holder.worktree) === resolve(cwd)) continue;
+    const label = `registry:${holder.worktree}`;
+    if (seenPeerIds.has(label)) continue;
+    reports.push({
+      id: item.id,
+      kind: 'same-id',
+      active_file: label,
+      archived_file: null,
+      active_title: holder.title,
+      archived_title: null,
+      identical: false,
+    });
+  }
+  for (const holder of await findRegistryTitleHolders(cwd, item.title)) {
+    if (holder.id === item.id) continue;
+    if (resolve(holder.worktree) === resolve(cwd)) continue;
+    reports.push({
+      id: holder.id,
+      kind: 'same-title',
+      active_file: `registry:${holder.worktree}`,
+      archived_file: null,
+      active_title: holder.title,
+      archived_title: null,
+      identical: false,
+    });
   }
   return reports;
 }

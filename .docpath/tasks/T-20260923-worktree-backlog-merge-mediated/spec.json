@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T13:52:11.499Z",
+    "updated_at": "2026-09-23T13:52:11.499Z",
+    "content_sha256": "99da236e6e08db4a60c22951786137949ba27b22593f5dc71b650c2f2b3b2ef0"
+  },
+  "task_id": "T-20260923-worktree-backlog-merge-mediated",
+  "backlog_id": "R-356",
+  "title": "T-20260923-worktree-backlog-merge-mediated - worktree backlog 快照过期根治（重复登记根因：merge-mediated 快照无实时共享）",
+  "generated_at": "2026-09-23T13:52:11.499Z",
+  "scope": {
+    "included": [
+      "worktree backlog 快照过期根治（重复登记根因：merge-mediated 快照无实时共享）"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "2026-09-23 用户裁定：采纳方案 B（跨 worktree 扫描 + 共享注册表）；注册表位置 .git/docpath-backlog-registry.json；实时性下限=capture 时（点时刻）可见，不做后台实时推送。",
+    "decision_brief_markdown": "- 当前问题: AGENTS.md 自认已知限制：worktree 的 .docpath/backlog 是 merge-mediated 快照（traced copy），可 stale，重复登记的结构性根因。多会话并行时一个会话看不到另一会话新登记/已合并成果，capture 时无法跨 worktree 去重（本 checkout+主 checkout 扫描只能覆盖两处，兄弟 worktree 不可见）。优化包内的 capture 期去重只覆盖 main+本 checkout，本条负责根治：需要新的共享可见性设计（方向待 brainstorm/refine，可能是共享真源/事件流/锁+索引，不在本条预设）。\n- 目标: worktree backlog 快照过期根治（重复登记根因：merge-mediated 快照无实时共享）\n- 背景: 来自 backlog R-356，Decision Brief 证据: .docpath/backlog/R356-decision-brief.md\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 2026-09-23 用户裁定：采纳方案 B（跨 worktree 扫描 + 共享注册表）；注册表位置 .git/docpath-backlog-registry.json；实时性下限=capture 时（点时刻）可见，不做后台实时推送。\n\n### 已有 Decision Brief (来自 backlog evidence)\n\n.docpath/backlog/R356-decision-brief.md"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "worktree backlog 快照过期根治（重复登记根因：merge-mediated 快照无实时共享）",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "多 worktree 并行 capture 时，任一会话能感知其他活跃 worktree 已存在的同标题/同 id 条目并在产生时提示；不再产生结构性重复登记。决策记录（Decision Brief）+ 用户确认后实现（涉及共享模型变更，可能推翻 R-238 Option B/R-273 资源分层，属重大变更门禁）。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-356 与任务 T-20260923-worktree-backlog-merge-mediated 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "AGENTS.md 自认已知限制：worktree 的 .docpath/backlog 是 merge-mediated 快照（traced copy），可 stale，重复登记的结构性根因。多会话并行时一个会话看不到另一会话新登记/已合并成果，capture 时无法跨 worktree 去重（本 checkout+主 checkout 扫描只能覆盖两处，兄弟 worktree 不可见）。优化包内的 capture 期去重只覆盖 main+本 checkout，本条负责根治：需要新的共享可见性设计（方向待 brainstorm/refine，可能是共享真源/事件流/锁+索引，不在本条预设）。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

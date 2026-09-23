@@ -306,10 +306,15 @@ describe('worktree command', () => {
     assert.equal(wtHasR006, true, 'reservation lands in the worktree copy');
     assert.equal(mainHasR006, false, 'main pool is not written by worktree capture');
 
-    // Main-side allocation is unchanged by worktree-local reservations (known
-    // asymmetry, documented in nextBacklogId).
+    // R-356：主 checkout 现在同样能看到兄弟 worktree 已预留的 R-006（跨 worktree 扫描 +
+    // 共享注册表），因此分配 R-007 而非撞号复用 R-006。R-273 时代的「主池只扫自己」
+    // 已知不对称已被根治——原断言编码的正是该缺陷本身。
     const mainOut = run(['backlog', 'capture', '--title', 'from main'], cwd).output;
-    assert.match(mainOut, /R-006/, 'main allocation scans only its own pools');
+    assert.match(
+      mainOut,
+      /R-007/,
+      'main allocation now sees the worktree reservation R-006 and avoids the collision (R-356)',
+    );
     rmSync(cwd, { recursive: true, force: true });
   });
 
