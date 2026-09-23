@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-decisions-jsonl","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 过滤 decisions.jsonl 中内部审计与过程流水，只下发实质架构红线","timestamp":"2026-09-23T18:31:55.931Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-decisions-jsonl","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-23T18:32:37.405Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-decisions-jsonl","step":"check","status":"blocked","context":"质量检查失败: 测试","timestamp":"2026-09-23T18:33:44.463Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-decisions-jsonl","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-23T18:36:26.392Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-decisions-jsonl","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-09-23T18:36:34.863Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-decisions-jsonl","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-23T18:36:35.365Z"}

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatActiveGuardrails } from '../dist/utils/agent-output/context-injection.js';
+import { formatActiveGuardrails, isSubstantiveDecision } from '../dist/utils/agent-output/context-injection.js';
 
 describe('formatActiveGuardrails', () => {
   it('formats empty decisions array to empty array', () => {
@@ -65,5 +65,40 @@ describe('formatActiveGuardrails', () => {
     const result = formatActiveGuardrails(decisions);
     assert.equal(result.length, 1);
     assert.equal(result[0], '【架构:install】采用 universal 统一安装入口 (ADR-20260910-002)');
+  });
+});
+
+describe('isSubstantiveDecision', () => {
+  it('filters out risk escalation transient audit logs', () => {
+    assert.equal(isSubstantiveDecision({
+      category: 'risk.escalation',
+      decision: 'check 风险复评升级 R2 → R3',
+    }), false);
+    assert.equal(isSubstantiveDecision({
+      category: 'risk.escalation',
+      decision: 'check 风险复评升级 R1 → R2',
+    }), false);
+  });
+
+  it('filters out policy skip logs and short placeholders', () => {
+    assert.equal(isSubstantiveDecision({
+      category: 'policy.skip',
+      decision: '跳过 review',
+    }), false);
+    assert.equal(isSubstantiveDecision({
+      category: 'architecture',
+      decision: '方案 B',
+    }), false);
+  });
+
+  it('accepts substantive architectural and design decisions', () => {
+    assert.equal(isSubstantiveDecision({
+      category: 'design-decision',
+      decision: 'R-349: blocked closeout 用独立 agent.blocked 事件，收口路径写 review 事件前必须做 FSM 合法性预检',
+    }), true);
+    assert.equal(isSubstantiveDecision({
+      category: 'architecture',
+      decision: '采用 branch merge-mediated 隔离模型替代 symlink',
+    }), true);
   });
 });

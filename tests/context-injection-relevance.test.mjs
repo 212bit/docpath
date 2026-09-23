@@ -23,8 +23,8 @@ function mkWorkspace() {
       kind: 'decision',
       id: 'ADR-002',
       taskId: 'T-002',
-      category: 'policy.skip',
-      decision: '跳过 review 门禁',
+      category: 'design-decision',
+      decision: '采用 compact 模式压缩输出 Token 预算',
       createdAt: '2026-09-11T00:00:00.000Z',
     },
     {

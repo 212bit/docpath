@@ -53,6 +53,28 @@ export function formatActiveGuardrails(decisions: DecisionEntry[]): string[] {
   });
 }
 
+const TRANSIENT_CATEGORIES = new Set([
+  'risk.escalation',
+  'policy.skip',
+  'policy.env_exempt',
+  'audit',
+  'transient',
+]);
+
+/**
+ * 判断一条决策是否属于具备长效指引价值的「实质性架构/设计决策」。
+ * 彻底过滤掉内部门禁风险升级（如 check 风险复评升级 R1→R2）和单次参数记录（如 跳过 review、方案 B）。
+ */
+export function isSubstantiveDecision(d: { category?: string; decision?: string }): boolean {
+  if (!d.decision || typeof d.decision !== 'string') return false;
+  const raw = d.decision.trim();
+  if (raw.length < 6) return false;
+  if (/^(?:方案\s*[A-Z]|跳过\s*(?:check|review|tests?))$/i.test(raw)) return false;
+  if (d.category && TRANSIENT_CATEGORIES.has(d.category)) return false;
+  if (d.category && (d.category.startsWith('risk.') || d.category.startsWith('policy.'))) return false;
+  return true;
+}
+
 // ── Context Injection 加载函数 ──
 
 const DECISIONS_MAX_LINES = 50;
@@ -78,7 +100,7 @@ export async function loadRecentDecisions(
     for (const line of tail) {
       try {
         const parsed = JSON.parse(line);
-        if (parsed.kind === 'decision' && parsed.id) {
+        if (parsed.kind === 'decision' && parsed.id && isSubstantiveDecision(parsed)) {
           allDecisions.push({
             id: parsed.id,
             taskId: parsed.taskId || '',
