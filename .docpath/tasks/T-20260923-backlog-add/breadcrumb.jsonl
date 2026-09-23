@@ -1,0 +1,8 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-add","step":"S1","status":"in_progress","context":"go --accept-dirty: start --adopt: claim workspace edits","timestamp":"2026-09-23T19:53:14.769Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-add","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 冷启动体验强化：支持标题直启与 Backlog Add 宽容入库","timestamp":"2026-09-23T19:53:14.773Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-add","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-23T19:53:23.715Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-add","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-23T19:54:43.716Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-add","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-23T19:57:14.130Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-add","step":"check","status":"done","context":"质量检查通过 (13 项)","timestamp":"2026-09-23T20:00:15.491Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-add","step":"review","status":"done","context":"代码审查: 0 错误, 6 警告, 0 提示","timestamp":"2026-09-23T20:00:16.555Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-add","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-23T20:00:18.018Z"}

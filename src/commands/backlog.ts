@@ -945,11 +945,13 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
   if (!title) {
     throw new Error('docpath backlog add requires --title <title> or <title>');
   }
+
   if (!hasBodyInput(options)) {
     throw new Error('docpath backlog add requires --background/--acceptance or --body-file; use `docpath backlog capture --title <title>` for raw ideas');
   }
 
   const body = await resolveBacklogBody(options);
+
   const readiness = normalizeReadiness(options.readiness, 'shaped');
   if (readiness === 'raw') {
     throw new Error('docpath backlog add: readiness=raw 请使用 `docpath backlog capture`');

@@ -13,6 +13,7 @@ import { backlogCommand } from './backlog.js';
 import { planCommand } from './plan.js';
 import { goCommand } from './go.js';
 import { readCurrentState } from '../utils/workspace.js';
+import { createBacklogItem, refreshBacklogIndex } from '../engine/backlog.js';
 
 export interface StartOptions {
   cwd: string;
@@ -24,36 +25,59 @@ export interface StartOptions {
 }
 
 export async function startCommand(options: StartOptions): Promise<void> {
-  const { cwd, id } = options;
-  if (!id) {
-    throw new Error('docpath start 需要提供 Backlog 条目 ID，例如: docpath start R-101');
+  const { cwd } = options;
+  let targetId = options.id?.trim();
+  if (!targetId) {
+    throw new Error('docpath start 需要提供 Backlog 条目 ID 或任务标题，例如: docpath start R-101 或 docpath start "优化生命周期"');
   }
 
-  console.log(`🚀  docpath start: 一键拉起任务并启动执行 (${id})\n`);
+  // 如果传入的不是 R-xxx 格式，则判定为按标题一键拉起新任务（自动捕获 Backlog）
+  if (!/^R-\d+$/i.test(targetId)) {
+    const title = targetId;
+    console.log(`💡  检测到任务标题 "${title}"，自动创建 Backlog 并一键拉起...\n`);
+    const item = await createBacklogItem(cwd, {
+      title,
+      status: 'proposed',
+      priority: 'P2',
+      level: 2,
+      source: 'docpath start',
+      readiness: 'raw',
+      evidence: { brainstorm: null, analysis: null, spec: null, decision_brief: null, user_confirmed: null },
+      links: { task: null, spec: null },
+      created_at: new Date().toISOString().slice(0, 10),
+      body: `## 背景\n\n- ${title}\n\n## 验收\n\n- 满足需求并通过门禁`,
+    });
+    await refreshBacklogIndex(cwd);
+    targetId = item.id;
+  }
+
+  console.log(`🚀  docpath start: 一键拉起任务并启动执行 (${targetId})\n`);
 
   // 步骤 1: promote 需求
-  await backlogCommand({
+  const promoteOptions = {
     cwd,
-    action: 'promote',
-    id,
+    action: 'promote' as const,
+    id: targetId,
     draft: options.draft,
     agent: options.agent,
     adopt: options.adopt,
-  });
+  };
+  await backlogCommand(promoteOptions);
+  const effectiveCwd = promoteOptions.cwd;
 
   // 步骤 2: plan（如果仍处于 drafting 或 planning 阶段）
-  const stateAfterPromote = await readCurrentState(cwd);
+  const stateAfterPromote = await readCurrentState(effectiveCwd);
   if (stateAfterPromote?.phase === 'drafting' || stateAfterPromote?.phase === 'planning') {
-    await planCommand({ cwd });
+    await planCommand({ cwd: effectiveCwd });
   }
 
   // 步骤 3: 认领并启动第一步（默认 S1）
   const stepToStart = options.step || 'S1';
   await goCommand({
-    cwd,
+    cwd: effectiveCwd,
     step: stepToStart,
     acceptDirty: options.adopt ? 'start --adopt: claim workspace edits' : undefined,
   });
 
-  console.log(`\n🎉  任务 ${id} 已拉起并启动步骤 ${stepToStart}！`);
+  console.log(`\n🎉  任务 ${targetId} 已拉起并启动步骤 ${stepToStart}！`);
 }

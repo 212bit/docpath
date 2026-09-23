@@ -60,4 +60,27 @@ describe('docpath start: 一键冷启动任务', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('start "<title>" --draft 一键完成 auto-capture + promote + plan + go S1', () => {
+    const cwd = mkRepo();
+    try {
+      // 执行 docpath start "<title>" --draft
+      const out = run(['start', '从零标题直接一键拉起任务', '--draft'], cwd);
+      assert.match(out, /检测到任务标题 "从零标题直接一键拉起任务"，自动创建 Backlog 并一键拉起/);
+      assert.match(out, /已拉起并启动步骤 S1/);
+
+      // 验证状态机与生成的任务
+      const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+      assert.equal(state.phase, 'executing');
+      assert.equal(state.current_step, 'S1');
+      assert.match(state.task_id, /^T-/);
+
+      // 验证 backlog 确实被创建并与 task 绑定
+      const backlogFiles = readdirSync(join(cwd, '.docpath', 'backlog')).filter(f => f.startsWith('R-') && f.endsWith('.md'));
+      assert.equal(backlogFiles.length, 1);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
+
