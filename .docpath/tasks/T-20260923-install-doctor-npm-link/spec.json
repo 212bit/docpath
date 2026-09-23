@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T13:08:21.024Z",
+    "updated_at": "2026-09-23T13:08:21.024Z",
+    "content_sha256": "0187cf1a4c7ad0fc3efe130246e2844e79a9eb43f6e5028b0f9312aa7714db7a"
+  },
+  "task_id": "T-20260923-install-doctor-npm-link",
+  "backlog_id": "R-361",
+  "title": "T-20260923-install-doctor-npm-link - install --doctor 在 npm-link 自引用场景下增加漂移说明",
+  "generated_at": "2026-09-23T13:08:21.024Z",
+  "scope": {
+    "included": [
+      "runInstallDoctor / buildInstallDoctorReportFromContext 增加自引用检测（解析 bin/docpath.js 指向，比对 cwd）"
+    ],
+    "excluded": [
+      "自动修复漂移"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": ""
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "install --doctor 检测到 docpath 的 npm-link 目标等于当前工作目录（自引用）时，在漂移报告末尾追加说明：模板修改后的 manifest 漂移为预期行为，请在各受管项目执行 docpath install --force 同步",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "仅在确属自引用场景才追加说明，不污染普通项目的 doctor 输出",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不修改既有漂移判定逻辑",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "自引用场景下 doctor 输出含「npm-link 自引用，漂移为预期」说明",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "非自引用项目 doctor 输出不变",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

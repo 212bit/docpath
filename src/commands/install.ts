@@ -12,6 +12,7 @@
  */
 
 import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { realpathSync } from 'node:fs';
 import { readFile, readdir, mkdir, copyFile, chmod, stat } from 'node:fs/promises';
 import { exists, writeFileSafe } from '../utils/file.js';
 import { getDocpathPackageVersion } from '../utils/package-info.js';
@@ -215,6 +216,26 @@ async function runInstallDoctor(context: InstallContext, json = false): Promise<
     return;
   }
   printDoctorReport(report);
+  // R-361: npm-link 自引用场景——docpath 通过 npm-link 指向自身 checkout，改模板会使所有
+  // 受管项目报 install-manifest-drift，这是必然复发的结构性约束而非项目损坏。检测到时追加说明，
+  // 避免误判。判定依据：CLI 入口（含被 npm-link 解引用后的真实路径）落在当前工作目录树内，
+  // 即 docpath 的安装源就是当前项目本身。
+  try {
+    const cliEntry = process.argv[1] ? resolve(process.argv[1]) : '';
+    if (cliEntry) {
+      const realEntry = realpathSync(cliEntry);
+      const cwdReal = realpathSync(context.targetDir);
+      if (realEntry === cwdReal || realEntry.startsWith(cwdReal + '/')) {
+        console.log('\n💡  检测到 npm-link 自引用：本机 docpath 经 npm-link 指向当前工作目录（即 docpath 自身仓库）。');
+        console.log('    在此场景下，修改 docpath 模板源（templates/protocols/）后，所有受管项目都会报');
+        console.log('    install-manifest-drift —— 这是结构性约束，并非项目损坏，无需惊慌。');
+        console.log('    如需消除漂移告警，请在各受管项目执行: docpath install --force（重建协议副本）。');
+        console.log('    ⚠️  不要为了消除告警去回退模板改动——那会丢失你在本仓库的修改。');
+      }
+    }
+  } catch {
+    // 路径解析失败时静默跳过自引用检测，不影响正常 doctor 输出。
+  }
   if (!report.passed) throw new Error('install doctor failed');
 }
 
