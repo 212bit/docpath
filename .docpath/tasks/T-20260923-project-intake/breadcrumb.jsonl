@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-project-intake","step":"S1","status":"in_progress","context":"go --accept-dirty: 改动已先行完成并 commit (e47e211)，本步骤为补充生命周期认领","timestamp":"2026-09-23T15:08:30.808Z","sessionId":"agent-docs-hygiene"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-project-intake","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 文档治理：清理 project-intake 下线残留与文档扫描盲区","timestamp":"2026-09-23T15:08:30.813Z","sessionId":"agent-docs-hygiene"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-project-intake","step":"S1","status":"done","context":"5 项文档治理已完成并验证：三件套删除、getting-started 修正、设计文档提炼+删除、评估报告归档、扫描路径修复（假绿消除）","timestamp":"2026-09-23T15:08:33.818Z","sessionId":"agent-docs-hygiene"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-project-intake","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-23T15:10:10.361Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-project-intake","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-09-23T15:10:13.211Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-project-intake","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-23T15:10:13.711Z"}

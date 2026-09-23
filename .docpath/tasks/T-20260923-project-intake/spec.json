@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T15:08:24.747Z",
+    "updated_at": "2026-09-23T15:08:24.747Z",
+    "content_sha256": "e1d92abf8af3946a89fc2bd258820fa4358db09a7e89e0708bf53353dcd11c12"
+  },
+  "task_id": "T-20260923-project-intake",
+  "backlog_id": "R-367",
+  "title": "T-20260923-project-intake - 文档治理：清理 project-intake 下线残留与文档扫描盲区",
+  "generated_at": "2026-09-23T15:08:24.747Z",
+  "scope": {
+    "included": [
+      "文档治理：清理 project-intake 下线残留与文档扫描盲区"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "用户于 2026-09-23 明确指示执行 5 项文档治理动作",
+    "decision_brief_markdown": "- 当前问题: 2026-09-08 的提交 `de08364`（「待裁决大块收敛」）彻底下线了 project-intake 平行工作流——删除了\n- 目标: 文档治理：清理 project-intake 下线残留与文档扫描盲区\n- 背景: 来自 backlog R-367\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 用户于 2026-09-23 明确指示执行 5 项文档治理动作"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "文档治理：清理 project-intake 下线残留与文档扫描盲区",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "AC-1：`REVIEW-project-intake.md`、`FIX-project-intake-concurrency.md`、",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`COMPLETION-project-intake-security-fix.md` 已从仓库移除。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "AC-2：`docs/getting-started.md` 中不再出现 `docpath project` 命令示例；保留的文档约定",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "描述准确；含指向 2026-09-08 下线事实的历史说明。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "AC-3：`docs/design/project-document-placement.md` 存在且只含通用放置决策，",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "不含 intake 专属内容；`project-intake-artifact-model.md` 与 `project-intake-command-contract.md`",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "已删除；`docs/README.md` 索引已同步更新为新文档。",
+      "done": false
+    },
+    {
+      "id": "AC-8",
+      "text": "AC-4：`docs/architecture/tool-evaluation-2026-06.md` 存在，文件头含时效性警告与已知过时点清单。",
+      "done": false
+    },
+    {
+      "id": "AC-9",
+      "text": "AC-5：`docpath docs doctor` 能扫描到新增/既有项目文档（索引条目数增加），",
+      "done": false
+    },
+    {
+      "id": "AC-10",
+      "text": "且在存在真实问题时**如实报 ISSUES_FOUND 而非 HEALTHY**；跑 `docs fix` 后归零。",
+      "done": false
+    },
+    {
+      "id": "AC-11",
+      "text": "AC-6：`docpath docs doctor` 终态为 HEALTHY，索引中不含任何已删除文件。",
+      "done": false
+    },
+    {
+      "id": "AC-12",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-13",
+      "text": "backlog 条目 R-367 与任务 T-20260923-project-intake 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "2026-09-08 的提交 `de08364`（「待裁决大块收敛」）彻底下线了 project-intake 平行工作流——删除了",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

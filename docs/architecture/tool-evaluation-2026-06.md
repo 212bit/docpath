@@ -1,5 +1,21 @@
 # DocPath 工具评估报告
 
+> **⚠️ 历史档案 —— 本报告基于 2026-06-23 的 v0.1.1 (commit f9fdbcc)，部分信息已过时。**
+>
+> 这是第三方（Claude Code）对 DocPath 的外部视角评估，保留它是因为项目内部
+> 无法产生此类横向对比与外部批评。**不要把它当现状真源**——引用前请核对当前实现。
+>
+> 截至 2026-09-23 已知的过时点：
+> - 「`.docpath/backlog/` 为 symlink live-shared」：**已错**。R-238 Option B /
+>   R-273 已改为 merge-mediated tracked copy（symlink 跟踪目录会导致合并时 mass
+>   deletion，故弃用）。
+> - 「未找到 `.docpath/docs/` 目录」：**已解决**，`docs/` 活文档中心已成型。
+> - 「未看到 CI/CD 配置」：**已解决**，已有 `.github/`。
+> - 「错误消息不够友好」：**已改善**，现有 E021 等结构化错误码与恢复指引。
+> - 「测试覆盖率未知」「Dashboard 定位不明」：**仍待解决**。
+>
+> 当前系统状态请看 `docs/README.md`、`docs/architecture/` 与 `README.md`。
+
 **评估时间**: 2026年6月23日  
 **工具版本**: 0.1.1  
 **评估人**: Claude Code
