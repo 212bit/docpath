@@ -4,7 +4,7 @@ import { gcCommand } from '../gc.js';
 import { taskCommand, taskFileSyncCommand } from '../task.js';
 
 export function registerBacklogMaintenanceCommands(cli: CAC): void {
-  cli.command('backlog <action> [id]', '需求条目管理: capture | add | edit | list | groom | refresh | accept | plan | promote | done | drop')
+  cli.command('backlog <action> [id]', '需求条目管理: capture | add | edit | list | groom | refresh | accept | plan | promote | done | drop | archive')
     .option('--cwd <path>', '项目目录')
     .option('--title <title>', 'add/edit: 条目标题')
     .option('--priority <priority>', 'add/edit/list: 优先级过滤或创建优先级 (P0|P1|P2|P3)')

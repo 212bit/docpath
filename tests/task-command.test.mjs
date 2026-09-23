@@ -74,7 +74,7 @@ describe('task command', () => {
     assert.equal(state.gate, 'none');
     assert.equal(state.task_id, '');
 
-    const backlog = readFileSync(join(cwd, '.docpath', 'backlog', 'R-001-task.md'), 'utf-8');
+    const backlog = readFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-001-task.md'), 'utf-8');
     assert.match(backlog, /status: dropped/);
     assert.match(readFileSync(join(cwd, '.docpath', 'workspace', 'breadcrumb.md'), 'utf-8'), /task\.abort/);
     rmSync(cwd, { recursive: true, force: true });

@@ -1286,7 +1286,8 @@ Beta
     assert.match(dropOut, /R-002 → dropped/);
     // R-001 marked done gets auto-archived by refreshBacklogIndex
     assert.match(readFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-001-alpha.md'), 'utf-8'), /status: done/);
-    assert.match(readFileSync(join(cwd, '.docpath', 'backlog', 'R-002-beta.md'), 'utf-8'), /status: dropped/);
+    // R-352: dropped 同自动归档进 archived（原先断言 active 留存已失效）
+    assert.match(readFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-002-beta.md'), 'utf-8'), /status: dropped/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
@@ -1479,6 +1480,55 @@ Raw idea only
     // --draft：plan 跳过门禁成功（accepted → planned 合法）
     const planOut = run('backlog plan --draft R-001', cwd);
     assert.match(planOut, /R-001 → planned/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog archive moves terminal items to archived and stays idempotent (R-352)', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-007-gamma.md'), `---
+id: R-007
+title: Gamma
+status: dropped
+priority: P3
+level: 1
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Gamma
+`);
+    const first = run('backlog archive R-007', cwd);
+    assert.match(first, /已归档/);
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-007-gamma.md')));
+    const second = run('backlog archive R-007', cwd);
+    assert.match(second, /无需归档/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('backlog archive refuses non-terminal items (R-352)', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'R-008-delta.md'), `---
+id: R-008
+title: Delta
+status: proposed
+priority: P3
+level: 1
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+Delta
+`);
+    assert.throws(() => run('backlog archive R-008', cwd), /只接受终态条目/);
     rmSync(cwd, { recursive: true, force: true });
   });
 });

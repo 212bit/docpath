@@ -13,6 +13,8 @@ let setBacklogStatus;
 let refreshBacklogIndex;
 let createBacklogItem;
 let detectBacklogIdCollisions;
+let archiveBacklogItem;
+let detectBacklogDuplicates;
 
 before(async () => {
   ({
@@ -25,6 +27,8 @@ before(async () => {
     refreshBacklogIndex,
     createBacklogItem,
     detectBacklogIdCollisions,
+    archiveBacklogItem,
+    detectBacklogDuplicates,
   } = await import('../dist/engine/backlog.js'));
 });
 
@@ -424,6 +428,63 @@ created_at: 2026-07-12
 b
 `);
     assert.deepEqual(await detectBacklogIdCollisions(cwd), []);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('auto-archives dropped items alongside done on refresh (R-352)', async () => {
+    const cwd = mkWorkspace();
+    await writeBacklogItem(cwd, sampleItem({ id: 'R-010', title: 'Drop me', status: 'dropped' }));
+    await writeBacklogItem(cwd, sampleItem({ id: 'R-011', title: 'Keep me', status: 'proposed' }));
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-010-drop-me.md')));
+    assert.ok(!existsSync(join(cwd, '.docpath', 'backlog', 'R-010-drop-me.md')));
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'R-011-keep-me.md')));
+    const index = readFileSync(join(cwd, '.docpath', 'backlog', 'backlog.md'), 'utf-8');
+    assert.ok(!index.includes('R-010'));
+    assert.ok(index.includes('R-011'));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('archives a terminal item explicitly and stays idempotent (R-352)', async () => {
+    const cwd = mkWorkspace();
+    const created = await createBacklogItem(cwd, sampleItem({ title: 'Archive me' }));
+    // 注意：createBacklogItem 写 proposed 后如 refresh，active 里有文件；drop 写终态后
+    // writeBacklogItem 内部 refresh 即把 dropped 归档（R-352），显式 archive 走幂等静默收尾。
+    await setBacklogStatus(cwd, created.id, 'dropped');
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'archived', `${created.id}-archive-me.md`)));
+    const repeat = await archiveBacklogItem(cwd, created.id);
+    assert.equal(repeat.moved, false);
+    assert.ok(repeat.file === null || repeat.file.includes(`${created.id}`));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('rejects archiving non-terminal items (R-352)', async () => {
+    const cwd = mkWorkspace();
+    await writeBacklogItem(cwd, sampleItem({ id: 'R-030', title: 'Active one', status: 'active' }));
+    await assert.rejects(() => archiveBacklogItem(cwd, 'R-030'), /只接受终态条目/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('detects same-title duplicates across active and archived (R-352)', async () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
+    await writeBacklogItem(cwd, sampleItem({ id: 'R-040', title: 'Same Thing Twice', status: 'proposed' }));
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-009-same-thing-twice.md'), `---
+id: R-009
+title: Same Thing Twice
+status: done
+priority: P2
+level: 1
+source: test
+links:
+  task: T-old
+  spec: tasks/T-old/spec.md
+created_at: 2026-07-12
+---
+
+old body
+`);
+    const dups = await detectBacklogDuplicates(cwd, { id: 'R-040', title: 'Same Thing Twice' });
+    assert.ok(dups.some((d) => d.kind === 'same-title' && d.archived_file?.includes('R-009')));
     rmSync(cwd, { recursive: true, force: true });
   });
 });

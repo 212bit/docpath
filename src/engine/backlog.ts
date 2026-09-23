@@ -242,7 +242,8 @@ function comparePriority(a: BacklogPriority, b: BacklogPriority): number {
 }
 
 function generateBacklogIndexMd(items: BacklogItem[]): string {
-  const activeItems = items.filter((item) => item.status !== 'done');
+  // R-352：终态 done/dropped 均已归档进 archived/，索引只列非终态
+  const activeItems = items.filter((item) => item.status !== 'done' && item.status !== 'dropped');
   const lines: string[] = [
     '# DocPath Backlog Index',
     '',
@@ -269,7 +270,7 @@ function generateBacklogIndexMd(items: BacklogItem[]): string {
   lines.push('- `status`: proposed|accepted|planned|active|done|dropped');
   lines.push('- `priority`: P0 最高，P3 最低');
   lines.push('- `task`: 已 promote 后关联的 task id；未关联为空');
-  lines.push('- **done 条目**: 已归档至 `.docpath/backlog/archived/`，不显示在此索引中');
+  lines.push('- **done/dropped 条目**: 已归档至 `.docpath/backlog/archived/`，不显示在此索引中（R-352 前该行只写 done）');
   lines.push('');
 
   return lines.join('\n');
@@ -323,17 +324,34 @@ export async function listBacklogItems(cwd: string): Promise<BacklogItem[]> {
 }
 
 /**
- * 读取单条；不存在返回 null（不报错）。
+ * 读取单条（含 archived/）；不存在返回 null（不报错）。
+ *
+ * R-352：archive 命令与幂等静默收尾需要能看到已归档副本。
+ * 默认只读 active（readArchived=false）；archive 流程传 true 使已归档条目可被正视。
  */
-export async function readBacklogItem(cwd: string, id: string): Promise<BacklogItem | null> {
+export async function readBacklogItem(
+  cwd: string,
+  id: string,
+  opts?: { readArchived?: boolean },
+): Promise<BacklogItem | null> {
   const dir = backlogDir(await resolveDocpathDir(cwd));
   const file = await findItemFile(dir, id);
-  if (!file) return null;
+  if (!file) {
+    if (!opts?.readArchived) return null;
+    const archivedDir = archivedBacklogDir(await resolveDocpathDir(cwd));
+    const archivedFile = await findItemFile(archivedDir, id);
+    if (!archivedFile) return null;
+    return parseItem(await readFile(join(archivedDir, archivedFile), 'utf-8'));
+  }
   return parseItem(await readFile(join(dir, file), 'utf-8'));
 }
 
 /**
  * 写入单条（唯一写入口）。保留既有文件名的 slug；新条目用 `${id}-${slug(title)}.md`。
+ *
+ * 注意（R-352）：凡是写终态（done/dropped）都顺手触发一次 refreshBacklogIndex，
+ * 让归档立即落地——否则归档依赖下一次显式 refresh，`drop` 当下文件还躺在 active 里，
+ * 与「drop 即归档」的验收预期不符。
  */
 export async function writeBacklogItem(cwd: string, item: BacklogItem): Promise<void> {
   const dir = backlogDir(await resolveDocpathDir(cwd));
@@ -444,6 +462,8 @@ export async function nextBacklogId(cwd: string): Promise<string> {
 /**
  * 生成 backlog.md 机器可读索引。
  * 按 priority 升序（P0→P3），同优先级内按 id 升序排序。
+ *
+ * R-352：终态（done + dropped）统一自动归档进 archived/，索引只列非终态。
  */
 export async function refreshBacklogIndex(cwd: string): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
@@ -454,9 +474,10 @@ export async function refreshBacklogIndex(cwd: string): Promise<void> {
 
   const items = await listBacklogItems(cwd);
 
-  // Archive done items before building index
-  const doneItems = items.filter((item) => item.status === 'done');
-  for (const item of doneItems) {
+  // Archive terminal items before building index (R-352: 补齐 dropped 自动归档，
+  // 原先只认 done；复用既有撞号安全阀，非破坏性)
+  const terminalItems = items.filter((item) => item.status === 'done' || item.status === 'dropped');
+  for (const item of terminalItems) {
     const filename = await findItemFile(dir, item.id);
     if (filename) {
       const sourcePath = join(dir, filename);
@@ -471,8 +492,8 @@ export async function refreshBacklogIndex(cwd: string): Promise<void> {
     }
   }
 
-  // Rebuild active items list after archival
-  const activeItems = items.filter((item) => item.status !== 'done');
+  // Rebuild active items list after archival（终态 done/dropped 均归档）
+  const activeItems = items.filter((item) => item.status !== 'done' && item.status !== 'dropped');
   const sorted = [...activeItems].sort((a, b) => {
     const priorityOrder = comparePriority(a.priority, b.priority);
     if (priorityOrder !== 0) return priorityOrder;
@@ -480,6 +501,149 @@ export async function refreshBacklogIndex(cwd: string): Promise<void> {
   });
 
   await writeFile(join(dir, 'backlog.md'), generateBacklogIndexMd(sorted), 'utf-8');
+}
+
+/**
+ * 归档单个终态 backlog 条目（R-352：`docpath backlog archive` 的引擎入口）。
+ *
+ * - 只接受终态 status（done/dropped），非终态拒绝（需先 drop/done）。
+ * - 直接复用同一撞号安全阀：archived 已有同名副本时不覆盖。
+ * - 归档后写入 backlog.md 索引，保证 archived/ 与索引一致。
+ * - 找不到条目或条目已在 archived 里时：返回 moved=false（幂等，不报错）。
+ */
+export async function archiveBacklogItem(
+  cwd: string,
+  id: string,
+): Promise<{ moved: boolean; file: string | null }> {
+  // R-352：先看 active，active 无名时再正视 archived（幂等静默需要看到已归档副本）
+  const item = (await readBacklogItem(cwd, id)) ?? (await readBacklogItem(cwd, id, { readArchived: true }));
+  if (!item) {
+    throw new Error(`[docpath] backlog 条目不存在: ${id}`);
+  }
+  if (item.status !== 'done' && item.status !== 'dropped') {
+    throw new Error(
+      `[docpath] backlog archive 只接受终态条目（done/dropped）：${item.id} 当前 ${item.status}。请先 backlog drop/done`,
+    );
+  }
+  const docpathDir = await resolveDocpathDir(cwd);
+  const dir = backlogDir(docpathDir);
+  const archivedDir = archivedBacklogDir(docpathDir);
+  await mkdir(archivedDir, { recursive: true });
+  const filename = await findItemFile(dir, item.id);
+  if (!filename) {
+    // active 里无该文件名：要么已归档，要么丢数据。显式读 archived 一次后再收敛。
+    const archivedFile = await findItemFile(archivedDir, item.id);
+    return { moved: false, file: archivedFile };
+  }
+  const sourcePath = join(dir, filename);
+  const targetPath = join(archivedDir, filename);
+  // 撞号安全阀（R-321/FR-2）：archived 已有同名副本时拒绝覆盖，由 groom 非破坏性暴露
+  if (existsSync(sourcePath) && !existsSync(targetPath)) {
+    await rename(sourcePath, targetPath);
+    await refreshBacklogIndex(cwd);
+    return { moved: true, file: `backlog/archived/${filename}` };
+  }
+  await refreshBacklogIndex(cwd);
+  return { moved: false, file: `backlog/${filename}` };
+}
+
+/**
+ * 检测重复登记（R-352：promote 阶段去重提示的引擎入口）。
+ *
+ * 只报告、不改数据：
+ * - 同 id 报告：active 与 archived 同 id 并存（撞号，沿用 detectBacklogIdCollisions）。
+ * - 同标题报告：active 区另有同 title 条目，或 archived 区已有同 title 副本
+ *   （normalize 后比较：NFC + 去首尾空白 + 压缩连续空白 + 英文小写）。
+ */
+export interface BacklogDuplicateReport {
+  id: string;
+  kind: 'same-id' | 'same-title';
+  active_file: string;
+  archived_file: string | null;
+  active_title: string;
+  archived_title: string | null;
+  identical: boolean;
+}
+
+function normalizeBacklogTitle(title: string): string {
+  return title
+    .normalize('NFC')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+export async function detectBacklogDuplicates(
+  cwd: string,
+  item: Pick<BacklogItem, 'id' | 'title'>,
+): Promise<BacklogDuplicateReport[]> {
+  const reports: BacklogDuplicateReport[] = [];
+  // 同 id：沿用既有撞号检测的结果集
+  const collisions = await detectBacklogIdCollisions(cwd);
+  for (const c of collisions) {
+    if (c.id !== item.id) continue;
+    reports.push({
+      id: c.id,
+      kind: 'same-id',
+      active_file: c.active_file,
+      archived_file: c.archived_file,
+      active_title: c.active_title,
+      archived_title: c.archived_title,
+      identical: c.identical,
+    });
+  }
+  // 同标题：扫 active（含本条）与 archived
+  const needle = normalizeBacklogTitle(item.title);
+  if (!needle) return reports;
+  const docpathDir = await resolveDocpathDir(cwd);
+  const dir = backlogDir(docpathDir);
+  const adir = archivedBacklogDir(docpathDir);
+  if (!existsSync(dir)) return reports;
+  const activeFiles: Array<{ file: string; title: string }> = [];
+  for (const file of await readdir(dir)) {
+    if (!/^R-\d+.*\.md$/i.test(file) || file === 'backlog.md') continue;
+    const content = await readFileOrSkip(join(dir, file));
+    if (content === null) continue;
+    activeFiles.push({ file, title: frontmatterTitle(content) });
+  }
+  const archivedByNorm = new Map<string, { file: string; title: string }>();
+  if (existsSync(adir)) {
+    for (const file of await readdir(adir)) {
+      if (!/^R-\d+.*\.md$/i.test(file) || file === 'backlog.md') continue;
+      const content = await readFileOrSkip(join(adir, file));
+      if (content === null) continue;
+      const title = frontmatterTitle(content);
+      const key = normalizeBacklogTitle(title);
+      if (key && !archivedByNorm.has(key)) archivedByNorm.set(key, { file, title });
+    }
+  }
+  const activePeers = activeFiles.filter(
+    (f) => normalizeBacklogTitle(f.title) === needle && !f.file.startsWith(`${item.id}-`) && f.file !== `${item.id}.md`,
+  );
+  for (const peer of activePeers) {
+    reports.push({
+      id: item.id,
+      kind: 'same-title',
+      active_file: `backlog/${peer.file}`,
+      archived_file: null,
+      active_title: peer.title,
+      archived_title: null,
+      identical: false,
+    });
+  }
+  const archivedHit = archivedByNorm.get(needle);
+  if (archivedHit) {
+    reports.push({
+      id: item.id,
+      kind: 'same-title',
+      active_file: `backlog/${(await findItemFile(dir, item.id)) ?? ''}`,
+      archived_file: `backlog/archived/${archivedHit.file}`,
+      active_title: item.title,
+      archived_title: archivedHit.title,
+      identical: true,
+    });
+  }
+  return reports;
 }
 
 /** active 与 archived 同 id 并存的一起撞号（R-321/FR-2 非破坏性检测结果）。 */

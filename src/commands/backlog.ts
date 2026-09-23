@@ -13,7 +13,9 @@ import {
   type BacklogPriority,
   type BacklogReadiness,
   type BacklogStatus,
+  archiveBacklogItem,
   createBacklogItem,
+  detectBacklogDuplicates,
   detectBacklogIdCollisions,
   isBacklogReadiness,
   isBacklogPriority,
@@ -1044,6 +1046,42 @@ async function assertNotActiveInOtherWorktrees(cwd: string, backlogId: string): 
   }
 }
 
+/**
+ * R-352：promote 前的重复登记探测（只报告、不拦、不改数据）。
+ *
+ * 检查同 id 撞号（R-321/FR-2）与同 title 在 active/archived 的副本。
+ * 命中任一时输出可读提示并挂进条目 evidence.decision_brief（via writeBacklogItem），
+ * 用户显式 --user-confirmed 后放行——真正 gate 留待后续迭代加硬拦。
+ */
+async function warnOnDuplicateRegistration(
+  cwd: string,
+  item: BacklogItem,
+): Promise<boolean> {
+  const dups = await detectBacklogDuplicates(cwd, { id: item.id, title: item.title });
+  if (dups.length === 0) return false;
+  console.warn(`\n⚠️  检测到 ${dups.length} 条可能的重复登记（R-352 非破坏性提示，不会拦 promote）：`);
+  for (const d of dups) {
+    if (d.kind === 'same-id') {
+      console.warn(
+        `- [${d.id}] 同 id 撞号：active「${d.active_title}」(${d.active_file}) vs archived「${d.archived_title ?? ''}」(${d.archived_file ?? ''})${d.identical ? '（内容一致）' : '（内容不同=两种需求撞了同号，走独立迁移）'}`,
+      );
+    } else if (d.archived_file) {
+      console.warn(
+        `- [${d.id}] 同标题已归档：当前「${d.active_title}」 vs ${d.archived_file}「${d.archived_title ?? ''}」——可能已做过，确认不是真新需求后再 promote`,
+      );
+    } else {
+      console.warn(
+        `- [${d.id}] 同标题现存：当前「${d.active_title}」 vs ${d.active_file}「${d.active_title}」——建议合并/skip 其一`,
+      );
+    }
+  }
+  if (!item.evidence.decision_brief) {
+    item.evidence.decision_brief = `R-352 去重提示（${today()}）：检测到 ${dups.length} 条重复候选，已提示合并/skip；用户放行确认待补 --user-confirmed。`;
+    await writeBacklogItem(cwd, item);
+  }
+  return true;
+}
+
 async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   if (!options.id?.trim()) {
     throw new Error('docpath backlog promote requires <id>');
@@ -1062,6 +1100,9 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   }
 
   await assertNotActiveInOtherWorktrees(options.cwd, item.id);
+
+  // R-352：promote 前重复登记探测——只报告不拦（含同 id 撞号 R-321/FR-2 与同标题）
+  await warnOnDuplicateRegistration(options.cwd, item);
 
   const dirtyReport = detectDirtyWorktree(options.cwd);
   const isDirty = dirtyReport.isGitRepo && dirtyReport.files.some(f => !isPromoteBacklogEvidencePath(f, item.id));
@@ -1169,6 +1210,24 @@ async function backlogAdvanceStatus(
   console.log(`✅  backlog 条目已更新: ${item.id} → ${item.status}`);
 }
 
+/**
+ * backlog archive（R-352）: 显式把终态条目归档进 archived/。
+ *
+ * 只接受 done/dropped（引擎 archiveBacklogItem 内校验）。moved=false 即幂等静默收尾，
+ * 由撞号安全阀非破坏性暴露给 `backlog groom`。
+ */
+async function backlogArchive(options: BacklogCommandOptions): Promise<void> {
+  if (!options.id?.trim()) {
+    throw new Error('docpath backlog archive requires <id>');
+  }
+  const result = await archiveBacklogItem(options.cwd, options.id.trim());
+  if (result.moved) {
+    console.log(`✅  backlog 条目已归档: ${options.id.trim()} → ${result.file ?? 'backlog/archived/'}`);
+    return;
+  }
+  console.log(`ℹ️  backlog 条目无需归档: ${options.id.trim()}（已在 archived 里或撞号安全阀拦截，见 backlog groom）`);
+}
+
 async function backlogUpdateTerminalStatus(
   options: BacklogCommandOptions,
   target: 'done' | 'dropped',
@@ -1272,7 +1331,7 @@ async function backlogGroom(options: BacklogCommandOptions): Promise<void> {
 export async function backlogCommand(options: BacklogCommandOptions): Promise<void> {
   const action = options.action?.trim().toLowerCase();
   if (!action) {
-    throw new Error('docpath backlog requires <capture|add|edit|list|groom|refresh|accept|plan|promote|done|drop>');
+    throw new Error('docpath backlog requires <capture|add|edit|list|groom|refresh|accept|plan|promote|done|drop|archive>');
   }
 
   switch (action) {
@@ -1309,7 +1368,10 @@ export async function backlogCommand(options: BacklogCommandOptions): Promise<vo
     case 'drop':
       await backlogUpdateTerminalStatus(options, 'dropped');
       return;
+    case 'archive':
+      await backlogArchive(options);
+      return;
     default:
-      throw new Error(`docpath backlog: unsupported action ${action}（允许: capture|add|edit|list|groom|refresh|accept|plan|promote|done|drop）`);
+      throw new Error(`docpath backlog: unsupported action ${action}（允许: capture|add|edit|list|groom|refresh|accept|plan|promote|done|drop|archive）`);
   }
 }
