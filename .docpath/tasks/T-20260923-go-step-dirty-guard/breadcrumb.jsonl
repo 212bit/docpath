@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-go-step-dirty-guard","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 未跟踪文件报错段补强——明确「未跟踪=未归属，git add 认领后才能被门禁视为本任务文件」","timestamp":"2026-09-23T13:08:40.025Z","sessionId":"agent-r360-go-dirtyguard"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-go-step-dirty-guard","step":"S1","status":"done","context":"R-360: git-dirty-guard.ts 未跟踪段补强，明确未跟踪=未归属、逐文件 git add 认领、提醒不要 git add -A（worktree 并发防半成品入 commit）。","timestamp":"2026-09-23T13:16:28.605Z","sessionId":"agent-r360-go-dirtyguard"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-go-step-dirty-guard","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-23T13:21:29.551Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-go-step-dirty-guard","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-09-23T13:23:00.749Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-go-step-dirty-guard","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-23T13:23:50.947Z"}

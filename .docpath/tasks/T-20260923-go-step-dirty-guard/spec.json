@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T13:07:50.867Z",
+    "updated_at": "2026-09-23T13:07:50.867Z",
+    "content_sha256": "225df1b05cfa8cec30c26c631a129f513a89286c1219d2cbef14702df244b016"
+  },
+  "task_id": "T-20260923-go-step-dirty-guard",
+  "backlog_id": "R-360",
+  "title": "T-20260923-go-step-dirty-guard - go --step 对未跟踪文件的 dirty guard 报错信息补充",
+  "generated_at": "2026-09-23T13:07:50.867Z",
+  "scope": {
+    "included": [
+      "git-dirty-guard.ts buildDirtyWorktreeError 的未跟踪段措辞补强"
+    ],
+    "excluded": [
+      "改变 dirty guard 的拦截逻辑"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": ""
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "未跟踪文件报错段补强——明确「未跟踪=未归属，git add 认领后才能被门禁视为本任务文件」",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "补充「不要 git add -A」提醒（worktree 常有别的 agent 在改，半成品会被扫进 commit）",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不改既有 git add / --accept-dirty 指引结构",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "报错未跟踪段含「未跟踪=未归属」与「不要 git add -A」提示",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "已跟踪修改段指引不变",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
