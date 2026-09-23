@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-task-2","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 多技术栈定向测试与门禁去重效能规范落盘与随路路由强化","timestamp":"2026-09-23T18:49:47.589Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-task-2","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-23T18:50:23.843Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-task-2","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-23T18:51:31.037Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-task-2","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-09-23T18:51:31.525Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-task-2","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-23T18:51:31.994Z"}

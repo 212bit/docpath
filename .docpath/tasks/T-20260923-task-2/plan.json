@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T18:50:23.846Z",
+    "updated_at": "2026-09-23T18:50:23.846Z",
+    "content_sha256": "219e7ade297ce7f8cd1845bd0f88b087f715b3c4f1b803fa2186b3ec5b92c0fd"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T18:50:23.846Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 多技术栈定向测试与门禁去重效能规范落盘与随路路由强化",
+      "description": "完成 FR-1: 多技术栈定向测试与门禁去重效能规范落盘与随路路由强化，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: AGENTS.md 补齐跨技术栈定向测试映射表；docs 活文档体系同步且 lint 通过；全量测试与门禁通过；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-376 与任务 T-20260923-task-2 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

@@ -46,6 +46,7 @@ docs/
 ### 5. 开发者与上手指南 (Guides)
 * [快速上手 (Getting Started)](file:///Users/mac/project/docpath/docs/getting-started.md) — 从安装到首次任务开发。
 * [构建与测试 (Build & Test)](file:///Users/mac/project/docpath/docs/BUILD.md) — 本地构建、单测、端到端测试流程。
+* [多技术栈定向测试与门禁效能最佳实践](./guides/multi-stack-testing-efficiency.md) — 跨技术栈（Node/Go/Rust/Python/Java）调试期定向测试与收口门禁去重规范。
 * [错误码与排错 (Error Codes)](file:///Users/mac/project/docpath/docs/error-codes.md) — 常见报错原因与恢复指引。
 
 ---
