@@ -48,8 +48,12 @@ function readChangedFiles(cwd: string): string[] {
     });
     return output
       .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
+      .map((line) => line.trimEnd())
+      .filter((line) => line.length > 3)
+      // porcelain=v1 行格式为固定 `XY <path>`（两位状态码 + 1 空格），slice(3) 取路径。
+      // 注意：不能先 trim 行首——` M src/...`（已跟踪修改，前导空格）trim 后变 `M src/...`，
+      // slice(3) 会把 `src/` 错切成 `rc/`，导致核心路径（RISKY_PATH_PATTERNS）匹配失效、
+      // check 风险复评漏判核心改动进 quick 快车道。
       .map((line) => line.slice(3).trim())
       .filter(Boolean)
       .map((file) => file.replace(/^"|"$/g, ''));
