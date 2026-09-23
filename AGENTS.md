@@ -89,6 +89,7 @@ Use lifecycle commands instead of manual state edits:
 <!-- docpath:block lifecycle-commands -->
 ```bash
 docpath quick "Fix typo in docs"   # mandatory for tiny low-risk changes (< 50 lines diff)
+docpath start R-101 --draft        # compound: 1-shot start from backlog (promote + plan + go S1)
 docpath go --step S1
 docpath step-pass                  # compound (R-340): finish current step + auto-start next
 docpath agent step --step "S1" --status done
@@ -194,6 +195,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath reveal --level N --topic <keyword>` | Progressive context expansion |
 | `docpath context --smart` | Smart path- and topic-affine rule & document routing package (`--agent` / `--raw`) |
 | `docpath context --max-tokens 5000 --topic <keyword>` | Budgeted context package |
+| `docpath start <id> [--draft]` | 1-shot start from backlog (promote + plan + go S1) |
 | `docpath go --step S1` | Atomically claim/start the selected plan step |
 | `docpath check` | Quality gates |
 | `docpath verify` | Semantic anti-drift, scope boundaries, and requirement completeness gate (`--agent` / `--json`) |

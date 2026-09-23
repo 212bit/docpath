@@ -1,0 +1,10 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-start-promote","step":"check","status":"blocked","context":"质量检查失败: 测试, 子任务完成度 (0/3)","timestamp":"2026-09-23T18:57:14.505Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-start-promote","step":"S1","status":"in_progress","context":"开始执行: 梳理 路由与协议口径升级：统一使用 start 一键拉起命令替代 promote 三连","timestamp":"2026-09-23T18:57:59.521Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-start-promote","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-23T18:58:00.108Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-start-promote","step":"S2","status":"in_progress","context":"开始执行: 实现 路由与协议口径升级：统一使用 start 一键拉起命令替代 promote 三连","timestamp":"2026-09-23T18:58:00.332Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-start-promote","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-09-23T18:58:00.894Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-start-promote","step":"S3","status":"in_progress","context":"开始执行: 验证验收标准","timestamp":"2026-09-23T18:58:01.124Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-start-promote","step":"S3","status":"done","context":"step-pass: S3","timestamp":"2026-09-23T18:58:01.692Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-start-promote","step":"check","status":"done","context":"质量检查通过 (13 项)","timestamp":"2026-09-23T18:59:07.516Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-start-promote","step":"review","status":"done","context":"代码审查: 0 错误, 2 警告, 0 提示","timestamp":"2026-09-23T18:59:08.282Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-start-promote","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-09-23T18:59:08.818Z"}

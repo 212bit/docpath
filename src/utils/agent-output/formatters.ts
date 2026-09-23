@@ -616,12 +616,12 @@ export function inferNextAction(
     }
     if (acceptedBacklog) {
       return withWorkflowConstraint({
-        next_action: `从 backlog 拉起下一项任务: ${acceptedBacklog.id} ${acceptedBacklog.title}`,
-        recommended_command: `docpath backlog promote ${acceptedBacklog.id}`,
+        next_action: `从 backlog 一键拉起并启动任务: ${acceptedBacklog.id} ${acceptedBacklog.title}`,
+        recommended_command: `docpath start ${acceptedBacklog.id} --draft`,
         required_context: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
         required_files: ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'],
         must_update: [],
-        exit_criteria: `${acceptedBacklog.id} 已 promote 成活跃任务`,
+        exit_criteria: `${acceptedBacklog.id} 已通过 docpath start 一键拉起并启动执行`,
       }, phase, gate);
     }
     if (immatureAcceptedBacklog) {
@@ -677,10 +677,10 @@ export function inferNextAction(
   switch (currentState) {
     case 'idle':
       if (acceptedBacklog) {
-        next_action = `从 backlog 拉起下一项任务: ${acceptedBacklog.id} ${acceptedBacklog.title}`;
-        recommended_command = `docpath backlog promote ${acceptedBacklog.id}`;
+        next_action = `从 backlog 一键拉起并启动任务: ${acceptedBacklog.id} ${acceptedBacklog.title}`;
+        recommended_command = `docpath start ${acceptedBacklog.id} --draft`;
         required_context = ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'];
-        exit_criteria = `${acceptedBacklog.id} 已 promote 成活跃任务`;
+        exit_criteria = `${acceptedBacklog.id} 已通过 docpath start 一键拉起并启动执行`;
       } else if (immatureAcceptedBacklog) {
         next_action = `backlog 条目尚未达到可执行成熟度: ${immatureAcceptedBacklog.id} ${immatureAcceptedBacklog.title}`;
         recommended_command = `docpath backlog edit ${immatureAcceptedBacklog.id} --readiness analyzed --evidence-analysis <path>`;

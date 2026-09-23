@@ -392,7 +392,7 @@ Promote ready.
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath backlog promote R-901');
+    assert.equal(output.recommended_command, 'docpath start R-901 --draft');
     assert.match(output.next_action, /R-901/);
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -631,7 +631,7 @@ Alpha
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath backlog promote R-001');
+    assert.equal(output.recommended_command, 'docpath start R-001 --draft');
     assert.match(output.next_action, /R-001 Alpha/);
     assert.ok(output.context_refs.some(ref => ref.path === '.docpath/backlog/backlog.md'));
     rmSync(cwd, { recursive: true, force: true });
@@ -675,7 +675,7 @@ Alpha
 
     const output = nextAgent(cwd);
 
-    assert.equal(output.recommended_command, 'docpath backlog promote R-001');
+    assert.equal(output.recommended_command, 'docpath start R-001 --draft');
     rmSync(cwd, { recursive: true, force: true });
   });
 
