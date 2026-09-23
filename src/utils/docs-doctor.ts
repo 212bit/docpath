@@ -287,7 +287,7 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
           if (
             entry.name === '.id-counter' ||
             entry.name === 'backlog.md' ||
-            /^R-\d+(-[a-z0-9\-]+)?\.md$/i.test(entry.name)
+            /^R-\d+(-[^\x00-\x1f/\\:*?"<>|]+)?\.md$/iu.test(entry.name)
           ) {
             continue;
           }

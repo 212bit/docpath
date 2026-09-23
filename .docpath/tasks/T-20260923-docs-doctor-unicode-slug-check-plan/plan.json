@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T16:15:39.228Z",
+    "updated_at": "2026-09-23T16:15:39.228Z",
+    "content_sha256": "0994e0a49c0421071f6e7ca999a901ab8958e83eeae6dc1f14cdf300fe2a4335"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T16:15:39.228Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 docs-doctor 支持 unicode slug 校验及 check 升级自动补齐 plan",
+      "description": "完成 FR-1: docs-doctor 支持 unicode slug 校验及 check 升级自动补齐 plan，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: check 升级后能正常通过门禁，测试与文档全量通过；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-370 与任务 T-20260923-docs-doctor-unicode-slug-check-plan 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

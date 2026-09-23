@@ -25,6 +25,7 @@ import { syncProtocolBlocks } from '../utils/protocol-blocks.js';
 import { resolveTemplate } from '../utils/install-core.js';
 import { recordEnvExemption } from '../engine/policy.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
+import { renderDraftPlan } from './plan.js';
 import { reassessRiskTier, riskPolicyFromConfig } from '../engine/risk.js';
 import { recordRiskEscalation } from '../engine/policy.js';
 import { readRiskPolicyConfig } from '../utils/config.js';
@@ -268,6 +269,14 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
             // 也不再要求 agent 手动 write-spec 同步。
             await writeActiveTaskFile(docpathDir, current.task_id, 'spec.md', newSpec);
             logger.log('📝  已自动将 spec.md 升级为 standard 格式并同步 spec.json 真源（保留原标题和需求摘要）。');
+
+            // R-370: 升级为 standard 需补齐 plan.md 避免门禁报 plan.md 缺失
+            const planPath = join(taskDir, 'plan.md');
+            if (!existsSync(planPath)) {
+              const draftPlan = renderDraftPlan(newSpec, current.level ?? 2);
+              await writeActiveTaskFile(docpathDir, current.task_id, 'plan.md', draftPlan);
+              logger.log('📋  已自动补齐单步执行计划 plan.md 与 plan.json 真源。');
+            }
             logger.log('');
           }
         } catch {
