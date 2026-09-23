@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T16:30:22.814Z",
+    "updated_at": "2026-09-23T16:30:22.814Z",
+    "content_sha256": "b8117116272fa0c7156e046f7697b51a5c82d025385306e7fd8173478620b258"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T16:30:22.814Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 Agent 输出去噪与高浓度行动护栏重构",
+      "description": "完成 FR-1: Agent 输出去噪与高浓度行动护栏重构，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: next/status agent 输出完成瘦身，active_guardrails 自动转换为高质量指令，测试全量通过；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-372 与任务 T-20260923-agent-2 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

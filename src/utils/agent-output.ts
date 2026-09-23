@@ -3,6 +3,7 @@ import { join } from 'path';
 import { resolveDocpathDir } from './file.js';
 import { gatePolicyForProfile, resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 import { selectCurrentFocus, summarizeDrift, loadAgentOutputContext, inferRouteFromContext, generateQuickFix, routeStepTopic } from './agent-output/formatters.js';
+import { formatActiveGuardrails } from './agent-output/context-injection.js';
 import { detectBinaryDrift, detectPathShadowing, takePathShadowAdvisory } from './version-drift.js';
 export type { AgentOutput } from './agent-output/formatters.js';
 
@@ -142,13 +143,7 @@ export async function generateAgentOutput(
     } : {}),
     context_injection: {
       spec_summary: context.specSummary,
-      recent_decisions: context.recentDecisions.length > 0 ? context.recentDecisions.map((d) => ({
-        id: d.id,
-        task_id: d.taskId,
-        category: d.category,
-        conclusion: d.conclusion,
-        created_at: d.createdAt,
-      })) : [],
+      active_guardrails: formatActiveGuardrails(context.recentDecisions),
     },
     task_id: context.state?.task_id || '',
     task_title: context.state?.task_title || '',
@@ -192,17 +187,23 @@ export async function generateAgentOutput(
     install_health: context.installHealth
       ? installHealthPassed && !verbose
         ? { passed: true }
-        : {
-            target: context.installHealth.target,
-            adapters: [...context.installHealth.adapters],
-            current_agent: context.installHealth.current_agent,
-            passed: context.installHealth.passed,
-            errors: context.installHealth.errors,
-            warnings: context.installHealth.warnings,
-            issue_scope: 'install-baseline',
-            recommended_command: context.installHealth.recommended_command,
-            issue_ids: context.installHealth.issues.map((issue) => issue.id),
-          }
+        : view === 'status' || verbose
+          ? {
+              target: context.installHealth.target,
+              adapters: [...context.installHealth.adapters],
+              current_agent: context.installHealth.current_agent,
+              passed: context.installHealth.passed,
+              errors: context.installHealth.errors,
+              warnings: context.installHealth.warnings,
+              issue_scope: 'install-baseline',
+              recommended_command: context.installHealth.recommended_command,
+              issue_ids: context.installHealth.issues.map((issue) => issue.id),
+            }
+          : {
+              passed: context.installHealth.passed,
+              reason: context.installHealth.issues.map((i) => i.message || i.id).join('; ') || '安装基线未通过',
+              fix_command: context.installHealth.recommended_command || 'docpath install --target universal',
+            }
       : null,
     ...(context.contextIndex ? { context_index: context.contextIndex } : {}),
     // R-335 FR-4 / R-332: 版本漂移提示——docpath 源码仓内用仓库外二进制时警告
@@ -232,22 +233,26 @@ export async function generateAgentOutput(
     selfSessionId: selfSession.sessionId,
   });
 
-  output.active_sessions = activeSessions.map((sess) => ({
-    session_id: sess.session_id,
-    pid: sess.pid,
-    cwd: sess.cwd,
-    command: sess.command,
-    task_id: sess.task_id,
-    step: sess.step,
-    updated_at: sess.updated_at,
-  }));
-
   if (activeSessions.length > 0) {
+    output.active_sessions = activeSessions.map((sess) => ({
+      session_id: sess.session_id,
+      pid: sess.pid,
+      cwd: sess.cwd,
+      command: sess.command,
+      task_id: sess.task_id,
+      step: sess.step,
+      updated_at: sess.updated_at,
+    }));
     output.concurrent_session_warning = `检测到 ${activeSessions.length} 个其它活跃 Agent 会话正在运行。请确保没有并发修改或锁冲突。`;
+    output.state_freshness = 'potentially_stale';
+  } else if (view === 'status' || verbose) {
+    output.active_sessions = [];
+    output.state_freshness = 'fresh';
   }
-  output.state_freshness = activeSessions.length > 0 ? 'potentially_stale' : 'fresh';
 
-  output.generated_at = new Date().toISOString();
+  if (verbose) {
+    output.generated_at = new Date().toISOString();
+  }
 
   return stringify(output, { indent: 2 });
 }

@@ -23,6 +23,36 @@ export interface SpecSummary {
   requirements: string[];
 }
 
+/**
+ * 将 ADR 决策记录浓缩为 Agent 高度可执行的行动红线（Active Guardrails）。
+ * 过滤掉 task_id、created_at 时间戳等元数据噪音，提炼出清晰的行动指令。
+ */
+export function formatActiveGuardrails(decisions: DecisionEntry[]): string[] {
+  if (!decisions || decisions.length === 0) return [];
+  return decisions.map((d) => {
+    const raw = (d.conclusion || '').trim();
+    if (!raw) return `${d.id}: (无详细结论)`;
+
+    // 如果已经包含指示标签
+    if (/^[【\[].+[】\]]/.test(raw)) {
+      return raw.includes(d.id) ? raw : `${raw} (${d.id})`;
+    }
+
+    // 智能提取意图（必须/强制优先于目标从句中的避免）
+    if (/(?:必须|强制|务必)/.test(raw)) {
+      return `【必须】${raw} (${d.id})`;
+    }
+    if (/(?:严禁|禁止|不得|严防)/.test(raw) || /^避免/.test(raw)) {
+      return `【严禁】${raw} (${d.id})`;
+    }
+    if (d.category && d.category !== 'general') {
+      const catLabel = d.category.replace(/^risk\./, '风险:').replace(/^arch\./, '架构:');
+      return `【${catLabel}】${raw} (${d.id})`;
+    }
+    return `【规范】${raw} (${d.id})`;
+  });
+}
+
 // ── Context Injection 加载函数 ──
 
 const DECISIONS_MAX_LINES = 50;
