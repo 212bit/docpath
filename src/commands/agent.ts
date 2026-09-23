@@ -47,6 +47,10 @@ type AgentOptions = {
   step?: string;
   batch?: string;
   note?: string;
+  /** R-359: 从标准输入读取 note，绕开 shell 对反引号/$/! 等特殊字符的命令替换/展开 */
+  stdin?: boolean;
+  /** R-359: 从文件读取 note，绕开 shell 特殊字符处理 */
+  bodyFile?: string;
   status?: 'done' | 'blocked' | 'skipped';
   skipCheck?: boolean;
   skipReview?: boolean;
@@ -93,6 +97,32 @@ function requireSkipReason(flag: '--skip-tests' | '--skip-check' | '--skip-revie
     throw new Error(`docpath agent done ${flag} requires --note "<reason>"`);
   }
   return note.trim();
+}
+
+/**
+ * R-359: 解析 note 输入源，优先级 bodyFile > stdin > --note。
+ * 反引号/`$`/`!` 等 shell 特殊字符会在 shell 层被命令替换/展开，导致 --note 内联文字静默消失。
+ * 通过 --body-file（文件）或 --stdin（管道）传入可绕开 shell 处理，完整保留原文字。
+ * 三者同时出现时，后者（更安全的通道）优先，并提示用户。
+ */
+async function resolveNoteInput(options: AgentOptions): Promise<string | undefined> {
+  const { readFile } = await import('node:fs/promises');
+  const { readStdin } = await import('../utils/stdin.js');
+  let resolved: string | undefined;
+  let source = 'note';
+  if (options.bodyFile) {
+    resolved = await readFile(options.bodyFile, 'utf-8');
+    source = 'body-file';
+  } else if (options.stdin) {
+    resolved = await readStdin();
+    source = 'stdin';
+  } else {
+    resolved = options.note;
+  }
+  if ((source === 'body-file' || source === 'stdin') && options.note && options.note.trim()) {
+    console.warn(`⚠️  --note 与 --${source} 同时出现，已采用 --${source} 的内容（绕开 shell 特殊字符更安全）`);
+  }
+  return resolved?.replace(/\n+$/, '');
 }
 
 
@@ -590,7 +620,11 @@ export async function agentCommand(options: AgentOptions): Promise<void> {
     throw new Error(`Unsupported agent action: ${action}. Expected enter | step | done`);
   }
 
-  if (action === 'enter') return handleAgentEnter(options);
-  if (action === 'step') return handleAgentStep(options);
-  return handleAgentDone(options);
+  // R-359: 统一解析 note 输入源（bodyFile > stdin > --note），所有子命令受益。
+  const resolvedNote = await resolveNoteInput(options);
+  const mergedOptions: AgentOptions = { ...options, note: resolvedNote };
+
+  if (action === 'enter') return handleAgentEnter(mergedOptions);
+  if (action === 'step') return handleAgentStep(mergedOptions);
+  return handleAgentDone(mergedOptions);
 }

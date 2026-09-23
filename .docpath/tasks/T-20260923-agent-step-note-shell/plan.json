@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T13:16:28.087Z",
+    "updated_at": "2026-09-23T13:16:28.087Z",
+    "content_sha256": "abed01eaaac05b427a8eca0abd1b098fa8259c8666e41f032e8ae50ec3044985"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T13:16:28.087Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 agent step / enter / done 的 note 支持 --stdin（从标准输入读取）与 --body-file <path>（从文件读取），绕开 shell 特殊字符处理",
+      "description": "完成 FR-1: agent step / enter / done 的 note 支持 --stdin（从标准输入读取）与 --body-file <path>（从文件读取），绕开 shell 特殊字符处理；FR-2: 当 --note 与 --stdin/--body-file 同时出现时，以后者为准并给出提示，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: 含反引号的 note 经 --stdin 传入后，breadcrumb/plan 中完整保留原文字（不被命令替换）；AC-2: --note 与 --stdin 同现时后者优先；AC-3: 现有 --note 单行用法不受影响",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
