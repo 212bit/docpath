@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T19:42:42.194Z",
+    "updated_at": "2026-09-23T19:42:42.194Z",
+    "content_sha256": "91d24d0a97ce3837698e7de901014f48c125fe6ec1d3f392e9007c6d7ff0c12a"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T19:42:42.194Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 优化生命周期流转：收敛 test-scope 核心路径白名单、done 自动集成 docs-sync 与 一键 commit 协议",
+      "description": "完成 优化生命周期流转：收敛 test-scope 核心路径白名单、done 自动集成 docs-sync 与 一键 commit 协议（quick 升级 standard 压缩计划）。",
+      "acceptance": "代码实现就绪并通过质量门禁与审查",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

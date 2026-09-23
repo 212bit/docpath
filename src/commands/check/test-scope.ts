@@ -25,13 +25,15 @@ import { minimatch } from 'minimatch';
 
 /** 影响面减载的安全回落模式：改动触及这些路径时强制全量，绝不因减载漏测核心。 */
 export const TEST_SCOPE_RISKY_PATTERNS: Array<{ pattern: string; reason: string }> = [
-  // 所有顶层命令主文件（agent/review/go/backlog/check...ts）：它们可能影响所有消费其
-  // 语义的遍历测试（如 review 改动可能影响 check-review），无法可靠子集化。
-  // E2E 测试都通过 CLI 入口整体跑、不直接 import 源码，静态依赖扫描不可行，
-  // 故命令主文件一律回落全量（R-3xx cross-import 漏窗修复）。
-  { pattern: 'src/commands/*.ts', reason: '命令主文件被改，消费方测试不可子集化' },
+  // 核心生命周期调度器与收口门禁（改动必须全量回归）
+  { pattern: 'src/commands/agent.ts', reason: 'agent 核心调度被改，测试必须全量' },
+  { pattern: 'src/commands/check.ts', reason: 'check 核心调度被改，测试必须全量' },
+  { pattern: 'src/commands/done.ts', reason: 'done 核心收口被改，测试必须全量' },
+  { pattern: 'src/commands/quick-done.ts', reason: 'quick-done 核心收口被改，测试必须全量' },
+  { pattern: 'src/commands/runtime.ts', reason: 'runtime 核心调度被改，测试必须全量' },
   { pattern: 'src/commands/check/**', reason: 'check 子命令被改，测试必须全量' },
   { pattern: 'src/commands/worktree/**', reason: 'worktree 子命令被改，测试必须全量' },
+  { pattern: 'src/commands/worktree.ts', reason: 'worktree 主命令被改，测试必须全量' },
   { pattern: 'src/engine/**', reason: '核心工作流引擎被改' },
   { pattern: 'src/utils/git-run.ts', reason: 'git 调用工具被多命令共享' },
   { pattern: 'src/utils/workspace*.ts', reason: 'workspace 状态被改' },
@@ -58,6 +60,7 @@ const TEST_FILE_PREFIX_KEYS = [
   'agent', 'changes', 'journal', 'docs', 'task', 'breadcrumb', 'plan',
   'review', 'verify', 'quick', 'commit', 'go', 'milestone', 'project',
   'budget', 'context', 'render', 'trace', 'templates', 'recovery',
+  'gc', 'learn', 'status', 'init', 'step-pass',
 ];
 
 /** 获取当时 git 改动的源文件（staged + unstaged + untracked）。非 git 仓返回 null。 */

@@ -91,11 +91,11 @@ Use lifecycle commands instead of manual state edits:
 docpath quick "Fix typo in docs"   # mandatory for tiny low-risk changes (< 50 lines diff)
 docpath start R-101 --draft        # compound: 1-shot start from backlog (promote + plan + go S1)
 docpath go --step S1
-docpath step-pass                  # compound (R-340): finish current step + auto-start next
+docpath step-pass                  # compound (R-340): finish current step + auto-start next (or --all)
 docpath agent step --step "S1" --status done
 docpath check                      # targeted quality check during iteration
-docpath done                       # compound: full gate sequence (check -> review -> journal) in one shot
-docpath quick-done                 # compound (R-340): done gate sequence + commit-readiness in one call
+docpath done --commit              # compound: full gate sequence (check -> review -> journal -> commit) in 1-shot
+docpath quick-done --commit        # compound (R-340): quick gate sequence + commit in 1-shot
 ```
 <!-- /docpath:block -->
 
@@ -143,16 +143,16 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 - Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath verify` to confirm requirement completeness and scope boundaries before final closeout.
-- Run `docpath done` (or `docpath quick-done`) before claiming a task is complete.
+- Run `docpath done --commit` (or `docpath quick-done --commit`) to execute quality gates, knowledge archiving, and git commit in 1-shot.
 
 ## Git Convention
 
-- **Auto-commit after `agent done`**: Once `docpath agent done` completes and
-  all gates pass (check, review, journal), commit automatically. Do not commit
-  mid-task on intermediate verification passes.
-- **Run `docpath changes --agent` before each commit**: Treat it as the commit
-  readiness report. Use its closeout summary as the commit message title;
-  append sub-change bullet points in the body.
+- **Prefer One-Shot Compound Closeout (`docpath done --commit` / `docpath quick-done --commit`)**:
+  Executes quality check, review, journal, stages all affected files, generates a structured commit message from `docpath changes`, and commits automatically in a single command.
+- **Manual Commit Flow (when multi-stage split commits are needed)**:
+  1. Once `docpath agent done` completes and all gates pass, run `docpath changes --agent` to inspect the commit readiness report.
+  2. Use its closeout summary as the commit message title; append sub-change bullet points in the body.
+  3. Stage all modified tracked files (`git add .`) and commit.
 - **Stage all modified tracked files**: Include both source/test files and any
   tracked `.docpath/` files (backlog, rules, AGENTS.md) that changed during the
   work. The `.gitignore` already excludes pure runtime state (workspace/,

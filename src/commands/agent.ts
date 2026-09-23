@@ -15,6 +15,7 @@ import { execFileSync } from 'node:child_process';
 import { checkCommand } from './check.js';
 import { journalCommand } from './journal.js';
 import { reviewCommand } from './review.js';
+import { refreshProjectDocumentIndex } from './docs.js';
 import { endStepExecution, runCommand } from './runtime.js';
 import { writeHybridContextIndex } from '../utils/context-index.js';
 import { goCommand } from './go.js';
@@ -605,6 +606,11 @@ async function handleAgentDone(options: AgentOptions): Promise<void> {
   await runAgentReviewGate(options, stateAfterCheck);
   if (finalStatus === 'done') {
     await completeFinalPlanStepIfNeeded(options, taskId, finalPlanStep);
+    try {
+      await refreshProjectDocumentIndex(join(cwd, '.docpath'), cwd);
+    } catch {
+      // non-fatal
+    }
   }
   await finishAgentDoneTask(options, finalStatus);
   await emitAgentTaskEnd(cwd, finalStatus);

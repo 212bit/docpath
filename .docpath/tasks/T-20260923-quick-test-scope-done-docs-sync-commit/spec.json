@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T19:42:41.952Z",
+    "updated_at": "2026-09-23T19:42:41.952Z",
+    "content_sha256": "903875be0987f42bc0fc365eed6dac3121ab6079f5e7bb76c0de2746215ae5cc"
+  },
+  "task_id": "T-20260923-quick-test-scope-done-docs-sync-commit",
+  "backlog_id": null,
+  "title": "T-20260923-quick-test-scope-done-docs-sync-commit - 优化生命周期流转：收敛 test-scope 核心路径白名单、done 自动集成 docs-sync 与 一键 commit 协议",
+  "generated_at": "2026-09-23T19:42:41.952Z",
+  "scope": {
+    "included": [
+      "优化生命周期流转：收敛 test-scope 核心路径白名单、done 自动集成 docs-sync 与 一键 commit 协议"
+    ],
+    "excluded": [
+      "无关的非范围需求"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": ""
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "优化生命周期流转：收敛 test-scope 核心路径白名单、done 自动集成 docs-sync 与 一键 commit 协议",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持架构与现有工作流一致性",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "代码修改完成并全量通过 check 与 review 门禁",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
