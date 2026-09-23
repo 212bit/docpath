@@ -10,7 +10,7 @@ evidence:
   brainstorm: null
   analysis: null
   spec: tasks/T-20260923-worktree-backlog-merge-mediated/spec.md
-  decision_brief: .docpath/backlog/R356-decision-brief.md
+  decision_brief: .docpath/backlog/analysis/R-356-decision-brief.md
   user_confirmed: 2026-09-23 用户裁定：采纳方案 B（跨 worktree 扫描 + 共享注册表）；注册表位置
     .git/docpath-backlog-registry.json；实时性下限=capture 时（点时刻）可见，不做后台实时推送。
 links:

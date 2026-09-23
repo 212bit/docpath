@@ -15,6 +15,7 @@ let createBacklogItem;
 let detectBacklogIdCollisions;
 let archiveBacklogItem;
 let detectBacklogDuplicates;
+let cleanBacklogTitle;
 
 before(async () => {
   ({
@@ -29,6 +30,7 @@ before(async () => {
     detectBacklogIdCollisions,
     archiveBacklogItem,
     detectBacklogDuplicates,
+    cleanBacklogTitle,
   } = await import('../dist/engine/backlog.js'));
 });
 
@@ -497,6 +499,20 @@ old body
 `);
     const dups = await detectBacklogDuplicates(cwd, { id: 'R-040', title: 'Same Thing Twice' });
     assert.ok(dups.some((d) => d.kind === 'same-title' && d.archived_file?.includes('R-009')));
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('cleans redundant prefix noise from backlog titles and filenames', async () => {
+    assert.equal(cleanBacklogTitle('P0: Fix critical auth bug'), 'Fix critical auth bug');
+    assert.equal(cleanBacklogTitle('[P1] Enhance search latency'), 'Enhance search latency');
+    assert.equal(cleanBacklogTitle('R-356 - Root cause snapshot issue'), 'Root cause snapshot issue');
+    assert.equal(cleanBacklogTitle('[dropped] Old concept'), 'Old concept');
+    assert.equal(cleanBacklogTitle('[P0] [R-100] Complex title'), 'Complex title');
+
+    const cwd = mkWorkspace();
+    const created = await createBacklogItem(cwd, sampleItem({ title: 'P0: Auto Clean Title' }));
+    assert.equal(created.title, 'Auto Clean Title');
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', `${created.id}-auto-clean-title.md`)));
     rmSync(cwd, { recursive: true, force: true });
   });
 });

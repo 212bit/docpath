@@ -15,12 +15,15 @@ import { join, dirname, resolve, isAbsolute } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { resolveDocpathDir } from '../utils/file.js';
 import {
+  cleanBacklogTitle,
   findRegistryIdHolders,
   findRegistryTitleHolders,
   listWorktreeDocpathDirs,
   readBacklogRegistry,
   registerBacklogEntry,
 } from '../utils/backlog-registry.js';
+
+export { cleanBacklogTitle };
 
 export type BacklogStatus = 'proposed' | 'accepted' | 'planned' | 'active' | 'done' | 'dropped';
 export type BacklogPriority = 'P0' | 'P1' | 'P2' | 'P3';
@@ -366,6 +369,7 @@ export async function readBacklogItem(
 export async function writeBacklogItem(cwd: string, item: BacklogItem): Promise<void> {
   const dir = backlogDir(await resolveDocpathDir(cwd));
   await mkdir(dir, { recursive: true });
+  item.title = cleanBacklogTitle(item.title);
   const existing = await findItemFile(dir, item.id);
   const fileName = existing ?? `${item.id}-${slugify(item.title)}.md`;
   await writeFile(join(dir, fileName), serializeItem(item), 'utf-8');
@@ -386,10 +390,13 @@ export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id
   const dir = backlogDir(docpathDir);
   await mkdir(dir, { recursive: true });
 
+  const cleanedTitle = cleanBacklogTitle(item.title);
+  const normalizedItem = { ...item, title: cleanedTitle };
+
   let next = parseBacklogNumber(await nextBacklogId(cwd));
   while (true) {
     const id = formatBacklogId(next);
-    const candidate: BacklogItem = { ...item, id };
+    const candidate: BacklogItem = { ...normalizedItem, id };
     const reservedFileName = `${id}.md`;
     try {
       const reservedPath = join(dir, reservedFileName);
@@ -403,13 +410,13 @@ export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id
         next += 1;
         continue;
       }
-      const finalFileName = `${id}-${slugify(item.title)}.md`;
+      const finalFileName = `${id}-${slugify(candidate.title)}.md`;
       await rename(reservedPath, join(dir, finalFileName));
       // 分配成功 → 推进权威计数器（O(1) 写），下次分配不再全目录扫描
       await writeBacklogIdCounter(docpathDir, next);
       // R-356：登记到跨 worktree 共享注册表，让兄弟 worktree 并行 capture 时可见
       // （fail-open：写失败不阻断创建，兜底仍是实时扫兄弟 worktree）
-      await registerBacklogEntry(cwd, { id, title: item.title, worktree: cwd });
+      await registerBacklogEntry(cwd, { id, title: candidate.title, worktree: cwd });
       return candidate;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
@@ -659,7 +666,7 @@ export interface BacklogDuplicateReport {
 }
 
 function normalizeBacklogTitle(title: string): string {
-  return title
+  return cleanBacklogTitle(title)
     .normalize('NFC')
     .trim()
     .replace(/\s+/g, ' ')

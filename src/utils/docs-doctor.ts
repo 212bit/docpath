@@ -10,8 +10,9 @@
  */
 
 import { existsSync } from 'node:fs';
-import { readFile, writeFile, readdir, rm } from 'node:fs/promises';
-import { join, relative, extname, basename, dirname, resolve } from 'node:path';
+import { readFile, writeFile, readdir, rm, rename, mkdir } from 'node:fs/promises';
+import { join, relative, extname, basename, dirname, resolve, isAbsolute } from 'node:path';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { resolveDocpathDir, readFileSafe, writeFileAtomic } from './file.js';
 import {
   readProjectDocumentIndex,
@@ -26,7 +27,9 @@ export type DocIssueType =
   | 'missing-heading'
   | 'unindexed'
   | 'stale-index'
-  | 'stale-archive';
+  | 'stale-archive'
+  | 'backlog-misplaced'
+  | 'broken-evidence';
 
 export interface DocIssue {
   file: string;
@@ -53,6 +56,7 @@ export interface DocHealthReport {
     missingHeadings: number;
     emptyDocs: number;
     staleIndex: number;
+    backlogIssues: number;
   };
 }
 
@@ -261,12 +265,172 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
     }
   }
 
+  // 4. Backlog 目录规范与证据死链检查 (Backlog Layout & Evidence Integrity)
+  const backlogDir = join(docpathDir, 'backlog');
+  if (existsSync(backlogDir)) {
+    try {
+      const entries = await readdir(backlogDir, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = join(backlogDir, entry.name);
+        const rel = normalizeDocPath(relative(projectRoot, full));
+        if (entry.isDirectory()) {
+          if (entry.name !== 'analysis' && entry.name !== 'archived') {
+            issues.push({
+              file: rel,
+              absPath: full,
+              type: 'backlog-misplaced',
+              message: `未预期的 Backlog 子目录: ${entry.name}（仅允许 analysis/ 与 archived/）`,
+              autoFixable: false,
+            });
+          }
+        } else if (entry.isFile()) {
+          if (
+            entry.name === '.id-counter' ||
+            entry.name === 'backlog.md' ||
+            /^R-\d+(-[a-z0-9\-]+)?\.md$/i.test(entry.name)
+          ) {
+            continue;
+          }
+          const isAnalysisOrBrief = /(?:analysis|decision|brief|summary|product|technical|requirements|risks|questions)/i.test(
+            entry.name,
+          );
+          let targetName = entry.name;
+          if (/^R\d+/i.test(targetName)) {
+            targetName = targetName.replace(/^R(\d+)/i, 'R-$1');
+          }
+          const suggestedTarget = isAnalysisOrBrief
+            ? normalizeDocPath(relative(projectRoot, join(backlogDir, 'analysis', targetName)))
+            : undefined;
+          issues.push({
+            file: rel,
+            absPath: full,
+            type: 'backlog-misplaced',
+            message: isAnalysisOrBrief
+              ? `Backlog 根目录下存在游离分析/决策文件: ${entry.name}，应移至 analysis/ 目录`
+              : `非标准的 Backlog 文件命名: ${entry.name}`,
+            autoFixable: !!suggestedTarget,
+            fixDetail: suggestedTarget ? `自动移动至 ${suggestedTarget}` : undefined,
+            linkData: suggestedTarget
+              ? {
+                  originalText: entry.name,
+                  originalTarget: rel,
+                  suggestedTarget,
+                }
+              : undefined,
+          });
+        }
+      }
+
+      // 扫描 active 与 archived 内的所有 backlog 文件，校验 evidence 路径有效性
+      const backlogRoots = [backlogDir, join(backlogDir, 'archived')];
+      for (const bDir of backlogRoots) {
+        if (!existsSync(bDir)) continue;
+        const bEntries = await readdir(bDir, { withFileTypes: true });
+        for (const bEntry of bEntries) {
+          if (!bEntry.isFile() || !bEntry.name.endsWith('.md') || bEntry.name === 'backlog.md') continue;
+          const bAbs = join(bDir, bEntry.name);
+          const bRel = normalizeDocPath(relative(projectRoot, bAbs));
+          const content = await readFileSafe(bAbs);
+          if (!content) continue;
+          const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+          if (!match) continue;
+          try {
+            const fm = (parseYaml(match[1]) || {}) as Record<string, unknown>;
+            if (fm.evidence && typeof fm.evidence === 'object') {
+              const evidenceObj = fm.evidence as Record<string, unknown>;
+              for (const field of ['brainstorm', 'analysis', 'spec', 'decision_brief'] as const) {
+                const val = evidenceObj[field];
+                if (typeof val === 'string' && val.trim()) {
+                  const target = val.trim();
+                  // 忽略内联叙述文本、对话确认或远程 URL
+                  if (
+                    target.includes('\n') ||
+                    target.startsWith('http://') ||
+                    target.startsWith('https://') ||
+                    target.startsWith('conversation:') ||
+                    /\s/.test(target) ||
+                    (!/\.(?:md|markdown|json|ya?ml|txt)$/i.test(target) &&
+                      !target.startsWith('./') &&
+                      !target.startsWith('../') &&
+                      !target.startsWith('.docpath/') &&
+                      !target.startsWith('tasks/'))
+                  ) {
+                    continue;
+                  }
+
+                  let found = false;
+                  if (existsSync(isAbsolute(target) ? target : resolve(projectRoot, target))) {
+                    found = true;
+                  } else if (target.startsWith('tasks/')) {
+                    const sub = target.replace(/^tasks\//, '');
+                    const directTask = join(docpathDir, 'tasks', sub);
+                    const doneTask = join(docpathDir, 'tasks', 'done', sub);
+                    if (existsSync(directTask) || existsSync(doneTask)) {
+                      found = true;
+                    }
+                  } else if (target.startsWith('.docpath/tasks/')) {
+                    const sub = target.replace(/^\.docpath\/tasks\//, '');
+                    const directTask = join(docpathDir, 'tasks', sub);
+                    const doneTask = join(docpathDir, 'tasks', 'done', sub);
+                    if (existsSync(directTask) || existsSync(doneTask)) {
+                      found = true;
+                    }
+                  } else if (existsSync(join(docpathDir, target))) {
+                    found = true;
+                  }
+
+                  if (!found) {
+                    // 尝试推断移动后的候选路径
+                    let suggestedTarget: string | undefined;
+                    const candidateAnalysis = join(backlogDir, 'analysis', basename(target));
+                    let normalizedAnalysisCandidate = '';
+                    if (/^R\d+/i.test(basename(target))) {
+                      normalizedAnalysisCandidate = join(
+                        backlogDir,
+                        'analysis',
+                        basename(target).replace(/^R(\d+)/i, 'R-$1'),
+                      );
+                    }
+                    if (existsSync(candidateAnalysis)) {
+                      suggestedTarget = normalizeDocPath(relative(projectRoot, candidateAnalysis));
+                    } else if (normalizedAnalysisCandidate && existsSync(normalizedAnalysisCandidate)) {
+                      suggestedTarget = normalizeDocPath(relative(projectRoot, normalizedAnalysisCandidate));
+                    }
+
+                    issues.push({
+                      file: bRel,
+                      absPath: bAbs,
+                      type: 'broken-evidence',
+                      message: `Backlog 证据死链: [${field}] "${target}" 目标文件不存在`,
+                      autoFixable: !!suggestedTarget,
+                      fixDetail: suggestedTarget ? `修正证据路径为 ${suggestedTarget}` : '无法推断有效证据路径',
+                      linkData: {
+                        originalText: field,
+                        originalTarget: target,
+                        suggestedTarget,
+                      },
+                    });
+                  }
+                }
+              }
+            }
+          } catch {
+            // 忽略 yaml 解析错误
+          }
+        }
+      }
+    } catch {
+      // 容错
+    }
+  }
+
   const stats = {
     brokenLinks: issues.filter((i) => i.type === 'broken-link').length,
     unindexed: issues.filter((i) => i.type === 'unindexed').length,
     missingHeadings: issues.filter((i) => i.type === 'missing-heading').length,
     emptyDocs: issues.filter((i) => i.type === 'empty-doc').length,
     staleIndex: issues.filter((i) => i.type === 'stale-index').length,
+    backlogIssues: issues.filter((i) => i.type === 'backlog-misplaced' || i.type === 'broken-evidence').length,
   };
 
   return {
@@ -284,6 +448,7 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
 export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean } = {}): Promise<DocFixResult> {
   const { dryRun = false } = options;
   const docpathDir = await resolveDocpathDir(cwd);
+  const projectRoot = dirname(resolve(docpathDir));
   const report = await diagnoseDocumentHealth(cwd);
 
   const healedHeadings: string[] = [];
@@ -352,7 +517,52 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     }
   }
 
-  // 3. 刷新活文档索引 (如果有未索引或幽灵索引条目)
+  // 3. 修复 Backlog 游离文件移动与证据死链自愈
+  for (const issue of report.issues) {
+    if (issue.type === 'backlog-misplaced' && issue.autoFixable && issue.linkData?.suggestedTarget) {
+      try {
+        const dest = resolve(projectRoot, issue.linkData.suggestedTarget);
+        if (!dryRun) {
+          await mkdir(dirname(dest), { recursive: true });
+          await rename(issue.absPath, dest);
+        }
+        repairedLinks.push({
+          file: issue.file,
+          from: issue.linkData.originalTarget,
+          to: issue.linkData.suggestedTarget,
+        });
+        fixedCount++;
+      } catch {
+        // 容错
+      }
+    } else if (issue.type === 'broken-evidence' && issue.autoFixable && issue.linkData?.suggestedTarget) {
+      try {
+        const content = (await readFileSafe(issue.absPath)) || '';
+        const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+        if (match) {
+          const fm = (parseYaml(match[1]) || {}) as Record<string, any>;
+          const field = issue.linkData.originalText;
+          if (fm.evidence && typeof fm.evidence === 'object') {
+            fm.evidence[field] = issue.linkData.suggestedTarget;
+            const newContent = `---\n${stringifyYaml(fm).trim()}\n---\n${match[2] || ''}`;
+            if (!dryRun) {
+              await writeFile(issue.absPath, newContent, 'utf-8');
+            }
+            repairedLinks.push({
+              file: issue.file,
+              from: issue.linkData.originalTarget,
+              to: issue.linkData.suggestedTarget,
+            });
+            fixedCount++;
+          }
+        }
+      } catch {
+        // 容错
+      }
+    }
+  }
+
+  // 4. 刷新活文档索引 (如果有未索引或幽灵索引条目)
   const needsIndexRefresh = report.stats.unindexed > 0 || report.stats.staleIndex > 0;
   if (needsIndexRefresh) {
     if (!dryRun) {
@@ -362,7 +572,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     fixedCount += report.stats.unindexed + report.stats.staleIndex;
   }
 
-  // 4. 重新诊断剩余未自愈问题
+  // 5. 重新诊断剩余未自愈问题
   const afterReport = dryRun ? report : await diagnoseDocumentHealth(cwd);
 
   return {
@@ -396,6 +606,7 @@ export function renderDocHealthTable(report: DocHealthReport): string {
   lines.push(`  - 缺失一级标题 (Missing H1)     : ${report.stats.missingHeadings === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.missingHeadings} 个文档缺少 H1`}`);
   lines.push(`  - 空白占位文档 (Empty Docs)     : ${report.stats.emptyDocs === 0 ? '✅ 无空文档' : `⚠️  ${report.stats.emptyDocs} 个空文档`}`);
   lines.push(`  - 幽灵过期索引 (Stale Index)    : ${report.stats.staleIndex === 0 ? '✅ 索引纯净' : `⚠️  ${report.stats.staleIndex} 个幽灵条目`}`);
+  lines.push(`  - Backlog 规范与证据 (Backlog Health) : ${report.stats.backlogIssues === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.backlogIssues} 个 Backlog 待治理项`}`);
   lines.push('');
 
   if (report.issues.length > 0) {

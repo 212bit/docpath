@@ -8,7 +8,7 @@ source: docpath backlog add
 readiness: confirmed
 evidence:
   brainstorm: null
-  analysis: .docpath/backlog/R362-analysis.md
+  analysis: .docpath/backlog/analysis/R-362-analysis.md
   spec: tasks/T-20260923-check-test-scope-quick-guard-porcelain-b/spec.md
   decision_brief: >-
     - 当前问题: check 全量测试约占耗时97%（实测80s），主要来自 node --test 87文件857用例。提供

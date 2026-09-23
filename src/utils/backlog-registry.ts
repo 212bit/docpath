@@ -81,8 +81,26 @@ export function backlogRegistryPath(cwd: string): string | null {
   return join(gitDir, REGISTRY_FILENAME);
 }
 
+/**
+ * 清理 Backlog 标题（R-368/治理）：去除前置冗余标记（P0/P1/P2/P3、R-###、[dropped]、[done] 等），
+ * 保持标题纯净、便于生成规范文件名与去重匹配。
+ */
+export function cleanBacklogTitle(raw: string): string {
+  let title = (raw || '').trim();
+  let changed = true;
+  while (changed) {
+    const prev = title;
+    title = title.replace(
+      /^(?:\[\s*(?:P[0-3]|R-\d+|proposed|accepted|planned|active|done|dropped)\s*\]|\(\s*(?:P[0-3]|R-\d+|proposed|accepted|planned|active|done|dropped)\s*\)|(?:P[0-3]|R-\d+)[\s:：\-—]+)\s*/i,
+      '',
+    );
+    changed = title !== prev;
+  }
+  return title.trim() || raw.trim();
+}
+
 function normalizeTitle(title: string): string {
-  return title
+  return cleanBacklogTitle(title)
     .normalize('NFC')
     .trim()
     .replace(/\s+/g, ' ')

@@ -73,4 +73,50 @@ describe('docpath docs lint command', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('detects misplaced backlog analysis files and broken evidence links', () => {
+    const cwd = mkWorkspace();
+    const dp = join(cwd, '.docpath');
+    const backlog = join(dp, 'backlog');
+    mkdirSync(backlog, { recursive: true });
+    try {
+      run('docs scan', cwd);
+      // Place loose analysis file directly in .docpath/backlog
+      writeFileSync(join(backlog, 'R999-analysis.md'), '# Loose Analysis\n\nSome notes.\n');
+      // Place backlog item pointing to nonexistent evidence
+      writeFileSync(
+        join(backlog, 'R-999-sample-feature.md'),
+        `---
+id: R-999
+title: Sample Feature
+status: proposed
+priority: P2
+level: 1
+source: test
+readiness: shaped
+evidence:
+  brainstorm: null
+  analysis: .docpath/backlog/analysis/nonexistent.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: '2026-09-23'
+---
+
+Sample body
+`,
+      );
+
+      const out = run('docs lint', cwd);
+      assert.match(out, /backlog-misplaced/);
+      assert.match(out, /R999-analysis\.md/);
+      assert.match(out, /broken-evidence/);
+      assert.match(out, /nonexistent\.md/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });

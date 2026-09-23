@@ -8,7 +8,7 @@ source: docpath backlog add
 readiness: confirmed
 evidence:
   brainstorm: null
-  analysis: .docpath/backlog/R363-analysis.md
+  analysis: .docpath/backlog/analysis/R-363-analysis.md
   spec: tasks/T-20260923-changed-files-scope-quick-done/spec.md
   decision_brief: |-
     - 当前问题: step-pass / next 在任务收尾时输出的「推荐收尾路线」是静态模板：无论本次实际改了什么，都把 `docpath quick-done` 列为「推荐」第一项。但 quick-done 服务于 quick 通道，受 quick-guard 约束（RISKY_PATH_PATTERNS + max_changed_files=3）。当任务实际改了 `src/engine/**`、`src/commands/(agent|check|done|go|journal|review|runtime|register)` 等核心路径时，quick 通道在 done 阶段必拒，用户/Agent 顺着「推荐」走会在收尾时才失败并被迫升级标准生命周期，白绕一圈。

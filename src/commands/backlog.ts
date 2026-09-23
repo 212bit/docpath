@@ -14,6 +14,7 @@ import {
   type BacklogReadiness,
   type BacklogStatus,
   archiveBacklogItem,
+  cleanBacklogTitle,
   createBacklogItem,
   detectBacklogDuplicates,
   detectBacklogIdCollisions,
@@ -1025,7 +1026,7 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
   }
 
   const updated: BacklogItem = { ...item };
-  if (options.title?.trim()) updated.title = options.title.trim();
+  if (options.title?.trim()) updated.title = cleanBacklogTitle(options.title.trim());
   if (options.priority) updated.priority = normalizePriority(options.priority);
   if (options.level) updated.level = normalizeLevel(options.level);
   if (options.bodyFile || hasInlineBodyOptions(options)) {
