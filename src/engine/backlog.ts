@@ -388,6 +388,7 @@ export async function writeBacklogItem(cwd: string, item: BacklogItem): Promise<
 export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id'>): Promise<BacklogItem> {
   const docpathDir = await resolveDocpathDir(cwd);
   const dir = backlogDir(docpathDir);
+  const archivedDir = archivedBacklogDir(docpathDir);
   await mkdir(dir, { recursive: true });
 
   const cleanedTitle = cleanBacklogTitle(item.title);
@@ -409,6 +410,17 @@ export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id
         await rm(reservedPath);
         next += 1;
         continue;
+      }
+      if (existsSync(archivedDir)) {
+        const archivedEntries = await readdir(archivedDir);
+        const hasArchivedSibling = archivedEntries.some(
+          (f) => (f === `${id}.md` || f.startsWith(`${id}-`)) && f.endsWith('.md'),
+        );
+        if (hasArchivedSibling) {
+          await rm(reservedPath);
+          next += 1;
+          continue;
+        }
       }
       const finalFileName = `${id}-${slugify(candidate.title)}.md`;
       await rename(reservedPath, join(dir, finalFileName));
@@ -548,10 +560,12 @@ async function logArchiveCollision(docpathDir: string, id: string, sourceFile: s
 export async function nextBacklogId(cwd: string): Promise<string> {
   const docpathDir = await resolveDocpathDir(cwd);
   const current = await readBacklogIdCounter(docpathDir);
-  if (current !== null) return formatBacklogId(current + 1);
   const seedMax = await scanBacklogMaxId(cwd);
-  await writeBacklogIdCounter(docpathDir, seedMax);
-  return formatBacklogId(seedMax + 1);
+  const effectiveMax = Math.max(current ?? 0, seedMax);
+  if (current !== effectiveMax) {
+    await writeBacklogIdCounter(docpathDir, effectiveMax);
+  }
+  return formatBacklogId(effectiveMax + 1);
 }
 
 /**

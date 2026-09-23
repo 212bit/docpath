@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T18:39:40.063Z",
+    "updated_at": "2026-09-23T18:39:40.063Z",
+    "content_sha256": "624a7241a14bb242c95d1ebd18469f0a2dd480dbf4e475df24a8c54d18b65612"
+  },
+  "task_id": "T-20260923-backlog-id-id-counter",
+  "backlog_id": "R-375",
+  "title": "T-20260923-backlog-id-id-counter - Backlog ID 分配增强：结合磁盘最大 ID 防御 counter 回退撞号",
+  "generated_at": "2026-09-23T18:39:40.063Z",
+  "scope": {
+    "included": [
+      "Backlog ID 分配增强：结合磁盘最大 ID 防御 counter 回退撞号"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 在 nextBacklogId 中将 id-counter 与 scanBacklogMaxId 取 Math.max，杜绝 git reset 或分支切换导致的编号回退撞号\n- 目标: Backlog ID 分配增强：结合磁盘最大 ID 防御 counter 回退撞号\n- 背景: 来自 backlog R-375\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "Backlog ID 分配增强：结合磁盘最大 ID 防御 counter 回退撞号",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "nextBacklogId 始终分配严格递增且不撞号的 ID，全量测试与门禁通过",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-375 与任务 T-20260923-backlog-id-id-counter 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "在 nextBacklogId 中将 id-counter 与 scanBacklogMaxId 取 Math.max，杜绝 git reset 或分支切换导致的编号回退撞号",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

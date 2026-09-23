@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-id-counter","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 Backlog ID 分配增强：结合磁盘最大 ID 防御 counter 回退撞号","timestamp":"2026-09-23T18:39:45.514Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-id-counter","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-23T18:41:25.938Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-id-counter","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-23T18:42:32.276Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-id-counter","step":"review","status":"done","context":"代码审查: 0 错误, 4 警告, 0 提示","timestamp":"2026-09-23T18:42:32.967Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-id-counter","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-23T18:42:33.447Z"}

@@ -515,4 +515,44 @@ old body
     assert.ok(existsSync(join(cwd, '.docpath', 'backlog', `${created.id}-auto-clean-title.md`)));
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('recovers from counter rollback and allocates monotonically above existing max id (R-375)', async () => {
+    const cwd = mkWorkspace();
+    // Simulate existing archived item with higher id R-050
+    mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-050-high-id.md'), `---
+id: R-050
+title: High ID Archived
+status: done
+priority: P2
+level: 1
+source: test
+links:
+  task: null
+  spec: null
+created_at: 2026-09-24
+---
+
+high id
+`);
+
+    // Simulate .id-counter artificially rewound/rolled back to 10
+    writeFileSync(join(cwd, '.docpath', 'backlog', '.id-counter'), '10', 'utf-8');
+
+    // nextBacklogId should self-heal and return R-051
+    const nextId = await nextBacklogId(cwd);
+    assert.equal(nextId, 'R-051');
+
+    // .id-counter should have been repaired to 50
+    const counterVal = readFileSync(join(cwd, '.docpath', 'backlog', '.id-counter'), 'utf-8').trim();
+    assert.equal(counterVal, '50');
+
+    // createBacklogItem should assign R-051 and update counter to 51
+    const created = await createBacklogItem(cwd, sampleItem({ title: 'After Rollback Recovery' }));
+    assert.equal(created.id, 'R-051');
+    const updatedCounter = readFileSync(join(cwd, '.docpath', 'backlog', '.id-counter'), 'utf-8').trim();
+    assert.equal(updatedCounter, '51');
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
