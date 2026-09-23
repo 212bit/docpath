@@ -5,12 +5,12 @@ status: proposed
 priority: P2
 level: 2
 source: docpath backlog add
-readiness: shaped
+readiness: analyzed
 evidence:
   brainstorm: null
   analysis: null
   spec: null
-  decision_brief: null
+  decision_brief: .docpath/backlog/R356-decision-brief.md
   user_confirmed: null
 links:
   task: null
