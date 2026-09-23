@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-docpath-check-done-95","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 默认启用基于改动影响面的增量测试减载（docpath check/done 提速 95%）","timestamp":"2026-09-23T19:19:16.760Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-docpath-check-done-95","step":"check","status":"blocked","context":"质量检查失败: 子任务完成度 (0/1)","timestamp":"2026-09-23T19:21:07.527Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-docpath-check-done-95","step":"S1","status":"done","context":"go-status: S1 -> done","timestamp":"2026-09-23T19:21:17.946Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-docpath-check-done-95","step":"check","status":"in_progress","context":"recovery-recover: 从 blocked 恢复执行","timestamp":"2026-09-23T19:21:20.577Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-docpath-check-done-95","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-23T19:22:37.623Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-docpath-check-done-95","step":"review","status":"done","context":"代码审查: 0 错误, 9 警告, 0 提示","timestamp":"2026-09-23T19:22:39.175Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-quick-docpath-check-done-95","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-23T19:22:39.694Z"}

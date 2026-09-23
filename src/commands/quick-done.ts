@@ -32,6 +32,8 @@ export interface QuickDoneOptions {
   gotcha?: string;
   lesson?: string;
   commit?: boolean;
+  testScope?: 'full' | 'touched';
+  allTests?: boolean;
 }
 
 async function recordQuickLessonCandidate(cwd: string, taskId: string, text: string): Promise<void> {
@@ -93,6 +95,8 @@ export async function quickDoneCommand(options: QuickDoneOptions): Promise<void>
     approveReview: options.approveReview,
     noDirtyReminder: options.noDirtyReminder,
     commit: options.commit,
+    testScope: options.testScope,
+    allTests: options.allTests,
   });
 
   // 记录轻量经验/踩坑候选（若提供）

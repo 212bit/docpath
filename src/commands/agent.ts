@@ -62,6 +62,8 @@ type AgentOptions = {
   enforce?: boolean;
   session?: string;
   noDirtyReminder?: boolean;
+  testScope?: 'full' | 'touched';
+  allTests?: boolean;
 };
 
 const GATE_EVIDENCE_FRESH_MS = 60 * 60 * 1000;
@@ -441,6 +443,8 @@ async function runAgentCheckGate(options: AgentOptions, stateAtStart: Awaited<Re
       cwd,
       skipTests: !!options.skipTests,
       skipLint: !!options.skipLint,
+      testScope: options.testScope ?? (options.allTests ? 'full' : 'touched'),
+      allTests: !!options.allTests,
     });
   } catch (error) {
     await transitionWorkflow(cwd, 'check.failed', {

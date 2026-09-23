@@ -29,6 +29,8 @@ export interface DoneOptions {
   session?: string;
   noDirtyReminder?: boolean;
   commit?: boolean;
+  testScope?: 'full' | 'touched';
+  allTests?: boolean;
 }
 
 /**
@@ -64,6 +66,8 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
     note: options.note,
     session: session.sessionId,
     noDirtyReminder: options.noDirtyReminder,
+    testScope: options.testScope,
+    allTests: options.allTests,
   });
 
   const { nonDocPathFiles, count } = detectUncommittedNonDocPathFiles(cwd);

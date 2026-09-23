@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T19:19:48.626Z",
+    "updated_at": "2026-09-23T19:19:48.626Z",
+    "content_sha256": "c89bc20eee385159ca7e971ccddc841fcd80d5c5206bf765e94fbef36addea7d"
+  },
+  "task_id": "T-20260923-quick-docpath-check-done-95",
+  "backlog_id": null,
+  "title": "T-20260923-quick-docpath-check-done-95 - T-20260923-quick-docpath-check-done-95 - 默认启用基于改动影响面的增量测试减载（docpath check/done 提速 95%）",
+  "generated_at": "2026-09-23T19:19:48.626Z",
+  "scope": {
+    "included": [
+      "待补充"
+    ],
+    "excluded": [
+      "待补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 待补充\n- 目标: 待补充\n- 可选方案: 待补充\n- 推荐方案: 待补充\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "默认启用基于改动影响面的增量测试减载（docpath check/done 提速 95%）",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "待补充",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "待补充",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "待补充",
+    "options": [
+      "待补充"
+    ],
+    "chosen": "待补充",
+    "rationale": "满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

@@ -45,11 +45,13 @@ export interface CheckOptions {
   noEnvExempt?: boolean;
   /**
    * R-3xx（性能任务）：测试执行减载级别。
-   * - 'full'（默认）：全量测试，但注入受控并发与进程隔离，避免 87 文件全并发摊薄 / sqlite 竞态。
-   * - 'touched'：影响面减载——只跑与本次 git 改动相关的测试文件；改动触及核心路径或
+   * - 'touched'（默认）：影响面减载——只跑与本次 git 改动相关的测试文件；改动触及核心路径或
    *   匹配粒度不足时自动回落全量（宁慢不放水，绝不因减载漏测核心）。
+   * - 'full'：全量测试，但注入受控并发与进程隔离，避免 87+ 文件全并发摊薄 / sqlite 竞态。
    */
   testScope?: 'full' | 'touched';
+  /** 强制运行全量测试（等价于 testScope='full'） */
+  allTests?: boolean;
 }
 
 export interface CheckResult {

@@ -96,3 +96,19 @@ test('listTestFiles 列目录下测试文件（含子目录）', () => {
   const files = scope.listTestFiles(dir);
   assert.deepEqual(files.sort(), ['tests/alpha.test.mjs', 'tests/beta.test.mjs', 'tests/sub/gamma.test.mjs']);
 });
+
+test('resolveTestCommand full 模式直接返回全量受控命令', () => {
+  const res = scope.resolveTestCommand(process.cwd(), { testScope: 'full', concurrency: 4 });
+  assert.equal(res.scope, 'full');
+  assert.match(res.command, /node --test/);
+  assert.match(res.command, /--test-concurrency=4/);
+  assert.match(res.command, /--test-isolation=process/);
+});
+
+test('resolveTestCommand touched 模式在非 git 目录或无改动时安全回落 full', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dp-no-git-'));
+  const res = scope.resolveTestCommand(dir, { testScope: 'touched', concurrency: 2 });
+  assert.equal(res.scope, 'full');
+  assert.match(res.command, /node --test/);
+  assert.match(res.command, /--test-concurrency=2/);
+});

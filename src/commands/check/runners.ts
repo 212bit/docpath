@@ -471,10 +471,12 @@ export async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeC
     if (build) results.push(build);
   }
   if (!options.skipTests && scripts.test) {
-    if (options.testScope !== undefined) {
-      // R-3xx（性能任务）：受控测试执行——注入受控并发 + 进程隔离；--test-scope=touched
-      // 时按 git 改动影响面减载（触及核心路径自动回落全量，宁慢不放水）。
-      const scope = resolveTestCommand(cwd, { testScope: options.testScope });
+    const isNodeTestScript = /node\s+--test/.test(scripts.test);
+    if (isNodeTestScript) {
+      // R-3xx（性能任务）：默认启用基于改动影响面的增量测试减载（宁慢不放水，触及核心自动回落全量）。
+      // 显式 --all / --test-scope=full 时执行受控并发全量测试。
+      const testScope = options.allTests ? 'full' : (options.testScope ?? 'touched');
+      const scope = resolveTestCommand(cwd, { testScope });
       const allTestCount = listTestFiles(cwd).length;
       const name = scope.scope === 'touched'
         ? `测试（影响面 ${scope.matchedFiles.length}/${allTestCount}）`

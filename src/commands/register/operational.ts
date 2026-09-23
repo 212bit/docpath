@@ -17,6 +17,7 @@ import { recoverCommand } from '../recovery.js';
 import { commitCommand } from '../commit.js';
 import { mergeDriverCommand } from '../merge-driver.js';
 import { learnCommand } from '../learn.js';
+import { getOptionValue } from './shared.js';
 
 export function registerOperationalCommands(cli: CAC): void {
   cli
@@ -78,6 +79,9 @@ export function registerOperationalCommands(cli: CAC): void {
     .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
     .option('--no-dirty-reminder', '不打印未提交业务文件提醒')
     .option('--commit', '门禁通过后自动将改动提交到本地 Git')
+    .option('--test-scope <scope>', '测试减载级别 full|touched（默认 touched）')
+    .option('--all', '强制执行全量测试（等价于 --test-scope=full）')
+    .option('--full-tests', '强制执行全量测试')
     .action(async (options: {
       cwd?: string;
       skipCheck?: boolean;
@@ -95,7 +99,18 @@ export function registerOperationalCommands(cli: CAC): void {
       dirtyReminder?: boolean;
       'dirty-reminder'?: boolean;
       commit?: boolean;
+      'test-scope'?: string;
+      testScope?: string;
+      all?: boolean;
+      'full-tests'?: boolean;
+      fullTests?: boolean;
     }) => {
+      const argv = process.argv.slice(2);
+      const hasFlag = (flag: string) => argv.includes(flag);
+      const isAll = options.all || options['full-tests'] || options.fullTests || hasFlag('--all') || hasFlag('--full-tests');
+      const testScopeRaw = options['test-scope'] || options.testScope || getOptionValue(argv, '--test-scope');
+      const testScope = isAll ? 'full' : testScopeRaw === 'touched' ? 'touched' : testScopeRaw === 'full' ? 'full' : undefined;
+
       await doneCommand({
         cwd: options.cwd || process.cwd(),
         skipCheck: options.skipCheck || options['skip-check'],
@@ -107,6 +122,8 @@ export function registerOperationalCommands(cli: CAC): void {
         session: options.session,
         noDirtyReminder: options.dirtyReminder === false || options['dirty-reminder'] === false,
         commit: options.commit,
+        testScope,
+        allTests: isAll,
       });
     });
 
