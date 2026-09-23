@@ -25,14 +25,16 @@ export function registerOperationalCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--step <step>', '指定起始步骤（缺省: S1）')
     .option('--draft', '快速通道推送（跳过成熟度检查）')
+    .option('--adopt', '就地认领当前工作区变更并启动任务（不触发 Worktree 隔离）')
     .option('--agent', 'Agent 输出模式')
-    .action(async (id: string, options: { cwd?: string; step?: string; draft?: boolean; agent?: boolean }) => {
+    .action(async (id: string, options: { cwd?: string; step?: string; draft?: boolean; agent?: boolean; adopt?: boolean }) => {
       await startCommand({
         cwd: options.cwd || process.cwd(),
         id,
         step: options.step,
         draft: options.draft,
         agent: options.agent,
+        adopt: options.adopt,
       });
     });
 
@@ -50,18 +52,20 @@ export function registerOperationalCommands(cli: CAC): void {
       });
     });
   cli
-    .command('quick <title>', '创建快车道任务（微型改动，压缩生命周期）')
+    .command('quick [title]', '创建快车道任务（微型改动，压缩生命周期）或原地升级为 standard (quick upgrade)')
     .option('--cwd <path>', '项目目录')
     .option('--instant', '即时档：跳 build/test，仅 typecheck + 结构门禁，跳 review')
     .option('--adopt', '事后补录：认领当前未提交的微型改动（跳过 clean worktree 拦截）')
+    .option('--upgrade', '原地升级：将当前 quick 任务原地升级为 standard 流程并闭环执行计划')
     .option('--done', '一键收口：创建后直接运行 done 门禁序列')
     .option('--commit', '一键完成并提交：创建后运行 done 门禁并在通过后自动提交')
-    .action(async (title: string, options: { cwd?: string; instant?: boolean; adopt?: boolean; done?: boolean; commit?: boolean }) => {
+    .action(async (title: string | undefined, options: { cwd?: string; instant?: boolean; adopt?: boolean; upgrade?: boolean; done?: boolean; commit?: boolean }) => {
       await quickCommand({
         cwd: options.cwd || process.cwd(),
-        title,
+        title: title || (options.upgrade ? 'upgrade' : ''),
         instant: options.instant,
         adopt: options.adopt,
+        upgrade: options.upgrade || title === 'upgrade',
         done: options.done,
         commit: options.commit,
       });

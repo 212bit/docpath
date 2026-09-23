@@ -555,4 +555,41 @@ high id
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('allows backlog add with positional title and background/acceptance', async () => {
+    const cwd = mkWorkspace();
+    const { backlogCommand } = await import('../dist/commands/backlog.js');
+    await backlogCommand({
+      cwd,
+      action: 'add',
+      id: 'Positional Backlog Item',
+      background: 'Positional background info',
+      acceptance: 'Positional acceptance criteria',
+    });
+
+    const items = await listBacklogItems(cwd);
+    assert.equal(items.length, 1);
+    assert.equal(items[0].title, 'Positional Backlog Item');
+    assert.equal(items[0].readiness, 'shaped');
+    assert.ok(items[0].body.includes('Positional background info'));
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('allows backlog capture with positional title', async () => {
+    const cwd = mkWorkspace();
+    const { backlogCommand } = await import('../dist/commands/backlog.js');
+    await backlogCommand({
+      cwd,
+      action: 'capture',
+      id: 'Positional Raw Capture',
+    });
+
+    const items = await listBacklogItems(cwd);
+    assert.equal(items.length, 1);
+    assert.equal(items[0].title, 'Positional Raw Capture');
+    assert.equal(items[0].readiness, 'raw');
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

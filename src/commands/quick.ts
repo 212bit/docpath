@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { mkdir, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { evaluateTaskRisk, riskPolicyFromConfig, riskTierName } from '../engine/risk.js';
@@ -7,10 +7,11 @@ import { assertQuickScope } from '../engine/quick-guard.js';
 import { readRiskPolicyConfig } from '../utils/config.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { clearCurrentTaskAlias, currentTaskDir, canonicalTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
-import { readCurrentState } from '../utils/workspace.js';
+import { readCurrentState, mutateCurrentState } from '../utils/workspace.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 import { doneCommand } from './done.js';
+import { endStepExecution } from './runtime.js';
 
 export interface QuickOptions {
   cwd: string;
@@ -23,6 +24,8 @@ export interface QuickOptions {
   done?: boolean;
   /** 一键收口并提交到 Git */
   commit?: boolean;
+  /** 原地升级：将当前活跃的 quick 任务就地升级为 standard 标准流程（不触发 worktree，保留未提交代码） */
+  upgrade?: boolean;
 }
 
 function slugifyTitle(title: string): string {
@@ -139,8 +142,130 @@ function renderQuickEvidence(taskId: string, title: string, profile: 'quick' | '
   ].join('\n');
 }
 
+export async function upgradeQuickToStandard(cwd: string): Promise<void> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const current = await readCurrentState(cwd);
+  if (!current || !current.task_id || (current.phase === 'idle' || current.phase === 'completed')) {
+    throw new Error('docpath quick upgrade: 当前没有活跃的任务');
+  }
+
+  const taskId = current.task_id;
+  const title = current.task_title || taskId;
+  const taskDir = canonicalTaskDir(docpathDir, taskId);
+
+  // 1. 升级 spec 为 standard 格式
+  const specPath = join(taskDir, 'spec.md');
+  const existingRequirements: string[] = [];
+  if (existsSync(specPath)) {
+    try {
+      const oldSpec = await readFile(specPath, 'utf-8');
+      for (const line of oldSpec.split('\n')) {
+        const match = line.match(/^- \[ \] FR-\d+:(.*)/);
+        if (match) existingRequirements.push(match[1].trim());
+      }
+    } catch {}
+  }
+  const reqLines = existingRequirements.length > 0
+    ? existingRequirements.map((r, i) => `- [ ] FR-${i + 1}: ${r}`).join('\n')
+    : `- [ ] FR-1: ${title}`;
+
+  const standardSpec = [
+    `# ${taskId} - ${title}`,
+    '',
+    '> workflow_profile: standard',
+    '> source: docpath quick upgrade',
+    '',
+    '## 1. 背景与动机',
+    '',
+    `来自 quick 任务原地升级为 standard 流程: ${title}`,
+    '',
+    '## 2. 需求清单',
+    '',
+    '### 功能需求',
+    reqLines,
+    '',
+    '### 非功能需求',
+    '- [ ] NFR-1: 保持架构与现有工作流一致性',
+    '',
+    '## 3. 范围界定',
+    '',
+    '### 包含',
+    `- ${title}`,
+    '',
+    '### 不包含',
+    '- 无关的非范围需求',
+    '',
+    '## 4. 关键决策',
+    '',
+    '| # | 决策 | 选项 | 结论 | 理由 |',
+    '|---|------|------|------|------|',
+    '| 1 | 原地升级为 standard | standard | 通过 | 改动规模或风险超出 quick 限制，就地升级保留已交付代码 |',
+    '',
+    '## 4.1 重大变更门禁',
+    '',
+    '### 是否涉及重大变更',
+    '- [x] 否',
+    '',
+    '## 5. 验收标准',
+    '',
+    '- [ ] AC-1: 代码修改完成并全量通过 check 与 review 门禁',
+    '',
+  ].join('\n');
+
+  await writeActiveTaskFile(docpathDir, taskId, 'spec.md', standardSpec);
+
+  // 2. 补齐并自动闭环单步执行计划（S1 done）
+  const singleStepPlan = [
+    '## 执行计划',
+    '',
+    `### S1: 实现并验证 ${title}`,
+    `- **描述**: 完成 ${title}（quick 升级 standard 压缩计划）。`,
+    '- **验收条件**: 代码实现就绪并通过质量门禁与审查',
+    '- **依赖**: 无',
+    '',
+    '## Checklist',
+    '- [x] S1',
+    '',
+    '## 依赖关系图',
+    'S1',
+    '',
+  ].join('\n');
+
+  await writeActiveTaskFile(docpathDir, taskId, 'plan.md', singleStepPlan);
+  await endStepExecution({
+    cwd,
+    step: 'S1',
+    status: 'done',
+    note: 'quick 升级 standard 自动闭环执行计划',
+  });
+
+  // 3. 更新 state.json 中的 profile 为 standard
+  await mutateCurrentState(cwd, (state) => {
+    if (!state) {
+      throw new Error('docpath quick upgrade: 当前没有活跃的任务');
+    }
+    return {
+      ...state,
+      workflow_profile: 'standard',
+      level: Math.max(state.level ?? 1, 1),
+    };
+  });
+
+  console.log(`🚀  任务 ${taskId} 已就地升级为 standard 标准流程！`);
+  console.log('   - workflow_profile: standard');
+  console.log('   - spec.md & spec.json 已同步标准真源');
+  console.log('   - plan.md 已生成并闭环 S1 完成证据');
+  console.log('   - 下一步: 运行 docpath done 走 standard 门禁完成收口\n');
+  await emitNextHint(cwd);
+}
+
 export async function quickCommand(options: QuickOptions): Promise<void> {
   const { cwd } = options;
+  if (options.upgrade || options.title === 'upgrade') {
+    await upgradeQuickToStandard(cwd);
+    return;
+  }
+
   const title = options.title?.trim();
   if (!title) throw new Error('docpath quick requires <title>');
 
@@ -151,7 +276,7 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
 
   const current = await readCurrentState(cwd);
   if (current && current.phase !== 'idle' && current.phase !== 'completed') {
-    throw new Error(`docpath quick: 当前已有活跃任务（phase=${current.phase}），请先 done 或 task reset`);
+    throw new Error(`docpath quick: 当前已有活跃任务（phase=${current.phase}），请先 done 或 task reset；如需将当前 quick 升级为 standard，请运行 docpath quick upgrade`);
   }
 
   if (options.adopt) {

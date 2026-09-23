@@ -275,15 +275,29 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
             // 补齐单步压缩计划并自动标记完成（- [x] S1），同步 breadcrumb 证据避免漂移
             const planPath = join(taskDir, 'plan.md');
             if (!existsSync(planPath)) {
-              const draftPlan = renderDraftPlan(newSpec, 1);
-              await writeActiveTaskFile(docpathDir, current.task_id, 'plan.md', draftPlan);
+              const singleStepPlan = [
+                '## 执行计划',
+                '',
+                `### S1: 实现并验证 ${title}`,
+                `- **描述**: 完成 ${title}（quick 升级 standard 压缩计划）。`,
+                '- **验收条件**: 代码实现就绪并通过质量门禁与审查',
+                '- **依赖**: 无',
+                '',
+                '## Checklist',
+                '- [x] S1',
+                '',
+                '## 依赖关系图',
+                'S1',
+                '',
+              ].join('\n');
+              await writeActiveTaskFile(docpathDir, current.task_id, 'plan.md', singleStepPlan);
               await endStepExecution({
                 cwd,
                 step: 'S1',
                 status: 'done',
                 note: 'quick 升级 standard 自动闭环执行计划',
               });
-              logger.log('📋  已自动补齐单步执行计划并同步完成证据（保留 quick 代码已交付上下文）。');
+              logger.log('📋  已自动补齐单步执行计划并闭环完成证据（保留 quick 代码已交付上下文）。');
             }
             logger.log('');
           }

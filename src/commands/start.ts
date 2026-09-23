@@ -20,6 +20,7 @@ export interface StartOptions {
   step?: string;
   draft?: boolean;
   agent?: boolean;
+  adopt?: boolean;
 }
 
 export async function startCommand(options: StartOptions): Promise<void> {
@@ -37,6 +38,7 @@ export async function startCommand(options: StartOptions): Promise<void> {
     id,
     draft: options.draft,
     agent: options.agent,
+    adopt: options.adopt,
   });
 
   // 步骤 2: plan（如果仍处于 drafting 或 planning 阶段）
@@ -50,6 +52,7 @@ export async function startCommand(options: StartOptions): Promise<void> {
   await goCommand({
     cwd,
     step: stepToStart,
+    acceptDirty: options.adopt ? 'start --adopt: claim workspace edits' : undefined,
   });
 
   console.log(`\n🎉  任务 ${id} 已拉起并启动步骤 ${stepToStart}！`);

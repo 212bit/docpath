@@ -58,6 +58,7 @@ interface BacklogCommandOptions {
   task?: string;
   agent?: boolean;
   draft?: boolean;
+  adopt?: boolean;
   nonInteractive?: boolean;
 }
 
@@ -357,6 +358,8 @@ function assertBacklogReadyForExecution(item: BacklogItem, action: 'accept' | 'p
 function isPromoteBacklogEvidencePath(path: string, itemId: string): boolean {
   const normalized = path.replace(/\\/g, '/').replace(/^\.\/+/, '');
   return normalized === '.docpath/backlog/backlog.md'
+    || normalized === '.docpath/backlog/.id-counter'
+    || normalized.startsWith('.docpath/backlog/')
     || normalized === `.docpath/backlog/${itemId}.md`
     || (normalized.startsWith(`.docpath/backlog/${itemId}-`) && normalized.endsWith('.md'));
 }
@@ -938,8 +941,9 @@ function renderMajorDecisionGate(item: BacklogItem, cwd?: string): string[] {
 }
 
 async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
-  if (!options.title?.trim()) {
-    throw new Error('docpath backlog add requires --title <title>');
+  const title = (options.title || options.id)?.trim();
+  if (!title) {
+    throw new Error('docpath backlog add requires --title <title> or <title>');
   }
   if (!hasBodyInput(options)) {
     throw new Error('docpath backlog add requires --background/--acceptance or --body-file; use `docpath backlog capture --title <title>` for raw ideas');
@@ -952,7 +956,7 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
   }
 
   const item = await createBacklogItem(options.cwd, {
-    title: options.title.trim(),
+    title,
     status: 'proposed',
     priority: normalizePriority(options.priority),
     level: normalizeLevel(options.level),
@@ -976,16 +980,17 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
 }
 
 async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
-  if (!options.title?.trim()) {
-    throw new Error('docpath backlog capture requires --title <title>');
+  const title = (options.title || options.id)?.trim();
+  if (!title) {
+    throw new Error('docpath backlog capture requires --title <title> or <title>');
   }
 
   const body = hasBodyInput(options)
     ? await resolveBacklogBody(options)
-    : buildInlineBacklogBody(options);
+    : buildInlineBacklogBody({ ...options, title });
 
   const item = await createBacklogItem(options.cwd, {
-    title: options.title.trim(),
+    title,
     status: 'proposed',
     priority: normalizePriority(options.priority),
     level: normalizeLevel(options.level),
@@ -1152,7 +1157,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
 
   const isInteractive = process.stdout.isTTY && !options.nonInteractive;
 
-  if ((activeTaskExists || isDirty) && isInteractive) {
+  if (!options.adopt && (activeTaskExists || isDirty) && isInteractive) {
     const safeWtName = `wt-${item.id.toLowerCase()}`;
     const paths = await resolveWorktreePaths(options.cwd, safeWtName);
     worktreePath = paths.worktreePath;
@@ -1168,12 +1173,16 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
 
     options.cwd = worktreePath;
   } else {
-    if (activeTaskExists) {
+    if (activeTaskExists && !options.adopt) {
       throw new Error(`docpath backlog promote: 当前已有活跃任务（phase=${current.phase}），请先 done，或用 docpath task abort/reset 显式清理当前任务`);
     }
-    assertCleanWorktreeForNewTask(options.cwd, 'docpath backlog promote', {
-      allowDirtyPath: (path) => isPromoteBacklogEvidencePath(path, item.id),
-    });
+    if (!options.adopt) {
+      assertCleanWorktreeForNewTask(options.cwd, 'docpath backlog promote', {
+        allowDirtyPath: (path) => isPromoteBacklogEvidencePath(path, item.id),
+      });
+    } else {
+      console.log(`📦  已启用 --adopt 模式：就地认领当前工作区变更并启动任务`);
+    }
   }
 
   assertBacklogReadyForExecution(item, 'promote', options.draft, options.cwd);

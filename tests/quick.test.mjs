@@ -409,5 +409,26 @@ describe('docpath quick', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('supports docpath quick upgrade in-place from active quick to standard', () => {
+    const cwd = mkWorkspace();
+    initGitRepo(cwd);
+    const created = runResult(`quick "Test In Place Upgrade" --cwd ${cwd}`, cwd);
+    assert.equal(created.code, 0);
+
+    const upgradeRes = runResult(`quick upgrade --cwd ${cwd}`, cwd);
+    assert.equal(upgradeRes.code, 0, upgradeRes.out);
+    assert.match(upgradeRes.out, /已就地升级为 standard 标准流程/);
+
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.workflow_profile, 'standard');
+
+    const planJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'tasks', state.task_id, 'plan.json'), 'utf-8'));
+    assert.equal(planJson.steps.length, 1);
+    assert.equal(planJson.steps[0].id, 'S1');
+    assert.equal(planJson.steps[0].status, 'done');
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
 
