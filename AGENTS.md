@@ -193,8 +193,10 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath quick-done` | Compound closeout with optional `--gotcha <text>` capture |
 | `docpath learn` | Promote validated lessons into durable rules (`--agent` / `--dry-run`) |
 | `docpath milestone` | Aggregate completed tasks and generate release summaries (`--dry-run` / `--agent`) |
+| `docpath milestone timeline` | Render global project evolution timeline and release trajectory |
 | `docpath budget` | Analyze context token consumption breakdown & pruning suggestions (`--agent` / `--suggest` / `--prune`) |
 | `docpath docs doctor` / `fix` | Living documentation diagnostics & automatic self-healing (broken links, unindexed files) |
+| `docpath docs sync` | One-shot documentation health self-healing and index synchronization |
 | `docpath docs search <topic>` | Fast topic search across living project documentation |
 | `docpath docs lint` | Living documentation integrity check (broken links & unindexed files) |
 | `docpath worktree matrix` | Live progress matrix across concurrent agents and worktrees (`--agent` / `--json`) |

@@ -12,6 +12,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import {
   collectMilestoneData,
   renderMilestoneMarkdown,
+  renderGlobalTimelineMarkdown,
   persistMilestone,
   listMilestones,
   type MilestoneData,
@@ -21,7 +22,7 @@ export interface MilestoneOptions {
   cwd: string;
   version?: string;
   title?: string;
-  action?: 'create' | 'list' | 'show';
+  action?: 'create' | 'list' | 'show' | 'timeline';
   dryRun?: boolean;
   agent?: boolean;
   json?: boolean;
@@ -35,6 +36,26 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath init`');
     process.exit(1);
+  }
+
+  // 0. Action: timeline
+  if (action === 'timeline') {
+    const milestones = await listMilestones(cwd);
+    const timelineMd = renderGlobalTimelineMarkdown(milestones);
+    if (json) {
+      console.log(JSON.stringify({ milestones, timeline_markdown: timelineMd }, null, 2));
+      return;
+    }
+    if (agent) {
+      console.log(stringify({
+        agent_view: 'milestone_timeline',
+        count: milestones.length,
+        timeline_markdown: timelineMd,
+      }));
+      return;
+    }
+    console.log(`\n${timelineMd}\n`);
+    return;
   }
 
   // 1. Action: list

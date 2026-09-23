@@ -23,13 +23,15 @@ function registerMilestoneCommand(cli: CAC): void {
     .option('--agent', '输出 Agent 可读 YAML 状态')
     .option('--json', '输出 JSON')
     .action(async (actionOrVersion: string | undefined, versionArg: string | undefined, options: { cwd?: string; title?: string; dryRun?: boolean; agent?: boolean; json?: boolean }) => {
-      let action: 'create' | 'list' | 'show' = 'create';
+      let action: 'create' | 'list' | 'show' | 'timeline' = 'create';
       let version = versionArg;
 
       if (actionOrVersion === 'list') {
         action = 'list';
       } else if (actionOrVersion === 'show') {
         action = 'show';
+      } else if (actionOrVersion === 'timeline') {
+        action = 'timeline';
       } else if (actionOrVersion === 'create') {
         action = 'create';
       } else if (actionOrVersion) {

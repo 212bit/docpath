@@ -23,6 +23,7 @@ import { gitSyncOptional } from '../../utils/git-run.js';
 import { readFile, stat } from 'fs/promises';
 import { select, isCancel } from '@clack/prompts';
 import { refreshProjectDocumentIndex } from '../docs.js';
+import { diagnoseDocumentHealth } from '../../utils/docs-doctor.js';
 import type { CheckOptions, CheckResult, TaskPlanProgress } from './types.js';
 import {
   formatValidationFailure,
@@ -840,38 +841,16 @@ export async function checkLivingDocsHealth(cwd: string, docpathDir: string): Pr
   const results: CheckResult[] = [];
 
   try {
-    const content = await readFile(docsReadmePath, 'utf-8');
-    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const brokenLinks: string[] = [];
-    let match: RegExpExecArray | null;
-    while ((match = linkRegex.exec(content)) !== null) {
-      const linkTarget = match[2].trim();
-      if (
-        linkTarget.startsWith('http://')
-        || linkTarget.startsWith('https://')
-        || linkTarget.startsWith('#')
-        || linkTarget.startsWith('mailto:')
-      ) {
-        continue;
-      }
-      let targetFilePath = '';
-      if (linkTarget.startsWith('file://')) {
-        targetFilePath = linkTarget.replace(/^file:\/\//, '').split('#')[0];
-      } else {
-        const cleanPath = linkTarget.split('#')[0];
-        if (!cleanPath) continue;
-        targetFilePath = resolve(dirname(docsReadmePath), cleanPath);
-      }
-      if (targetFilePath && !existsSync(targetFilePath)) {
-        brokenLinks.push(`[${match[1]}](${match[2]})`);
-      }
-    }
-
-    if (brokenLinks.length > 0) {
+    const report = await diagnoseDocumentHealth(cwd);
+    if (!report.healthy) {
+      const topIssues = report.issues
+        .slice(0, 5)
+        .map((i) => `  - [${i.type}] ${i.file}: ${i.message}`)
+        .join('\n');
       results.push({
         name: 'Living docs integrity gate',
         passed: false,
-        output: `docs/README.md 存在 ${brokenLinks.length} 个失效链接:\n${brokenLinks.map((l) => `  - ${l}`).join('\n')}\n请运行 docpath docs lint 诊断修复。`,
+        output: `活文档体检发现 ${report.issues.length} 处待治理项（断链/未索引/Backlog异常）:\n${topIssues}\n请运行 docpath docs lint 查看完整明细，或 docpath docs fix 一键自愈。`,
         category: 'context',
         severity: 'warning',
       });
@@ -879,7 +858,7 @@ export async function checkLivingDocsHealth(cwd: string, docpathDir: string): Pr
       results.push({
         name: 'Living docs integrity gate',
         passed: true,
-        output: 'docs/README.md 活文档中心索引完整有效',
+        output: `活文档生态健康（${report.scannedCount} 篇文档，${report.indexedCount} 篇有效索引，0 处断链）`,
         category: 'context',
       });
     }

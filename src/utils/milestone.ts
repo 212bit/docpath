@@ -293,8 +293,45 @@ export function renderMilestoneMarkdown(data: MilestoneData): string {
     '- **门禁状态**: ✅ 全部质量门禁 (Check & Review) 100% 验证通过',
     `- **活文档索引**: ✅ 自动同步更新至 \`docs-index.json\``,
     '',
+    '## 5. 🗺️ 演进时间线 (Milestone Timeline)',
+    '',
+    '```mermaid',
+    'timeline',
+    `    title Release ${data.version} 演进轨迹`,
+    `    ${data.date} : 交付 ${data.metrics.totalTasks} 个已归档任务`,
+    `                 : 闭环 ${data.metrics.totalBacklogClosed} 个需求`,
+    `                 : 沉淀 ${data.metrics.totalDecisions} 项架构决策`,
+    '```',
+    '',
   );
 
+  return lines.join('\n');
+}
+
+/**
+ * 将全部里程碑渲染为全局 Mermaid 时间线大盘
+ */
+export function renderGlobalTimelineMarkdown(milestones: MilestoneMeta[]): string {
+  const lines: string[] = [
+    '# DocPath 项目演进全景时间线 (Project Evolution Timeline)',
+    '',
+    '> 自动聚合历史已发布里程碑与架构决策生成。',
+    '',
+    '```mermaid',
+    'timeline',
+    '    title DocPath 系统架构与里程碑演进大盘',
+  ];
+
+  if (milestones.length === 0) {
+    lines.push('    当前 : 持续迭代演进中');
+  } else {
+    for (const m of milestones) {
+      lines.push(`    ${m.date} : [${m.version}] ${m.title}`);
+      lines.push(`             : 交付 ${m.taskCount} 个任务`);
+    }
+  }
+
+  lines.push('```', '');
   return lines.join('\n');
 }
 
