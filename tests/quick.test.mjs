@@ -113,6 +113,26 @@ describe('docpath quick', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('quick profile falls back to full on a TRACKED-modified core file (R-3xx regression: porcelain slice offset)', () => {
+    const cwd = mkWorkspace();
+    execSync('git init -q', { cwd, stdio: 'ignore' });
+    execSync('git config user.email t@example.com', { cwd, stdio: 'ignore' });
+    execSync('git config user.name test', { cwd, stdio: 'ignore' });
+    // base 里就有 core 文件（tracked），随后修改它 → git status 输出 ` M src/...`（前导空格）。
+    // 旧 readChangedFiles 先 trim 再 slice(3) 会把 `src/` 错切成 `rc/`，导致核心路径漏判。
+    mkdirSync(join(cwd, 'src', 'engine'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'engine', 'core.ts'), 'export const a = 1;\n');
+    execSync('git add -A && git commit -qm base', { cwd, stdio: 'ignore' });
+    run(`quick "Fix typo in docs" --cwd ${cwd}`, cwd);
+    // 修改已跟踪的核心文件（tracked-modified），而非 untracked 新建
+    writeFileSync(join(cwd, 'src', 'engine', 'core.ts'), 'export const a = 1;\nexport const b = 2;\n');
+
+    const res = runResult(`check --cwd ${cwd} --skip-tests`, cwd);
+
+    assert.doesNotMatch(res.out, /quick 降档/, 'tracked 核心文件被修改时不得降档（不得漏判核心路径）');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('creates an active quick task and routes next directly to done', () => {
     const cwd = mkWorkspace();
 

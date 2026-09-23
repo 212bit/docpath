@@ -43,6 +43,13 @@ export interface CheckOptions {
   noCache?: boolean;
   /** R-350: 禁用环境豁免（默认开启）——即使全部失败项都是环境类也按失败处理 */
   noEnvExempt?: boolean;
+  /**
+   * R-3xx（性能任务）：测试执行减载级别。
+   * - 'full'（默认）：全量测试，但注入受控并发与进程隔离，避免 87 文件全并发摊薄 / sqlite 竞态。
+   * - 'touched'：影响面减载——只跑与本次 git 改动相关的测试文件；改动触及核心路径或
+   *   匹配粒度不足时自动回落全量（宁慢不放水，绝不因减载漏测核心）。
+   */
+  testScope?: 'full' | 'touched';
 }
 
 export interface CheckResult {

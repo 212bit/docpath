@@ -4,6 +4,7 @@ import { mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { delimiter, dirname, isAbsolute, join, resolve, sep } from 'path';
 import type { CheckResult, NodeCommandConfig, PackageManifest, CheckOptions } from './types.js';
+import { resolveTestCommand, listTestFiles } from './test-scope.js';
 import { errorOutput } from './formatters.js';
 
 export const DEFAULT_CHECK_TIMEOUT_MS = 60000;
@@ -470,8 +471,19 @@ export async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeC
     if (build) results.push(build);
   }
   if (!options.skipTests && scripts.test) {
-    const test = await resolveOrSkip('测试', 'test', 'test', HEAVY_CHECK_TIMEOUT_MS);
-    if (test) results.push(test);
+    if (options.testScope !== undefined) {
+      // R-3xx（性能任务）：受控测试执行——注入受控并发 + 进程隔离；--test-scope=touched
+      // 时按 git 改动影响面减载（触及核心路径自动回落全量，宁慢不放水）。
+      const scope = resolveTestCommand(cwd, { testScope: options.testScope });
+      const allTestCount = listTestFiles(cwd).length;
+      const name = scope.scope === 'touched'
+        ? `测试（影响面 ${scope.matchedFiles.length}/${allTestCount}）`
+        : '测试（受控并发）';
+      results.push(runCheck(name, scope.command, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
+    } else {
+      const test = await resolveOrSkip('测试', 'test', 'test', HEAVY_CHECK_TIMEOUT_MS);
+      if (test) results.push(test);
+    }
   } else if (!options.skipTests) {
     const testFramework = detectTestFramework(pkg);
     if (testFramework) {

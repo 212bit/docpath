@@ -23,7 +23,8 @@ export function registerQualityCommands(cli: CAC): void {
     .option('--no-cache', 'R-331: 禁用 scope 缓存复用，强制全量执行重 runner')
     .option('--force', 'R-333: 允许在无活跃 agent 会话时独立运行（压制会话警告）')
     .option('--no-env-exempt', 'R-350: 关闭环境豁免——即使全部失败项都是工具链不可用也按失败处理')
-    .action(async (options: { cwd?: string; 'skip-tests'?: boolean; 'skip-lint'?: boolean; harness?: boolean; preflight?: boolean; boundary?: boolean; 'only-harness'?: boolean; 'fix-drift'?: string; fixDrift?: string; verbose?: boolean; 'with-review'?: boolean; withReview?: boolean; 'non-interactive'?: boolean; nonInteractive?: boolean; 'no-cache'?: boolean; noCache?: boolean; force?: boolean; 'env-exempt'?: boolean; envExempt?: boolean }) => {
+    .option('--test-scope <scope>', 'R-3xx: 测试减载级别 full|touched（touched=仅跑与本次改动相关的测试，触及核心路径自动回落全量）')
+    .action(async (options: { cwd?: string; 'skip-tests'?: boolean; 'skip-lint'?: boolean; harness?: boolean; preflight?: boolean; boundary?: boolean; 'only-harness'?: boolean; 'fix-drift'?: string; fixDrift?: string; verbose?: boolean; 'with-review'?: boolean; withReview?: boolean; 'non-interactive'?: boolean; nonInteractive?: boolean; 'no-cache'?: boolean; noCache?: boolean; force?: boolean; 'env-exempt'?: boolean; envExempt?: boolean; 'test-scope'?: string; testScope?: string }) => {
       const argv = process.argv.slice(2);
       const hasFlag = (flag: string) => argv.includes(flag);
       const skipTests = options['skip-tests'] || hasFlag('--skip-tests');
@@ -40,6 +41,8 @@ export function registerQualityCommands(cli: CAC): void {
       const force = options.force || hasFlag('--force');
       // R-350: --no-env-exempt 在 commander 下解析为 envExempt=false；同时兜住原始 argv 形态。
       const noEnvExempt = options.envExempt === false || options['env-exempt'] === false || hasFlag('--no-env-exempt');
+      const testScopeRaw = options['test-scope'] || options.testScope || getOptionValue(argv, '--test-scope');
+      const testScope = testScopeRaw === 'touched' ? 'touched' : testScopeRaw === 'full' ? 'full' : undefined;
 
       await checkCommand({
         cwd: options.cwd || process.cwd(),
@@ -56,6 +59,7 @@ export function registerQualityCommands(cli: CAC): void {
         noCache,
         force,
         noEnvExempt,
+        testScope,
       });
     });
 
