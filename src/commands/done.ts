@@ -105,4 +105,13 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
     console.log('    或者在主仓库中运行 `docpath worktree prune` 自动清理所有已合并的 worktree。');
     console.log('');
   }
+
+  if (options.commit) {
+    console.log('🚀  --commit 已启用，自动将任务改动提交至本地 Git...\n');
+    await commitCommand({
+      cwd,
+      stage: true,
+      autoMessage: true,
+    });
+  }
 }

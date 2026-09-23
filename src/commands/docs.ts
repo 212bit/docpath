@@ -666,6 +666,13 @@ async function docsSearch(cwd: string, query: string, agent = false): Promise<vo
   }
 }
 
+async function docsSync(cwd: string, agent: boolean, json: boolean): Promise<void> {
+  console.log('🔄  文档资产全量同步与自愈...\n');
+  await docsFix(cwd, { dryRun: false, agent, json });
+  await docsScan(cwd);
+  console.log('✅  文档索引已刷新并完成自愈！\n');
+}
+
 /** 主命令入口 */
 export async function docsCommand(options: DocsOptions): Promise<void> {
   const { cwd, action, args = [], full = false, query, agent = false, dryRun = false, json = false } = options;
@@ -673,6 +680,9 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
   switch (action) {
     case 'scan':
       await docsScan(cwd);
+      break;
+    case 'sync':
+      await docsSync(cwd, agent, json);
       break;
     case 'list':
       await docsList(cwd, full);

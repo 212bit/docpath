@@ -19,7 +19,7 @@ import { resolveSessionContext } from '../utils/session.js';
 import { exitWithError } from '../utils/error-helpers.js';
 import { resolveDocpathDir } from '../utils/file.js';
 
-interface QuickDoneOptions {
+export interface QuickDoneOptions {
   cwd: string;
   note?: string;
   session?: string;
@@ -31,6 +31,7 @@ interface QuickDoneOptions {
   noDirtyReminder?: boolean;
   gotcha?: string;
   lesson?: string;
+  commit?: boolean;
 }
 
 async function recordQuickLessonCandidate(cwd: string, taskId: string, text: string): Promise<void> {
@@ -91,6 +92,7 @@ export async function quickDoneCommand(options: QuickDoneOptions): Promise<void>
     skipLint: options.skipLint,
     approveReview: options.approveReview,
     noDirtyReminder: options.noDirtyReminder,
+    commit: options.commit,
   });
 
   // 记录轻量经验/踩坑候选（若提供）

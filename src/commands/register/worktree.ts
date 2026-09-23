@@ -39,6 +39,7 @@ export function registerWorktreeCommands(cli: CAC): void {
     doctor [name]       Check worktree readiness before development
     repair [name]       Automatically repair worktree contract drifts
     merge [branch]      Automatically merge changes and closeout to main (--allow-dirty-main <reason> for concurrent recovery)
+    finish <name>       Merge worktree back to target branch and remove worktree
     sync                Merge main into all active worktrees (R-335)
     remove <name>       Remove a worktree
     prune               Prune all completed, merged, and clean worktrees

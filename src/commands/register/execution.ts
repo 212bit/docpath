@@ -54,7 +54,8 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--no-dirty-reminder', '不打印未提交业务文件提醒')
     .option('--gotcha <text>', '记录本次快速修复的踩坑点/经验')
     .option('--lesson <text>', '记录本次任务的经验总结')
-    .action(async (options: { cwd?: string; note?: string; session?: string; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; dirtyReminder?: boolean; 'dirty-reminder'?: boolean; gotcha?: string; lesson?: string }) => {
+    .option('--commit', '门禁通过后自动将改动提交到本地 Git')
+    .action(async (options: { cwd?: string; note?: string; session?: string; skipCheck?: boolean; 'skip-check'?: boolean; skipReview?: boolean; 'skip-review'?: boolean; skipTests?: boolean; 'skip-tests'?: boolean; skipLint?: boolean; 'skip-lint'?: boolean; approveReview?: boolean; 'approve-review'?: boolean; dirtyReminder?: boolean; 'dirty-reminder'?: boolean; gotcha?: string; lesson?: string; commit?: boolean }) => {
       await quickDoneCommand({
         cwd: options.cwd || process.cwd(),
         note: options.note,
@@ -67,6 +68,7 @@ export function registerExecutionCommands(cli: CAC): void {
         noDirtyReminder: options.dirtyReminder === false || options['dirty-reminder'] === false,
         gotcha: options.gotcha,
         lesson: options.lesson,
+        commit: options.commit,
       });
     });
 

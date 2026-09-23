@@ -10,14 +10,19 @@ import { clearCurrentTaskAlias, currentTaskDir, canonicalTaskDir, writeActiveTas
 import { readCurrentState } from '../utils/workspace.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
+import { doneCommand } from './done.js';
 
-interface QuickOptions {
+export interface QuickOptions {
   cwd: string;
   title: string;
   /** 即时档：跳 check(build/test)，仅 typecheck + 结构门禁；跳 review。比 quick 更轻。 */
   instant?: boolean;
   /** 事后补录：认领当前未提交的微型改动（跳过 clean worktree 拦截） */
   adopt?: boolean;
+  /** 一键收口：创建后直接执行 done 门禁 */
+  done?: boolean;
+  /** 一键收口并提交到 Git */
+  commit?: boolean;
 }
 
 function slugifyTitle(title: string): string {
@@ -203,6 +208,15 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
   } else {
     console.log('   gates: check required, review skipped by quick profile');
   }
-  console.log('   下一步: 完成修改后运行 docpath done');
-  await emitNextHint(cwd);
+
+  if (options.done || options.commit) {
+    console.log('\n🚀  一键收口/提交已启用，执行收尾流程...\n');
+    await doneCommand({
+      cwd,
+      commit: options.commit,
+    });
+  } else {
+    console.log('   下一步: 完成修改后运行 docpath done');
+    await emitNextHint(cwd);
+  }
 }

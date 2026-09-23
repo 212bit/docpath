@@ -542,7 +542,7 @@ export function inferNextAction(
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'];
     return withWorkflowConstraint({
       next_action: `完成进行中的步骤: ${activeStep.step}`,
-      recommended_command: `docpath agent step --step ${activeStep.step} --status done`,
+      recommended_command: `docpath step-pass --step ${activeStep.step}`,
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'],

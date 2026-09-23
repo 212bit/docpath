@@ -237,7 +237,7 @@ describe('CLI positional argument guards', () => {
   it('removed commands fail loud as unknown (R-299 命令面收缩)', () => {
     const cwd = mkWorkspace();
 
-    for (const removed of ['brainstor', 'disclosure', 'tdd', 'resume', 'stats', 'export', 'compact', 'discover', 'start', 'retry', 'unblock']) {
+    for (const removed of ['brainstor', 'disclosure', 'tdd', 'resume', 'stats', 'export', 'compact', 'discover', 'retry', 'unblock']) {
       const result = run(removed, cwd);
       assert.notEqual(result.code, 0, `${removed} 应已删除`);
       assert.match(result.out, /未知命令/, `${removed} 应报未知命令`);

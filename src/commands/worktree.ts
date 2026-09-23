@@ -26,7 +26,7 @@ import { worktreeCreate } from './worktree/create.js';
 import { worktreeList, worktreeDoctor, assertWorktreeContract } from './worktree/query.js';
 import { worktreeRemove, worktreePrune, worktreeRepair } from './worktree/lifecycle.js';
 import { worktreeSync, worktreeMerge } from './worktree/closeout.js';
-import type { WorktreeOptions } from './worktree/shared.js';
+import { resolveWorktreeManagerRoot, type WorktreeOptions } from './worktree/shared.js';
 export { assertWorktreeContract } from './worktree/query.js';
 export { resolveWorktreePaths } from './worktree/shared.js';
 export { getWorktreeDoctorStatus } from './worktree/query.js';
@@ -128,6 +128,26 @@ export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
     case 'merge':
       await worktreeMerge(cwd, name, options.allowDirtyMain);
       break;
+
+    case 'finish': {
+      if (!name && !isInWorktree(cwd)) {
+        console.error('❌  缺少 worktree 名称');
+        console.error('用法: docpath worktree finish <name> [--force]');
+        process.exit(1);
+      }
+      const wtName = name || (cwd.split(/[\\/]/).filter(Boolean).at(-1) as string);
+      const targetCwd = isInWorktree(cwd) ? cwd : join(cwd, '.worktrees', wtName);
+      if (!existsSync(targetCwd)) {
+        console.error(`❌  找不到 worktree: ${wtName} (${targetCwd})`);
+        process.exit(1);
+      }
+      console.log(`🚀  docpath worktree finish: 合并并清理 worktree ${wtName}...\n`);
+      await worktreeMerge(targetCwd, undefined, options.allowDirtyMain);
+      const rootCwd = await resolveWorktreeManagerRoot(targetCwd);
+      await worktreeRemove(rootCwd, wtName, force);
+      console.log(`\n🎉  Worktree ${wtName} 已成功合并回主分支并完成工作区清理！`);
+      break;
+    }
 
     case 'remove':
       if (!name) {

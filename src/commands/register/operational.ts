@@ -12,12 +12,29 @@
 import type { CAC } from 'cac';
 import { doneCommand } from '../done.js';
 import { quickCommand } from '../quick.js';
+import { startCommand } from '../start.js';
 import { recoverCommand } from '../recovery.js';
 import { commitCommand } from '../commit.js';
 import { mergeDriverCommand } from '../merge-driver.js';
 import { learnCommand } from '../learn.js';
 
 export function registerOperationalCommands(cli: CAC): void {
+  cli
+    .command('start <id>', '一键从 Backlog 拉起任务并启动执行（promote + plan + go S1）')
+    .option('--cwd <path>', '项目目录')
+    .option('--step <step>', '指定起始步骤（缺省: S1）')
+    .option('--draft', '快速通道推送（跳过成熟度检查）')
+    .option('--agent', 'Agent 输出模式')
+    .action(async (id: string, options: { cwd?: string; step?: string; draft?: boolean; agent?: boolean }) => {
+      await startCommand({
+        cwd: options.cwd || process.cwd(),
+        id,
+        step: options.step,
+        draft: options.draft,
+        agent: options.agent,
+      });
+    });
+
   cli
     .command('learn [action]', '经验规约固化流水线：将候选经验固化为 rules 规约')
     .option('--cwd <path>', '项目目录')
@@ -36,16 +53,19 @@ export function registerOperationalCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--instant', '即时档：跳 build/test，仅 typecheck + 结构门禁，跳 review')
     .option('--adopt', '事后补录：认领当前未提交的微型改动（跳过 clean worktree 拦截）')
-    .action(async (title: string, options: { cwd?: string; instant?: boolean; adopt?: boolean }) => {
+    .option('--done', '一键收口：创建后直接运行 done 门禁序列')
+    .option('--commit', '一键完成并提交：创建后运行 done 门禁并在通过后自动提交')
+    .action(async (title: string, options: { cwd?: string; instant?: boolean; adopt?: boolean; done?: boolean; commit?: boolean }) => {
       await quickCommand({
         cwd: options.cwd || process.cwd(),
         title,
         instant: options.instant,
         adopt: options.adopt,
+        done: options.done,
+        commit: options.commit,
       });
     });
 
-  // R-299: start/step 步进糖已删除——go（原子认领）+ agent step --status 完全覆盖。
   cli
     .command('done', '完成任务（保留所有门禁：check → review → journal）')
     .option('--cwd <path>', '项目目录')
@@ -57,6 +77,7 @@ export function registerOperationalCommands(cli: CAC): void {
     .option('--note <note>', '跳过原因（--skip-* 时必需）')
     .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
     .option('--no-dirty-reminder', '不打印未提交业务文件提醒')
+    .option('--commit', '门禁通过后自动将改动提交到本地 Git')
     .action(async (options: {
       cwd?: string;
       skipCheck?: boolean;
@@ -73,6 +94,7 @@ export function registerOperationalCommands(cli: CAC): void {
       session?: string;
       dirtyReminder?: boolean;
       'dirty-reminder'?: boolean;
+      commit?: boolean;
     }) => {
       await doneCommand({
         cwd: options.cwd || process.cwd(),
@@ -84,6 +106,7 @@ export function registerOperationalCommands(cli: CAC): void {
         note: options.note,
         session: options.session,
         noDirtyReminder: options.dirtyReminder === false || options['dirty-reminder'] === false,
+        commit: options.commit,
       });
     });
 
@@ -99,17 +122,18 @@ export function registerOperationalCommands(cli: CAC): void {
       });
     });
 
-  // R-299: retry/unblock 步进糖已删除——recover 覆盖阻塞恢复语义。
   cli
     .command('commit', 'Git 收口包装：预览/暂存/提交（Phase 2）')
     .option('--cwd <path>', '项目目录')
     .option('--stage', '暂存推荐文件（不提交）')
     .option('-m, --message <msg>', '提交信息（暂存并提交）')
+    .option('--auto', '自动从任务信息生成提交信息并提交')
     .option('--include <pattern>', '额外暂存的文件模式（可多次使用）', { default: [] })
     .action(async (options: {
       cwd?: string;
       stage?: boolean;
       message?: string;
+      auto?: boolean;
       include?: string | string[];
     }) => {
       const includePatterns = Array.isArray(options.include)
@@ -120,9 +144,10 @@ export function registerOperationalCommands(cli: CAC): void {
 
       await commitCommand({
         cwd: options.cwd || process.cwd(),
-        dryRun: !options.stage && !options.message,
+        dryRun: !options.stage && !options.message && !options.auto,
         stage: options.stage || false,
         message: options.message,
+        autoMessage: options.auto,
         includePatterns,
       });
     });

@@ -25,7 +25,7 @@ const execFileAsync = promisify(execFile);
 
 export interface WorktreeOptions {
   cwd: string;
-  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | 'sync' | 'matrix' | 'status' | 'broadcast';
+  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | 'finish' | 'sync' | 'matrix' | 'status' | 'broadcast';
   name?: string;
   force?: boolean;
   backlog?: string;
