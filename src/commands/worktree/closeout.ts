@@ -103,7 +103,11 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
     try {
       await runGit(cwd, ['add', '-A']);
       const scope = process.env.CODE_MERGE_SCOPE || 'worktree-merge';
-      await runGit(cwd, ['commit', '-m', `chore(${scope}): merge worktree into ${targetMergeBranch}`]);
+      // R-358: 措辞改为中性——这只是「合并前残余快照」，不伪装成「合并已完成」。
+      // 真正的合回提交由 FR-7 生成（message 为 `Merge branch ... into ...`）。
+      // 历史措辞 `chore(worktree-merge): merge worktree into <target>` 会在合并失败
+      // （main dirty 拒绝 / --allow-dirty-main 跳过后底层 git merge 仍失败）时误导 git log。
+      await runGit(cwd, ['commit', '-m', `chore(${scope}): snapshot pre-merge residual on ${currentBranch}`]);
       const lastHash = (await runGitCapture(cwd, ['log', '-1', '--format=%H'])).trim();
       console.log(`  ✓ commit 完成, hash: ${lastHash}`);
     } catch (err) {

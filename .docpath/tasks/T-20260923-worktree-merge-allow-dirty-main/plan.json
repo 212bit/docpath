@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T12:55:02.905Z",
+    "updated_at": "2026-09-23T12:55:02.905Z",
+    "content_sha256": "70bf81015a204bdb2b36a355590d7853362c4bd8f71b72175e3e51795a8eb5a3"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T12:55:02.905Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-2 自动提交的措辞改为中性，明确只是「合并前残余快照」，不再伪装成「合并已完成」",
+      "description": "完成 FR-1: FR-2 自动提交的措辞改为中性，明确只是「合并前残余快照」，不再伪装成「合并已完成」；FR-2: 提交信息可区分 FR-2 快照与真实的 FR-7 合回提交，避免 git log 误读，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: FR-2 自动提交的 message 不再含「merge worktree into」措辞；AC-2: 真实 FR-7 合回提交的 message 仍保留 `Merge branch '...' into main`（不受影响）；AC-3: worktree merge 相关测试（若有）不回归",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
