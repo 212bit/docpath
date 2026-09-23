@@ -53,16 +53,28 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
 
     if (!verbose && failed.length === 0 && warnings.length === 0) {
       console.log(`\n${categoryNames[category] || category}:`);
-      console.log(`  ✅  ${passed.length} 项通过`);
+      const cachedInCat = categoryResults.filter((r) => r.cached && r.passed);
+      if (cachedInCat.length > 0) {
+        // R-357: 复用项曾静默伪装成真跑的 ✅。现在逐项标注「缓存复用，未实际执行」，
+        // 让用户一眼看出本项判定来自上次绿色 check 而非本次真跑。
+        for (const r of cachedInCat) {
+          console.log(`  ♻️  ${r.name}（缓存复用，未实际执行）`);
+        }
+        const realPass = passed.length - cachedInCat.length;
+        console.log(`  ✅  ${realPass} 项通过；${cachedInCat.length} 项来自缓存复用（未重跑）`);
+      } else {
+        console.log(`  ✅  ${passed.length} 项通过`);
+      }
       continue;
     }
 
     console.log(`\n${categoryNames[category] || category}:`);
     for (const result of categoryResults) {
-      if (verbose || !result.passed || result.severity === 'warning') {
-        const icon = result.severity === 'warning' ? '⚠️' : result.passed ? '✅' : '❌';
-        console.log(`  ${icon}  ${result.name}`);
-        if ((!result.passed || result.severity === 'warning') && result.output) {
+      if (verbose || !result.passed || result.severity === 'warning' || result.cached) {
+        const icon = result.cached ? '♻️' : result.severity === 'warning' ? '⚠️' : result.passed ? '✅' : '❌';
+        console.log(`  ${icon}  ${result.name}${result.cached ? '（缓存复用，未实际执行）' : ''}`);
+        // R-357: 缓存复用项的说明（含「--no-cache 可强制重跑」）在 verbose 或展开路径下也露出。
+        if ((!result.passed || result.severity === 'warning' || result.cached) && result.output) {
           for (const line of formatFailedOutput(result.output)) {
             console.log(line);
           }
@@ -93,6 +105,13 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
     for (const r of executed) {
       console.log(`  ${r.passed ? '✅' : '❌'}  ${r.name}: ${r.command}`);
     }
+  }
+
+  // R-357: 缓存复用聚合提示——显式告诉 agent 本次有多少项是复用而非真跑，
+  // 并给出强制全量的开关。复用出来的绿与真跑出来的绿是两件事，必须醒目区分。
+  const cachedCount = results.filter((r) => r.cached).length;
+  if (cachedCount > 0) {
+    console.log(`\n♻️  缓存复用 ${cachedCount} 项（typecheck/build/test/lint）：代码范围自上次绿色 check 无变更，判定沿用，本次未实际执行。如需强制全量请加 --no-cache。`);
   }
 
   // R-350: 环境豁免——全部失败项都是确定性可证的工具链故障时，不落 check_fail，

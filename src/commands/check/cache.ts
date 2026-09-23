@@ -98,6 +98,8 @@ export async function tryReuseCachedHeavyChecks(docpathDir: string, cwd: string)
     severity: check.severity === 'error' || check.severity === 'warning' ? check.severity : undefined,
     environment_failure: check.environment_failure,
     environment_exemptible: check.environment_exemptible,
+    // R-357: 标记来自缓存复用，渲染层据此显式提示「未实际执行」，不伪装成真跑的绿。
+    cached: true,
     output: '♻️  缓存复用：代码范围（src/tests/构建配置）自上次绿色 check 无变更，判定沿用该次结果。--no-cache 可强制重跑。',
   }));
 }
