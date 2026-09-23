@@ -1,7 +1,7 @@
 ---
 id: R-367
 title: 文档治理：清理 project-intake 下线残留与文档扫描盲区
-status: proposed
+status: done
 priority: P2
 level: 1
 source: docpath backlog add
@@ -9,12 +9,25 @@ readiness: confirmed
 evidence:
   brainstorm: null
   analysis: null
-  spec: null
-  decision_brief: null
+  spec: tasks/T-20260923-project-intake/spec.md
+  decision_brief: |-
+    - 当前问题: 2026-09-08 的提交 `de08364`（「待裁决大块收敛」）彻底下线了 project-intake 平行工作流——删除了
+    - 目标: 文档治理：清理 project-intake 下线残留与文档扫描盲区
+    - 背景: 来自 backlog R-367
+    - 可选方案:
+      - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程
+      - 方案 B: 补充分析，扩展本任务范围
+    - 推荐方案: 方案 A
+    - 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险
+    - 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围
+    - 成本: 中等，按 plan 拆分后逐步验证
+    - 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移
+    - 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed
+    - 用户确认: 用户于 2026-09-23 明确指示执行 5 项文档治理动作
   user_confirmed: 用户于 2026-09-23 明确指示执行 5 项文档治理动作
 links:
-  task: null
-  spec: null
+  task: T-20260923-project-intake
+  spec: tasks/T-20260923-project-intake/spec.md
 created_at: 2026-09-23
 ---
 
@@ -62,7 +75,7 @@ created_at: 2026-09-23
 - FR-5：修正 `document_scan_paths` 声明，使扫描面覆盖实际存在的项目文档，消除假绿；
   并在配置中写明白名单语义，防止后续新增文档再次漏扫。
 
-## 验收标准
+## 验收
 
 - AC-1：`REVIEW-project-intake.md`、`FIX-project-intake-concurrency.md`、
   `COMPLETION-project-intake-security-fix.md` 已从仓库移除。
