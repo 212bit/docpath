@@ -69,7 +69,7 @@ export async function worktreeList(cwd: string, agentMode = false): Promise<void
       } else if (diagnostics.completed && diagnostics.dirty) {
         action = `commit/stash 后: docpath worktree merge`;
       } else if (state?.task_id) {
-        action = `继续任务 (phase=${state.phase})，完成后 docpath check → review → agent done`;
+        action = `继续任务 (phase=${state.phase})，完成后 docpath done 收口`;
       } else {
         action = 'docpath next --agent';
       }

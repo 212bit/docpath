@@ -144,7 +144,7 @@ async function taskReopen(options: TaskCommandOptions): Promise<void> {
     context: '完成态任务经显式 reopen 回到 executing（R-298）',
   });
   console.log(`✅  已重开任务: ${current.task_id}（phase: ${next.phase}）`);
-  console.log('📌  修复完成后请重新走 check → review → journal 闭环');
+  console.log('📌  修复完成后请运行 `docpath done` 重新走收口门禁闭环');
 }
 
 /**

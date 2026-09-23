@@ -181,9 +181,9 @@ export async function updateCheckWorkflowState(
   const event = envExempt ? 'check.env_exempt' : allPassed ? 'check.passed' : 'check.failed';
   await transitionWorkflow(cwd, event, {
     currentStep: envExempt
-      ? `质量检查环境豁免 (${results.length} 项，失败项均为工具链不可用)，下一步: docpath review`
+      ? `质量检查环境豁免 (${results.length} 项，失败项均为工具链不可用)，下一步: docpath done`
       : allPassed
-        ? `质量检查通过 (${results.length} 项)，下一步: docpath review`
+        ? `质量检查通过 (${results.length} 项)，下一步: docpath done`
         : `质量检查失败: ${results.filter(result => !result.passed).map(result => result.name).join(', ')}`,
   });
 }

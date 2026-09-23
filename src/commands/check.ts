@@ -359,7 +359,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
       console.log('\n🔄  自动执行 review...\n');
       await reviewCommand({ cwd, force: options.force });
     } else {
-      console.log('下一步: `docpath review` 进行代码审查');
+      console.log('下一步: `docpath done` 执行收口门禁（check -> review -> journal）；如需单独排查可运行 `docpath review`');
       await emitNextHint(cwd);
     }
   }

@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -126,5 +126,64 @@ describe('R-363: 收尾路线按 scope 判定', () => {
       /开始或恢复任务执行/,
       `plan 全完成时不应给执行期提示，实际:\n${out}`,
     );
+  });
+});
+
+// R-365（第一批）：收口口径对齐——残余三连推荐文案清理
+//
+// 原则：docpath done 内部即 check -> review -> journal，因此对外推荐应是一步到位的
+// 复合命令，check / review 降级为「中途自测 / 单独排查」的原子工具。
+describe('R-365: 收口口径对齐（残余三连文案）', () => {
+  it('核心路径改动的收口路线推荐 docpath done 并给出排查备选', () => {
+    const cwd = mkRepo({ plan: ALL_DONE_PLAN });
+    writeFileSync(join(cwd, 'src', 'engine', 'placeholder.ts'), 'export const x = 2;\n');
+
+    const out = run('step-pass --step S1', cwd, { allowFail: true });
+
+    assert.match(out, /推荐收尾路线/, `应输出收口路线，实际:\n${out}`);
+    assert.match(
+      out,
+      /`docpath done`/,
+      `应主推 docpath done（一步到位收口），实际:\n${out}`,
+    );
+    assert.doesNotMatch(
+      out,
+      /`docpath check` -> `docpath review`/,
+      `不应再输出三连序列，实际:\n${out}`,
+    );
+  });
+
+  it('check 通过后的引导指向 docpath done', () => {
+    const cwd = mkRepo({ plan: ALL_DONE_PLAN });
+
+    const out = run('check', cwd, { allowFail: true });
+
+    if (/下一步:/.test(out)) {
+      assert.match(out, /docpath done/, `check 通过后应引导 docpath done，实际:\n${out}`);
+      assert.doesNotMatch(
+        out,
+        /下一步: `docpath review`/,
+        `不应再把单独 review 作为下一步，实际:\n${out}`,
+      );
+    }
+  });
+
+  it('源码中不再残留三连推荐文案', () => {
+    const repoRoot = new URL('..', import.meta.url).pathname;
+    const targets = [
+      'src/commands/worktree/query.ts',
+      'src/commands/check.ts',
+      'src/commands/check/evidence.ts',
+      'src/commands/task.ts',
+      'src/utils/closeout-route.ts',
+    ];
+    for (const rel of targets) {
+      const content = readFileSync(join(repoRoot, rel), 'utf-8');
+      assert.doesNotMatch(
+        content,
+        /check\s*(→|->)\s*review\s*(→|->)\s*(agent\s+)?done/,
+        `${rel} 不应残留三连推荐文案`,
+      );
+    }
   });
 });

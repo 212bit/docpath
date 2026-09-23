@@ -9,8 +9,8 @@
  * 本模块按实际改动做 scope 分类（复用 quick-guard 的 evaluateQuickScope，与 done 阶段
  * 真正使用的判定同源，避免「推荐」与「门禁」两套口径漂移），据此产出收口路线：
  *   - scope 通过（quick 可行）→ quick-done 作为推荐项；
- *   - scope 不通过（quick 必拒）→ 不出现 quick-done，主推 check -> review -> agent done，
- *     并附上被拒原因。
+ *   - scope 不通过（quick 必拒）→ 不出现 quick-done，主推 docpath done（其内部已含
+ *     check -> review -> journal 完整门禁序列），并附上被拒原因。
  */
 
 import { evaluateQuickScope } from '../engine/quick-guard.js';
