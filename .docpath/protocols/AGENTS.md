@@ -89,12 +89,13 @@ Use lifecycle commands instead of manual state edits:
 <!-- docpath:block lifecycle-commands -->
 ```bash
 docpath quick "Fix typo in docs"   # mandatory for tiny low-risk changes (< 50 lines diff)
+docpath start R-101 --draft        # compound: 1-shot start from backlog (promote + plan + go S1)
 docpath go --step S1
-docpath step-pass                  # compound (R-340): finish current step + auto-start next
+docpath step-pass                  # compound (R-340): finish current step + auto-start next (or --all)
 docpath agent step --step "S1" --status done
 docpath check                      # targeted quality check during iteration
-docpath done                       # compound: full gate sequence (check -> review -> journal) in one shot
-docpath quick-done                 # compound (R-340): done gate sequence + commit-readiness in one call
+docpath done --commit              # compound: full gate sequence (check -> review -> journal -> commit) in 1-shot
+docpath quick-done --commit        # compound (R-340): quick gate sequence + commit in 1-shot
 ```
 <!-- /docpath:block -->
 
@@ -126,7 +127,15 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 
 4. **Failure Handling & Verification Dedup (失败处理与验证去重)**:
    - **Environment-level failures stop after two attempts**: when a tool call is refused by the harness itself (permission denied, sandbox/classifier unavailable, command blocked) rather than by the command's own output, retry at most once. On the second failure, stop, report the exact error and what remains undone, and let the user decide. Re-sending an identical large payload ten times costs more than the task it was meant to finish.
-   - **Do not re-run what the gate already ran**: `docpath check` and `docpath done` execute typecheck / test / build and print the commands they ran. Do not run those by hand immediately before or after the gate "to be sure"; run targeted checks during iteration, then let the gate be the single full run.
+   - **Multi-Stack Targeted Test vs Single Full Gate (调试期定向测试与全量门禁去重)**:
+     - **调试期严禁跑全量测试套件**：迭代开发与调试时，**只允许**运行当前模块的单文件/单用例定向测试，禁止无参全量跑测试消耗长时延与上下文：
+       - *Node/TS*: `node --test tests/<file>.test.mjs` / `vitest run <file>` / `jest <path>`
+       - *Go*: `go test -v ./pkg/<pkg>/...` / `go test -run TestName ./...`
+       - *Rust*: `cargo test --test <name>` / `cargo test <test_fn>`
+       - *Python*: `pytest tests/<file>.py -k <test_name>`
+       - *Java*: `mvn test -Dtest=<Class>#<method>`
+       - *Makefile*: `make test-single TARGET=<target>`
+     - **全量测试只跑一次**：`docpath check` 和 `docpath done` 是项目全量构建、静态类型、全量单测和契约校验的**唯一法定执行点**。严禁在调用 `docpath done` / `check` 前后手动在终端跑全量测试（如 `node --test`、`go test ./...`、`cargo test`、`mvn test`）。
    - **Edit with the editor tool, not with scripts**: prefer the harness's file-edit tool over `sed` / heredoc / python rewrites. Script edits make the harness re-inject the whole changed file into context on the next turn; a targeted edit does not. Fall back to scripts only for mechanical multi-site renames the editor cannot express.
 
 ### Lifecycle Rules
@@ -134,16 +143,16 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 - Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath verify` to confirm requirement completeness and scope boundaries before final closeout.
-- Run `docpath done` (or `docpath quick-done`) before claiming a task is complete.
+- Run `docpath done --commit` (or `docpath quick-done --commit`) to execute quality gates, knowledge archiving, and git commit in 1-shot.
 
 ## Git Convention
 
-- **Auto-commit after `agent done`**: Once `docpath agent done` completes and
-  all gates pass (check, review, journal), commit automatically. Do not commit
-  mid-task on intermediate verification passes.
-- **Run `docpath changes --agent` before each commit**: Treat it as the commit
-  readiness report. Use its closeout summary as the commit message title;
-  append sub-change bullet points in the body.
+- **Prefer One-Shot Compound Closeout (`docpath done --commit` / `docpath quick-done --commit`)**:
+  Executes quality check, review, journal, stages all affected files, generates a structured commit message from `docpath changes`, and commits automatically in a single command.
+- **Manual Commit Flow (when multi-stage split commits are needed)**:
+  1. Once `docpath agent done` completes and all gates pass, run `docpath changes --agent` to inspect the commit readiness report.
+  2. Use its closeout summary as the commit message title; append sub-change bullet points in the body.
+  3. Stage all modified tracked files (`git add .`) and commit.
 - **Stage all modified tracked files**: Include both source/test files and any
   tracked `.docpath/` files (backlog, rules, AGENTS.md) that changed during the
   work. The `.gitignore` already excludes pure runtime state (workspace/,
@@ -186,6 +195,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath reveal --level N --topic <keyword>` | Progressive context expansion |
 | `docpath context --smart` | Smart path- and topic-affine rule & document routing package (`--agent` / `--raw`) |
 | `docpath context --max-tokens 5000 --topic <keyword>` | Budgeted context package |
+| `docpath start <id> [--draft]` | 1-shot start from backlog (promote + plan + go S1) |
 | `docpath go --step S1` | Atomically claim/start the selected plan step |
 | `docpath check` | Quality gates |
 | `docpath verify` | Semantic anti-drift, scope boundaries, and requirement completeness gate (`--agent` / `--json`) |
@@ -193,8 +203,10 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath quick-done` | Compound closeout with optional `--gotcha <text>` capture |
 | `docpath learn` | Promote validated lessons into durable rules (`--agent` / `--dry-run`) |
 | `docpath milestone` | Aggregate completed tasks and generate release summaries (`--dry-run` / `--agent`) |
+| `docpath milestone timeline` | Render global project evolution timeline and release trajectory |
 | `docpath budget` | Analyze context token consumption breakdown & pruning suggestions (`--agent` / `--suggest` / `--prune`) |
 | `docpath docs doctor` / `fix` | Living documentation diagnostics & automatic self-healing (broken links, unindexed files) |
+| `docpath docs sync` | One-shot documentation health self-healing and index synchronization |
 | `docpath docs search <topic>` | Fast topic search across living project documentation |
 | `docpath docs lint` | Living documentation integrity check (broken links & unindexed files) |
 | `docpath worktree matrix` | Live progress matrix across concurrent agents and worktrees (`--agent` / `--json`) |

@@ -127,7 +127,15 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 
 4. **Failure Handling & Verification Dedup (失败处理与验证去重)**:
    - **Environment-level failures stop after two attempts**: when a tool call is refused by the harness itself (permission denied, sandbox/classifier unavailable, command blocked) rather than by the command's own output, retry at most once. On the second failure, stop, report the exact error and what remains undone, and let the user decide. Re-sending an identical large payload ten times costs more than the task it was meant to finish.
-   - **Do not re-run what the gate already ran**: `docpath check` and `docpath done` execute typecheck / test / build and print the commands they ran. Do not run those by hand immediately before or after the gate "to be sure"; run targeted checks during iteration, then let the gate be the single full run.
+   - **Multi-Stack Targeted Test vs Single Full Gate (调试期定向测试与全量门禁去重)**:
+     - **调试期严禁跑全量测试套件**：迭代开发与调试时，**只允许**运行当前模块的单文件/单用例定向测试，禁止无参全量跑测试消耗长时延与上下文：
+       - *Node/TS*: `node --test tests/<file>.test.mjs` / `vitest run <file>` / `jest <path>`
+       - *Go*: `go test -v ./pkg/<pkg>/...` / `go test -run TestName ./...`
+       - *Rust*: `cargo test --test <name>` / `cargo test <test_fn>`
+       - *Python*: `pytest tests/<file>.py -k <test_name>`
+       - *Java*: `mvn test -Dtest=<Class>#<method>`
+       - *Makefile*: `make test-single TARGET=<target>`
+     - **全量测试只跑一次**：`docpath check` 和 `docpath done` 是项目全量构建、静态类型、全量单测和契约校验的**唯一法定执行点**。严禁在调用 `docpath done` / `check` 前后手动在终端跑全量测试（如 `node --test`、`go test ./...`、`cargo test`、`mvn test`）。
    - **Edit with the editor tool, not with scripts**: prefer the harness's file-edit tool over `sed` / heredoc / python rewrites. Script edits make the harness re-inject the whole changed file into context on the next turn; a targeted edit does not. Fall back to scripts only for mechanical multi-site renames the editor cannot express.
 
 ### Lifecycle Rules
@@ -187,6 +195,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath reveal --level N --topic <keyword>` | Progressive context expansion |
 | `docpath context --smart` | Smart path- and topic-affine rule & document routing package (`--agent` / `--raw`) |
 | `docpath context --max-tokens 5000 --topic <keyword>` | Budgeted context package |
+| `docpath start <id> [--draft]` | 1-shot start from backlog (promote + plan + go S1) |
 | `docpath go --step S1` | Atomically claim/start the selected plan step |
 | `docpath check` | Quality gates |
 | `docpath verify` | Semantic anti-drift, scope boundaries, and requirement completeness gate (`--agent` / `--json`) |
@@ -194,8 +203,10 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath quick-done` | Compound closeout with optional `--gotcha <text>` capture |
 | `docpath learn` | Promote validated lessons into durable rules (`--agent` / `--dry-run`) |
 | `docpath milestone` | Aggregate completed tasks and generate release summaries (`--dry-run` / `--agent`) |
+| `docpath milestone timeline` | Render global project evolution timeline and release trajectory |
 | `docpath budget` | Analyze context token consumption breakdown & pruning suggestions (`--agent` / `--suggest` / `--prune`) |
 | `docpath docs doctor` / `fix` | Living documentation diagnostics & automatic self-healing (broken links, unindexed files) |
+| `docpath docs sync` | One-shot documentation health self-healing and index synchronization |
 | `docpath docs search <topic>` | Fast topic search across living project documentation |
 | `docpath docs lint` | Living documentation integrity check (broken links & unindexed files) |
 | `docpath worktree matrix` | Live progress matrix across concurrent agents and worktrees (`--agent` / `--json`) |
