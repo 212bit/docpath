@@ -1037,6 +1037,22 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
 
   if (!pendingDone && state?.phase === 'executing' && state.task_id && !isQuickProfile(state.workflow_profile) && !isTroubleshooting) {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'];
+    // R-364：executing 期真正推进任务是 `go --step <id>`，不是会话入口 agent enter。
+    // 原实现推荐 agent enter（一次性会话初始化）作为「下一步」，与自身 exit_criteria
+    // （已生成 pending-done 哨兵 → 之后 next 不再走本分支）矛盾，且 agent enter 报错文案
+    // 自己写着「通常是 docpath go --step <id>」。有未完成步骤时直接推荐 go。
+    const openStep = context.planTasks.find((task) => !task.done);
+    if (openStep) {
+      return {
+        next_action: `执行下一个未完成步骤: ${openStep.id} ${openStep.title || ''}`.trim(),
+        recommended_command: `docpath go --step ${openStep.id}`,
+        required_context: required,
+        required_files: required,
+        must_update: ['.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'],
+        exit_criteria: `${openStep.id} 已完成并勾选 plan checklist`,
+      };
+    }
+    // 无可用步骤信息（plan 缺失/不可解析）时保守降级为会话入口，保证推荐命令仍可执行。
     return {
       next_action: '开始或恢复任务执行，运行 agent enter 初始化会话',
       recommended_command: 'docpath agent enter',
