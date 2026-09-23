@@ -143,7 +143,9 @@ function buildDirtyWorktreeError(
     const blockedUntracked = files.filter((file) => untrackedSet.has(file));
     if (blockedUntracked.length > 0) {
       lines.push(
-        '   未跟踪新文件不会被自动归属到当前任务。若属于本任务，先 git add 认领归属后重试:',
+        '   未跟踪新文件 = 尚未被 git 认领归属。门禁无法判断它属于哪个任务，故拒绝进入。',
+        '   若确属本任务，逐一 git add 认领（不要 git add -A：worktree 常有别的 agent 在改，',
+        '   半成品会被扫进同一 commit 难以回滚）后重试:',
         ...blockedUntracked.slice(0, 5).map((file) => `     git add ${file}`),
       );
       if (blockedUntracked.length > 5) {
