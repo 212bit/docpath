@@ -351,11 +351,20 @@ export async function validateTaskDocuments(cwd: string, docpathDir: string, opt
       : `还有 ${progress.planTotalCount - progress.planDoneCount} 个子任务未完成`;
     if (!passed && agentFlow) {
       const claimedUnfinished = await claimedPlanStepIds(cwd, planTasks);
+      const state = await readCurrentState(cwd);
+      const isExecuting = state?.phase === 'executing';
       if (claimedUnfinished.length === 0 && progress.planDoneCount > 0) {
         passed = true;
         output = `agent_flow: 已认领子任务全部完成 (${progress.planDoneCount}/${progress.planTotalCount})，未认领步骤不阻塞中间 check`;
       } else if (claimedUnfinished.length > 0) {
-        output = `还有已认领但未完成的子任务: ${claimedUnfinished.join(', ')}`;
+        const breadcrumb = await readBreadcrumb(cwd);
+        const hasBlocked = breadcrumb.entries.some(e => claimedUnfinished.includes(e.step) && e.status === 'blocked');
+        if (isExecuting && !hasBlocked) {
+          passed = true;
+          output = `开发执行中: 子任务 ${claimedUnfinished.join(', ')} 正在执行，代码/编译/测试质量门禁通过 (${progress.planDoneCount}/${progress.planTotalCount})`;
+        } else {
+          output = `还有已认领但未完成的子任务: ${claimedUnfinished.join(', ')}`;
+        }
       }
     }
     results.push({

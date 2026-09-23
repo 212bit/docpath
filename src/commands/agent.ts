@@ -603,11 +603,16 @@ async function handleAgentDone(options: AgentOptions): Promise<void> {
     assertQuickScope(cwd);
   }
 
+  // 关键修复：当 finalStatus 为 'done' 且有当前活跃步骤时，在门禁前先行预闭环当前步骤，
+  // 避免 runAgentCheckGate 校验 plan-checklist 时因当前步骤未勾选产生死锁拦截。
+  if (finalStatus === 'done') {
+    await completeFinalPlanStepIfNeeded(options, taskId, finalPlanStep);
+  }
+
   await runAgentCheckGate(options, stateAtStart);
   const stateAfterCheck = await readCurrentState(cwd);
   await runAgentReviewGate(options, stateAfterCheck);
   if (finalStatus === 'done') {
-    await completeFinalPlanStepIfNeeded(options, taskId, finalPlanStep);
     try {
       await refreshProjectDocumentIndex(join(cwd, '.docpath'), cwd);
     } catch {

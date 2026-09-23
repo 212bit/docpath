@@ -44,6 +44,24 @@ export function registerExecutionCommands(cli: CAC): void {
       });
     });
 
+  cli.command('step [action]', '步骤管理：极简推进或完成当前活跃步骤（docpath step done / pass）')
+    .option('--cwd <path>', '项目目录')
+    .option('--step <step>', '要收尾的步骤；缺省取 state.current_step')
+    .option('-a, --all', '一键收尾所有未完成的步骤并给出收口路线')
+    .option('--note <note>', '收尾事件备注')
+    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
+    .option('--accept-dirty <reason>', '透传给内部 go：记录证据后跳过 dirty worktree 拦截')
+    .action(async (action: string | undefined, options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string }) => {
+      await stepPassCommand({
+        cwd: options.cwd || process.cwd(),
+        step: options.step,
+        all: options.all || action === 'all',
+        note: options.note || (action && action !== 'done' && action !== 'pass' ? action : undefined),
+        session: options.session,
+        acceptDirty: options.acceptDirty ?? options['accept-dirty'],
+      });
+    });
+
   cli.command('quick-done', '一键收口：done 门禁序列（check/review/journal）+ 提交准备报告')
     .option('--cwd <path>', '项目目录')
     .option('--note <note>', '事件备注（跳过门禁时必填原因）')

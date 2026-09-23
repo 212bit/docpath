@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T20:15:46.612Z",
+    "updated_at": "2026-09-23T20:15:46.612Z",
+    "content_sha256": "f467bdb27957665ff9211aa8e5be88c54cd2f036f8b6a0ae2a02ebdb63883cf2"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T20:15:46.612Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 生命周期终态死锁根治：Done 自动预闭环活跃步骤、Check 执行期解耦计划终态阻断与步骤操作极简别名",
+      "description": "完成 FR-1: 生命周期终态死锁根治：Done 自动预闭环活跃步骤、Check 执行期解耦计划终态阻断与步骤操作极简别名，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-383 与任务 T-20260923-done-check 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

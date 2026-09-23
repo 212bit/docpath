@@ -168,4 +168,32 @@ describe('docpath step-pass (R-340)', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('docpath step [action] 极简别名正常推进步骤', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-step-alias-'));
+    try {
+      const { tasks, workspace } = mkExecWorkspace(cwd);
+      writeFileSync(join(tasks, 'plan.md'), twoStepPlan());
+      writeFileSync(join(workspace, 'state.json'), JSON.stringify({
+        level: 2,
+        task_id: 'T-AGENT',
+        task_title: 'Agent Lifecycle',
+        phase: 'executing',
+        gate: 'none',
+        state: 'executing',
+        current_step: 'S1',
+        started_at: '2026-06-01T00:00:00.000Z',
+        updated_at: '2026-06-01T00:00:00.000Z',
+      }));
+
+      const result = run(['step', 'done'], cwd);
+      assert.equal(result.code, 0, `step done failed: ${result.out}`);
+      assert.match(result.out, /step-pass: S1 已完成/);
+      assert.match(result.out, /自动推进下一步/);
+      assert.match(result.out, /子任务: S2/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
+
