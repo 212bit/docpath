@@ -2,13 +2,12 @@
 
 > 自动生成，供 agent / 人类稳定读取。
 
-> 扫描时间: 2026-09-23T12:15:30.481Z
+> 扫描时间: 2026-09-23T12:38:55.038Z
 
 ## 条目列表
 
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
-| R-355 | 高优先级架构优化包：backlog 写路径解耦、id/归档原子化、动作单真源、evidence 存在校验、capture 期去重 | active | P1 | 2 | T-20260923-backlog-id-evidence-capture |
 | R-357 | check scope 缓存命中时输出明确提示而非静默复用 | proposed | P1 | 1 |  |
 | R-358 | worktree merge --allow-dirty-main 假提交与语义误导修复 | proposed | P1 | 1 |  |
 | R-356 | worktree backlog 快照过期根治（重复登记根因：merge-mediated 快照无实时共享） | proposed | P2 | 2 |  |

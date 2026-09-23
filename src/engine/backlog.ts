@@ -349,9 +349,12 @@ export async function readBacklogItem(
 /**
  * 写入单条（唯一写入口）。保留既有文件名的 slug；新条目用 `${id}-${slug(title)}.md`。
  *
- * 注意（R-352）：凡是写终态（done/dropped）都顺手触发一次 refreshBacklogIndex，
- * 让归档立即落地——否则归档依赖下一次显式 refresh，`drop` 当下文件还躺在 active 里，
- * 与「drop 即归档」的验收预期不符。
+ * 写路径解耦（R-355/FR-1）：本函数**不再**隐式触发 refreshBacklogIndex。此前每次写
+ * （含改优先级、改状态等局部更新）都要付一次「全 active+archived 目录扫描 + 归档 rename
+ * + 重建索引」的代价，单条写入成本随 backlog 总量线性增长。
+ *
+ * 「drop/done 即归档」的 R-352 语义由 setBacklogStatus 在状态转移后显式 rebuild 一次保住；
+ * 其余写操作（如 edit 改字段）不再付出索引重建成本，索引由显式 refresh 命令收敛。
  */
 export async function writeBacklogItem(cwd: string, item: BacklogItem): Promise<void> {
   const dir = backlogDir(await resolveDocpathDir(cwd));
@@ -359,7 +362,6 @@ export async function writeBacklogItem(cwd: string, item: BacklogItem): Promise<
   const existing = await findItemFile(dir, item.id);
   const fileName = existing ?? `${item.id}-${slugify(item.title)}.md`;
   await writeFile(join(dir, fileName), serializeItem(item), 'utf-8');
-  await refreshBacklogIndex(cwd);
 }
 
 /**
@@ -373,7 +375,8 @@ export async function writeBacklogItem(cwd: string, item: BacklogItem): Promise<
  * 3. 复检通过后把裸锁重命名为自描述 slug 名。
  */
 export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id'>): Promise<BacklogItem> {
-  const dir = backlogDir(await resolveDocpathDir(cwd));
+  const docpathDir = await resolveDocpathDir(cwd);
+  const dir = backlogDir(docpathDir);
   await mkdir(dir, { recursive: true });
 
   let next = parseBacklogNumber(await nextBacklogId(cwd));
@@ -395,7 +398,8 @@ export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id
       }
       const finalFileName = `${id}-${slugify(item.title)}.md`;
       await rename(reservedPath, join(dir, finalFileName));
-      await refreshBacklogIndex(cwd);
+      // 分配成功 → 推进权威计数器（O(1) 写），下次分配不再全目录扫描
+      await writeBacklogIdCounter(docpathDir, next);
       return candidate;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
@@ -426,27 +430,50 @@ function resolveMainCheckoutDocpathDir(cwd: string): string | null {
 }
 
 /**
- * 分配下一个 R-### id（基于现有条目最大编号 +1，3 位补零）。
- *
- * R-273/FR-3：worktree 的本地 backlog 副本可能 stale，同时扫描主 checkout 的
- * backlog/ 与 archived/ 取全局 max，避免基于旧快照分配出与 main 撞号的 id。
- * 边界：跨 checkout 同时 capture 的原子性不在此保证（wx 预留仅锁本 checkout）。
+ * 权威 id 计数器文件路径（FR-2）：`<docpath>/backlog/.id-counter`，纯数字文本，原子写（临时文件+rename）。
+ * dotfile + 非 `.md` 后缀，天然被 list/scan/archive 的 `/^R-\d+.*\.md$/` 与 `/^R-\d+/` 过滤忽略。
+ * 语义：记录「本 checkout 已分配到的最大编号」；首次缺失时以跨 checkout 最大扫描值做权威种子，
+ * 此后分配走 O(1) 单文件读写，不再全目录扫描。
  */
-export async function nextBacklogId(cwd: string): Promise<string> {
+function idCounterPath(docpathDir: string): string {
+  return join(docpathDir, 'backlog', '.id-counter');
+}
+
+/** 读取权威计数器；不存在或不可解析时返回 null（由调用方走种子扫描）。 */
+async function readBacklogIdCounter(docpathDir: string): Promise<number | null> {
+  const path = idCounterPath(docpathDir);
+  if (!existsSync(path)) return null;
+  try {
+    const raw = (await readFile(path, 'utf-8')).trim();
+    const n = parseInt(raw, 10);
+    return Number.isInteger(n) && n >= 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 原子写权威计数器（临时文件 + rename，避免并发/崩溃留半写）。 */
+async function writeBacklogIdCounter(docpathDir: string, max: number): Promise<void> {
+  const path = idCounterPath(docpathDir);
+  const tmp = `${path}.${process.pid}.tmp`;
+  await writeFile(tmp, String(max), 'utf-8');
+  await rename(tmp, path);
+}
+
+/**
+ * 扫描本 checkout + 主 checkout 的 active/archived 取全局 max 编号（R-273/FR-3，id 单池种子）。
+ */
+async function scanBacklogMaxId(cwd: string): Promise<number> {
   const docpathDir = await resolveDocpathDir(cwd);
   const dirs = [backlogDir(docpathDir), archivedBacklogDir(docpathDir)];
-
   const mainDocpathDir = resolveMainCheckoutDocpathDir(cwd);
   if (mainDocpathDir && resolve(mainDocpathDir) !== resolve(docpathDir)) {
     dirs.push(backlogDir(mainDocpathDir), archivedBacklogDir(mainDocpathDir));
   }
-
   let max = 0;
-
   for (const dir of dirs) {
     if (!existsSync(dir)) continue;
-    const entries = await readdir(dir);
-    for (const file of entries) {
+    for (const file of await readdir(dir)) {
       if (!file.endsWith('.md') || file === 'backlog.md') continue;
       const match = file.match(/^R-(\d+)/i);
       if (match) {
@@ -455,8 +482,35 @@ export async function nextBacklogId(cwd: string): Promise<string> {
       }
     }
   }
+  return max;
+}
 
-  return formatBacklogId(max + 1);
+/**
+ * 归档撞号留痕（FR-3）：archived 已有同名副本、非破坏性跳过覆盖时，把冲突追加到
+ * `<docpath>/backlog/.archive-collisions.log`，作为「报错留痕」证据——既守住 R-321 不覆盖，
+ * 又不依赖事后 groom 扫描才能发现。dotfile + 非 `.md`，被各过滤天然忽略。
+ */
+async function logArchiveCollision(docpathDir: string, id: string, sourceFile: string): Promise<void> {
+  const dir = join(docpathDir, 'backlog');
+  await mkdir(dir, { recursive: true });
+  const line = `${new Date().toISOString()} [archive-collision] entry=${id} source=${sourceFile} (archived 已有同名副本，R-321 非破坏性跳过；id 重分配走独立迁移条目)`;
+  await writeFile(join(dir, '.archive-collisions.log'), `${line}\n`, { encoding: 'utf-8', flag: 'a' });
+}
+
+/**
+ * 分配下一个 R-### id（基于权威计数器，O(1)；首次以跨 checkout max 为种子）。
+ *
+ * FR-2：把「全目录扫描取 max」收敛为「单文件权威计数器」。首次缺失时经 scanBacklogMaxId
+ * 做权威种子（保留 R-273 主 checkout 可见性）；此后 O(1) 读一文件。跨 checkout 同时 capture
+ * 的原子性仍靠 createBacklogItem 的 wx 预留（仅锁本 checkout，基线已知边界）。
+ */
+export async function nextBacklogId(cwd: string): Promise<string> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const current = await readBacklogIdCounter(docpathDir);
+  if (current !== null) return formatBacklogId(current + 1);
+  const seedMax = await scanBacklogMaxId(cwd);
+  await writeBacklogIdCounter(docpathDir, seedMax);
+  return formatBacklogId(seedMax + 1);
 }
 
 /**
@@ -488,6 +542,9 @@ export async function refreshBacklogIndex(cwd: string): Promise<void> {
       // 非破坏性暴露；真正的 id 重分配须走独立迁移条目，勿在此自动改数据。
       if (existsSync(sourcePath) && !existsSync(targetPath)) {
         await rename(sourcePath, targetPath);
+      } else if (existsSync(sourcePath) && existsSync(targetPath)) {
+        // FR-3：撞号安全阀拦截时「留痕」，不依赖事后 groom 才可见
+        await logArchiveCollision(docpathDir, item.id, filename);
       }
     }
   }
@@ -543,6 +600,8 @@ export async function archiveBacklogItem(
     await refreshBacklogIndex(cwd);
     return { moved: true, file: `backlog/archived/${filename}` };
   }
+  // FR-3：撞号安全阀拦截（archived 已有同名副本）时留痕，再回落幂等静默
+  await logArchiveCollision(docpathDir, item.id, filename);
   await refreshBacklogIndex(cwd);
   return { moved: false, file: `backlog/${filename}` };
 }
@@ -578,7 +637,7 @@ export async function detectBacklogDuplicates(
   item: Pick<BacklogItem, 'id' | 'title'>,
 ): Promise<BacklogDuplicateReport[]> {
   const reports: BacklogDuplicateReport[] = [];
-  // 同 id：沿用既有撞号检测的结果集
+  // 同 id：沿既有撞号检测的结果集（本地 active+archived）；FR-6 追加主 checkout 扫描
   const collisions = await detectBacklogIdCollisions(cwd);
   for (const c of collisions) {
     if (c.id !== item.id) continue;
@@ -592,56 +651,76 @@ export async function detectBacklogDuplicates(
       identical: c.identical,
     });
   }
-  // 同标题：扫 active（含本条）与 archived
+  // 同标题：本地 + 主 checkout（worktree 快照可能 stale）的 active/archived
   const needle = normalizeBacklogTitle(item.title);
   if (!needle) return reports;
+
   const docpathDir = await resolveDocpathDir(cwd);
-  const dir = backlogDir(docpathDir);
-  const adir = archivedBacklogDir(docpathDir);
-  if (!existsSync(dir)) return reports;
-  const activeFiles: Array<{ file: string; title: string }> = [];
-  for (const file of await readdir(dir)) {
-    if (!/^R-\d+.*\.md$/i.test(file) || file === 'backlog.md') continue;
-    const content = await readFileOrSkip(join(dir, file));
-    if (content === null) continue;
-    activeFiles.push({ file, title: frontmatterTitle(content) });
+  // roots：label → 可读前缀；active 区的存档语义（isActive）区分 active/archived 展示
+  const roots: Array<{ label: string; dir: string; isActive: boolean }> = [
+    { label: 'backlog', dir: join(docpathDir, 'backlog'), isActive: true },
+    { label: 'backlog/archived', dir: join(docpathDir, 'backlog', 'archived'), isActive: false },
+  ];
+  const mainDocpathDir = resolveMainCheckoutDocpathDir(cwd);
+  if (mainDocpathDir && resolve(mainDocpathDir) !== resolve(docpathDir)) {
+    roots.push(
+      { label: 'main.backlog', dir: join(mainDocpathDir, 'backlog'), isActive: true },
+      { label: 'main.backlog/archived', dir: join(mainDocpathDir, 'backlog', 'archived'), isActive: false },
+    );
   }
-  const archivedByNorm = new Map<string, { file: string; title: string }>();
-  if (existsSync(adir)) {
-    for (const file of await readdir(adir)) {
+
+  const selfLocalFile = (await findItemFile(join(docpathDir, 'backlog'), item.id)) ?? '';
+  const seen = new Set<string>();
+  const peers: Array<{ label: string; file: string; title: string }> = [];
+  for (const root of roots) {
+    if (!existsSync(root.dir)) continue;
+    for (const file of await readdir(root.dir)) {
       if (!/^R-\d+.*\.md$/i.test(file) || file === 'backlog.md') continue;
-      const content = await readFileOrSkip(join(adir, file));
+      const content = await readFileOrSkip(join(root.dir, file));
       if (content === null) continue;
       const title = frontmatterTitle(content);
-      const key = normalizeBacklogTitle(title);
-      if (key && !archivedByNorm.has(key)) archivedByNorm.set(key, { file, title });
+      // 本地 active 区跳过「本条」自身（R-040/R-040-slug），避免自报重复
+      const isSelf = root.label === 'backlog' && (file.startsWith(`${item.id}-`) || file === `${item.id}.md`);
+      if (isSelf) continue;
+      if (normalizeBacklogTitle(title) !== needle) continue;
+      const key = `${root.label}:${file}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      peers.push({ label: root.label, file, title });
     }
   }
-  const activePeers = activeFiles.filter(
-    (f) => normalizeBacklogTitle(f.title) === needle && !f.file.startsWith(`${item.id}-`) && f.file !== `${item.id}.md`,
-  );
-  for (const peer of activePeers) {
+
+  for (const peer of peers) {
+    const archived = peer.label.endsWith('/archived');
     reports.push({
       id: item.id,
       kind: 'same-title',
-      active_file: `backlog/${peer.file}`,
-      archived_file: null,
-      active_title: peer.title,
-      archived_title: null,
-      identical: false,
+      active_file: peer.label === 'backlog' ? `backlog/${peer.file}` : selfLocalFile,
+      archived_file: archived ? `${peer.label}/${peer.file}` : null,
+      active_title: peer.label === 'backlog' ? peer.title : item.title,
+      archived_title: archived ? peer.title : null,
+      identical: archived && peer.label === 'backlog/archived',
     });
   }
-  const archivedHit = archivedByNorm.get(needle);
-  if (archivedHit) {
-    reports.push({
-      id: item.id,
-      kind: 'same-title',
-      active_file: `backlog/${(await findItemFile(dir, item.id)) ?? ''}`,
-      archived_file: `backlog/archived/${archivedHit.file}`,
-      active_title: item.title,
-      archived_title: archivedHit.title,
-      identical: true,
-    });
+
+  // FR-6：主 checkout 与「本条」同 id 的撞号（本地 detectBacklogIdCollisions 不跨 checkout）
+  const mainActive = roots.find((r) => r.label === 'main.backlog');
+  if (mainActive && existsSync(mainActive.dir)) {
+    const mainFile = await findItemFile(mainActive.dir, item.id);
+    if (mainFile) {
+      const content = await readFileOrSkip(join(mainActive.dir, mainFile));
+      if (content !== null) {
+        reports.push({
+          id: item.id,
+          kind: 'same-id',
+          active_file: `main.backlog/${mainFile}`,
+          archived_file: null,
+          active_title: frontmatterTitle(content),
+          archived_title: null,
+          identical: false,
+        });
+      }
+    }
   }
   return reports;
 }
@@ -766,5 +845,8 @@ export async function setBacklogStatus(
   }
   item.status = transitionBacklog(item.status, to);
   await writeBacklogItem(cwd, item);
+  // R-352 语义：状态转移是「归档边界」——done/dropped 必须立即归档。writeBacklogItem
+  // 已不再隐式重建索引（FR-1 写路径解耦），故在转移后显式重建一次，保住「drop/done 即归档」。
+  await refreshBacklogIndex(cwd);
   return item;
 }

@@ -16,7 +16,7 @@ import { transitionWorkflow, assertWorkflowEventLegal } from '../engine/transiti
 import { evaluateCompletionPolicy } from '../engine/policy.js';
 import { isQuickProfile } from '../engine/workflow-profile.js';
 import { appendDecision, gcDecisions, splitArchiveIfBloated } from '../governance/decisions.js';
-import { listBacklogItems, transitionBacklog, writeBacklogItem } from '../engine/backlog.js';
+import { listBacklogItems, transitionBacklog, writeBacklogItem, refreshBacklogIndex } from '../engine/backlog.js';
 import {
   archivedTaskDir,
   canonicalTaskDir,
@@ -518,6 +518,8 @@ async function completeLinkedBacklog(
         linkedBacklog.status = transitionBacklog(linkedBacklog.status, 'done');
       }
       await writeBacklogItem(cwd, linkedBacklog);
+      // FR-1：写路径解耦后归档在「done」边界显式触发——journal 把条目翻成 done，须显式重建以「即归档」
+      await refreshBacklogIndex(cwd);
       console.log(`🔁  backlog 已自动回填完成: ${linkedBacklog.id}`);
     }
   } catch (e) {

@@ -173,7 +173,7 @@ Archived body
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('refreshes backlog.md index after writes and sorts by priority then id', async () => {
+  it('decouples plain writes from index rebuild; index updates only on explicit refresh (FR-1)', async () => {
     const cwd = mkWorkspace();
 
     await writeBacklogItem(cwd, sampleItem({
@@ -195,6 +195,14 @@ Archived body
       status: 'planned',
     }));
 
+    // FR-1：普通写入不再隐式触发索引重建/归档——写后条目文件在，但 backlog.md 尚未生成
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'R-001-first.md')));
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'R-002-second.md')));
+    assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'R-003-third.md')));
+    assert.ok(!existsSync(join(cwd, '.docpath', 'backlog', 'backlog.md')), 'plain write 不应隐式生成索引');
+
+    // 显式 refresh 后才落索引，且按 priority 再 id 排序
+    await refreshBacklogIndex(cwd);
     const indexPath = join(cwd, '.docpath', 'backlog', 'backlog.md');
     const index = readFileSync(indexPath, 'utf-8');
 
@@ -431,10 +439,14 @@ b
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('auto-archives dropped items alongside done on refresh (R-352)', async () => {
+  it('auto-archives dropped items alongside done at the status boundary (R-352 / FR-1)', async () => {
     const cwd = mkWorkspace();
-    await writeBacklogItem(cwd, sampleItem({ id: 'R-010', title: 'Drop me', status: 'dropped' }));
+    // FR-1：写路径解耦后，归档发生在状态转移边界（setBacklogStatus 内显式 refresh），
+    // 而非普通 writeBacklogItem 隐式触发——drop 用 setBacklogStatus 走「即归档」语义。
+    await writeBacklogItem(cwd, sampleItem({ id: 'R-010', title: 'Drop me', status: 'proposed' }));
+    await setBacklogStatus(cwd, 'R-010', 'dropped');
     await writeBacklogItem(cwd, sampleItem({ id: 'R-011', title: 'Keep me', status: 'proposed' }));
+    await refreshBacklogIndex(cwd);
     assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-010-drop-me.md')));
     assert.ok(!existsSync(join(cwd, '.docpath', 'backlog', 'R-010-drop-me.md')));
     assert.ok(existsSync(join(cwd, '.docpath', 'backlog', 'R-011-keep-me.md')));

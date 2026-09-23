@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-evidence-capture","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 高优先级架构优化包：backlog 写路径解耦、id/归档原子化、动作单真源、evidence 存在校验、capture 期去重","timestamp":"2026-09-23T11:53:00.602Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-evidence-capture","step":"S1","status":"done","context":"agent-step: S1","timestamp":"2026-09-23T12:35:40.003Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-evidence-capture","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-23T12:38:40.123Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-evidence-capture","step":"review","status":"done","context":"代码审查: 0 错误, 11 警告, 0 提示","timestamp":"2026-09-23T12:38:49.958Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-evidence-capture","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-23T12:38:55.040Z"}

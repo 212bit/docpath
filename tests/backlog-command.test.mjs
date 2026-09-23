@@ -293,6 +293,70 @@ created_at: 2026-05-31
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('backlog promote rejects dangling path evidence refs but passes once the file exists (FR-5)', () => {
+    const cwd = mkWorkspace();
+    const writeItem = () => {
+      mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
+      mkdirSync(join(cwd, '.docpath', 'workspace'), { recursive: true });
+      writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+        level: 2,
+        task_id: '',
+        task_title: '',
+        phase: 'idle',
+        gate: 'none',
+        current_step: '等待下一步',
+        started_at: '2026-05-31T00:00:00.000Z',
+        updated_at: '2026-05-31T00:00:00.000Z',
+      }, null, 2));
+      writeFileSync(join(cwd, '.docpath', 'backlog', 'R-001-alpha.md'), `---
+id: R-001
+title: Alpha
+status: accepted
+priority: P0
+level: 2
+source: test
+readiness: analyzed
+evidence:
+  brainstorm: null
+  analysis: analysis/requirements.md
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+links:
+  task: null
+  spec: null
+created_at: 2026-05-31
+---
+
+## 背景
+
+- 来自 backlog 的正文
+
+## 验收
+
+- 完成验收
+`);
+    };
+
+    // 1) 悬空路径引用：analysis/requirements.md 不存在 → promote 门禁拒绝并给出明确提示
+    writeItem();
+    assert.throws(
+      () => run('backlog promote R-001', cwd),
+      (err) => {
+        const out = err.stdout || err.stderr || err.message || '';
+        return /evidence\.analysis 引用文件不存在: analysis\/requirements\.md/.test(out)
+          && /尚未达到可执行成熟度/.test(out);
+      },
+    );
+
+    // 2) 文件落盘后：同一条目 promote 放行（不再因文件缺失被拒）
+    mkdirSync(join(cwd, 'analysis'), { recursive: true });
+    writeFileSync(join(cwd, 'analysis', 'requirements.md'), 'analysis evidence\n');
+    const out = run('backlog promote R-001', cwd);
+    assert.match(out, /已 promote backlog 条目: R-001/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('backlog edit replaces body from body file', () => {
     const cwd = mkWorkspace();
     mkdirSync(join(cwd, '.docpath', 'backlog'), { recursive: true });
@@ -751,6 +815,8 @@ created_at: 2026-05-31
 
 - 完成验收
 `);
+    mkdirSync(join(cwd, 'analysis'), { recursive: true });
+    writeFileSync(join(cwd, 'analysis', 'requirements.md'), 'analysis evidence\n');
     writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
       level: 2,
       task_id: '',
@@ -925,6 +991,10 @@ Brand-new project intake is workflow-level work and must not use quick gates.
 
 Promoted task routes through standard spec/plan lifecycle.
 `);
+    mkdirSync(join(cwd, 'analysis'), { recursive: true });
+    mkdirSync(join(cwd, 'decisions'), { recursive: true });
+    writeFileSync(join(cwd, 'analysis', 'project-intake.md'), 'analysis evidence\n');
+    writeFileSync(join(cwd, 'decisions', 'project-intake.md'), 'decision brief evidence\n');
     writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
       level: 1,
       workflow_profile: 'quick',
@@ -982,6 +1052,8 @@ docpath worktree workflow gate blocks git commit staging.
 
 CLI workflow task can proceed without product UI design assets.
 `);
+    mkdirSync(join(cwd, 'docs'), { recursive: true });
+    writeFileSync(join(cwd, 'docs', 'decision.md'), 'decision brief evidence\n');
     writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
       level: 2,
       task_id: '',
@@ -1140,6 +1212,8 @@ created_at: 2026-05-31
 
 - 完成验收
 `);
+    mkdirSync(join(cwd, 'analysis'), { recursive: true });
+    writeFileSync(join(cwd, 'analysis', 'requirements.md'), 'analysis evidence\n');
 
     const out = run('backlog promote R-001', cwd);
     const state = JSON.parse(readFileSync(join(dp, 'workspace', 'state.json'), 'utf-8'));
@@ -1227,6 +1301,8 @@ created_at: 2026-05-31
 
 Alpha
 `);
+    mkdirSync(join(cwd, 'analysis'), { recursive: true });
+    writeFileSync(join(cwd, 'analysis', 'requirements.md'), 'analysis evidence\n');
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const baseTaskId = `T-${date}-alpha-promote`;
     mkdirSync(join(dp, 'tasks', 'done', baseTaskId), { recursive: true });
