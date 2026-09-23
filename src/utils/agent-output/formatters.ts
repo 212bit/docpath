@@ -589,14 +589,16 @@ export function inferNextAction(
     const envExempted = gate === 'check_env_exempt';
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/last-check.md'];
     return withWorkflowConstraint({
-      // R-350: 环境豁免态与 check_pass 同路——下一步都是评审，但文案必须点明豁免，
+      // R-350: 环境豁免态与 check_pass 同路——下一步都是收口，但文案必须点明豁免，
       // 避免 agent 误以为检查真的全绿（豁免只表达"失败项为工具链不可用"）。
-      next_action: envExempted ? '质量检查含环境豁免，执行审查' : '质量检查已通过，执行审查',
-      recommended_command: 'docpath review',
+      // R-366: 收口入口统一为 docpath done（内部即 check -> review -> journal 完整门禁
+      // 序列），与 transitions.ts 的建议口径同源，消除同一输出内两个字段指向不同命令。
+      next_action: envExempted ? '质量检查含环境豁免，执行收口' : '质量检查已通过，执行收口',
+      recommended_command: 'docpath done',
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/review.md', '.docpath/workspace/breadcrumb.md'],
-      exit_criteria: '审查通过并记录 review 证据',
+      exit_criteria: '运行 docpath done 通过门禁并归档任务（或运行 docpath review 单独排查）',
     }, phase, gate);
   }
 

@@ -63,9 +63,11 @@ const EVENT_RECOVERY_COMMAND: Record<WorkflowEvent, string> = {
   'plan.ready': 'docpath go --step S1',
   'step.started': 'docpath next --agent',
   'step.completed': 'docpath next --agent',
-  'check.passed': 'docpath review',
-  // R-350: 环境豁免与 check_pass 同路——下一步仍是评审（豁免只表达"检查结论受环境阻塞"）
-  'check.env_exempt': 'docpath review',
+  'check.passed': 'docpath done',
+  // R-350: 环境豁免与 check_pass 同路——下一步都是收口（豁免只表达"检查结论受环境阻塞"）
+  // R-366: 与 formatters 的 next 路由口径统一为 docpath done（其内部即
+  // check -> review -> journal 完整门禁序列），避免同一输出内两个字段指向不同命令。
+  'check.env_exempt': 'docpath done',
   'check.failed': 'docpath check',
   'review.passed': 'docpath journal',
   'review.skipped': 'docpath journal',
@@ -196,9 +198,12 @@ export function preferredWorkflowCommand(previous: Pick<CurrentState, 'phase' | 
   if ((gate === 'review_pass' || gate === 'review_skipped') && valid.has('journal.archived')) {
     return 'docpath journal';
   }
-  // Check passed（含 R-350 环境豁免），review not yet done → review (or quick done path leaves journal also legal)
+  // Check passed（含 R-350 环境豁免），review not yet done → 收口入口 done
+  // R-366: 口径与 formatters 的 next 路由统一。done 内部即 check -> review -> journal，
+  // 且 done/agent done 无 FSM gate 前置（自行跑三门禁），故在 check_pass 下指向它合法、
+  // 不会把用户引入死胡同。
   if ((gate === 'check_pass' || gate === 'check_env_exempt') && (valid.has('review.passed') || valid.has('review.skipped') || valid.has('review.failed'))) {
-    return 'docpath review';
+    return 'docpath done';
   }
   if (gate === 'review_fail' && (valid.has('review.passed') || valid.has('review.failed'))) {
     return 'docpath review';
@@ -263,12 +268,12 @@ export function constrainRecommendedCommandToWorkflow(
 
 const DEFAULT_STEP: Record<WorkflowEvent, string> = {
   'task.created': '任务已创建，下一步: 编写或细化 spec',
-  'task.reopened': '任务已重开，修复后重新走 check/review/journal 闭环',
+  'task.reopened': '任务已重开，修复后运行 docpath done 重新走收口门禁闭环',
   'plan.ready': '计划已就绪，下一步: 开始执行',
   'step.started': '步骤执行中',
   'step.completed': '步骤已完成，继续下一步',
-  'check.passed': '质量检查通过，下一步: docpath review',
-  'check.env_exempt': '质量检查环境豁免（失败项均为工具链不可用），下一步: docpath review',
+  'check.passed': '质量检查通过，下一步: docpath done 收口',
+  'check.env_exempt': '质量检查环境豁免（失败项均为工具链不可用），下一步: docpath done 收口',
   'check.failed': '质量检查失败，请修复失败项',
   'review.passed': '审查通过，下一步: docpath journal',
   'review.skipped': '审查已按工作流策略跳过，下一步: docpath journal',

@@ -104,11 +104,11 @@ describe('R-350 check 环境豁免（AC-1 / AC-3 / AC-4）', () => {
       const lastCheck = readFileSync(join(dir, '.docpath', 'workspace', 'last-check.md'), 'utf-8');
       assert.match(lastCheck, /PASS \(环境豁免\)/);
 
-      // 路由回归：gate=check_env_exempt 时 next --agent 必须指向 review，
-      // 而不是把豁免态当"未检查"或"已完成"（须在 review 之前断言）
+      // 路由回归：gate=check_env_exempt 时 next --agent 必须指向收口入口，
+      // 而不是把豁免态当"未检查"或"已完成"（R-366: 收口入口统一为 docpath done）
       const next = run(['next', '--agent'], dir);
-      assert.match(next.out, /质量检查含环境豁免，执行审查/);
-      assert.match(next.out, /recommended_command:\s*docpath review/);
+      assert.match(next.out, /质量检查含环境豁免，执行收口/);
+      assert.match(next.out, /recommended_command:\s*docpath done/);
 
       // 豁免后必须能继续走评审（requiredGate 视同 check_pass）
       const review = run(['review', '--force'], dir);

@@ -16,8 +16,9 @@ import { resolveGatePolicy, isQuickProfile, isInstantProfile, normalizeWorkflowP
 import { isInWorktree } from '../utils/worktree.js';
 import { exitWithError } from '../utils/error-helpers.js';
 import { detectUncommittedNonDocPathFiles, renderCommitReminder } from '../utils/git-dirty-guard.js';
+import { commitCommand } from './commit.js';
 
-interface DoneOptions {
+export interface DoneOptions {
   cwd: string;
   skipCheck?: boolean;
   skipReview?: boolean;
@@ -27,6 +28,7 @@ interface DoneOptions {
   note?: string;
   session?: string;
   noDirtyReminder?: boolean;
+  commit?: boolean;
 }
 
 /**

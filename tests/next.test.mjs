@@ -1421,7 +1421,8 @@ warned: false
     ].join('\n'));
 
     const output = nextAgent(cwd);
-    assert.equal(output.recommended_command, 'docpath review');
+    // R-366: check 通过后的收口入口统一为 docpath done（内部即 check -> review -> journal）
+    assert.equal(output.recommended_command, 'docpath done');
     assert.doesNotMatch(output.recommended_command || '', /docpath plan/);
     rmSync(cwd, { recursive: true, force: true });
   });

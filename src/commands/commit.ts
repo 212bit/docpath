@@ -3,6 +3,8 @@ import { checkGitSafety, formatSafetyResult } from '../utils/git-safety.js';
 import { stageRecommendedFiles, formatStageResult, getStagedFiles } from '../utils/git-staging.js';
 import { buildChangesReport } from '../utils/changes-report.js';
 
+import { readCurrentState } from '../utils/workspace.js';
+
 /** R-347: changes report 分组平铺（含 worktree 隔离下的 commit_relevant_files）；报告失败时退回空集，不放宽任何文件。 */
 async function stagingCandidateFiles(cwd: string): Promise<string[]> {
   try {
@@ -15,10 +17,25 @@ async function stagingCandidateFiles(cwd: string): Promise<string[]> {
   }
 }
 
-interface CommitOptions {
-  dryRun: boolean;
-  stage: boolean;
+export async function deriveCommitMessage(cwd: string): Promise<string> {
+  try {
+    const report = await buildChangesReport(cwd);
+    if (report.suggested_commit_message?.trim()) {
+      return report.suggested_commit_message.trim();
+    }
+  } catch {}
+  const state = await readCurrentState(cwd);
+  if (state?.task_title || state?.task_id) {
+    return `feat: ${state.task_title || state.task_id}`;
+  }
+  return 'chore: complete task and update changes';
+}
+
+export interface CommitOptions {
+  dryRun?: boolean;
+  stage?: boolean;
   message?: string;
+  autoMessage?: boolean;
   includePatterns?: string[];
   cwd: string;
 }
@@ -29,7 +46,11 @@ const CO_AUTHOR = 'Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthrop
  * Main commit command implementation
  */
 export async function commitCommand(options: CommitOptions): Promise<void> {
-  const { dryRun, stage, message, includePatterns, cwd } = options;
+  let { dryRun, stage, message, autoMessage, includePatterns, cwd } = options;
+
+  if (!message && autoMessage) {
+    message = await deriveCommitMessage(cwd);
+  }
 
   // Step 1: Safety checks
   console.log('🔍 Checking Git safety...\n');

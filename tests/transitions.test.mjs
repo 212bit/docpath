@@ -225,12 +225,20 @@ describe('FSM next_hint single-source helpers', () => {
     } = await import('../dist/engine/transitions.js'));
   });
 
-  it('exports suggested command for check.passed as review', () => {
-    assert.equal(workflowEventSuggestedCommand('check.passed'), 'docpath review');
+  it('exports suggested command for check.passed as closeout entry (R-366)', () => {
+    // R-366: 口径统一为 docpath done（内部即 check -> review -> journal 完整门禁序列），
+    // 与 formatters 的 next 路由同源，避免同一输出内两个字段指向不同命令。
+    assert.equal(workflowEventSuggestedCommand('check.passed'), 'docpath done');
   });
 
-  it('prefers review when phase=checking gate=check_pass', () => {
-    assert.equal(preferredWorkflowCommand({ phase: 'checking', gate: 'check_pass' }), 'docpath review');
+  it('prefers closeout entry when phase=checking gate=check_pass (R-366)', () => {
+    assert.equal(preferredWorkflowCommand({ phase: 'checking', gate: 'check_pass' }), 'docpath done');
+    // done 在 check_pass 下 FSM 合法（其内部自跑 check/review/journal，无 gate 前置）
+    assert.equal(
+      isWorkflowGateCommandAllowed('docpath done', { phase: 'checking', gate: 'check_pass' }),
+      true,
+    );
+    // 原子命令仍可用作单独排查
     assert.equal(
       isWorkflowGateCommandAllowed('docpath review', { phase: 'checking', gate: 'check_pass' }),
       true,
