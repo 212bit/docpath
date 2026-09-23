@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T08:28:28.183Z",
+    "updated_at": "2026-09-23T08:28:28.183Z",
+    "content_sha256": "4283b437ebbf16e4a46217b19a44614ee907ad8448817793a1dc414c0644db3c"
+  },
+  "task_id": "T-20260923-docpath-archiving-blind-spots-and-duplic",
+  "backlog_id": "R-352",
+  "title": "T-20260923-docpath-archiving-blind-spots-and-duplic - DocPath archiving blind spots and duplicate registration patterns",
+  "generated_at": "2026-09-23T08:28:28.183Z",
+  "scope": {
+    "included": [
+      "DocPath archiving blind spots and duplicate registration patterns"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: DocPath 的归档机制存在盲区：只有 done 条目会被自动归档，dropped 条目没有自动路径，CLI 动作集里也没有 archive。重复登记已成模式：多会话并行时，一个会话看到别人已合并的成果后，把它当作待办重新走了一遍 backlog → promote → plan → done，生成新 ID。\n- 目标: DocPath archiving blind spots and duplicate registration patterns\n- 背景: 来自 backlog R-352\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "DocPath archiving blind spots and duplicate registration patterns",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "dropped 条目归档后在 archive/ 或 done/ 中找到。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "重复登记时有明确提示并记录证据。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "门禁检查通过（level 2 maturity）。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "dropped 条目归档后在 archive/ 或 done/ 中找到。",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "重复登记时有明确提示并记录证据。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "backlog 条目 R-352 与任务 T-20260923-docpath-archiving-blind-spots-and-duplic 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "DocPath 的归档机制存在盲区：只有 done 条目会被自动归档，dropped 条目没有自动路径，CLI 动作集里也没有 archive。重复登记已成模式：多会话并行时，一个会话看到别人已合并的成果后，把它当作待办重新走了一遍 backlog → promote → plan → done，生成新 ID。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
