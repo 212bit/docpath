@@ -266,7 +266,37 @@ function readinessRank(readiness: BacklogReadiness): number {
   return ['raw', 'shaped', 'analyzed', 'confirmed'].indexOf(readiness);
 }
 
-function missingReadinessEvidence(item: BacklogItem): string[] {
+/**
+ * FR-5：evidence 引用是否「像文件路径」。凡含路径分隔符（`/` 或 `\`）即视为文件路径引用，
+ * 必须能解析到真实文件；纯文本标注（如 "spec decision"/"R-260 plan exercise"，无分隔符）
+ * 不做存在性校验，避免误拒自由文本 evidence。
+ */
+function evidencePathLike(ref: string): boolean {
+  return /[/\\]/.test(ref);
+}
+
+/**
+ * 收集引用了真实文件但文件不存在的 evidence 字段（FR-5，AC-1#4）。
+ * 解析基准：相对路径按 cwd 解析（evidence 惯例为 `.docpath/...` 或 `analysis/...` 相对条目目录）；
+ * 绝对路径直接判。user_confirmed 恒为自由文本，不参与文件校验。
+ */
+function danglingEvidenceRefs(item: BacklogItem, cwd: string): Array<{ field: string; ref: string }> {
+  const candidates: Array<[string, string | null]> = [
+    ['analysis', item.evidence.analysis],
+    ['spec', item.evidence.spec],
+    ['decision_brief', item.evidence.decision_brief],
+    ['brainstorm', item.evidence.brainstorm],
+  ];
+  const dangling: Array<{ field: string; ref: string }> = [];
+  for (const [field, ref] of candidates) {
+    if (!ref || !evidencePathLike(ref)) continue;
+    const resolved = isAbsolute(ref) ? ref : resolve(cwd, ref);
+    if (!existsSync(resolved)) dangling.push({ field, ref });
+  }
+  return dangling;
+}
+
+function missingReadinessEvidence(item: BacklogItem, cwd: string, checkFiles = false): string[] {
   const issues: string[] = [];
   const bg = getMarkdownSection(item.body, '背景');
   const ac = getMarkdownSection(item.body, '验收');
@@ -297,12 +327,19 @@ function missingReadinessEvidence(item: BacklogItem): string[] {
   if (item.level >= 3 && !item.evidence.user_confirmed) {
     issues.push('缺少 evidence.user_confirmed');
   }
+  if (checkFiles) {
+    // FR-5：promote 门禁额外校验「路径型 evidence 引用必须解析到真实文件」
+    for (const { field, ref } of danglingEvidenceRefs(item, cwd)) {
+      issues.push(`evidence.${field} 引用文件不存在: ${ref}`);
+    }
+  }
   return issues;
 }
 
-function assertBacklogReadyForExecution(item: BacklogItem, action: 'accept' | 'plan' | 'promote', skipCheck = false): void {
+function assertBacklogReadyForExecution(item: BacklogItem, action: 'accept' | 'plan' | 'promote', skipCheck = false, cwd = process.cwd()): void {
   if (skipCheck) return;
-  const issues = missingReadinessEvidence(item);
+  // FR-5：文件存在性校验仅在 promote 门禁启用（accept/plan 看成熟度，不看引用文件真实存在）
+  const issues = missingReadinessEvidence(item, cwd, action === 'promote');
   if (issues.length === 0) return;
   throw new Error([
     `docpath backlog ${action}: backlog 条目 ${item.id} 尚未达到可执行成熟度`,
@@ -934,6 +971,7 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
   console.log(`   priority: ${item.priority}`);
   console.log(`   level: ${item.level}`);
   console.log(`   readiness: ${item.readiness}`);
+  await refreshBacklogIndex(options.cwd);
 }
 
 async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
@@ -970,6 +1008,7 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
   if (item.level <= 1) {
     console.log(`   ⚡ 微小改动可跳过完整流程: docpath quick "${item.title}"（R-310 轻量通道）`);
   }
+  await refreshBacklogIndex(options.cwd);
 }
 
 async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
@@ -1136,7 +1175,7 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
     });
   }
 
-  assertBacklogReadyForExecution(item, 'promote', options.draft);
+  assertBacklogReadyForExecution(item, 'promote', options.draft, options.cwd);
 
   const docpathDir = await resolveDocpathDir(options.cwd);
   const nextStatus = transitionBacklog(item.status, 'active');
@@ -1204,7 +1243,7 @@ async function backlogAdvanceStatus(
   if (!existing) {
     throw new Error(`[docpath] backlog 条目不存在: ${options.id}`);
   }
-  assertBacklogReadyForExecution(existing, target === 'accepted' ? 'accept' : 'plan', options.draft);
+  assertBacklogReadyForExecution(existing, target === 'accepted' ? 'accept' : 'plan', options.draft, options.cwd);
   const item = await setBacklogStatus(options.cwd, existing.id, target);
   await refreshBacklogIndex(options.cwd);
   console.log(`✅  backlog 条目已更新: ${item.id} → ${item.status}`);
@@ -1328,50 +1367,41 @@ async function backlogGroom(options: BacklogCommandOptions): Promise<void> {
   }
 }
 
-export async function backlogCommand(options: BacklogCommandOptions): Promise<void> {
-  const action = options.action?.trim().toLowerCase();
-  if (!action) {
-    throw new Error('docpath backlog requires <capture|add|edit|list|groom|refresh|accept|plan|promote|done|drop|archive>');
-  }
+/**
+ * FR-4 动作单一真源：backlog 动作 → 处理器映射。帮助文案 / 校验 / 报错全部由
+ * BACKLOG_ACTIONS 派生，扩展一个动作只改这里一处的映射项，其余（roster、usage、报错）自动跟随。
+ */
+const backlogActions = {
+  add: backlogAdd,
+  capture: backlogCapture,
+  edit: backlogEdit,
+  list: backlogList,
+  groom: backlogGroom,
+  refresh: backlogRefresh,
+  promote: backlogPromote,
+  accept: (o: BacklogCommandOptions) => backlogAdvanceStatus(o, 'accepted'),
+  plan: (o: BacklogCommandOptions) => backlogAdvanceStatus(o, 'planned'),
+  done: (o: BacklogCommandOptions) => backlogUpdateTerminalStatus(o, 'done'),
+  drop: (o: BacklogCommandOptions) => backlogUpdateTerminalStatus(o, 'dropped'),
+  archive: backlogArchive,
+} as const satisfies Record<string, (o: BacklogCommandOptions) => Promise<void>>;
 
-  switch (action) {
-    case 'add':
-      await backlogAdd(options);
-      return;
-    case 'capture':
-      await backlogCapture(options);
-      return;
-    case 'edit':
-      await backlogEdit(options);
-      return;
-    case 'list':
-      await backlogList(options);
-      return;
-    case 'groom':
-      await backlogGroom(options);
-      return;
-    case 'refresh':
-      await backlogRefresh(options);
-      return;
-    case 'promote':
-      await backlogPromote(options);
-      return;
-    case 'accept':
-      await backlogAdvanceStatus(options, 'accepted');
-      return;
-    case 'plan':
-      await backlogAdvanceStatus(options, 'planned');
-      return;
-    case 'done':
-      await backlogUpdateTerminalStatus(options, 'done');
-      return;
-    case 'drop':
-      await backlogUpdateTerminalStatus(options, 'dropped');
-      return;
-    case 'archive':
-      await backlogArchive(options);
-      return;
-    default:
-      throw new Error(`docpath backlog: unsupported action ${action}（允许: capture|add|edit|list|groom|refresh|accept|plan|promote|done|drop|archive）`);
+export type BacklogActionName = keyof typeof backlogActions;
+/** 全部 backlog 动作名（单一真源，序保证帮助/报错可读性）。 */
+export const BACKLOG_ACTIONS = Object.keys(backlogActions) as unknown as readonly BacklogActionName[];
+/** 派生 usage 字符串（`a|b|c`），供无 action / 非法 action 报错复用。 */
+function backlogActionUsage(): string {
+  return BACKLOG_ACTIONS.join('|');
+}
+
+export async function backlogCommand(options: BacklogCommandOptions): Promise<void> {
+  const raw = options.action?.trim().toLowerCase() ?? '';
+  if (!raw) {
+    throw new Error(`docpath backlog requires <${backlogActionUsage()}>`);
   }
+  const handler = backlogActions[raw as BacklogActionName];
+  if (!handler) {
+    throw new Error(`docpath backlog: unsupported action ${raw}（允许: ${backlogActionUsage()}）`);
+  }
+  await handler(options);
 }

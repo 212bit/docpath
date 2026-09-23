@@ -1,7 +1,7 @@
 ---
 id: R-355
 title: 高优先级架构优化包：backlog 写路径解耦、id/归档原子化、动作单真源、evidence 存在校验、capture 期去重
-status: active
+status: done
 priority: P1
 level: 2
 source: docpath backlog add
