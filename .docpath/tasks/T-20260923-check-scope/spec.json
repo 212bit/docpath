@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T12:38:47.113Z",
+    "updated_at": "2026-09-23T12:38:47.113Z",
+    "content_sha256": "7a774fa94fc5696eb4211cb9dc600a4f13b253b30e3cef1bbf25a1538ad4656b"
+  },
+  "task_id": "T-20260923-check-scope",
+  "backlog_id": "R-357",
+  "title": "T-20260923-check-scope - check scope 缓存命中时输出明确提示而非静默复用",
+  "generated_at": "2026-09-23T12:38:47.113Z",
+  "scope": {
+    "included": [
+      "CheckResult 增加 cached 标记；cache.ts 复用项打 cached: true；evidence.ts 报告渲染在缓存命中时显式提示"
+    ],
+    "excluded": [
+      "调整 scope digest 计算或缓存失效策略",
+      "--no-cache 行为变更"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": ""
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "缓存命中时，逐项报告中每个被复用的检查项须显式标注「（缓存复用，未实际执行）」，不能伪装成真跑的 ✅",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "全量 check 末尾保留一行聚合提示，说明本次有多少项来自缓存复用、可用 --no-cache 强制重跑",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "仅修改渲染层与缓存结果标记，不改变 scope 缓存的命中/失效判定逻辑",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "缓存命中时，被复用检查项的报告行不是孤立的 ✅，而是带「缓存复用」标注",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "全量报告末尾出现一行说明缓存复用项数与 --no-cache 提示",
+      "done": true
+    },
+    {
+      "id": "AC-3",
+      "text": "--no-cache 或真实变更导致全量执行时，报告中不出现「缓存复用」字样（标记不误标）",
+      "done": true
+    },
+    {
+      "id": "AC-4",
+      "text": "现有 check 测试套件（含缓存命中路径测试）不回归",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

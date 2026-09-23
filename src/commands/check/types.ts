@@ -63,6 +63,12 @@ export interface CheckResult {
   environment_exemptible?: boolean;
   /** R-347: 实际执行的外部命令（仅外部 runner 有；结构/上下文类检查无）。供 agent 判断门禁已跑过什么，避免重复手跑。 */
   command?: string;
+  /**
+   * R-357: 本结果来自 scope 缓存复用，并非本次实际执行。渲染层据此在报告里
+   * 标注「（缓存复用，未实际执行）」，避免把复用出来的绿伪造成真跑的绿。
+   * 仅 tryReuseCachedHeavyChecks 复用的重 runner 判定为 true。
+   */
+  cached?: boolean;
 }
 
 export interface GitBaseline {
