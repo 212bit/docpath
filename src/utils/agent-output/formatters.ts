@@ -1020,6 +1020,21 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
     };
   }
 
+  // R-363：所有 plan 步骤已完成时不再给执行期提示（agent enter /「开始或恢复任务执行」），
+  // 否则 step-pass 标完最后一步后收口阶段仍输出执行期路由，与收口路线自相矛盾。
+  // 注意保留 !pendingDone 守卫：存在未收尾哨兵时既有语义优先（下方分支路由到 docpath done）。
+  const allPlanStepsDone = context.planTasks.length > 0 && context.planTasks.every((task) => task.done);
+  if (allPlanStepsDone && !pendingDone && state?.phase === 'executing' && state.task_id && !isTroubleshooting) {
+    return {
+      next_action: '所有计划步骤已完成，执行收口门禁并归档任务',
+      recommended_command: 'docpath check',
+      required_context: ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'],
+      required_files: ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'],
+      must_update: ['.docpath/workspace/breadcrumb.md'],
+      exit_criteria: 'check -> review -> agent done 依次通过并归档任务',
+    };
+  }
+
   if (!pendingDone && state?.phase === 'executing' && state.task_id && !isQuickProfile(state.workflow_profile) && !isTroubleshooting) {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'];
     return {

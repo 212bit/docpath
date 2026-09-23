@@ -28,6 +28,7 @@ import { readDocPathConfig } from '../utils/config.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
 import { exitWithError } from '../utils/error-helpers.js';
+import { renderCloseoutRoute, resolveCloseoutRoute } from '../utils/closeout-route.js';
 import { assertWorktreeContract } from './worktree.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 import { assertNoDriftLock, refreshAgentSnapshot } from '../hooks/bridge.js';
@@ -213,9 +214,8 @@ async function finalizeStep(
       const remaining = allSteps.filter((t) => !t.done);
       if (remaining.length === 0) {
         console.log('\n🎉  所有计划步骤均已完成！');
-        console.log('👉  推荐收尾路线:');
-        console.log('    - 一键快速收口: `docpath quick-done` (推荐)');
-        console.log('    - 逐步验证门禁: `docpath check` -> `docpath review` -> `docpath agent done`');
+        // R-363：按实际 changed files 判定收口路线（核心路径改动不推荐 quick-done）
+        console.log(renderCloseoutRoute(resolveCloseoutRoute(cwd)));
       }
     } catch {
       // 容错处理

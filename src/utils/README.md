@@ -22,7 +22,7 @@ git-closeout.ts, git-hygiene.ts, git-safety.ts, git-staging.ts, changes-report.t
 context-index.ts, context.ts, document-index.ts, topic-synonyms.ts, milestone.ts, budget.ts, docs-doctor.ts, smart-context.ts, payload.ts, rules.ts, lesson-candidates.ts, deliverables.ts, roles.ts
 
 ### agent-io — Agent 输出/提示/路由
-agent-output.ts, agent-output/formatters.ts, agent-output/context-injection.ts, agent-prompt.ts, next-hint.ts, output-formatter.ts, contextual-help.ts, error-messages.ts, error-helpers.ts, logger.ts
+agent-output.ts, agent-output/formatters.ts, agent-output/context-injection.ts, agent-prompt.ts, next-hint.ts, output-formatter.ts, contextual-help.ts, error-messages.ts, error-helpers.ts, logger.ts, closeout-route.ts
 
 ### install — 安装/模板/协议分发
 install-core.ts, protocol-blocks.ts, detect.ts, package-info.ts, scan-existing-arch.ts, scan-existing-claude.ts, scan-existing-commands.ts, scan-existing-tree.ts

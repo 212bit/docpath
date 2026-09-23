@@ -1,20 +1,33 @@
 ---
 id: R-363
 title: 收尾路线推荐应按实际 changed files 做 scope 判定（quick-done 误推）
-status: proposed
+status: done
 priority: P2
 level: 1
 source: docpath backlog add
-readiness: shaped
+readiness: confirmed
 evidence:
   brainstorm: null
-  analysis: null
-  spec: null
-  decision_brief: null
-  user_confirmed: null
+  analysis: .docpath/backlog/R363-analysis.md
+  spec: tasks/T-20260923-changed-files-scope-quick-done/spec.md
+  decision_brief: |-
+    - 当前问题: step-pass / next 在任务收尾时输出的「推荐收尾路线」是静态模板：无论本次实际改了什么，都把 `docpath quick-done` 列为「推荐」第一项。但 quick-done 服务于 quick 通道，受 quick-guard 约束（RISKY_PATH_PATTERNS + max_changed_files=3）。当任务实际改了 `src/engine/**`、`src/commands/(agent|check|done|go|journal|review|runtime|register)` 等核心路径时，quick 通道在 done 阶段必拒，用户/Agent 顺着「推荐」走会在收尾时才失败并被迫升级标准生命周期，白绕一圈。
+    - 目标: 收尾路线推荐应按实际 changed files 做 scope 判定（quick-done 误推）
+    - 背景: 来自 backlog R-363
+    - 可选方案:
+      - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程
+      - 方案 B: 补充分析，扩展本任务范围
+    - 推荐方案: 方案 A
+    - 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险
+    - 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围
+    - 成本: 中等，按 plan 拆分后逐步验证
+    - 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移
+    - 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed
+    - 用户确认: 待确认
+  user_confirmed: 待确认
 links:
-  task: null
-  spec: null
+  task: T-20260923-changed-files-scope-quick-done
+  spec: tasks/T-20260923-changed-files-scope-quick-done/spec.md
 created_at: 2026-09-23
 ---
 

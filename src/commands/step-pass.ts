@@ -18,6 +18,7 @@ import { exitWithError } from '../utils/error-helpers.js';
 import { parsePlanSteps } from '../utils/doc-parser.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { renderCloseoutRoute, resolveCloseoutRoute } from '../utils/closeout-route.js';
 
 interface StepPassOptions {
   cwd: string;
@@ -67,7 +68,7 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
       `docpath step-pass: current_step "${step}" 不是 plan 中的有效步骤（可能被状态污染）。\n` +
       (pending.length > 0
         ? `    待完成步骤: ${pending.join(', ')}。请先用 \`docpath go --step ${pending[0]}\` 领取，或显式传入 \`--step <id>\`。`
-        : '    所有计划步骤均已完成，请直接运行 `docpath quick-done` 收口。'),
+        : `    所有计划步骤均已完成，请直接运行 \`${resolveCloseoutRoute(cwd).recommendedCommand}\` 收口。`),
     );
   }
   if (!step) {
@@ -100,9 +101,9 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
   const remaining = stepsAfter ? stepsAfter.filter((t) => !t.done).map((t) => t.id) : null;
   if (remaining && remaining.length === 0) {
     console.log('\n🎉  所有计划步骤均已完成！');
-    console.log('👉  推荐收尾路线:');
-    console.log('    - 一键快速收口 (门禁 + 评审 + 提交准备): `docpath quick-done` (推荐)');
-    console.log('    - 逐步验证门禁: `docpath check` -> `docpath review` -> `docpath agent done`');
+    // R-363：收口路线按实际 changed files 做 scope 判定——改动命中 quick-guard
+    // RISKY_PATH_PATTERNS 时不推荐 quick-done（它在 done 阶段必拒）。
+    console.log(renderCloseoutRoute(resolveCloseoutRoute(cwd)));
     await emitNextHint(cwd);
     return;
   }

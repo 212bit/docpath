@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T14:04:08.151Z",
+    "updated_at": "2026-09-23T14:04:08.151Z",
+    "content_sha256": "7545c726afa8399bed25c2903b2c617f040d3239ea27addb59dd1088a5884b98"
+  },
+  "task_id": "T-20260923-changed-files-scope-quick-done",
+  "backlog_id": "R-363",
+  "title": "T-20260923-changed-files-scope-quick-done - 收尾路线推荐应按实际 changed files 做 scope 判定（quick-done 误推）",
+  "generated_at": "2026-09-23T14:04:08.151Z",
+  "scope": {
+    "included": [
+      "收尾路线推荐应按实际 changed files 做 scope 判定（quick-done 误推）"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: step-pass / next 在任务收尾时输出的「推荐收尾路线」是静态模板：无论本次实际改了什么，都把 `docpath quick-done` 列为「推荐」第一项。但 quick-done 服务于 quick 通道，受 quick-guard 约束（RISKY_PATH_PATTERNS + max_changed_files=3）。当任务实际改了 `src/engine/**`、`src/commands/(agent|check|done|go|journal|review|runtime|register)` 等核心路径时，quick 通道在 done 阶段必拒，用户/Agent 顺着「推荐」走会在收尾时才失败并被迫升级标准生命周期，白绕一圈。\n- 目标: 收尾路线推荐应按实际 changed files 做 scope 判定（quick-done 误推）\n- 背景: 来自 backlog R-363\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "收尾路线推荐应按实际 changed files 做 scope 判定（quick-done 误推）",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "step-pass / next 输出收尾路线前，基于本次实际 changed files（复用 quick-guard 的 `evaluateQuickScope` / `RISKY_PATH_PATTERNS` 判定）做 scope 分类；",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "命中 RISKY_PATH_PATTERNS 或 guardedFiles 超 max_changed_files 时，不得把 quick-done 标为「推荐」，应推荐 `check -> review -> agent done`（标准收口）；",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "仅当改动确实落在 quick 允许范围（scope 判定通过）时，quick-done 才作为推荐项；",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "收口阶段（所有 plan 步骤已完成）的 next_hint 不应再给 agent enter / 「开始或恢复任务执行」这类执行期提示，应按阶段给出收口命令；",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "有回归测试覆盖：核心路径改动 -> 推荐不含 quick-done；叶子改动 -> 推荐含 quick-done。",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-7",
+      "text": "backlog 条目 R-363 与任务 T-20260923-changed-files-scope-quick-done 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "step-pass / next 在任务收尾时输出的「推荐收尾路线」是静态模板：无论本次实际改了什么，都把 `docpath quick-done` 列为「推荐」第一项。但 quick-done 服务于 quick 通道，受 quick-guard 约束（RISKY_PATH_PATTERNS + max_changed_files=3）。当任务实际改了 `src/engine/**`、`src/commands/(agent|check|done|go|journal|review|runtime|register)` 等核心路径时，quick 通道在 done 阶段必拒，用户/Agent 顺着「推荐」走会在收尾时才失败并被迫升级标准生命周期，白绕一圈。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

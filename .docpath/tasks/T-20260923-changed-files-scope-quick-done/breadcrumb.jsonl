@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-changed-files-scope-quick-done","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 收尾路线推荐应按实际 changed files 做 scope 判定（quick-done 误推）","timestamp":"2026-09-23T14:04:11.286Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-changed-files-scope-quick-done","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-23T14:06:07.509Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-changed-files-scope-quick-done","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-23T14:07:35.921Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-changed-files-scope-quick-done","step":"review","status":"done","context":"代码审查: 0 错误, 4 警告, 0 提示","timestamp":"2026-09-23T14:07:41.300Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-changed-files-scope-quick-done","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-23T14:07:44.149Z"}
