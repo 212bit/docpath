@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T13:49:36.537Z",
+    "updated_at": "2026-09-23T13:49:36.537Z",
+    "content_sha256": "9abe52d73e78b6144c9577eb13345ac64d55ffe2700f249712847829e6a63526"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T13:49:36.537Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 check 测试执行优化包：--test-scope 影响面减载、受控并发与进程隔离、quick-guard porcelain 路径 bug 修复",
+      "description": "完成 FR-1: check 测试执行优化包：--test-scope 影响面减载、受控并发与进程隔离、quick-guard porcelain 路径 bug 修复，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: --test-scope=touched 仅运行与 git 改动相关的测试子集，叶子改动（改单个非核心源文件）实测减载不低于 80%；AC-2: touched 触及 RISKY_PATH_PATTERNS（命令主文件、check/worktree 子模块、engine、核心 utils、package.json、锁文件、tsconfig）时强制回落全量，不漏测核心；AC-3: --test-scope=full（默认）注入受控并发 --test-concurrency（cpu/2，范围 2 到 8）与 --test-isolation=process，全量覆盖不筛选；AC-4: quick-guard readChangedFiles 对 tracked 修改（状态码前导空格的 M src/...）用 line.slice(3) 正确取路径，核心路径不致被错切为 rc/... 而漏判；AC-5: 受控并发加进程隔离消除全并发摊薄与 ~/.docpath/projects.sqlite 竞态重试，整体 check 墙钟显著下降（基线约 80s）；AC-6: 上述行为均有回归测试覆盖。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-362 与任务 T-20260923-check-test-scope-quick-guard-porcelain-b 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
