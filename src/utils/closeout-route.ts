@@ -41,19 +41,20 @@ export function resolveCloseoutRoute(cwd: string): CloseoutRoute {
       recommendedCommand: 'docpath quick-done',
       lines: [
         '    - 一键快速收口 (门禁 + 评审 + 提交准备): `docpath quick-done` (推荐)',
-        '    - 逐步验证门禁: `docpath check` -> `docpath review` -> `docpath agent done`',
+        '    - 标准门禁收口: `docpath done` (或分步运行 `docpath check` 排查)',
       ],
     };
   }
 
-  // quick 在 done 阶段必拒：不推荐它，并说明原因（取前 3 条，避免刷屏）
+  // quick 在 done 阶段必拒：不推荐 quick-done，推荐 docpath done（完整门禁一键收口）
   const reasons = verdict.reasons.slice(0, 3);
   const more = verdict.reasons.length > reasons.length ? `（另有 ${verdict.reasons.length - reasons.length} 项）` : '';
   return {
     quickDoneAllowed,
-    recommendedCommand: 'docpath check',
+    recommendedCommand: 'docpath done',
     lines: [
-      '    - 逐步验证门禁 (推荐): `docpath check` -> `docpath review` -> `docpath agent done`',
+      '    - 一键门禁收口 (推荐): `docpath done` (自动执行 check -> review -> journal 门禁)',
+      '    - 逐步排查/自测: `docpath check`（测试/类型检查）',
       `    - ⚠️  不可用 quick-done：改动超出 quick 通道范围，done 阶段会被拒${more}`,
       ...reasons.map((reason) => `        · ${reason}`),
     ],

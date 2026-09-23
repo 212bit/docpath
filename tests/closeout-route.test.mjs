@@ -93,7 +93,7 @@ describe('R-363: 收尾路线按 scope 判定', () => {
       /quick-done.*推荐/,
       `核心路径改动不应把 quick-done 标为推荐，实际:\n${out}`,
     );
-    assert.match(out, /docpath check/, `应主推 check 收口，实际:\n${out}`);
+    assert.match(out, /docpath done/, `应主推 docpath done 收口，实际:\n${out}`);
   });
 
   it('叶子改动时 quick-done 仍作为推荐项', () => {

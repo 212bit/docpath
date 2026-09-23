@@ -576,12 +576,12 @@ export function inferNextAction(
   ) {
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'];
     return withWorkflowConstraint({
-      next_action: '计划已完成，运行质量检查',
-      recommended_command: 'docpath check',
+      next_action: '计划已完成，执行收口门禁并归档任务',
+      recommended_command: 'docpath done',
       required_context: required,
       required_files: required,
       must_update: ['.docpath/workspace/last-check.md', '.docpath/workspace/breadcrumb.md'],
-      exit_criteria: 'last-check.md 显示 PASS',
+      exit_criteria: '运行 docpath done 通过门禁并归档任务（或运行 docpath check 单独排查）',
     }, phase, gate);
   }
 
@@ -1027,11 +1027,11 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
   if (allPlanStepsDone && !pendingDone && state?.phase === 'executing' && state.task_id && !isTroubleshooting) {
     return {
       next_action: '所有计划步骤已完成，执行收口门禁并归档任务',
-      recommended_command: 'docpath check',
+      recommended_command: 'docpath done',
       required_context: ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'],
       required_files: ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'],
       must_update: ['.docpath/workspace/breadcrumb.md'],
-      exit_criteria: 'check -> review -> agent done 依次通过并归档任务',
+      exit_criteria: '运行 docpath done 通过门禁并归档任务（或运行 docpath check 单独排查）',
     };
   }
 

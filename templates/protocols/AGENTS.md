@@ -92,8 +92,8 @@ docpath quick "Fix typo in docs"   # mandatory for tiny low-risk changes (< 50 l
 docpath go --step S1
 docpath step-pass                  # compound (R-340): finish current step + auto-start next
 docpath agent step --step "S1" --status done
-docpath check
-docpath agent done --step "<task>"
+docpath check                      # targeted quality check during iteration
+docpath done                       # compound: full gate sequence (check -> review -> journal) in one shot
 docpath quick-done                 # compound (R-340): done gate sequence + commit-readiness in one call
 ```
 <!-- /docpath:block -->
@@ -134,7 +134,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 - Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.
 - Run `docpath agent step` after each meaningful sub-task or major decision.
 - Run `docpath verify` to confirm requirement completeness and scope boundaries before final closeout.
-- Run `docpath agent done` before claiming a task is complete.
+- Run `docpath done` (or `docpath quick-done`) before claiming a task is complete.
 
 ## Git Convention
 
