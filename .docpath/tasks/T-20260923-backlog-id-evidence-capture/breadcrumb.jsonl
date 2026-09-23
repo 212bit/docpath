@@ -3,3 +3,5 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-evidence-capture","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-23T12:38:40.123Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-evidence-capture","step":"review","status":"done","context":"代码审查: 0 错误, 11 警告, 0 提示","timestamp":"2026-09-23T12:38:49.958Z"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-evidence-capture","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-23T12:38:55.040Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-evidence-capture","step":"review","status":"blocked","context":"代码审查: 0 错误, 2 警告, 0 提示","timestamp":"2026-09-23T13:16:14.182Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260923-backlog-id-evidence-capture","step":"review","status":"done","context":"代码审查: 0 错误, 2 警告, 0 提示","timestamp":"2026-09-23T13:17:05.544Z"}

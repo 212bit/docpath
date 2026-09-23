@@ -93,6 +93,7 @@ docpath init --level 2
    ```bash
    docpath done
    ```
+   > 开发期想省时间可单独跑 `docpath check --test-scope=touched`——按**本次 git 改动**跑相关测试。改到叶子工具/独立模块时有明显加速（如只跑 backlog 相关 3 个测试文件：~80s 全量 → ~14s）；改到顶层命令主文件（`src/commands/*.ts`）、`src/engine`、`src/commands/check`、共享核心 utils 或 `package.json` 时**自动回落全量**，绝不因减载漏测核心。`--test-scope=full` 保留全量但注入受控并发与进程隔离，消除共享 sqlite 竞态偶发失败。最终收口仍由 `docpath done` 跑全量门禁兜底。
 2. **安全提交**（自动检查 Git 安全，过滤 `.docpath/` 运行时噪音，强制 force-add 需要版本化的 canonical 任务证据，并自动带上 Agent 协作签名）：
    ```bash
    docpath commit -m "feat: implement feature based on R-190"

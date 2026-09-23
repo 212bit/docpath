@@ -9,8 +9,8 @@
 | id | title | status | priority | level | task |
 |----|-------|--------|----------|-------|------|
 | R-356 | worktree backlog 快照过期根治（重复登记根因：merge-mediated 快照无实时共享） | proposed | P2 | 2 |  |
-| R-359 | agent step --note 反引号被 shell 命令替换导致文字静默消失 | proposed | P2 | 1 |  |
 | R-361 | install --doctor 在 npm-link 自引用场景下增加漂移说明 | proposed | P3 | 1 |  |
+| R-362 | check 测试执行优化包：--test-scope 影响面减载、受控并发与进程隔离、quick-guard porcelain 路径 bug 修复 | proposed | P1 | 2 |  |
 
 ## 用途说明
 
