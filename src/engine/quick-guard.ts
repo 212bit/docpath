@@ -35,7 +35,7 @@ const RISKY_PATH_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   { pattern: /^src\/engine\//, reason: 'core workflow engine changed' },
   { pattern: /^src\/commands\/(agent|check|done|go|journal|review|runtime|register)\b/, reason: 'core lifecycle command changed' },
   { pattern: /^src\/utils\/(agent-output|major-change|task-files|ui-gate|workspace)\.ts$/, reason: 'core workflow utility changed' },
-  { pattern: /^templates\/(AGENTS|CLAUDE|OPENCODE|SKILL)\.md$/, reason: 'agent protocol template changed' },
+  { pattern: /^templates\/(protocols\/|AGENTS|CLAUDE|OPENCODE|SKILL)/, reason: 'agent protocol template changed' },
   { pattern: /^\.docpath\/rules\//, reason: 'global DocPath rule changed' },
 ];
 

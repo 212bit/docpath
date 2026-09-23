@@ -107,6 +107,8 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
    - **Ultra-light / Quick Fixes (Estimated diff < 50 lines, single config, docs typo, localized bugfix)**:
      **MUST** use `docpath quick "<title>"`. Bypasses backlog promotion, spec, and plan ceremonies; directly claims execution; preserves quality baseline with `check` on closeout. Reduces CLI round-trips by 70%.
      - *Post-hoc adoption (事后补录)*: If code edits were already made before starting the task, use `docpath quick "<title>" --adopt` to claim existing uncommitted changes directly into the quick task without resetting the worktree.
+     - *In-place upgrade (原地升级)*: If changes expand mid-task or touch core paths, run `docpath quick upgrade` to smoothly elevate to standard profile without worktree resets.
+     - **【严禁使用 quick 的红线】**：凡触及核心生命周期调度器 (`src/commands/agent.ts`, `check.ts`, `done.ts`, `runtime.ts`)、引擎 (`src/engine/**`)、协议资产 (`templates/protocols/`, `AGENTS.md`) 或预期 > 50 行代码时，**绝对禁止**使用 `quick`，必须起手使用 `docpath start <id>` 走标准流程。
    - **Small/Medium Tasks (Estimated diff < 100 lines, single module, no contract/architecture changes)**:
      **MUST** use `--level 1` (e.g. `docpath backlog add --level 1` or `init --level 1`). Prunes redundant formal review and heavy journal ceremonies.
    - **Architecture / Cross-module / Breaking Changes**:

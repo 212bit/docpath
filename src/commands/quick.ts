@@ -279,6 +279,19 @@ export async function quickCommand(options: QuickOptions): Promise<void> {
     throw new Error(`docpath quick: 当前已有活跃任务（phase=${current.phase}），请先 done 或 task reset；如需将当前 quick 升级为 standard，请运行 docpath quick upgrade`);
   }
 
+  const CORE_RISKY_TITLE_KEYWORDS = [
+    'core', 'lifecycle', 'protocol', 'engine', 'check', 'gate',
+    '调度', '生命周期', '协议', '架构', '迁移', 'migration',
+    'harness', 'permission', '权限', 'worktree',
+  ];
+  const lowerTitle = title.toLowerCase();
+  const hitKeywords = CORE_RISKY_TITLE_KEYWORDS.filter(k => lowerTitle.includes(k));
+  if (hitKeywords.length > 0) {
+    console.log(`⚠️  前置提示: 任务标题命中核心/高危关键词 [${hitKeywords.join(', ')}]。`);
+    console.log('   Quick 模式仅适用于 < 50 行且不触碰核心生命周期/架构/协议的局部小改动。');
+    console.log('   若开发过程中涉及核心文件修改，可随时运行 `docpath quick upgrade` 原地升级为 standard 标准流程。\n');
+  }
+
   if (options.adopt) {
     // 认领模式下校验已有未提交改动是否在 quick 边界内（<=3 个非 DocPath 文件、未触碰核心高危路径）
     assertQuickScope(cwd);

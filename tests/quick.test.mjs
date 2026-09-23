@@ -430,5 +430,17 @@ describe('docpath quick', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('emits pre-flight warning banner when quick title contains core risky keywords', () => {
+    const cwd = mkWorkspace();
+    initGitRepo(cwd);
+    const result = runResult(`quick "修改核心生命周期调度与协议" --cwd ${cwd}`, cwd);
+    assert.equal(result.code, 0, result.out);
+    assert.match(result.out, /前置提示: 任务标题命中核心\/高危关键词/);
+    assert.match(result.out, /若开发过程中涉及核心文件修改，可随时运行 `docpath quick upgrade`/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
+
 

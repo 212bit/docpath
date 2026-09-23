@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T19:48:44.571Z",
+    "updated_at": "2026-09-23T19:48:44.571Z",
+    "content_sha256": "6416e4f33ec80fa289bfdfdf5fe912ca0d889cc07ed360b2514a8fac7279f4fb"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T19:48:44.571Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 增强 Quick 前置范围与风险意图防呆：拦截核心高危词与脏工作区预检",
+      "description": "完成 FR-1: 增强 Quick 前置范围与风险意图防呆：拦截核心高危词与脏工作区预检，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 待补充；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-379 与任务 T-20260923-quick 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
