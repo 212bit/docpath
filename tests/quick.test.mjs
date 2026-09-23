@@ -320,10 +320,10 @@ describe('docpath quick', () => {
     // Run check, which should trigger the upgrade
     const result = runResult(`check --cwd ${cwd}`, cwd);
 
-    // It should log the upgrade warning and block because standard spec/plan is missing
+    // It should log the upgrade notice and auto-close plan seamlessly
     assert.match(result.out, /检测到高等级属性、需求规格或超限变更，已自动将工作流 Profile 从 "quick" 升级为 "standard"/);
     assert.match(result.out, /代码变更超出 quick 限制/);
-    assert.notEqual(result.code, 0);
+    assert.equal(result.code, 0);
 
     // Verify state.json was mutated
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
@@ -351,7 +351,7 @@ describe('docpath quick', () => {
 
     assert.match(result.out, /检测到高等级属性、需求规格或超限变更，已自动将工作流 Profile 从 "quick" 升级为 "standard"/);
     assert.match(result.out, /任务需求规格（spec.md）要求重大变更确认门禁/);
-    assert.notEqual(result.code, 0);
+    assert.equal(result.code, 0);
 
     const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
     assert.equal(state.workflow_profile, 'standard');

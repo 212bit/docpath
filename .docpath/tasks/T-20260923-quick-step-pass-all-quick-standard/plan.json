@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T19:06:37.041Z",
+    "updated_at": "2026-09-23T19:06:37.041Z",
+    "content_sha256": "b023028de04a1b5ecb4f907f672136a9d5fb1fa7410d55fbe01676bb622a5c76"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-23T19:06:37.041Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 生命周期体验增强：支持 step-pass --all 一键批量收尾，并在 quick 升级 standard 时自动闭环执行计划",
+      "description": "完成 FR-1: 生命周期体验增强：支持 step-pass --all 一键批量收尾，并在 quick 升级 standard 时自动闭环执行计划，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: 待补充",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

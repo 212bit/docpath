@@ -148,4 +148,24 @@ describe('docpath step-pass (R-340)', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('completes all remaining pending steps at once with --all / -a (R-377)', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-step-pass-all-'));
+    try {
+      const { tasks } = mkExecWorkspace(cwd);
+      writeFileSync(join(tasks, 'plan.md'), twoStepPlan());
+
+      const result = run(['step-pass', '--all', '--note', 'batch pass'], cwd);
+      assert.equal(result.code, 0, `step-pass --all failed: ${result.out}`);
+      assert.match(result.out, /step-pass: S1 已完成/);
+      assert.match(result.out, /step-pass: S2 已完成/);
+      assert.match(result.out, /所有计划步骤均已完成/);
+
+      const plan = readFileSync(join(tasks, 'plan.md'), 'utf-8');
+      assert.match(plan, /- \[x\] S1: First step/);
+      assert.match(plan, /- \[x\] S2: Second step/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });

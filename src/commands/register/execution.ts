@@ -29,13 +29,15 @@ export function registerExecutionCommands(cli: CAC): void {
   cli.command('step-pass', '复合生命周期：完成当前步骤并自动启动下一步（agent step done + go）')
     .option('--cwd <path>', '项目目录')
     .option('--step <step>', '要收尾的步骤；缺省取 state.current_step')
+    .option('-a, --all', '一键收尾所有未完成的步骤并给出收口路线')
     .option('--note <note>', '收尾事件备注')
     .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
     .option('--accept-dirty <reason>', '透传给内部 go：记录证据后跳过 dirty worktree 拦截')
-    .action(async (options: { cwd?: string; step?: string; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string }) => {
+    .action(async (options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string }) => {
       await stepPassCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
+        all: options.all,
         note: options.note,
         session: options.session,
         acceptDirty: options.acceptDirty ?? options['accept-dirty'],

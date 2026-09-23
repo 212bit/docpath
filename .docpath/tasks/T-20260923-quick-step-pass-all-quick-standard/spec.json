@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T19:04:49.632Z",
+    "updated_at": "2026-09-23T19:04:49.632Z",
+    "content_sha256": "0ae76a1c92b22705b76762097961f263683176f4aa015716416146ff552c653f"
+  },
+  "task_id": "T-20260923-quick-step-pass-all-quick-standard",
+  "backlog_id": null,
+  "title": "T-20260923-quick-step-pass-all-quick-standard - T-20260923-quick-step-pass-all-quick-standard - 生命周期体验增强：支持 step-pass --all 一键批量收尾，并在 quick 升级 standard 时自动闭环执行计划",
+  "generated_at": "2026-09-23T19:04:49.632Z",
+  "scope": {
+    "included": [
+      "待补充"
+    ],
+    "excluded": [
+      "待补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 待补充\n- 目标: 待补充\n- 可选方案: 待补充\n- 推荐方案: 待补充\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "生命周期体验增强：支持 step-pass --all 一键批量收尾，并在 quick 升级 standard 时自动闭环执行计划",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "待补充",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "待补充",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "待补充",
+    "options": [
+      "待补充"
+    ],
+    "chosen": "待补充",
+    "rationale": "满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

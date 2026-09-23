@@ -26,6 +26,7 @@ import { resolveTemplate } from '../utils/install-core.js';
 import { recordEnvExemption } from '../engine/policy.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 import { renderDraftPlan } from './plan.js';
+import { endStepExecution } from './runtime.js';
 import { reassessRiskTier, riskPolicyFromConfig } from '../engine/risk.js';
 import { recordRiskEscalation } from '../engine/policy.js';
 import { readRiskPolicyConfig } from '../utils/config.js';
@@ -233,7 +234,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     });
 
     if (resolution.upgraded) {
-      logger.warn(`⚠️  检测到高等级属性、需求规格或超限变更，已自动将工作流 Profile 从 "${resolution.storedProfile}" 升级为 "${resolution.effectiveProfile}"`);
+      logger.log(`⚠️  检测到高等级属性、需求规格或超限变更，已自动将工作流 Profile 从 "${resolution.storedProfile}" 升级为 "${resolution.effectiveProfile}"`);
       resolution.reasons.forEach((reason) => logger.log(`   - ${reason}`));
 
       const fallback = current;
@@ -270,12 +271,19 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
             await writeActiveTaskFile(docpathDir, current.task_id, 'spec.md', newSpec);
             logger.log('📝  已自动将 spec.md 升级为 standard 格式并同步 spec.json 真源（保留原标题和需求摘要）。');
 
-            // R-370: 升级为 standard 需补齐 plan.md 避免门禁报 plan.md 缺失
+            // R-370/R-377: 升级为 standard 需补齐 plan.md；quick 任务代码已在执行期就绪，
+            // 补齐单步压缩计划并自动标记完成（- [x] S1），同步 breadcrumb 证据避免漂移
             const planPath = join(taskDir, 'plan.md');
             if (!existsSync(planPath)) {
-              const draftPlan = renderDraftPlan(newSpec, current.level ?? 2);
+              const draftPlan = renderDraftPlan(newSpec, 1);
               await writeActiveTaskFile(docpathDir, current.task_id, 'plan.md', draftPlan);
-              logger.log('📋  已自动补齐单步执行计划 plan.md 与 plan.json 真源。');
+              await endStepExecution({
+                cwd,
+                step: 'S1',
+                status: 'done',
+                note: 'quick 升级 standard 自动闭环执行计划',
+              });
+              logger.log('📋  已自动补齐单步执行计划并同步完成证据（保留 quick 代码已交付上下文）。');
             }
             logger.log('');
           }

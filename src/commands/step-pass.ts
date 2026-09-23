@@ -26,6 +26,8 @@ interface StepPassOptions {
   step?: string;
   note?: string;
   session?: string;
+  /** 一键收尾所有待完成的步骤 */
+  all?: boolean;
   /** 透传给内部 go 的首等恢复旗标（同 `go --accept-dirty`） */
   acceptDirty?: string;
 }
@@ -47,12 +49,42 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
   if (current?.phase === 'completed') {
     throw new Error(
       'docpath step-pass: 当前任务已处于 completed 状态，无法推进步骤。\n' +
-      '    如果是新工作，请运行 docpath next --agent 或 docpath backlog promote <id> 推进新任务。',
+      '    如果是新工作，请运行 docpath next --agent 或 docpath start <id> 推进新任务。',
     );
   }
   const taskId = await resolveBoundTaskId(cwd);
   if (!taskId) {
     exitWithError('NO_ACTIVE_TASK');
+  }
+
+  const session = resolveSessionContext(options.session);
+
+  if (options.all) {
+    const planSteps = await loadPlanSteps(cwd, taskId);
+    const pending = planSteps?.filter((t) => !t.done) ?? [];
+    if (pending.length === 0) {
+      console.log('🎉  所有计划步骤均已处于完成状态！');
+      console.log(renderCloseoutRoute(resolveCloseoutRoute(cwd)));
+      await emitNextHint(cwd);
+      return;
+    }
+    for (const item of pending) {
+      const sync = await endStepExecution({
+        cwd,
+        step: item.id,
+        status: 'done',
+        note: options.note || `step-pass --all: ${item.id}`,
+        session: session.sessionId,
+      });
+      if (!sync.planSynced) {
+        console.warn(`⚠️  plan checklist 未同步: ${sync.planSyncReason}`);
+      }
+      console.log(`✅  step-pass: ${item.id} 已完成`);
+    }
+    console.log('\n🎉  所有计划步骤均已完成！');
+    console.log(renderCloseoutRoute(resolveCloseoutRoute(cwd)));
+    await emitNextHint(cwd);
+    return;
   }
 
   const currentStep = normalizeStep(current?.current_step);
@@ -82,7 +114,6 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
     step = explicitStep;
   }
 
-  const session = resolveSessionContext(options.session);
   const sync = await endStepExecution({
     cwd,
     step,
