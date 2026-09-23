@@ -19,6 +19,17 @@ paths:
   spec: .docpath/spec/
   journal: .docpath/journal/
 trace: true
+# 文档扫描路径（FR-4/FR-5）：白名单语义 —— 只扫声明的路径，
+# 不递归未声明目录。新增项目文档请在此登记，否则 docpath docs doctor/lint
+# 会漏扫（表现为"假绿"：报告 HEALTHY 但文件从未进入扫描面）。
+# noise 由 §4.d 排除（.gitignore + 硬黑名单：node_modules/.git/dist/build/
+# target/.worktrees/coverage 等）。
 document_scan_paths:
-  - README.md
-  - docs
+  - ".docpath/"
+  - "README.md"
+  - "docs/"
+  # Agent 协议文件（对 Agent 可见的持久约定，纳入索引）
+  - "AGENTS.md"
+  - "CLAUDE.md"
+  - "CODEX.md"
+  - "OPENCODE.md"

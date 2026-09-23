@@ -35,7 +35,7 @@ docs/
 
 ### 3. 工作流与工件策略 (Workflows & Policies)
 * [工件策略与阶段门禁](file:///Users/mac/project/docpath/docs/workflows/artifact-policy.md) — Spec/Plan/Evidence 工件生命周期与存储规范。
-* [项目接入工件模型](file:///Users/mac/project/docpath/docs/design/project-intake-artifact-model.md) — 初始项目接入与分析。
+* [项目文档放置决策](./design/project-document-placement.md) — 人类真源 (`docs/`) 与 Agent 工作流真源 (`.docpath/`) 的边界。
 
 ### 4. 接入与协议 (Integrations)
 * [Codex / Claude / OpenCode 适配](file:///Users/mac/project/docpath/docs/integrations/codex-skill-adapter.md) — 多平台 Agent 协议与 Skill 适配。

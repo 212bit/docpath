@@ -136,29 +136,19 @@ FR、AC、范围或门禁，请通过 `docpath write-spec --stdin` 写回 spec�
 
 ## 4.1 全新项目导入
 
-当用户只有 PPT 提取文本、接口文档、介绍文档、会议纪要或单份粗需求文档时，不要先拆成 backlog。先创建 project intake：
-
-```bash
-docpath project capture --title "New CRM" --file requirements.md --source-type requirements
-docpath project analyze P-YYYYMMDD-new-crm --dry-run
-docpath project brief P-YYYYMMDD-new-crm --dry-run
-docpath project settle P-YYYYMMDD-new-crm --dry-run
-docpath project backlog P-YYYYMMDD-new-crm --dry-run
-```
-
-project intake 是需求梳理流水线，不是开发任务入口。固定顺序是：
+当用户只有 PPT 提取文本、接口文档、介绍文档、会议纪要或单份粗需求文档时，不要先拆成 backlog。先做需求梳理，产出项目级需求真源，再创建 backlog 条目：
 
 ```text
-capture 原始材料
--> analyze 六域分析
--> gap index / stakeholder questions / decision cards
--> brief 需求定稿候选 + 拍板门
--> settle 需求真源 + 架构真源 + 阶段范围 + 拍板状态
--> backlog guidance
+整理原始材料
+-> 需求梳理（区分事实 / 假设 / 缺口 / 建议决策）
+-> 需求定稿候选 + 拍板门
+-> 需求真源 + 架构真源 + 阶段范围 + 拍板状态
 -> 手工审阅后创建普通 backlog 条目
 ```
 
-project intake 会把原始材料保存在 `.docpath/project-intake/<id>/`。analysis 必须区分事实、假设、缺口和建议决策；每个缺口应标注 `blocking` / `can-mock` / `later`。brief 必须包含范围、不做什么、验收候选、待拍板决策和拍板人/确认依据。settle 必须记录已拍板 requirements、architecture、phase scope、gap 状态和 backlog eligibility。确认前不要自动创建可执行 backlog 项。
+每个缺口应标注 `blocking` / `can-mock` / `later`。需求定稿必须包含范围、不做什么、验收候选、待拍板决策和拍板人/确认依据。拍板记录必须覆盖已确认 requirements、architecture、phase scope、gap 状态和 backlog eligibility。确认前不要自动创建可执行 backlog 项。
+
+> **历史说明**：早期版本提供 `docpath project` 平行工作流（capture / analyze / brief / settle / backlog）承载上述梳理，该工作流已于 2026-09-08 整体下线。需求梳理由当前会话的 Agent 完成，产出经 `write-spec` / `write-analysis` 落库。
 
 进入开发前，项目级需求梳理最小交付包是两件套：
 
