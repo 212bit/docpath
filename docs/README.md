@@ -24,6 +24,7 @@ docs/
 ## 快速导航
 
 ### 1. 系统架构 (Architecture)
+* [Agent 零点击上下文随路注入与智能路由体系架构](./architecture/agent-context-injection-architecture.md) — 零点击随路下发、路径亲和性路由、Token 预算熔断与防破坏架构不变量。
 * [文档全生命周期管理与演进体系](file:///Users/mac/project/docpath/docs/architecture/documentation-lifecycle-guide.md) — 架构文档、ADR 决策、活文档防腐与全景时间线还原规范。
 * [Breadcrumb 任务级优先架构](file:///Users/mac/project/docpath/docs/architecture/breadcrumb-task-level-architecture.md) — 单一真源与任务级上下文生命周期。
 * [状态机正确性分析](file:///Users/mac/project/docpath/docs/design/state-machine-correctness-analysis.md) — 状态转移与不可变门禁设计。
