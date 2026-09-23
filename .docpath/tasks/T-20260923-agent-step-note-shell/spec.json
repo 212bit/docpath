@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-23T13:07:15.228Z",
+    "updated_at": "2026-09-23T13:07:15.228Z",
+    "content_sha256": "7cfa26580431570bdf403c05214f08fa8f002be631174558132f9db09d31c4d1"
+  },
+  "task_id": "T-20260923-agent-step-note-shell",
+  "backlog_id": "R-359",
+  "title": "T-20260923-agent-step-note-shell - agent step 反引号被 shell 命令替换导致文字静默消失",
+  "generated_at": "2026-09-23T13:07:15.228Z",
+  "scope": {
+    "included": [
+      "agent 子命令 CLI 选项增加 --stdin / --body-file（复用 src/utils/stdin.ts）",
+      "handleAgentStep / handleAgentEnter / handleAgentDone 在解析 note 时优先采用 stdin/body-file"
+    ],
+    "excluded": [
+      "修改 shell 行为（做不到）；修改 note 存储格式"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": null,
+    "decision_brief_markdown": ""
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "agent step / enter / done 的 note 支持 --stdin（从标准输入读取）与 --body-file <path>（从文件读取），绕开 shell 特殊字符处理",
+      "done": true
+    },
+    {
+      "id": "FR-2",
+      "text": "当 --note 与 --stdin/--body-file 同时出现时，以后者为准并给出提示",
+      "done": true
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不影响现有 --note 单行用法",
+      "done": true
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "含反引号的 note 经 --stdin 传入后，breadcrumb/plan 中完整保留原文字（不被命令替换）",
+      "done": true
+    },
+    {
+      "id": "AC-2",
+      "text": "--note 与 --stdin 同现时后者优先",
+      "done": true
+    },
+    {
+      "id": "AC-3",
+      "text": "现有 --note 单行用法不受影响",
+      "done": true
+    }
+  ],
+  "decision_brief": {
+    "problem": "",
+    "options": [],
+    "chosen": "",
+    "rationale": "满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
