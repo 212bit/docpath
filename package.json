@@ -1,6 +1,6 @@
 {
   "name": "docpath",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "文径 DocPath — 渐进式文档驱动工作流 (Document as Finite State Machine)",
   "type": "module",
   "bin": {

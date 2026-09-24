@@ -1,90 +1,19 @@
 # DocPath Agent Protocol
 
-> This project uses DocPath as the shared workflow engine for Codex, Claude Code,
-> OpenCode, and compatible coding agents.
->
-> Default rule: agents consume DocPath through CLI summaries. JSON/JSONL files are
-> machine truth sources. Markdown files are rendered human views and are not
-> default agent inputs.
+> Shared workflow engine for Codex, Claude Code, OpenCode, and Antigravity.
+> **Rule**: Consume DocPath through CLI summaries. JSON/JSONL are machine truth; Markdown files are rendered human views and never default agent inputs.
 
-## First Steps
+## First Steps & Access Model
 
-1. Run `docpath next --agent` to read the `agent_view: next` route and the
-   current workflow snapshot: `next_action`, `recommended_command`, required
-   context, exit criteria, state, progress, drift, and install health.
-2. Follow the `recommended_command` unless the user explicitly changes direction.
-3. Use `context_index`, `data_index`, `required_files`, and `current_focus` as an
-   index. Do not expand files just because they are mentioned.
-4. Use `docpath status --agent` only when an explicit status/debug snapshot,
-   drift check, or post-mutation confirmation is needed.
-5. When details are needed, prefer `docpath reveal --topic <keyword> --level 1-3`
-   or `docpath context --max-tokens 5000 --topic <keyword>`.
-6. Record progress with DocPath lifecycle commands after each meaningful step.
-
-## Access Model
-
-DocPath is JSON-first internally and CLI-first for agents.
-
-| Artifact | Role | Agent access |
-| --- | --- | --- |
-| `.docpath/workspace/state.json` | Runtime state truth | Use `docpath next --agent` for start/resume; use `docpath status --agent` for diagnostics. |
-| `.docpath/workspace/current.md` | Human rendered state view | Do not read by default. |
-| `.docpath/workspace/breadcrumb.jsonl` | Execution event truth | Use `next`, `status`, `reveal`, or `context`; direct tail only for debug. |
-| `.docpath/workspace/breadcrumb.md` | Human rendered progress view | Do not read by default. |
-| `.docpath/tasks/current/spec.json` | Structured task spec truth | Prefer CLI summaries; direct read only when schema detail is needed. |
-| `.docpath/tasks/current/spec.md` | Human spec view | Read on demand for full narrative requirements. `backlog promote` seeds spec.md with backlog background/FR/AC/evidence — edit the seed incrementally; reserve full `write-spec` rewrites for genuine resets. |
-| `.docpath/tasks/current/plan.json` | Structured task plan truth | Prefer `next`, `go`, and `reveal`. |
-| `.docpath/tasks/current/plan.md` | Human plan view | Do not parse manually by default. |
-| `.docpath/docs-index.json` | Document index truth | Never read in full; use CLI filtered summaries. |
-
-Direct file reads are acceptable only when the CLI route or the debugging task
-requires them. Keep direct reads scoped to the smallest file, topic, task id, or
-tail range that answers the question.
-
-## Command Boundaries
-
-- Prompt emitters such as `brainstorm`, `refine`, `analyze --dry-run`, and
-  `plan --dry-run` output structured prompt contracts or payload previews for the
-  current agent session. They do not call a hidden LLM and do not replace
-  current-session reasoning.
-- Artifact sinks such as `write-spec`, `write-plan`, `write-design`, and
-  `write-analysis` persist content already generated or selected by the current
-  agent session.
-- Workflow gates such as `status`, `next`, `go`, `agent enter/step/done`,
-  `check`, `review`, and `changes` are deterministic state, routing, validation,
-  lifecycle, review, and closeout commands.
-- CLI owns mechanical consistency checks: task identity, current/canonical task
-  file sync, state transition legality, plan/breadcrumb alignment, install
-  health, and closeout evidence. Agent owns semantic recovery decisions: whether
-  a drifted spec is a new task, an old task restore, or a user-confirmed reset.
-- If `next`, `status`, `check`, or `task drift` reports task identity drift, do
-  not repair it with `agent step`; choose a restore/reset/capture/promote path
-  with explicit user intent.
-- `docpath next --agent` is a read-only advisory router for session
-  start/resume and uncertain state. It does not grant permission, hold locks, or
-  replace command preflight gates. Do not require it before an explicit
-  deterministic user command such as `go --step`, `check`, `review`, or
-  `changes`.
-- State-changing commands such as `go`, `agent enter/step/done`, `plan`,
-  `check`, `review`, `journal`, and `backlog promote` must re-read workflow
-  state and enforce their own preconditions.
-- `docpath go --step <id>` is atomic step control: it claims/starts the selected
-  step only if the workflow allows that step now.
-- Treat `--dry-run` output as preview material only, not as durable final
-  analysis/spec/plan evidence.
-
-## Project Context
-
-- `.docpath/backlog/` holds candidate work before it becomes an active task.
-- `.docpath/tasks/` holds task artifacts: spec, plan, review, journal, and
-  structured JSON mirrors.
-- `.docpath/workspace/` holds runtime state, evidence, and rendered views.
-- `.docpath/rules/` holds global style, architecture, and learned conventions.
-- `.docpath/protocols/` and `templates/` hold installable agent protocol assets.
+1. **Start/Resume**: `docpath next --agent` is the read-only advisory router. Inspect `next_action`, `recommended_command`, required context, and exit criteria.
+2. **Access Model**:
+   - Runtime state: `.docpath/workspace/state.json` (Read via `next --agent` or `status --agent`)
+   - Task spec/plan: `.docpath/tasks/current/spec.json`, `plan.json` (Read via `next`, `go`, `reveal`)
+   - Progress events: `.docpath/workspace/breadcrumb.jsonl` (Read via `next`, `status`, `reveal`)
+   - Human rendered views (`current.md`, `breadcrumb.md`, `spec.md`, `plan.md`, `docs-index.json`): **Do not read by default**.
+   - When details are needed, use `docpath reveal --topic <kw> --level 1` or `docpath context --smart --max-tokens 2000`.
 
 ## Agent Lifecycle Commands
-
-Use lifecycle commands instead of manual state edits:
 
 <!-- docpath:block lifecycle-commands -->
 ```bash
@@ -99,171 +28,42 @@ docpath quick-done --commit        # compound (R-340): quick gate sequence + com
 ```
 <!-- /docpath:block -->
 
-### Lightweighting & Token Economy Rules (轻量化与 Token 预算准则)
+### Lightweighting & Execution Rules (轻量化与执行红线)
 
-To avoid heavy ceremony, unnecessary round-trip latency, and context window bloat:
+1. **Mandatory Tiering (严禁越级大炮打蚊子)**:
+   - **Ultra-light (< 50 lines diff, typo, single config, localized fix)**: **MUST** use `docpath quick "<title>"`. (Post-hoc: `--adopt`; upgrade: `quick upgrade`).
+   - **【严禁 quick 的红线】**：触及调度器 (`agent.ts`, `check.ts`, `done.ts`, `runtime.ts`)、引擎 (`src/engine/**`)、协议资产或预期 > 50 行代码时，**绝对禁止**使用 `quick`，必须起手 `docpath start <id | "title">`。
+   - **Small/Medium (< 100 lines)**: `--level 1`（跳过正式 review 与冗长 journal）。
+   - **Architecture / Cross-module**: `--level 2` (Standard Profile)。
 
-1. **Mandatory Workflow Tiering (强制分级，严禁越级大炮打蚊子)**:
-   - **Ultra-light / Quick Fixes (Estimated diff < 50 lines, single config, docs typo, localized bugfix)**:
-     **MUST** use `docpath quick "<title>"`. Bypasses backlog promotion, spec, and plan ceremonies; directly claims execution; preserves quality baseline with `check` on closeout. Reduces CLI round-trips by 70%.
-     - *Post-hoc adoption (事后补录)*: If code edits were already made before starting the task, use `docpath quick "<title>" --adopt` to claim existing uncommitted changes directly into the quick task without resetting the worktree.
-     - *In-place upgrade (原地升级)*: If changes expand mid-task or touch core paths, run `docpath quick upgrade` to smoothly elevate to standard profile without worktree resets.
-     - **【严禁使用 quick 的红线】**：凡触及核心生命周期调度器 (`src/commands/agent.ts`, `check.ts`, `done.ts`, `runtime.ts`)、引擎 (`src/engine/**`)、协议资产 (`templates/protocols/`, `AGENTS.md`) 或预期 > 50 行代码时，**绝对禁止**使用 `quick`，必须起手使用 `docpath start <id>` 走标准流程。
-   - **Small/Medium Tasks (Estimated diff < 100 lines, single module, no contract/architecture changes)**:
-     **MUST** use `--level 1` (e.g. `docpath backlog add --level 1` or `init --level 1`). Prunes redundant formal review and heavy journal ceremonies.
-   - **Architecture / Cross-module / Breaking Changes**:
-     Only escalate to `level 2` / Standard Profile when scope touches core architecture, multi-module contracts, protocol changes, permissions, or migrations.
-
-2. **Atomic Execution & Incremental Gates (减少往返与门禁等待)**:
-   - **Atomic Step Claim**: Use `docpath go --step <id>` directly to claim and start the step in one shot. Avoid extra round-trips with redundant `agent enter` declarations unless multi-session tracking is explicitly required.
-   - **Incremental Verification During Coding**: During iterative development and debugging, avoid running full-suite `docpath check` in loops. Run targeted tests or fast validation; run the full `docpath check` suite once before `agent done`.
+2. **Atomic Execution & Zero-Redundancy Gates (零冗余原子收口)**:
+   - **Atomic Step Claim**: `docpath go --step <id>` is atomic step control to claim and start steps in 1-shot.
+   - **调试期严禁跑全量测试**：迭代开发与单用例调试时，**只允许**运行当前模块的单文件定向测试（如 `node --test tests/<file>.test.mjs`, `go test -run`, `pytest`）；**全量测试只跑一次**，由 `docpath done --commit`（底层调用 `docpath agent done`）在收口时原子执行全部门禁（check → review → journal → git commit）。严禁在调用 `done` 前后手动在终端重复执行 `docpath check` 或全量测试。
+   - **Edit with tools, not scripts**: Prefer editor tools over shell scripts (`sed`, heredoc) to minimize context re-injection.
+   - **Failure handling**: Stop after 2 environment/harness failures and report.
 
 3. **Strict Context Budget & Anti-bloat (严格控制上下文消耗)**:
-   - **NEVER** read full human-rendered Markdown files (`current.md`, `breadcrumb.md`, `plan.md`, `spec.md`, `docs-index.json`).
    - Always consume compact machine routes (`docpath next --agent`, `docpath status --agent`).
-   - When retrieving topic details, strictly use token-budgeted commands:
-     - `docpath reveal --topic <keyword> --level 1`
-     - `docpath context --smart --max-tokens 2000` (prefer smart rule/doc routing over manual search)
-     - `docpath context --max-tokens 2000 --topic <keyword>`
-   - When context token usage is heavy or sessions run long, run `docpath budget --agent` or `docpath budget --suggest` to analyze token distribution, and use `docpath budget --prune` to slim down context.
+   - Retrieve topics via token-budgeted commands (`docpath reveal --topic <kw> --level 1`, `docpath context --smart --max-tokens 2000`).
+   - Prune context bloat with `docpath budget --agent` / `docpath budget --prune`.
 
-4. **Failure Handling & Verification Dedup (失败处理与验证去重)**:
-   - **Environment-level failures stop after two attempts**: when a tool call is refused by the harness itself (permission denied, sandbox/classifier unavailable, command blocked) rather than by the command's own output, retry at most once. On the second failure, stop, report the exact error and what remains undone, and let the user decide. Re-sending an identical large payload ten times costs more than the task it was meant to finish.
-   - **Multi-Stack Targeted Test vs Single Full Gate (调试期定向测试与全量门禁去重)**:
-     - **调试期严禁跑全量测试套件**：迭代开发与调试时，**只允许**运行当前模块的单文件/单用例定向测试，禁止无参全量跑测试消耗长时延与上下文：
-       - *Node/TS*: `node --test tests/<file>.test.mjs` / `vitest run <file>` / `jest <path>`
-       - *Go*: `go test -v ./pkg/<pkg>/...` / `go test -run TestName ./...`
-       - *Rust*: `cargo test --test <name>` / `cargo test <test_fn>`
-       - *Python*: `pytest tests/<file>.py -k <test_name>`
-       - *Java*: `mvn test -Dtest=<Class>#<method>`
-       - *Makefile*: `make test-single TARGET=<target>`
-     - **全量测试只跑一次**：`docpath check` 和 `docpath done` 是项目全量构建、静态类型、全量单测和契约校验的**唯一法定执行点**。严禁在调用 `docpath done` / `check` 前后手动在终端跑全量测试（如 `node --test`、`go test ./...`、`cargo test`、`mvn test`）。
-   - **Edit with the editor tool, not with scripts**: prefer the harness's file-edit tool over `sed` / heredoc / python rewrites. Script edits make the harness re-inject the whole changed file into context on the next turn; a targeted edit does not. Fall back to scripts only for mechanical multi-site renames the editor cannot express.
+## Required Gates & Boundaries
 
-### Lifecycle Rules
-
-- Run `docpath go --step <id>` to claim the active step before code or protocol edits; `docpath agent enter` is an optional session declaration and is legal only after the step is executing.
-- Run `docpath agent step` after each meaningful sub-task or major decision.
-- Run `docpath verify` to confirm requirement completeness and scope boundaries before final closeout.
-- Run `docpath done --commit` (or `docpath quick-done --commit`) to execute quality gates, knowledge archiving, and git commit in 1-shot.
-
-## Git Convention
-
-- **Prefer One-Shot Compound Closeout (`docpath done --commit` / `docpath quick-done --commit`)**:
-  Executes quality check, review, journal, stages all affected files, generates a structured commit message from `docpath changes`, and commits automatically in a single command.
-- **Manual Commit Flow (when multi-stage split commits are needed)**:
-  1. Once `docpath agent done` completes and all gates pass, run `docpath changes --agent` to inspect the commit readiness report.
-  2. Use its closeout summary as the commit message title; append sub-change bullet points in the body.
-  3. Stage all modified tracked files (`git add .`) and commit.
-- **Stage all modified tracked files**: Include both source/test files and any
-  tracked `.docpath/` files (backlog, rules, AGENTS.md) that changed during the
-  work. The `.gitignore` already excludes pure runtime state (workspace/,
-  tasks/current/) — there's no risk of staging transient data.
-- **Atomic by logical unit**: One commit per coherent change. If a change spans
-  multiple independent concerns (e.g., fix + refactor in different modules),
-  split into separate commits.
-- **Do not push**: Commits are local. Pushing requires explicit user request.
-
-## Required Gates
-
-1. Do not skip `docpath next --agent` at start/resume or when state is
-   uncertain. Do not require it before an explicit deterministic user command;
-   that command must enforce its own gate. Use `docpath status --agent` only for
-   explicit status/debug snapshots, suspected drift, or confirmation after
-   state-changing commands.
-2. Do not act from memory alone.
-3. For trivial low-risk edits, prefer `docpath quick "<title>"` over a full
-   backlog/spec/plan cycle. Do not use quick as a bypass for architecture,
-   workflow, permission, migration, CI/CD, or broad module changes.
-4. When a product/UI request lacks target user, entry point, data scope, or
-   interaction model, clarify or run brainstorm/refine before implementation.
-5. When a request may change technology stack, architecture or module
-   boundaries, data/API contracts, UI information architecture, workflow or
-   agent behavior, permission or write boundaries, task scope, existing
-   capabilities, or long-term maintenance cost, run brainstorm/refine first.
-   Record a Decision Brief in the task spec and wait for explicit user
-   confirmation before implementation.
-6. Do not hand-edit `state.json`, `current.md`, `breadcrumb.md`, or other
-   workspace runtime views.
-7. Run `docpath check` before marking work complete.
-8. Let `docpath agent step` update breadcrumb and plan checklist state.
-
-## Useful Commands
-
-| Command | Purpose |
-| --- | --- |
-| `docpath next --agent` | Default agent start/resume route with command contract and compact state snapshot |
-| `docpath status --agent` | Diagnostic workflow state snapshot and health indexes |
-| `docpath reveal --level N --topic <keyword>` | Progressive context expansion |
-| `docpath context --smart` | Smart path- and topic-affine rule & document routing package (`--agent` / `--raw`) |
-| `docpath context --max-tokens 5000 --topic <keyword>` | Budgeted context package |
-| `docpath start <id> [--draft]` | 1-shot start from backlog (promote + plan + go S1) |
-| `docpath go --step S1` | Atomically claim/start the selected plan step |
-| `docpath check` | Quality gates |
-| `docpath verify` | Semantic anti-drift, scope boundaries, and requirement completeness gate (`--agent` / `--json`) |
-| `docpath review` | Structured review |
-| `docpath quick-done` | Compound closeout with optional `--gotcha <text>` capture |
-| `docpath learn` | Promote validated lessons into durable rules (`--agent` / `--dry-run`) |
-| `docpath milestone` | Aggregate completed tasks and generate release summaries (`--dry-run` / `--agent`) |
-| `docpath milestone timeline` | Render global project evolution timeline and release trajectory |
-| `docpath budget` | Analyze context token consumption breakdown & pruning suggestions (`--agent` / `--suggest` / `--prune`) |
-| `docpath docs doctor` / `fix` | Living documentation diagnostics & automatic self-healing (broken links, unindexed files) |
-| `docpath docs sync` | One-shot documentation health self-healing and index synchronization |
-| `docpath docs search <topic>` | Fast topic search across living project documentation |
-| `docpath docs lint` | Living documentation integrity check (broken links & unindexed files) |
-| `docpath worktree matrix` | Live progress matrix across concurrent agents and worktrees (`--agent` / `--json`) |
-| `docpath worktree broadcast <msg>` | Broadcast breaking changes/announcements to all active worktrees |
-| `docpath journal` | Knowledge archive |
-| `docpath gc` | Preview workspace cleanup candidates and inactive task archive candidates; `--force` executes |
+1. **State & Preconditions**: Never act from memory alone. Do not hand-edit `state.json` or runtime views. If task identity drifts, do not patch with `agent step`; choose a restore/reset path.
+2. **Ambiguity & Decision Brief Gates**:
+   - When a product/UI request lacks target user, clarify or run brainstorm/refine first.
+   - When changing architecture, technology stack, contracts, agent workflows, boundaries, or long-term maintenance cost, run brainstorm/refine first, record a Decision Brief in spec, and get explicit user confirmation.
+3. **Compound Closeout**:
+   - Prefer `docpath done --commit` / `docpath quick-done --commit` (which invoke `docpath agent done`).
+   - Stage all modified tracked files (`git add .`) including tracked `.docpath/` assets (backlog, rules, AGENTS.md).
+   - Local commits only; do not push without explicit user request.
 
 ## Worktree Concurrent Development
 
-DocPath supports true concurrent development via Git Worktrees. Use when multiple
-agents need to develop different features simultaneously without conflicts.
-
-### When to Use Worktrees
-
-Use `docpath worktree create <name>` when:
-- User explicitly requests concurrent development
-- Developing Feature A while another agent/session develops Feature B
-- Need complete isolation (separate workspace/, tasks/, state)
-
-Do NOT use worktrees for:
-- Single-agent sequential development (use normal workflow)
-- Quick testing or verification (use session isolation with DOCPATH_SESSION)
-
-### Worktree Workflow
-
-```bash
-# Create worktree for Feature A
-docpath worktree create feature-a
-cd .worktrees/feature-a
-
-# Set session ID (optional but recommended)
-export DOCPATH_SESSION=codex
-
-# Standard DocPath workflow
-docpath backlog promote R-xxx
-docpath plan
-docpath go --step S1
-# ... develop ...
-docpath agent step --step S1 --status done
-docpath check
-git commit
-
-# Merge back to main
-cd ../../
-git merge feature-a
-docpath worktree remove feature-a
-```
-
-### Multi-Agent Collaboration & Matrix
-
-When multiple agents operate across parallel worktrees:
-- Run `docpath worktree matrix` (or `docpath worktree matrix --agent`) to inspect active agents (`session`), assigned tasks, current step progress, and dirty file status across all branches.
-- When introducing breaking architectural changes, schema migrations, or shared contract updates, run `docpath worktree broadcast "<announcement>"` to dispatch high-priority notifications to all other worktrees' event streams.
-
-### Worktree Isolation
+Use `docpath worktree create <name>` only for parallel multi-agent development.
+- **Workflow**: `docpath worktree create <name>` → `cd .worktrees/<name>` → `docpath start R-xxx` → `docpath done --commit` → `cd ../.. && git merge <name> && docpath worktree remove <name>`.
+- **Collaboration**: `docpath worktree matrix` (live progress across agents), `docpath worktree broadcast "<msg>"` (broadcast breaking updates).
+- Details & isolation model: see `docs/features/worktree-workflow.md`.
 
 <!-- docpath:block worktree-isolation -->
 Resources are split by sharing model (R-238 Option B, reaffirmed by R-273 —
@@ -289,26 +89,6 @@ reports each resource against its expected model (merge-mediated / isolated)
 and fails a symlinked backlog over tracked files (repair with
 `docpath worktree repair`).
 <!-- /docpath:block -->
-
-### Commands
-
-- `docpath worktree matrix` - view live collaboration matrix across all agents/worktrees (`--agent` / `--json`)
-- `docpath worktree broadcast <msg>` - broadcast notification across all active worktrees
-- `docpath worktree list` - list all worktrees
-- `docpath worktree create <name>` - create new worktree
-- `docpath worktree remove <name>` - delete worktree
-
-See `docs/features/worktree-workflow.md` for detailed usage guide.
-
-## Decision Log Aging
-
-- `workspace/decisions.md` keeps recent ADR entries only.
-- `docpath journal` rotates older entries into `workspace/decisions-YYYY-MM.md`.
-- Historical decision queries should read the relevant monthly archive
-  explicitly, not the full decision history.
-- `docpath journal` should write decisions only for reusable architecture,
-  workflow, or behavior decisions with context, impact, boundaries, and
-  alternatives.
 
 ## Linked Project
 
