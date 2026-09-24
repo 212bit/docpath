@@ -642,6 +642,32 @@ export async function installCommand(options: InstallOptions = {}): Promise<void
 const skippedManagedFiles: string[] = [];
 
 
+const STANDARD_PROTOCOL_SECTIONS = [
+  'First Steps & Access Model',
+  'Agent Lifecycle Commands',
+  'Lightweighting & Execution Rules',
+  'Required Gates & Boundaries',
+  'Worktree Concurrent Development',
+  'Linked Project',
+];
+
+function extractCustomProtocolSections(content: string): string[] {
+  const sections = content.split(/(?=^##\s+)/m);
+  const custom: string[] = [];
+  for (const section of sections) {
+    const match = section.match(/^##\s+([^\n]+)/);
+    if (!match) continue;
+    const heading = match[1].trim();
+    const isStandard = STANDARD_PROTOCOL_SECTIONS.some(
+      std => heading.toLowerCase().includes(std.toLowerCase()) || std.toLowerCase().includes(heading.toLowerCase())
+    );
+    if (!isStandard) {
+      custom.push(section.trim());
+    }
+  }
+  return custom;
+}
+
 async function installProtocolFile(
   targetDir: string,
   filename: string,
@@ -664,7 +690,7 @@ async function installProtocolFile(
 
     // ── 智能无损更新（Smart Block Update）──
     // 若本地文件包含协议注入块标记，优先以无损方式合并最新共享契约块，保留本地项目绑定与定制
-    if (isCustomizable && existing.includes('<!-- docpath:block ')) {
+    if (existing.includes('<!-- docpath:block ')) {
       try {
         const templatesDir = await resolveTemplate();
         const blocksDir = join(templatesDir, 'protocols', 'blocks');
@@ -675,13 +701,36 @@ async function installProtocolFile(
             await writeFileSafe(filePath, result.content);
             console.log(`✅  ${filename} 智能无损更新: 已同步 ${result.updated.length} 个协议块 (${result.updated.join(', ')})，保留项目绑定与本地定制`);
             return;
-          } else if (result.present.length > 0 && !force) {
+          } else if (result.present.length > 0) {
             console.log(`✓  ${filename} 已是最新（协议注入块已对齐，保留本地定制）`);
             return;
           }
         }
       } catch {
         // 出错时回退常规 writeManagedFile 逻辑
+      }
+    }
+
+    // ── 历史旧版协议自动升级（Legacy Upgrade with Block Adoption）──
+    // 若本地文件为旧版 DocPath 协议（无 block 标记），在 force 模式下自动升级为带 block 标记的新版，并保留项目绑定与自定义段落
+    if (force && (existing.includes('# DocPath Agent Protocol') || existing.includes('Linked to:'))) {
+      try {
+        let upgraded = content;
+        // 尝试保留已有文件中显式指定的项目名
+        const projectMatch = existing.match(/Linked to:\s*\*\*([^*]+)\*\*/);
+        if (projectMatch && projectMatch[1]) {
+          upgraded = upgraded.replace(new RegExp(`Linked to:\\s*\\*\\*${projectName}\\*\\*`, 'g'), `Linked to: **${projectMatch[1]}**`);
+        }
+        // 提取并保留非标准自定义段落
+        const customSections = extractCustomProtocolSections(existing);
+        if (customSections.length > 0) {
+          upgraded = upgraded.trimEnd() + '\n\n' + customSections.join('\n\n') + '\n';
+        }
+        await writeFileSafe(filePath, upgraded);
+        console.log(`✅  ${filename} 旧版协议已升级为带注入块的新格式，保留项目绑定与本地定制`);
+        return;
+      } catch {
+        // 回退 writeManagedFile
       }
     }
   }

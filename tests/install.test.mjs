@@ -928,6 +928,118 @@ describe('install agent adapters', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('install --force on aligned AGENTS.md with custom binding does not trigger warning or skip', () => {
+    const cwd = mkWorkspace();
+    // 1. Initial clean install
+    run(`install --cwd ${cwd} --target universal`, cwd);
+
+    // 2. Simulate project (e.g. ferrum) with custom project binding and aligned lifecycle block
+    const agentsPath = join(cwd, 'AGENTS.md');
+    let content = readFileSync(agentsPath, 'utf-8');
+    content = content.replace(/Linked to:\s*\*\*[^*]+\*\*/, 'Linked to: **ferrum**');
+    writeFileSync(agentsPath, content);
+
+    // 3. Run install with --force in non-interactive mode
+    const out = run(`install --cwd ${cwd} --target universal --force`, cwd);
+
+    // 4. Verify no warning about AGENTS.md and no skipped managed files
+    assert.match(out, /AGENTS\.md 已是最新（协议注入块已对齐，保留本地定制）/);
+    assert.doesNotMatch(out, /警告: 检测到本地定制资产 AGENTS\.md/);
+    assert.doesNotMatch(out, /未覆盖/);
+    assert.match(out, /🎉  Agent 协议安装完成/);
+
+    const after = readFileSync(agentsPath, 'utf-8');
+    assert.match(after, /Linked to: \*\*ferrum\*\*/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --force upgrades legacy AGENTS.md without blocks preserving project binding and custom sections', () => {
+    const cwd = mkWorkspace();
+    // 1. Create a legacy AGENTS.md without docpath:block tags
+    const legacyContent = [
+      '# DocPath Agent Protocol',
+      '',
+      '> Shared workflow engine for Codex, Claude Code, OpenCode, and Antigravity.',
+      '',
+      '## Agent Lifecycle Commands',
+      '```bash',
+      'docpath old-command',
+      '```',
+      '',
+      '## Custom Ferrum Rules',
+      'Rules specifically for ferrum project.',
+      '',
+      '## Linked Project',
+      'Linked to: **ferrum**',
+      'Config: .docpath/config.yaml',
+    ].join('\n');
+    writeFileSync(join(cwd, 'AGENTS.md'), legacyContent);
+
+    // 2. Run install --force
+    const out = run(`install --cwd ${cwd} --target universal --force`, cwd);
+    const upgraded = readFileSync(join(cwd, 'AGENTS.md'), 'utf-8');
+
+    // 3. Verify upgraded to blocks and preserved customs
+    assert.match(out, /AGENTS\.md 旧版协议已升级为带注入块的新格式/);
+    assert.match(upgraded, /<!-- docpath:block lifecycle-commands -->/);
+    assert.match(upgraded, /docpath quick/);
+    assert.match(upgraded, /Linked to: \*\*ferrum\*\*/);
+    assert.match(upgraded, /## Custom Ferrum Rules/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('docpath update command smoothly upgrades project assets, shim, and metadata in 1-shot', () => {
+    const cwd = mkWorkspace();
+    // 1. Initial install
+    run(`install --cwd ${cwd} --target universal`, cwd);
+
+    // 2. Set outdated metadata version
+    const metaPath = join(cwd, '.docpath', '.install-meta.json');
+    const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+    meta.docpathVersion = '0.0.1';
+    writeFileSync(metaPath, JSON.stringify(meta, null, 2));
+
+    // 3. Run docpath update
+    const out = run(`update --cwd ${cwd}`, cwd);
+
+    // 4. Verify update completed successfully
+    assert.match(out, /🎉  Agent 协议安装完成/);
+    const updatedMeta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+    assert.equal(updatedMeta.docpathVersion, PACKAGE_VERSION);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install performs smart block update on OPENCODE.md preserving custom sections', () => {
+    const cwd = mkWorkspace();
+    run(`install --cwd ${cwd} --target opencode`, cwd);
+
+    const opencodePath = join(cwd, 'OPENCODE.md');
+    const customContent = [
+      '# OpenCode Protocol',
+      '',
+      '<!-- docpath:block worktree-isolation -->',
+      'old worktree isolation block here',
+      '<!-- /docpath:block -->',
+      '',
+      '## Custom OpenCode Rules',
+      'Project specific rules.',
+    ].join('\n');
+    writeFileSync(opencodePath, customContent);
+
+    const out = run(`install --cwd ${cwd} --target opencode`, cwd);
+    const updated = readFileSync(opencodePath, 'utf-8');
+
+    assert.match(out, /OPENCODE\.md 智能无损更新/);
+    assert.match(updated, /<!-- docpath:block worktree-isolation -->/);
+    assert.match(updated, /Merge-mediated/);
+    assert.match(updated, /## Custom OpenCode Rules/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
 
 describe('install real-world fixes (R-311/R-312, SynapBuddy 实测)', () => {

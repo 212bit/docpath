@@ -161,7 +161,7 @@ async function printInstallMetadata(cwd: string): Promise<void> {
     }
     if (currentVersion !== 'unknown' && installedVersion !== currentVersion) {
       console.log(`  ⚠️  当前 CLI 版本 ${currentVersion} 与安装资产版本 ${installedVersion} 不一致`);
-      console.log('      建议运行: docpath install --target <target>');
+      console.log('      建议运行: docpath update (或 docpath install --target <target>)');
     }
     await printInstallAssetDrift(cwd, meta);
   } catch {

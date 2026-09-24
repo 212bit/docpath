@@ -69,7 +69,25 @@ export function registerDocsInstallCommands(cli: CAC): void {
     });
 
   registerInstallCommand(cli);
+  registerUpdateCommand(cli);
   registerMergeDriverCommand(cli);
+}
+
+function registerUpdateCommand(cli: CAC): void {
+  cli.command('update', '一键平滑升级当前项目的 DocPath 协议与组件（智能保留定制）')
+    .option('--cwd <path>', '项目目录')
+    .option('--target <type>', '目标类型: codex | claude | opencode | universal (默认读取已安装 target)')
+    .option('--hooks', '同步安装/更新 git hooks')
+    .option('--hook-mode <mode>', 'pre-commit 模式: check | agent-done (默认 check)')
+    .action(async (options: { cwd?: string; target?: string; hooks?: boolean; hookMode?: string; 'hook-mode'?: string }) => {
+      await installCommand({
+        cwd: options.cwd || process.cwd(),
+        target: options.target,
+        force: true,
+        hooks: !!options.hooks,
+        hookMode: options.hookMode || options['hook-mode'],
+      });
+    });
 }
 
 function registerInstallCommand(cli: CAC): void {
