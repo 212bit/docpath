@@ -154,6 +154,19 @@ describe('docpath quick', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('supports unquoted multi-word titles for quick command', () => {
+    const cwd = mkWorkspace();
+
+    const out = run(`quick Fix typo in docs --cwd ${cwd}`, cwd);
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    const taskId = state.task_id;
+
+    assert.match(out, /quick task 已创建/);
+    assert.match(taskId, /^T-\d{8}-quick-fix-typo-in-docs/);
+    assert.equal(state.task_title, 'Fix typo in docs');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('reports effective standard profile for a quick task raised to level 2', () => {
     const cwd = mkWorkspace();
     run(`quick "Investigate workflow behavior" --cwd ${cwd}`, cwd);

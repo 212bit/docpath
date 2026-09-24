@@ -4,7 +4,7 @@ import { mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { delimiter, dirname, isAbsolute, join, resolve, sep } from 'path';
 import type { CheckResult, NodeCommandConfig, PackageManifest, CheckOptions } from './types.js';
-import { resolveTestCommand, listTestFiles } from './test-scope.js';
+import { resolveTestCommand, listTestFiles, resolveGoTestCommand } from './test-scope.js';
 import { errorOutput } from './formatters.js';
 
 export const DEFAULT_CHECK_TIMEOUT_MS = 60000;
@@ -444,37 +444,18 @@ export async function runCompileChecks(cwd: string, pkgPath: string, nodeCommand
   return [];
 }
 
-export async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeCommands: NodeCommandConfig, options: CheckOptions): Promise<CheckResult[]> {
-  const pkg = await readPackageManifest(pkgPath);
-  if (!pkg?.scripts) return [];
+async function resolvePackageTestCheck(
+  cwd: string,
+  pkg: PackageManifest,
+  scripts: Record<string, string>,
+  nodeCommands: NodeCommandConfig,
+  options: CheckOptions,
+): Promise<CheckResult | null> {
+  if (options.skipTests) return null;
 
-  if (options.lite) return [];
-
-  const results: CheckResult[] = [];
-  const scripts = pkg.scripts;
-
-  const resolveOrSkip = async (
-    checkName: string,
-    scriptName: string,
-    category: CheckResult['category'],
-    timeoutMs: number = DEFAULT_CHECK_TIMEOUT_MS,
-  ): Promise<CheckResult | null> => {
-    const resolved = await resolveRunnerScriptCommand(scriptName, scripts, nodeCommands, cwd);
-    if (resolved.cmd === null) {
-      return runnerUnavailableResult(checkName, scriptName, nodeCommands, resolved.runnerBroken!, category);
-    }
-    return runCheck(checkName, `${resolved.cmd} 2>&1`, cwd, category, timeoutMs);
-  };
-
-  if (scripts.build) {
-    const build = await resolveOrSkip('构建', 'build', 'compile', HEAVY_CHECK_TIMEOUT_MS);
-    if (build) results.push(build);
-  }
-  if (!options.skipTests && scripts.test) {
+  if (scripts.test) {
     const isNodeTestScript = /node\s+--test/.test(scripts.test);
     if (isNodeTestScript) {
-      // R-3xx（性能任务）：默认启用基于改动影响面的增量测试减载（宁慢不放水，触及核心自动回落全量）。
-      // 显式 --all / --test-scope=full 时执行受控并发全量测试。
       const testScope = options.allTests ? 'full' : (options.testScope ?? 'touched');
       const customRiskyPatterns = await readCheckRiskyPatterns(cwd);
       const scope = resolveTestCommand(cwd, { testScope, customRiskyPatterns });
@@ -482,24 +463,56 @@ export async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeC
       const name = scope.scope === 'touched'
         ? `测试（影响面 ${scope.matchedFiles.length}/${allTestCount}）`
         : '测试（受控并发）';
-      results.push(runCheck(name, scope.command, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
-    } else {
-      const test = await resolveOrSkip('测试', 'test', 'test', HEAVY_CHECK_TIMEOUT_MS);
-      if (test) results.push(test);
+      return runCheck(name, scope.command, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS);
     }
-  } else if (!options.skipTests) {
-    const testFramework = detectTestFramework(pkg);
-    if (testFramework) {
-      // 优先直接使用 node_modules/.bin 下的测试二进制（PATH 已前置），避免 runner exec 挂起
-      const binName = testFramework.split(/\s+/)[0];
-      const localBin = join(cwd, 'node_modules', '.bin', binName);
-      const testCmd = existsSync(localBin) ? testFramework : `${nodeCommands.pkgRunner} exec ${testFramework}`;
-      results.push(runCheck('测试', `${testCmd} 2>&1`, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
+    const resolved = await resolveRunnerScriptCommand('test', scripts, nodeCommands, cwd);
+    if (resolved.cmd === null) {
+      return runnerUnavailableResult('测试', 'test', nodeCommands, resolved.runnerBroken!, 'test');
+    }
+    return runCheck('测试', `${resolved.cmd} 2>&1`, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS);
+  }
+
+  const testFramework = detectTestFramework(pkg);
+  if (testFramework) {
+    const binName = testFramework.split(/\s+/)[0];
+    const localBin = join(cwd, 'node_modules', '.bin', binName);
+    const testCmd = existsSync(localBin) ? testFramework : `${nodeCommands.pkgRunner} exec ${testFramework}`;
+    return runCheck('测试', `${testCmd} 2>&1`, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS);
+  }
+  return null;
+}
+
+export async function runPackageScriptChecks(
+  cwd: string,
+  pkgPath: string,
+  nodeCommands: NodeCommandConfig,
+  options: CheckOptions,
+): Promise<CheckResult[]> {
+  const pkg = await readPackageManifest(pkgPath);
+  if (!pkg?.scripts || options.lite) return [];
+
+  const results: CheckResult[] = [];
+  const scripts = pkg.scripts;
+
+  if (scripts.build) {
+    const resolved = await resolveRunnerScriptCommand('build', scripts, nodeCommands, cwd);
+    if (resolved.cmd === null) {
+      results.push(runnerUnavailableResult('构建', 'build', nodeCommands, resolved.runnerBroken!, 'compile'));
+    } else {
+      results.push(runCheck('构建', `${resolved.cmd} 2>&1`, cwd, 'compile', HEAVY_CHECK_TIMEOUT_MS));
     }
   }
+
+  const testResult = await resolvePackageTestCheck(cwd, pkg, scripts, nodeCommands, options);
+  if (testResult) results.push(testResult);
+
   if (!options.skipLint && scripts.lint) {
-    const lint = await resolveOrSkip('Lint', 'lint', 'lint');
-    if (lint) results.push(lint);
+    const resolved = await resolveRunnerScriptCommand('lint', scripts, nodeCommands, cwd);
+    if (resolved.cmd === null) {
+      results.push(runnerUnavailableResult('Lint', 'lint', nodeCommands, resolved.runnerBroken!, 'lint'));
+    } else {
+      results.push(runCheck('Lint', `${resolved.cmd} 2>&1`, cwd, 'lint'));
+    }
   }
   return results;
 }
@@ -570,7 +583,7 @@ export async function runCustomCheckConfig(cwd: string, options: CheckOptions): 
   return results;
 }
 
-export function runNativeLanguageChecks(cwd: string, options: CheckOptions): CheckResult[] {
+export async function runNativeLanguageChecks(cwd: string, options: CheckOptions): Promise<CheckResult[]> {
   if (options.lite) return [];
   const results: CheckResult[] = [];
 
@@ -590,7 +603,10 @@ export function runNativeLanguageChecks(cwd: string, options: CheckOptions): Che
       results.push(runCheck('Go 代码检查 (go vet)', 'go vet ./... 2>&1', cwd, 'lint', DEFAULT_CHECK_TIMEOUT_MS));
     }
     if (!options.skipTests) {
-      results.push(runCheck('Go 单元测试', 'go test ./... 2>&1', cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
+      const testScope = options.allTests ? 'full' : (options.testScope ?? 'touched');
+      const customRiskyPatterns = await readCheckRiskyPatterns(cwd);
+      const goTest = resolveGoTestCommand(cwd, { testScope, customRiskyPatterns });
+      results.push(runCheck(goTest.name, goTest.command, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
     }
   } else if (existsSync(pomPath)) {
     if (!options.skipTests) {
@@ -600,6 +616,7 @@ export function runNativeLanguageChecks(cwd: string, options: CheckOptions): Che
 
   return results;
 }
+
 
 export async function runProjectChecks(cwd: string, options: CheckOptions): Promise<CheckResult[]> {
   // 1. 优先使用用户在 .docpath/config.yaml 中显式配置的 check 门禁
@@ -626,7 +643,8 @@ export async function runProjectChecks(cwd: string, options: CheckOptions): Prom
   return [
     ...await runCompileChecks(cwd, pkgPath, nodeCommands),
     ...await runPackageScriptChecks(cwd, pkgPath, nodeCommands, options),
-    ...runNativeLanguageChecks(cwd, options),
+    ...await runNativeLanguageChecks(cwd, options),
   ];
 }
+
 

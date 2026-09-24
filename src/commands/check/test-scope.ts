@@ -261,3 +261,33 @@ export function resolveTestCommand(
   const cmd = buildNodeTestCommand(cwd, selected, { concurrency, isolation });
   return { command: cmd, scope: 'touched', matchedFiles: selected };
 }
+
+/** 解析 Go 语言测试命令（支持根据改动文件定向推导 Go 包路径）。 */
+export function resolveGoTestCommand(
+  cwd: string,
+  opts: { testScope?: 'full' | 'touched'; customRiskyPatterns?: string[] } = {},
+): { command: string; name: string } {
+  if (opts.testScope === 'full') {
+    return { command: 'go test ./... 2>&1', name: 'Go 单元测试' };
+  }
+  const changedFiles = getChangedSourceFiles(cwd);
+  if (!changedFiles || changedFiles.length === 0 || changedFiles.length > TEST_SCOPE_MAX_FILES || changedFiles.some((f) => touchesRiskyPath(f, opts.customRiskyPatterns))) {
+    return { command: 'go test ./... 2>&1', name: 'Go 单元测试' };
+  }
+  const goFiles = changedFiles.filter((f) => f.endsWith('.go'));
+  if (goFiles.length === 0) {
+    return { command: 'go test ./... 2>&1', name: 'Go 单元测试' };
+  }
+  const pkgs = Array.from(new Set(goFiles.map((f) => {
+    const dir = dirname(f).split(sep).join('/');
+    return dir === '.' ? '.' : `./${dir}/...`;
+  }))).sort();
+
+  if (pkgs.length === 0) {
+    return { command: 'go test ./... 2>&1', name: 'Go 单元测试' };
+  }
+  return {
+    command: `go test ${pkgs.join(' ')} 2>&1`,
+    name: `Go 单元测试（影响面 ${pkgs.length} 包）`,
+  };
+}

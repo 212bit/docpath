@@ -473,5 +473,15 @@ project:
   language: "${lang}"
   framework: "${fw}"
   created_at: "${now}"
+
+# 质量门禁与测试范围配置（按需开启）
+# check:
+#   # command: "make check"               # 自定义聚合质量门禁
+#   # risky_patterns:                     # 触碰时强制全量回归的核心业务模块 (glob)
+#   #   - "pkg/core/**"
+#   #   - "api/v1/proto/**"
+#   # code_scope_paths:                   # 参与代码变更指纹与缓存判定的源码路径
+#   #   - "custom_contracts/**"
 `;
 }
+

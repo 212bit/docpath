@@ -87,7 +87,10 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
     console.log('⚠️  未检测到可执行的检查项（无 tsconfig/package.json/Cargo.toml/go.mod/pom.xml）');
   }
 
-  // 环境失败诊断摘要：先分类环境/代码，帮助 Agent 用最廉价的判定排除工具链问题。
+  printDiagnosticsAndRemediation(results, allPassed, envExempt);
+}
+
+function printDiagnosticsAndRemediation(results: CheckResult[], allPassed: boolean, envExempt: boolean): void {
   const envFailures = results.filter((r) => !r.passed && r.environment_failure);
   if (envFailures.length > 0) {
     console.log('\n🔧  环境诊断（以下失败看起来是工具链/环境问题，不是代码问题）:');
@@ -98,7 +101,6 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
     console.log('    这些失败与代码质量无关，用 token 诊断代码是浪费。\n');
   }
 
-  // R-347: 列出门禁实际执行的外部命令，agent 据此不再在 check 前后手动重跑同一套验证。
   const executed = results.filter((r) => r.command);
   if (executed.length > 0) {
     console.log('\n🧾  已执行命令（门禁已跑过，无需手动重复）:');
@@ -107,15 +109,11 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
     }
   }
 
-  // R-357: 缓存复用聚合提示——显式告诉 agent 本次有多少项是复用而非真跑，
-  // 并给出强制全量的开关。复用出来的绿与真跑出来的绿是两件事，必须醒目区分。
   const cachedCount = results.filter((r) => r.cached).length;
   if (cachedCount > 0) {
     console.log(`\n♻️  缓存复用 ${cachedCount} 项（typecheck/build/test/lint）：代码范围自上次绿色 check 无变更，判定沿用，本次未实际执行。如需强制全量请加 --no-cache。`);
   }
 
-  // R-350: 环境豁免——全部失败项都是确定性可证的工具链故障时，不落 check_fail，
-  // 而是落 check_env_exempt（可继续 review/归档，但必须显著可见 + 审计留痕）。
   if (envExempt) {
     console.log('\n🛠️  环境豁免（check_env_exempt）: 本次全部失败项都是工具链不可用，非代码问题:');
     for (const r of results.filter((item) => !item.passed && item.severity !== 'warning')) {
@@ -142,6 +140,7 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
     }
   }
 }
+
 
 /**
  * R-350: 环境豁免判定（纯函数，便于单测）。
