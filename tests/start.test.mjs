@@ -83,21 +83,51 @@ describe('docpath start: 一键冷启动任务', () => {
     }
   });
 
-  it('start "<title>" 在工作区存在未提交改动时智能自动开启 adopt 并启动执行', () => {
+  it('start "<title>" 在工作区存在未提交改动且未传 --adopt 时严格报错拦截', () => {
     const cwd = mkRepo();
     try {
-      // 在起手前先修改一个文件（模拟用户/Agent 先写了代码后 start）
+      // 在起手前先修改一个文件
       writeFileSync(join(cwd, 'uncommitted.ts'), 'export const hello = "world";\n');
 
-      // 执行 docpath start "<title>" --draft（未显式传递 --adopt）
-      const out = run(['start', '已有未提交改动直接一键认领启动', '--draft'], cwd);
-      assert.match(out, /检测到当前工作区存在未提交改动，已自动认领纳入当前任务 \(--adopt\)/);
+      // 执行 docpath start "<title>"（未显式传递 --adopt）应该抛错
+      assert.throws(
+        () => run(['start', '已有未提交改动未加adopt启动', '--draft'], cwd),
+        /存在未提交变更，拒绝在 dirty worktree 上启动新任务/
+      );
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('start "<title>" --adopt 显式传参时成功认领已有改动并启动执行', () => {
+    const cwd = mkRepo();
+    try {
+      writeFileSync(join(cwd, 'uncommitted.ts'), 'export const hello = "world";\n');
+
+      // 执行 docpath start "<title>" --adopt --draft
+      const out = run(['start', '已有未提交改动显式认领启动', '--adopt', '--draft'], cwd);
+      assert.match(out, /已启用 --adopt 模式/);
       assert.match(out, /已拉起并启动步骤 S1/);
 
-      // 验证状态机正常处于 executing
       const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
       assert.equal(state.phase, 'executing');
       assert.equal(state.current_step, 'S1');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('start 在已有活跃任务处于 executing 期时前置拦截禁止覆盖', () => {
+    const cwd = mkRepo();
+    try {
+      // 启动第一个任务
+      run(['start', '第一个进行中任务'], cwd);
+
+      // 尝试在未完成状态下启动第二个任务
+      assert.throws(
+        () => run(['start', '尝试覆盖启动第二个任务'], cwd),
+        /当前已有活跃任务/
+      );
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

@@ -14,7 +14,7 @@ import { planCommand } from './plan.js';
 import { goCommand } from './go.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { createBacklogItem, refreshBacklogIndex } from '../engine/backlog.js';
-import { detectDirtyWorktree } from '../utils/git-dirty-guard.js';
+import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 
 export interface StartOptions {
   cwd: string;
@@ -32,16 +32,19 @@ export async function startCommand(options: StartOptions): Promise<void> {
     throw new Error('docpath start 需要提供 Backlog 条目 ID 或任务标题，例如: docpath start R-101 或 docpath start "优化生命周期"');
   }
 
-  // 智能认领已有工作区改动：如果没有活跃任务且用户未显式指定 adopt，且检测到 dirty 文件，则自动启用 adopt
-  let adopt = options.adopt;
-  const currentState = await readCurrentState(cwd);
-  const activeTaskExists = Boolean(currentState && currentState.phase !== 'completed');
-  if (!activeTaskExists && adopt === undefined) {
-    const dirtyReport = detectDirtyWorktree(cwd);
-    if (dirtyReport.isGitRepo && dirtyReport.dirty) {
-      adopt = true;
-      console.log(`💡  检测到当前工作区存在未提交改动，已自动认领纳入当前任务 (--adopt)\n`);
-    }
+  // 1. 活跃任务冲突前置拦截：已有进行中任务时禁止重复 start 覆盖
+  const current = await readCurrentState(cwd);
+  if (current && current.phase !== 'idle' && current.phase !== 'completed' && !options.adopt) {
+    throw new Error(
+      `docpath start: 当前已有活跃任务 ${current.task_id}（phase=${current.phase}），禁止重复启动。\n` +
+      `   如需结束当前任务请先运行 docpath done，或运行 docpath task reset/abort。\n` +
+      `   若需并发进行多任务开发，请创建隔离工作区: docpath worktree create <name>`
+    );
+  }
+
+  // 2. 脏工作区前置拦截：未显式指定 --adopt 时严格禁止在 dirty worktree 上启动新任务
+  if (!options.adopt) {
+    assertCleanWorktreeForNewTask(cwd, 'docpath start');
   }
 
   let isTitle = false;
@@ -75,7 +78,7 @@ export async function startCommand(options: StartOptions): Promise<void> {
     id: targetId,
     draft: options.draft ?? (isTitle ? true : undefined),
     agent: options.agent,
-    adopt,
+    adopt: options.adopt,
   };
   await backlogCommand(promoteOptions);
   const effectiveCwd = promoteOptions.cwd;
@@ -91,7 +94,7 @@ export async function startCommand(options: StartOptions): Promise<void> {
   await goCommand({
     cwd: effectiveCwd,
     step: stepToStart,
-    acceptDirty: adopt ? 'start --adopt: claim workspace edits' : undefined,
+    acceptDirty: options.adopt ? 'start --adopt: claim workspace edits' : undefined,
   });
 
   console.log(`\n🎉  任务 ${targetId} 已拉起并启动步骤 ${stepToStart}！`);

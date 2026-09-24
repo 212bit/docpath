@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-start-adopt-dirtyworktree","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 修复Start静默Adopt漏洞并加固DirtyWorktree防踩踏门禁","timestamp":"2026-09-24T05:06:48.044Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-start-adopt-dirtyworktree","step":"S1","status":"done","context":"agent-done: S1","timestamp":"2026-09-24T05:07:45.472Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-start-adopt-dirtyworktree","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-24T05:10:15.105Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-start-adopt-dirtyworktree","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-24T05:14:14.575Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-start-adopt-dirtyworktree","step":"check","status":"done","context":"质量检查通过 (12 项)","timestamp":"2026-09-24T05:18:57.896Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-start-adopt-dirtyworktree","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-09-24T05:18:58.774Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-start-adopt-dirtyworktree","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-24T05:19:00.496Z"}
