@@ -116,7 +116,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 
 2. **Atomic Execution & Incremental Gates (减少往返与门禁等待)**:
    - **Atomic Step Claim**: Use `docpath go --step <id>` directly to claim and start the step in one shot. Avoid extra round-trips with redundant `agent enter` declarations unless multi-session tracking is explicitly required.
-   - **Incremental Verification During Coding**: During iterative development and debugging, avoid running full-suite `docpath check` in loops. Run targeted tests or fast validation; run the full `docpath check` suite once before `agent done`.
+   - **Incremental Verification During Coding**: During iterative development and debugging, avoid running full-suite `docpath check` in loops. Run targeted tests or fast validation (e.g. `node --test tests/<file>.test.mjs`); let `docpath done --commit` (or `quick-done --commit`) atomically execute the full quality gate sequence in 1-shot without manual pre-runs.
 
 3. **Strict Context Budget & Anti-bloat (严格控制上下文消耗)**:
    - **NEVER** read full human-rendered Markdown files (`current.md`, `breadcrumb.md`, `plan.md`, `spec.md`, `docs-index.json`).
@@ -197,7 +197,7 @@ To avoid heavy ceremony, unnecessary round-trip latency, and context window bloa
 | `docpath reveal --level N --topic <keyword>` | Progressive context expansion |
 | `docpath context --smart` | Smart path- and topic-affine rule & document routing package (`--agent` / `--raw`) |
 | `docpath context --max-tokens 5000 --topic <keyword>` | Budgeted context package |
-| `docpath start <id> [--draft]` | 1-shot start from backlog (promote + plan + go S1) |
+| `docpath start <id \| "title">` | 1-shot start from backlog/title (promote + plan + go S1, default draft) |
 | `docpath go --step S1` | Atomically claim/start the selected plan step |
 | `docpath check` | Quality gates |
 | `docpath verify` | Semantic anti-drift, scope boundaries, and requirement completeness gate (`--agent` / `--json`) |
@@ -242,20 +242,17 @@ cd .worktrees/feature-a
 # Set session ID (optional but recommended)
 export DOCPATH_SESSION=codex
 
-# Standard DocPath workflow
-docpath backlog promote R-xxx
-docpath plan
-docpath go --step S1
+# Standard DocPath workflow (1-shot compound lifecycle)
+docpath start R-xxx --draft   # 1-shot: promote + plan + go S1
 # ... develop ...
-docpath agent step --step S1 --status done
-docpath check
-git commit
+docpath done --commit         # 1-shot: check + review + journal + git commit
 
 # Merge back to main
 cd ../../
 git merge feature-a
 docpath worktree remove feature-a
 ```
+
 
 ### Multi-Agent Collaboration & Matrix
 

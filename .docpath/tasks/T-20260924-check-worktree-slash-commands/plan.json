@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-24T01:11:48.787Z",
+    "updated_at": "2026-09-24T01:11:48.787Z",
+    "content_sha256": "7c11541863e50509620a2928a72969b21b82f12352514ce287ed14f49f6f5f63"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-24T01:11:48.787Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 协议文档梳理对齐：修正 Check 执行表述、升级 Worktree 示例与对齐 Slash Commands",
+      "description": "完成 FR-1: 协议文档梳理对齐：修正 Check 执行表述、升级 Worktree 示例与对齐 Slash Commands，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-386 与任务 T-20260924-check-worktree-slash-commands 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
