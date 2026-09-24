@@ -962,7 +962,12 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
     };
   }
 
-  if (context.structuredMarkdownDrifts.length > 0) {
+  const isExecutingOrLater = Boolean(
+    state?.task_id &&
+    ['executing', 'checking', 'reviewing', 'completed'].includes(state.phase)
+  );
+
+  if (context.structuredMarkdownDrifts.length > 0 && !isExecutingOrLater) {
     const first = context.structuredMarkdownDrifts[0];
     const command = first.file === 'plan.md' ? 'docpath write-plan --stdin' : 'docpath write-spec --stdin';
     const required = Array.from(new Set(context.structuredMarkdownDrifts.flatMap((drift) => [

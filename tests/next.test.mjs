@@ -1118,6 +1118,57 @@ created_at: 2026-05-31
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('does not hijack recommended_command with write-spec/plan when executing phase is active (R-393)', () => {
+    const oldPlan = [
+      '## 执行计划',
+      '',
+      '### S1: Step One',
+      '- **描述**: step 1',
+      '- **验收条件**: pass',
+      '- **依赖**: 无',
+      '',
+      '## Checklist',
+      '- [ ] S1',
+      '',
+    ].join('\n');
+    const editedPlan = oldPlan.replace('step 1', 'edited step 1');
+    const cwd = mkWorkspace({
+      taskId: 'T-NEXT-EXEC',
+      phase: 'executing',
+      gate: 'none',
+      plan: editedPlan,
+    });
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.json'), JSON.stringify({
+      schema_version: 1,
+      kind: 'plan',
+      markdown: oldPlan,
+      generated_at: '2026-05-29T00:00:00.000Z',
+      source: {
+        kind: 'markdown',
+        created_at: '2026-05-29T00:00:00.000Z',
+        updated_at: '2026-05-29T00:00:00.000Z',
+        content_sha256: sha256(oldPlan),
+      },
+      title: 'Step One',
+      steps: [{
+        id: 'S1',
+        name: 'Step One',
+        description: 'step 1',
+        acceptance: 'pass',
+        dependencies: '无',
+        status: 'pending',
+      }],
+    }, null, 2));
+
+    const output = nextAgent(cwd);
+
+    // During executing phase, recommended_command must stay on the actionable execution route (go --step S1), NOT hijacked into write-plan --stdin
+    assert.notEqual(output.recommended_command, 'docpath write-plan --stdin');
+    assert.notEqual(output.recommended_command, 'docpath write-spec --stdin');
+    assert.match(output.recommended_command, /docpath go --step S1|docpath agent enter/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('routes review_pass into journal', () => {
     const cwd = mkWorkspace({
       phase: 'reviewing',
