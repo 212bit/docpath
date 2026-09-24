@@ -16,6 +16,7 @@ import { realpathSync } from 'node:fs';
 import { readFile, readdir, mkdir, copyFile, chmod, stat } from 'node:fs/promises';
 import { exists, writeFileSafe } from '../utils/file.js';
 import { getDocpathPackageVersion } from '../utils/package-info.js';
+import { readProtocolBlocks, renderProtocolBlocks } from '../utils/protocol-blocks.js';
 import {
   type Target,
   type HookMode,
@@ -653,6 +654,38 @@ async function installProtocolFile(
   let content = await readFile(tplPath, 'utf-8');
   content = content.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
   const isCustomizable = isLocallyCustomizableInstallAsset({ path: filename });
+
+  if (await exists(filePath)) {
+    const existing = await readFile(filePath, 'utf-8');
+    if (existing === content) {
+      console.log(`✓  ${filename} 已是最新`);
+      return;
+    }
+
+    // ── 智能无损更新（Smart Block Update）──
+    // 若本地文件包含协议注入块标记，优先以无损方式合并最新共享契约块，保留本地项目绑定与定制
+    if (isCustomizable && existing.includes('<!-- docpath:block ')) {
+      try {
+        const templatesDir = await resolveTemplate();
+        const blocksDir = join(templatesDir, 'protocols', 'blocks');
+        const blocks = await readProtocolBlocks(blocksDir);
+        if (blocks) {
+          const result = renderProtocolBlocks(existing, blocks);
+          if (result.updated.length > 0) {
+            await writeFileSafe(filePath, result.content);
+            console.log(`✅  ${filename} 智能无损更新: 已同步 ${result.updated.length} 个协议块 (${result.updated.join(', ')})，保留项目绑定与本地定制`);
+            return;
+          } else if (result.present.length > 0 && !force) {
+            console.log(`✓  ${filename} 已是最新（协议注入块已对齐，保留本地定制）`);
+            return;
+          }
+        }
+      } catch {
+        // 出错时回退常规 writeManagedFile 逻辑
+      }
+    }
+  }
+
   await writeManagedFile(filePath, content, force, filename, isCustomizable);
 }
 

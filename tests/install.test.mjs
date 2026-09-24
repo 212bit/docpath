@@ -891,6 +891,43 @@ describe('install agent adapters', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('install performs smart block update on AGENTS.md preserving project binding and custom sections', () => {
+    const cwd = mkWorkspace();
+    // 1. Initial clean install
+    run(`install --cwd ${cwd} --target universal`, cwd);
+
+    // 2. Simulate project (e.g. ferrum) with custom project binding and outdated lifecycle block
+    const agentsPath = join(cwd, 'AGENTS.md');
+    const customContent = [
+      '# DocPath Agent Protocol',
+      '',
+      '<!-- docpath:block lifecycle-commands -->',
+      'old lifecycle content here',
+      '<!-- /docpath:block -->',
+      '',
+      '## Custom Ferrum Section',
+      'Custom project notes here.',
+      '',
+      '## Linked Project',
+      'Linked to: **ferrum**',
+      '',
+    ].join('\n');
+    writeFileSync(agentsPath, customContent);
+
+    // 3. Run install (even without --force)
+    const out = run(`install --cwd ${cwd} --target universal`, cwd);
+    const updated = readFileSync(agentsPath, 'utf-8');
+
+    // 4. Verify blocks were updated to latest while preserving custom sections and project binding
+    assert.match(out, /AGENTS\.md 智能无损更新/);
+    assert.match(updated, /docpath quick/);
+    assert.match(updated, /docpath start/);
+    assert.match(updated, /## Custom Ferrum Section/);
+    assert.match(updated, /Linked to: \*\*ferrum\*\*/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
 
 describe('install real-world fixes (R-311/R-312, SynapBuddy 实测)', () => {
