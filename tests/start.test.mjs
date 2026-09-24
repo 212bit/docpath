@@ -102,5 +102,22 @@ describe('docpath start: 一键冷启动任务', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('start "<title>" 默认免 --draft 参数即可直接拉起新任务', () => {
+    const cwd = mkRepo();
+    try {
+      // 执行 docpath start "<title>"（完全不传递 --draft）
+      const out = run(['start', '纯标题完全免draft参数启动任务'], cwd);
+      assert.match(out, /检测到任务标题 "纯标题完全免draft参数启动任务"，自动创建 Backlog 并一键拉起/);
+      assert.match(out, /已拉起并启动步骤 S1/);
+
+      // 验证状态机正常处于 executing
+      const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+      assert.equal(state.phase, 'executing');
+      assert.equal(state.current_step, 'S1');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
 

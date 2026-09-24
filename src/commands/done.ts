@@ -66,14 +66,14 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
     approveReview: options.approveReview,
     note: options.note,
     session: session.sessionId,
-    noDirtyReminder: options.noDirtyReminder,
+    noDirtyReminder: options.noDirtyReminder || options.commit,
     testScope: options.testScope,
     allTests: options.allTests,
     fix: options.fix,
   });
 
   const { nonDocPathFiles, count } = detectUncommittedNonDocPathFiles(cwd);
-  if (count > 0 && !options.noDirtyReminder) {
+  if (count > 0 && !options.noDirtyReminder && !options.commit) {
     console.warn(renderCommitReminder(nonDocPathFiles));
   }
 

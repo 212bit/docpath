@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-done-commit-start-draft-next","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 生命周期体验打磨：清理 Done Commit 冗余告警、Start 标题免传 Draft 旗标与 Next 路由现代对齐","timestamp":"2026-09-24T00:45:32.210Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-done-commit-start-draft-next","step":"S1","status":"done","context":"agent-done: S1","timestamp":"2026-09-24T00:46:46.087Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-done-commit-start-draft-next","step":"check","status":"done","context":"质量检查通过 (13 项)","timestamp":"2026-09-24T00:48:15.938Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-done-commit-start-draft-next","step":"review","status":"done","context":"代码审查: 0 错误, 2 警告, 0 提示","timestamp":"2026-09-24T00:48:16.873Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-done-commit-start-draft-next","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-24T00:48:18.232Z"}

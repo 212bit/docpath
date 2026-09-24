@@ -44,8 +44,10 @@ export async function startCommand(options: StartOptions): Promise<void> {
     }
   }
 
+  let isTitle = false;
   // 如果传入的不是 R-xxx 格式，则判定为按标题一键拉起新任务（自动捕获 Backlog）
   if (!/^R-\d+$/i.test(targetId)) {
+    isTitle = true;
     const title = targetId;
     console.log(`💡  检测到任务标题 "${title}"，自动创建 Backlog 并一键拉起...\n`);
     const item = await createBacklogItem(cwd, {
@@ -66,12 +68,12 @@ export async function startCommand(options: StartOptions): Promise<void> {
 
   console.log(`🚀  docpath start: 一键拉起任务并启动执行 (${targetId})\n`);
 
-  // 步骤 1: promote 需求
+  // 步骤 1: promote 需求（标题直启默认免 --draft）
   const promoteOptions = {
     cwd,
     action: 'promote' as const,
     id: targetId,
-    draft: options.draft,
+    draft: options.draft ?? (isTitle ? true : undefined),
     agent: options.agent,
     adopt,
   };
