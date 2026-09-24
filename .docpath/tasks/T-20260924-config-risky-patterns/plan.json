@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-24T00:58:30.530Z",
+    "updated_at": "2026-09-24T00:58:30.530Z",
+    "content_sha256": "510176094d4ea15a89194dcbf8fd71381661ea142539f3e86a8effb52e11d08b"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-24T00:58:30.530Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 测试范围通用化解耦：支持多语言构建配置感知、Config Risky Patterns 与通用测试关联推导",
+      "description": "完成 FR-1: 测试范围通用化解耦：支持多语言构建配置感知、Config Risky Patterns 与通用测试关联推导，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-385 与任务 T-20260924-config-risky-patterns 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

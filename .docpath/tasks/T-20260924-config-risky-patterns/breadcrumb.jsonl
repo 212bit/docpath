@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-config-risky-patterns","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 测试范围通用化解耦：支持多语言构建配置感知、Config Risky Patterns 与通用测试关联推导","timestamp":"2026-09-24T00:56:27.867Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-config-risky-patterns","step":"S1","status":"done","context":"agent-done: S1","timestamp":"2026-09-24T00:58:30.533Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-config-risky-patterns","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-24T01:00:09.697Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-config-risky-patterns","step":"review","status":"done","context":"代码审查: 0 错误, 3 警告, 0 提示","timestamp":"2026-09-24T01:00:14.993Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260924-config-risky-patterns","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-24T01:00:16.416Z"}

@@ -83,6 +83,8 @@ export interface CheckConfig {
   command?: string;
   /** 多条自定义 check 命令列表 */
   commands?: Array<string | CheckCommandItem>;
+  /** 触发全量测试/回归的高危核心路径模式（glob 列表） */
+  risky_patterns?: string[];
 }
 
 /**

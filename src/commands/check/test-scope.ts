@@ -23,9 +23,34 @@ import { execFileSync } from 'child_process';
 import { availableParallelism } from 'os';
 import { minimatch } from 'minimatch';
 
-/** 影响面减载的安全回落模式：改动触及这些路径时强制全量，绝不因减载漏测核心。 */
+/**
+ * 通用多语言核心高危回落模式：
+ * 1. 通用多语言包管理、构建与依赖锁文件（任何语言项目改动均须全量回归）
+ * 2. CI/CD 与基础设施配置
+ * 3. DocPath 调度内核路径
+ */
 export const TEST_SCOPE_RISKY_PATTERNS: Array<{ pattern: string; reason: string }> = [
-  // 核心生命周期调度器与收口门禁（改动必须全量回归）
+  // ── 通用多语言构建、包管理与依赖锁 ──
+  { pattern: 'package.json', reason: 'Node 包配置被改' },
+  { pattern: 'pnpm-lock.yaml', reason: 'Node 依赖锁被改' },
+  { pattern: 'package-lock.json', reason: 'Node 依赖锁被改' },
+  { pattern: 'yarn.lock', reason: 'Node 依赖锁被改' },
+  { pattern: 'tsconfig*.json', reason: 'TypeScript 编译配置被改' },
+  { pattern: 'go.mod', reason: 'Go 依赖配置被改' },
+  { pattern: 'go.sum', reason: 'Go 依赖锁被改' },
+  { pattern: 'Cargo.toml', reason: 'Rust 包配置被改' },
+  { pattern: 'Cargo.lock', reason: 'Rust 依赖锁被改' },
+  { pattern: 'pyproject.toml', reason: 'Python 项目配置被改' },
+  { pattern: 'requirements*.txt', reason: 'Python 依赖被改' },
+  { pattern: 'Pipfile*', reason: 'Python 依赖被改' },
+  { pattern: 'pom.xml', reason: 'Java Maven 配置被改' },
+  { pattern: 'build.gradle*', reason: 'Java Gradle 配置被改' },
+  { pattern: 'Makefile', reason: 'Makefile 构建配置被改' },
+  { pattern: 'justfile', reason: 'Justfile 构建配置被改' },
+  { pattern: 'Dockerfile*', reason: 'Docker 镜像配置被改' },
+  { pattern: '.github/**', reason: 'CI 工作流配置被改' },
+
+  // ── 核心生命周期调度器与收口门禁（DocPath 核心调度） ──
   { pattern: 'src/commands/agent.ts', reason: 'agent 核心调度被改，测试必须全量' },
   { pattern: 'src/commands/check.ts', reason: 'check 核心调度被改，测试必须全量' },
   { pattern: 'src/commands/done.ts', reason: 'done 核心收口被改，测试必须全量' },
@@ -40,9 +65,6 @@ export const TEST_SCOPE_RISKY_PATTERNS: Array<{ pattern: string; reason: string 
   { pattern: 'src/utils/task-files*.ts', reason: '任务文件契约被改' },
   { pattern: 'src/utils/doc-parser*.ts', reason: '文档解析被改' },
   { pattern: 'src/utils/evidence*.ts', reason: '证据持久化被多命令共享' },
-  { pattern: 'package.json', reason: '包契约被改' },
-  { pattern: 'pnpm-lock.yaml', reason: '依赖锁文件被改' },
-  { pattern: 'tsconfig.json', reason: '编译配置被改' },
 ];
 
 /** 变更文件数上限：超过则回落全量（减载场景多为 <5 文件） */
@@ -53,15 +75,6 @@ export const TEST_SCOPE_MAX_SELECTED = 24;
 
 /** 影响面减载 vs 全量的收益阈值：只有当相关测试占全量比率 < 该值才值得减载。 */
 export const TEST_SCOPE_RATIO_THRESHOLD = 0.75;
-
-/** 按文件基名 / 前缀推断测试文件所属模块的前缀集（粗匹配，覆盖本仓库命名惯例）。 */
-const TEST_FILE_PREFIX_KEYS = [
-  'check', 'backlog', 'next', 'write', 'install', 'worktree', 'dirty',
-  'agent', 'changes', 'journal', 'docs', 'task', 'breadcrumb', 'plan',
-  'review', 'verify', 'quick', 'commit', 'go', 'milestone', 'project',
-  'budget', 'context', 'render', 'trace', 'templates', 'recovery',
-  'gc', 'learn', 'status', 'init', 'step-pass',
-];
 
 /** 获取当时 git 改动的源文件（staged + unstaged + untracked）。非 git 仓返回 null。 */
 export function getChangedSourceFiles(cwd: string): string[] | null {
@@ -95,34 +108,69 @@ export function computeTestConcurrency(): number {
   }
 }
 
-/** 判断改动文件是否触及安全回落的核心路径。 */
-export function touchesRiskyPath(changedFile: string): boolean {
+/** 判断改动文件是否触及安全回落的核心路径（支持项目自定义 patterns）。 */
+export function touchesRiskyPath(changedFile: string, customPatterns?: string[]): boolean {
   const normalized = changedFile.replace(/^\.\//, '');
+  if (customPatterns && customPatterns.length > 0) {
+    if (customPatterns.some((pattern) => minimatch(normalized, pattern, { dot: true }))) {
+      return true;
+    }
+  }
   return TEST_SCOPE_RISKY_PATTERNS.some(({ pattern }) => minimatch(normalized, pattern, { dot: true }));
 }
 
-/** 判断一个测试文件是否与某改动文件相关（基名 / 前缀 / 目录粗匹配）。 */
+/** 清理测试文件名中的通用测试后缀与语言扩展，提取纯模块基名。 */
+function normalizeTestBaseName(name: string): string {
+  return basename(name)
+    .replace(/\.(test|spec)\.(mjs|ts|js|jsx|tsx|mts|cts)$/i, '')
+    .replace(/(_test|Test|Tests)\.(go|py|rs|java|cpp|c|php)$/i, '')
+    .replace(/^test_([a-zA-Z0-9_\-]+)\.py$/i, '$1');
+}
+
+/** 清理源码文件名中的语言扩展，提取纯模块基名。 */
+function normalizeSourceBaseName(name: string): string {
+  return basename(name)
+    .replace(/\.(ts|mts|cts|js|mjs|cjs|jsx|tsx|go|py|rs|java|cpp|c|h|hpp|php)$/i, '');
+}
+
+/**
+ * 判断一个测试文件是否与某改动文件相关（多语言通用推导：基名一致 / 动态前缀 / 镜像子目录）。
+ */
 export function testRelatesToFile(testFile: string, changedFile: string): boolean {
-  const t = basename(testFile).replace(/\.test\.mjs$/, '').replace(/\.test\.ts$/, '');
-  const c = basename(changedFile).replace(/\.ts$/, '').replace(/\.mts$/, '').replace(/\.js$/, '').replace(/\.mjs$/, '');
-  if (t === c) return true; // test-<x>.test vs <x>
-  for (const key of TEST_FILE_PREFIX_KEYS) {
-    if (t.startsWith(`${key}-`) && c.startsWith(key)) return true;
-  }
-  // 目录命名（tests/<module>/）与改动文件所在目录粗匹配
-  const tDir = dirname(testFile).split(sep).filter(Boolean).join('/');
-  const cDir = dirname(changedFile).split(sep).filter(Boolean).join('/');
-  return tDir !== '.' && cDir !== '.' && (tDir === cDir);
+  const t = normalizeTestBaseName(testFile).toLowerCase();
+  const c = normalizeSourceBaseName(changedFile).toLowerCase();
+
+  // 1. 基名完全一致（例如 auth.ts ↔ auth.test.ts / auth_test.go / test_auth.py）
+  if (t === c) return true;
+
+  // 2. 前缀包含（例如 user ↔ user-auth.test.ts 或 auth-service.ts ↔ auth.test.ts）
+  if (t.startsWith(`${c}-`) || t.startsWith(`${c}_`)) return true;
+  if (c.startsWith(`${t}-`) || c.startsWith(`${t}_`)) return true;
+
+  // 3. 动态首词词元匹配（例如 check-cache.ts ↔ check-runner.test.ts 共享 check 词元）
+  const tToken = t.split(/[-_.]/)[0];
+  const cToken = c.split(/[-_.]/)[0];
+  if (tToken && cToken && tToken.length >= 3 && tToken === cToken) return true;
+
+  // 4. 目录命名（tests/<module>/ 或 src/<module>/）与改动文件所在目录镜像匹配
+  const tDir = dirname(testFile).split(sep).filter(Boolean).join('/').toLowerCase().replace(/^(tests?|src|pkg|internal)\//, '');
+  const cDir = dirname(changedFile).split(sep).filter(Boolean).join('/').toLowerCase().replace(/^(tests?|src|pkg|internal)\//, '');
+  return tDir !== '.' && cDir !== '.' && (tDir === cDir || tDir.endsWith(cDir) || cDir.endsWith(tDir));
 }
 
 /**
  * 影响面减载：给定改动文件，选出"可能受影响"的测试文件相对路径子集。
  * 返回 null 表示应回落全量（改动触及核心 / 超规模 / 无可用粒度）。
  */
-export function selectTouchedTestFiles(cwd: string, changedFiles: string[], testFiles: string[]): string[] | null {
+export function selectTouchedTestFiles(
+  cwd: string,
+  changedFiles: string[],
+  testFiles: string[],
+  customRiskyPatterns?: string[],
+): string[] | null {
   if (changedFiles.length === 0) return testFiles; // 无改动 → 无减载信息，回全量
   if (changedFiles.length > TEST_SCOPE_MAX_FILES) return null; // 改动过多，减载无益
-  if (changedFiles.some(touchesRiskyPath)) return null; // 触及核心 → 强制全量
+  if (changedFiles.some((f) => touchesRiskyPath(f, customRiskyPatterns))) return null; // 触及核心 → 强制全量
 
   const relevant = testFiles.filter((tf) => changedFiles.some((cf) => testRelatesToFile(tf, cf)));
   if (relevant.length === 0) return null; // 匹配不到 → 回全量，宁可慢不漏
@@ -187,7 +235,7 @@ export function listTestFiles(cwd: string): string[] {
 /** 解析受控测试命令。返回 { command, scope: 'full'|'touched', matchedFiles, reusedReason? }。 */
 export function resolveTestCommand(
   cwd: string,
-  opts: { testScope?: 'full' | 'touched'; concurrency?: number; isolation?: boolean } = {},
+  opts: { testScope?: 'full' | 'touched'; concurrency?: number; isolation?: boolean; customRiskyPatterns?: string[] } = {},
 ): { command: string; scope: 'full' | 'touched'; matchedFiles: string[] } {
   const concurrency = opts.concurrency ?? computeTestConcurrency();
   const isolation = opts.isolation ?? true;
@@ -205,7 +253,7 @@ export function resolveTestCommand(
     const cmd = buildNodeTestCommand(cwd, [], { concurrency, isolation });
     return { command: cmd, scope: 'full', matchedFiles: [] };
   }
-  const selected = selectTouchedTestFiles(cwd, changedFiles, testFiles);
+  const selected = selectTouchedTestFiles(cwd, changedFiles, testFiles, opts.customRiskyPatterns);
   if (selected === null) {
     const cmd = buildNodeTestCommand(cwd, [], { concurrency, isolation });
     return { command: cmd, scope: 'full', matchedFiles: [] };

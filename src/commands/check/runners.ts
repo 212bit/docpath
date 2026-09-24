@@ -476,7 +476,8 @@ export async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeC
       // R-3xx（性能任务）：默认启用基于改动影响面的增量测试减载（宁慢不放水，触及核心自动回落全量）。
       // 显式 --all / --test-scope=full 时执行受控并发全量测试。
       const testScope = options.allTests ? 'full' : (options.testScope ?? 'touched');
-      const scope = resolveTestCommand(cwd, { testScope });
+      const customRiskyPatterns = await readCheckRiskyPatterns(cwd);
+      const scope = resolveTestCommand(cwd, { testScope, customRiskyPatterns });
       const allTestCount = listTestFiles(cwd).length;
       const name = scope.scope === 'touched'
         ? `测试（影响面 ${scope.matchedFiles.length}/${allTestCount}）`
@@ -503,7 +504,7 @@ export async function runPackageScriptChecks(cwd: string, pkgPath: string, nodeC
   return results;
 }
 
-import { readCheckConfig } from '../../utils/config.js';
+import { readCheckConfig, readCheckRiskyPatterns } from '../../utils/config.js';
 import type { CheckCommandItem } from '../../types/config.js';
 
 export function detectMakefileCheck(cwd: string): { tool: string; targets: Set<string> } | null {

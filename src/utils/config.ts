@@ -109,3 +109,14 @@ export async function readCheckConfig(cwd: string): Promise<DocPathConfig['check
   return config.check ?? null;
 }
 
+/**
+ * 读取 check 高危全量回归路径模式（config.yaml 中的 check.risky_patterns）
+ */
+export async function readCheckRiskyPatterns(cwd: string): Promise<string[]> {
+  const checkConfig = await readCheckConfig(cwd);
+  if (Array.isArray(checkConfig?.risky_patterns)) {
+    return checkConfig.risky_patterns.filter((p): p is string => typeof p === 'string' && p.trim().length > 0).map(p => p.trim());
+  }
+  return [];
+}
+

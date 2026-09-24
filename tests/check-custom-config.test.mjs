@@ -135,4 +135,23 @@ describe('docpath check custom config and makefile integration', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('reads check.risky_patterns from .docpath/config.yaml', async () => {
+    const cwd = mkWorkspace();
+    writeFileSync(join(cwd, '.docpath', 'config.yaml'), [
+      'project:',
+      '  name: check-cfg-test',
+      'check:',
+      '  risky_patterns:',
+      '    - "pkg/core/**"',
+      '    - "api/v1/**"',
+      '',
+    ].join('\n'));
+
+    const { readCheckRiskyPatterns } = await import('../dist/utils/config.js');
+    const patterns = await readCheckRiskyPatterns(cwd);
+    assert.deepEqual(patterns, ['pkg/core/**', 'api/v1/**']);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
