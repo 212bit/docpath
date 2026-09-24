@@ -19,16 +19,44 @@ import { join } from 'node:path';
 import type { CheckResult } from './types.js';
 import { readLastCheckEvidence } from '../../utils/workspace-evidence.js';
 
-/** 参与 digest 的代码范围：变更这些路径才视为「代码可能变了」。 */
-export const CHECK_CODE_SCOPE_PATHS = [
+/** 通用多语言默认源码与构建配置路径 */
+export const DEFAULT_CHECK_CODE_SCOPE_PATHS = [
+  // ── 通用源码与测试目录 ──
   'src',
+  'pkg',
+  'cmd',
+  'internal',
+  'api',
+  'app',
+  'crates',
+  'lib',
   'tests',
+  'test',
   'scripts',
+
+  // ── 通用多语言包管理、构建与依赖锁 ──
   'package.json',
   'pnpm-lock.yaml',
-  'tsconfig.json',
-  'tsup.config.ts',
+  'package-lock.json',
+  'yarn.lock',
+  'tsconfig*.json',
+  'tsup.config.*',
+  'go.mod',
+  'go.sum',
+  'Cargo.toml',
+  'Cargo.lock',
+  'pyproject.toml',
+  'requirements*.txt',
+  'Pipfile*',
+  'pom.xml',
+  'build.gradle*',
+  'Makefile',
+  'makefile',
+  'justfile',
+  'Dockerfile*',
 ];
+
+export const CHECK_CODE_SCOPE_PATHS = DEFAULT_CHECK_CODE_SCOPE_PATHS;
 
 function runGitOptional(cwd: string, args: string[]): string | null {
   try {
@@ -46,9 +74,12 @@ function runGitOptional(cwd: string, args: string[]): string | null {
  * 不付第二次全量。文件增删改任何一字节都会改变 digest。
  * 非 git 仓或 git 失败返回 null（调用方回落全量）。
  */
-export function computeCodeScopeDigest(cwd: string): string | null {
+export function computeCodeScopeDigest(cwd: string, customScopePaths?: string[]): string | null {
+  const scopePaths = (customScopePaths && customScopePaths.length > 0)
+    ? Array.from(new Set([...customScopePaths, ...DEFAULT_CHECK_CODE_SCOPE_PATHS]))
+    : DEFAULT_CHECK_CODE_SCOPE_PATHS;
   const listing = runGitOptional(cwd, [
-    'ls-files', '-co', '--exclude-standard', '--', ...CHECK_CODE_SCOPE_PATHS,
+    'ls-files', '-co', '--exclude-standard', '--', ...scopePaths,
   ]);
   if (listing === null) return null;
   const files = listing.split('\n').filter(Boolean).sort();
@@ -64,14 +95,19 @@ export function computeCodeScopeDigest(cwd: string): string | null {
   return hash.digest('hex');
 }
 
+
 const REUSABLE_CATEGORIES = new Set(['compile', 'test', 'lint']);
 
 /**
  * 尝试复用上次绿色 check 的重 runner 判定。
  * 返回 null 表示不可复用（调用方执行全量 runProjectChecks）。
  */
-export async function tryReuseCachedHeavyChecks(docpathDir: string, cwd: string): Promise<CheckResult[] | null> {
-  const digest = computeCodeScopeDigest(cwd);
+export async function tryReuseCachedHeavyChecks(
+  docpathDir: string,
+  cwd: string,
+  customScopePaths?: string[],
+): Promise<CheckResult[] | null> {
+  const digest = computeCodeScopeDigest(cwd, customScopePaths);
   if (!digest) return null;
 
   let evidence = null;

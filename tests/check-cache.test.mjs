@@ -105,7 +105,48 @@ describe('check scope cache (R-331)', () => {
         rmSync(cwd, { recursive: true, force: true });
       }
     });
+
+    it('detects changes in multi-language directories and manifests by default', () => {
+      const cwd = mkWorkspace();
+      try {
+        mkdirSync(join(cwd, 'pkg', 'service'), { recursive: true });
+        writeFileSync(join(cwd, 'pkg', 'service', 'service.go'), 'package service\n');
+        writeFileSync(join(cwd, 'go.mod'), 'module example.com/test\n');
+        git(cwd, ['add', '.']);
+        git(cwd, ['commit', '-m', 'add go files']);
+
+        const before = computeCodeScopeDigest(cwd);
+        appendFileSync(join(cwd, 'pkg', 'service', 'service.go'), '// update\n');
+        assert.notEqual(before, computeCodeScopeDigest(cwd), 'pkg/ directory change should invalidate digest');
+
+        git(cwd, ['add', '.']);
+        git(cwd, ['commit', '-m', 'update go file']);
+        const beforeMod = computeCodeScopeDigest(cwd);
+        appendFileSync(join(cwd, 'go.mod'), '// comment\n');
+        assert.notEqual(beforeMod, computeCodeScopeDigest(cwd), 'go.mod change should invalidate digest');
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+
+    it('supports custom code_scope_paths from configuration', () => {
+      const cwd = mkWorkspace();
+      try {
+        mkdirSync(join(cwd, 'custom_contracts'), { recursive: true });
+        writeFileSync(join(cwd, 'custom_contracts', 'schema.proto'), 'syntax = "proto3";\n');
+        git(cwd, ['add', '.']);
+        git(cwd, ['commit', '-m', 'add proto']);
+
+        const customScope = ['custom_contracts/**'];
+        const before = computeCodeScopeDigest(cwd, customScope);
+        appendFileSync(join(cwd, 'custom_contracts', 'schema.proto'), '// update proto\n');
+        assert.notEqual(before, computeCodeScopeDigest(cwd, customScope), 'custom scope path change should alter digest');
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
   });
+
 
   describe('end-to-end reuse', () => {
     it('full check primes digest, doc-only change hits cache, scope change falls back to full', () => {

@@ -85,6 +85,8 @@ export interface CheckConfig {
   commands?: Array<string | CheckCommandItem>;
   /** 触发全量测试/回归的高危核心路径模式（glob 列表） */
   risky_patterns?: string[];
+  /** 参与代码范围指纹（scope digest）计算的源码与配置目录/文件列表 */
+  code_scope_paths?: string[];
 }
 
 /**

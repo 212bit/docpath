@@ -350,7 +350,9 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     let cachedHeavy: CheckResult[] | null = null;
     if (!options.lite && !options.noCache) {
       const { tryReuseCachedHeavyChecks } = await import('./check/cache.js');
-      cachedHeavy = await tryReuseCachedHeavyChecks(docpathDir, cwd);
+      const { readCheckCodeScopePaths } = await import('../utils/config.js');
+      const customScopePaths = await readCheckCodeScopePaths(cwd);
+      cachedHeavy = await tryReuseCachedHeavyChecks(docpathDir, cwd, customScopePaths);
     }
     if (cachedHeavy && cachedHeavy.length > 0) {
       cacheReused = true;

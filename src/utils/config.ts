@@ -120,3 +120,14 @@ export async function readCheckRiskyPatterns(cwd: string): Promise<string[]> {
   return [];
 }
 
+/**
+ * 读取 check 代码范围指纹路径配置（config.yaml 中的 check.code_scope_paths）
+ */
+export async function readCheckCodeScopePaths(cwd: string): Promise<string[]> {
+  const checkConfig = await readCheckConfig(cwd);
+  if (Array.isArray(checkConfig?.code_scope_paths)) {
+    return checkConfig.code_scope_paths.filter((p): p is string => typeof p === 'string' && p.trim().length > 0).map(p => p.trim());
+  }
+  return [];
+}
+
