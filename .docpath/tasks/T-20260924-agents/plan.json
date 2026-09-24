@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-24T01:17:48.805Z",
+    "updated_at": "2026-09-24T01:17:48.805Z",
+    "content_sha256": "8e605f1a5ddcf3fae22e3468038f852624b3179efda5db7c435f346c0170387b"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-24T01:17:48.805Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 AGENTS协议瘦身与降噪：高频热规则聚焦、去重收敛与冷知识文档化下沉",
+      "description": "完成 FR-1: AGENTS协议瘦身与降噪：高频热规则聚焦、去重收敛与冷知识文档化下沉，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-387 与任务 T-20260924-agents 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
