@@ -888,8 +888,22 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
   if (specSummary?.title) {
     keywords.push(...specSummary.title.split(/[\s_\-–—,，。：:（）\(\)\[\]]+/u).filter((t) => t.length > 1));
   }
+  if (specSummary?.requirements) {
+    for (const req of specSummary.requirements) {
+      keywords.push(...req.split(/[\s_\-–—,，。：:（）\(\)\[\]]+/u).filter((t) => t.length > 1));
+    }
+  }
+  if (state?.current_step) {
+    keywords.push(...state.current_step.split(/[\s_\-–—,，。：:（）\(\)\[\]]+/u).filter((t) => t.length > 1));
+  }
+  const taskFiles: string[] = Array.isArray(dirtyWorktree?.files) ? dirtyWorktree.files : [];
   const [recentDecisions] = await Promise.all([
-    loadRecentDecisions(docpathDir, 2, keywords),
+    loadRecentDecisions(docpathDir, {
+      count: 2,
+      queryKeywords: Array.from(new Set(keywords)),
+      files: taskFiles,
+      strictRelevance: true,
+    }),
   ]);
 
   return {

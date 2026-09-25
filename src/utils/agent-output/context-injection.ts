@@ -16,11 +16,22 @@ export interface DecisionEntry {
   category: string;
   conclusion: string;
   createdAt: string;
+  relatedFiles?: string[];
+  context?: string;
+  score?: number;
 }
 
 export interface SpecSummary {
   title: string;
   requirements: string[];
+}
+
+export interface LoadDecisionsOptions {
+  count?: number;
+  queryKeywords?: string[];
+  files?: string[];
+  strictRelevance?: boolean;
+  compact?: boolean;
 }
 
 /**
@@ -30,8 +41,11 @@ export interface SpecSummary {
 export function formatActiveGuardrails(decisions: DecisionEntry[]): string[] {
   if (!decisions || decisions.length === 0) return [];
   return decisions.map((d) => {
-    const raw = (d.conclusion || '').trim();
+    let raw = (d.conclusion || '').trim();
     if (!raw) return `${d.id}: (无详细结论)`;
+
+    // 清理常见前缀
+    raw = raw.replace(/^-\s*决策理由:\s*/, '').trim();
 
     // 如果已经包含指示标签
     if (/^[【\[].+[】\]]/.test(raw)) {
@@ -63,16 +77,83 @@ const TRANSIENT_CATEGORIES = new Set([
 
 /**
  * 判断一条决策是否属于具备长效指引价值的「实质性架构/设计决策」。
- * 彻底过滤掉内部门禁风险升级（如 check 风险复评升级 R1→R2）和单次参数记录（如 跳过 review、方案 B）。
+ * 彻底过滤掉内部门禁风险升级、单次参数记录和无意义模板占位符。
  */
-export function isSubstantiveDecision(d: { category?: string; decision?: string }): boolean {
+export function isSubstantiveDecision(d: { category?: string; decision?: string; context?: string }): boolean {
   if (!d.decision || typeof d.decision !== 'string') return false;
   const raw = d.decision.trim();
   if (raw.length < 6) return false;
   if (/^(?:方案\s*[A-Z]|跳过\s*(?:check|review|tests?))$/i.test(raw)) return false;
+  if (/^(?:待补充|无|暂无|none|n\/a|tbd)$/i.test(raw)) return false;
   if (d.category && TRANSIENT_CATEGORIES.has(d.category)) return false;
   if (d.category && (d.category.startsWith('risk.') || d.category.startsWith('policy.'))) return false;
+  // 过滤无实质约束的通用模板占位符
+  if (raw.includes('满足 backlog 声明的全部验收条件') && raw.includes('无额外依赖风险')) return false;
+  if (raw.startsWith('- 决策理由: 满足 backlog 声明的全部验收条件')) return false;
   return true;
+}
+
+// ── 语义域映射 ──
+const DOMAIN_KEYWORDS: Record<string, string[]> = {
+  git: ['git', 'commit', 'branch', 'stash', 'staging', 'worktree'],
+  check: ['check', 'gate', 'review', 'quality', 'exempt', 'linter', 'pom.xml'],
+  test: ['pytest', 'cargo test', 'jest', 'vitest', 'unit-test', 'monorepo'],
+  backlog: ['backlog', 'requirement', 'promote', 'rfp'],
+  task: ['task', 'switch', 'reset', 'abort', 'drift'],
+  rules: ['rule', 'architecture', 'style', 'guardrail'],
+};
+
+function scoreDecisionRelevance(
+  decision: DecisionEntry,
+  keywords: string[],
+  files: string[],
+): number {
+  let score = 0;
+  const decisionText = `${decision.id} ${decision.taskId} ${decision.category} ${decision.conclusion} ${decision.context || ''}`.toLowerCase();
+  const decisionFiles = (decision.relatedFiles || []).map((f) => f.toLowerCase());
+
+  // 1. 关键词直接匹配
+  for (const kw of keywords) {
+    const k = kw.toLowerCase().trim();
+    if (!k || k.length < 2) continue;
+    if (decisionText.includes(k)) {
+      score += 2.0;
+    }
+  }
+
+  // 2. 文件与模块关联度匹配
+  if (files.length > 0) {
+    for (const f of files) {
+      const lowerFile = f.toLowerCase();
+      // 精确文件命中
+      if (decisionFiles.some((df) => df.includes(lowerFile) || lowerFile.includes(df))) {
+        score += 5.0;
+      }
+      // 模块/路径词根命中（如 git-staging, check, worktree, pom.xml）
+      const basename = lowerFile.split('/').pop()?.toLowerCase() || '';
+      const baseStem = basename.replace(/\.[a-z0-9]+$/i, '');
+      if (basename.length >= 4 && decisionText.includes(basename)) {
+        score += 4.0;
+      } else if (baseStem.length >= 4 && decisionText.includes(baseStem)) {
+        score += 2.5;
+      }
+    }
+  }
+
+  // 3. 语义域精准匹配
+  for (const [domain, domainWords] of Object.entries(DOMAIN_KEYWORDS)) {
+    const queryMatchesDomain = domainWords.some((w) =>
+      keywords.some((kw) => kw.toLowerCase() === w || kw.toLowerCase().includes(w))
+    );
+    if (queryMatchesDomain) {
+      const decisionMatchesDomain = domainWords.some((w) => decisionText.includes(w));
+      if (decisionMatchesDomain) {
+        score += 1.5;
+      }
+    }
+  }
+
+  return score;
 }
 
 // ── Context Injection 加载函数 ──
@@ -82,13 +163,23 @@ const DECISIONS_RECENT_COUNT = 2;
 
 /**
  * 从 decisions.jsonl 读取与当前上下文相关或最近的 N 条决策记录。
- * 文件按追加顺序写入，尾部是最新记录。若提供 queryKeywords 则按相关性优先排序。
+ * 支持多维相关性打分（关键词、文件关联、领域同义词）与动态剪裁。
  */
 export async function loadRecentDecisions(
   docpathDir: string,
-  count: number = DECISIONS_RECENT_COUNT,
+  countOrOptions: number | LoadDecisionsOptions = DECISIONS_RECENT_COUNT,
   queryKeywords?: string[],
+  files?: string[],
 ): Promise<DecisionEntry[]> {
+  const options: LoadDecisionsOptions = typeof countOrOptions === 'number'
+    ? { count: countOrOptions, queryKeywords, files }
+    : { ...countOrOptions };
+
+  const count = options.count ?? DECISIONS_RECENT_COUNT;
+  const keywords = options.queryKeywords || [];
+  const targetFiles = options.files || [];
+  const strictRelevance = options.strictRelevance ?? false;
+
   const jsonlPath = join(docpathDir, 'workspace', 'decisions.jsonl');
   if (!existsSync(jsonlPath)) return [];
 
@@ -107,6 +198,8 @@ export async function loadRecentDecisions(
             category: parsed.category || '',
             conclusion: parsed.decision || '',
             createdAt: parsed.createdAt || '',
+            relatedFiles: Array.isArray(parsed.relatedFiles) ? parsed.relatedFiles : [],
+            context: parsed.context || '',
           });
         }
       } catch {
@@ -114,34 +207,27 @@ export async function loadRecentDecisions(
       }
     }
 
-    if (!queryKeywords || queryKeywords.length === 0) {
+    const hasQuery = (keywords.length > 0) || (targetFiles.length > 0);
+
+    if (!hasQuery) {
       return allDecisions.slice(-count);
     }
 
-    const lowerKeywords = queryKeywords
-      .map((k) => k.toLowerCase().trim())
-      .filter((k) => k.length > 1);
-
-    if (lowerKeywords.length === 0) {
-      return allDecisions.slice(-count);
-    }
-
-    // 计算相关性得分
+    // 计算各决策的相关性打分
     const scored = allDecisions.map((d, index) => {
-      const targetText = `${d.id} ${d.taskId} ${d.category} ${d.conclusion}`.toLowerCase();
-      let matchCount = 0;
-      for (const kw of lowerKeywords) {
-        if (targetText.includes(kw)) {
-          matchCount++;
-        }
-      }
-      return { decision: d, score: matchCount, index };
+      const score = scoreDecisionRelevance(d, keywords, targetFiles);
+      return { decision: { ...d, score }, score, index };
     });
 
     const matched = scored
       .filter((s) => s.score > 0)
       .sort((a, b) => b.score - a.score || b.index - a.index)
       .map((s) => s.decision);
+
+    if (strictRelevance) {
+      // 严格相关模式：只返回得分大于 0 的相关决策，绝不强行补充不相干的旧 ADR 噪音
+      return matched.slice(0, count);
+    }
 
     const result: DecisionEntry[] = [...matched.slice(0, count)];
     if (result.length < count) {

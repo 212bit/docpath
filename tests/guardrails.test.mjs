@@ -101,4 +101,35 @@ describe('isSubstantiveDecision', () => {
       decision: '采用 branch merge-mediated 隔离模型替代 symlink',
     }), true);
   });
+
+  it('filters out boilerplate placeholders and generic non-decisions', () => {
+    assert.equal(isSubstantiveDecision({
+      category: 'architecture',
+      decision: '待补充',
+    }), false);
+    assert.equal(isSubstantiveDecision({
+      category: 'architecture',
+      decision: '- 决策理由: 满足 backlog 声明的全部验收条件，且无额外依赖风险',
+    }), false);
+    assert.equal(isSubstantiveDecision({
+      category: 'architecture',
+      decision: '满足 backlog 声明的全部验收条件，且无额外依赖风险',
+    }), false);
+  });
+
+  it('cleans up - 决策理由: prefix when formatting active guardrails', () => {
+    const decisions = [
+      {
+        id: 'ADR-20260925-015',
+        taskId: 'T-test',
+        category: 'architecture',
+        conclusion: '- 决策理由: 必须在写入 spec 前通过 write-spec 工具校验',
+        createdAt: '2026-09-25T00:00:00.000Z',
+      },
+    ];
+    const result = formatActiveGuardrails(decisions);
+    assert.equal(result.length, 1);
+    assert.equal(result[0], '【必须】必须在写入 spec 前通过 write-spec 工具校验 (ADR-20260925-015)');
+  });
 });
+

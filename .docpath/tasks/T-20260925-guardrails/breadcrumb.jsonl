@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-guardrails","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 实现Guardrails动态相关性剪裁","timestamp":"2026-09-25T14:41:04.040Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-guardrails","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-25T14:43:06.449Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-guardrails","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-25T14:44:42.521Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-guardrails","step":"review","status":"done","context":"代码审查: 0 错误, 4 警告, 0 提示","timestamp":"2026-09-25T14:44:43.683Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-guardrails","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-25T14:44:45.219Z"}

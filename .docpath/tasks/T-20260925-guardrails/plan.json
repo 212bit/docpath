@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-25T14:43:06.454Z",
+    "updated_at": "2026-09-25T14:43:06.454Z",
+    "content_sha256": "01159abd5b86ddfe5dbf571c128fa070a9a54c9c3ae020d12811a8ed3757bf0f"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-25T14:43:06.454Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 实现Guardrails动态相关性剪裁",
+      "description": "完成 FR-1: 实现Guardrails动态相关性剪裁，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-398 与任务 T-20260925-guardrails 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

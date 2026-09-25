@@ -72,4 +72,35 @@ describe('loadRecentDecisions context-relevance injection', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('prioritizes file-matching decisions when target files are provided', async () => {
+    const { cwd, dp } = mkWorkspace();
+    try {
+      const result = await loadRecentDecisions(dp, {
+        count: 1,
+        files: ['pom.xml', 'src/commands/check.ts'],
+        strictRelevance: true,
+      });
+      assert.equal(result.length, 1);
+      assert.equal(result[0].id, 'ADR-003');
+      assert.equal(result[0].conclusion, 'check 接入 Maven 编译检查 pom.xml');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('returns empty array in strictRelevance mode when no decisions match the domain', async () => {
+    const { cwd, dp } = mkWorkspace();
+    try {
+      const result = await loadRecentDecisions(dp, {
+        count: 2,
+        queryKeywords: ['python', 'rust', 'cargo', 'pytest'],
+        files: ['tests/pytest.py'],
+        strictRelevance: true,
+      });
+      assert.equal(result.length, 0);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
