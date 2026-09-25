@@ -48,10 +48,15 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
       });
     });
 
-  cli.command('task <action>', '当前任务管理: abort | reset | reopen | drift | sync')
+  cli.command('task [action] [target] [extra]', '当前任务管理与热切换: abort | reset | reopen | drift | sync | stash | pop | switch | drop | list')
     .option('--cwd <path>', '项目目录')
     .option('--from <source>', 'sync: 同步来源 canonical | current')
-    .action(async (action: string, options: { cwd?: string; from?: 'canonical' | 'current' }) => {
+    .option('-m, --message <text>', 'stash/switch 备注说明')
+    .option('--no-git', '跳过 Git 变更暂存/恢复')
+    .option('--all', 'drop: 丢弃所有暂存')
+    .option('--agent', '输出 Agent 机器视图')
+    .option('--json', '输出 JSON 格式')
+    .action(async (action: string | undefined, target: string | undefined, extra: string | undefined, options: { cwd?: string; from?: 'canonical' | 'current'; message?: string; 'no-git'?: boolean; noGit?: boolean; all?: boolean; agent?: boolean; json?: boolean }) => {
       const normalized = action?.trim().toLowerCase();
       if (normalized === 'drift' || normalized === 'sync') {
         await taskFileSyncCommand({
@@ -63,7 +68,14 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
       }
       await taskCommand({
         cwd: options.cwd || process.cwd(),
-        action,
+        action: normalized,
+        target,
+        extra,
+        message: options.message,
+        noGit: options['no-git'] ?? options.noGit,
+        all: options.all,
+        agent: options.agent,
+        json: options.json,
       });
     });
 

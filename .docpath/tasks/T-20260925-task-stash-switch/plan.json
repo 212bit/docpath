@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-25T14:25:27.246Z",
+    "updated_at": "2026-09-25T14:25:27.246Z",
+    "content_sha256": "d6038b170652d9589ce4db2a1d7ebdb4d95bb3ffb5b5bd8a0b7256513807fda4"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-25T14:25:27.246Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 实现任务热暂存与上下文恢复(task stash/switch)",
+      "description": "完成 FR-1: 实现任务热暂存与上下文恢复(task stash/switch)，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-397 与任务 T-20260925-task-stash-switch 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

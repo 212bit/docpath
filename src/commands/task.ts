@@ -1,5 +1,5 @@
 /**
- * docpath task — 当前任务生命周期管理。
+ * docpath task — 当前任务生命周期管理与上下文热切换。
  */
 
 import { existsSync } from 'node:fs';
@@ -8,6 +8,15 @@ import { join } from 'node:path';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import { listBacklogItems, setBacklogStatus } from '../engine/backlog.js';
+import {
+  dropTaskStash,
+  findMatchingStash,
+  listTaskStashes,
+  popTaskStash,
+  stashTask,
+  type TaskStashMetadata,
+} from '../engine/task-stash.js';
+import { startCommand } from './start.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { mutateCurrentState, readCurrentState, syncCurrentDocument, type CurrentState } from '../utils/workspace.js';
 import {
@@ -21,9 +30,18 @@ import {
   syncActiveTaskFiles,
 } from '../utils/task-files.js';
 
-interface TaskCommandOptions {
+export interface TaskCommandOptions {
   cwd: string;
   action?: string;
+  target?: string;
+  extra?: string;
+  message?: string;
+  withGit?: boolean;
+  noGit?: boolean;
+  all?: boolean;
+  agent?: boolean;
+  json?: boolean;
+  from?: 'canonical' | 'current';
 }
 
 function nowIso(): string {
@@ -149,8 +167,6 @@ async function taskReopen(options: TaskCommandOptions): Promise<void> {
 
 /**
  * R-314: 原 `docpath tasks` 的 drift / sync 实现。
- * `tasks` 命令（R-299 deprecated 兼容转发）删除后，实现下沉到 `task`，
- * 由 `docpath task drift` / `docpath task sync` 直接承载。
  */
 export async function taskFileSyncCommand(options: { cwd: string; action: string; from?: 'canonical' | 'current' }): Promise<void> {
   const { cwd, action } = options;
@@ -226,6 +242,220 @@ export async function taskFileSyncCommand(options: { cwd: string; action: string
   throw new Error(`Unsupported task action: ${action}. Expected drift | sync`);
 }
 
+/**
+ * 暂存当前活跃任务
+ */
+async function taskStashCommand(options: TaskCommandOptions, message?: string): Promise<void> {
+  const withGit = options.noGit ? false : (options.withGit ?? true);
+  const result = await stashTask(options.cwd, {
+    message: message || options.message,
+    withGit,
+  });
+
+  if (options.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  if (options.agent) {
+    const { stringify } = await import('yaml');
+    console.log(stringify({
+      status: 'stashed',
+      stash_id: result.stash.id,
+      task_id: result.stash.taskId,
+      task_title: result.stash.taskTitle,
+      phase: result.stash.phase,
+      current_step: result.stash.currentStep,
+      git_stashed: result.gitStashed,
+      message: result.stash.message ?? null,
+      next_action: '任务已暂存，工作流回到 idle。可运行 docpath start 拉起新任务，或 docpath task pop 恢复。',
+      recommended_command: 'docpath task pop',
+    }));
+    return;
+  }
+
+  console.log(`📦  当前任务已暂存: ${result.stash.taskId} (${result.stash.taskTitle})`);
+  console.log(`   stash_id: ${result.stash.id}`);
+  console.log(`   phase:    ${result.stash.phase} (step: ${result.stash.currentStep})`);
+  if (result.stash.message) {
+    console.log(`   message:  ${result.stash.message}`);
+  }
+  if (result.gitStashed) {
+    console.log(`   git:      已保存未提交变更 (stash ref: ${result.stash.gitStashMessage})`);
+  } else {
+    console.log('   git:      工作区无未提交变更（或已通过 --no-git 跳过）');
+  }
+  console.log('📌  工作流已回到 idle。随时运行 `docpath task pop` 恢复，或 `docpath start` 开启新任务。');
+}
+
+/**
+ * 列出所有暂存任务
+ */
+async function taskStashListCommand(options: TaskCommandOptions): Promise<void> {
+  const stashes = await listTaskStashes(options.cwd);
+
+  if (options.json) {
+    console.log(JSON.stringify({ stashes }, null, 2));
+    return;
+  }
+
+  if (options.agent) {
+    const { stringify } = await import('yaml');
+    console.log(stringify({
+      stashes: stashes.map((s) => ({
+        id: s.id,
+        task_id: s.taskId,
+        task_title: s.taskTitle,
+        phase: s.phase,
+        current_step: s.currentStep,
+        created_at: s.createdAt,
+        git_stashed: !!s.gitStashed,
+        message: s.message ?? null,
+      })),
+      count: stashes.length,
+    }));
+    return;
+  }
+
+  if (stashes.length === 0) {
+    console.log('暂无暂存的任务。');
+    return;
+  }
+
+  console.log(`=== 任务暂存列表 (共 ${stashes.length} 个) ===`);
+  stashes.forEach((s, idx) => {
+    const time = s.createdAt ? s.createdAt.slice(0, 19).replace('T', ' ') : '';
+    const gitTag = s.gitStashed ? ' [git saved]' : '';
+    console.log(`  [${idx + 1}] ${s.id}${gitTag}`);
+    console.log(`      任务: ${s.taskId} — ${s.taskTitle}`);
+    console.log(`      状态: ${s.phase} (${s.currentStep}) | 创建时间: ${time}`);
+    if (s.message) {
+      console.log(`      备注: ${s.message}`);
+    }
+  });
+  console.log('\n💡 提示: 恢复任务请运行 `docpath task pop [id]` 或 `docpath task switch <task_id>`');
+}
+
+/**
+ * 恢复暂存任务
+ */
+async function taskStashPopCommand(options: TaskCommandOptions, query?: string): Promise<void> {
+  const withGit = options.noGit ? false : (options.withGit ?? true);
+  const result = await popTaskStash(options.cwd, query, { withGit });
+
+  if (options.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  if (options.agent) {
+    const { stringify } = await import('yaml');
+    console.log(stringify({
+      status: 'restored',
+      task_id: result.stash.taskId,
+      task_title: result.stash.taskTitle,
+      phase: result.stash.phase,
+      current_step: result.stash.currentStep,
+      git_popped: result.gitPopped,
+      git_warning: result.gitWarning ?? null,
+      next_action: `任务已恢复，请继续执行步骤 ${result.stash.currentStep}`,
+      recommended_command: `docpath go --step ${result.stash.currentStep}`,
+    }));
+    return;
+  }
+
+  console.log(`✅  已恢复暂存任务: ${result.stash.taskId} (${result.stash.taskTitle})`);
+  console.log(`   phase:    ${result.stash.phase} (step: ${result.stash.currentStep})`);
+  if (result.gitPopped) {
+    console.log('   git:      已恢复 Git 未提交变更');
+  }
+  if (result.gitWarning) {
+    console.log(`   ${result.gitWarning}`);
+  }
+  console.log(`📌  任务上下文已恢复！可运行 \`docpath go --step ${result.stash.currentStep}\` 或 \`docpath next --agent\` 继续开发。`);
+}
+
+/**
+ * 丢弃暂存记录
+ */
+async function taskStashDropCommand(options: TaskCommandOptions, query?: string): Promise<void> {
+  const droppedIds = await dropTaskStash(options.cwd, query, { all: options.all });
+  console.log(`🗑️  已丢弃暂存记录: ${droppedIds.join(', ')}`);
+}
+
+/**
+ * 任务快速切换 (Auto-stash + Pop / Activate / Start)
+ */
+async function taskSwitchCommand(options: TaskCommandOptions, target?: string): Promise<void> {
+  const targetId = target?.trim();
+  if (!targetId) {
+    throw new Error('docpath task switch 需要提供目标 Task ID、Backlog ID 或 Stash ID，例如: docpath task switch R-101 或 docpath task switch T-20260925-feature');
+  }
+
+  const current = await readCurrentState(options.cwd);
+  const withGit = options.noGit ? false : (options.withGit ?? true);
+
+  // 1. 如果当前已有活跃任务且与目标不一致，先自动暂存
+  if (current?.task_id && current.phase !== 'idle' && current.phase !== 'completed' && current.task_id !== targetId) {
+    const stashRes = await stashTask(options.cwd, {
+      message: options.message || `Auto-stashed before switching to ${targetId}`,
+      withGit,
+    });
+    console.log(`📦  已自动暂存前序任务: ${stashRes.stash.taskId} (${stashRes.stash.id})`);
+  }
+
+  // 2. 检查目标是否在暂存区中
+  const stashes = await listTaskStashes(options.cwd);
+  const matchedStash = findMatchingStash(stashes, targetId);
+  if (matchedStash) {
+    await taskStashPopCommand(options, matchedStash.id);
+    return;
+  }
+
+  // 3. 检查目标是否为已有 canonical 任务目录
+  const docpathDir = await resolveDocpathDir(options.cwd);
+  const canonicalDir = canonicalTaskDir(docpathDir, targetId);
+  if (existsSync(canonicalDir)) {
+    const candidates: ('spec.md' | 'plan.md')[] = ['spec.md', 'plan.md'];
+    const existing = candidates.filter((f) => existsSync(join(canonicalDir, f)));
+    if (existing.length > 0) {
+      await syncActiveTaskFiles(docpathDir, targetId, 'canonical', existing);
+    }
+    await syncCurrentDocument(options.cwd);
+    await mutateCurrentState(options.cwd, (prev) => ({
+      level: prev?.level || 2,
+      workflow_profile: prev?.workflow_profile || 'standard',
+      state: 'executing',
+      task_id: targetId,
+      task_title: prev?.task_title || targetId,
+      phase: 'executing',
+      current_step: 'S1',
+      gate: 'none',
+      started_at: prev?.started_at || nowIso(),
+      updated_at: nowIso(),
+    }));
+    await writeBreadcrumb(options.cwd, {
+      taskId: targetId,
+      step: 'task.switch',
+      status: 'done',
+      context: `已切换至已有任务目录: ${targetId}`,
+    });
+    console.log(`✅  已切换至任务目录: ${targetId}`);
+    console.log('📌  任务已激活为 executing 状态，可运行 `docpath next --agent` 或 `docpath go`');
+    return;
+  }
+
+  // 4. 检查是否为 Backlog ID 或新任务标题
+  console.log(`🚀  目标 ${targetId} 未在暂存区或本地已有任务中，尝试通过 docpath start 拉起...`);
+  await startCommand({
+    cwd: options.cwd,
+    id: targetId,
+    draft: true,
+    adopt: true,
+    agent: options.agent,
+  });
+}
+
 export async function taskCommand(options: TaskCommandOptions): Promise<void> {
   const action = options.action?.trim().toLowerCase();
   switch (action) {
@@ -238,7 +468,41 @@ export async function taskCommand(options: TaskCommandOptions): Promise<void> {
     case 'reopen':
       await taskReopen(options);
       return;
+    case 'stash': {
+      const sub = options.target?.trim().toLowerCase();
+      if (sub === 'list' || sub === 'ls') {
+        await taskStashListCommand(options);
+        return;
+      }
+      if (sub === 'pop') {
+        await taskStashPopCommand(options, options.extra);
+        return;
+      }
+      if (sub === 'drop') {
+        await taskStashDropCommand(options, options.extra);
+        return;
+      }
+      if (sub === 'clear') {
+        await taskStashDropCommand({ ...options, all: true });
+        return;
+      }
+      // 否则将 target 作为 stash message
+      await taskStashCommand(options, options.target);
+      return;
+    }
+    case 'pop':
+      await taskStashPopCommand(options, options.target);
+      return;
+    case 'drop':
+      await taskStashDropCommand(options, options.target);
+      return;
+    case 'list':
+      await taskStashListCommand(options);
+      return;
+    case 'switch':
+      await taskSwitchCommand(options, options.target);
+      return;
     default:
-      throw new Error(`docpath task: unsupported action ${action || '(empty)'}（允许: abort|reset|reopen|drift|sync）`);
+      throw new Error(`docpath task: unsupported action ${action || '(empty)'}（允许: abort|reset|reopen|drift|sync|stash|pop|switch|drop|list）`);
   }
 }
