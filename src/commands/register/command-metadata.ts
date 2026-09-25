@@ -12,7 +12,7 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'install', description: 'Install agent protocol files and adapters', visibility: 'core' },
   { name: 'status', description: 'Read workflow diagnostics', visibility: 'core' },
   { name: 'next', description: 'Read the recommended next route', visibility: 'core' },
-  { name: 'backlog', description: 'Capture, shape, accept, and promote work', visibility: 'core' },
+  { name: 'backlog', description: 'Capture, search, graph dependencies, and promote work', visibility: 'core' },
   { name: 'analyze', description: 'Generate pre-development analysis payloads', visibility: 'core' },
   { name: 'refine', description: 'Generate requirement refinement payloads', visibility: 'core' },
   { name: 'write-analysis', description: 'Persist generated analysis sections', visibility: 'core' },

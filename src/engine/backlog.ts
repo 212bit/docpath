@@ -36,6 +36,12 @@ export interface BacklogLinks {
   task: string | null;
   /** 关联 spec 路径；未 promote 时为 null */
   spec: string | null;
+  /** 父级需求 ID（例如 R-100） */
+  parent?: string | null;
+  /** 依赖的前置需求列表（例如 ['R-101', 'R-102']） */
+  depends_on?: string[];
+  /** 阻塞的后置需求列表（例如 ['R-105']） */
+  blocks?: string[];
 }
 
 export interface BacklogEvidence {
@@ -179,9 +185,20 @@ function parseItem(content: string): BacklogItem {
   }
   const links = (fm.links ?? {}) as Record<string, unknown>;
   const body = (match[2] || '').trim();
-  const parsedLinks = {
+  const parsedDependsOn = Array.isArray(links.depends_on)
+    ? links.depends_on.map(String)
+    : Array.isArray(links.dependsOn)
+      ? links.dependsOn.map(String)
+      : (typeof links.depends_on === 'string' ? links.depends_on.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined);
+  const parsedBlocks = Array.isArray(links.blocks)
+    ? links.blocks.map(String)
+    : (typeof links.blocks === 'string' ? links.blocks.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined);
+  const parsedLinks: BacklogLinks = {
     task: links.task != null ? String(links.task) : null,
     spec: links.spec != null ? String(links.spec) : null,
+    parent: links.parent != null ? String(links.parent) : null,
+    ...(parsedDependsOn && parsedDependsOn.length > 0 ? { depends_on: parsedDependsOn } : {}),
+    ...(parsedBlocks && parsedBlocks.length > 0 ? { blocks: parsedBlocks } : {}),
   };
   return {
     id,
@@ -232,6 +249,14 @@ function containsPlaceholderLine(body: string): boolean {
 }
 
 function serializeItem(item: BacklogItem): string {
+  const linksMap: Record<string, unknown> = {
+    task: item.links.task,
+    spec: item.links.spec,
+  };
+  if (item.links.parent) linksMap.parent = item.links.parent;
+  if (item.links.depends_on && item.links.depends_on.length > 0) linksMap.depends_on = item.links.depends_on;
+  if (item.links.blocks && item.links.blocks.length > 0) linksMap.blocks = item.links.blocks;
+
   const frontmatter = stringifyYaml({
     id: item.id,
     title: item.title,
@@ -241,7 +266,7 @@ function serializeItem(item: BacklogItem): string {
     source: item.source,
     readiness: item.readiness,
     evidence: item.evidence,
-    links: { task: item.links.task, spec: item.links.spec },
+    links: linksMap,
     created_at: item.created_at,
   }).trim();
   return `---\n${frontmatter}\n---\n\n${item.body.trim()}\n`;

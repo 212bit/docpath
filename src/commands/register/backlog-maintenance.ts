@@ -7,7 +7,8 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
   cli.command('backlog <action> [id]', `需求条目管理: ${BACKLOG_ACTIONS.join(' | ')}`)
     .option('--cwd <path>', '项目目录')
     .option('--title <title>', 'add/edit: 条目标题')
-    .option('--priority <priority>', 'add/edit/list: 优先级过滤或创建优先级 (P0|P1|P2|P3)')
+    .option('--query <query>', 'search/find: 搜索关键词')
+    .option('--priority <priority>', 'add/edit/list/search: 优先级过滤或创建优先级 (P0|P1|P2|P3)')
     .option('--level <level>', 'add/edit: 条目复杂度 (0|1|2|3)')
     .option('--background <text>', 'add/edit: 条目背景正文')
     .option('--acceptance <text>', 'add/edit: 条目验收正文')
@@ -18,17 +19,55 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .option('--evidence-spec <ref>', 'add/edit: spec 证据引用')
     .option('--evidence-decision <ref>', 'add/edit: Decision Brief 证据引用')
     .option('--user-confirmed <text>', 'add/edit: 用户确认依据')
-    .option('--status <status>', 'list: 状态过滤')
+    .option('--status <status>', 'list/search: 状态过滤')
+    .option('--parent <id>', 'add/edit/search: 父需求 ID')
+    .option('--depends-on <ids>', 'add/edit/search: 依赖的前置需求 ID（逗号分隔）')
+    .option('--blocks <ids>', 'add/edit: 阻塞的后置需求 ID（逗号分隔）')
+    .option('--ready-only, --unblocked', 'search: 仅检索当前无未解依赖已就绪条目')
+    .option('--mermaid', 'graph/tree/deps: 输出 Mermaid 格式拓扑图')
+    .option('--limit <number>', 'search: 限制输出条数')
     .option('--task <id>', 'done: 旁路闭环任务证据（quick 等绕过 promote 时链接已执行任务 id）')
-    .option('--agent', 'list/groom: 输出 agent YAML')
+    .option('--agent', 'list/groom/search/graph: 输出 agent YAML')
+    .option('--json', 'search/graph: 输出 JSON 结构')
     .option('--draft', 'promote: 跳过成熟度检查，快速通道推送')
     .option('--adopt', 'promote: 就地认领当前工作区变更并启动任务（不触发 Worktree 隔离）')
-    .action(async (action: string, id: string | undefined, options: { cwd?: string; title?: string; priority?: string; level?: string; background?: string; acceptance?: string; bodyFile?: string; readiness?: string; evidenceBrainstorm?: string; evidenceAnalysis?: string; evidenceSpec?: string; evidenceDecision?: string; userConfirmed?: string; status?: string; task?: string; agent?: boolean; draft?: boolean; adopt?: boolean }) => {
+    .action(async (action: string, id: string | undefined, options: {
+      cwd?: string;
+      title?: string;
+      query?: string;
+      priority?: string;
+      level?: string;
+      background?: string;
+      acceptance?: string;
+      bodyFile?: string;
+      readiness?: string;
+      evidenceBrainstorm?: string;
+      evidenceAnalysis?: string;
+      evidenceSpec?: string;
+      evidenceDecision?: string;
+      userConfirmed?: string;
+      status?: string;
+      parent?: string;
+      dependsOn?: string;
+      'depends-on'?: string;
+      blocks?: string;
+      readyOnly?: boolean;
+      'ready-only'?: boolean;
+      unblocked?: boolean;
+      mermaid?: boolean;
+      json?: boolean;
+      limit?: number | string;
+      task?: string;
+      agent?: boolean;
+      draft?: boolean;
+      adopt?: boolean;
+    }) => {
       await backlogCommand({
         cwd: options.cwd || process.cwd(),
         action,
         id,
         title: options.title,
+        query: options.query,
         priority: options.priority,
         level: options.level,
         background: options.background,
@@ -41,6 +80,14 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         evidenceDecision: options.evidenceDecision,
         userConfirmed: options.userConfirmed,
         status: options.status,
+        parent: options.parent,
+        dependsOn: options['depends-on'] || options.dependsOn,
+        blocks: options.blocks,
+        readyOnly: !!(options['ready-only'] || options.readyOnly || options.unblocked),
+        unblocked: !!(options.unblocked || options['ready-only'] || options.readyOnly),
+        mermaid: !!options.mermaid,
+        json: !!options.json,
+        limit: options.limit ? Number.parseInt(String(options.limit), 10) : undefined,
         task: options.task,
         agent: !!options.agent,
         draft: !!options.draft,

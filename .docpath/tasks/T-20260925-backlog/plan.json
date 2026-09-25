@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-25T14:49:41.397Z",
+    "updated_at": "2026-09-25T14:49:41.397Z",
+    "content_sha256": "e8d4c6b63d252f99ff1dbcc1d2385779488f7833c98d90602bdde2ce62658b36"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-25T14:49:41.397Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 实现Backlog依赖图谱与全文搜索",
+      "description": "完成 FR-1: 实现Backlog依赖图谱与全文搜索，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-399 与任务 T-20260925-backlog 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

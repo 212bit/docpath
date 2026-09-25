@@ -27,6 +27,14 @@ import {
   transitionBacklog,
   writeBacklogItem,
 } from '../engine/backlog.js';
+import {
+  buildBacklogGraph,
+  renderBacklogAsciiGraph,
+  renderBacklogMermaidGraph,
+} from '../engine/backlog-graph.js';
+import {
+  searchBacklogItems,
+} from '../engine/backlog-search.js';
 import { today, resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
@@ -38,11 +46,12 @@ import { assertCleanWorktreeForNewTask, detectDirtyWorktree } from '../utils/git
 import { hasExplicitUiDesignIntent } from '../utils/ui-gate.js';
 import { resolveWorktreePaths, worktreeCommand } from './worktree.js';
 
-interface BacklogCommandOptions {
+export interface BacklogCommandOptions {
   cwd: string;
   action?: string;
   id?: string;
   title?: string;
+  query?: string;
   priority?: string;
   level?: string;
   background?: string;
@@ -56,6 +65,14 @@ interface BacklogCommandOptions {
   userConfirmed?: string;
   status?: string;
   task?: string;
+  parent?: string;
+  dependsOn?: string;
+  blocks?: string;
+  readyOnly?: boolean;
+  unblocked?: boolean;
+  mermaid?: boolean;
+  json?: boolean;
+  limit?: number;
   agent?: boolean;
   draft?: boolean;
   adopt?: boolean;
@@ -225,6 +242,9 @@ function hasEditFields(options: BacklogCommandOptions): boolean {
     || hasInlineBodyOptions(options)
     || options.readiness
     || hasEvidenceOptions(options)
+    || options.parent !== undefined
+    || options.dependsOn !== undefined
+    || options.blocks !== undefined
   );
 }
 
@@ -957,6 +977,10 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
     throw new Error('docpath backlog add: readiness=raw 请使用 `docpath backlog capture`');
   }
 
+  const dependsOn = options.dependsOn ? options.dependsOn.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined;
+  const blocks = options.blocks ? options.blocks.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined;
+  const parent = options.parent?.trim() || null;
+
   const item = await createBacklogItem(options.cwd, {
     title,
     status: 'proposed',
@@ -968,6 +992,9 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
     links: {
       task: null,
       spec: null,
+      parent,
+      ...(dependsOn && dependsOn.length > 0 ? { depends_on: dependsOn } : {}),
+      ...(blocks && blocks.length > 0 ? { blocks } : {}),
     },
     created_at: today(),
     body,
@@ -978,6 +1005,9 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
   console.log(`   priority: ${item.priority}`);
   console.log(`   level: ${item.level}`);
   console.log(`   readiness: ${item.readiness}`);
+  if (item.links.parent) console.log(`   parent: ${item.links.parent}`);
+  if (item.links.depends_on && item.links.depends_on.length > 0) console.log(`   depends_on: ${item.links.depends_on.join(', ')}`);
+  if (item.links.blocks && item.links.blocks.length > 0) console.log(`   blocks: ${item.links.blocks.join(', ')}`);
   await refreshBacklogIndex(options.cwd);
 }
 
@@ -991,6 +1021,10 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
     ? await resolveBacklogBody(options)
     : buildInlineBacklogBody({ ...options, title });
 
+  const dependsOn = options.dependsOn ? options.dependsOn.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined;
+  const blocks = options.blocks ? options.blocks.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined;
+  const parent = options.parent?.trim() || null;
+
   const item = await createBacklogItem(options.cwd, {
     title,
     status: 'proposed',
@@ -1002,6 +1036,9 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
     links: {
       task: null,
       spec: null,
+      parent,
+      ...(dependsOn && dependsOn.length > 0 ? { depends_on: dependsOn } : {}),
+      ...(blocks && blocks.length > 0 ? { blocks } : {}),
     },
     created_at: today(),
     body,
@@ -1012,6 +1049,9 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
   console.log(`   priority: ${item.priority}`);
   console.log(`   level: ${item.level}`);
   console.log('   readiness: raw');
+  if (item.links.parent) console.log(`   parent: ${item.links.parent}`);
+  if (item.links.depends_on && item.links.depends_on.length > 0) console.log(`   depends_on: ${item.links.depends_on.join(', ')}`);
+  if (item.links.blocks && item.links.blocks.length > 0) console.log(`   blocks: ${item.links.blocks.join(', ')}`);
   console.log(`   下一步: docpath analyze --dry-run --mode deep --content "${item.title}"，再用 docpath backlog edit ${item.id} 补充 evidence`);
   if (item.level <= 1) {
     console.log(`   ⚡ 微小改动可跳过完整流程: docpath quick "${item.title}"（R-310 轻量通道）`);
@@ -1032,7 +1072,7 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
     throw new Error(`docpath backlog edit: backlog 条目不存在: ${options.id}`);
   }
 
-  const updated: BacklogItem = { ...item };
+  const updated: BacklogItem = { ...item, links: { ...item.links } };
   if (options.title?.trim()) updated.title = cleanBacklogTitle(options.title.trim());
   if (options.priority) updated.priority = normalizePriority(options.priority);
   if (options.level) updated.level = normalizeLevel(options.level);
@@ -1048,6 +1088,17 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
   if (hasEvidenceOptions(options)) {
     updated.evidence = buildEvidence(options, updated.evidence);
   }
+  if (options.parent !== undefined) {
+    updated.links.parent = options.parent ? options.parent.trim() : null;
+  }
+  if (options.dependsOn !== undefined) {
+    const deps = options.dependsOn ? options.dependsOn.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : [];
+    updated.links.depends_on = deps.length > 0 ? deps : undefined;
+  }
+  if (options.blocks !== undefined) {
+    const blks = options.blocks ? options.blocks.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : [];
+    updated.links.blocks = blks.length > 0 ? blks : undefined;
+  }
 
   await writeBacklogItem(options.cwd, updated);
   await refreshBacklogIndex(options.cwd);
@@ -1055,6 +1106,9 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
   console.log(`   title: ${updated.title}`);
   console.log(`   priority: ${updated.priority}`);
   console.log(`   level: ${updated.level}`);
+  if (updated.links.parent) console.log(`   parent: ${updated.links.parent}`);
+  if (updated.links.depends_on && updated.links.depends_on.length > 0) console.log(`   depends_on: ${updated.links.depends_on.join(', ')}`);
+  if (updated.links.blocks && updated.links.blocks.length > 0) console.log(`   blocks: ${updated.links.blocks.join(', ')}`);
 }
 
 async function assertNotActiveInOtherWorktrees(cwd: string, backlogId: string): Promise<void> {
@@ -1379,6 +1433,90 @@ async function backlogGroom(options: BacklogCommandOptions): Promise<void> {
   }
 }
 
+async function backlogSearch(options: BacklogCommandOptions): Promise<void> {
+  const query = options.query || options.title || options.id;
+  const results = await searchBacklogItems(options.cwd, {
+    query,
+    status: options.status,
+    priority: options.priority,
+    parent: options.parent,
+    dependsOn: options.dependsOn,
+    readyOnly: options.readyOnly || options.unblocked,
+    limit: options.limit,
+  });
+
+  if (options.json) {
+    console.log(JSON.stringify({ query, count: results.length, results }, null, 2));
+    return;
+  }
+
+  if (options.agent) {
+    console.log(stringify({
+      query: query || null,
+      count: results.length,
+      results: results.map((r) => ({
+        id: r.item.id,
+        title: r.item.title,
+        status: r.item.status,
+        priority: r.item.priority,
+        level: r.item.level,
+        score: r.score,
+        is_blocked: r.isBlocked,
+        unresolved_dependencies: r.unresolvedDependencies,
+        layer: r.layer,
+        parent: r.item.links.parent || null,
+      })),
+    }));
+    return;
+  }
+
+  if (results.length === 0) {
+    console.log(`未找到匹配条件的 Backlog 条目${query ? ` (query: "${query}")` : ''}。`);
+    return;
+  }
+
+  console.log(`=== Backlog 检索结果 (共 ${results.length} 条)${query ? ` — 关键词: "${query}"` : ''} ===\n`);
+  for (const r of results) {
+    const badge = r.item.status === 'done' ? '✅' : r.isBlocked ? '🔒 [阻塞]' : '⚡ [就绪]';
+    const layer = `Layer ${r.layer}`;
+    console.log(`  ${badge} ${r.item.id} [${r.item.priority}] ${r.item.title} (${r.item.status} | ${layer})`);
+    if (r.unresolvedDependencies.length > 0) {
+      console.log(`      未解前置依赖: ${r.unresolvedDependencies.join(', ')}`);
+    }
+    if (r.item.links.parent) {
+      console.log(`      父需求: ${r.item.links.parent}`);
+    }
+  }
+}
+
+async function backlogGraph(options: BacklogCommandOptions): Promise<void> {
+  const items = await listBacklogItems(options.cwd);
+  const graph = buildBacklogGraph(items);
+
+  if (options.mermaid) {
+    console.log(renderBacklogMermaidGraph(graph));
+    return;
+  }
+
+  if (options.json) {
+    console.log(JSON.stringify(graph, null, 2));
+    return;
+  }
+
+  if (options.agent) {
+    console.log(stringify({
+      total_nodes: Object.keys(graph.nodes).length,
+      layers: graph.layers,
+      ready_items: graph.readyItems,
+      blocked_items: graph.blockedItems,
+      cycles: graph.cycles,
+    }));
+    return;
+  }
+
+  console.log(renderBacklogAsciiGraph(graph, options.id));
+}
+
 /**
  * FR-4 动作单一真源：backlog 动作 → 处理器映射。帮助文案 / 校验 / 报错全部由
  * BACKLOG_ACTIONS 派生，扩展一个动作只改这里一处的映射项，其余（roster、usage、报错）自动跟随。
@@ -1388,6 +1526,11 @@ const backlogActions = {
   capture: backlogCapture,
   edit: backlogEdit,
   list: backlogList,
+  search: backlogSearch,
+  find: backlogSearch,
+  graph: backlogGraph,
+  tree: backlogGraph,
+  deps: backlogGraph,
   groom: backlogGroom,
   refresh: backlogRefresh,
   promote: backlogPromote,
