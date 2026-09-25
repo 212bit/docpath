@@ -1,0 +1,4 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-quick-git-staging","step":"S1","status":"done","context":"quick 升级 standard 自动闭环执行计划","timestamp":"2026-09-25T07:29:18.030Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-quick-git-staging","step":"check","status":"done","context":"质量检查通过 (12 项)","timestamp":"2026-09-25T07:29:41.056Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-quick-git-staging","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-09-25T07:29:41.761Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-quick-git-staging","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-25T07:29:43.207Z"}

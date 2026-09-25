@@ -151,8 +151,13 @@ export async function stageRecommendedFiles(options: StageOptions): Promise<Stag
 
     // Check which files actually exist and are modified
     const validFiles: StageCandidate[] = [];
+    const alreadyStaged = new Set(getStagedFiles(options.cwd));
     for (const candidate of filesToStage) {
       const file = candidate.path;
+      if (alreadyStaged.has(file)) {
+        result.stagedFiles.push(file);
+        continue;
+      }
       try {
         const status = candidate.force
           ? (existsSync(join(options.cwd, file)) ? 'ignored' : '')
@@ -169,8 +174,10 @@ export async function stageRecommendedFiles(options: StageOptions): Promise<Stag
     }
 
     if (validFiles.length === 0) {
-      result.errors.push('No valid files to stage');
-      result.success = false;
+      if (result.stagedFiles.length === 0) {
+        result.errors.push('No valid files to stage');
+        result.success = false;
+      }
       return result;
     }
 

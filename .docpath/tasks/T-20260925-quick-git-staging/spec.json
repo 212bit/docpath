@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-25T07:29:17.847Z",
+    "updated_at": "2026-09-25T07:29:17.847Z",
+    "content_sha256": "e50329736b28986e26c82fb7463f1c53ed240f828d2564a6bf7585dd49a9365b"
+  },
+  "task_id": "T-20260925-quick-git-staging",
+  "backlog_id": null,
+  "title": "T-20260925-quick-git-staging - T-20260925-quick-git-staging - 允许全量已暂存文件在git-staging中正常放行",
+  "generated_at": "2026-09-25T07:29:17.847Z",
+  "scope": {
+    "included": [
+      "待补充"
+    ],
+    "excluded": [
+      "待补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 待补充\n- 目标: 待补充\n- 可选方案: 待补充\n- 推荐方案: 待补充\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "允许全量已暂存文件在git-staging中正常放行",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "待补充",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "待补充",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "待补充",
+    "options": [
+      "待补充"
+    ],
+    "chosen": "待补充",
+    "rationale": "满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

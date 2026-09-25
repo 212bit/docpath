@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-25T07:29:18.033Z",
+    "updated_at": "2026-09-25T07:29:18.033Z",
+    "content_sha256": "958dd80ea950dd81e0478629f072e61f91da07a7338eba003ab36f249c1d4197"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-25T07:29:18.033Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 T-20260925-quick-git-staging - 允许全量已暂存文件在git-staging中正常放行",
+      "description": "完成 T-20260925-quick-git-staging - 允许全量已暂存文件在git-staging中正常放行（quick 升级 standard 压缩计划）。",
+      "acceptance": "代码实现就绪并通过质量门禁与审查",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
