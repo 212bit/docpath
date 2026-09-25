@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-worktree-finish","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 增强worktree finish闭环与合并门禁保护","timestamp":"2026-09-25T10:42:45.166Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-worktree-finish","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-25T10:44:57.004Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-worktree-finish","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-25T10:46:20.179Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-worktree-finish","step":"review","status":"done","context":"代码审查: 0 错误, 2 警告, 0 提示","timestamp":"2026-09-25T10:46:21.042Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-worktree-finish","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-25T10:46:22.340Z"}

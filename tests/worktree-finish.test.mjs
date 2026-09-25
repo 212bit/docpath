@@ -66,4 +66,55 @@ describe('docpath worktree finish: 合并并清理 worktree', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('worktree finish <name> 当任务未 completed 且无 --force 时拒绝清理', () => {
+    const cwd = mkRepo();
+    try {
+      run(['worktree', 'create', 'feat-incomplete'], cwd);
+      const wtDir = join(cwd, '.worktrees', 'feat-incomplete');
+      writeFileSync(join(wtDir, 'incomplete.txt'), 'wip content\n');
+      git(wtDir, ['add', '-A']);
+      git(wtDir, ['commit', '-qm', 'wip']);
+
+      // 写入 executing 状态
+      writeFileSync(join(wtDir, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+        task_id: 'T-INCOMPLETE',
+        phase: 'executing',
+        gate: 'none',
+      }));
+
+      assert.throws(() => {
+        run(['worktree', 'finish', 'feat-incomplete'], cwd);
+      }, /phase !== completed/);
+
+      // 确保未被删除
+      assert.equal(existsSync(wtDir), true);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('worktree finish <name> --agent 输出结构化 YAML', () => {
+    const cwd = mkRepo();
+    try {
+      run(['worktree', 'create', 'feat-agent'], cwd);
+      const wtDir = join(cwd, '.worktrees', 'feat-agent');
+      writeFileSync(join(wtDir, 'feat.txt'), 'agent test\n');
+      git(wtDir, ['add', '-A']);
+      git(wtDir, ['commit', '-qm', 'add feat']);
+      writeFileSync(join(wtDir, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+        task_id: 'T-AGENT',
+        phase: 'completed',
+        gate: 'review_pass',
+      }));
+
+      const out = run(['worktree', 'finish', 'feat-agent', '--agent'], cwd);
+      assert.match(out, /agent_view:\s*worktree_finish/);
+      assert.match(out, /status:\s*success/);
+      assert.match(out, /merged:\s*true/);
+      assert.equal(existsSync(wtDir), false);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });

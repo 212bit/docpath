@@ -62,7 +62,7 @@ docpath quick-done --commit        # compound (R-340): quick gate sequence + com
 ## Worktree Concurrent Development
 
 Use `docpath worktree create <name>` only for parallel multi-agent development.
-- **Workflow**: `docpath worktree create <name>` → `cd .worktrees/<name>` → `docpath start R-xxx` → `docpath done --commit` → `cd ../.. && git merge <name> && docpath worktree remove <name>`.
+- **Workflow**: `docpath worktree create <name>` → `cd .worktrees/<name>` → `docpath start R-xxx` → `docpath done --commit` → `cd ../.. && docpath worktree finish <name>`.
 - **Collaboration**: `docpath worktree matrix` (live progress across agents), `docpath worktree broadcast "<msg>"` (broadcast breaking updates).
 - Details & isolation model: see `docs/features/worktree-workflow.md`.
 

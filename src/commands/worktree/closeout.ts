@@ -70,7 +70,7 @@ export async function worktreeSync(cwd: string): Promise<void> {
   console.log(`\n=== worktree-sync 完成: 合入 ${synced}，已最新 ${upToDate}，跳过/失败 ${skipped} ===`);
 }
 
-export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, allowDirtyMain?: string): Promise<void> {
+export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, allowDirtyMain?: string): Promise<{ mergedToMain: boolean }> {
   if (!(await isGitRepo(cwd))) {
     console.error('❌  当前目录不是 git 仓库');
     process.exit(1);
@@ -225,7 +225,7 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
     console.log(`    已将 ${targetMergeBranch} 成功合并至当前开发分支，保持开发分支同步更新。`);
     console.log(`    合回主干 (checkout ${targetBranchEnv} && git merge) 仅在 phase=completed (质量门禁和 review 均通过后) 运行。`);
     console.log(`=== worktree-merge 结束 (同步完成) ===`);
-    return;
+    return { mergedToMain: false };
   }
 
   // 6. 合并当前 worktree 分支回目标主分支 (FR-7)
@@ -307,6 +307,7 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
     console.log(` · 目标分支: ${targetBranchEnv}`);
     console.log(` · merge commit: ${mergeHash}`);
     console.log(` · 退出码: 0`);
+    return { mergedToMain: true };
   } catch (err) {
     console.error(`❌  合回 ${targetBranchEnv} 失败: ${err instanceof Error ? err.message : String(err)}`);
     // R-344 WT-1: 主仓不得残留 mid-merge 现场（否则 dirty guard 卡死后续所有任务）

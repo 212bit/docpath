@@ -270,6 +270,25 @@ cd .worktrees/feature-auth
 docpath worktree doctor
 ```
 
+### `docpath worktree finish <name> [--force]`
+
+一键合并并清理 worktree（完成任务后的推荐收口命令）。
+
+**说明**：
+- 自动校验 worktree 内任务是否已完成（`phase === completed`，已通过全部质量门禁与审查）；
+- 自动将目标主分支拉取同步、消解索引冲突并将 worktree 开发分支合回主分支；
+- 合并成功后自动清理 `.worktrees/<name>` 工作目录与本地分支；
+- 若任务尚未完成且未传 `--force`，拒绝误删未合入代码。
+
+**示例**：
+```bash
+# 从主仓库一键合并并清理
+docpath worktree finish feature-a
+
+# 强制合并并清理
+docpath worktree finish feature-a --force
+```
+
 ### `docpath worktree remove <name> [--force]`
 
 删除 worktree。

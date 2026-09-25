@@ -141,11 +141,58 @@ export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
         console.error(`❌  找不到 worktree: ${wtName} (${targetCwd})`);
         process.exit(1);
       }
-      console.log(`🚀  docpath worktree finish: 合并并清理 worktree ${wtName}...\n`);
-      await worktreeMerge(targetCwd, undefined, options.allowDirtyMain);
+      if (!agent && !json) {
+        console.log(`🚀  docpath worktree finish: 合并并清理 worktree ${wtName}...\n`);
+      }
+      const mergeResult = await worktreeMerge(targetCwd, undefined, options.allowDirtyMain);
+      if (!mergeResult.mergedToMain && !force) {
+        if (json) {
+          console.log(JSON.stringify({
+            status: 'error',
+            message: `Worktree ${wtName} 内任务尚未完成 (phase !== completed)，合回主干被跳过。若要强制删除未合入的工作区，请使用 --force。`,
+            merged: false,
+            removed: false,
+          }, null, 2));
+        } else if (agent) {
+          const { stringify } = await import('yaml');
+          console.log(stringify({
+            agent_view: 'worktree_finish',
+            status: 'blocked',
+            worktree: wtName,
+            merged: false,
+            removed: false,
+            reason: 'task_not_completed',
+            next_action: `在 worktree ${wtName} 中运行 docpath done --commit 完成任务收口，或使用 --force 强制清理`,
+          }));
+        } else {
+          console.error(`\n❌  Worktree ${wtName} 内任务尚未完成 (phase !== completed)，拒绝清理。`);
+          console.error(`    请进入该 worktree 运行 docpath done --commit 完成门禁与收口后再 finish，或使用 --force 强制删除。`);
+        }
+        process.exit(1);
+      }
+
       const rootCwd = await resolveWorktreeManagerRoot(targetCwd);
       await worktreeRemove(rootCwd, wtName, force);
-      console.log(`\n🎉  Worktree ${wtName} 已成功合并回主分支并完成工作区清理！`);
+
+      if (json) {
+        console.log(JSON.stringify({
+          status: 'success',
+          worktree: wtName,
+          merged: mergeResult.mergedToMain,
+          removed: true,
+        }, null, 2));
+      } else if (agent) {
+        const { stringify } = await import('yaml');
+        console.log(stringify({
+          agent_view: 'worktree_finish',
+          status: 'success',
+          worktree: wtName,
+          merged: mergeResult.mergedToMain,
+          removed: true,
+        }));
+      } else {
+        console.log(`\n🎉  Worktree ${wtName} 已成功合并回主分支并完成工作区清理！`);
+      }
       break;
     }
 
