@@ -57,7 +57,7 @@ async function getRecommendedFiles(cwd: string): Promise<StageCandidate[]> {
       : Object.values(report.groups).flat();
     const normalCandidates = normalFiles
       .filter((file) => !isTaskCurrentAlias(file))
-      .map((file) => ({ path: file, force: isIgnored(cwd, file) }));
+      .map((file) => ({ path: file, force: false }));
     const canonicalEvidenceCandidates = report.ignored_evidence.canonical_files
       .filter((file) => !isTaskCurrentAlias(file))
       .map((file) => ({ path: file, force: true }));

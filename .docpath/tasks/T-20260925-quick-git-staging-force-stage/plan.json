@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-25T07:27:11.592Z",
+    "updated_at": "2026-09-25T07:27:11.592Z",
+    "content_sha256": "8bd8b64055e40e9aa093611faa9f3e390be0979e8cc6d1e5480b15838ecddd46"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-25T07:27:11.592Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 T-20260925-quick-git-staging-force-stage - 修复git-staging误将普通被忽略文件force-stage漏洞并清理历史冗余跟踪",
+      "description": "完成 T-20260925-quick-git-staging-force-stage - 修复git-staging误将普通被忽略文件force-stage漏洞并清理历史冗余跟踪（quick 升级 standard 压缩计划）。",
+      "acceptance": "代码实现就绪并通过质量门禁与审查",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-25T07:27:11.393Z",
+    "updated_at": "2026-09-25T07:27:11.393Z",
+    "content_sha256": "d0d40b579007a36dab56e05a5eb5c3cb654ebe831b87869af45c4a55ba2b8ad6"
+  },
+  "task_id": "T-20260925-quick-git-staging-force-stage",
+  "backlog_id": null,
+  "title": "T-20260925-quick-git-staging-force-stage - T-20260925-quick-git-staging-force-stage - 修复git-staging误将普通被忽略文件force-stage漏洞并清理历史冗余跟踪",
+  "generated_at": "2026-09-25T07:27:11.393Z",
+  "scope": {
+    "included": [
+      "待补充"
+    ],
+    "excluded": [
+      "待补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 待补充\n- 目标: 待补充\n- 可选方案: 待补充\n- 推荐方案: 待补充\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "修复git-staging误将普通被忽略文件force-stage漏洞并清理历史冗余跟踪",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "待补充",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "待补充",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "待补充",
+    "options": [
+      "待补充"
+    ],
+    "chosen": "待补充",
+    "rationale": "满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
