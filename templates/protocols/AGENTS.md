@@ -32,13 +32,14 @@ docpath quick-done --commit        # compound (R-340): quick gate sequence + com
 
 1. **Mandatory Tiering (严禁越级大炮打蚊子)**:
    - **Ultra-light (< 50 lines diff, typo, single config, localized fix)**: **MUST** use `docpath quick "<title>"`. (Post-hoc: `--adopt`; upgrade: `quick upgrade`).
-   - **【严禁 quick 的红线】**：触及调度器 (`agent.ts`, `check.ts`, `done.ts`, `runtime.ts`)、引擎 (`src/engine/**`)、协议资产或预期 > 50 行代码时，**绝对禁止**使用 `quick`，必须起手 `docpath start <id | "title">`。
+   - **【严禁 quick 的红线】**：触及工作流协议资产（`.docpath/rules/`、`.docpath/protocols/`、`AGENTS.md`）、跨模块核心安全/权限边界重构，或预期 diff > 50 行代码时，**绝对禁止**使用 `quick`，必须起手 `docpath start <id | "title">`。
    - **Small/Medium (< 100 lines)**: `--level 1`（跳过正式 review 与冗长 journal）。
    - **Architecture / Cross-module**: `--level 2` (Standard Profile)。
 
 2. **Atomic Execution & Zero-Redundancy Gates (零冗余原子收口)**:
    - **Atomic Step Claim**: `docpath go --step <id>` is atomic step control to claim and start steps in 1-shot.
    - **调试期严禁跑全量测试**：迭代开发与单用例调试时，**只允许**运行当前模块的单文件定向测试（如 `node --test tests/<file>.test.mjs`, `go test -run`, `pytest`）；**全量测试只跑一次**，由 `docpath done --commit`（底层调用 `docpath agent done`）在收口时原子执行全部门禁（check → review → journal → git commit）。严禁在调用 `done` 前后手动在终端重复执行 `docpath check` 或全量测试。
+   - **AC 不手动打勾**：`spec.md` 中的 `AC-*` 验收标准为静态需求声明，严禁编写脚本或手动编辑将其改为 `[x]`；执行进度完全由 `plan.md` 和 `docpath step-pass`（或 `agent step --step <id> --status done`）驱动。
    - **Edit with tools, not scripts**: Prefer editor tools over shell scripts (`sed`, heredoc) to minimize context re-injection.
    - **Failure handling**: Stop after 2 environment/harness failures and report.
 

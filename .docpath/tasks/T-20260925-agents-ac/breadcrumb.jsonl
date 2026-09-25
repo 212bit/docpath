@@ -1,0 +1,8 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-agents-ac","step":"S1","status":"in_progress","context":"go --accept-dirty: start --adopt: claim workspace edits","timestamp":"2026-09-25T01:03:04.119Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-agents-ac","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 在AGENTS协议中明确AC为静态需求声明无需手动勾选","timestamp":"2026-09-25T01:03:04.161Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-agents-ac","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-25T01:03:14.124Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-agents-ac","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-25T01:09:07.902Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-agents-ac","step":"check","status":"in_progress","context":"recovery-recover: 从 blocked 恢复执行","timestamp":"2026-09-25T07:23:44.308Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-agents-ac","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-25T07:25:18.273Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-agents-ac","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-09-25T07:25:18.794Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-agents-ac","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-25T07:25:20.263Z"}
