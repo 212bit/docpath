@@ -8,38 +8,56 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--title <title>', 'add/edit: 条目标题')
     .option('--query <query>', 'search/find: 搜索关键词')
-    .option('--priority <priority>', 'add/edit/list/search: 优先级过滤或创建优先级 (P0|P1|P2|P3)')
+    .option('--kind <kind>', 'add/edit/shape/list/search/export: 需求分类 (feature|fix|refactor|perf|debt|spike|chore)')
+    .option('--priority <priority>', 'add/edit/list/search/export: 优先级过滤或创建优先级 (P0|P1|P2|P3)')
     .option('--level <level>', 'add/edit: 条目复杂度 (0|1|2|3)')
-    .option('--background <text>', 'add/edit: 条目背景正文')
-    .option('--acceptance <text>', 'add/edit: 条目验收正文')
+    .option('--background <text>', 'add/edit/shape: 条目背景正文')
+    .option('--acceptance <text>', 'add/edit/shape: 条目验收正文')
+    .option('--fr <text>', 'shape/add: 功能要点')
+    .option('--non-goals <text>', 'shape/add: 非目标/约束')
     .option('--body-file <path>', 'add/edit: 从 markdown 文件读取完整正文')
+    .option('--file <path>', 'import: 导入文件路径')
+    .option('--format <format>', 'export: 导出格式 json|yaml|markdown (默认 yaml)')
+    .option('--output <path>', 'export: 导出目标文件路径')
+    .option('--dry-run', 'import: 预览模式，不实际写入磁盘')
+    .option('--overwrite', 'import: 覆盖已存在 ID 的条目')
     .option('--readiness <readiness>', 'add/edit: 需求成熟度 raw|shaped|analyzed|confirmed')
     .option('--evidence-brainstorm <ref>', 'add/edit: brainstorm 证据引用')
     .option('--evidence-analysis <ref>', 'add/edit: analysis 证据引用')
     .option('--evidence-spec <ref>', 'add/edit: spec 证据引用')
     .option('--evidence-decision <ref>', 'add/edit: Decision Brief 证据引用')
     .option('--user-confirmed <text>', 'add/edit: 用户确认依据')
-    .option('--status <status>', 'list/search: 状态过滤')
-    .option('--parent <id>', 'add/edit/search: 父需求 ID')
-    .option('--depends-on <ids>', 'add/edit/search: 依赖的前置需求 ID（逗号分隔）')
+    .option('--status <status>', 'list/search/export: 状态过滤')
+    .option('--parent <id>', 'add/edit/shape/search: 父需求 ID')
+    .option('--depends-on <ids>', 'add/edit/shape/search: 依赖的前置需求 ID（逗号分隔）')
     .option('--blocks <ids>', 'add/edit: 阻塞的后置需求 ID（逗号分隔）')
-    .option('--ready-only, --unblocked', 'search: 仅检索当前无未解依赖已就绪条目')
+    .option('--ready-only, --unblocked', 'search/export: 仅检索当前无未解依赖已就绪条目')
     .option('--mermaid', 'graph/tree/deps: 输出 Mermaid 格式拓扑图')
     .option('--limit <number>', 'search: 限制输出条数')
     .option('--task <id>', 'done: 旁路闭环任务证据（quick 等绕过 promote 时链接已执行任务 id）')
-    .option('--agent', 'list/groom/search/graph: 输出 agent YAML')
-    .option('--json', 'search/graph: 输出 JSON 结构')
+    .option('--agent', 'list/groom/search/graph/shape/import: 输出 agent YAML')
+    .option('--json', 'search/graph/import: 输出 JSON 结构')
     .option('--draft', 'promote: 跳过成熟度检查，快速通道推送')
     .option('--adopt', 'promote: 就地认领当前工作区变更并启动任务（不触发 Worktree 隔离）')
     .action(async (action: string, id: string | undefined, options: {
       cwd?: string;
       title?: string;
       query?: string;
+      kind?: string;
       priority?: string;
       level?: string;
       background?: string;
       acceptance?: string;
+      fr?: string;
+      'non-goals'?: string;
+      nonGoals?: string;
       bodyFile?: string;
+      file?: string;
+      format?: 'json' | 'yaml' | 'markdown';
+      output?: string;
+      dryRun?: boolean;
+      'dry-run'?: boolean;
+      overwrite?: boolean;
       readiness?: string;
       evidenceBrainstorm?: string;
       evidenceAnalysis?: string;
@@ -68,11 +86,19 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         id,
         title: options.title,
         query: options.query,
+        kind: options.kind,
         priority: options.priority,
         level: options.level,
         background: options.background,
         acceptance: options.acceptance,
+        fr: options.fr,
+        nonGoals: options['non-goals'] || options.nonGoals,
         bodyFile: options.bodyFile,
+        file: options.file,
+        format: options.format,
+        output: options.output,
+        dryRun: !!(options['dry-run'] || options.dryRun),
+        overwrite: !!options.overwrite,
         readiness: options.readiness,
         evidenceBrainstorm: options.evidenceBrainstorm,
         evidenceAnalysis: options.evidenceAnalysis,

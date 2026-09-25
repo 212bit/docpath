@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-backlog-groom","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 优化Backlog阶段体系：类型体系、结构化模板、Groom健康治理、批量导入导出与需求演进","timestamp":"2026-09-25T15:11:21.453Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-backlog-groom","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-25T15:17:00.001Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-backlog-groom","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-25T15:18:26.081Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-backlog-groom","step":"check","status":"done","context":"质量检查通过 (13 项)","timestamp":"2026-09-25T15:20:45.932Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-backlog-groom","step":"review","status":"done","context":"代码审查: 0 错误, 16 警告, 0 提示","timestamp":"2026-09-25T15:20:47.515Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-backlog-groom","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-25T15:20:48.900Z"}

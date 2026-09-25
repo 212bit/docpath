@@ -13,6 +13,7 @@ import {
   type BacklogPriority,
   type BacklogReadiness,
   type BacklogStatus,
+  type BacklogKind,
   archiveBacklogItem,
   cleanBacklogTitle,
   createBacklogItem,
@@ -20,6 +21,8 @@ import {
   detectBacklogIdCollisions,
   isBacklogReadiness,
   isBacklogPriority,
+  isBacklogKind,
+  generateBacklogItemBody,
   listBacklogItems,
   readBacklogItem,
   refreshBacklogIndex,
@@ -35,6 +38,14 @@ import {
 import {
   searchBacklogItems,
 } from '../engine/backlog-search.js';
+import {
+  exportBacklogItems,
+  importBacklogItems,
+} from '../engine/backlog-io.js';
+import {
+  auditBacklogHygiene,
+  type BacklogGroomIssue,
+} from '../engine/backlog-groom.js';
 import { today, resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
@@ -52,10 +63,13 @@ export interface BacklogCommandOptions {
   id?: string;
   title?: string;
   query?: string;
+  kind?: string;
   priority?: string;
   level?: string;
   background?: string;
   acceptance?: string;
+  fr?: string;
+  nonGoals?: string;
   bodyFile?: string;
   readiness?: string;
   evidenceBrainstorm?: string;
@@ -73,18 +87,15 @@ export interface BacklogCommandOptions {
   mermaid?: boolean;
   json?: boolean;
   limit?: number;
+  format?: 'json' | 'yaml' | 'markdown';
+  output?: string;
+  file?: string;
+  dryRun?: boolean;
+  overwrite?: boolean;
   agent?: boolean;
   draft?: boolean;
   adopt?: boolean;
   nonInteractive?: boolean;
-}
-
-interface BacklogGroomIssue {
-  id: string;
-  severity: 'error';
-  field: string;
-  message: string;
-  suggestion: string;
 }
 
 function normalizePriority(priority?: string): BacklogPriority {
@@ -157,7 +168,7 @@ async function readBacklogBodyFile(cwd: string, bodyFile: string): Promise<strin
 
 function getMarkdownSection(body: string, title: string): string | null {
   const normalized = body.replace(/\r\n/g, '\n').trim();
-  const sectionRegex = new RegExp(`^##\\s+${title}\\s*$`, 'm');
+  const sectionRegex = new RegExp(`^##\\s+(?:\\d+\\.\\s*)?.*${title}.*$`, 'm');
   const match = normalized.match(sectionRegex);
   if (!match) return null;
 
@@ -178,7 +189,7 @@ function getMarkdownSection(body: string, title: string): string | null {
 
 function replaceMarkdownSection(body: string, title: string, content: string): string {
   const normalized = body.replace(/\r\n/g, '\n').trim();
-  const sectionRegex = new RegExp(`^##\\s+${title}\\s*$`, 'm');
+  const sectionRegex = new RegExp(`^##\\s+(?:\\d+\\.\\s*)?.*${title}.*$`, 'm');
   const match = normalized.match(sectionRegex);
   if (!match) {
     return normalized + `\n\n## ${title}\n\n${content}`;
@@ -236,6 +247,7 @@ async function resolveBacklogBody(options: BacklogCommandOptions, existingBody?:
 function hasEditFields(options: BacklogCommandOptions): boolean {
   return Boolean(
     options.title?.trim()
+    || options.kind
     || options.priority
     || options.level
     || options.bodyFile
@@ -269,7 +281,7 @@ function buildEvidence(options: BacklogCommandOptions, existing?: BacklogEvidenc
 }
 
 function hasSection(body: string, title: string): boolean {
-  return new RegExp(`^##\\s+${title}\\s*$`, 'm').test(body);
+  return new RegExp(`^##\\s+(?:\\d+\\.\\s*)?.*${title}.*$`, 'm').test(body);
 }
 
 function isPlaceholderBody(body: string): boolean {
@@ -521,9 +533,11 @@ function inspectBacklogItem(item: BacklogItem): BacklogGroomIssue[] {
   return issues;
 }
 
-async function collectBacklogGroomIssues(options: BacklogCommandOptions): Promise<BacklogGroomIssue[]> {
+async function collectBacklogGroomIssues(options: BacklogCommandOptions): Promise<{ issues: BacklogGroomIssue[]; warnings: BacklogGroomIssue[] }> {
   const docpathDir = await resolveDocpathDir(options.cwd);
   const issues: BacklogGroomIssue[] = [];
+  const warnings: BacklogGroomIssue[] = [];
+
   if (!existsSync(join(docpathDir, 'backlog', 'backlog.md'))) {
     issues.push({
       id: 'backlog.md',
@@ -538,10 +552,15 @@ async function collectBacklogGroomIssues(options: BacklogCommandOptions): Promis
   for (const item of items) {
     issues.push(...inspectBacklogItem(item));
   }
-  return issues;
+
+  const hygiene = auditBacklogHygiene(items);
+  issues.push(...hygiene.issues);
+  warnings.push(...hygiene.warnings);
+
+  return { issues, warnings };
 }
 
-function renderGroomReport(issues: BacklogGroomIssue[], collisions: BacklogIdCollision[] = []): string {
+function renderGroomReport(issues: BacklogGroomIssue[], warnings: BacklogGroomIssue[] = [], collisions: BacklogIdCollision[] = []): string {
   const lines = ['', '🧹  Backlog 健康检查', ''];
   if (issues.length === 0) {
     lines.push('✅  Backlog 健康检查通过');
@@ -551,6 +570,15 @@ function renderGroomReport(issues: BacklogGroomIssue[], collisions: BacklogIdCol
     for (const issue of issues) {
       lines.push(`- [${issue.id}] ${issue.field}: ${issue.message}`);
       lines.push(`  修复建议: ${issue.suggestion}`);
+    }
+  }
+
+  if (warnings.length > 0) {
+    lines.push('');
+    lines.push(`⚠️  发现 ${warnings.length} 个治理建议/改进提示:`);
+    for (const warning of warnings) {
+      lines.push(`- ⚠️ [${warning.id}] ${warning.field}: ${warning.message}`);
+      lines.push(`  建议: ${warning.suggestion}`);
     }
   }
 
@@ -970,6 +998,9 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
     throw new Error('docpath backlog add requires --background/--acceptance or --body-file; use `docpath backlog capture --title <title>` for raw ideas');
   }
 
+  const rawKind = options.kind ? options.kind.toLowerCase().trim() : undefined;
+  const kind: BacklogKind = rawKind && isBacklogKind(rawKind) ? (rawKind as BacklogKind) : 'feature';
+
   const body = await resolveBacklogBody(options);
 
   const readiness = normalizeReadiness(options.readiness, 'shaped');
@@ -983,6 +1014,7 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
 
   const item = await createBacklogItem(options.cwd, {
     title,
+    kind,
     status: 'proposed',
     priority: normalizePriority(options.priority),
     level: normalizeLevel(options.level),
@@ -1002,6 +1034,7 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
 
   console.log(`✅  已创建 backlog 条目: ${item.id}`);
   console.log(`   title: ${item.title}`);
+  console.log(`   kind: ${item.kind || 'feature'}`);
   console.log(`   priority: ${item.priority}`);
   console.log(`   level: ${item.level}`);
   console.log(`   readiness: ${item.readiness}`);
@@ -1017,6 +1050,9 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
     throw new Error('docpath backlog capture requires --title <title> or <title>');
   }
 
+  const rawKind = options.kind ? options.kind.toLowerCase().trim() : undefined;
+  const kind: BacklogKind = rawKind && isBacklogKind(rawKind) ? (rawKind as BacklogKind) : 'feature';
+
   const body = hasBodyInput(options)
     ? await resolveBacklogBody(options)
     : buildInlineBacklogBody({ ...options, title });
@@ -1027,6 +1063,7 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
 
   const item = await createBacklogItem(options.cwd, {
     title,
+    kind,
     status: 'proposed',
     priority: normalizePriority(options.priority),
     level: normalizeLevel(options.level),
@@ -1046,6 +1083,7 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
 
   console.log(`✅  已捕获 raw backlog 条目: ${item.id}`);
   console.log(`   title: ${item.title}`);
+  console.log(`   kind: ${item.kind || 'feature'}`);
   console.log(`   priority: ${item.priority}`);
   console.log(`   level: ${item.level}`);
   console.log('   readiness: raw');
@@ -1074,6 +1112,14 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
 
   const updated: BacklogItem = { ...item, links: { ...item.links } };
   if (options.title?.trim()) updated.title = cleanBacklogTitle(options.title.trim());
+  if (options.kind) {
+    const rawKind = options.kind.toLowerCase().trim();
+    if (isBacklogKind(rawKind)) {
+      updated.kind = rawKind;
+    } else {
+      throw new Error(`docpath backlog edit: kind 非法: ${options.kind} (允许: feature|fix|refactor|perf|debt|spike|chore)`);
+    }
+  }
   if (options.priority) updated.priority = normalizePriority(options.priority);
   if (options.level) updated.level = normalizeLevel(options.level);
   if (options.bodyFile || hasInlineBodyOptions(options)) {
@@ -1104,6 +1150,7 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
   await refreshBacklogIndex(options.cwd);
   console.log(`✅  backlog 条目已编辑: ${updated.id}`);
   console.log(`   title: ${updated.title}`);
+  console.log(`   kind: ${updated.kind || 'feature'}`);
   console.log(`   priority: ${updated.priority}`);
   console.log(`   level: ${updated.level}`);
   if (updated.links.parent) console.log(`   parent: ${updated.links.parent}`);
@@ -1412,7 +1459,7 @@ async function backlogRefresh(options: BacklogCommandOptions): Promise<void> {
 }
 
 async function backlogGroom(options: BacklogCommandOptions): Promise<void> {
-  const issues = await collectBacklogGroomIssues(options);
+  const { issues, warnings } = await collectBacklogGroomIssues(options);
   // R-321/FR-2：撞号检测为非破坏性告警，不计入 issues（不触发 groom 失败），
   // 只把 refreshBacklogIndex 归档时的「静默跳过」显式暴露；数据迁移另走独立条目。
   const collisions = await detectBacklogIdCollisions(options.cwd);
@@ -1421,11 +1468,13 @@ async function backlogGroom(options: BacklogCommandOptions): Promise<void> {
     console.log(stringify({
       passed: issues.length === 0,
       issue_count: issues.length,
+      warning_count: warnings.length,
       issues,
+      warnings,
       id_collisions: collisions,
     }));
   } else {
-    console.log(renderGroomReport(issues, collisions));
+    console.log(renderGroomReport(issues, warnings, collisions));
   }
 
   if (issues.length > 0) {
@@ -1517,6 +1566,119 @@ async function backlogGraph(options: BacklogCommandOptions): Promise<void> {
   console.log(renderBacklogAsciiGraph(graph, options.id));
 }
 
+async function backlogShape(options: BacklogCommandOptions): Promise<void> {
+  const id = options.id?.trim();
+  if (!id) {
+    throw new Error('docpath backlog shape requires <id>');
+  }
+  const item = await readBacklogItem(options.cwd, id);
+  if (!item) {
+    throw new Error(`docpath backlog shape: 条目不存在: ${id}`);
+  }
+
+  const rawKind = options.kind ? options.kind.toLowerCase().trim() : undefined;
+  const kind: BacklogKind = rawKind && isBacklogKind(rawKind) ? (rawKind as BacklogKind) : (item.kind || 'feature');
+
+  const existingBg = getMarkdownSection(item.body, '背景');
+  const existingAc = getMarkdownSection(item.body, '验收');
+
+  const structuredBody = generateBacklogItemBody(kind, item.title, {
+    background: options.background || (existingBg && !isPlaceholderValue(existingBg) ? existingBg : undefined),
+    acceptance: options.acceptance || (existingAc && !isPlaceholderValue(existingAc) ? existingAc : undefined),
+    fr: options.fr,
+    nonGoals: options.nonGoals,
+  });
+
+  const updated: BacklogItem = {
+    ...item,
+    kind,
+    readiness: 'shaped',
+    body: structuredBody,
+    links: {
+      ...item.links,
+      parent: options.parent !== undefined ? (options.parent ? options.parent.trim() : null) : item.links.parent,
+      depends_on: options.dependsOn !== undefined
+        ? (options.dependsOn ? options.dependsOn.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined)
+        : item.links.depends_on,
+    },
+  };
+
+  if (hasEvidenceOptions(options)) {
+    updated.evidence = buildEvidence(options, updated.evidence);
+  }
+
+  await writeBacklogItem(options.cwd, updated);
+  await refreshBacklogIndex(options.cwd);
+
+  if (options.agent) {
+    console.log(stringify({
+      shaped: true,
+      item: {
+        id: updated.id,
+        title: updated.title,
+        kind: updated.kind,
+        readiness: updated.readiness,
+        links: updated.links,
+      },
+    }));
+    return;
+  }
+
+  console.log(`✅  已将条目 ${updated.id} 规范化为 shaped 成熟度`);
+  console.log(`   title: ${updated.title}`);
+  console.log(`   kind: ${updated.kind}`);
+  console.log(`   readiness: shaped`);
+  console.log('   正文已更新为四段式结构化模板');
+}
+
+async function backlogImport(options: BacklogCommandOptions): Promise<void> {
+  const filePath = options.file || options.id;
+  if (!filePath) {
+    throw new Error('docpath backlog import requires <file_path>');
+  }
+
+  const result = await importBacklogItems(options.cwd, {
+    filePath,
+    dryRun: options.dryRun,
+    overwrite: options.overwrite,
+  });
+
+  if (options.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  if (options.agent) {
+    console.log(stringify(result));
+    return;
+  }
+
+  console.log(`=== Backlog 批量导入${options.dryRun ? ' (预览模式 --dry-run)' : ''} ===\n`);
+  console.log(`✅  成功创建: ${result.imported} 个 | 更新: ${result.updated} 个 | 跳过: ${result.skipped} 个 | 失败: ${result.errors.length} 个\n`);
+
+  for (const it of result.items) {
+    const badge = it.action === 'created' ? '➕ [新建]' : it.action === 'updated' ? '🔄 [更新]' : it.action === 'skipped' ? '⏭️  [跳过]' : '❌ [错误]';
+    console.log(`  ${badge} ${it.id}: ${it.title}${it.error ? ` (${it.error})` : ''}`);
+  }
+}
+
+async function backlogExport(options: BacklogCommandOptions): Promise<void> {
+  const result = await exportBacklogItems(options.cwd, {
+    format: options.format,
+    status: options.status,
+    priority: options.priority,
+    kind: options.kind,
+    readyOnly: options.readyOnly || options.unblocked,
+    outputPath: options.output,
+  });
+
+  if (result.outputPath) {
+    console.log(`✅  已成功导出 ${result.count} 条 Backlog 到: ${result.outputPath}`);
+  } else {
+    console.log(result.content);
+  }
+}
+
 /**
  * FR-4 动作单一真源：backlog 动作 → 处理器映射。帮助文案 / 校验 / 报错全部由
  * BACKLOG_ACTIONS 派生，扩展一个动作只改这里一处的映射项，其余（roster、usage、报错）自动跟随。
@@ -1524,6 +1686,7 @@ async function backlogGraph(options: BacklogCommandOptions): Promise<void> {
 const backlogActions = {
   add: backlogAdd,
   capture: backlogCapture,
+  shape: backlogShape,
   edit: backlogEdit,
   list: backlogList,
   search: backlogSearch,
@@ -1531,6 +1694,8 @@ const backlogActions = {
   graph: backlogGraph,
   tree: backlogGraph,
   deps: backlogGraph,
+  import: backlogImport,
+  export: backlogExport,
   groom: backlogGroom,
   refresh: backlogRefresh,
   promote: backlogPromote,

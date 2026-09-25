@@ -28,8 +28,14 @@ export { cleanBacklogTitle };
 export type BacklogStatus = 'proposed' | 'accepted' | 'planned' | 'active' | 'done' | 'dropped';
 export type BacklogPriority = 'P0' | 'P1' | 'P2' | 'P3';
 export type BacklogReadiness = 'raw' | 'shaped' | 'analyzed' | 'confirmed';
+export type BacklogKind = 'feature' | 'fix' | 'refactor' | 'perf' | 'debt' | 'spike' | 'chore';
 const VALID_PRIORITIES = new Set<BacklogPriority>(['P0', 'P1', 'P2', 'P3']);
 const VALID_READINESS = new Set<BacklogReadiness>(['raw', 'shaped', 'analyzed', 'confirmed']);
+const VALID_KINDS = new Set<BacklogKind>(['feature', 'fix', 'refactor', 'perf', 'debt', 'spike', 'chore']);
+
+export function isBacklogKind(value: string): value is BacklogKind {
+  return VALID_KINDS.has(value.toLowerCase().trim() as BacklogKind);
+}
 
 export interface BacklogLinks {
   /** 关联任务：T-YYYYMMDD-slug 或 'current'；未 promote 时为 null */
@@ -56,6 +62,7 @@ export interface BacklogItem {
   /** 需求 id：R-###（单调递增） */
   id: string;
   title: string;
+  kind?: BacklogKind;
   status: BacklogStatus;
   priority: BacklogPriority;
   /** 复杂度 0-3 */
@@ -71,6 +78,107 @@ export interface BacklogItem {
   created_at: string;
   /** frontmatter 之后的 markdown 正文 */
   body: string;
+}
+
+/**
+ * 为不同类型需求生成标准四段式结构化 Markdown 正文
+ */
+export function generateBacklogItemBody(
+  kind: BacklogKind,
+  title: string,
+  options?: {
+    background?: string;
+    acceptance?: string;
+    fr?: string;
+    nonGoals?: string;
+  },
+): string {
+  const bg = options?.background?.trim();
+  const ac = options?.acceptance?.trim();
+  const fr = options?.fr?.trim();
+  const nonGoals = options?.nonGoals?.trim();
+
+  switch (kind) {
+    case 'fix':
+      return [
+        '## 1. 缺陷背景与影响',
+        bg ? `- **现象描述**: ${bg}` : '- **现象描述**: 待补充\n- **复现步骤**: 1. 待补充\n- **影响范围**: 待补充',
+        '',
+        '## 2. 根因分析与修复方案',
+        '- **根本原因**: 待分析',
+        '- **修复思路**: 待补充',
+        '',
+        '## 3. 严格验收标准',
+        ac ? `- [AC-1] ${ac}` : '- [AC-1] 复现步骤不再异常抛错\n- [AC-2] 新增单元测试/回归测试验证边界',
+        '',
+        '## 4. 边界与约束',
+        nonGoals ? `- **Non-Goals**: ${nonGoals}` : '- 不引入破坏性 API 变更',
+      ].join('\n');
+
+    case 'perf':
+      return [
+        '## 1. 性能现状与基准',
+        bg ? `- **现状描述**: ${bg}` : '- **基准测试数据**: 待补充\n- **性能瓶颈**: 待分析',
+        '',
+        '## 2. 优化方案',
+        '- **优化思路**: 待补充',
+        '',
+        '## 3. 严格验收标准',
+        ac ? `- [AC-1] ${ac}` : '- [AC-1] 达到目标性能指标\n- [AC-2] 基准测试通过且无功能回退',
+        '',
+        '## 4. 边界与约束',
+        nonGoals ? `- **Non-Goals**: ${nonGoals}` : '- 内存与 CPU 资源占用符合预期',
+      ].join('\n');
+
+    case 'spike':
+      return [
+        '## 1. 调研目标与核心问题',
+        bg ? `- **调研背景**: ${bg}` : '- **待解技术疑难**: 待补充\n- **调研范围**: 待补充',
+        '',
+        '## 2. 调研要点与候选方案',
+        '- **候选方案**: 待对比分析',
+        '',
+        '## 3. 严格验收标准',
+        ac ? `- [AC-1] ${ac}` : '- [AC-1] 产出技术评估报告或 ADR\n- [AC-2] 明确可行性结论与潜在风险',
+        '',
+        '## 4. 边界与约束',
+        nonGoals ? `- **Non-Goals**: ${nonGoals}` : '- 仅限技术调研与原型验证，不直接合并生产代码',
+      ].join('\n');
+
+    case 'refactor':
+    case 'debt':
+      return [
+        '## 1. 重构动因与技术债现状',
+        bg ? `- **动因描述**: ${bg}` : '- **维护痛点 / 代码异味**: 待补充\n- **预期收益**: 待补充',
+        '',
+        '## 2. 重构范围与模块',
+        fr ? `- [FR-1] ${fr}` : '- **涉及模块**: 待明确',
+        '',
+        '## 3. 严格验收标准',
+        ac ? `- [AC-1] ${ac}` : '- [AC-1] 保持原有外部行为和契约 100% 兼容\n- [AC-2] 现有测试套件全部绿色通过',
+        '',
+        '## 4. 边界与约束',
+        nonGoals ? `- **Non-Goals**: ${nonGoals}` : '- **Non-Goals**: 严禁在重构中夹带未经评审的新功能',
+      ].join('\n');
+
+    case 'feature':
+    case 'chore':
+    default:
+      return [
+        '## 1. 背景与业务价值',
+        bg ? `- **现状与痛点**: ${bg}` : '- **现状与痛点**: 待补充\n- **预期收益**: 待补充',
+        '',
+        '## 2. 核心功能要点',
+        fr ? `- [FR-1] ${fr}` : `- [FR-1] ${title}`,
+        '',
+        '## 3. 严格验收标准',
+        ac ? `- [AC-1] ${ac}` : '- [AC-1] 满足功能需求并通过门禁',
+        '',
+        '## 4. 边界与约束',
+        nonGoals ? `- **Non-Goals**: ${nonGoals}` : '- **Non-Goals**: 待补充',
+        '- **架构约束**: 遵循既定架构规范与无冗余门禁',
+      ].join('\n');
+  }
 }
 
 // ── 合法状态转移矩阵 ──
@@ -200,9 +308,13 @@ function parseItem(content: string): BacklogItem {
     ...(parsedDependsOn && parsedDependsOn.length > 0 ? { depends_on: parsedDependsOn } : {}),
     ...(parsedBlocks && parsedBlocks.length > 0 ? { blocks: parsedBlocks } : {}),
   };
+  const rawKind = String(fm.kind ?? '').toLowerCase().trim();
+  const kind: BacklogKind = isBacklogKind(rawKind) ? rawKind : 'feature';
+
   return {
     id,
     title: title.trim(),
+    kind,
     status,
     priority,
     level,
@@ -260,6 +372,7 @@ function serializeItem(item: BacklogItem): string {
   const frontmatter = stringifyYaml({
     id: item.id,
     title: item.title,
+    ...(item.kind ? { kind: item.kind } : {}),
     status: item.status,
     priority: item.priority,
     level: item.level,
