@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-25T10:47:51.876Z",
+    "updated_at": "2026-09-25T10:47:51.876Z",
+    "content_sha256": "117aa077b858e99f38062ce654a4f397e3cd745ac8075f4a4a860a79c2008938"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-25T10:47:51.876Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 T-20260925-quick-agents - 同步本地受管AGENTS协议文件",
+      "description": "完成 T-20260925-quick-agents - 同步本地受管AGENTS协议文件（quick 升级 standard 压缩计划）。",
+      "acceptance": "代码实现就绪并通过质量门禁与审查",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
