@@ -4,7 +4,7 @@ import { mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { delimiter, dirname, isAbsolute, join, resolve, sep } from 'path';
 import type { CheckResult, NodeCommandConfig, PackageManifest, CheckOptions } from './types.js';
-import { resolveTestCommand, listTestFiles, resolveGoTestCommand } from './test-scope.js';
+import { resolveTestCommand, listTestFiles, resolveGoTestCommand, resolvePythonTestCommand, resolveRustTestCommand } from './test-scope.js';
 import { errorOutput } from './formatters.js';
 
 export const DEFAULT_CHECK_TIMEOUT_MS = 60000;
@@ -590,23 +590,35 @@ export async function runNativeLanguageChecks(cwd: string, options: CheckOptions
   const cargoPath = join(cwd, 'Cargo.toml');
   const goModPath = join(cwd, 'go.mod');
   const pomPath = join(cwd, 'pom.xml');
+  const isPythonProject = existsSync(join(cwd, 'pyproject.toml'))
+    || existsSync(join(cwd, 'requirements.txt'))
+    || existsSync(join(cwd, 'Pipfile'))
+    || existsSync(join(cwd, 'setup.py'))
+    || existsSync(join(cwd, 'setup.cfg'));
+
+  const testScope = options.allTests ? 'full' : (options.testScope ?? 'touched');
+  const customRiskyPatterns = await readCheckRiskyPatterns(cwd);
 
   if (existsSync(cargoPath)) {
     if (!options.skipLint) {
       results.push(runCheck('Rust 代码检查 (Clippy)', 'cargo clippy 2>&1', cwd, 'lint', HEAVY_CHECK_TIMEOUT_MS));
     }
     if (!options.skipTests) {
-      results.push(runCheck('Rust 单元测试', 'cargo test 2>&1', cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
+      const rustTest = resolveRustTestCommand(cwd, { testScope, customRiskyPatterns });
+      results.push(runCheck(rustTest.name, rustTest.command, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
     }
   } else if (existsSync(goModPath)) {
     if (!options.skipLint) {
       results.push(runCheck('Go 代码检查 (go vet)', 'go vet ./... 2>&1', cwd, 'lint', DEFAULT_CHECK_TIMEOUT_MS));
     }
     if (!options.skipTests) {
-      const testScope = options.allTests ? 'full' : (options.testScope ?? 'touched');
-      const customRiskyPatterns = await readCheckRiskyPatterns(cwd);
       const goTest = resolveGoTestCommand(cwd, { testScope, customRiskyPatterns });
       results.push(runCheck(goTest.name, goTest.command, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
+    }
+  } else if (isPythonProject) {
+    if (!options.skipTests) {
+      const pyTest = resolvePythonTestCommand(cwd, { testScope, customRiskyPatterns });
+      results.push(runCheck(pyTest.name, pyTest.command, cwd, 'test', HEAVY_CHECK_TIMEOUT_MS));
     }
   } else if (existsSync(pomPath)) {
     if (!options.skipTests) {

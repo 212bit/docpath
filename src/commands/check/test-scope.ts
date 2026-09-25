@@ -291,3 +291,97 @@ export function resolveGoTestCommand(
     name: `Go 单元测试（影响面 ${pkgs.length} 包）`,
   };
 }
+
+/** 列出 Python 测试文件（递归扫描 tests/ 目录）。 */
+export function listPythonTestFiles(cwd: string): string[] {
+  const testsDir = join(cwd, 'tests');
+  try {
+    const entries = readdirSync(testsDir, { encoding: 'utf-8' });
+    const files: string[] = [];
+    for (const entry of entries) {
+      const full = join(testsDir, entry);
+      let isDir = false;
+      try { isDir = statSync(full).isDirectory(); } catch { continue; }
+      if (isDir) {
+        const sub = readdirSync(full, { encoding: 'utf-8' });
+        for (const s of sub) {
+          if (/^(test_.*|.*_test)\.py$/i.test(s)) files.push(relative(cwd, join(full, s)));
+        }
+      } else if (/^(test_.*|.*_test)\.py$/i.test(entry)) {
+        files.push(relative(cwd, full));
+      }
+    }
+    return files.sort();
+  } catch {
+    return [];
+  }
+}
+
+/** 解析 Python 语言测试命令（支持 pytest 影响面定向推导）。 */
+export function resolvePythonTestCommand(
+  cwd: string,
+  opts: { testScope?: 'full' | 'touched'; customRiskyPatterns?: string[] } = {},
+): { command: string; name: string } {
+  if (opts.testScope === 'full') {
+    return { command: 'pytest 2>&1', name: 'Python 单元测试 (pytest)' };
+  }
+  const changedFiles = getChangedSourceFiles(cwd);
+  const testFiles = listPythonTestFiles(cwd);
+  if (!changedFiles || changedFiles.length === 0 || testFiles.length === 0 || changedFiles.length > TEST_SCOPE_MAX_FILES || changedFiles.some((f) => touchesRiskyPath(f, opts.customRiskyPatterns))) {
+    return { command: 'pytest 2>&1', name: 'Python 单元测试 (pytest)' };
+  }
+  const pyFiles = changedFiles.filter((f) => f.endsWith('.py'));
+  if (pyFiles.length === 0) {
+    return { command: 'pytest 2>&1', name: 'Python 单元测试 (pytest)' };
+  }
+  const selected = selectTouchedTestFiles(cwd, pyFiles, testFiles, opts.customRiskyPatterns);
+  if (!selected || selected.length === 0) {
+    return { command: 'pytest 2>&1', name: 'Python 单元测试 (pytest)' };
+  }
+  return {
+    command: `pytest ${selected.map((f) => JSON.stringify(f)).join(' ')} 2>&1`,
+    name: `Python 单元测试（影响面 ${selected.length} 文件）`,
+  };
+}
+
+/** 解析 Rust 语言测试命令（支持根据改动文件定向推导 cargo test 模块/集成测试）。 */
+export function resolveRustTestCommand(
+  cwd: string,
+  opts: { testScope?: 'full' | 'touched'; customRiskyPatterns?: string[] } = {},
+): { command: string; name: string } {
+  if (opts.testScope === 'full') {
+    return { command: 'cargo test 2>&1', name: 'Rust 单元测试' };
+  }
+  const changedFiles = getChangedSourceFiles(cwd);
+  if (!changedFiles || changedFiles.length === 0 || changedFiles.length > TEST_SCOPE_MAX_FILES || changedFiles.some((f) => touchesRiskyPath(f, opts.customRiskyPatterns))) {
+    return { command: 'cargo test 2>&1', name: 'Rust 单元测试' };
+  }
+  const rsFiles = changedFiles.filter((f) => f.endsWith('.rs'));
+  if (rsFiles.length === 0) {
+    return { command: 'cargo test 2>&1', name: 'Rust 单元测试' };
+  }
+
+  // 若改动了 tests/foo.rs，定向跑 cargo test --test foo
+  const integrationTests = rsFiles
+    .filter((f) => f.startsWith('tests/') && f.endsWith('.rs'))
+    .map((f) => basename(f, '.rs'));
+
+  if (integrationTests.length > 0 && integrationTests.length === rsFiles.length) {
+    const targets = Array.from(new Set(integrationTests)).map((t) => `--test ${t}`).join(' ');
+    return {
+      command: `cargo test ${targets} 2>&1`,
+      name: `Rust 集成测试（影响面 ${integrationTests.length} 目标）`,
+    };
+  }
+
+  // 若改动了 src 模块，提取模块名
+  const modules = Array.from(new Set(rsFiles.map((f) => basename(f, '.rs')).filter((m) => m !== 'mod' && m !== 'lib' && m !== 'main'))).sort();
+  if (modules.length > 0 && modules.length <= 3) {
+    return {
+      command: `cargo test ${modules.join(' ')} 2>&1`,
+      name: `Rust 单元测试（影响面 ${modules.length} 模块）`,
+    };
+  }
+
+  return { command: 'cargo test 2>&1', name: 'Rust 单元测试' };
+}

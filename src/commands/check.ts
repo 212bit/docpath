@@ -200,5 +200,14 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   }
 }
 
-export { touchesRiskyPath, selectTouchedTestFiles, resolveTestCommand, testRelatesToFile } from './check/test-scope.js';
+export {
+  touchesRiskyPath,
+  selectTouchedTestFiles,
+  resolveTestCommand,
+  testRelatesToFile,
+  resolveGoTestCommand,
+  resolvePythonTestCommand,
+  resolveRustTestCommand,
+  listPythonTestFiles,
+} from './check/test-scope.js';
 

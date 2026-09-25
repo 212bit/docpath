@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-25T12:33:34.247Z",
+    "updated_at": "2026-09-25T12:33:34.247Z",
+    "content_sha256": "ace7c689fc045e7ed7d50c41f4ff6a3481740ee20a728057490a0c8b54c3a1d0"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-25T12:33:34.247Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 支持Python/Rust精准定向测试与Monorepo测试范围推导",
+      "description": "完成 FR-1: 支持Python/Rust精准定向测试与Monorepo测试范围推导，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-396 与任务 T-20260925-python-rust-monorepo 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

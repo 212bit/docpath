@@ -4,6 +4,9 @@ import {
   touchesRiskyPath,
   selectTouchedTestFiles,
   testRelatesToFile,
+  resolveGoTestCommand,
+  resolvePythonTestCommand,
+  resolveRustTestCommand,
 } from '../dist/commands/check.js';
 
 // Test touchesRiskyPath and selection logic
@@ -72,5 +75,19 @@ describe('test-scope touched selection and risky path isolation', () => {
     const testFiles = ['tests/feature.test.mjs', 'tests/check.test.mjs'];
     const selected = selectTouchedTestFiles(process.cwd(), changed, testFiles, customPatterns);
     assert.equal(selected, null);
+  });
+
+  it('resolves Go, Python, and Rust test commands with scope awareness', () => {
+    const goFull = resolveGoTestCommand(process.cwd(), { testScope: 'full' });
+    assert.equal(goFull.command, 'go test ./... 2>&1');
+    assert.match(goFull.name, /Go 单元测试/);
+
+    const pyFull = resolvePythonTestCommand(process.cwd(), { testScope: 'full' });
+    assert.equal(pyFull.command, 'pytest 2>&1');
+    assert.match(pyFull.name, /pytest/);
+
+    const rustFull = resolveRustTestCommand(process.cwd(), { testScope: 'full' });
+    assert.equal(rustFull.command, 'cargo test 2>&1');
+    assert.match(rustFull.name, /Rust 单元测试/);
   });
 });

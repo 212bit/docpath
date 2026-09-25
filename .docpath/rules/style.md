@@ -85,3 +85,20 @@
 ### Evidence
 - 本会话 R-276/R-277 两次 promote 失败被吞 → go 污染 completed 任务 breadcrumb
 - git checkout -- .docpath/tasks/<id>/breadcrumb.jsonl 恢复
+
+## best-practice: T-20260923-quick-step-pass-all-quick-standard — 2026-09-23T19:10:33.079Z
+- rationale: ### 推荐方案
+
+待补充
+
+### 架构决策摘要
+
+- 待补充: 待补充
+
+### 阻塞步骤（踩坑点）
+
+- check: 质量检查失败: Plan/Breadcrumb 漂移检查
+- check: 质量检查失败: 测试
+### Evidence
+- 任务来源: T-20260923-quick-step-pass-all-quick-standard
+- 原始经验: T-20260923-quick-step-pass-all-quick-standard-workflow

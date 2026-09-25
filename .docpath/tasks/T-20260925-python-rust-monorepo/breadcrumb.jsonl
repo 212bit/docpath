@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-python-rust-monorepo","step":"S1","status":"in_progress","context":"go --accept-dirty: start --adopt: claim workspace edits","timestamp":"2026-09-25T12:32:18.350Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-python-rust-monorepo","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 支持Python/Rust精准定向测试与Monorepo测试范围推导","timestamp":"2026-09-25T12:32:18.356Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-python-rust-monorepo","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-25T12:33:34.242Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-python-rust-monorepo","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-25T12:35:12.275Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-python-rust-monorepo","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-09-25T12:35:13.459Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260925-python-rust-monorepo","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-25T12:35:14.932Z"}
