@@ -18,13 +18,13 @@
 <!-- docpath:block lifecycle-commands -->
 ```bash
 docpath quick "Fix typo in docs"   # mandatory for tiny low-risk changes (< 50 lines diff)
-docpath start R-101 --draft        # compound: 1-shot start from backlog (promote + plan + go S1)
+docpath start "<title>" --draft    # compound: 1-shot start by title or backlog ID (promote + plan + go S1)
 docpath go --step S1
-docpath step-pass                  # compound (R-340): finish current step + auto-start next (or --all)
-docpath agent step --step "S1" --status done
+docpath step-pass --commit         # compound: pass step + auto-closeout & commit on final step (or --all)
 docpath task stash "WIP msg"       # hot stash active task state, files, and git changes
 docpath task pop                   # restore latest stashed task
 docpath task switch <target_id>    # seamless switch: auto-stash current + restore/start target
+docpath arch check                 # architecture layer & dependency guard check
 docpath check                      # targeted quality check during iteration
 docpath done --commit              # compound: full gate sequence (check -> review -> journal -> commit) in 1-shot
 docpath quick-done --commit        # compound (R-340): quick gate sequence + commit in 1-shot
@@ -41,7 +41,7 @@ docpath quick-done --commit        # compound (R-340): quick gate sequence + com
 
 2. **Atomic Execution & Zero-Redundancy Gates (零冗余原子收口)**:
    - **Atomic Step Claim**: `docpath go --step <id>` is atomic step control to claim and start steps in 1-shot.
-   - **调试期严禁跑全量测试**：迭代开发与单用例调试时，**只允许**运行当前模块的单文件定向测试（如 `node --test tests/<file>.test.mjs`, `go test -run`, `pytest`）；**全量测试只跑一次**，由 `docpath done --commit`（底层调用 `docpath agent done`）在收口时原子执行全部门禁（check → review → journal → git commit）。严禁在调用 `done` 前后手动在终端重复执行 `docpath check` 或全量测试。
+   - **调试期严禁跑全量测试与多余构建**：迭代开发与单用例调试时，**只允许**运行当前模块的单文件定向测试（如 `node --test tests/<file>.test.mjs`, `go test -run`, `pytest`）；步骤验证引擎已内建**构建感知自愈**（源码比产物新时自动增量 build，无需手动 `npm run build`）。**全量测试只跑一次**，由 `docpath done --commit` 或 `docpath step-pass --commit` 在终步收口时原子执行全部门禁（check → review → journal → git commit）。严禁在收口前后手动重复执行 `docpath check` 或全量测试。
    - **AC 不手动打勾**：`spec.md` 中的 `AC-*` 验收标准为静态需求声明，严禁编写脚本或手动编辑将其改为 `[x]`；执行进度完全由 `plan.md` 和 `docpath step-pass`（或 `agent step --step <id> --status done`）驱动。
    - **Edit with tools, not scripts**: Prefer editor tools over shell scripts (`sed`, heredoc) to minimize context re-injection.
    - **Failure handling**: Stop after 2 environment/harness failures and report.
@@ -58,7 +58,7 @@ docpath quick-done --commit        # compound (R-340): quick gate sequence + com
    - When a product/UI request lacks target user, clarify or run brainstorm/refine first.
    - When changing architecture, technology stack, contracts, agent workflows, boundaries, or long-term maintenance cost, run brainstorm/refine first, record a Decision Brief in spec, and get explicit user confirmation.
 3. **Compound Closeout**:
-   - Prefer `docpath done --commit` / `docpath quick-done --commit` (which invoke `docpath agent done`).
+   - Prefer `docpath step-pass --commit` / `docpath done --commit` / `docpath quick-done --commit` (which invoke `docpath agent done`).
    - Stage all modified tracked files (`git add .`) including tracked `.docpath/` assets (backlog, rules, AGENTS.md).
    - Local commits only; do not push without explicit user request.
 
