@@ -16,6 +16,7 @@ import { compactRuleContent, readRuleFile } from '../utils/rules.js';
 import { readLastCheckMarkdown } from '../utils/workspace-evidence.js';
 import { getTopicRelevantDecisions } from '../governance/decisions.js';
 import { buildSmartContext } from '../utils/smart-context.js';
+import { buildAdaptiveContext, type AdaptiveContextReport } from '../engine/adaptive-context.js';
 import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
   assertDocumentIndexContainsTaskId,
@@ -32,7 +33,7 @@ import {
   type ProjectDocumentIndexEntry,
 } from '../utils/document-index.js';
 
-interface ContextOptions {
+export interface ContextOptions {
   cwd: string;
   /** 输出格式：prompt（默认）| raw */
   format?: 'prompt' | 'raw';
@@ -40,6 +41,8 @@ interface ContextOptions {
   maxTokens?: number;
   /** 是否使用智能关联与精准规则投喂 */
   smart?: boolean;
+  /** 是否使用自适应分层预算压缩 (Adaptive Multi-Tier Compression) */
+  adaptive?: boolean;
   /** 是否包含 spec */
   withSpec?: boolean;
   /** 是否包含 plan */
@@ -181,6 +184,66 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath:init`');
     process.exit(1);
+  }
+
+  // ── 自适应分层预算压缩路由 (--adaptive) ──
+  if (options.adaptive) {
+    const report = await buildAdaptiveContext({
+      cwd,
+      maxTokens,
+      smart: options.smart,
+      topic: options.topic,
+      taskId: options.taskId,
+      withSpec: options.withSpec,
+      withPlan: options.withPlan,
+      includeArchive: options.includeArchive,
+    });
+
+    if (options.agent) {
+      const { stringify } = await import('yaml');
+      console.log(
+        stringify({
+          agent_view: 'adaptive_context',
+          task_id: report.task_id,
+          task_title: report.task_title,
+          phase: report.phase,
+          tokens: report.total_tokens,
+          max_tokens_budget: report.max_tokens_budget,
+          compression_ratio: report.compression_ratio,
+          tiers: report.tiers.map((t) => ({
+            tier: t.tier,
+            name: t.name,
+            priority: t.priority,
+            summary: t.summary,
+            tokens: t.actualTokens,
+          })),
+          context_payload: report.markdown,
+        }),
+      );
+      return;
+    }
+
+    if (format === 'raw') {
+      console.log(report.markdown);
+    } else {
+      console.log(`\n🗜️  DocPath 自适应分层上下文包 (--adaptive)\n`);
+      console.log(`📊  预算适配: ~${report.total_tokens} / ${maxTokens} tokens | 压缩率: ${(report.compression_ratio * 100).toFixed(0)}%`);
+      console.log(`📋  分层装配:`);
+      for (const tier of report.tiers) {
+        console.log(`  - Tier ${tier.tier} [${tier.name}]: ~${tier.actualTokens} tokens (${tier.summary})`);
+      }
+      console.log(`\n${'─'.repeat(50)}\n`);
+      console.log(report.markdown);
+      console.log(`\n${'─'.repeat(50)}`);
+      console.log(`💡  已根据预算上限自动完成需求保全、步骤聚焦与规则剪裁\n`);
+    }
+
+    if (options.output) {
+      const { writeFile } = await import('fs/promises');
+      await writeFile(options.output, report.markdown, 'utf-8');
+      console.log(`✅  已保存到 ${options.output}`);
+    }
+    return;
   }
 
   // ── 智能精准上下文路由 (--smart) ──
