@@ -212,6 +212,7 @@ function normalizeStoredState(raw: Partial<CurrentState> & { state?: string; pha
     state: snapshot.state,
     task_id: raw.task_id || '',
     task_title: raw.task_title || '',
+    backlog_id: raw.backlog_id || null,
     phase: snapshot.phase,
     gate: snapshot.gate,
     current_step: raw.current_step || '待确认下一步',

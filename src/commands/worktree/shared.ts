@@ -25,7 +25,7 @@ const execFileAsync = promisify(execFile);
 
 export interface WorktreeOptions {
   cwd: string;
-  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | 'finish' | 'sync' | 'matrix' | 'status' | 'broadcast';
+  action?: 'create' | 'list' | 'remove' | 'doctor' | 'prune' | 'repair' | 'merge' | 'finish' | 'sync' | 'matrix' | 'status' | 'broadcast' | 'conflicts' | 'preflight';
   name?: string;
   force?: boolean;
   backlog?: string;
@@ -37,6 +37,8 @@ export interface WorktreeOptions {
   message?: string;
   /** R-335 FR-1: merge 时记录证据跳过 dirty 交集拒绝 */
   allowDirtyMain?: string;
+  /** 冲突预警发现阻塞冲突时以非 0 退出 */
+  strict?: boolean;
 }
 
 export interface WorktreePaths {

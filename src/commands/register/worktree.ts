@@ -13,7 +13,8 @@ export function registerWorktreeCommands(cli: CAC): void {
     .option('--agent', '输出 Agent 编排/矩阵视图 YAML')
     .option('--json', '输出 JSON 格式')
     .option('--message <text>', 'broadcast: 跨 Worktree 广播的消息内容')
-    .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean; backlog?: string; agent?: boolean; json?: boolean; message?: string; allowDirtyMain?: string; 'allow-dirty-main'?: string }) => {
+    .option('--strict', 'conflicts/preflight: 发现阻塞级冲突时以非 0 退出码退出')
+    .action(async (action: string | undefined, name: string | undefined, options: { cwd?: string; force?: boolean; backlog?: string; agent?: boolean; json?: boolean; message?: string; allowDirtyMain?: string; 'allow-dirty-main'?: string; strict?: boolean }) => {
       await worktreeCommand({
         cwd: options.cwd || process.cwd(),
         action: action as any,
@@ -24,6 +25,7 @@ export function registerWorktreeCommands(cli: CAC): void {
         json: options.json,
         message: options.message,
         allowDirtyMain: options.allowDirtyMain ?? options['allow-dirty-main'],
+        strict: options.strict,
       });
     });
 
@@ -34,6 +36,7 @@ export function registerWorktreeCommands(cli: CAC): void {
   Actions:
     list                List all worktrees (--agent for aggregated orchestration view)
     matrix / status     Show live Multi-Agent worktree progress and collaboration matrix
+    conflicts / preflight Detect cross-worktree file overlaps, in-flight dependencies, and collisions
     broadcast <msg>     Broadcast message to all active worktrees
     create <name>       Create a new worktree with isolated .docpath/
     doctor [name]       Check worktree readiness before development

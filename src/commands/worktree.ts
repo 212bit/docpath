@@ -36,9 +36,13 @@ import {
   renderWorktreeMatrixTable,
   broadcastWorktreeMessage,
 } from '../utils/worktree-collaboration.js';
+import {
+  detectWorktreeConflicts,
+  renderWorktreeConflictReport,
+} from '../engine/worktree-preflight.js';
 
 export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
-  const { cwd, action = 'list', name, force = false, backlog, agent = false, json = false, message } = options;
+  const { cwd, action = 'list', name, force = false, backlog, agent = false, json = false, message, strict = false } = options;
 
   switch (action) {
     case 'create':
@@ -110,6 +114,38 @@ export async function worktreeCommand(options: WorktreeOptions): Promise<void> {
       console.log(`\n📢  跨 Worktree 消息广播完成！`);
       console.log(`    内容: "${broadcastContent}"`);
       console.log(`    同步分发目标: ${results.map((r) => r.worktree).join(', ')}\n`);
+      break;
+    }
+
+    case 'conflicts':
+    case 'preflight': {
+      const report = await detectWorktreeConflicts(cwd, { targetWorktree: name });
+      if (json) {
+        console.log(JSON.stringify(report, null, 2));
+      } else if (agent) {
+        const { stringify } = await import('yaml');
+        console.log(
+          stringify({
+            agent_view: 'worktree_conflicts',
+            passed: report.passed,
+            has_blocking_conflicts: report.hasBlockingConflicts,
+            total_worktrees: report.totalWorktrees,
+            file_overlaps_count: report.fileOverlaps.length,
+            file_overlaps: report.fileOverlaps,
+            dependency_conflicts_count: report.dependencyConflicts.length,
+            dependency_conflicts: report.dependencyConflicts,
+            task_collisions_count: report.taskCollisions.length,
+            task_collisions: report.taskCollisions,
+            base_drifts_count: report.baseDrifts.length,
+            base_drifts: report.baseDrifts,
+          }),
+        );
+      } else {
+        console.log(renderWorktreeConflictReport(report));
+      }
+      if (strict && report.hasBlockingConflicts) {
+        process.exit(1);
+      }
       break;
     }
 
