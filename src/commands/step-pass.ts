@@ -13,7 +13,7 @@ import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { resolveSessionContext } from '../utils/session.js';
 import { endStepExecution } from './runtime.js';
 import { goCommand } from './go.js';
-import { emitNextHint } from '../utils/next-hint.js';
+import { emitNextHint } from '../engine/next-hint.js';
 import { exitWithError } from '../utils/error-helpers.js';
 import { parsePlanSteps } from '../utils/doc-parser.js';
 import { readActiveTaskFile } from '../utils/task-files.js';

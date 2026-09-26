@@ -1,25 +1,25 @@
 import { existsSync } from 'fs';
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
-import { readCurrentState, readOptionalFile } from '../workspace.js';
-import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../../engine/breadcrumb.js';
-import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from '../plan-sync.js';
-import { canonicalTaskDir, currentTaskDir, detectActiveTaskIdentityDrift, readActiveStructuredSpecDocument, readActiveTaskFile, type TaskIdentityDrift } from '../task-files.js';
-import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift, readStructuredDriftNag, writeStructuredDriftNag, type StructuredMarkdownHashDrift, type StructuredTaskMarkdownFile } from '../structured-docs.js';
-import { listBacklogItems, type BacklogItem } from '../../engine/backlog.js';
-import { handleStalePendingDoneWarning, readPendingDone } from '../pending-done.js';
-import { readRuleFile, ruleDisplayPaths } from '../rules.js';
-import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } from '../install-core.js';
-import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridContextIndexLeaves, type HybridContextIndexSummary, type HybridContextIndexEntry } from '../context-index.js';
-import { readGitCloseoutSummary, type GitCloseoutSummary } from '../git-closeout.js';
-import { resolveMajorChangeGateStatus, type MajorChangeGateStatus } from '../major-change.js';
-import { readAgentFlow } from '../config.js';
-import { readLastCheckMarkdown } from '../workspace-evidence.js';
-import { isQuickProfile } from '../../engine/workflow-profile.js';
-import { constrainRecommendedCommandToWorkflow } from '../../engine/transitions.js';
-import type { StructuredSpecDocument } from '../structured-docs.js';
-import { detectDirtyWorktree, type DirtyWorktreeReport } from '../git-dirty-guard.js';
-import { classifyCandidateBlocks, lessonCandidateKey, parseCandidateBlocks } from '../lesson-candidates.js';
+import { readCurrentState, readOptionalFile } from '../../utils/workspace.js';
+import { readBreadcrumb, type BreadcrumbEntry, type BreadcrumbSummary } from '../breadcrumb.js';
+import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcrumbDrift } from '../../utils/plan-sync.js';
+import { canonicalTaskDir, currentTaskDir, detectActiveTaskIdentityDrift, readActiveStructuredSpecDocument, readActiveTaskFile, type TaskIdentityDrift } from '../../utils/task-files.js';
+import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift, readStructuredDriftNag, writeStructuredDriftNag, type StructuredMarkdownHashDrift, type StructuredTaskMarkdownFile } from '../../utils/structured-docs.js';
+import { listBacklogItems, type BacklogItem } from '../backlog.js';
+import { handleStalePendingDoneWarning, readPendingDone } from '../../utils/pending-done.js';
+import { readRuleFile, ruleDisplayPaths } from '../../utils/rules.js';
+import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } from '../../utils/install-core.js';
+import { readHybridContextIndexSummary, readHybridContextIndexTrunk, readHybridContextIndexLeaves, type HybridContextIndexSummary, type HybridContextIndexEntry } from '../../utils/context-index.js';
+import { readGitCloseoutSummary, type GitCloseoutSummary } from '../../utils/git-closeout.js';
+import { resolveMajorChangeGateStatus, type MajorChangeGateStatus } from '../../utils/major-change.js';
+import { readAgentFlow } from '../../utils/config.js';
+import { readLastCheckMarkdown } from '../../utils/workspace-evidence.js';
+import { isQuickProfile } from '../workflow-profile.js';
+import { constrainRecommendedCommandToWorkflow } from '../transitions.js';
+import type { StructuredSpecDocument } from '../../utils/structured-docs.js';
+import { detectDirtyWorktree, type DirtyWorktreeReport } from '../../utils/git-dirty-guard.js';
+import { classifyCandidateBlocks, lessonCandidateKey, parseCandidateBlocks } from '../../utils/lesson-candidates.js';
 
 import {
   loadRecentDecisions,

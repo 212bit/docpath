@@ -18,7 +18,7 @@ import {
 import {
   renderGlobalTimelineMarkdown,
   listMilestones,
-} from '../utils/milestone.js';
+} from '../engine/milestone.js';
 
 export interface MilestoneOptions {
   cwd: string;

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatActiveGuardrails, isSubstantiveDecision } from '../dist/utils/agent-output/context-injection.js';
+import { formatActiveGuardrails, isSubstantiveDecision } from '../dist/engine/agent-output/context-injection.js';
 
 describe('formatActiveGuardrails', () => {
   it('formats empty decisions array to empty array', () => {

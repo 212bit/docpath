@@ -6,7 +6,7 @@
  */
 
 import { readCurrentState } from './workspace.js';
-import { readBreadcrumb } from '../engine/breadcrumb.js';
+import { readBreadcrumb } from './breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
 import { readActiveTaskFile } from './task-files.js';
 import { parsePlanSteps } from './doc-parser.js';

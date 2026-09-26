@@ -52,7 +52,7 @@ import { transitionWorkflow } from '../engine/transitions.js';
 import { evaluateTaskRisk, riskPolicyFromConfig, riskTierName } from '../engine/risk.js';
 import { readRiskPolicyConfig } from '../utils/config.js';
 import { archivedTaskDir, backupCurrentTaskAlias, canonicalTaskRelativePath, canonicalTaskDir, clearCurrentTaskAlias, writeActiveTaskFile } from '../utils/task-files.js';
-import { emitNextHint } from '../utils/next-hint.js';
+import { emitNextHint } from '../engine/next-hint.js';
 import { assertCleanWorktreeForNewTask, detectDirtyWorktree } from '../utils/git-dirty-guard.js';
 import { hasExplicitUiDesignIntent } from '../utils/ui-gate.js';
 import { resolveWorktreePaths, worktreeCommand } from './worktree.js';

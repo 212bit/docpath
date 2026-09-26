@@ -1,6 +1,6 @@
 /** 工作流门禁策略。 */
 
-import { appendDecision } from '../governance/decisions.js';
+import { appendDecision } from '../utils/decisions.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { readLastCheckEvidence } from '../utils/workspace-evidence.js';

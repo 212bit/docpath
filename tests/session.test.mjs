@@ -99,7 +99,7 @@ describe('session-aware CLI flow', () => {
 });
 
 import { listActiveSessions, touchSession } from '../dist/utils/session.js';
-import { generateAgentOutput } from '../dist/utils/agent-output.js';
+import { generateAgentOutput } from '../dist/engine/agent-output.js';
 
 describe('listActiveSessions and concurrency outputs', () => {
   it('correctly filters active, stale and non-surviving PID sessions', async () => {

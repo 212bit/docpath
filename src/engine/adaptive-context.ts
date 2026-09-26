@@ -14,7 +14,7 @@ import {
 import { currentTaskDir, canonicalTaskDir, readActiveTaskFile } from '../utils/task-files.js';
 import { resolveRulePaths, readRuleFile, compactRuleContent } from '../utils/rules.js';
 import { estimateTokens } from '../utils/document-index.js';
-import { getTopicRelevantDecisions } from '../governance/decisions.js';
+import { getTopicRelevantDecisions } from '../utils/decisions.js';
 import { getModifiedFiles } from '../utils/semantic-verify.js';
 
 export interface ContextTier {

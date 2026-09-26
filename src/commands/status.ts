@@ -8,7 +8,7 @@ import {
   isInstallTarget,
   type InstallMetadata,
 } from '../utils/install-core.js';
-import { generateAgentOutput } from '../utils/agent-output.js';
+import { generateAgentOutput } from '../engine/agent-output.js';
 import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
 import { getDocpathPackageVersion } from '../utils/package-info.js';
 import { handleStalePendingDoneWarning, readPendingDone } from '../utils/pending-done.js';

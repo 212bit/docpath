@@ -12,7 +12,7 @@ import { readCurrentState, readOptionalFile } from '../utils/workspace.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { markPlanStep } from '../utils/plan-sync.js';
-import { generateAgentOutput } from '../utils/agent-output.js';
+import { generateAgentOutput } from '../engine/agent-output.js';
 import { transitionWorkflow } from '../engine/transitions.js';
 import type { WorkflowEvent, TransitionPayload } from '../engine/transitions.js';
 import { detectActiveTaskFileDrift, readActiveTaskFile, syncActiveTaskFiles } from '../utils/task-files.js';

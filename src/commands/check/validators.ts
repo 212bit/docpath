@@ -6,7 +6,7 @@ import { readCurrentState, syncCurrentDocument, parsePlanTasks } from '../../uti
 import { validatePlanContent, validateSpecContent } from '../../utils/doc-parser.js';
 import { detectActiveTaskFileDrift, detectActiveTaskIdentityDrift, formatPhantomMissingFiles, formatTaskIdentityDrift, readActiveTaskFile, syncActiveTaskFiles } from '../../utils/task-files.js';
 import { validateDeliverables } from '../../utils/deliverables.js';
-import { validateLifecycleDeliverables } from '../../utils/lifecycle.js';
+import { validateLifecycleDeliverables } from '../../engine/lifecycle.js';
 import { resolveUiDesignRequirement, approvalState, hasUiImplementationIntent, shouldAdviseUiDesignOptIn } from '../../utils/ui-gate.js';
 import { resolveMajorChangeGateStatus } from '../../utils/major-change.js';
 import { readAgentFlow } from '../../utils/config.js';
@@ -17,12 +17,12 @@ import {
   documentIndexStats,
   isProjectDocumentIndexStale,
   readProjectDocumentIndex,
+  refreshProjectDocumentIndex,
 } from '../../utils/document-index.js';
 import { resolveRulePaths, type RuleName } from '../../utils/rules.js';
 import { gitSyncOptional } from '../../utils/git-run.js';
 import { readFile, stat } from 'fs/promises';
 import { select, isCancel } from '@clack/prompts';
-import { refreshProjectDocumentIndex } from '../docs.js';
 import { diagnoseDocumentHealth } from '../../utils/docs-doctor.js';
 import type { CheckOptions, CheckResult, TaskPlanProgress } from './types.js';
 import {

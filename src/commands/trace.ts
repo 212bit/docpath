@@ -17,7 +17,7 @@ import {
   checkTraceMatrix,
   generateTraceMatrix,
   getTraceMatrixStatus,
-} from '../utils/trace-matrix.js';
+} from '../engine/trace-matrix.js';
 
 interface TraceOptions {
   cwd: string;
@@ -43,7 +43,7 @@ async function assertDocpathWorkspace(cwd: string): Promise<void> {
 }
 
 async function handleTraceMatrix(cwd: string, matrixAction: TraceOptions['matrixAction'], json?: boolean): Promise<void> {
-  const { readLifecycleConfig } = await import('../utils/lifecycle.js');
+  const { readLifecycleConfig } = await import('../engine/lifecycle.js');
   const lifecycleConfig = await readLifecycleConfig(cwd);
   if (!lifecycleConfig) {
     console.error('❌ Trace matrix requires lifecycle profile. Run `docpath deliverables init --profile <profile>` first.');

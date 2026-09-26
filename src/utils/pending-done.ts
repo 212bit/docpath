@@ -1,8 +1,7 @@
 import { join } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { readFileSafe, rmFile, writeFileAtomic } from './file.js';
-import { resolveDocpathDir } from './file.js';
-import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
+import { readFileSafe, resolveDocpathDir, rmFile, writeFileAtomic } from './file.js';
+import { readBreadcrumb, writeBreadcrumb } from './breadcrumb.js';
 import type { CurrentState } from './workspace.js';
 
 export interface PendingDoneRecord {

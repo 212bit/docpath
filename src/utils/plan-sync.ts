@@ -2,8 +2,8 @@
 
 import { existsSync } from 'fs';
 import { mkdir } from 'fs/promises';
-import { dirname, join } from 'path';
-import { readBreadcrumb, type BreadcrumbEntry } from '../engine/breadcrumb.js';
+import { dirname, join } from 'node:path';
+import { readBreadcrumb, type BreadcrumbEntry } from './breadcrumb.js';
 import { resolveDocpathDir } from './file.js';
 import { parsePlanTasks, readCurrentState } from './workspace.js';
 import { parsePlanSteps } from './doc-parser.js';

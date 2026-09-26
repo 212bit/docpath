@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { loadRecentDecisions } from '../dist/utils/agent-output/context-injection.js';
+import { loadRecentDecisions } from '../dist/engine/agent-output/context-injection.js';
 
 function mkWorkspace() {
   const cwd = mkdtempSync(join(tmpdir(), 'dp-ctx-inj-'));

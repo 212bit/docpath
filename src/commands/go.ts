@@ -25,7 +25,7 @@ import { renderDraftPlan } from './plan.js';
 import { resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { readDocPathConfig } from '../utils/config.js';
-import { emitNextHint } from '../utils/next-hint.js';
+import { emitNextHint } from '../engine/next-hint.js';
 import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
 import { exitWithError } from '../utils/error-helpers.js';
 import { renderCloseoutRoute, resolveCloseoutRoute } from '../engine/closeout-route.js';

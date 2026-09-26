@@ -2,13 +2,13 @@ import { existsSync } from 'node:fs';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join, isAbsolute } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { resolveDocpathDir, exists, writeFileSafe } from './file.js';
+import { resolveDocpathDir, exists, writeFileSafe } from '../utils/file.js';
 import {
   type LifecycleConfig,
   type LifecycleProfileId,
   type LifecycleStage,
-  BUILTIN_LIFECYCLE_PROFILES
-} from '../engine/lifecycle-profile.js';
+  BUILTIN_LIFECYCLE_PROFILES,
+} from './lifecycle-profile.js';
 
 export interface LifecycleRegistryEntry {
   status: 'draft' | 'done' | 'reviewed';

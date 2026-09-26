@@ -1,10 +1,18 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { generateAgentOutput } from '../utils/agent-output.js';
+import { generateAgentOutput } from '../engine/agent-output.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
-import { listValidWorkflowEvents, type WorkflowTransitionMetadata } from '../engine/transitions.js';
+import { listValidWorkflowEvents, registerTransitionHook, type WorkflowTransitionMetadata } from '../engine/transitions.js';
+
+registerTransitionHook(async (cwd) => {
+  try {
+    await refreshAgentSnapshot(cwd);
+  } catch {
+    // Ignore snapshot failures
+  }
+});
 
 export interface AgentSnapshot {
   schema_version: 1;

@@ -219,7 +219,7 @@ describe('CLI positional argument guards', () => {
 
   it('emitNextHint ends with a meaningful final line, no trailing blank (R-304)', async () => {
     const cwd = mkWorkspace();
-    const { emitNextHint } = await import('../dist/utils/next-hint.js');
+    const { emitNextHint } = await import('../dist/engine/next-hint.js');
     const lines = [];
     const original = console.log;
     console.log = (msg = '') => lines.push(String(msg));

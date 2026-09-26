@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { resolveRulePaths, type ResolvedRuleFile, RULE_FILE_LINE_BUDGET } from '../utils/rules.js';
-import { readDecisionJsonl, type DecisionJsonlRecord } from '../governance/decisions.js';
+import { readDecisionJsonl, type DecisionJsonlRecord } from '../utils/decisions.js';
 
 export type RuleIssueSeverity = 'error' | 'warning' | 'info';
 

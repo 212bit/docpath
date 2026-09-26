@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { readFileSafe, writeFileAtomic } from './file.js';
 import type { ReviewSkillEvidence, ReviewSkillGate, ReviewSkillSkip } from './review-skill-router.js';
-import { CHECK_CATEGORIES, CHECK_SEVERITIES, type CheckCategory, type CheckSeverity } from '../commands/check/types.js';
+import { CHECK_CATEGORIES, CHECK_SEVERITIES, type CheckCategory, type CheckSeverity } from '../types/check.js';
 
 export interface GitBaselineEvidence {
   ref: string;

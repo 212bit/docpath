@@ -20,7 +20,7 @@ import {
   estimateTokens,
   type ProjectDocumentIndexEntry,
 } from './document-index.js';
-import { getTopicRelevantDecisions } from '../governance/decisions.js';
+import { getTopicRelevantDecisions } from './decisions.js';
 import { getModifiedFiles } from './semantic-verify.js';
 import { readStructuredSpecDocument, parseSpecMarkdownDocument, type StructuredSpecDocument } from './structured-docs.js';
 import { currentTaskDir, canonicalTaskDir } from './task-files.js';

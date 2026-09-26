@@ -16,7 +16,7 @@ import { readCurrentState } from '../utils/workspace.js';
 import { readActiveAnalysisSummary, writeActiveTaskFile } from '../utils/task-files.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { readDocPathConfig } from '../utils/config.js';
-import { emitNextHint } from '../utils/next-hint.js';
+import { emitNextHint } from '../engine/next-hint.js';
 import { readBacklogItem } from '../engine/backlog.js';
 
 interface PlanOptions {

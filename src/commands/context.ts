@@ -367,7 +367,7 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
 
   // --agent: 输出机器可读 YAML
   if (options.agent) {
-    const { generateAgentOutput } = await import('../utils/agent-output.js');
+    const { generateAgentOutput } = await import('../engine/agent-output.js');
     process.stdout.write(await generateAgentOutput(cwd));
     return;
   }

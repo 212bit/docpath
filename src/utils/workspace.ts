@@ -14,14 +14,15 @@ import { readActiveTaskFile, resolveActiveTaskDocPath } from './task-files.js';
 import {
   normalizeWorkflowSnapshot,
   snapshotFromState,
+  normalizeWorkflowProfile,
   type GateStatus,
   type RuntimeWorkflowState,
   type WorkflowPhase,
-} from '../engine/state-machine.js';
-import { normalizeWorkflowProfile, type WorkflowProfile } from '../engine/workflow-profile.js';
+  type WorkflowProfile,
+} from '../types/state.js';
 import { parsePlanSteps, renderPlanChecklist } from './doc-parser.js';
 import { readLastCheckMarkdown } from './workspace-evidence.js';
-import { readBreadcrumb, type BreadcrumbEntry } from '../engine/breadcrumb.js';
+import { readBreadcrumb, type BreadcrumbEntry } from './breadcrumb.js';
 
 // ── state.json schema ──
 

@@ -17,9 +17,9 @@ import { resolveDocpathDir, readFileSafe, writeFileAtomic } from './file.js';
 import {
   readProjectDocumentIndex,
   normalizeDocPath,
+  refreshProjectDocumentIndex,
   type ProjectDocumentIndexEntry,
 } from './document-index.js';
-import { refreshProjectDocumentIndex } from '../commands/docs.js';
 
 export type DocIssueType =
   | 'broken-link'

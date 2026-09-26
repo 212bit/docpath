@@ -21,9 +21,12 @@ import {
   isProjectDocumentScanExcludedPath,
   normalizeDocPath,
   readProjectDocumentIndex,
+  refreshProjectDocumentIndex,
   sortDocumentEntries,
   type ProjectDocumentIndexEntry,
 } from '../utils/document-index.js';
+
+export { refreshProjectDocumentIndex };
 import {
   diagnoseDocumentHealth,
   fixDocumentHealth,
@@ -245,133 +248,6 @@ async function readCurrentTaskId(docpathDir: string): Promise<string | undefined
   } catch {
     return undefined;
   }
-}
-
-async function buildDocEntries(
-  docpathDir: string,
-  mdFiles: string[],
-  externalFiles: ExternalDocFile[] = [],
-): Promise<ProjectDocumentIndexEntry[]> {
-  const entries: ProjectDocumentIndexEntry[] = [];
-  const currentTaskId = await readCurrentTaskId(docpathDir);
-  const hasPreferredRules = existsSync(join(docpathDir, 'rules'));
-  const now = Date.now();
-
-  const pushEntry = async (fullPath: string, relPath: string): Promise<void> => {
-    const fileStat = await stat(fullPath);
-    const content = await readFile(fullPath, 'utf-8');
-    const entry = buildProjectDocumentEntry({
-      path: relPath,
-      size: fileStat.size,
-      mtime: fileStat.mtime,
-      content,
-      title: extractTitleFromContent(fullPath, content),
-      summary: extractSummaryFromContent(fullPath, content),
-      currentTaskId,
-      hasPreferredRules,
-    });
-
-    if (entry.archive && isArchiveDocumentExpired(fileStat.mtime, now)) {
-      return;
-    }
-
-    entries.push(entry);
-  };
-
-  // R-335 FR-3: 生成物不入索引 —— docs.md/docs-index.json 是本次扫描的输出，
-  // 自索引会让「更新时间=自身 mtime」随每次重写漂移，永不收敛（并发合并冲突源）。
-  const GENERATED_ARTIFACTS = new Set(['docs.md', 'docs-index.json']);
-  for (const file of mdFiles) {
-    if (GENERATED_ARTIFACTS.has(file)) continue;
-    await pushEntry(join(docpathDir, file), file);
-  }
-  // FR-5：外部文档以项目根相对路径进索引（默认 default_read=false，仅索引可检索）。
-  for (const external of externalFiles) {
-    await pushEntry(external.abs, external.rel);
-  }
-
-  return entries;
-}
-
-async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentIndexEntry[]): Promise<string> {
-  const docsIndexPath = join(docpathDir, 'docs-index.json');
-
-  const compactEntries = entries.map(compactIndexEntry);
-  await writeFile(docsIndexPath, `${JSON.stringify({
-    version: PROJECT_DOCS_INDEX_VERSION,
-    generated_at: new Date().toISOString(),
-    policy: {
-      mode: 'index-first',
-      default_context_token_budget: 15000,
-      archive_body_requires: ['--topic', '--task-id', '--include-archive'],
-      archive_retention_days: ARCHIVE_RETENTION_DAYS,
-    },
-    entries: compactEntries,
-  })}\n`, 'utf-8');
-  // R-336 FR-1: docs.md 不再生成 —— 人类视图按需 `docpath docs list --full` 渲染，
-  // 机器真源唯一为 docs-index.json（-310KB 仓库体积，少一个生成物与四处特判）。
-
-  return docsIndexPath;
-}
-
-function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unknown> {
-  // R-336 FR-2: 索引瘦身 —— archive 条目（tasks/done、backlog/archived、legacy）
-  // 不落 summary/content_terms（占索引 548KB 中的 ~390KB）；archive 检索走
-  // task-id / include-archive 的显式读取，topic 全文搜索本就按需读原文。
-  const isArchive = entry.archive === true;
-  const compact: Record<string, unknown> = {
-    path: entry.path,
-    type: entry.type,
-    scope: entry.scope,
-    level: entry.level,
-    title: entry.title,
-    ...(isArchive ? {} : { summary: entry.summary.slice(0, 140) }),
-    updated_at: entry.updated_at,
-    size: entry.size,
-    token_estimate: entry.token_estimate,
-    default_read: entry.default_read,
-    archive: entry.archive,
-  };
-
-  if (entry.task_id) compact.task_id = entry.task_id;
-  if (!isArchive && entry.content_terms && entry.content_terms.length > 0) {
-    // live 条目限 16 词（实测均值 ~40 词/条，砍掉后搜索信号基本无损）
-    compact.content_terms = entry.content_terms.slice(0, 16);
-  }
-  if (entry.generated_view === true) compact.generated_view = true;
-  if (entry.index_only === true) compact.index_only = true;
-  if (entry.stale === true) compact.stale = true;
-
-  return compact;
-}
-
-export async function refreshProjectDocumentIndex(
-  docpathDir: string,
-  cwd: string = dirname(resolve(docpathDir)),
-): Promise<{ entries: ProjectDocumentIndexEntry[]; docsIndexPath: string; externalCount: number; declaredExternal: boolean }> {
-  const mdFiles = await scanDirectory(docpathDir, docpathDir);
-  const declaredPaths = await readDeclaredDocumentScanPaths(cwd);
-  const externalFiles = declaredPaths
-    ? await collectExternalDocFiles(docpathDir, declaredPaths, new Set(mdFiles))
-    : [];
-
-  if (mdFiles.length === 0 && externalFiles.length === 0) {
-    return {
-      entries: [],
-      docsIndexPath: join(docpathDir, 'docs-index.json'),
-      externalCount: 0,
-      declaredExternal: !!declaredPaths,
-    };
-  }
-
-  const entries = await buildDocEntries(docpathDir, mdFiles, externalFiles);
-  const docsIndexPath = await writeDocsIndexes(docpathDir, entries);
-  return {
-    entries,
-    docsIndexPath,
-    externalCount: externalFiles.length,
-    declaredExternal: !!declaredPaths,
-  };
 }
 
 /** docs scan — 扫描文档生成索引 */

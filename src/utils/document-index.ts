@@ -1,7 +1,9 @@
 import { existsSync, type Dirent } from 'node:fs';
-import { readdir, readFile, stat } from 'node:fs/promises';
-import { basename, extname, join, resolve, sep } from 'node:path';
+import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { basename, extname, join, resolve, sep, dirname, relative } from 'node:path';
 import { normalizeTopic } from './topic-synonyms.js';
+import { readDeclaredDocumentScanPaths } from './config.js';
+import { isExcludedForScan } from './scan-existing-tree.js';
 
 export const PROJECT_DOCS_INDEX_VERSION = 1;
 export const DEFAULT_CONTEXT_TOKEN_BUDGET = 15000;
@@ -534,3 +536,245 @@ export async function isProjectDocumentIndexStale(
   }
   return false;
 }
+
+/** 从 markdown 中提取标题 */
+function extractTitleFromContent(filePath: string, content: string): string {
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const match = line.match(/^#\s+(.+)/);
+    if (match) return match[1].trim();
+  }
+  return basename(filePath, extname(filePath));
+}
+
+/** 从 markdown 中提取简短摘要 */
+function extractSummaryFromContent(filePath: string, content: string): string {
+  const lines = content
+    .replace(/^---[\s\S]*?---\s*\n?/, '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#') && !line.startsWith('|') && !line.startsWith('>'));
+  return (lines[0] || basename(filePath, extname(filePath))).replace(/\s+/g, ' ').slice(0, 180);
+}
+
+/** 递归扫描目录 */
+export async function scanDirectory(dir: string, baseDir: string): Promise<string[]> {
+  const results: string[] = [];
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+      const relativePath = normalizeDocPath(relative(baseDir, fullPath));
+
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+        if (isProjectDocumentScanExcludedPath(relativePath)) continue;
+        const subResults = await scanDirectory(fullPath, baseDir);
+        results.push(...subResults);
+      } else if (entry.isFile() && extname(entry.name) === '.md') {
+        if (isProjectDocumentScanExcludedPath(relativePath)) continue;
+        results.push(relativePath);
+      }
+    }
+  } catch {
+    /* ignore permission errors */
+  }
+  return results;
+}
+
+export interface ExternalDocFile {
+  abs: string;
+  rel: string;
+}
+
+export async function collectExternalDocFiles(
+  docpathDir: string,
+  declaredPaths: string[],
+  internalPaths: ReadonlySet<string>,
+): Promise<ExternalDocFile[]> {
+  const projectRoot = dirname(resolve(docpathDir));
+  const docpathAbs = resolve(docpathDir);
+  const results: ExternalDocFile[] = [];
+  const seen = new Set<string>();
+
+  const relOf = (abs: string): string => normalizeDocPath(relative(projectRoot, abs));
+
+  const pushFile = (abs: string): void => {
+    if (extname(abs) !== '.md') return;
+    if (isExcludedForScan(projectRoot, abs, basename(abs), false)) return;
+    const rel = relOf(abs);
+    if (internalPaths.has(rel) || seen.has(rel)) return;
+    seen.add(rel);
+    results.push({ abs, rel });
+  };
+
+  const walkDir = async (dir: string): Promise<void> => {
+    let entries: Dirent[];
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const abs = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (resolve(abs) === docpathAbs) continue;
+        if (isExcludedForScan(projectRoot, abs, entry.name, true)) continue;
+        await walkDir(abs);
+      } else if (entry.isFile()) {
+        pushFile(abs);
+      }
+    }
+  };
+
+  for (const declared of declaredPaths) {
+    const abs = resolve(projectRoot, declared);
+    if (abs === docpathAbs || abs.startsWith(`${docpathAbs}${sep}`)) continue;
+    if (abs !== projectRoot && !abs.startsWith(`${projectRoot}${sep}`)) continue;
+
+    let info;
+    try {
+      info = await stat(abs);
+    } catch {
+      continue;
+    }
+    if (info.isFile()) {
+      pushFile(abs);
+    } else if (info.isDirectory()) {
+      if (abs !== projectRoot && isExcludedForScan(projectRoot, abs, basename(abs), true)) continue;
+      await walkDir(abs);
+    }
+  }
+
+  return results;
+}
+
+async function readCurrentTaskId(docpathDir: string): Promise<string | undefined> {
+  try {
+    const state = JSON.parse(await readFile(join(docpathDir, 'workspace', 'state.json'), 'utf-8')) as { task_id?: string };
+    return state.task_id || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function buildDocEntries(
+  docpathDir: string,
+  mdFiles: string[],
+  externalFiles: ExternalDocFile[] = [],
+): Promise<ProjectDocumentIndexEntry[]> {
+  const entries: ProjectDocumentIndexEntry[] = [];
+  const currentTaskId = await readCurrentTaskId(docpathDir);
+  const hasPreferredRules = existsSync(join(docpathDir, 'rules'));
+  const now = Date.now();
+
+  const pushEntry = async (fullPath: string, relPath: string): Promise<void> => {
+    const fileStat = await stat(fullPath);
+    const content = await readFile(fullPath, 'utf-8');
+    const entry = buildProjectDocumentEntry({
+      path: relPath,
+      size: fileStat.size,
+      mtime: fileStat.mtime,
+      content,
+      title: extractTitleFromContent(fullPath, content),
+      summary: extractSummaryFromContent(fullPath, content),
+      currentTaskId,
+      hasPreferredRules,
+    });
+
+    if (entry.archive && isArchiveDocumentExpired(fileStat.mtime, now)) {
+      return;
+    }
+
+    entries.push(entry);
+  };
+
+  const GENERATED_ARTIFACTS = new Set(['docs.md', 'docs-index.json']);
+  for (const file of mdFiles) {
+    if (GENERATED_ARTIFACTS.has(file)) continue;
+    await pushEntry(join(docpathDir, file), file);
+  }
+  for (const external of externalFiles) {
+    await pushEntry(external.abs, external.rel);
+  }
+
+  return entries;
+}
+
+function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unknown> {
+  const isArchive = entry.archive === true;
+  const compact: Record<string, unknown> = {
+    path: entry.path,
+    type: entry.type,
+    scope: entry.scope,
+    level: entry.level,
+    title: entry.title,
+    ...(isArchive ? {} : { summary: entry.summary.slice(0, 140) }),
+    updated_at: entry.updated_at,
+    size: entry.size,
+    token_estimate: entry.token_estimate,
+    default_read: entry.default_read,
+    archive: entry.archive,
+  };
+
+  if (entry.task_id) compact.task_id = entry.task_id;
+  if (!isArchive && entry.content_terms && entry.content_terms.length > 0) {
+    compact.content_terms = entry.content_terms.slice(0, 16);
+  }
+  if (entry.generated_view === true) compact.generated_view = true;
+  if (entry.index_only === true) compact.index_only = true;
+  if (entry.stale === true) compact.stale = true;
+
+  return compact;
+}
+
+async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentIndexEntry[]): Promise<string> {
+  const docsIndexPath = join(docpathDir, 'docs-index.json');
+  const compactEntries = entries.map(compactIndexEntry);
+  await writeFile(
+    docsIndexPath,
+    `${JSON.stringify({
+      version: PROJECT_DOCS_INDEX_VERSION,
+      generated_at: new Date().toISOString(),
+      policy: {
+        mode: 'index-first',
+        default_context_token_budget: 15000,
+        archive_body_requires: ['--topic', '--task-id', '--include-archive'],
+        archive_retention_days: ARCHIVE_RETENTION_DAYS,
+      },
+      entries: compactEntries,
+    })}\n`,
+    'utf-8',
+  );
+  return docsIndexPath;
+}
+
+export async function refreshProjectDocumentIndex(
+  docpathDir: string,
+  cwd: string = dirname(resolve(docpathDir)),
+): Promise<{ entries: ProjectDocumentIndexEntry[]; docsIndexPath: string; externalCount: number; declaredExternal: boolean }> {
+  const mdFiles = await scanDirectory(docpathDir, docpathDir);
+  const declaredPaths = await readDeclaredDocumentScanPaths(cwd);
+  const externalFiles = declaredPaths
+    ? await collectExternalDocFiles(docpathDir, declaredPaths, new Set(mdFiles))
+    : [];
+
+  if (mdFiles.length === 0 && externalFiles.length === 0) {
+    return {
+      entries: [],
+      docsIndexPath: join(docpathDir, 'docs-index.json'),
+      externalCount: 0,
+      declaredExternal: !!declaredPaths,
+    };
+  }
+
+  const entries = await buildDocEntries(docpathDir, mdFiles, externalFiles);
+  const docsIndexPath = await writeDocsIndexes(docpathDir, entries);
+  return {
+    entries,
+    docsIndexPath,
+    externalCount: externalFiles.length,
+    declaredExternal: !!declaredPaths,
+  };
+}
+

@@ -27,7 +27,7 @@ import {
   resolveActiveTaskDocPath,
 } from '../utils/task-files.js';
 import type { StructuredSpecDocument } from '../utils/structured-docs.js';
-import { emitNextHint } from '../utils/next-hint.js';
+import { emitNextHint } from '../engine/next-hint.js';
 import { gitSync } from '../utils/git-run.js';
 
 interface JournalOptions {

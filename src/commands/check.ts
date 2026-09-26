@@ -10,7 +10,7 @@
 import { existsSync } from 'fs';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
-import { emitNextHint } from '../utils/next-hint.js';
+import { emitNextHint } from '../engine/next-hint.js';
 import { reviewCommand } from './review.js';
 import type { CheckOptions, CheckResult } from './check/types.js';
 

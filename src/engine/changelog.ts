@@ -10,12 +10,12 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { readFileSafe, resolveDocpathDir, ensureDir } from '../utils/file.js';
-import { resolveRulePaths } from '../utils/rules.js';
-import { readDecisionJsonl } from '../governance/decisions.js';
+import { readDecisionJsonl } from '../utils/decisions.js';
 import { listBacklogItems } from '../engine/backlog.js';
 import { parseSpecMarkdownDocument } from '../utils/structured-docs.js';
 import { parsePlanSteps } from '../utils/doc-parser.js';
-import { refreshProjectDocumentIndex } from '../commands/docs.js';
+import { refreshProjectDocumentIndex } from '../utils/document-index.js';
+import { resolveRulePaths } from '../utils/rules.js';
 
 export type ChangeCategory = 'breaking' | 'features' | 'improvements' | 'fixes' | 'decisions' | 'rules' | 'other';
 

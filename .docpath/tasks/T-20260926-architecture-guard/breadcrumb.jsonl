@@ -1,0 +1,8 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-architecture-guard","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 Architecture Guard 架构分层净化与循环依赖清零","timestamp":"2026-09-26T14:45:25.948Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-architecture-guard","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-26T15:05:33.353Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-architecture-guard","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译, 测试（受控并发）","timestamp":"2026-09-26T15:06:58.651Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-architecture-guard","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-26T15:10:13.567Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-architecture-guard","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-26T15:13:19.709Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-architecture-guard","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-26T15:20:30.827Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-architecture-guard","step":"review","status":"done","context":"代码审查: 0 错误, 85 警告, 0 提示","timestamp":"2026-09-26T15:20:40.029Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-architecture-guard","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-26T15:20:41.432Z"}

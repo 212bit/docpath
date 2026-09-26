@@ -6,7 +6,7 @@
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import type { AgentOutputContext } from './formatters.js';
+import type { AgentFocusContext, AgentOutputContext } from '../../types/agent-output.js';
 
 // ── Context Injection 类型 ──
 
@@ -275,20 +275,21 @@ export function extractSpecSummary(specContent: string): SpecSummary | null {
 export function selectCurrentFocus(
   phase: string,
   gate: string,
-  context: AgentOutputContext,
+  context: AgentFocusContext,
 ): { phase: string; detail: string } | null {
+  const planTasks = context.planTasks || [];
   if (phase === 'executing') {
-    const openStep = context.planTasks.find(task => !task.done);
+    const openStep = planTasks.find(task => !task.done);
     if (openStep) {
       return {
         phase: 'executing',
-        detail: `当前步骤: ${openStep.id} - ${openStep.title}\n进度: ${context.planTasks.filter(t => t.done).length}/${context.planTasks.length} 完成`,
+        detail: `当前步骤: ${openStep.id} - ${openStep.title}\n进度: ${planTasks.filter(t => t.done).length}/${planTasks.length} 完成`,
       };
     }
-    if (context.planTasks.length > 0) {
+    if (planTasks.length > 0) {
       return {
         phase: 'executing',
-        detail: `所有计划步骤已完成 (${context.planTasks.length}/${context.planTasks.length})\n建议运行 check 门禁`,
+        detail: `所有计划步骤已完成 (${planTasks.length}/${planTasks.length})\n建议运行 check 门禁`,
       };
     }
   }
@@ -304,15 +305,16 @@ export function selectCurrentFocus(
   }
 
   if (phase === 'completed') {
-    if (context.lessonSummary.pendingCount > 0) {
+    if (context.lessonSummary && context.lessonSummary.pendingCount > 0) {
+      const pendingKeys = context.lessonSummary.pendingKeys || [];
       return {
         phase: 'completed',
-        detail: `待归档 lesson: ${context.lessonSummary.pendingCount} 条\nKeys: ${context.lessonSummary.pendingKeys.slice(0, 3).join(', ')}${context.lessonSummary.pendingKeys.length > 3 ? '...' : ''}`,
+        detail: `待归档 lesson: ${context.lessonSummary.pendingCount} 条\nKeys: ${pendingKeys.slice(0, 3).join(', ')}${pendingKeys.length > 3 ? '...' : ''}`,
       };
     }
     return {
       phase: 'completed',
-      detail: `任务已完成\n计划: ${context.planTasks.filter(t => t.done).length}/${context.planTasks.length} 完成\n门禁: ${gate}`,
+      detail: `任务已完成\n计划: ${planTasks.filter(t => t.done).length}/${planTasks.length} 完成\n门禁: ${gate}`,
     };
   }
 

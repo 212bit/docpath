@@ -9,11 +9,17 @@ import { existsSync, readdirSync } from 'node:fs';
 import { appendFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { readCurrentState } from './workspace.js';
-import { listActiveSessions } from './session.js';
-import { listWorktrees, isGitRepo } from './worktree.js';
+import {
+  listWorktrees,
+  isGitRepo,
+  runGitCapture,
+  samePath,
+  worktreeNameFromPath,
+  resolveWorktreeManagerRoot,
+} from './worktree.js';
 import { readFileSafe, resolveDocpathDir } from './file.js';
-import { runGitCapture, samePath, worktreeNameFromPath, resolveWorktreeManagerRoot } from '../commands/worktree/shared.js';
-import { writeBreadcrumb, formatEntry } from '../engine/breadcrumb.js';
+import { writeBreadcrumb, formatEntry } from './breadcrumb.js';
+import { listActiveSessions } from './session.js';
 
 export type WorktreeReadiness = 'idle' | 'in_progress' | 'ready_to_merge' | 'blocked' | 'merged' | 'drifted';
 

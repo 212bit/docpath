@@ -8,7 +8,7 @@ import { readRiskPolicyConfig } from '../utils/config.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { clearCurrentTaskAlias, currentTaskDir, canonicalTaskDir, writeActiveTaskFile } from '../utils/task-files.js';
 import { readCurrentState, mutateCurrentState } from '../utils/workspace.js';
-import { emitNextHint } from '../utils/next-hint.js';
+import { emitNextHint } from '../engine/next-hint.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 import { doneCommand } from './done.js';
 import { endStepExecution } from './runtime.js';

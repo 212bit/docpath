@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
 import { dirname, join, basename, isAbsolute } from 'node:path';
-import { runGit } from './git-closeout.js';
-import { resolveDocpathDir, writeFileSafe, readFileSafe } from './file.js';
-import { listBacklogItems } from '../engine/backlog.js';
+import { runGit } from '../utils/git-closeout.js';
+import { resolveDocpathDir, writeFileSafe, readFileSafe } from '../utils/file.js';
+import { listBacklogItems } from './backlog.js';
 import { readLifecycleConfig } from './lifecycle.js';
 
 export interface TraceMatrixEntry {

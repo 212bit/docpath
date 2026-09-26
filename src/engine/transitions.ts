@@ -393,12 +393,20 @@ export async function transitionWorkflow(
     }
 
     await writeCurrentState(cwd, next);
-    try {
-      const { refreshAgentSnapshot } = await import('../hooks/bridge.js');
-      await refreshAgentSnapshot(cwd);
-    } catch {
-      // Snapshot refresh must not make a successful FSM transition fail.
+    for (const hook of transitionHooks) {
+      try {
+        await hook(cwd, next, event);
+      } catch {
+        // Hooks must not fail transitions
+      }
     }
     return next;
   });
+}
+
+export type TransitionHook = (cwd: string, state: CurrentState, event: WorkflowEvent) => Promise<void> | void;
+const transitionHooks: TransitionHook[] = [];
+
+export function registerTransitionHook(hook: TransitionHook): void {
+  transitionHooks.push(hook);
 }

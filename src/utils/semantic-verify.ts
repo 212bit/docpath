@@ -23,7 +23,7 @@ import {
   type StructuredSpecItem,
 } from './structured-docs.js';
 import { gitSyncOptional } from './git-run.js';
-import { readBreadcrumb } from '../engine/breadcrumb.js';
+import { readBreadcrumb } from './breadcrumb.js';
 
 export interface ScopeViolation {
   file: string;

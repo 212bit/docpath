@@ -10,10 +10,15 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { listWorktrees } from '../utils/worktree.js';
+import {
+  listWorktrees,
+  runGitCapture,
+  samePath,
+  worktreeNameFromPath,
+  resolveWorktreeManagerRoot,
+} from '../utils/worktree.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { readFileSafe } from '../utils/file.js';
-import { runGitCapture, samePath, worktreeNameFromPath, resolveWorktreeManagerRoot } from '../commands/worktree/shared.js';
 import { listBacklogItems, readBacklogItem, type BacklogItem } from './backlog.js';
 
 export interface FileOverlapConflict {

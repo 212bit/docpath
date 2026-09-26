@@ -16,7 +16,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow, assertWorkflowEventLegal } from '../engine/transitions.js';
-import { emitNextHint } from '../utils/next-hint.js';
+import { emitNextHint } from '../engine/next-hint.js';
 import { writeReviewEvidence, readReviewEvidence } from '../utils/workspace-evidence.js';
 import { healStructuredMarkdownDrift } from '../utils/structured-heal.js';
 import {

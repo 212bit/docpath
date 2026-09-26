@@ -1,10 +1,10 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { resolveDocpathDir } from './file.js';
-import { gatePolicyForProfile, resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
+import { resolveDocpathDir } from '../utils/file.js';
+import { gatePolicyForProfile, resolveEffectiveWorkflowProfile } from './workflow-profile.js';
 import { selectCurrentFocus, summarizeDrift, loadAgentOutputContext, inferRouteFromContext, generateQuickFix, routeStepTopic } from './agent-output/formatters.js';
 import { formatActiveGuardrails } from './agent-output/context-injection.js';
-import { detectBinaryDrift, detectPathShadowing, takePathShadowAdvisory } from './version-drift.js';
+import { detectBinaryDrift, detectPathShadowing, takePathShadowAdvisory } from '../utils/version-drift.js';
 export type { AgentOutput } from './agent-output/formatters.js';
 
 /**
@@ -226,7 +226,7 @@ export async function generateAgentOutput(
   };
 
   // Add active_sessions, concurrent_session_warning, and state_freshness to generateAgentOutput
-  const { listActiveSessions, resolveSessionContext } = await import('./session.js');
+  const { listActiveSessions, resolveSessionContext } = await import('../utils/session.js');
   const selfSession = resolveSessionContext();
   const activeSessions = await listActiveSessions(cwd, {
     excludeSelf: true,

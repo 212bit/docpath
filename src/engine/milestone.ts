@@ -1,14 +1,14 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { readFileSafe, resolveDocpathDir, ensureDir } from './file.js';
-import { resolveRulePaths } from './rules.js';
-import { readDecisionJsonl } from '../governance/decisions.js';
-import { listBacklogItems } from '../engine/backlog.js';
-import { readActiveTaskFile, canonicalTaskDir, archivedTaskDir } from './task-files.js';
-import { parseSpecMarkdownDocument, type StructuredSpecDocument } from './structured-docs.js';
-import { parsePlanSteps } from './doc-parser.js';
-import { refreshProjectDocumentIndex } from '../commands/docs.js';
+import { readFileSafe, resolveDocpathDir, ensureDir } from '../utils/file.js';
+import { resolveRulePaths } from '../utils/rules.js';
+import { readDecisionJsonl } from '../utils/decisions.js';
+import { listBacklogItems } from './backlog.js';
+import { readActiveTaskFile, canonicalTaskDir, archivedTaskDir } from '../utils/task-files.js';
+import { parseSpecMarkdownDocument, type StructuredSpecDocument } from '../utils/structured-docs.js';
+import { parsePlanSteps } from '../utils/doc-parser.js';
+import { refreshProjectDocumentIndex } from '../utils/document-index.js';
 
 export interface MilestoneTaskSummary {
   taskId: string;

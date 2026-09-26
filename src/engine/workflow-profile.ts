@@ -1,6 +1,15 @@
 import { normalizeRiskTier } from './risk.js';
+import {
+  type WorkflowProfile,
+  DEFAULT_WORKFLOW_PROFILE,
+  normalizeWorkflowProfile,
+} from '../types/state.js';
 
-export type WorkflowProfile = 'quick' | 'standard' | 'strict' | 'instant';
+export {
+  type WorkflowProfile,
+  DEFAULT_WORKFLOW_PROFILE,
+  normalizeWorkflowProfile,
+};
 
 export interface GatePolicy {
   requiresSpec: boolean;
@@ -16,8 +25,6 @@ export interface GatePolicy {
    */
   liteCheck: boolean;
 }
-
-export const DEFAULT_WORKFLOW_PROFILE: WorkflowProfile = 'standard';
 
 const PROFILE_POLICIES: Record<WorkflowProfile, GatePolicy> = {
   quick: {
@@ -54,9 +61,6 @@ const PROFILE_POLICIES: Record<WorkflowProfile, GatePolicy> = {
   },
 };
 
-export function normalizeWorkflowProfile(value: unknown): WorkflowProfile {
-  return value === 'quick' || value === 'strict' || value === 'instant' ? value : DEFAULT_WORKFLOW_PROFILE;
-}
 
 export function gatePolicyForProfile(profile: unknown): GatePolicy {
   return PROFILE_POLICIES[normalizeWorkflowProfile(profile)];

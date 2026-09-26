@@ -9,7 +9,7 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';
-import { BREADCRUMB_HEADER, formatEntry, type BreadcrumbEntry } from '../engine/breadcrumb.js';
+import { BREADCRUMB_HEADER, formatEntry, type BreadcrumbEntry } from './breadcrumb.js';
 import { resolveDocpathDir, writeFileAtomic } from './file.js';
 import { DEFAULT_LEASE_TTL_MS } from './session.js';
 import { readCurrentState } from './workspace.js';

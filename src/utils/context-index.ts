@@ -6,7 +6,7 @@ import { readCurrentState } from './workspace.js';
 import { readActiveTaskFile } from './task-files.js';
 import { parsePlanSteps } from './doc-parser.js';
 import { readDeliverableIndexSummary } from './deliverables.js';
-import { readBreadcrumb } from '../engine/breadcrumb.js';
+import { readBreadcrumb } from './breadcrumb.js';
 import { readLastCheckMarkdown, readReviewMarkdown } from './workspace-evidence.js';
 
 export interface HybridContextIndexEntry {
