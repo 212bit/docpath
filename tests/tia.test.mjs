@@ -99,4 +99,35 @@ describe('Test Impact Analysis (TIA) Engine', () => {
     assert.ok(parsed.impacted_tests.includes('tests/calculator.test.mjs'));
     assert.equal(parsed.stats.impacted_test_count, 1);
   });
+
+  it('supports multi-language TIA impact derivation (Python, Go, Rust)', async () => {
+    // 1. Python files
+    await writeFile(join(tempDir, 'src', 'auth.py'), 'def login(): pass', 'utf-8');
+    await writeFile(
+      join(tempDir, 'tests', 'test_auth.py'),
+      'from src.auth import login\ndef test_login(): pass',
+      'utf-8',
+    );
+
+    // 2. Go files
+    await mkdir(join(tempDir, 'pkg', 'jwt'), { recursive: true });
+    await writeFile(join(tempDir, 'pkg', 'jwt', 'token.go'), 'package jwt\nfunc Sign() {}', 'utf-8');
+    await writeFile(join(tempDir, 'pkg', 'jwt', 'token_test.go'), 'package jwt\nimport "testing"\nfunc TestSign(t *testing.T) {}', 'utf-8');
+
+    // 3. Rust files
+    await writeFile(join(tempDir, 'src', 'codec.rs'), 'pub fn encode() {}', 'utf-8');
+    await writeFile(join(tempDir, 'tests', 'codec.rs'), 'use project::codec;\n#[test]\nfn test_codec() {}', 'utf-8');
+
+    // Test Python impact
+    const pyReport = await analyzeTestImpact(tempDir, { files: ['src/auth.py'] });
+    assert.ok(pyReport.impacted_tests.includes('tests/test_auth.py'));
+
+    // Test Go impact
+    const goReport = await analyzeTestImpact(tempDir, { files: ['pkg/jwt/token.go'] });
+    assert.ok(goReport.impacted_tests.includes('pkg/jwt/token_test.go'));
+
+    // Test Rust impact
+    const rsReport = await analyzeTestImpact(tempDir, { files: ['src/codec.rs'] });
+    assert.ok(rsReport.impacted_tests.includes('tests/codec.rs'));
+  });
 });

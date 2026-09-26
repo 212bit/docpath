@@ -112,4 +112,46 @@ describe('Dependency Graph Engine', () => {
     assert.ok(cycles[0].display.includes('a.ts'));
     assert.ok(cycles[0].display.includes('b.ts'));
   });
+
+  it('supports multi-language dependency graphs (Python, Go, Rust)', async () => {
+    // Python
+    await mkdir(join(tempDir, 'app', 'services'), { recursive: true });
+    await writeFile(join(tempDir, 'app', 'services', 'auth.py'), 'def check(): pass', 'utf-8');
+    await writeFile(
+      join(tempDir, 'app', 'services', 'user.py'),
+      'from .auth import check\nimport math',
+      'utf-8',
+    );
+
+    // Go
+    await mkdir(join(tempDir, 'pkg', 'api'), { recursive: true });
+    await writeFile(join(tempDir, 'pkg', 'api', 'handler.go'), 'package api\nimport "net/http"', 'utf-8');
+    await writeFile(join(tempDir, 'pkg', 'api', 'server.go'), 'package api\nfunc Run() {}', 'utf-8');
+
+    // Rust
+    await mkdir(join(tempDir, 'src', 'db'), { recursive: true });
+    await writeFile(join(tempDir, 'src', 'db', 'mod.rs'), 'pub fn connect() {}', 'utf-8');
+    await writeFile(
+      join(tempDir, 'src', 'main.rs'),
+      'mod db;\nuse crate::db::connect;',
+      'utf-8',
+    );
+
+    const graph = await buildDependencyGraph(tempDir);
+
+    // Python node check
+    const userNode = graph.nodes.get('app/services/user.py');
+    assert.ok(userNode, 'Python userNode should exist');
+    assert.ok(userNode.imports.includes('app/services/auth.py'));
+
+    // Go package internal dependency
+    const handlerNode = graph.nodes.get('pkg/api/handler.go');
+    assert.ok(handlerNode, 'Go handlerNode should exist');
+    assert.ok(handlerNode.imports.includes('pkg/api/server.go'));
+
+    // Rust module dependency
+    const mainNode = graph.nodes.get('src/main.rs');
+    assert.ok(mainNode, 'Rust mainNode should exist');
+    assert.ok(mainNode.imports.includes('src/db/mod.rs'));
+  });
 });

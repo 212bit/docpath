@@ -83,13 +83,45 @@ export async function testMapCommand(options: TestMapOptions): Promise<void> {
   }
 
   if (run) {
-    console.log(`🚀  正在定向运行受影响单测: node --test ${report.impacted_tests.join(' ')}\n`);
-    const result = spawnSync('node', ['--test', ...report.impacted_tests], {
-      cwd,
-      stdio: 'inherit',
-    });
-    if (result.status !== 0) {
-      process.exit(result.status || 1);
+    const pyTests = report.impacted_tests.filter((t) => t.endsWith('.py'));
+    const goTests = report.impacted_tests.filter((t) => t.endsWith('.go'));
+    const rsTests = report.impacted_tests.filter((t) => t.endsWith('.rs'));
+    const nodeTests = report.impacted_tests.filter((t) => /\.(mjs|cjs|js|ts|tsx|jsx)$/.test(t));
+
+    let allPassed = true;
+
+    // 1. Python
+    if (pyTests.length > 0) {
+      console.log(`🚀  正在定向运行 Python 受影响单测: pytest ${pyTests.join(' ')}\n`);
+      const res = spawnSync('pytest', pyTests, { cwd, stdio: 'inherit' });
+      if (res.status !== 0) allPassed = false;
+    }
+
+    // 2. Go
+    if (goTests.length > 0) {
+      console.log(`🚀  正在定向运行 Go 受影响单测: go test ${goTests.join(' ')}\n`);
+      const res = spawnSync('go', ['test', ...goTests], { cwd, stdio: 'inherit' });
+      if (res.status !== 0) allPassed = false;
+    }
+
+    // 3. Rust
+    if (rsTests.length > 0) {
+      const targets = rsTests.map((t) => t.replace(/^tests\//, '').replace(/\.rs$/, ''));
+      const args = ['test', ...targets.map((t) => `--test=${t}`)];
+      console.log(`🚀  正在定向运行 Rust 受影响单测: cargo ${args.join(' ')}\n`);
+      const res = spawnSync('cargo', args, { cwd, stdio: 'inherit' });
+      if (res.status !== 0) allPassed = false;
+    }
+
+    // 4. Node / TypeScript
+    if (nodeTests.length > 0) {
+      console.log(`🚀  正在定向运行 Node/TS 受影响单测: node --test ${nodeTests.join(' ')}\n`);
+      const res = spawnSync('node', ['--test', ...nodeTests], { cwd, stdio: 'inherit' });
+      if (res.status !== 0) allPassed = false;
+    }
+
+    if (!allPassed) {
+      process.exit(1);
     }
   } else {
     console.log(`💡  提示: 加上 \`--run\` 参数可一键定向执行这些测试: \`docpath test-map --run\`\n`);

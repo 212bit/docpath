@@ -76,23 +76,76 @@ export function getGitModifiedFiles(cwd: string, sinceRef?: string): string[] {
 }
 
 /**
- * 依据文件名规范做直觉匹配 (例如 src/engine/foo.ts 对应 tests/foo.test.mjs)
+ * 判断是否为测试文件（支持 JS/TS, Python, Go, Rust）
+ */
+export function isTestFile(filePath: string): boolean {
+  const norm = filePath.replace(/\\/g, '/');
+  const base = basename(norm);
+  const ext = norm.substring(norm.lastIndexOf('.')).toLowerCase();
+
+  // 1. 位于测试目录
+  if (norm.startsWith('tests/') || norm.startsWith('test/') || norm.includes('/tests/') || norm.includes('/test/')) {
+    return true;
+  }
+
+  // 2. JS / TS 测试
+  if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(ext)) {
+    if (/\.(test|spec)\.(mjs|ts|js|jsx|tsx|cjs)$/i.test(base)) {
+      return true;
+    }
+  }
+
+  // 3. Go 测试
+  if (ext === '.go') {
+    if (base.endsWith('_test.go')) {
+      return true;
+    }
+  }
+
+  // 4. Python 测试
+  if (ext === '.py') {
+    if (base.startsWith('test_') || base.endsWith('_test.py')) {
+      return true;
+    }
+  }
+
+  // 5. Rust 测试
+  if (ext === '.rs') {
+    if (norm.startsWith('tests/') || base.endsWith('_test.rs') || base === 'tests.rs') {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * 依据文件名规范做直觉匹配（支持多语言：JS/TS, Python, Go, Rust）
  */
 function findDirectNameMatchedTests(
   modifiedFile: string,
   allTestFiles: string[],
 ): string[] {
-  const base = basename(modifiedFile).replace(/\.(ts|js|tsx|jsx|mjs|cjs)$/, '');
+  const rawBase = basename(modifiedFile)
+    .replace(/\.(ts|js|tsx|jsx|mjs|cjs|go|py|rs)$/i, '')
+    .toLowerCase();
   const matches: string[] = [];
 
   for (const testFile of allTestFiles) {
-    const testBase = basename(testFile);
+    const testBase = basename(testFile).toLowerCase();
+    const testBaseClean = testBase
+      .replace(/\.(test|spec)\.(mjs|ts|js|jsx|tsx|cjs)$/i, '')
+      .replace(/^test_/, '')
+      .replace(/_test\.(go|py|rs)$/i, '')
+      .replace(/\.(py|go|rs|mjs|ts|js)$/i, '');
+
     if (
-      testBase.startsWith(`${base}.test.`) ||
-      testBase.startsWith(`${base}-test.`) ||
-      testBase.startsWith(`${base}.spec.`) ||
-      testBase === `${base}.test.mjs` ||
-      testBase === `${base}.test.js`
+      testBaseClean === rawBase ||
+      testBaseClean.startsWith(`${rawBase}-`) ||
+      testBaseClean.startsWith(`${rawBase}_`) ||
+      rawBase.startsWith(`${testBaseClean}-`) ||
+      rawBase.startsWith(`${testBaseClean}_`) ||
+      testBase.includes(rawBase)
     ) {
       matches.push(testFile);
     }
@@ -108,22 +161,22 @@ export async function analyzeTestImpact(
   cwd: string,
   options: { files?: string[]; since?: string; graph?: DependencyGraph } = {},
 ): Promise<TestImpactReport> {
-  const graph = options.graph || (await buildDependencyGraph(cwd, ['src', 'tests']));
-  const allTestFiles = graph.allFiles.filter((f) => f.startsWith('tests/'));
+  const graph = options.graph || (await buildDependencyGraph(cwd));
+  const allTestFiles = graph.allFiles.filter(isTestFile);
 
   let modifiedFiles = options.files && options.files.length > 0
     ? options.files.map((f) => f.replace(/\\/g, '/'))
     : getGitModifiedFiles(cwd, options.since);
 
   // 过滤只保留存在于项目中的文件
-  modifiedFiles = modifiedFiles.filter((f) => graph.nodes.has(f) || f.startsWith('src/') || f.startsWith('tests/'));
+  modifiedFiles = modifiedFiles.filter((f) => graph.nodes.has(f) || isTestFile(f) || f.startsWith('src/') || f.startsWith('pkg/'));
 
   const impactedTestsSet = new Set<string>();
   const dependencyChains: TestImpactReport['dependency_chains'] = [];
 
   for (const modFile of modifiedFiles) {
     // 1. 如果修改的本身就是测试文件，必须包含自身
-    if (modFile.startsWith('tests/')) {
+    if (isTestFile(modFile)) {
       impactedTestsSet.add(modFile);
       dependencyChains.push({
         test_file: modFile,
@@ -135,7 +188,7 @@ export async function analyzeTestImpact(
 
     // 2. 通过依赖图谱查找所有引用了该文件的测试
     const { affectedFiles, dependencyChains: chains } = getTransitiveDependents(graph, [modFile]);
-    const affectedTests = affectedFiles.filter((f) => f.startsWith('tests/'));
+    const affectedTests = affectedFiles.filter(isTestFile);
 
     for (const testFile of affectedTests) {
       impactedTestsSet.add(testFile);
