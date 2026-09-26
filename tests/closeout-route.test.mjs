@@ -175,7 +175,7 @@ describe('R-365: 收口口径对齐（残余三连文案）', () => {
       'src/commands/check.ts',
       'src/commands/check/evidence.ts',
       'src/commands/task.ts',
-      'src/utils/closeout-route.ts',
+      'src/engine/closeout-route.ts',
     ];
     for (const rel of targets) {
       const content = readFileSync(join(repoRoot, rel), 'utf-8');

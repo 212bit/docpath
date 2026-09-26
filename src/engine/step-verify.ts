@@ -165,6 +165,62 @@ function parseTestOutputCounts(output: string): { passCount: number; failCount: 
   return { passCount, failCount };
 }
 
+function getLatestMtime(dir: string): number {
+  let maxMtime = 0;
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = join(dir, e.name);
+      if (e.isDirectory()) {
+        const subMax = getLatestMtime(full);
+        if (subMax > maxMtime) maxMtime = subMax;
+      } else if (e.isFile()) {
+        const mt = statSync(full).mtimeMs;
+        if (mt > maxMtime) maxMtime = mt;
+      }
+    }
+  } catch {}
+  return maxMtime;
+}
+
+/**
+ * 自动检查并确保 TypeScript / 构建产物新鲜度
+ * 若 src/ 下有比 dist/ 更新的文件，或配置了 build 脚本且 dist/ 缺失，自动执行快速增量构建
+ */
+export async function ensureBuildFreshness(cwd: string): Promise<{ built: boolean; error?: string }> {
+  const pkgPath = join(cwd, 'package.json');
+  if (!existsSync(pkgPath)) return { built: false };
+
+  try {
+    const pkgRaw = await readFileSafe(pkgPath);
+    if (!pkgRaw) return { built: false };
+    const pkg = JSON.parse(pkgRaw);
+    const hasBuild = Boolean(pkg.scripts?.build);
+    const hasDist = existsSync(join(cwd, 'dist'));
+    const hasSrc = existsSync(join(cwd, 'src'));
+
+    if (!hasBuild || !hasSrc) return { built: false };
+
+    let needsBuild = !hasDist;
+    if (hasDist) {
+      const srcStat = getLatestMtime(join(cwd, 'src'));
+      const distStat = getLatestMtime(join(cwd, 'dist'));
+      if (srcStat > distStat) {
+        needsBuild = true;
+      }
+    }
+
+    if (needsBuild) {
+      await execFileAsync('npm', ['run', 'build'], { cwd, timeout: 30000 });
+      return { built: true };
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { built: false, error: msg };
+  }
+  return { built: false };
+}
+
 /**
  * 执行步骤级即时单测验证
  */
@@ -200,6 +256,8 @@ export async function runStepTargetedVerification(
   let args: string[] = [];
 
   if (isNode) {
+    // 自动自愈构建产物新鲜度
+    await ensureBuildFreshness(cwd);
     cmd = 'node';
     args = ['--test', '--test-concurrency=2', '--test-isolation=process', ...targetTests];
   } else if (isGo) {

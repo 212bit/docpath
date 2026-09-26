@@ -28,7 +28,7 @@ import { readDocPathConfig } from '../utils/config.js';
 import { emitNextHint } from '../utils/next-hint.js';
 import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
 import { exitWithError } from '../utils/error-helpers.js';
-import { renderCloseoutRoute, resolveCloseoutRoute } from '../utils/closeout-route.js';
+import { renderCloseoutRoute, resolveCloseoutRoute } from '../engine/closeout-route.js';
 import { assertWorktreeContract } from './worktree.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 import { assertNoDriftLock, refreshAgentSnapshot } from '../hooks/bridge.js';

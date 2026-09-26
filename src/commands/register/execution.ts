@@ -36,7 +36,9 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--test <path>', '指定靶向单测文件路径，随做随验')
     .option('--skip-verify', '跳过单步即时单测验证')
     .option('--strict-verify', '单步单测验证未通过时阻断收尾')
-    .action(async (options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; test?: string; skipVerify?: boolean; 'skip-verify'?: boolean; strictVerify?: boolean; 'strict-verify'?: boolean }) => {
+    .option('--done', '所有步骤完成后直接执行收口门禁序列')
+    .option('--commit', '收口门禁通过后自动将改动提交至本地 Git')
+    .action(async (options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; test?: string; skipVerify?: boolean; 'skip-verify'?: boolean; strictVerify?: boolean; 'strict-verify'?: boolean; done?: boolean; commit?: boolean }) => {
       await stepPassCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
@@ -47,6 +49,8 @@ export function registerExecutionCommands(cli: CAC): void {
         test: options.test,
         skipVerify: options.skipVerify ?? options['skip-verify'],
         strictVerify: options.strictVerify ?? options['strict-verify'],
+        done: options.done,
+        commit: options.commit,
       });
     });
 
@@ -60,7 +64,9 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--test <path>', '指定靶向单测文件路径，随做随验')
     .option('--skip-verify', '跳过单步即时单测验证')
     .option('--strict-verify', '单步单测验证未通过时阻断收尾')
-    .action(async (action: string | undefined, options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; test?: string; skipVerify?: boolean; 'skip-verify'?: boolean; strictVerify?: boolean; 'strict-verify'?: boolean }) => {
+    .option('--done', '所有步骤完成后直接执行收口门禁序列')
+    .option('--commit', '收口门禁通过后自动将改动提交至本地 Git')
+    .action(async (action: string | undefined, options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; test?: string; skipVerify?: boolean; 'skip-verify'?: boolean; strictVerify?: boolean; 'strict-verify'?: boolean; done?: boolean; commit?: boolean }) => {
       await stepPassCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
@@ -71,6 +77,8 @@ export function registerExecutionCommands(cli: CAC): void {
         test: options.test,
         skipVerify: options.skipVerify ?? options['skip-verify'],
         strictVerify: options.strictVerify ?? options['strict-verify'],
+        done: options.done,
+        commit: options.commit,
       });
     });
 

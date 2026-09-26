@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkExecWorkspace } from './helpers.mjs';
@@ -219,6 +219,39 @@ describe('docpath step-pass (R-340)', () => {
 
       const targetedTests = await resolveStepTargetedTests(cwd);
       assert.ok(targetedTests.some((t) => t.includes('helper.test.mjs')), 'Must detect helper.test.mjs through TIA transitive dependency');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('triggers compound closeout when --done is passed and all steps are finished', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-step-pass-super-done-'));
+    try {
+      const { tasks, workspace } = mkExecWorkspace(cwd);
+      const canonicalDir = join(cwd, '.docpath', 'tasks', 'T-AGENT');
+      mkdirSync(canonicalDir, { recursive: true });
+
+      const planContent = [
+        '## 执行计划',
+        '',
+        '### S1: Only step',
+        '- [ ] S1: Only step',
+        '- **描述**: single step plan',
+        '- **验收条件**: done',
+        '- **依赖**: 无',
+        '',
+      ].join('\n');
+
+      writeFileSync(join(tasks, 'plan.md'), planContent);
+      writeFileSync(join(canonicalDir, 'plan.md'), planContent);
+      copyFileSync(join(tasks, 'spec.md'), join(canonicalDir, 'spec.md'));
+
+      const result = run(['step-pass', '--done', '--skip-verify'], cwd);
+      assert.equal(result.code, 0, `step-pass --done failed: ${result.out}`);
+      assert.match(result.out, /step-pass: S1 已完成/);
+      assert.match(result.out, /--done \/ --commit 已启用/);
+      assert.match(result.out, /操作层审计/);
+      assert.match(result.out, /任务完成流程已执行/);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

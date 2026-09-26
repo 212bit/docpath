@@ -18,7 +18,7 @@ import { exitWithError } from '../utils/error-helpers.js';
 import { parsePlanSteps } from '../utils/doc-parser.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { resolveDocpathDir } from '../utils/file.js';
-import { renderCloseoutRoute, resolveCloseoutRoute } from '../utils/closeout-route.js';
+import { renderCloseoutRoute, resolveCloseoutRoute } from '../engine/closeout-route.js';
 import { runStepTargetedVerification, renderStepVerifyFeedback } from '../engine/step-verify.js';
 
 export interface StepPassOptions {
@@ -37,6 +37,10 @@ export interface StepPassOptions {
   skipVerify?: boolean;
   /** 是否在单测失败时阻断步骤收尾 */
   strictVerify?: boolean;
+  /** 所有步骤完成后直接进入收口门禁序列 */
+  done?: boolean;
+  /** 收口门禁通过后直接提交到本地 Git */
+  commit?: boolean;
 }
 
 /**
@@ -89,6 +93,17 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
       console.log(`✅  step-pass: ${item.id} 已完成`);
     }
     console.log('\n🎉  所有计划步骤均已完成！');
+    if (options.done || options.commit) {
+      console.log('🚀  --done / --commit 已启用，直接进入复合收口门禁序列...\n');
+      const { doneCommand } = await import('./done.js');
+      await doneCommand({
+        cwd,
+        commit: options.commit,
+        note: options.note,
+        session: options.session,
+      });
+      return;
+    }
     console.log(renderCloseoutRoute(resolveCloseoutRoute(cwd)));
     await emitNextHint(cwd);
     return;
@@ -182,6 +197,17 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
   const remaining = stepsAfter ? stepsAfter.filter((t) => !t.done).map((t) => t.id) : null;
   if (remaining && remaining.length === 0) {
     console.log('\n🎉  所有计划步骤均已完成！');
+    if (options.done || options.commit) {
+      console.log('🚀  --done / --commit 已启用，直接进入复合收口门禁序列...\n');
+      const { doneCommand } = await import('./done.js');
+      await doneCommand({
+        cwd,
+        commit: options.commit,
+        note: options.note,
+        session: options.session,
+      });
+      return;
+    }
     // R-363：收口路线按实际 changed files 做 scope 判定——改动命中 quick-guard
     // RISKY_PATH_PATTERNS 时不推荐 quick-done（它在 done 阶段必拒）。
     console.log(renderCloseoutRoute(resolveCloseoutRoute(cwd)));

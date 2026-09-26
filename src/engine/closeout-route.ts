@@ -13,7 +13,7 @@
  *     check -> review -> journal 完整门禁序列），并附上被拒原因。
  */
 
-import { evaluateQuickScope } from '../engine/quick-guard.js';
+import { evaluateQuickScope } from './quick-guard.js';
 
 export interface CloseoutRoute {
   /** 是否可走 quick-done 一键收口（由实际改动 scope 决定）。 */
