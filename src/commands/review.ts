@@ -28,6 +28,7 @@ import {
   type ReviewSkillGate,
   type ReviewSkillSkip,
 } from '../utils/review-skill-router.js';
+import { checkArchitectureLayers } from '../engine/arch-guard.js';
 
 interface ReviewOptions {
   cwd: string;
@@ -193,6 +194,26 @@ async function analyzeChangedFiles(cwd: string, changedFiles: string[]): Promise
   for (const file of changedFiles) {
     findings.push(...await analyzeChangedFile(cwd, file));
   }
+
+  // 架构分层防腐与循环依赖检查 (Architecture Drift & Circular Dependency Guard)
+  try {
+    const archReport = await checkArchitectureLayers(cwd);
+    const changedSet = new Set(changedFiles.map((f) => f.replace(/\\/g, '/')));
+    for (const v of archReport.violations) {
+      const normFile = v.file.replace(/\\/g, '/');
+      const normTarget = v.target.replace(/\\/g, '/');
+      if (changedSet.has(normFile) || changedSet.has(normTarget)) {
+        findings.push({
+          file: normFile,
+          severity: v.severity === 'error' ? 'error' : 'warn',
+          message: `[架构防腐] ${v.message} (${v.rule})`,
+        });
+      }
+    }
+  } catch {
+    // 容错处理
+  }
+
   return findings;
 }
 

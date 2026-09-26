@@ -195,5 +195,33 @@ describe('docpath step-pass (R-340)', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('resolves transitive test dependencies through TIA during step verification', async () => {
+    const { resolveStepTargetedTests } = await import('../dist/engine/step-verify.js');
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-step-verify-tia-'));
+    try {
+      const { mkdirSync, writeFileSync } = await import('node:fs');
+      mkdirSync(join(cwd, 'src'), { recursive: true });
+      mkdirSync(join(cwd, 'tests'), { recursive: true });
+      writeFileSync(join(cwd, 'src', 'core.ts'), 'export const VERSION = "1.0.0";');
+      writeFileSync(join(cwd, 'src', 'helper.ts'), 'import { VERSION } from "./core.js";\nexport function getVersion() { return VERSION; }');
+      writeFileSync(join(cwd, 'tests', 'helper.test.mjs'), 'import { getVersion } from "../src/helper.js";');
+
+      // Initialize git and commit
+      spawnSync('git', ['init', '-b', 'main'], { cwd });
+      spawnSync('git', ['config', 'user.name', 'Test'], { cwd });
+      spawnSync('git', ['config', 'user.email', 'test@example.com'], { cwd });
+      spawnSync('git', ['add', '.'], { cwd });
+      spawnSync('git', ['commit', '-m', 'initial'], { cwd });
+
+      // Modify low-level core.ts (which is imported by helper.ts, which is imported by tests/helper.test.mjs)
+      writeFileSync(join(cwd, 'src', 'core.ts'), 'export const VERSION = "2.0.0";');
+
+      const targetedTests = await resolveStepTargetedTests(cwd);
+      assert.ok(targetedTests.some((t) => t.includes('helper.test.mjs')), 'Must detect helper.test.mjs through TIA transitive dependency');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
 

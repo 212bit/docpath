@@ -102,4 +102,32 @@ describe('Architecture Drift Guard Engine', () => {
     assert.ok(parsed.layers.some((l) => l.name === 'types'));
     assert.ok(parsed.layers.some((l) => l.name === 'engine'));
   });
+
+  it('reports architecture layer inversion in docpath review findings', async () => {
+    // Git init
+    execSync('git init -b main', { cwd: tempDir, stdio: 'ignore' });
+    execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'ignore' });
+    execSync('git config user.email "test@example.com"', { cwd: tempDir, stdio: 'ignore' });
+    execSync('git add . && git commit -m "initial"', { cwd: tempDir, stdio: 'ignore' });
+
+    // Introduce layer inversion
+    await writeFile(
+      join(tempDir, 'src', 'utils', 'string.ts'),
+      "import { createUser } from '../engine/user-engine.js';\nexport function bad() { return createUser(); }",
+      'utf-8',
+    );
+
+    let reviewOut = '';
+    try {
+      reviewOut = execSync(`node "${BIN}" review --force --cwd "${tempDir}"`, {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } catch (err) {
+      reviewOut = `${err.stdout || ''}\n${err.stderr || ''}`;
+    }
+
+    assert.match(reviewOut, /\[架构防腐\]/);
+    assert.match(reviewOut, /分层逆向依赖/);
+  });
 });

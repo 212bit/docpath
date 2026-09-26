@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-26T12:06:05.008Z",
+    "updated_at": "2026-09-26T12:06:05.008Z",
+    "content_sha256": "5048a421ea69d053d52e20ab22945d81c17b2257c262ea01b6a4d842020e9617"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-26T12:06:05.008Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 流程无感强化：TIA智能单测赋能step-pass与门禁架构防腐融合",
+      "description": "完成 FR-1: 流程无感强化：TIA智能单测赋能step-pass与门禁架构防腐融合，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 待补充；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-409 与任务 T-20260926-tia-step-pass 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

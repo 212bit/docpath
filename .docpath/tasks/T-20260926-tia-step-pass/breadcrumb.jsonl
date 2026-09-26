@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia-step-pass","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 流程无感强化：TIA智能单测赋能step-pass与门禁架构防腐融合","timestamp":"2026-09-26T12:03:17.230Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia-step-pass","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-26T12:06:05.003Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia-step-pass","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-26T12:07:46.237Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia-step-pass","step":"review","status":"blocked","context":"代码审查: 1 错误, 5 警告, 0 提示","timestamp":"2026-09-26T12:07:47.209Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia-step-pass","step":"review","status":"done","context":"代码审查: 0 错误, 5 警告, 0 提示","timestamp":"2026-09-26T12:08:33.240Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia-step-pass","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-26T12:08:37.108Z"}

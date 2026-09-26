@@ -18,9 +18,10 @@ import {
   selectTouchedTestFiles,
   testRelatesToFile,
   buildNodeTestCommand,
-} from '../commands/check/test-scope.js';
+} from './test-scope.js';
 import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
+import { analyzeTestImpact } from './tia.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -70,6 +71,7 @@ export async function resolveStepTargetedTests(
   const directChangedTests = new Set<string>();
   const exactMatchedTests = new Set<string>();
   const fuzzyMatchedTests = new Set<string>();
+  const tiaImpactedTests = new Set<string>();
 
   // 2. 从当前 plan.md / plan.json / spec.md 的步骤描述中解析测试文件提述
   if (taskId && step) {
@@ -91,7 +93,17 @@ export async function resolveStepTargetedTests(
     }
   }
 
-  // 3. 从工作区当前 git 改动的源文件自动推导关联测试
+  // 3. TIA 智能单测影响面分析 (Test Impact Analysis 静态拓扑图谱推导)
+  try {
+    const tiaReport = await analyzeTestImpact(cwd);
+    for (const testFile of tiaReport.impacted_tests) {
+      tiaImpactedTests.add(testFile);
+    }
+  } catch {
+    // TIA 容错降级
+  }
+
+  // 4. 从工作区当前 git 改动的源文件自动推导关联测试（基名与模糊匹配补充）
   const changedFiles = getChangedSourceFiles(cwd);
   if (changedFiles && changedFiles.length > 0) {
     // 过滤出直接被修改的测试文件
@@ -116,9 +128,9 @@ export async function resolveStepTargetedTests(
     }
   }
 
-  // 优先级合并：直接修改的单测 > 精准同名单测 > 模糊相关单测
+  // 优先级合并：直接修改的单测 > TIA 推导受波及单测 > 精准同名单测 > 模糊相关单测
   const combined = Array.from(
-    new Set([...directChangedTests, ...exactMatchedTests, ...fuzzyMatchedTests]),
+    new Set([...directChangedTests, ...tiaImpactedTests, ...exactMatchedTests, ...fuzzyMatchedTests]),
   );
 
   // 步骤级验证严格控制数量（≤ 6 个），确保毫秒级即时反馈
