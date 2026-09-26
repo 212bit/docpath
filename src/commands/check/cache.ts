@@ -56,6 +56,64 @@ export const DEFAULT_CHECK_CODE_SCOPE_PATHS = [
   'Dockerfile*',
 ];
 
+/** 通用编译与源码路径（排除纯测试目录，用于编译/构建独立缓存） */
+export const DEFAULT_COMPILE_SCOPE_PATHS = [
+  'src',
+  'pkg',
+  'cmd',
+  'internal',
+  'api',
+  'app',
+  'crates',
+  'lib',
+  'scripts',
+  'package.json',
+  'pnpm-lock.yaml',
+  'package-lock.json',
+  'yarn.lock',
+  'tsconfig*.json',
+  'tsup.config.*',
+  'go.mod',
+  'go.sum',
+  'Cargo.toml',
+  'Cargo.lock',
+  'pyproject.toml',
+  'requirements*.txt',
+  'Pipfile*',
+  'pom.xml',
+  'build.gradle*',
+  'Makefile',
+  'makefile',
+  'justfile',
+  'Dockerfile*',
+];
+
+/** 通用测试范围路径 */
+export const DEFAULT_TEST_SCOPE_PATHS = [
+  'tests',
+  'test',
+  '__tests__',
+  'jest.config.*',
+  'vitest.config.*',
+  'pytest.ini',
+  ...DEFAULT_COMPILE_SCOPE_PATHS,
+];
+
+/** 通用 Lint 范围路径 */
+export const DEFAULT_LINT_SCOPE_PATHS = [
+  '.eslintrc*',
+  'eslint.config.*',
+  'biome.json',
+  '.prettierrc*',
+  'tsconfig*.json',
+  'src',
+  'lib',
+  'pkg',
+  'cmd',
+  'internal',
+  'tests',
+];
+
 export const CHECK_CODE_SCOPE_PATHS = DEFAULT_CHECK_CODE_SCOPE_PATHS;
 
 function runGitOptional(cwd: string, args: string[]): string | null {
@@ -64,6 +122,57 @@ function runGitOptional(cwd: string, args: string[]): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * 计算特定分类的代码/配置 digest
+ */
+export function computeCategoryDigest(
+  cwd: string,
+  category: 'compile' | 'test' | 'lint',
+  customScopePaths?: string[],
+): string | null {
+  let basePaths: string[];
+  if (category === 'compile') {
+    basePaths = DEFAULT_COMPILE_SCOPE_PATHS;
+  } else if (category === 'test') {
+    basePaths = DEFAULT_TEST_SCOPE_PATHS;
+  } else {
+    basePaths = DEFAULT_LINT_SCOPE_PATHS;
+  }
+
+  const scopePaths = (customScopePaths && customScopePaths.length > 0)
+    ? Array.from(new Set([...customScopePaths, ...basePaths]))
+    : basePaths;
+
+  const listing = runGitOptional(cwd, [
+    'ls-files', '-co', '--exclude-standard', '--', ...scopePaths,
+  ]);
+  if (listing === null) return null;
+  const files = listing.split('\n').filter(Boolean).sort();
+  const hash = createHash('sha256');
+  for (const file of files) {
+    try {
+      hash.update(file);
+      hash.update(readFileSync(join(cwd, file)));
+    } catch {
+      return null;
+    }
+  }
+  return hash.digest('hex');
+}
+
+/**
+ * 一次性计算所有分门类 digest
+ */
+export function computeAllCategoryDigests(
+  cwd: string,
+  customScopePaths?: string[],
+): { compile?: string; test?: string; lint?: string } {
+  const compile = computeCategoryDigest(cwd, 'compile', customScopePaths) ?? undefined;
+  const test = computeCategoryDigest(cwd, 'test', customScopePaths) ?? undefined;
+  const lint = computeCategoryDigest(cwd, 'lint', customScopePaths) ?? undefined;
+  return { compile, test, lint };
 }
 
 /**
@@ -95,12 +204,49 @@ export function computeCodeScopeDigest(cwd: string, customScopePaths?: string[])
   return hash.digest('hex');
 }
 
-
 const REUSABLE_CATEGORIES = new Set(['compile', 'test', 'lint']);
 
 /**
- * 尝试复用上次绿色 check 的重 runner 判定。
- * 返回 null 表示不可复用（调用方执行全量 runProjectChecks）。
+ * 尝试细粒度复用特定分类的绿色 check 判定（R-403）
+ */
+export async function tryReuseGranularCategoryChecks(
+  docpathDir: string,
+  cwd: string,
+  category: 'compile' | 'test' | 'lint',
+  customScopePaths?: string[],
+): Promise<CheckResult[] | null> {
+  const digest = computeCategoryDigest(cwd, category, customScopePaths);
+  if (!digest) return null;
+
+  let evidence = null;
+  try {
+    evidence = await readLastCheckEvidence(docpathDir);
+  } catch {
+    return null;
+  }
+  if (!evidence || !evidence.passed || evidence.env_exempt) return null;
+
+  const cachedDigest = evidence.category_digests?.[category] || (evidence.code_scope_digest === digest ? digest : null);
+  if (!cachedDigest || cachedDigest !== digest) return null;
+
+  const matched = evidence.checks.filter((check) => check.category === category);
+  if (matched.length === 0) return null;
+
+  return matched.map((check) => ({
+    name: check.name,
+    passed: check.passed,
+    category: check.category as CheckResult['category'],
+    severity: check.severity === 'error' || check.severity === 'warning' ? check.severity : undefined,
+    environment_failure: check.environment_failure,
+    environment_exemptible: check.environment_exemptible,
+    cached: true,
+    output: `♻️  增量指纹复用：${category} 范围自上次绿色 check 无变更，复用上次判定。--no-cache 可强制重跑。`,
+  }));
+}
+
+/**
+ * 尝试复用上次绿色 check 的全部重 runner 判定。
+ * 返回 null 表示不可全量复用（调用方执行细粒度增量或全量 runProjectChecks）。
  */
 export async function tryReuseCachedHeavyChecks(
   docpathDir: string,

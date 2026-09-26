@@ -486,7 +486,7 @@ export async function runPackageScriptChecks(
   cwd: string,
   pkgPath: string,
   nodeCommands: NodeCommandConfig,
-  options: CheckOptions,
+  options: CheckOptions & { skipCompileInScripts?: boolean; cachedLintResults?: CheckResult[] },
 ): Promise<CheckResult[]> {
   const pkg = await readPackageManifest(pkgPath);
   if (!pkg?.scripts || options.lite) return [];
@@ -494,7 +494,7 @@ export async function runPackageScriptChecks(
   const results: CheckResult[] = [];
   const scripts = pkg.scripts;
 
-  if (scripts.build) {
+  if (scripts.build && !options.skipCompileInScripts) {
     const resolved = await resolveRunnerScriptCommand('build', scripts, nodeCommands, cwd);
     if (resolved.cmd === null) {
       results.push(runnerUnavailableResult('构建', 'build', nodeCommands, resolved.runnerBroken!, 'compile'));
@@ -507,11 +507,25 @@ export async function runPackageScriptChecks(
   if (testResult) results.push(testResult);
 
   if (!options.skipLint && scripts.lint) {
-    const resolved = await resolveRunnerScriptCommand('lint', scripts, nodeCommands, cwd);
-    if (resolved.cmd === null) {
-      results.push(runnerUnavailableResult('Lint', 'lint', nodeCommands, resolved.runnerBroken!, 'lint'));
+    if (options.cachedLintResults && options.cachedLintResults.length > 0) {
+      const lintMatches = options.cachedLintResults.filter((r) => r.category === 'lint' || r.name.includes('Lint'));
+      if (lintMatches.length > 0) {
+        results.push(...lintMatches);
+      } else {
+        const resolved = await resolveRunnerScriptCommand('lint', scripts, nodeCommands, cwd);
+        if (resolved.cmd === null) {
+          results.push(runnerUnavailableResult('Lint', 'lint', nodeCommands, resolved.runnerBroken!, 'lint'));
+        } else {
+          results.push(runCheck('Lint', `${resolved.cmd} 2>&1`, cwd, 'lint'));
+        }
+      }
     } else {
-      results.push(runCheck('Lint', `${resolved.cmd} 2>&1`, cwd, 'lint'));
+      const resolved = await resolveRunnerScriptCommand('lint', scripts, nodeCommands, cwd);
+      if (resolved.cmd === null) {
+        results.push(runnerUnavailableResult('Lint', 'lint', nodeCommands, resolved.runnerBroken!, 'lint'));
+      } else {
+        results.push(runCheck('Lint', `${resolved.cmd} 2>&1`, cwd, 'lint'));
+      }
     }
   }
   return results;
@@ -583,7 +597,7 @@ export async function runCustomCheckConfig(cwd: string, options: CheckOptions): 
   return results;
 }
 
-export async function runNativeLanguageChecks(cwd: string, options: CheckOptions): Promise<CheckResult[]> {
+export async function runNativeLanguageChecks(cwd: string, options: CheckOptions & { cachedLintResults?: CheckResult[] } = { cwd }): Promise<CheckResult[]> {
   if (options.lite) return [];
   const results: CheckResult[] = [];
 
@@ -601,7 +615,11 @@ export async function runNativeLanguageChecks(cwd: string, options: CheckOptions
 
   if (existsSync(cargoPath)) {
     if (!options.skipLint) {
-      results.push(runCheck('Rust 代码检查 (Clippy)', 'cargo clippy 2>&1', cwd, 'lint', HEAVY_CHECK_TIMEOUT_MS));
+      if (options.cachedLintResults && options.cachedLintResults.length > 0) {
+        results.push(...options.cachedLintResults.filter((r) => r.category === 'lint'));
+      } else {
+        results.push(runCheck('Rust 代码检查 (Clippy)', 'cargo clippy 2>&1', cwd, 'lint', HEAVY_CHECK_TIMEOUT_MS));
+      }
     }
     if (!options.skipTests) {
       const rustTest = resolveRustTestCommand(cwd, { testScope, customRiskyPatterns });
@@ -609,7 +627,11 @@ export async function runNativeLanguageChecks(cwd: string, options: CheckOptions
     }
   } else if (existsSync(goModPath)) {
     if (!options.skipLint) {
-      results.push(runCheck('Go 代码检查 (go vet)', 'go vet ./... 2>&1', cwd, 'lint', DEFAULT_CHECK_TIMEOUT_MS));
+      if (options.cachedLintResults && options.cachedLintResults.length > 0) {
+        results.push(...options.cachedLintResults.filter((r) => r.category === 'lint'));
+      } else {
+        results.push(runCheck('Go 代码检查 (go vet)', 'go vet ./... 2>&1', cwd, 'lint', DEFAULT_CHECK_TIMEOUT_MS));
+      }
     }
     if (!options.skipTests) {
       const goTest = resolveGoTestCommand(cwd, { testScope, customRiskyPatterns });
@@ -628,7 +650,6 @@ export async function runNativeLanguageChecks(cwd: string, options: CheckOptions
 
   return results;
 }
-
 
 export async function runProjectChecks(cwd: string, options: CheckOptions): Promise<CheckResult[]> {
   // 1. 优先使用用户在 .docpath/config.yaml 中显式配置的 check 门禁
@@ -652,10 +673,43 @@ export async function runProjectChecks(cwd: string, options: CheckOptions): Prom
     return makeResults;
   }
 
+  // 3. R-403: 细粒度分门类增量指纹复用 (compile / lint)
+  let cachedCompile: CheckResult[] | null = null;
+  let cachedLint: CheckResult[] | null = null;
+
+  if (!options.noCache && !options.lite) {
+    try {
+      const { resolveDocpathDir } = await import('../../utils/file.js');
+      const docpathDir = await resolveDocpathDir(cwd);
+      const { tryReuseGranularCategoryChecks } = await import('./cache.js');
+      const { readCheckCodeScopePaths } = await import('../../utils/config.js');
+      const customScopePaths = await readCheckCodeScopePaths(cwd);
+      cachedCompile = await tryReuseGranularCategoryChecks(docpathDir, cwd, 'compile', customScopePaths);
+      cachedLint = await tryReuseGranularCategoryChecks(docpathDir, cwd, 'lint', customScopePaths);
+    } catch {
+      // 容错回落
+    }
+  }
+
+  const compileResults = cachedCompile && cachedCompile.length > 0
+    ? cachedCompile
+    : await runCompileChecks(cwd, pkgPath, nodeCommands);
+
+  const packageResults = await runPackageScriptChecks(cwd, pkgPath, nodeCommands, {
+    ...options,
+    skipCompileInScripts: Boolean(cachedCompile && cachedCompile.length > 0),
+    cachedLintResults: cachedLint ?? undefined,
+  });
+
+  const nativeResults = await runNativeLanguageChecks(cwd, {
+    ...options,
+    cachedLintResults: cachedLint ?? undefined,
+  });
+
   return [
-    ...await runCompileChecks(cwd, pkgPath, nodeCommands),
-    ...await runPackageScriptChecks(cwd, pkgPath, nodeCommands, options),
-    ...await runNativeLanguageChecks(cwd, options),
+    ...compileResults,
+    ...packageResults,
+    ...nativeResults,
   ];
 }
 

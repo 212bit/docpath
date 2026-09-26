@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-26T03:35:46.629Z",
+    "updated_at": "2026-09-26T03:35:46.629Z",
+    "content_sha256": "9836318b34eeab3035f35d073dd03eaa7a286515404f85d90488ac908d8925e0"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-26T03:35:46.629Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 实现Check智能增量门禁与指纹缓存机制",
+      "description": "完成 FR-1: 实现Check智能增量门禁与指纹缓存机制，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 待补充；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-403 与任务 T-20260926-check 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
