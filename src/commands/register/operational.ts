@@ -17,9 +17,41 @@ import { recoverCommand } from '../recovery.js';
 import { commitCommand } from '../commit.js';
 import { mergeDriverCommand } from '../merge-driver.js';
 import { learnCommand } from '../learn.js';
+import { ruleCommand } from '../rules.js';
 import { getOptionValue } from './shared.js';
 
 export function registerOperationalCommands(cli: CAC): void {
+  cli
+    .command('rule [action]', 'Rules 与 ADR 规则体检与去重 (doctor | dedupe | fix | list | groom)')
+    .option('--cwd <path>', '项目目录')
+    .option('--json', '输出 JSON 诊断结果')
+    .option('--agent', 'Agent 机器输出模式（YAML）')
+    .option('--fix', '自动修复完全重复条目与失效引用')
+    .action(async (action: string | undefined, options: { cwd?: string; json?: boolean; agent?: boolean; fix?: boolean }) => {
+      await ruleCommand({
+        cwd: options.cwd || process.cwd(),
+        action: (action as any) || (options.fix ? 'dedupe' : 'doctor'),
+        json: !!options.json,
+        agent: !!options.agent,
+        fix: !!options.fix,
+      });
+    });
+
+  cli
+    .command('rules [action]', 'Rules 与 ADR 规则体检与去重 (rule 别名)')
+    .option('--cwd <path>', '项目目录')
+    .option('--json', '输出 JSON 诊断结果')
+    .option('--agent', 'Agent 机器输出模式（YAML）')
+    .option('--fix', '自动修复完全重复条目与失效引用')
+    .action(async (action: string | undefined, options: { cwd?: string; json?: boolean; agent?: boolean; fix?: boolean }) => {
+      await ruleCommand({
+        cwd: options.cwd || process.cwd(),
+        action: (action as any) || (options.fix ? 'dedupe' : 'doctor'),
+        json: !!options.json,
+        agent: !!options.agent,
+        fix: !!options.fix,
+      });
+    });
   cli
     .command('start [...titleOrId]', '一键从 Backlog ID 或标题拉起任务并启动执行（promote + plan + go S1）')
     .option('--cwd <path>', '项目目录')

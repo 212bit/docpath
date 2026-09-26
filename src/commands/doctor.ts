@@ -4,20 +4,25 @@ import {
   type GitHygieneCleanupResult,
   type GitHygieneReport,
 } from '../utils/git-hygiene.js';
+import { diagnoseRulesAndDecisions, type RuleDoctorReport } from '../engine/rule-doctor.js';
 
 interface DoctorOptions {
   cwd: string;
   json?: boolean;
   untrackNoise?: boolean;
+  rules?: boolean;
+  agent?: boolean;
 }
 
-function hasErrors(report: GitHygieneReport): boolean {
-  return !report.isGitRepo || report.trackedIgnoredRuntimeFiles.length > 0;
+function hasErrors(report: GitHygieneReport, ruleReport?: RuleDoctorReport): boolean {
+  const gitHasErrors = !report.isGitRepo || report.trackedIgnoredRuntimeFiles.length > 0;
+  const ruleHasErrors = ruleReport ? !ruleReport.passed : false;
+  return gitHasErrors || ruleHasErrors;
 }
 
-function printJson(report: GitHygieneReport, cleanup?: GitHygieneCleanupResult): void {
+function printJson(report: GitHygieneReport, cleanup?: GitHygieneCleanupResult, ruleReport?: RuleDoctorReport): void {
   console.log(JSON.stringify({
-    passed: !hasErrors(report),
+    passed: !hasErrors(report, ruleReport),
     git: {
       is_repo: report.isGitRepo,
       repo_root: report.repoRoot,
@@ -33,6 +38,15 @@ function printJson(report: GitHygieneReport, cleanup?: GitHygieneCleanupResult):
           attempted: true,
           untracked_count: cleanup.untrackedFiles.length,
           untracked_files: cleanup.untrackedFiles,
+        }
+      : undefined,
+    rules: ruleReport
+      ? {
+          passed: ruleReport.passed,
+          errors: ruleReport.errors,
+          warnings: ruleReport.warnings,
+          stats: ruleReport.stats,
+          issues: ruleReport.issues,
         }
       : undefined,
   }, null, 2));
@@ -81,7 +95,7 @@ function printNonRuntimeWarning(report: GitHygieneReport): void {
   console.log('  Review .gitignore rules before untracking these files.');
 }
 
-function printHuman(report: GitHygieneReport, cleanup?: GitHygieneCleanupResult): void {
+function printHuman(report: GitHygieneReport, cleanup?: GitHygieneCleanupResult, ruleReport?: RuleDoctorReport): void {
   console.log('\n🩺  DocPath doctor\n');
 
   if (!report.isGitRepo) {
@@ -95,24 +109,46 @@ function printHuman(report: GitHygieneReport, cleanup?: GitHygieneCleanupResult)
   printRuntimeNoise(report);
   printNonRuntimeWarning(report);
 
-  if (report.trackedIgnoredRuntimeFiles.length > 0) {
-    console.log(`\n❌  doctor failed (${report.trackedIgnoredRuntimeFiles.length} tracked ignored runtime files)`);
+  if (ruleReport) {
+    console.log(`\n📜  Rules & ADRs:`);
+    console.log(`  - 规则条目: ${ruleReport.stats.totalRules} 条 (${ruleReport.stats.totalRuleFiles} 文件)`);
+    console.log(`  - ADR 决策: ${ruleReport.stats.totalDecisions} 条`);
+    if (ruleReport.issues.length === 0) {
+      console.log('  ✅  规则与 ADR 健康度体检通过 (无冲突/重复/失效引用)');
+    } else {
+      for (const issue of ruleReport.issues) {
+        const icon = issue.severity === 'error' ? '❌' : '⚠️';
+        console.log(`  ${icon} [${issue.category}] ${issue.target}: ${issue.message}`);
+      }
+    }
+  }
+
+  const gitErrors = report.trackedIgnoredRuntimeFiles.length;
+  const ruleErrors = ruleReport ? ruleReport.errors : 0;
+  const totalErrors = gitErrors + ruleErrors;
+  const totalWarnings = report.trackedIgnoredNonRuntimeFiles.length + (ruleReport ? ruleReport.warnings : 0);
+
+  if (totalErrors > 0) {
+    console.log(`\n❌  doctor failed (${totalErrors} errors, ${totalWarnings} warnings)`);
     return;
   }
 
-  console.log(`\n✅  doctor passed (${report.trackedIgnoredNonRuntimeFiles.length} warnings)`);
+  console.log(`\n✅  doctor passed (${totalWarnings} warnings)`);
 }
 
 export async function doctorCommand(options: DoctorOptions): Promise<void> {
   const cleanup = options.untrackNoise ? untrackGitRuntimeNoise(options.cwd) : undefined;
   const report = cleanup?.finalReport || detectGitHygiene(options.cwd);
+  const ruleReport = options.rules ? await diagnoseRulesAndDecisions({ cwd: options.cwd }) : undefined;
+
   if (options.json) {
-    printJson(report, cleanup);
+    printJson(report, cleanup, ruleReport);
   } else {
-    printHuman(report, cleanup);
+    printHuman(report, cleanup, ruleReport);
   }
 
-  if (hasErrors(report)) {
+  if (hasErrors(report, ruleReport)) {
     process.exit(1);
   }
 }
+

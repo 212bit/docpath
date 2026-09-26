@@ -49,11 +49,13 @@ export function registerCoreCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--json', '输出 JSON')
     .option('--untrack-noise', '从 Git index 移除 tracked ignored DocPath runtime 文件')
-    .action(async (options: { cwd?: string; json?: boolean; untrackNoise?: boolean; 'untrack-noise'?: boolean }) => {
+    .option('--rules', '同时诊断 Rules 与 ADR 规则去重与冲突体检')
+    .action(async (options: { cwd?: string; json?: boolean; untrackNoise?: boolean; 'untrack-noise'?: boolean; rules?: boolean }) => {
       await doctorCommand({
         cwd: options.cwd || process.cwd(),
         json: !!options.json,
         untrackNoise: !!(options.untrackNoise || options['untrack-noise']),
+        rules: !!options.rules,
       });
     });
 }
