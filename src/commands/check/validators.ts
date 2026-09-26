@@ -910,6 +910,34 @@ export async function checkLivingDocsHealth(cwd: string, docpathDir: string): Pr
   }
 }
 
+export async function checkArchitectureHealth(cwd: string): Promise<CheckResult[]> {
+  try {
+    const { checkArchitectureLayers } = await import('../../engine/arch-guard.js');
+    const report = await checkArchitectureLayers(cwd);
+    if (!report.passed) {
+      const errorLines = report.violations
+        .filter((v) => v.severity === 'error')
+        .slice(0, 3)
+        .map((v) => `  - [${v.type}] ${v.file} ➔ ${v.message}`);
+      return [{
+        name: '架构分层防腐检查',
+        passed: true,
+        severity: 'warning',
+        output: `⚠️ 架构分层体检发现 ${report.stats.errors} 处逆向分层依赖与 ${report.circular_cycles.length} 处循环引用:\n${errorLines.join('\n')}\n治理建议: 运行 docpath arch 查看详情与解耦指南。`,
+        category: 'context',
+      }];
+    }
+    return [{
+      name: '架构分层防腐检查',
+      passed: true,
+      output: `分层依赖单向流动正常 (${report.stats.total_files} 个源码文件，0 错误，${report.stats.warnings} 警告)`,
+      category: 'context',
+    }];
+  } catch {
+    return [];
+  }
+}
+
 export async function checkContextHealth(cwd: string, docpathDir: string): Promise<CheckResult[]> {
   const workflowState = await readCurrentState(cwd);
   if ((workflowState?.level || 0) < 2) return [];
@@ -919,6 +947,7 @@ export async function checkContextHealth(cwd: string, docpathDir: string): Promi
     ...await checkRuleTruthSources(docpathDir),
     ...await checkProjectStandardsPackage(cwd, docpathDir),
     ...await checkLivingDocsHealth(cwd, docpathDir),
+    ...await checkArchitectureHealth(cwd),
   ];
 }
 

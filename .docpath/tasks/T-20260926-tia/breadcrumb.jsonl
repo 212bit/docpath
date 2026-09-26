@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 实现TIA智能单测影响面推导与架构分层防腐门禁引擎","timestamp":"2026-09-26T11:33:16.996Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-26T11:35:55.415Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-26T11:37:30.376Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia","step":"review","status":"done","context":"代码审查: 0 错误, 17 警告, 0 提示","timestamp":"2026-09-26T11:37:32.793Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-tia","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-26T11:37:34.111Z"}

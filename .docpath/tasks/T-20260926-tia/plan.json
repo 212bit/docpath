@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-26T11:35:55.419Z",
+    "updated_at": "2026-09-26T11:35:55.419Z",
+    "content_sha256": "5daf9d0de908cd58a2a8d49d3449d951ba20fb1673459090aa61663a52025fb4"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-26T11:35:55.419Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 实现TIA智能单测影响面推导与架构分层防腐门禁引擎",
+      "description": "完成 FR-1: 实现TIA智能单测影响面推导与架构分层防腐门禁引擎，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 待补充；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-408 与任务 T-20260926-tia 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

@@ -5,9 +5,44 @@ import { reviewCommand } from '../review.js';
 import { verifyCommand } from '../verify.js';
 import { writeReviewSkillCommand } from '../write-review-skill.js';
 import { writeJournalCommand } from '../write-journal.js';
+import { testMapCommand } from '../test-map.js';
+import { archCommand } from '../arch.js';
 import { getOptionValue, normalizeEnumOption, normalizeTaskFileSyncSource } from './shared.js';
 
 export function registerQualityCommands(cli: CAC): void {
+  cli.command('test-map [...files]', 'Test Impact Analysis (TIA) 智能单测影响面推导与定向执行')
+    .option('--cwd <path>', '项目目录')
+    .option('--since <ref>', '按 git ref 汇总差异')
+    .option('--run', '直接定向运行受波及的单测')
+    .option('--agent', '输出 Agent 可读 YAML 状态')
+    .option('--json', '输出 JSON 格式')
+    .action(async (files: string[] | undefined, options: { cwd?: string; since?: string; run?: boolean; agent?: boolean; json?: boolean }) => {
+      await testMapCommand({
+        cwd: options.cwd || process.cwd(),
+        files: Array.isArray(files) ? files : files ? [files] : [],
+        since: options.since,
+        run: !!options.run,
+        agent: !!options.agent,
+        json: !!options.json,
+      });
+    });
+
+  cli.command('arch [action]', '架构分层依赖与防腐门禁体检 (单向流动/循环依赖)')
+    .option('--cwd <path>', '项目目录')
+    .option('--strict', '发现警告直接作为错误处理')
+    .option('--agent', '输出 Agent 可读 YAML 状态')
+    .option('--json', '输出 JSON 格式')
+    .action(async (action: string | undefined, options: { cwd?: string; strict?: boolean; agent?: boolean; json?: boolean }) => {
+      const normalizedAction = action === 'layers' ? 'layers' : action === 'cycles' ? 'cycles' : 'check';
+      await archCommand({
+        cwd: options.cwd || process.cwd(),
+        action: normalizedAction,
+        strict: !!options.strict,
+        agent: !!options.agent,
+        json: !!options.json,
+      });
+    });
+
   cli.command('check', '质量门禁 — 编译/测试/lint/检查 + 工作流护栏')
     .option('--cwd <path>', '项目目录')
     .option('--skip-tests', '跳过测试')
