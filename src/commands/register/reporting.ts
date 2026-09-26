@@ -1,4 +1,5 @@
 import type { CAC } from 'cac';
+import { changelogCommand } from '../changelog.js';
 import { changesCommand } from '../changes.js';
 import { contextCommand } from '../context.js';
 import { projectsCommand } from '../projects.js';
@@ -15,15 +16,41 @@ function parseScopeFiles(value: string | string[] | undefined): string[] {
     .filter(Boolean);
 }
 
+function registerChangelogCommand(cli: CAC): void {
+  cli.command('changelog [targetVersion]', '自动化聚合已归档任务与 Git 提交生成 CHANGELOG.md')
+    .option('--cwd <path>', '项目目录')
+    .option('--release-version <version>', '指定版本号 (例如 v0.2.0，默认 Unreleased)')
+    .option('--title <title>', '版本简报标题')
+    .option('--since <ref>', '按 git ref/tag 汇总差异，例如 v0.1.0、HEAD~10')
+    .option('--dry-run', '预览 Changelog，不写盘')
+    .option('--agent', '输出 Agent 可读 YAML 状态')
+    .option('--json', '输出 JSON')
+    .option('--output <file>', '导出到指定文件')
+    .action(async (targetVersion: string | undefined, options: { cwd?: string; releaseVersion?: string; 'release-version'?: string; title?: string; since?: string; dryRun?: boolean; agent?: boolean; json?: boolean; output?: string }) => {
+      const version = targetVersion || options.releaseVersion || options['release-version'];
+      await changelogCommand({
+        cwd: options.cwd || process.cwd(),
+        version,
+        title: options.title,
+        since: options.since,
+        dryRun: !!options.dryRun,
+        agent: !!options.agent,
+        json: !!options.json,
+        output: options.output,
+      });
+    });
+}
+
 function registerMilestoneCommand(cli: CAC): void {
   cli.command('milestone [action] [version]', '版本/阶段性里程碑总结：聚合已归档任务与架构决策并生成发布简报')
     .option('--cwd <path>', '项目目录')
     .option('--title <title>', '里程碑标题描述')
+    .option('--since <ref>', '按 git ref/tag 汇总差异')
     .option('--dry-run', '预览发布简报，不写盘')
     .option('--agent', '输出 Agent 可读 YAML 状态')
     .option('--json', '输出 JSON')
-    .action(async (actionOrVersion: string | undefined, versionArg: string | undefined, options: { cwd?: string; title?: string; dryRun?: boolean; agent?: boolean; json?: boolean }) => {
-      let action: 'create' | 'list' | 'show' | 'timeline' = 'create';
+    .action(async (actionOrVersion: string | undefined, versionArg: string | undefined, options: { cwd?: string; title?: string; since?: string; dryRun?: boolean; agent?: boolean; json?: boolean }) => {
+      let action: 'create' | 'draft' | 'publish' | 'list' | 'show' | 'timeline' = 'create';
       let version = versionArg;
 
       if (actionOrVersion === 'list') {
@@ -32,6 +59,10 @@ function registerMilestoneCommand(cli: CAC): void {
         action = 'show';
       } else if (actionOrVersion === 'timeline') {
         action = 'timeline';
+      } else if (actionOrVersion === 'draft') {
+        action = 'draft';
+      } else if (actionOrVersion === 'publish') {
+        action = 'publish';
       } else if (actionOrVersion === 'create') {
         action = 'create';
       } else if (actionOrVersion) {
@@ -45,6 +76,7 @@ function registerMilestoneCommand(cli: CAC): void {
         action,
         version,
         title: options.title,
+        since: options.since,
         dryRun: !!options.dryRun,
         agent: !!options.agent,
         json: !!options.json,
@@ -164,6 +196,7 @@ function registerPromptCommand(cli: CAC): void {
 }
 
 export function registerReportingCommands(cli: CAC): void {
+  registerChangelogCommand(cli);
   registerBudgetCommand(cli);
   registerMilestoneCommand(cli);
   registerChangesCommand(cli);

@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-milestone-release-changelog","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 实现Milestone与Release发布简报与Changelog自动化引擎","timestamp":"2026-09-26T05:20:48.816Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-milestone-release-changelog","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-26T05:23:46.650Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-milestone-release-changelog","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-26T05:25:22.432Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-milestone-release-changelog","step":"check","status":"done","context":"质量检查通过 (13 项)","timestamp":"2026-09-26T05:28:00.143Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-milestone-release-changelog","step":"review","status":"done","context":"代码审查: 0 错误, 4 警告, 0 提示","timestamp":"2026-09-26T05:28:01.502Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-milestone-release-changelog","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-26T05:28:02.832Z"}

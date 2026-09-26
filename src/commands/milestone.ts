@@ -1,7 +1,7 @@
 /**
  * docpath:milestone — 阶段性/版本里程碑总结与发布简报
  *
- * 跨已归档任务 (tasks/done/)、Backlog、架构决策 (ADRs) 与系统规则，
+ * 跨已归档任务 (tasks/done/)、Backlog、架构决策 (ADRs) 与 Git 历史，
  * 自动聚合生成结构化版本发布报告 docs/releases/vX.Y.Z.md 与 CHANGELOG.md。
  */
 
@@ -10,26 +10,29 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { resolveDocpathDir } from '../utils/file.js';
 import {
-  collectMilestoneData,
-  renderMilestoneMarkdown,
+  buildChangelogData,
+  publishMilestoneRelease,
+  renderMilestoneReleaseDocMarkdown,
+  type ChangelogReleaseData,
+} from '../engine/changelog.js';
+import {
   renderGlobalTimelineMarkdown,
-  persistMilestone,
   listMilestones,
-  type MilestoneData,
 } from '../utils/milestone.js';
 
 export interface MilestoneOptions {
   cwd: string;
   version?: string;
   title?: string;
-  action?: 'create' | 'list' | 'show' | 'timeline';
+  since?: string;
+  action?: 'create' | 'draft' | 'publish' | 'list' | 'show' | 'timeline';
   dryRun?: boolean;
   agent?: boolean;
   json?: boolean;
 }
 
 export async function milestoneCommand(options: MilestoneOptions): Promise<void> {
-  const { cwd, action = 'create', version, title, dryRun = false, agent = false, json = false } = options;
+  const { cwd, action = 'create', version, title, since, dryRun = false, agent = false, json = false } = options;
   const { stringify } = await import('yaml');
   const docpathDir = await resolveDocpathDir(cwd);
 
@@ -47,11 +50,13 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
       return;
     }
     if (agent) {
-      console.log(stringify({
-        agent_view: 'milestone_timeline',
-        count: milestones.length,
-        timeline_markdown: timelineMd,
-      }));
+      console.log(
+        stringify({
+          agent_view: 'milestone_timeline',
+          count: milestones.length,
+          timeline_markdown: timelineMd,
+        }),
+      );
       return;
     }
     console.log(`\n${timelineMd}\n`);
@@ -66,17 +71,19 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
       return;
     }
     if (agent) {
-      console.log(stringify({
-        agent_view: 'milestone_list',
-        count: milestones.length,
-        milestones,
-      }));
+      console.log(
+        stringify({
+          agent_view: 'milestone_list',
+          count: milestones.length,
+          milestones,
+        }),
+      );
       return;
     }
 
     console.log(`\n📦  历史里程碑/发布总结 (${milestones.length} 个记录):\n`);
     if (milestones.length === 0) {
-      console.log('   (暂无记录，运行 `docpath milestone create v0.1.0` 创建首个里程碑)');
+      console.log('   (暂无记录，运行 `docpath milestone draft v0.1.0` 或 `docpath milestone publish v0.1.0` 创建首个里程碑)');
     } else {
       for (const m of milestones) {
         console.log(`  📌 [${m.version}] ${m.title} (${m.date}) — ${m.taskCount} 个交付任务`);
@@ -107,22 +114,75 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
     return;
   }
 
-  // 3. Action: create (default)
+  // 3. Action: draft
+  if (action === 'draft') {
+    const targetVersion = version || 'Draft';
+    const releaseData: ChangelogReleaseData = await buildChangelogData(cwd, {
+      version: targetVersion,
+      title,
+      since,
+    });
+
+    if (json) {
+      console.log(JSON.stringify(releaseData, null, 2));
+      return;
+    }
+
+    if (agent) {
+      console.log(
+        stringify({
+          agent_view: 'milestone_draft',
+          version: releaseData.version,
+          title: releaseData.title,
+          date: releaseData.date,
+          since_ref: releaseData.sinceRef || null,
+          metrics: releaseData.metrics,
+          categories: {
+            breaking_count: releaseData.categories.breaking.length,
+            features_count: releaseData.categories.features.length,
+            improvements_count: releaseData.categories.improvements.length,
+            fixes_count: releaseData.categories.fixes.length,
+            decisions_count: releaseData.categories.decisions.length,
+            rules_count: releaseData.categories.rules.length,
+            other_count: releaseData.categories.other.length,
+          },
+          markdown: releaseData.markdown,
+        }),
+      );
+      return;
+    }
+
+    console.log(`\n📝  DocPath 里程碑发布草案 (Milestone Draft: ${targetVersion})\n`);
+    console.log(`📊  变更统计: ${releaseData.metrics.tasksDelivered} 任务 | ${releaseData.metrics.backlogClosed} 需求 | ${releaseData.metrics.decisionsRecorded} 决策 | ${releaseData.metrics.breakingCount} 破坏性变更`);
+    console.log(`${'─'.repeat(50)}\n`);
+    console.log(releaseData.markdown);
+    console.log(`\n${'─'.repeat(50)}`);
+    console.log(`💡  确认无误后运行 \`docpath milestone publish ${targetVersion}\` 正式生成版本报告并更新 CHANGELOG.md\n`);
+    return;
+  }
+
+  // 4. Action: publish / create (default)
   if (!version) {
-    console.error('❌  请指定里程碑版本号，例如: `docpath milestone create v0.2.0 --title "架构升级"`');
+    console.error('❌  请指定里程碑版本号，例如: `docpath milestone publish v0.2.0 --title "架构升级"`');
     process.exit(1);
   }
 
-  const milestoneData: MilestoneData = await collectMilestoneData(cwd, version, title);
+  const releaseData: ChangelogReleaseData = await buildChangelogData(cwd, {
+    version,
+    title,
+    since,
+  });
 
   if (dryRun) {
-    const previewMarkdown = renderMilestoneMarkdown(milestoneData);
+    const previewMarkdown = renderMilestoneReleaseDocMarkdown(releaseData);
     if (agent) {
-      console.log(stringify({
-        agent_view: 'milestone_preview',
-        dry_run: true,
-        data: milestoneData,
-      }));
+      console.log(
+        stringify({
+          agent_view: 'milestone_preview',
+          dry_run: true,
+          data: releaseData,
+        }),
+      );
     } else {
       console.log(`\n📝  [dry-run] 里程碑发布简报预览 (${version}):\n`);
       console.log(previewMarkdown);
@@ -131,19 +191,22 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
     return;
   }
 
-  const { releaseDocPath, changelogPath } = await persistMilestone(cwd, milestoneData);
+  const { releaseDocPath, changelogPath } = await publishMilestoneRelease(cwd, releaseData);
 
   if (agent) {
-    console.log(stringify({
-      agent_view: 'milestone_created',
-      version: milestoneData.version,
-      title: milestoneData.title,
-      tasks_delivered: milestoneData.metrics.totalTasks,
-      backlog_closed: milestoneData.metrics.totalBacklogClosed,
-      decisions_recorded: milestoneData.metrics.totalDecisions,
-      release_doc: releaseDocPath,
-      changelog: changelogPath,
-    }));
+    console.log(
+      stringify({
+        agent_view: 'milestone_created',
+        version: releaseData.version,
+        title: releaseData.title,
+        tasks_delivered: releaseData.metrics.tasksDelivered,
+        backlog_closed: releaseData.metrics.backlogClosed,
+        decisions_recorded: releaseData.metrics.decisionsRecorded,
+        breaking_count: releaseData.metrics.breakingCount,
+        release_doc: releaseDocPath,
+        changelog: changelogPath,
+      }),
+    );
   } else {
     console.log(`\n🎉  里程碑 ${version} 阶段性总结生成完毕！`);
     console.log(`   📄 发布简报: ${releaseDocPath}`);
