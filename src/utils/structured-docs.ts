@@ -151,7 +151,7 @@ function parseMarkdownList(block: string): string[] {
 
 function parseChecklistItems(content: string, prefix: string): StructuredSpecItem[] {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(`^- \\[([ xX])\\]\\s*(${escaped}-\\d+)\\s*:\\s*(.+)$`, 'gm');
+  const pattern = new RegExp(`^- \\[([ xX])\\]\\s*(?:\\*\\*)?(${escaped}-\\d+)(?:\\*\\*)?\\s*:\\s*(.+)$`, 'gm');
   return Array.from(content.matchAll(pattern)).map((match) => ({
     id: match[2],
     text: match[3].trim(),

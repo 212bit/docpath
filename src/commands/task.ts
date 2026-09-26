@@ -16,6 +16,7 @@ import {
   stashTask,
   type TaskStashMetadata,
 } from '../engine/task-stash.js';
+import { repairActiveTask, type TaskRepairReport } from '../engine/task-repair.js';
 import { startCommand } from './start.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { mutateCurrentState, readCurrentState, syncCurrentDocument, type CurrentState } from '../utils/workspace.js';
@@ -41,7 +42,9 @@ export interface TaskCommandOptions {
   all?: boolean;
   agent?: boolean;
   json?: boolean;
-  from?: 'canonical' | 'current';
+  dryRun?: boolean;
+  from?: 'canonical' | 'current' | 'auto';
+  auto?: boolean;
 }
 
 function nowIso(): string {
@@ -168,7 +171,15 @@ async function taskReopen(options: TaskCommandOptions): Promise<void> {
 /**
  * R-314: 原 `docpath tasks` 的 drift / sync 实现。
  */
-export async function taskFileSyncCommand(options: { cwd: string; action: string; from?: 'canonical' | 'current' }): Promise<void> {
+export async function taskFileSyncCommand(options: {
+  cwd: string;
+  action: string;
+  from?: 'canonical' | 'current' | 'auto';
+  agent?: boolean;
+  json?: boolean;
+  auto?: boolean;
+  dryRun?: boolean;
+}): Promise<void> {
   const { cwd, action } = options;
   const docpathDir = await resolveDocpathDir(cwd);
 
@@ -219,16 +230,65 @@ export async function taskFileSyncCommand(options: { cwd: string; action: string
         }
       }
     }
-    console.log('\n修复建议: docpath task sync --from canonical 或 docpath task sync --from current');
+    console.log('\n修复建议: docpath task repair（一键自愈修复）或 docpath task sync --from canonical');
     throw new Error(`tasks/current drift detected: ${drifts.map((drift) => drift.file).join(', ')}`);
+  }
+
+  if (action === 'repair' || (action === 'sync' && (options.from === 'auto' || (options as any).auto))) {
+    const { stringify } = await import('yaml');
+    const report = await repairActiveTask({
+      cwd,
+      dryRun: !!(options as any).dryRun,
+    });
+
+    if (options.agent) {
+      console.log(stringify({
+        agent_view: 'task_repair',
+        task_id: report.task_id,
+        healthy_before: report.healthy_before,
+        healthy_after: report.healthy_after,
+        repaired_count: report.repaired_count,
+        actions: report.actions,
+      }));
+      return;
+    }
+
+    if (options.json) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+
+    console.log(`\n🩺  DocPath Task 自愈与修复: ${report.task_id}\n`);
+    if (report.actions.length === 0) {
+      console.log('✅  当前任务状态完全健康，无真源失配或文件漂移！');
+      return;
+    }
+
+    console.log(`📋  自愈修复了 ${report.repaired_count} 项漂移:\n`);
+    const catLabels: Record<string, string> = {
+      markdown_hash_drift: '📝 [真源指纹失配]',
+      file_mirror_drift: '🪞 [任务镜像漂移]',
+      step_progress_drift: '⚡ [步骤进度漂移]',
+      identity_drift: '🆔 [任务身份漂移]',
+    };
+
+    for (const act of report.actions) {
+      const label = catLabels[act.category] || `[${act.category}]`;
+      const icon = act.repaired ? '✅' : 'ℹ️';
+      console.log(`  ${icon} ${label} ${act.file}`);
+      console.log(`     ${act.detail}`);
+    }
+
+    console.log(`\n🎉  任务自愈完成，真源已恢复一致！\n`);
+    return;
   }
 
   if (action === 'sync') {
     const from = options.from || 'canonical';
-    if (!['canonical', 'current'].includes(from)) {
-      throw new Error('docpath task sync --from 仅支持 canonical 或 current');
+    if (!['canonical', 'current', 'auto'].includes(from)) {
+      throw new Error('docpath task sync --from 仅支持 canonical、current 或 auto');
     }
-    const synced = await syncActiveTaskFiles(docpathDir, current.task_id, from);
+    const synced = await syncActiveTaskFiles(docpathDir, current.task_id, from as 'canonical' | 'current');
     await syncCurrentDocument(cwd);
     console.log(`✅  已同步 active task 文件 (${from} -> ${from === 'canonical' ? 'current' : 'canonical'})`);
     for (const item of synced) {
@@ -239,7 +299,7 @@ export async function taskFileSyncCommand(options: { cwd: string; action: string
     return;
   }
 
-  throw new Error(`Unsupported task action: ${action}. Expected drift | sync`);
+  throw new Error(`Unsupported task action: ${action}. Expected drift | sync | repair`);
 }
 
 /**
@@ -499,10 +559,20 @@ export async function taskCommand(options: TaskCommandOptions): Promise<void> {
     case 'list':
       await taskStashListCommand(options);
       return;
+    case 'drift':
+    case 'sync':
+    case 'repair':
+      await taskFileSyncCommand({
+        cwd: options.cwd,
+        action: action as any,
+        from: options.from,
+        ...(options as any),
+      });
+      return;
     case 'switch':
       await taskSwitchCommand(options, options.target);
       return;
     default:
-      throw new Error(`docpath task: unsupported action ${action || '(empty)'}（允许: abort|reset|reopen|drift|sync|stash|pop|switch|drop|list）`);
+      throw new Error(`docpath task: unsupported action ${action || '(empty)'}（允许: abort|reset|reopen|drift|sync|repair|stash|pop|switch|drop|list）`);
   }
 }

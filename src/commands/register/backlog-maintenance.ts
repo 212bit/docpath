@@ -121,22 +121,28 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
       });
     });
 
-  cli.command('task [action] [target] [extra]', '当前任务管理与热切换: abort | reset | reopen | drift | sync | stash | pop | switch | drop | list')
+  cli.command('task [action] [target] [extra]', '当前任务管理与热切换: abort | reset | reopen | drift | sync | repair | stash | pop | switch | drop | list')
     .option('--cwd <path>', '项目目录')
-    .option('--from <source>', 'sync: 同步来源 canonical | current')
+    .option('--from <source>', 'sync: 同步来源 canonical | current | auto')
+    .option('--auto', 'sync: 自动全维度自愈修复')
+    .option('--dry-run', 'repair/sync: 仅预览修复动作，不修改文件')
     .option('-m, --message <text>', 'stash/switch 备注说明')
     .option('--no-git', '跳过 Git 变更暂存/恢复')
     .option('--all', 'drop: 丢弃所有暂存')
     .option('--agent', '输出 Agent 机器视图')
     .option('--json', '输出 JSON 格式')
-    .action(async (action: string | undefined, target: string | undefined, extra: string | undefined, options: { cwd?: string; from?: 'canonical' | 'current'; message?: string; 'no-git'?: boolean; noGit?: boolean; all?: boolean; agent?: boolean; json?: boolean }) => {
+    .action(async (action: string | undefined, target: string | undefined, extra: string | undefined, options: { cwd?: string; from?: 'canonical' | 'current' | 'auto'; auto?: boolean; 'dry-run'?: boolean; dryRun?: boolean; message?: string; 'no-git'?: boolean; noGit?: boolean; all?: boolean; agent?: boolean; json?: boolean }) => {
       const normalized = action?.trim().toLowerCase();
-      if (normalized === 'drift' || normalized === 'sync') {
+      if (normalized === 'drift' || normalized === 'sync' || normalized === 'repair') {
         await taskFileSyncCommand({
           cwd: options.cwd || process.cwd(),
           action: normalized,
           from: options.from,
-        });
+          agent: options.agent,
+          json: options.json,
+          auto: options.auto,
+          dryRun: options.dryRun || options['dry-run'],
+        } as any);
         return;
       }
       await taskCommand({
@@ -149,6 +155,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         all: options.all,
         agent: options.agent,
         json: options.json,
+        dryRun: options.dryRun || options['dry-run'],
       });
     });
 
