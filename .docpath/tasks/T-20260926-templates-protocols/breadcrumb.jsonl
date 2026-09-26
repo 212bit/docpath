@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-templates-protocols","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 同步 templates/protocols/ 模板分发真源与协议块","timestamp":"2026-09-26T13:20:39.540Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-templates-protocols","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-26T13:21:45.263Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-templates-protocols","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-26T13:23:25.046Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-templates-protocols","step":"review","status":"done","context":"代码审查: 0 错误, 0 警告, 0 提示","timestamp":"2026-09-26T13:23:25.648Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-templates-protocols","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-26T13:23:27.136Z"}
