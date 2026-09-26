@@ -19,8 +19,9 @@ import { parsePlanSteps } from '../utils/doc-parser.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { renderCloseoutRoute, resolveCloseoutRoute } from '../utils/closeout-route.js';
+import { runStepTargetedVerification, renderStepVerifyFeedback } from '../engine/step-verify.js';
 
-interface StepPassOptions {
+export interface StepPassOptions {
   cwd: string;
   /** 要收尾的步骤；缺省取 state.current_step */
   step?: string;
@@ -30,6 +31,12 @@ interface StepPassOptions {
   all?: boolean;
   /** 透传给内部 go 的首等恢复旗标（同 `go --accept-dirty`） */
   acceptDirty?: string;
+  /** 显式指定要随做随验的单测文件路径 */
+  test?: string;
+  /** 是否跳过单步即时测试验证 */
+  skipVerify?: boolean;
+  /** 是否在单测失败时阻断步骤收尾 */
+  strictVerify?: boolean;
 }
 
 /**
@@ -112,6 +119,27 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
   if (explicitStep && currentStep && explicitStep !== currentStep) {
     console.warn(`⚠️  step-pass: 指定步骤 ${explicitStep} 与当前执行步骤 ${currentStep} 不一致，按指定值收尾。`);
     step = explicitStep;
+  }
+
+  if (!options.skipVerify) {
+    const verifyResult = await runStepTargetedVerification(cwd, {
+      step,
+      explicitTest: options.test,
+      strictVerify: options.strictVerify,
+      taskId,
+    });
+    if (verifyResult.executed) {
+      const feedback = renderStepVerifyFeedback(verifyResult);
+      if (feedback) {
+        console.log(feedback);
+      }
+      if (!verifyResult.passed && options.strictVerify) {
+        throw new Error(
+          `docpath step-pass: 单步即时单测验证未通过 (${verifyResult.targetTests.join(', ')})，步骤收尾被阻断。\n` +
+          '    请先修复单测或使用 --skip-verify 跳过验证。',
+        );
+      }
+    }
   }
 
   const sync = await endStepExecution({
