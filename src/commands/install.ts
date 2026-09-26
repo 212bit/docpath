@@ -423,21 +423,22 @@ async function installGitMergeDriver(context: InstallContext): Promise<void> {
 }
 
 async function installEntryProtocols(context: InstallContext): Promise<void> {
-  const { target, targetDir, projectName, force } = context;
+  const { target, targetDir, projectName, force, full, resetProtocols } = context;
+  const opts = { full, resetProtocols };
   // ─── 1. 入口协议文件 ───
   if (target === 'universal') {
-    await installProtocolFile(targetDir, 'CLAUDE.md', projectName, force);
-    await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
-    await installProtocolFile(targetDir, 'CODEX.md', projectName, force);
-    await installProtocolFile(targetDir, 'OPENCODE.md', projectName, force);
+    await installProtocolFile(targetDir, 'CLAUDE.md', projectName, force, opts);
+    await installProtocolFile(targetDir, 'AGENTS.md', projectName, force, opts);
+    await installProtocolFile(targetDir, 'CODEX.md', projectName, force, opts);
+    await installProtocolFile(targetDir, 'OPENCODE.md', projectName, force, opts);
   } else if (target === 'codex') {
-    await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
-    await installProtocolFile(targetDir, 'CODEX.md', projectName, force);
+    await installProtocolFile(targetDir, 'AGENTS.md', projectName, force, opts);
+    await installProtocolFile(targetDir, 'CODEX.md', projectName, force, opts);
   } else if (target === 'claude') {
-    await installProtocolFile(targetDir, 'AGENTS.md', projectName, force);
-    await installProtocolFile(targetDir, 'CLAUDE.md', projectName, force);
+    await installProtocolFile(targetDir, 'AGENTS.md', projectName, force, opts);
+    await installProtocolFile(targetDir, 'CLAUDE.md', projectName, force, opts);
   } else if (target === 'opencode') {
-    await installProtocolFile(targetDir, 'OPENCODE.md', projectName, force);
+    await installProtocolFile(targetDir, 'OPENCODE.md', projectName, force, opts);
   }
 }
 
@@ -643,12 +644,21 @@ const skippedManagedFiles: string[] = [];
 
 
 const STANDARD_PROTOCOL_SECTIONS = [
+  'First Steps',
   'First Steps & Access Model',
-  'Agent Lifecycle Commands',
+  'Access Model',
+  'Command Boundaries',
+  'Workflow Tiering',
+  'Lightweight Rules',
   'Lightweighting & Execution Rules',
+  'Execution Rules & Invariants',
+  'Agent Lifecycle Commands',
+  'Required Gates',
   'Required Gates & Boundaries',
   'Worktree Concurrent Development',
   'Linked Project',
+  'Protocol Reference',
+  'Slash Commands',
 ];
 
 function extractCustomProtocolSections(content: string): string[] {
@@ -672,7 +682,8 @@ async function installProtocolFile(
   targetDir: string,
   filename: string,
   projectName: string,
-  force: boolean
+  force: boolean,
+  options: { resetProtocols?: boolean; full?: boolean } = {},
 ): Promise<void> {
   const filePath = join(targetDir, filename);
   // R-297: 协议根文件从唯一手写层 templates/protocols/ 渲染（参数化源）。
@@ -680,12 +691,43 @@ async function installProtocolFile(
   let content = await readFile(tplPath, 'utf-8');
   content = content.replace(/\{\{PROJECT_NAME\}\}/g, projectName);
   const isCustomizable = isLocallyCustomizableInstallAsset({ path: filename });
+  const isFullReset = !!(options.resetProtocols || options.full);
 
   if (await exists(filePath)) {
     const existing = await readFile(filePath, 'utf-8');
     if (existing === content) {
       console.log(`✓  ${filename} 已是最新`);
       return;
+    }
+
+    // ── 全量升级模式（Full Template Upgrade Mode: --full / --reset-protocols）──
+    // 当显式指定 --full 或 --reset-protocols 时，重构为最新标准模板，同时保留项目名绑定与本地自定义段落
+    if (isFullReset) {
+      try {
+        let upgraded = content;
+        // 尝试保留已有文件中显式指定的项目名
+        const projectMatch = existing.match(/Linked to:\s*\*\*([^*]+)\*\*/);
+        if (projectMatch && projectMatch[1]) {
+          upgraded = upgraded.replace(new RegExp(`Linked to:\\s*\\*\\*${projectName}\\*\\*`, 'g'), `Linked to: **${projectMatch[1]}**`);
+        }
+        // 提取并保留非标准自定义段落
+        const customSections = extractCustomProtocolSections(existing);
+        if (customSections.length > 0) {
+          upgraded = upgraded.trimEnd() + '\n\n' + customSections.join('\n\n') + '\n';
+        }
+        // 对注入块进行对齐渲染
+        const templatesDir = await resolveTemplate();
+        const blocksDir = join(templatesDir, 'protocols', 'blocks');
+        const blocks = await readProtocolBlocks(blocksDir);
+        if (blocks) {
+          upgraded = renderProtocolBlocks(upgraded, blocks).content;
+        }
+        await writeFileSafe(filePath, upgraded);
+        console.log(`✅  ${filename} 全量升级为最新标准版（保留项目绑定与本地定制）`);
+        return;
+      } catch {
+        // 出错时回退常规 writeManagedFile 逻辑
+      }
     }
 
     // ── 智能无损更新（Smart Block Update）──

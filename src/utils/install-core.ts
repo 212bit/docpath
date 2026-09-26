@@ -53,6 +53,8 @@ export interface InstallOptions {
   cwd?: string;
   target?: string;
   force?: boolean;
+  full?: boolean;
+  resetProtocols?: boolean;
   hooks?: boolean;
   hookMode?: string;
   checkOnly?: boolean;
@@ -65,6 +67,8 @@ export interface InstallContext {
   cwd: string;
   target: Target;
   force: boolean;
+  full?: boolean;
+  resetProtocols?: boolean;
   targetDir: string;
   docpathDir: string;
   projectName: string;
@@ -644,7 +648,7 @@ export async function createInstallContext(options: InstallOptions): Promise<Ins
     // 非致命，继续
   }
 
-  return { cwd, target, force, targetDir, docpathDir, projectName, projectInfo, hooks, hookMode };
+  return { cwd, target, force, full: options.full, resetProtocols: options.resetProtocols, targetDir, docpathDir, projectName, projectInfo, hooks, hookMode };
 }
 
 export type { HookMode };

@@ -77,13 +77,17 @@ function registerUpdateCommand(cli: CAC): void {
   cli.command('update', '一键平滑升级当前项目的 DocPath 协议与组件（智能保留定制）')
     .option('--cwd <path>', '项目目录')
     .option('--target <type>', '目标类型: codex | claude | opencode | universal (默认读取已安装 target)')
+    .option('--full', '全量升级模式: 将协议文件重构为最新标准模板（保留项目绑定与本地自定义段落）')
+    .option('--reset-protocols', '--full 别名: 全量升级重置协议模板')
     .option('--hooks', '同步安装/更新 git hooks')
     .option('--hook-mode <mode>', 'pre-commit 模式: check | agent-done (默认 check)')
-    .action(async (options: { cwd?: string; target?: string; hooks?: boolean; hookMode?: string; 'hook-mode'?: string }) => {
+    .action(async (options: { cwd?: string; target?: string; full?: boolean; resetProtocols?: boolean; 'reset-protocols'?: boolean; hooks?: boolean; hookMode?: string; 'hook-mode'?: string }) => {
       await installCommand({
         cwd: options.cwd || process.cwd(),
         target: options.target,
         force: true,
+        full: !!options.full,
+        resetProtocols: !!(options.resetProtocols || options['reset-protocols'] || options.full),
         hooks: !!options.hooks,
         hookMode: options.hookMode || options['hook-mode'],
       });
@@ -95,17 +99,21 @@ function registerInstallCommand(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--target <type>', '目标类型: codex | claude | opencode | universal (默认 universal)')
     .option('--force', '覆盖已有文件')
+    .option('--full', '全量升级模式: 将已有协议文件升级为最新标准模板（保留项目绑定与自定义段落）')
+    .option('--reset-protocols', '--full 别名: 全量升级重置协议模板')
     .option('--check-only', '仅检查安装资产 manifest 漂移，不写入文件')
     .option('--check', '仅检查安装资产 manifest 漂移，不写入文件（--check-only 别名）')
     .option('--doctor', '诊断安装资产、shim 与 Agent 配置风险，不写入文件')
     .option('--json', 'doctor: 输出 JSON 诊断结果')
     .option('--hooks', '安装 git hooks')
     .option('--hook-mode <mode>', 'pre-commit 模式: check | agent-done (默认 check)')
-    .action(async (options: { cwd?: string; target?: string; force?: boolean; check?: boolean; checkOnly?: boolean; 'check-only'?: boolean; doctor?: boolean; json?: boolean; hooks?: boolean; hookMode?: string; 'hook-mode'?: string }) => {
+    .action(async (options: { cwd?: string; target?: string; force?: boolean; full?: boolean; resetProtocols?: boolean; 'reset-protocols'?: boolean; check?: boolean; checkOnly?: boolean; 'check-only'?: boolean; doctor?: boolean; json?: boolean; hooks?: boolean; hookMode?: string; 'hook-mode'?: string }) => {
       await installCommand({
         cwd: options.cwd || process.cwd(),
         target: options.target,
         force: !!options.force,
+        full: !!options.full,
+        resetProtocols: !!(options.resetProtocols || options['reset-protocols'] || options.full),
         check: !!options.check,
         checkOnly: !!(options.checkOnly || options['check-only']),
         doctor: !!options.doctor,

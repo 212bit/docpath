@@ -1040,6 +1040,73 @@ describe('install agent adapters', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('update --full upgrades legacy bloated AGENTS.md to standard 100-line template while preserving custom sections and project binding', () => {
+    const cwd = mkWorkspace();
+    // 1. Create a legacy bloated AGENTS.md with block and extra historical sections
+    const legacyContent = [
+      '# DocPath Agent Protocol',
+      '',
+      '> Legacy verbose intro paragraph.',
+      '',
+      '## Workflow Tiering (Profile Ladder)',
+      'Old table content here.',
+      '',
+      '<!-- docpath:block lifecycle-commands -->',
+      'old lifecycle content here',
+      '<!-- /docpath:block -->',
+      '',
+      '## Custom MyService Section',
+      'Important project specific rules that must be preserved.',
+      '',
+      '## Linked Project',
+      'Linked to: **my-awesome-app**',
+      'Config: .docpath/config.yaml',
+    ].join('\n');
+    writeFileSync(join(cwd, 'AGENTS.md'), legacyContent);
+
+    // 2. Run update --full
+    const out = run(`update --cwd ${cwd} --full`, cwd);
+    const upgraded = readFileSync(join(cwd, 'AGENTS.md'), 'utf-8');
+
+    // 3. Verify upgraded to standard template with preserved customs
+    assert.match(out, /AGENTS\.md 全量升级为最新标准版/);
+    assert.match(upgraded, /## First Steps & Access Model/);
+    assert.match(upgraded, /docpath start "<title>" --draft/);
+    assert.match(upgraded, /## Custom MyService Section/);
+    assert.match(upgraded, /Important project specific rules that must be preserved/);
+    assert.match(upgraded, /Linked to: \*\*my-awesome-app\*\*/);
+    assert.doesNotMatch(upgraded, /## Workflow Tiering/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('install --force --reset-protocols upgrades protocol files to latest standard format', () => {
+    const cwd = mkWorkspace();
+    const legacyContent = [
+      '# DocPath Agent Protocol',
+      '',
+      '## Old Section',
+      'old text',
+      '',
+      '<!-- docpath:block lifecycle-commands -->',
+      'old commands',
+      '<!-- /docpath:block -->',
+      '',
+      '## Linked Project',
+      'Linked to: **custom-service**',
+    ].join('\n');
+    writeFileSync(join(cwd, 'AGENTS.md'), legacyContent);
+
+    const out = run(`install --cwd ${cwd} --target universal --force --reset-protocols`, cwd);
+    const upgraded = readFileSync(join(cwd, 'AGENTS.md'), 'utf-8');
+
+    assert.match(out, /AGENTS\.md 全量升级为最新标准版/);
+    assert.match(upgraded, /## First Steps & Access Model/);
+    assert.match(upgraded, /Linked to: \*\*custom-service\*\*/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
 
 describe('install real-world fixes (R-311/R-312, SynapBuddy 实测)', () => {
