@@ -473,6 +473,14 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const docpathDir = await resolveDocpathDir(opts.cwd);
   console.log('🔍 代码审查开始...');
   const current = await readCurrentState(opts.cwd);
+
+  // ── 执行 pre-review 生命周期 Hook ──
+  try {
+    const { executeLifecycleHook } = await import('../engine/hook-runner.js');
+    await executeLifecycleHook(opts.cwd, 'pre-review', { taskId: current?.task_id });
+  } catch {
+    // fail-safe
+  }
   // R-276: 任务锚点用 canonical breadcrumb 首条时间 (state.started_at 是 phase 开始时间,
   // 会被 phase 转移刷新, 直接用会静默缩小任务累计 diff)。
   const taskStartedAt = resolveTaskStartedAt(docpathDir, current?.task_id, current?.started_at);
@@ -611,5 +619,14 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     skill_review_skips: [...(previousReview?.skill_review_skips || []), ...requestedSkips],
     skill_review_gate: skillReviewGate,
   });
+
+  // ── 执行 post-review 生命周期 Hook ──
+  try {
+    const { executeLifecycleHook } = await import('../engine/hook-runner.js');
+    await executeLifecycleHook(opts.cwd, 'post-review', { taskId });
+  } catch {
+    // fail-safe
+  }
+
   await emitNextHint(opts.cwd);
 }

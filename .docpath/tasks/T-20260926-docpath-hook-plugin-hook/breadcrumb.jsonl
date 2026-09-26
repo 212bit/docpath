@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-docpath-hook-plugin-hook","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 DocPath 插件体系与生命周期 Hook 扩展引擎 (plugin & hook)","timestamp":"2026-09-26T12:10:08.618Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-docpath-hook-plugin-hook","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-26T12:12:35.399Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-docpath-hook-plugin-hook","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-26T12:14:23.679Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-docpath-hook-plugin-hook","step":"review","status":"done","context":"代码审查: 0 错误, 14 警告, 0 提示","timestamp":"2026-09-26T12:14:26.131Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260926-docpath-hook-plugin-hook","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-26T12:14:27.667Z"}

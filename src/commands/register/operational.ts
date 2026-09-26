@@ -18,6 +18,8 @@ import { commitCommand } from '../commit.js';
 import { mergeDriverCommand } from '../merge-driver.js';
 import { learnCommand } from '../learn.js';
 import { ruleCommand } from '../rules.js';
+import { hookCommand } from '../hook.js';
+import { pluginCommand } from '../plugin.js';
 import { getOptionValue } from './shared.js';
 
 export function registerOperationalCommands(cli: CAC): void {
@@ -231,6 +233,45 @@ export function registerOperationalCommands(cli: CAC): void {
         other: options.other,
         path: options.path,
         cwd: options.cwd || process.cwd(),
+      });
+    });
+
+  cli
+    .command('hook [action] [event]', '生命周期 Hook 管理与手动调试 (list | run <event>)')
+    .option('--cwd <path>', '项目目录')
+    .option('--strict', '发现失败直接以非零码退出')
+    .option('--agent', 'Agent 机器输出模式（YAML）')
+    .option('--json', '输出 JSON 格式')
+    .action(async (action: string | undefined, event: string | undefined, options: { cwd?: string; strict?: boolean; agent?: boolean; json?: boolean }) => {
+      let normalizedAction = action === 'run' ? 'run' : 'list';
+      let normalizedEvent = event;
+      if (action && action !== 'run' && action !== 'list' && !event) {
+        // 支持 docpath hook <event> 直接触发 run
+        normalizedAction = 'run';
+        normalizedEvent = action;
+      }
+      await hookCommand({
+        cwd: options.cwd || process.cwd(),
+        action: normalizedAction,
+        event: normalizedEvent,
+        strict: !!options.strict,
+        agent: !!options.agent,
+        json: !!options.json,
+      });
+    });
+
+  cli
+    .command('plugin [action]', 'DocPath 插件管理与健康诊断 (list | doctor)')
+    .option('--cwd <path>', '项目目录')
+    .option('--agent', 'Agent 机器输出模式（YAML）')
+    .option('--json', '输出 JSON 格式')
+    .action(async (action: string | undefined, options: { cwd?: string; agent?: boolean; json?: boolean }) => {
+      const normalizedAction = action === 'doctor' ? 'doctor' : 'list';
+      await pluginCommand({
+        cwd: options.cwd || process.cwd(),
+        action: normalizedAction,
+        agent: !!options.agent,
+        json: !!options.json,
       });
     });
 }

@@ -142,6 +142,20 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
     }
   }
 
+  // ── 执行 pre-step 生命周期 Hook ──
+  try {
+    const { executeLifecycleHook } = await import('../engine/hook-runner.js');
+    const preReport = await executeLifecycleHook(cwd, 'pre-step', { taskId, step, note: options.note });
+    if (!preReport.passed) {
+      const failed = preReport.results.find((r) => !r.passed && r.fail_fast);
+      if (failed) {
+        throw new Error(`docpath step-pass: Hook (pre-step: ${failed.name}) 执行失败:\n${failed.output || failed.error}`);
+      }
+    }
+  } catch (err: any) {
+    if (err.message?.startsWith('docpath step-pass: Hook')) throw err;
+  }
+
   const sync = await endStepExecution({
     cwd,
     step,
@@ -153,6 +167,14 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
     console.warn(`⚠️  plan checklist 未同步: ${sync.planSyncReason}`);
   }
   console.log(`✅  step-pass: ${step} 已完成`);
+
+  // ── 执行 post-step 生命周期 Hook ──
+  try {
+    const { executeLifecycleHook } = await import('../engine/hook-runner.js');
+    await executeLifecycleHook(cwd, 'post-step', { taskId, step, note: options.note });
+  } catch {
+    // fail-safe
+  }
 
   // 判断是否还有后续步骤：有则交给 go 原子领取并渲染执行上下文；
   // 全部完成则给出收口路线（quick-done 一键收口）。无 plan 时保持保守路线，交给 go。

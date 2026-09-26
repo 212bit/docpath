@@ -55,6 +55,20 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
     exitWithError('NO_ACTIVE_TASK');
   }
 
+  // ── 执行 pre-done 生命周期 Hook ──
+  try {
+    const { executeLifecycleHook } = await import('../engine/hook-runner.js');
+    const preReport = await executeLifecycleHook(cwd, 'pre-done', { taskId, note: options.note });
+    if (!preReport.passed) {
+      const failed = preReport.results.find((r) => !r.passed && r.fail_fast);
+      if (failed) {
+        throw new Error(`docpath done: Hook (pre-done: ${failed.name}) 拦截任务收口:\n${failed.output || failed.error}`);
+      }
+    }
+  } catch (err: any) {
+    if (err.message?.startsWith('docpath done: Hook')) throw err;
+  }
+
   // 调用底层 agent done 命令（保留所有门禁序列）
   await agentCommand({
     cwd,
@@ -71,6 +85,14 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
     allTests: options.allTests,
     fix: options.fix,
   });
+
+  // ── 执行 post-done 生命周期 Hook ──
+  try {
+    const { executeLifecycleHook } = await import('../engine/hook-runner.js');
+    await executeLifecycleHook(cwd, 'post-done', { taskId, note: options.note });
+  } catch {
+    // fail-safe
+  }
 
   const { nonDocPathFiles, count } = detectUncommittedNonDocPathFiles(cwd);
   if (count > 0 && !options.noDirtyReminder && !options.commit) {

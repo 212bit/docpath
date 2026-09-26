@@ -142,6 +142,25 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   const results: CheckResult[] = [];
   normalizeHarnessOptions(options);
 
+  // ── 执行 pre-check 生命周期 Hook ──
+  try {
+    const { executeLifecycleHook } = await import('../engine/hook-runner.js');
+    const preHookReport = await executeLifecycleHook(cwd, 'pre-check', { taskId: current?.task_id });
+    if (!preHookReport.passed) {
+      for (const res of preHookReport.results.filter((r) => !r.passed && r.fail_fast)) {
+        results.push({
+          name: `Hook (pre-check): ${res.name}`,
+          passed: false,
+          output: `❌ Hook 执行失败 (退出码 ${res.exitCode}):\n${res.output || res.error || ''}`,
+          category: 'compile',
+          severity: 'error',
+        });
+      }
+    }
+  } catch {
+    // fail-safe
+  }
+
   // 1-5. 常规检查（--only-harness 时跳过）
   // R-331: scope 缓存——代码范围 digest 与上次绿色全量 check 一致时复用重 runner 判定，
   // 结构门禁（runTaskDocumentChecks）照常新鲜执行。lite/only-harness 本就不跑重 runner，
@@ -190,6 +209,14 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
     console.log('请修复失败项后重新运行 `docpath check`\n');
     throw new Error(`docpath check failed: ${results.filter(r => !r.passed && r.severity !== 'warning').map(r => r.name).join(', ')}`);
   } else {
+    // ── 执行 post-check 生命周期 Hook ──
+    try {
+      const { executeLifecycleHook } = await import('../engine/hook-runner.js');
+      await executeLifecycleHook(cwd, 'post-check', { taskId: current?.task_id });
+    } catch {
+      // fail-safe
+    }
+
     if (options.withReview) {
       console.log('\n🔄  自动执行 review...\n');
       await reviewCommand({ cwd, force: options.force });
