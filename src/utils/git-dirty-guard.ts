@@ -127,14 +127,18 @@ function buildDirtyWorktreeError(
   if (mode === 'new-task') {
     if (command.includes('quick')) {
       lines.push(
-        '   若这些未提交变动属于即将登记的微型任务，请使用事后补录认领现有改动:',
+        '   💡 解决方案 (事后补录认领): 若这些未提交变动属于即将登记的微型任务，请使用 --adopt:',
         '     docpath quick "<title>" --adopt',
       );
     } else {
       lines.push(
-        '   若这些未提交变动属于即将启动的新任务，请添加 --adopt 参数认领现有改动:',
-        '     docpath start <id> --adopt',
+        '   💡 解决方案 1 (认领现有改动): 若这些未提交变动属于新任务，添加 --adopt 直接拉起并认领:',
+        '     docpath start <id | "title"> --draft --adopt',
         '     或 docpath backlog promote <id> --adopt',
+        '   💡 解决方案 2 (暂存稍后处理): 若这些未提交变动属于其他未完工作，暂存后启动:',
+        '     docpath task stash "WIP: 暂存当前未提交改动"',
+        '     docpath start <id | "title"> --draft',
+        '     (新任务完成后运行 docpath task pop 恢复暂存)',
       );
     }
   }

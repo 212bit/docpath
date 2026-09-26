@@ -22,6 +22,39 @@ import {
 } from './shared.js';
 import { getWorktreeDoctorStatus, resolveDoctorTarget } from './query.js';
 
+/**
+ * 在销毁 worktree 前，若检测到未提交修改，自动创建安全快照 ref，防止代码丢失。
+ */
+export async function createEmergencyWorktreeSnapshot(
+  repoRoot: string,
+  worktreePath: string,
+  safeName: string,
+): Promise<string | null> {
+  if (!existsSync(worktreePath)) return null;
+  try {
+    const status = (await runGitCapture(worktreePath, ['status', '--porcelain=v1', '--untracked-files=all'])).trim();
+    if (!status) return null;
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupRef = `refs/docpath-backups/${safeName}-${timestamp}`;
+
+    // 将未跟踪文件一同纳入并生成 stash commit
+    await runGit(worktreePath, ['add', '-A']);
+    const commitHash = (await runGitCapture(worktreePath, ['stash', 'create', `emergency backup before remove ${safeName}`])).trim();
+
+    if (commitHash) {
+      await runGit(repoRoot, ['update-ref', backupRef, commitHash]);
+      console.warn(`🛡️  【安全兜底】检测到 worktree 存在未提交修改，已自动创建安全快照: ${backupRef}`);
+      console.warn(`    Commit: ${commitHash}`);
+      console.warn(`    如需找回改动代码，随时可运行: git checkout ${backupRef} 或 git cherry-pick ${commitHash}\n`);
+      return backupRef;
+    }
+  } catch (err) {
+    console.warn(`⚠️  创建安全快照失败: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  return null;
+}
+
 export async function worktreeRemove(cwd: string, name: string, force: boolean): Promise<void> {
   if (!(await isGitRepo(cwd))) {
     console.error('❌  当前目录不是 git 仓库');
@@ -37,6 +70,9 @@ export async function worktreeRemove(cwd: string, name: string, force: boolean):
   }
 
   console.log(`\n🗑️  删除 worktree: ${safeName}\n`);
+
+  // 若包含未提交改动，自动创建安全快照
+  await createEmergencyWorktreeSnapshot(repoRoot, worktreePath, safeName);
 
   // 调用 git worktree remove
   try {
@@ -99,6 +135,8 @@ export async function worktreePrune(cwd: string, force: boolean): Promise<void> 
 
     if (shouldPrune) {
       console.log(`🗑️  清理 worktree: ${safeName} (${wt.path})`);
+      // 若 dirty 则创建快照
+      await createEmergencyWorktreeSnapshot(repoRoot, wt.path, safeName);
       try {
         await runGit(repoRoot, ['worktree', 'remove', ...(force ? ['--force'] : []), relative(repoRoot, wt.path)]);
         prunedCount++;

@@ -638,4 +638,29 @@ Test backlog description`);
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('creates an emergency backup snapshot when removing a dirty worktree', () => {
+    const cwd = mkRepo();
+    const worktreePath = join(cwd, '.worktrees', 'dirty-wt-test');
+    run(['worktree', 'create', 'dirty-wt-test'], cwd);
+
+    // Create uncommitted/untracked changes in worktree
+    writeFileSync(join(worktreePath, 'precious_code.txt'), 'very important uncommitted code\n');
+
+    // Run worktree remove with --force
+    const removeOut = run(['worktree', 'remove', 'dirty-wt-test', '--force'], cwd).output;
+    assert.match(removeOut, /已自动创建安全快照/);
+    assert.match(removeOut, /refs\/docpath-backups\/dirty-wt-test-/);
+
+    // Verify the backup ref exists in git repository
+    const refs = git(cwd, ['for-each-ref', '--format=%(refname)', 'refs/docpath-backups/']);
+    assert.match(refs, /refs\/docpath-backups\/dirty-wt-test-/);
+
+    // Verify the contents can be read from the backup ref
+    const backupRef = refs.trim().split('\n')[0];
+    const catOut = git(cwd, ['show', `${backupRef}:precious_code.txt`]);
+    assert.equal(catOut, 'very important uncommitted code\n');
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

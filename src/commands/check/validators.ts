@@ -348,7 +348,7 @@ export async function validateTaskDocuments(cwd: string, docpathDir: string, opt
       ? effectiveProgress.waivedTerminalVerification.length > 0
         ? `terminal verification step 由 check/review/journal 生命周期门禁覆盖: ${effectiveProgress.waivedTerminalVerification.join(', ')}`
         : '所有子任务已完成'
-      : `还有 ${progress.planTotalCount - progress.planDoneCount} 个子任务未完成`;
+      : `还有 ${progress.planTotalCount - progress.planDoneCount} 个子任务未完成。\n    💡 提示: 若步骤均已就绪/验证，可运行 docpath step-pass --all 一键推进所有剩余步骤；或用 docpath step-pass 逐步完成。`;
     if (!passed && agentFlow) {
       const claimedUnfinished = await claimedPlanStepIds(cwd, planTasks);
       const state = await readCurrentState(cwd);
