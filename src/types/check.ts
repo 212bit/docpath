@@ -6,6 +6,7 @@ export const CHECK_CATEGORIES = [
   'compile',
   'test',
   'lint',
+  'arch',
   'plan',
   'analysis',
   'context',

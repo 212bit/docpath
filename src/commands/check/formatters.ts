@@ -92,7 +92,7 @@ export function contextFailureResult(name: string, output: string): CheckResult 
 }
 
 export function groupCheckResults(results: CheckResult[]): Record<string, CheckResult[]> {
-  const categoryOrder = ['compile', 'test', 'lint', 'preflight', 'boundary', 'pattern', 'plan', 'analysis', 'context'];
+  const categoryOrder = ['compile', 'test', 'lint', 'arch', 'preflight', 'boundary', 'pattern', 'plan', 'analysis', 'context'];
   const grouped: Record<string, CheckResult[]> = {};
   const unknownCategory = 'other';
 
@@ -180,6 +180,11 @@ export function extractActionableFixSuggestions(failures: CheckResult[]): Action
     if (cat === 'compile' || name.includes('编译') || name.includes('typecheck') || name.includes('tsc')) {
       addSuggestion('定向运行类型检查', 'npx tsc --noEmit');
     }
+
+    // 4. 架构分层防腐失败检测
+    if (cat === 'arch' || (cat === 'boundary' && name.includes('架构')) || name.includes('架构') || name.includes('arch')) {
+      addSuggestion('查看架构依赖违规与解耦建议', 'docpath arch check');
+    }
   }
 
   return suggestions;
@@ -191,6 +196,7 @@ export function printCheckReport(results: CheckResult[], allPassed: boolean, ver
     compile: '编译检查',
     test: '测试检查',
     lint: 'Lint 检查',
+    arch: '架构分层防腐检查',
     plan: '计划文档检查',
     analysis: '分析文档检查',
     context: '上下文健康检查',

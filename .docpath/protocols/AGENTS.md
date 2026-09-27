@@ -18,10 +18,13 @@
 <!-- docpath:block lifecycle-commands -->
 ```bash
 docpath quick "Fix typo in docs"   # mandatory for tiny low-risk changes (< 50 lines diff)
-docpath start R-101 --draft        # compound: 1-shot start from backlog (promote + plan + go S1)
+docpath start "<title>" --draft    # compound: 1-shot start by title or backlog ID (promote + plan + go S1)
 docpath go --step S1
-docpath step-pass                  # compound (R-340): finish current step + auto-start next (or --all)
-docpath agent step --step "S1" --status done
+docpath step-pass --commit         # compound: pass step + auto-closeout & commit on final step (or --all)
+docpath task stash "WIP msg"       # hot stash active task state, files, and git changes
+docpath task pop                   # restore latest stashed task
+docpath task switch <target_id>    # seamless switch: auto-stash current + restore/start target
+docpath arch check                 # architecture layer & dependency guard check
 docpath check                      # targeted quality check during iteration
 docpath done --commit              # compound: full gate sequence (check -> review -> journal -> commit) in 1-shot
 docpath quick-done --commit        # compound (R-340): quick gate sequence + commit in 1-shot
@@ -32,13 +35,13 @@ docpath quick-done --commit        # compound (R-340): quick gate sequence + com
 
 1. **Mandatory Tiering (严禁越级大炮打蚊子)**:
    - **Ultra-light (< 50 lines diff, typo, single config, localized fix)**: **MUST** use `docpath quick "<title>"`. (Post-hoc: `--adopt`; upgrade: `quick upgrade`).
-   - **【严禁 quick 的红线】**：触及工作流协议资产（`.docpath/rules/`、`.docpath/protocols/`、`AGENTS.md`）、跨模块核心安全/权限边界重构，或预期 diff > 50 行代码时，**绝对禁止**使用 `quick`，必须起手 `docpath start <id | "title">`。
+   - **【严禁 quick 的红线】**：触及调度器 (`agent.ts`, `check.ts`, `done.ts`, `runtime.ts`)、引擎 (`src/engine/**`)、协议资产或预期 > 50 行代码时，**绝对禁止**使用 `quick`，必须起手 `docpath start <id | "title">`。
    - **Small/Medium (< 100 lines)**: `--level 1`（跳过正式 review 与冗长 journal）。
    - **Architecture / Cross-module**: `--level 2` (Standard Profile)。
 
 2. **Atomic Execution & Zero-Redundancy Gates (零冗余原子收口)**:
    - **Atomic Step Claim**: `docpath go --step <id>` is atomic step control to claim and start steps in 1-shot.
-   - **调试期严禁跑全量测试**：迭代开发与单用例调试时，**只允许**运行当前模块的单文件定向测试（如 `node --test tests/<file>.test.mjs`, `go test -run`, `pytest`）；**全量测试只跑一次**，由 `docpath done --commit`（底层调用 `docpath agent done`）在收口时原子执行全部门禁（check → review → journal → git commit）。严禁在调用 `done` 前后手动在终端重复执行 `docpath check` 或全量测试。
+   - **调试期严禁跑全量测试与多余构建**：迭代开发与单用例调试时，**只允许**运行当前模块的单文件定向测试（如 `node --test tests/<file>.test.mjs`, `go test -run`, `pytest`）；步骤验证引擎已内建**构建感知自愈**（源码比产物新时自动增量 build，无需手动 `npm run build`）。**全量测试只跑一次**，由 `docpath done --commit` 或 `docpath step-pass --commit` 在终步收口时原子执行全部门禁（check → review → journal → git commit）。严禁在收口前后手动重复执行 `docpath check` 或全量测试。
    - **AC 不手动打勾**：`spec.md` 中的 `AC-*` 验收标准为静态需求声明，严禁编写脚本或手动编辑将其改为 `[x]`；执行进度完全由 `plan.md` 和 `docpath step-pass`（或 `agent step --step <id> --status done`）驱动。
    - **Edit with tools, not scripts**: Prefer editor tools over shell scripts (`sed`, heredoc) to minimize context re-injection.
    - **Failure handling**: Stop after 2 environment/harness failures and report.
@@ -55,14 +58,16 @@ docpath quick-done --commit        # compound (R-340): quick gate sequence + com
    - When a product/UI request lacks target user, clarify or run brainstorm/refine first.
    - When changing architecture, technology stack, contracts, agent workflows, boundaries, or long-term maintenance cost, run brainstorm/refine first, record a Decision Brief in spec, and get explicit user confirmation.
 3. **Compound Closeout**:
-   - Prefer `docpath done --commit` / `docpath quick-done --commit` (which invoke `docpath agent done`).
+   - Prefer `docpath step-pass --commit` / `docpath done --commit` / `docpath quick-done --commit` (which invoke `docpath agent done`).
    - Stage all modified tracked files (`git add .`) including tracked `.docpath/` assets (backlog, rules, AGENTS.md).
    - Local commits only; do not push without explicit user request.
 
 ## Worktree Concurrent Development
 
 Use `docpath worktree create <name>` only for parallel multi-agent development.
-- **Workflow**: `docpath worktree create <name>` → `cd .worktrees/<name>` → `docpath start R-xxx` → `docpath done --commit` → `cd ../.. && docpath worktree finish <name>`.
+- **Workflow**: `docpath worktree create <name>` → `cd .worktrees/<name>` → `docpath start "<title>" --draft` → `docpath step-pass --commit` → `cd ../.. && docpath worktree finish <name>`.
+- **Adoption & Stash**: When existing uncommitted code exists, use `--adopt` (`docpath start "<title>" --draft --adopt`) or `docpath task stash "WIP msg"`.
+- **Safety Snapshots**: `docpath worktree remove` automatically creates emergency snapshots under `refs/docpath-backups/` if uncommitted changes exist.
 - **Collaboration**: `docpath worktree matrix` (live progress across agents), `docpath worktree broadcast "<msg>"` (broadcast breaking updates).
 - Details & isolation model: see `docs/features/worktree-workflow.md`.
 

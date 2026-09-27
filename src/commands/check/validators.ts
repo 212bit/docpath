@@ -917,21 +917,38 @@ export async function checkArchitectureHealth(cwd: string): Promise<CheckResult[
     if (!report.passed) {
       const errorLines = report.violations
         .filter((v) => v.severity === 'error')
+        .slice(0, 5)
+        .map((v) => `  - [${v.type}] ${v.file} ➔ ${v.message}`);
+      const cycleLines = report.circular_cycles
+        .slice(0, 3)
+        .map((c) => `  - [cycle] ${c.display}`);
+      const details = [...errorLines, ...cycleLines].join('\n');
+      return [{
+        name: '架构分层防腐检查',
+        passed: false,
+        severity: 'error',
+        output: `❌ 发现 ${report.stats.errors} 处逆向分层依赖违规与 ${report.circular_cycles.length} 处循环引用:\n${details}\n👉 修复建议: 运行 docpath arch check 查看完整拓扑与解耦建议。`,
+        category: 'arch',
+      }];
+    }
+    if (report.stats.warnings > 0) {
+      const warnLines = report.violations
+        .filter((v) => v.severity === 'warning')
         .slice(0, 3)
         .map((v) => `  - [${v.type}] ${v.file} ➔ ${v.message}`);
       return [{
         name: '架构分层防腐检查',
         passed: true,
         severity: 'warning',
-        output: `⚠️ 架构分层体检发现 ${report.stats.errors} 处逆向分层依赖与 ${report.circular_cycles.length} 处循环引用:\n${errorLines.join('\n')}\n治理建议: 运行 docpath arch 查看详情与解耦指南。`,
-        category: 'context',
+        output: `分层依赖正常，但发现 ${report.stats.warnings} 处架构提示:\n${warnLines.join('\n')}`,
+        category: 'arch',
       }];
     }
     return [{
       name: '架构分层防腐检查',
       passed: true,
-      output: `分层依赖单向流动正常 (${report.stats.total_files} 个源码文件，0 错误，${report.stats.warnings} 警告)`,
-      category: 'context',
+      output: `分层依赖单向流动正常 (${report.stats.total_files} 个源码文件，0 错误，0 循环)`,
+      category: 'arch',
     }];
   } catch {
     return [];

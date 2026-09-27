@@ -130,4 +130,34 @@ describe('Architecture Drift Guard Engine', () => {
     assert.match(reviewOut, /\[架构防腐\]/);
     assert.match(reviewOut, /分层逆向依赖/);
   });
+
+  it('fails docpath check gate when architecture layer inversion is present', async () => {
+    // Introduce layer inversion
+    await writeFile(
+      join(tempDir, 'src', 'utils', 'string.ts'),
+      "import { createUser } from '../engine/user-engine.js';\nexport function bad() { return createUser(); }",
+      'utf-8',
+    );
+
+    let checkOut = '';
+    let checkExitCode = 0;
+    try {
+      checkOut = execSync(`node "${BIN}" check --only-harness --force --cwd "${tempDir}"`, {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } catch (err) {
+      checkExitCode = err.status || 1;
+      checkOut = `${err.stdout || ''}\n${err.stderr || ''}`;
+    }
+
+    // Now test full task check
+    const { checkArchitectureHealth } = await import('../dist/commands/check/validators.js');
+    const results = await checkArchitectureHealth(tempDir);
+    assert.equal(results.length, 1);
+    assert.equal(results[0].passed, false);
+    assert.equal(results[0].severity, 'error');
+    assert.match(results[0].output, /逆向分层依赖违规/);
+    assert.match(results[0].output, /docpath arch check/);
+  });
 });
