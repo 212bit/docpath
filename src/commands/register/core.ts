@@ -45,17 +45,20 @@ export function registerCoreCommands(cli: CAC): void {
       await statusCommand({ cwd: options.cwd || process.cwd(), agent: options.agent, verbose: options.verbose });
     });
 
-  cli.command('doctor', '只读诊断 DocPath/Git 工作区健康')
+  cli.command('doctor', '只读诊断 DocPath/Git 工作区健康与全真源一致性')
     .option('--cwd <path>', '项目目录')
     .option('--json', '输出 JSON')
     .option('--untrack-noise', '从 Git index 移除 tracked ignored DocPath runtime 文件')
     .option('--rules', '同时诊断 Rules 与 ADR 规则去重与冲突体检')
-    .action(async (options: { cwd?: string; json?: boolean; untrackNoise?: boolean; 'untrack-noise'?: boolean; rules?: boolean }) => {
+    .option('--deep', '全景深度体检：任务状态一致性、架构分层、活文档健康与上下文预算')
+    .option('--consistency', '全真源逻辑与步骤一致性检查（--deep 别名）')
+    .action(async (options: { cwd?: string; json?: boolean; untrackNoise?: boolean; 'untrack-noise'?: boolean; rules?: boolean; deep?: boolean; consistency?: boolean }) => {
       await doctorCommand({
         cwd: options.cwd || process.cwd(),
         json: !!options.json,
         untrackNoise: !!(options.untrackNoise || options['untrack-noise']),
         rules: !!options.rules,
+        deep: !!(options.deep || options.consistency),
       });
     });
 }
