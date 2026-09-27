@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-docpath-update-full-reset-protocols","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 协议全量智能升级模式 docpath update --full / --reset-protocols","timestamp":"2026-09-27T01:44:30.421Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-docpath-update-full-reset-protocols","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-27T01:47:59.017Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-docpath-update-full-reset-protocols","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-27T01:49:49.813Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-docpath-update-full-reset-protocols","step":"review","status":"done","context":"代码审查: 0 错误, 2 警告, 0 提示","timestamp":"2026-09-27T01:49:50.647Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-docpath-update-full-reset-protocols","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-27T01:49:52.041Z"}

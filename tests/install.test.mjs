@@ -1081,29 +1081,48 @@ describe('install agent adapters', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('install --force --reset-protocols upgrades protocol files to latest standard format', () => {
+  it('update --reset-protocols upgrades legacy 240-line Chinese protocol to 100-line standard while preserving custom business sections and project binding', () => {
     const cwd = mkWorkspace();
     const legacyContent = [
       '# DocPath Agent Protocol',
       '',
-      '## Old Section',
-      'old text',
+      '> 核心工作流引擎规范。',
       '',
-      '<!-- docpath:block lifecycle-commands -->',
-      'old commands',
-      '<!-- /docpath:block -->',
+      '## 1. 核心工作流与命令速查',
+      'docpath quick "msg"',
+      'docpath go --step S1',
+      '',
+      '## 2. 状态机与工作流控制',
+      'idle -> planning -> executing -> done',
+      '',
+      '## 3. 门禁体系与纪律红线',
+      '严禁越级大炮打蚊子',
+      '',
+      '## 4. Worktree 并发开发',
+      'worktree 机制说明...',
+      '',
+      '## 5. 项目特定业务规范 (Custom)',
+      '所有支付接口必须校验 signature 与 timestamp，不可信任客户端参数。',
       '',
       '## Linked Project',
-      'Linked to: **custom-service**',
+      'Linked to: **dsh-payment-service**',
+      'Config: `.docpath/config.yaml`',
     ].join('\n');
     writeFileSync(join(cwd, 'AGENTS.md'), legacyContent);
 
-    const out = run(`install --cwd ${cwd} --target universal --force --reset-protocols`, cwd);
+    // Run docpath update --reset-protocols
+    const out = run(`update --cwd ${cwd} --reset-protocols`, cwd);
     const upgraded = readFileSync(join(cwd, 'AGENTS.md'), 'utf-8');
 
     assert.match(out, /AGENTS\.md 全量升级为最新标准版/);
     assert.match(upgraded, /## First Steps & Access Model/);
-    assert.match(upgraded, /Linked to: \*\*custom-service\*\*/);
+    assert.match(upgraded, /## Agent Lifecycle Commands/);
+    assert.match(upgraded, /## 5\. 项目特定业务规范 \(Custom\)/);
+    assert.match(upgraded, /所有支付接口必须校验 signature 与 timestamp/);
+    assert.match(upgraded, /Linked to: \*\*dsh-payment-service\*\*/);
+    assert.doesNotMatch(upgraded, /## 1\. 核心工作流与命令速查/);
+    assert.doesNotMatch(upgraded, /## 2\. 状态机与工作流控制/);
+    assert.doesNotMatch(upgraded, /## 3\. 门禁体系与纪律红线/);
 
     rmSync(cwd, { recursive: true, force: true });
   });

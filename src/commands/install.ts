@@ -644,11 +644,13 @@ const skippedManagedFiles: string[] = [];
 
 
 const STANDARD_PROTOCOL_SECTIONS = [
+  // English standard sections
   'First Steps',
   'First Steps & Access Model',
   'Access Model',
   'Command Boundaries',
   'Workflow Tiering',
+  'Workflow Tiering (Profile Ladder)',
   'Lightweight Rules',
   'Lightweighting & Execution Rules',
   'Execution Rules & Invariants',
@@ -656,10 +658,75 @@ const STANDARD_PROTOCOL_SECTIONS = [
   'Required Gates',
   'Required Gates & Boundaries',
   'Worktree Concurrent Development',
+  'Worktree Workflow',
   'Linked Project',
   'Protocol Reference',
   'Slash Commands',
+  'Codex Instructions',
+  'OpenCode Workflow',
+  'Rules',
+  'Config',
+  'Guidelines',
+  'Overview',
+  'Workflow',
+  'Context & Boundaries',
+  'Execution Rules',
+  // Chinese standard sections & historical variants
+  '核心工作流与命令速查',
+  '工作流与命令',
+  '状态机与工作流控制',
+  '状态机与推进规则',
+  '状态机与推进',
+  '状态机',
+  '门禁体系与纪律红线',
+  '门禁与纪律红线',
+  '门禁与红线',
+  '门禁体系',
+  '门禁',
+  '轻量化分级与执行',
+  '轻量化与执行红线',
+  '轻量化规则',
+  '执行规则与红线',
+  '执行红线',
+  '核心规则与红线',
+  '核心规范',
+  '核心红线',
+  '纪律红线',
+  'Worktree 并发开发',
+  'Worktree 并行机制',
+  'Worktree 并行开发',
+  '并发开发',
+  '关联项目与配置',
+  '关联项目',
+  '项目绑定',
+  '快速开始',
+  '命令速查',
+  '协作规范',
+  'Agent 执行规范',
+  '任务流转与状态机',
+  '阶段流转',
+  '访问模型',
+  '上下文预算',
+  '第一步',
+  '操作指南',
 ];
+
+function isStandardProtocolHeading(heading: string): boolean {
+  const cleaned = heading
+    .replace(/^[\d一二三四五六七八九十]+[\.、\s\-\)]*/, '')
+    .replace(/^[\(\[\{][\d一二三四五六七八九十]+[\)\]\}]\s*/, '')
+    .trim()
+    .toLowerCase();
+
+  if (/^(custom|user|project[\s\-_]|自定义|项目特定|业务|本地定制)/i.test(cleaned)) {
+    return false;
+  }
+
+  return STANDARD_PROTOCOL_SECTIONS.some((std) => {
+    const stdLower = std.toLowerCase();
+    return cleaned === stdLower || cleaned.includes(stdLower) || stdLower.includes(cleaned);
+  });
+}
 
 function extractCustomProtocolSections(content: string): string[] {
   const sections = content.split(/(?=^##\s+)/m);
@@ -668,10 +735,7 @@ function extractCustomProtocolSections(content: string): string[] {
     const match = section.match(/^##\s+([^\n]+)/);
     if (!match) continue;
     const heading = match[1].trim();
-    const isStandard = STANDARD_PROTOCOL_SECTIONS.some(
-      std => heading.toLowerCase().includes(std.toLowerCase()) || std.toLowerCase().includes(heading.toLowerCase())
-    );
-    if (!isStandard) {
+    if (!isStandardProtocolHeading(heading)) {
       custom.push(section.trim());
     }
   }
@@ -705,10 +769,14 @@ async function installProtocolFile(
     if (isFullReset) {
       try {
         let upgraded = content;
-        // 尝试保留已有文件中显式指定的项目名
+        // 尝试保留已有文件中显式指定的项目名与配置
         const projectMatch = existing.match(/Linked to:\s*\*\*([^*]+)\*\*/);
         if (projectMatch && projectMatch[1]) {
           upgraded = upgraded.replace(new RegExp(`Linked to:\\s*\\*\\*${projectName}\\*\\*`, 'g'), `Linked to: **${projectMatch[1]}**`);
+        }
+        const configMatch = existing.match(/Config:\s*`?([^\n`]+)`?/);
+        if (configMatch && configMatch[1] && !configMatch[1].includes('{{PROJECT_NAME}}')) {
+          upgraded = upgraded.replace(/Config:\s*`?\.docpath\/config\.yaml`?/, `Config: \`${configMatch[1].trim()}\``);
         }
         // 提取并保留非标准自定义段落
         const customSections = extractCustomProtocolSections(existing);
@@ -723,7 +791,9 @@ async function installProtocolFile(
           upgraded = renderProtocolBlocks(upgraded, blocks).content;
         }
         await writeFileSafe(filePath, upgraded);
-        console.log(`✅  ${filename} 全量升级为最新标准版（保留项目绑定与本地定制）`);
+        const oldLines = existing.split('\n').length;
+        const newLines = upgraded.split('\n').length;
+        console.log(`✅  ${filename} 全量升级为最新标准版（${oldLines} 行 → ${newLines} 行，保留项目绑定与本地定制）`);
         return;
       } catch {
         // 出错时回退常规 writeManagedFile 逻辑
