@@ -81,17 +81,31 @@ export function backlogRegistryPath(cwd: string): string | null {
   return join(gitDir, REGISTRY_FILENAME);
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
- * 清理 Backlog 标题（R-368/治理）：去除前置冗余标记（P0/P1/P2/P3、R-###、[dropped]、[done] 等），
- * 保持标题纯净、便于生成规范文件名与去重匹配。
+ * 清理 Backlog 标题（R-368/治理，R-422 修复）：去除前置冗余标记（P0/P1/P2/P3、[dropped]、[done] 等）。
+ * 仅在提供 selfId 且标题以自身的 ID 开头时剥离该 ID，避免误杀标题中引用的外部需求号（如 R-093）。
  */
-export function cleanBacklogTitle(raw: string): string {
+export function cleanBacklogTitle(raw: string, selfId?: string): string {
   let title = (raw || '').trim();
   let changed = true;
+  const selfPrefixPattern = selfId?.trim()
+    ? new RegExp(
+        `^(?:\\[\\s*${escapeRegExp(selfId.trim())}\\s*\\]|\\(\\s*${escapeRegExp(selfId.trim())}\\s*\\)|${escapeRegExp(selfId.trim())}[\\s:：\\-—]+)\\s*`,
+        'i',
+      )
+    : null;
+
   while (changed) {
     const prev = title;
+    if (selfPrefixPattern) {
+      title = title.replace(selfPrefixPattern, '');
+    }
     title = title.replace(
-      /^(?:\[\s*(?:P[0-3]|R-\d+|proposed|accepted|planned|active|done|dropped)\s*\]|\(\s*(?:P[0-3]|R-\d+|proposed|accepted|planned|active|done|dropped)\s*\)|(?:P[0-3]|R-\d+)[\s:：\-—]+)\s*/i,
+      /^(?:\[\s*(?:P[0-3]|proposed|accepted|planned|active|done|dropped)\s*\]|\(\s*(?:P[0-3]|proposed|accepted|planned|active|done|dropped)\s*\)|(?:P[0-3])[\s:：\-—]+)\s*/i,
       '',
     );
     changed = title !== prev;

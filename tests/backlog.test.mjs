@@ -502,17 +502,25 @@ old body
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('cleans redundant prefix noise from backlog titles and filenames', async () => {
+  it('cleans redundant prefix noise from backlog titles and filenames (R-368, R-422)', async () => {
     assert.equal(cleanBacklogTitle('P0: Fix critical auth bug'), 'Fix critical auth bug');
     assert.equal(cleanBacklogTitle('[P1] Enhance search latency'), 'Enhance search latency');
-    assert.equal(cleanBacklogTitle('R-356 - Root cause snapshot issue'), 'Root cause snapshot issue');
+    assert.equal(cleanBacklogTitle('R-356 - Root cause snapshot issue', 'R-356'), 'Root cause snapshot issue');
     assert.equal(cleanBacklogTitle('[dropped] Old concept'), 'Old concept');
-    assert.equal(cleanBacklogTitle('[P0] [R-100] Complex title'), 'Complex title');
+    assert.equal(cleanBacklogTitle('[P0] [R-100] Complex title', 'R-100'), 'Complex title');
+
+    // R-422: 外部引用的 R-### 不会被误杀
+    assert.equal(cleanBacklogTitle('R-093 验收未兑现修复', 'R-102'), 'R-093 验收未兑现修复');
+    assert.equal(cleanBacklogTitle('R-093: WS/DNS 传输支持', 'R-102'), 'R-093: WS/DNS 传输支持');
+    assert.equal(cleanBacklogTitle('R-093 的验收标准修复'), 'R-093 的验收标准修复');
 
     const cwd = mkWorkspace();
     const created = await createBacklogItem(cwd, sampleItem({ title: 'P0: Auto Clean Title' }));
     assert.equal(created.title, 'Auto Clean Title');
     assert.ok(existsSync(join(cwd, '.docpath', 'backlog', `${created.id}-auto-clean-title.md`)));
+
+    const createdRef = await createBacklogItem(cwd, sampleItem({ title: 'R-093 跨通道 AC 空洞修复' }));
+    assert.equal(createdRef.title, 'R-093 跨通道 AC 空洞修复');
     rmSync(cwd, { recursive: true, force: true });
   });
 

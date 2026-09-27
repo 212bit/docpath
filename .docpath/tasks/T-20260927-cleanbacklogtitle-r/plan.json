@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-27T16:59:37.771Z",
+    "updated_at": "2026-09-27T16:59:37.771Z",
+    "content_sha256": "d1b526959956e966a709a2c436f13a040ab065cedf16c0fa1cbbedccb9e53d20"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-27T16:59:37.771Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 修复 cleanBacklogTitle 误删 R-### 引用前缀问题",
+      "description": "完成 FR-1: 修复 cleanBacklogTitle 误删 R-### 引用前缀问题，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-422 与任务 T-20260927-cleanbacklogtitle-r 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

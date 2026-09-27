@@ -1111,7 +1111,7 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
   }
 
   const updated: BacklogItem = { ...item, links: { ...item.links } };
-  if (options.title?.trim()) updated.title = cleanBacklogTitle(options.title.trim());
+  if (options.title?.trim()) updated.title = cleanBacklogTitle(options.title.trim(), updated.id);
   if (options.kind) {
     const rawKind = options.kind.toLowerCase().trim();
     if (isBacklogKind(rawKind)) {

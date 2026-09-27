@@ -507,7 +507,7 @@ export async function readBacklogItem(
 export async function writeBacklogItem(cwd: string, item: BacklogItem): Promise<void> {
   const dir = backlogDir(await resolveDocpathDir(cwd));
   await mkdir(dir, { recursive: true });
-  item.title = cleanBacklogTitle(item.title);
+  item.title = cleanBacklogTitle(item.title, item.id);
   const existing = await findItemFile(dir, item.id);
   const fileName = existing ?? `${item.id}-${slugify(item.title)}.md`;
   await writeFile(join(dir, fileName), serializeItem(item), 'utf-8');
@@ -535,7 +535,11 @@ export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id
   let next = parseBacklogNumber(await nextBacklogId(cwd));
   while (true) {
     const id = formatBacklogId(next);
-    const candidate: BacklogItem = { ...normalizedItem, id };
+    const candidate: BacklogItem = {
+      ...normalizedItem,
+      id,
+      title: cleanBacklogTitle(normalizedItem.title, id),
+    };
     const reservedFileName = `${id}.md`;
     try {
       const reservedPath = join(dir, reservedFileName);

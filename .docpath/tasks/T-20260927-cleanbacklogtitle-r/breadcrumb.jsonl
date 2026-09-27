@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-cleanbacklogtitle-r","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 修复 cleanBacklogTitle 误删 R-### 引用前缀问题","timestamp":"2026-09-27T16:58:17.022Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-cleanbacklogtitle-r","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-27T16:59:37.768Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-cleanbacklogtitle-r","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-27T17:01:08.137Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-cleanbacklogtitle-r","step":"review","status":"done","context":"代码审查: 0 错误, 14 警告, 0 提示","timestamp":"2026-09-27T17:01:09.169Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-cleanbacklogtitle-r","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-27T17:01:10.514Z"}
