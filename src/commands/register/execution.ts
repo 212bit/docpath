@@ -3,6 +3,7 @@ import { agentCommand } from '../agent.js';
 import { goCommand } from '../go.js';
 import { runCommand } from '../runtime.js';
 import { stepPassCommand } from '../step-pass.js';
+import { stepSkipCommand } from '../step-skip.js';
 import { quickDoneCommand } from '../quick-done.js';
 import { normalizeEnumOption, parseIntegerOption, getOptionValue } from './shared.js';
 
@@ -49,6 +50,30 @@ export function registerExecutionCommands(cli: CAC): void {
         test: options.test,
         skipVerify: options.skipVerify ?? options['skip-verify'],
         strictVerify: options.strictVerify ?? options['strict-verify'],
+        done: options.done,
+        commit: options.commit,
+      });
+    });
+
+  cli.command('step-skip [step]', '步骤跳过与承接：显式跳过或标记已被其他任务/提交承接的步骤')
+    .option('--cwd <path>', '项目目录')
+    .option('--step <step>', '要跳过的步骤编号；缺省取 state.current_step')
+    .option('-a, --all', '一键跳过所有剩余未完成的步骤并给出收口路线')
+    .option('--reason <reason>', '跳过或承接原因')
+    .option('--superseded-by <ref>', '承接该步骤的提交哈希或任务编号 (e.g. bd9605c 或 R-074)')
+    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
+    .option('--accept-dirty <reason>', '透传给内部 go：记录证据后跳过 dirty worktree 拦截')
+    .option('--done', '所有步骤跳过/完成后直接执行收口门禁序列')
+    .option('--commit', '收口门禁通过后自动将改动提交至本地 Git')
+    .action(async (stepArg: string | undefined, options: { cwd?: string; step?: string; all?: boolean; reason?: string; supersededBy?: string; 'superseded-by'?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; done?: boolean; commit?: boolean }) => {
+      await stepSkipCommand({
+        cwd: options.cwd || process.cwd(),
+        step: options.step || stepArg,
+        all: options.all,
+        reason: options.reason,
+        supersededBy: options.supersededBy ?? options['superseded-by'],
+        session: options.session,
+        acceptDirty: options.acceptDirty ?? options['accept-dirty'],
         done: options.done,
         commit: options.commit,
       });

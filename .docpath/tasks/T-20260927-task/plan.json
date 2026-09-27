@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-27T05:30:27.126Z",
+    "updated_at": "2026-09-27T05:30:27.126Z",
+    "content_sha256": "a7b47db29b0fa118ea46fa16d204a3b53fd41064f2d8930d8e80cc6b0bb97cb3"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-27T05:30:27.126Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 系统事件白名单防假漂移与步骤跳过承接收口机制",
+      "description": "完成 FR-1: 系统事件白名单防假漂移与步骤跳过承接收口机制，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-420 与任务 T-20260927-task 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

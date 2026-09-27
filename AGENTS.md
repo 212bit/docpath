@@ -21,6 +21,7 @@ docpath quick "Fix typo in docs"   # mandatory for tiny low-risk changes (< 50 l
 docpath start "<title>" --draft    # compound: 1-shot start by title or backlog ID (promote + plan + go S1)
 docpath go --step S1
 docpath step-pass --commit         # compound: pass step + auto-closeout & commit on final step (or --all)
+docpath step-skip S2 --reason ".." # skip or supersede step with full breadcrumb evidence
 docpath task stash "WIP msg"       # hot stash active task state, files, and git changes
 docpath task pop                   # restore latest stashed task
 docpath task switch <target_id>    # seamless switch: auto-stash current + restore/start target

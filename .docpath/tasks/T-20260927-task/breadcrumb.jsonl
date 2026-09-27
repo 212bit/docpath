@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-task","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 系统事件白名单防假漂移与步骤跳过承接收口机制","timestamp":"2026-09-27T05:27:02.957Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-task","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-27T05:30:27.120Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-task","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-27T05:32:29.560Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-task","step":"review","status":"done","context":"代码审查: 0 错误, 4 警告, 0 提示","timestamp":"2026-09-27T05:32:31.171Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260927-task","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-27T05:32:32.729Z"}

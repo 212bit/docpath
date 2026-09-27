@@ -245,4 +245,36 @@ describe('plan command FSM precondition (R-291)', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('ignores system workflow events (task.pop, task.stash, check, etc) in breadcrumb without plan drift', () => {
+    const cwd = mkWorkspace({
+      plan: '## 执行计划\n\n### S1: Step 1\n- [ ] S1: Step 1\n',
+      breadcrumb: JSON.stringify({ taskId: 'T-SYNC', step: 'task.pop', status: 'done', context: 'pop' }) + '\n' +
+        JSON.stringify({ taskId: 'T-SYNC', step: 'check', status: 'done', context: 'check' }) + '\n',
+    });
+
+    const res = run(`check --cwd ${cwd}`, cwd);
+    // Should NOT report drift for task.pop or check
+    assert.doesNotMatch(res.out, /task\.pop.*done in breadcrumb but plan\.md still unchecked/);
+    assert.doesNotMatch(res.out, /Plan\/Breadcrumb 漂移检查/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('supports step-skip command to skip or supersede a plan step with ~ marker and breadcrumb evidence', () => {
+    const cwd = mkWorkspace({
+      plan: '## 执行计划\n\n### S1: First step\n- [ ] S1: First step\n\n### S2: Superseded step\n- [ ] S2: Superseded step\n',
+    });
+
+    const res = run(`step-skip --cwd ${cwd} --step S2 --reason "承接于 R-074 bd9605c" --superseded-by bd9605c`, cwd);
+    assert.equal(res.code, 0);
+
+    const plan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
+    assert.match(plan, /- \[~\] S2: Superseded step/);
+
+    const breadcrumb = readFileSync(join(cwd, '.docpath', 'workspace', 'breadcrumb.jsonl'), 'utf-8');
+    assert.match(breadcrumb, /step-skip \[S2\]/);
+    assert.match(breadcrumb, /bd9605c/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

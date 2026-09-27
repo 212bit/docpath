@@ -26,6 +26,7 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'commit', description: 'Git closeout wrapper: preview/stage/commit', visibility: 'core' },
   { name: 'go', description: 'Atomically claim/start a plan step', visibility: 'core' },
   { name: 'step-pass', description: 'Compound step closeout: finish current step and auto-start next', visibility: 'core' },
+  { name: 'step-skip', description: 'Explicitly skip or supersede plan steps with full breadcrumb evidence', visibility: 'core' },
   { name: 'quick-done', description: 'Compound closeout: full gate sequence plus commit-readiness report in one call', visibility: 'core' },
   { name: 'agent', description: 'Agent lifecycle: enter, step, done, handoff', visibility: 'core' },
   { name: 'check', description: 'Run quality and workflow gates', visibility: 'core' },

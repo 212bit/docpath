@@ -53,7 +53,8 @@ export async function resolveEffectivePlanTasks(cwd: string): Promise<EffectiveP
 
   return tasks.map((task) => {
     const step = stepById.get(task.id);
-    const breadcrumbDone = latest.get(task.id)?.status === 'done';
+    const breadcrumbStatus = latest.get(task.id)?.status;
+    const breadcrumbDone = breadcrumbStatus === 'done' || breadcrumbStatus === 'skipped';
     const effectiveDone = task.done || (!!breadcrumbDone && !!step && !step.lineText);
     return {
       id: task.id,
@@ -123,6 +124,40 @@ export async function markPlanStep(cwd: string, step: string, status: PlanStepSt
   });
 }
 
+export function isSystemWorkflowStep(step: string): boolean {
+  if (!step) return false;
+  const normalized = step.toLowerCase().trim();
+  const SYSTEM_EXACT_STEPS = new Set([
+    'check',
+    'review',
+    'journal',
+    'verify',
+    'arch',
+    'gc',
+    'promote',
+    'start',
+    'plan',
+    'draft',
+    'audit',
+    'quick',
+    'quick-done',
+    'init',
+    'install',
+    'update',
+  ]);
+  if (SYSTEM_EXACT_STEPS.has(normalized)) return true;
+  if (
+    normalized.startsWith('task.') ||
+    normalized.startsWith('worktree.') ||
+    normalized.startsWith('session.') ||
+    normalized.startsWith('arch.') ||
+    normalized.startsWith('system.')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export async function detectPlanBreadcrumbDrift(cwd: string): Promise<PlanBreadcrumbDrift> {
   const docpathDir = await resolveDocpathDir(cwd);
   const state = await readCurrentState(cwd);
@@ -136,16 +171,19 @@ export async function detectPlanBreadcrumbDrift(cwd: string): Promise<PlanBreadc
   const planById = new Map(planTasks.map((task) => [task.id, task]));
   const planStepById = new Map(planSteps.map((task) => [task.id, task]));
   const latest = latestByStep(breadcrumb.entries, state?.task_id);
-  const workflowOnlySteps = new Set(['check', 'review', 'journal']);
 
   const planDoneWithoutBreadcrumb = planTasks
-    .filter((task) => task.done && latest.get(task.id)?.status !== 'done')
+    .filter((task) => {
+      if (!task.done) return false;
+      const latestStatus = latest.get(task.id)?.status;
+      return latestStatus !== 'done' && latestStatus !== 'skipped';
+    })
     .map((task) => task.id);
 
   const breadcrumbDoneWithoutPlan = Array.from(latest.values())
     .filter((entry) =>
-      entry.status === 'done' &&
-      !workflowOnlySteps.has(entry.step) &&
+      (entry.status === 'done' || entry.status === 'skipped') &&
+      !isSystemWorkflowStep(entry.step) &&
       (() => {
         const task = planById.get(entry.step);
         if (!task) return true;
