@@ -130,4 +130,14 @@ describe('Test Impact Analysis (TIA) Engine', () => {
     const rsReport = await analyzeTestImpact(tempDir, { files: ['src/codec.rs'] });
     assert.ok(rsReport.impacted_tests.includes('tests/codec.rs'));
   });
+
+  it('supports docpath test-map --smart option with structured JSON output', () => {
+    const out = execSync(`node "${BIN}" test-map src/utils/math.ts --smart --json --cwd "${tempDir}"`, {
+      encoding: 'utf-8',
+    });
+
+    const parsed = JSON.parse(out);
+    assert.equal(parsed.stats.modified_count, 1);
+    assert.ok(parsed.impacted_tests.includes('tests/calculator.test.mjs'));
+  });
 });

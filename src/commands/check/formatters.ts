@@ -135,12 +135,25 @@ export function extractActionableFixSuggestions(failures: CheckResult[]): Action
 
     // 1. 测试失败检测与单测提取
     if (cat === 'test' || name.includes('测试') || name.includes('test')) {
-      const testFileRegex = /(?:tests?\/[a-zA-Z0-9_\-\./]+\.(?:test|spec)\.(?:mjs|ts|js|jsx|tsx)|[a-zA-Z0-9_\-\./]+_test\.go|tests?\/test_[a-zA-Z0-9_\-\.]+\.py)/gi;
-      const matchedFiles = Array.from(new Set(output.match(testFileRegex) || []));
+      const testFileRegex = /(?:tests?\/[a-zA-Z0-9_\-\./]+\.(?:test|spec)\.(?:mjs|ts|js|jsx|tsx|cjs)|tests?\/[a-zA-Z0-9_\-\./]+\.(?:mjs|ts|js|jsx|tsx|cjs)|[a-zA-Z0-9_\-\./]+_test\.go|tests?\/test_[a-zA-Z0-9_\-\.]+\.py|tests?\/[a-zA-Z0-9_\-\.]+_test\.py|tests?\/[a-zA-Z0-9_\-\.]+\.rs)/gi;
+      const matchedFiles = new Set<string>();
 
-      if (matchedFiles.length > 0) {
-        for (const file of matchedFiles.slice(0, 3)) {
-          if (file.endsWith('.mjs') || file.endsWith('.js')) {
+      // 从 "test at tests/..." 结构中精确提取失败测试文件路径
+      const testAtRegex = /test at (tests?\/[a-zA-Z0-9_\-\./]+):/gi;
+      let atMatch: RegExpExecArray | null;
+      while ((atMatch = testAtRegex.exec(output)) !== null) {
+        if (atMatch[1]) matchedFiles.add(atMatch[1]);
+      }
+
+      // 从正则模式匹配
+      const generalMatches = output.match(testFileRegex) || [];
+      for (const f of generalMatches) {
+        matchedFiles.add(f);
+      }
+
+      if (matchedFiles.size > 0) {
+        for (const file of Array.from(matchedFiles).slice(0, 3)) {
+          if (file.endsWith('.mjs') || file.endsWith('.js') || file.endsWith('.cjs')) {
             addSuggestion(`单用例测试 (${file})`, `node --test ${file}`);
           } else if (file.endsWith('.ts') || file.endsWith('.tsx')) {
             addSuggestion(`单用例测试 (${file})`, `npx vitest run ${file}`);
@@ -148,6 +161,9 @@ export function extractActionableFixSuggestions(failures: CheckResult[]): Action
             addSuggestion(`单用例 Go 测试 (${file})`, `go test -v ./${file}`);
           } else if (file.endsWith('.py')) {
             addSuggestion(`单用例 Python 测试 (${file})`, `pytest ${file}`);
+          } else if (file.endsWith('.rs')) {
+            const target = file.replace(/^tests\//, '').replace(/\.rs$/, '');
+            addSuggestion(`单用例 Rust 测试 (${file})`, `cargo test --test ${target}`);
           }
         }
       } else if (failure.command) {

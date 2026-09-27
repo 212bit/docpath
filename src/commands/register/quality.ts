@@ -14,14 +14,15 @@ export function registerQualityCommands(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--since <ref>', '按 git ref 汇总差异')
     .option('--run', '直接定向运行受波及的单测')
+    .option('--smart', '--run 别名: 智能推导并定向运行')
     .option('--agent', '输出 Agent 可读 YAML 状态')
     .option('--json', '输出 JSON 格式')
-    .action(async (files: string[] | undefined, options: { cwd?: string; since?: string; run?: boolean; agent?: boolean; json?: boolean }) => {
+    .action(async (files: string[] | undefined, options: { cwd?: string; since?: string; run?: boolean; smart?: boolean; agent?: boolean; json?: boolean }) => {
       await testMapCommand({
         cwd: options.cwd || process.cwd(),
         files: Array.isArray(files) ? files : files ? [files] : [],
         since: options.since,
-        run: !!options.run,
+        run: !!(options.run || options.smart),
         agent: !!options.agent,
         json: !!options.json,
       });

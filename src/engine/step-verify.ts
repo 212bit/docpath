@@ -247,6 +247,11 @@ export async function runStepTargetedVerification(
     };
   }
 
+  const hasPy = targetTests.some((t) => t.endsWith('.py'));
+  const hasGo = targetTests.some((t) => t.endsWith('.go'));
+  const hasRs = targetTests.some((t) => t.endsWith('.rs'));
+  const hasNode = targetTests.some((t) => /\.(mjs|cjs|js|ts|tsx|jsx)$/.test(t));
+
   const isNode = existsSync(join(cwd, 'package.json'));
   const isGo = existsSync(join(cwd, 'go.mod'));
   const isPython = existsSync(join(cwd, 'pyproject.toml')) || existsSync(join(cwd, 'requirements.txt'));
@@ -255,20 +260,20 @@ export async function runStepTargetedVerification(
   let cmd = '';
   let args: string[] = [];
 
-  if (isNode) {
+  if (hasPy || (!hasNode && !hasGo && !hasRs && isPython)) {
+    cmd = 'pytest';
+    args = [...targetTests];
+  } else if (hasGo || (!hasNode && !hasPy && !hasRs && isGo)) {
+    cmd = 'go';
+    args = ['test', ...targetTests];
+  } else if (hasRs || (!hasNode && !hasPy && !hasGo && isRust)) {
+    cmd = 'cargo';
+    args = ['test', ...targetTests];
+  } else if (hasNode || isNode) {
     // 自动自愈构建产物新鲜度
     await ensureBuildFreshness(cwd);
     cmd = 'node';
     args = ['--test', '--test-concurrency=2', '--test-isolation=process', ...targetTests];
-  } else if (isGo) {
-    cmd = 'go';
-    args = ['test', ...targetTests];
-  } else if (isPython) {
-    cmd = 'pytest';
-    args = [...targetTests];
-  } else if (isRust) {
-    cmd = 'cargo';
-    args = ['test', ...targetTests];
   } else {
     return {
       executed: false,
@@ -353,12 +358,13 @@ export function renderStepVerifyFeedback(result: StepVerifyResult): string {
       // 提取核心失败行
       const failLines = result.output
         .split('\n')
-        .filter((l) => /ERR_ASSERTION|AssertionError|✖|fail|error|Error:/i.test(l))
-        .slice(0, 8);
+        .map((l) => l.trim())
+        .filter((l) => /^(?:✖|×|FAIL|FAILED|ERROR|Error:|AssertionError|ERR_ASSERTION|assert|panic:)/i.test(l) || /test at /i.test(l))
+        .slice(0, 6);
       if (failLines.length > 0) {
         lines.push('    ── 失败摘要 ──');
         for (const fl of failLines) {
-          lines.push(`    ${fl.trim()}`);
+          lines.push(`    ${fl}`);
         }
       }
     }
