@@ -23,6 +23,13 @@ export interface BacklogGraphNode {
   unresolvedDependencies: string[];
 }
 
+export interface BacklogBottleneck {
+  id: string;
+  title: string;
+  directBlocks: number;
+  totalTransitiveBlocks: number;
+}
+
 export interface BacklogGraphResult {
   nodes: Record<string, BacklogGraphNode>;
   layers: Array<{ layer: number; itemIds: string[] }>;
@@ -30,10 +37,12 @@ export interface BacklogGraphResult {
   rootItems: string[];
   readyItems: string[];
   blockedItems: string[];
+  bottlenecks: BacklogBottleneck[];
+  criticalPath: string[];
 }
 
 /**
- * 构建 Backlog 完整依赖图谱
+ * 构建 Backlog 完整依赖图谱（包含分层、瓶颈与关键路径分析）
  */
 export function buildBacklogGraph(items: BacklogItem[]): BacklogGraphResult {
   const nodes: Record<string, BacklogGraphNode> = {};
@@ -173,6 +182,80 @@ export function buildBacklogGraph(items: BacklogItem[]): BacklogGraphResult {
     calculateLayer(id);
   }
 
+  // 5. 核心瓶颈点计算 (Top Blockers)
+  const bottlenecks: BacklogBottleneck[] = [];
+  for (const node of Object.values(nodes)) {
+    if (node.status === 'done' || node.status === 'dropped') continue;
+    if (node.blocks.length === 0) continue;
+
+    // 计算可达闭包（传递阻塞数量）
+    const reachable = new Set<string>();
+    const queue = [...node.blocks];
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      if (!reachable.has(curr) && curr !== node.id) {
+        reachable.add(curr);
+        const currNode = nodes[curr];
+        if (currNode) {
+          for (const next of currNode.blocks) {
+            if (!reachable.has(next)) queue.push(next);
+          }
+        }
+      }
+    }
+
+    if (reachable.size > 0) {
+      bottlenecks.push({
+        id: node.id,
+        title: node.title,
+        directBlocks: node.blocks.length,
+        totalTransitiveBlocks: reachable.size,
+      });
+    }
+  }
+  bottlenecks.sort((a, b) => b.totalTransitiveBlocks - a.totalTransitiveBlocks || b.directBlocks - a.directBlocks);
+
+  // 6. 关键路径计算 (Critical Path: 最长依赖链)
+  let longestPath: string[] = [];
+  const memoPath = new Map<string, string[]>();
+  const pathVisiting = new Set<string>();
+
+  function findLongestPath(id: string): string[] {
+    if (memoPath.has(id)) return memoPath.get(id)!;
+    if (pathVisiting.has(id)) return [id]; // 环中节点兜底
+
+    pathVisiting.add(id);
+    const node = nodes[id];
+    if (!node || node.dependsOn.length === 0) {
+      pathVisiting.delete(id);
+      const res = [id];
+      memoPath.set(id, res);
+      return res;
+    }
+
+    let maxSubPath: string[] = [];
+    for (const depId of node.dependsOn) {
+      if (nodes[depId] && !pathVisiting.has(depId)) {
+        const sub = findLongestPath(depId);
+        if (sub.length > maxSubPath.length) {
+          maxSubPath = sub;
+        }
+      }
+    }
+
+    pathVisiting.delete(id);
+    const res = [...maxSubPath, id];
+    memoPath.set(id, res);
+    return res;
+  }
+
+  for (const id of Object.keys(nodes)) {
+    const p = findLongestPath(id);
+    if (p.length > longestPath.length) {
+      longestPath = p;
+    }
+  }
+
   // 聚合层级
   const layerMap = new Map<number, string[]>();
   for (const node of Object.values(nodes)) {
@@ -196,6 +279,8 @@ export function buildBacklogGraph(items: BacklogItem[]): BacklogGraphResult {
     rootItems,
     readyItems,
     blockedItems,
+    bottlenecks,
+    criticalPath: longestPath,
   };
 }
 

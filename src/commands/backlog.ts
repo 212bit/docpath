@@ -47,6 +47,7 @@ import {
   autoFixBacklogHygiene,
   type BacklogGroomIssue,
 } from '../engine/backlog-groom.js';
+import { computeBacklogStats } from '../engine/backlog-stats.js';
 import { today, resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { transitionWorkflow } from '../engine/transitions.js';
@@ -94,6 +95,8 @@ export interface BacklogCommandOptions {
   dryRun?: boolean;
   overwrite?: boolean;
   fix?: boolean;
+  all?: boolean;
+  includeArchived?: boolean;
   agent?: boolean;
   draft?: boolean;
   adopt?: boolean;
@@ -1352,22 +1355,33 @@ async function backlogPromote(options: BacklogCommandOptions): Promise<void> {
   }
 }
 
+function parseIdList(rawId?: string): string[] {
+  if (!rawId?.trim()) return [];
+  return rawId
+    .split(/[\s,，]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 async function backlogAdvanceStatus(
   options: BacklogCommandOptions,
   target: 'accepted' | 'planned',
 ): Promise<void> {
-  if (!options.id?.trim()) {
+  const ids = parseIdList(options.id);
+  if (ids.length === 0) {
     throw new Error(`docpath backlog ${target === 'accepted' ? 'accept' : 'plan'} requires <id>`);
   }
 
-  const existing = await readBacklogItem(options.cwd, options.id.trim());
-  if (!existing) {
-    throw new Error(`[docpath] backlog 条目不存在: ${options.id}`);
+  for (const singleId of ids) {
+    const existing = await readBacklogItem(options.cwd, singleId);
+    if (!existing) {
+      throw new Error(`[docpath] backlog 条目不存在: ${singleId}`);
+    }
+    assertBacklogReadyForExecution(existing, target === 'accepted' ? 'accept' : 'plan', options.draft, options.cwd);
+    const item = await setBacklogStatus(options.cwd, existing.id, target);
+    console.log(`✅  backlog 条目已更新: ${item.id} → ${item.status}`);
   }
-  assertBacklogReadyForExecution(existing, target === 'accepted' ? 'accept' : 'plan', options.draft, options.cwd);
-  const item = await setBacklogStatus(options.cwd, existing.id, target);
   await refreshBacklogIndex(options.cwd);
-  console.log(`✅  backlog 条目已更新: ${item.id} → ${item.status}`);
 }
 
 /**
@@ -1377,33 +1391,39 @@ async function backlogAdvanceStatus(
  * 由撞号安全阀非破坏性暴露给 `backlog groom`。
  */
 async function backlogArchive(options: BacklogCommandOptions): Promise<void> {
-  if (!options.id?.trim()) {
+  const ids = parseIdList(options.id);
+  if (ids.length === 0) {
     throw new Error('docpath backlog archive requires <id>');
   }
-  const result = await archiveBacklogItem(options.cwd, options.id.trim());
-  if (result.moved) {
-    console.log(`✅  backlog 条目已归档: ${options.id.trim()} → ${result.file ?? 'backlog/archived/'}`);
-    return;
+  for (const singleId of ids) {
+    const result = await archiveBacklogItem(options.cwd, singleId);
+    if (result.moved) {
+      console.log(`✅  backlog 条目已归档: ${singleId} → ${result.file ?? 'backlog/archived/'}`);
+    } else {
+      console.log(`ℹ️  backlog 条目无需归档: ${singleId}（已在 archived 里或撞号安全阀拦截，见 backlog groom）`);
+    }
   }
-  console.log(`ℹ️  backlog 条目无需归档: ${options.id.trim()}（已在 archived 里或撞号安全阀拦截，见 backlog groom）`);
 }
 
 async function backlogUpdateTerminalStatus(
   options: BacklogCommandOptions,
   target: 'done' | 'dropped',
 ): Promise<void> {
-  if (!options.id?.trim()) {
+  const ids = parseIdList(options.id);
+  if (ids.length === 0) {
     throw new Error(`docpath backlog ${target === 'done' ? 'done' : 'drop'} requires <id>`);
   }
   if (options.task?.trim() && target !== 'done') {
     throw new Error('docpath backlog --task 仅适用于 done（drop 不需要任务证据）');
   }
 
-  const item = await setBacklogStatus(options.cwd, options.id.trim(), target, {
-    linkTask: options.task?.trim() || undefined,
-  });
+  for (const singleId of ids) {
+    const item = await setBacklogStatus(options.cwd, singleId, target, {
+      linkTask: options.task?.trim() || undefined,
+    });
+    console.log(`✅  backlog 条目已更新: ${item.id} → ${item.status}${item.links.task ? `（任务 ${item.links.task}）` : ''}`);
+  }
   await refreshBacklogIndex(options.cwd);
-  console.log(`✅  backlog 条目已更新: ${item.id} → ${item.status}${item.links.task ? `（任务 ${item.links.task}）` : ''}`);
 }
 
 function renderListTable(items: BacklogItem[]): string {
@@ -1517,6 +1537,7 @@ async function backlogSearch(options: BacklogCommandOptions): Promise<void> {
     dependsOn: options.dependsOn,
     readyOnly: options.readyOnly || options.unblocked,
     limit: options.limit,
+    includeArchived: options.includeArchived || options.all,
   });
 
   if (options.json) {
@@ -1536,6 +1557,7 @@ async function backlogSearch(options: BacklogCommandOptions): Promise<void> {
         level: r.item.level,
         score: r.score,
         is_blocked: r.isBlocked,
+        is_archived: r.isArchived || false,
         unresolved_dependencies: r.unresolvedDependencies,
         layer: r.layer,
         parent: r.item.links.parent || null,
@@ -1551,9 +1573,10 @@ async function backlogSearch(options: BacklogCommandOptions): Promise<void> {
 
   console.log(`=== Backlog 检索结果 (共 ${results.length} 条)${query ? ` — 关键词: "${query}"` : ''} ===\n`);
   for (const r of results) {
-    const badge = r.item.status === 'done' ? '✅' : r.isBlocked ? '🔒 [阻塞]' : '⚡ [就绪]';
+    const archiveBadge = r.isArchived ? ' [已归档]' : '';
+    const badge = r.item.status === 'done' ? '✅' : r.item.status === 'dropped' ? '🛑' : r.isBlocked ? '🔒 [阻塞]' : '⚡ [就绪]';
     const layer = `Layer ${r.layer}`;
-    console.log(`  ${badge} ${r.item.id} [${r.item.priority}] ${r.item.title} (${r.item.status} | ${layer})`);
+    console.log(`  ${badge} ${r.item.id} [${r.item.priority}] ${r.item.title} (${r.item.status}${archiveBadge} | ${layer})`);
     if (r.unresolvedDependencies.length > 0) {
       console.log(`      未解前置依赖: ${r.unresolvedDependencies.join(', ')}`);
     }
@@ -1766,6 +1789,40 @@ async function backlogShow(options: BacklogCommandOptions): Promise<void> {
   }
 }
 
+async function backlogStats(options: BacklogCommandOptions): Promise<void> {
+  const stats = await computeBacklogStats(options.cwd);
+
+  if (options.json) {
+    console.log(JSON.stringify(stats, null, 2));
+    return;
+  }
+
+  if (options.agent) {
+    console.log(stringify(stats));
+    return;
+  }
+
+  console.log(`\n📊  Backlog 需求池全景统计 (共 ${stats.summary.total} 条)`);
+  console.log(`    活跃: ${stats.summary.active} | 已归档: ${stats.summary.archived} | 整体完成率: ${stats.summary.completion_rate_pct}%`);
+  console.log('\n--- 状态漏斗 (Status) ---');
+  console.log(`    💡 proposed: ${stats.status.proposed} | 📋 accepted: ${stats.status.accepted} | 🚀 planned: ${stats.status.planned} | ✅ done: ${stats.status.done} | 🛑 dropped: ${stats.status.dropped}`);
+  console.log('\n--- 成熟度分布 (Readiness) ---');
+  console.log(`    🌱 raw: ${stats.readiness.raw} | 📐 shaped: ${stats.readiness.shaped} | 🔍 analyzed: ${stats.readiness.analyzed} | 🤝 confirmed: ${stats.readiness.confirmed}`);
+  console.log('\n--- 优先级分布 (Priority) ---');
+  console.log(`    🔥 P0: ${stats.priority.P0} | ⚡ P1: ${stats.priority.P1} | 📌 P2: ${stats.priority.P2} | ☕ P3: ${stats.priority.P3}`);
+  console.log('\n--- 依赖拓扑与健康指标 (Topology & Health) ---');
+  console.log(`    ⚡ 就绪条目: ${stats.topology.ready} | 🔒 阻塞条目: ${stats.topology.blocked} | 🔄 闭环环路: ${stats.topology.cycles_count}`);
+  console.log(`    🛤️  最长依赖链 (Critical Path): ${stats.topology.critical_path_length} 步 [${stats.topology.critical_path.join(' -> ') || '无'}]`);
+  if (stats.topology.top_blockers.length > 0) {
+    console.log('    🚧 核心卡点 (Top Blockers):');
+    for (const b of stats.topology.top_blockers) {
+      console.log(`       - [${b.id}] ${b.title} (直接阻塞 ${b.directBlocks} 项 / 传递阻塞 ${b.totalTransitiveBlocks} 项)`);
+    }
+  }
+  console.log(`    🛡️  健康门禁: ${stats.hygiene.passed ? '✅ 全部通过' : `⚠️  ${stats.hygiene.issues_count} 异常 / ${stats.hygiene.warnings_count} 警告`}`);
+  console.log('');
+}
+
 /**
  * FR-4 动作单一真源：backlog 动作 → 处理器映射。帮助文案 / 校验 / 报错全部由
  * BACKLOG_ACTIONS 派生，扩展一个动作只改这里一处的映射项，其余（roster、usage、报错）自动跟随。
@@ -1778,6 +1835,8 @@ const backlogActions = {
   show: backlogShow,
   get: backlogShow,
   view: backlogShow,
+  stats: backlogStats,
+  metrics: backlogStats,
   list: backlogList,
   search: backlogSearch,
   find: backlogSearch,

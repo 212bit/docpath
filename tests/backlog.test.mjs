@@ -693,6 +693,96 @@ high id
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('searches full lifecycle across active and archived items', async () => {
+    const cwd = mkWorkspace();
+    const { searchBacklogItems } = await import('../dist/engine/backlog-search.js');
+
+    const active = await createBacklogItem(cwd, sampleItem({ title: 'Active Authentication Service' }));
+    const toArchive = await createBacklogItem(cwd, sampleItem({ title: 'Archived Legacy Auth Service' }));
+    await setBacklogStatus(cwd, toArchive.id, 'dropped');
+
+    // Default search: only active
+    const activeOnly = await searchBacklogItems(cwd, { query: 'Auth' });
+    assert.equal(activeOnly.length, 1);
+    assert.equal(activeOnly[0].item.id, active.id);
+
+    // Full lifecycle search: active + archived
+    const full = await searchBacklogItems(cwd, { query: 'Auth', includeArchived: true });
+    assert.equal(full.length, 2);
+    assert.ok(full.some((r) => r.item.id === toArchive.id && r.isArchived === true));
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('computes topological bottlenecks and critical path in buildBacklogGraph', async () => {
+    const { buildBacklogGraph } = await import('../dist/engine/backlog-graph.js');
+
+    const itemA = sampleItem({ id: 'R-001', title: 'Foundation DB' });
+    const itemB = sampleItem({ id: 'R-002', title: 'Auth API', links: { depends_on: ['R-001'] } });
+    const itemC = sampleItem({ id: 'R-003', title: 'User Profile API', links: { depends_on: ['R-001'] } });
+    const itemD = sampleItem({ id: 'R-004', title: 'Frontend App', links: { depends_on: ['R-002'] } });
+
+    const graph = buildBacklogGraph([itemA, itemB, itemC, itemD]);
+
+    // R-001 blocks R-002 and R-003 directly, and R-004 transitively -> Top Bottleneck
+    assert.ok(graph.bottlenecks.length > 0);
+    assert.equal(graph.bottlenecks[0].id, 'R-001');
+    assert.equal(graph.bottlenecks[0].directBlocks, 2);
+    assert.equal(graph.bottlenecks[0].totalTransitiveBlocks, 3);
+
+    // Critical Path: R-001 -> R-002 -> R-004 (length 3)
+    assert.equal(graph.criticalPath.length, 3);
+    assert.deepEqual(graph.criticalPath, ['R-001', 'R-002', 'R-004']);
+  });
+
+  it('computes backlog stats and runs backlog stats command', async () => {
+    const cwd = mkWorkspace();
+    const { computeBacklogStats } = await import('../dist/engine/backlog-stats.js');
+    const { backlogCommand } = await import('../dist/commands/backlog.js');
+
+    const it1 = await createBacklogItem(cwd, sampleItem({ title: 'Task 1', priority: 'P0' }));
+    const it2 = await createBacklogItem(cwd, sampleItem({ title: 'Task 2', priority: 'P1' }));
+    await setBacklogStatus(cwd, it2.id, 'dropped');
+
+    const stats = await computeBacklogStats(cwd);
+    assert.equal(stats.summary.total, 2);
+    assert.equal(stats.summary.active, 1);
+    assert.equal(stats.summary.archived, 1);
+    assert.equal(stats.priority.P0, 1);
+    assert.equal(stats.priority.P1, 1);
+
+    // Test stats CLI output
+    let logs = [];
+    const origLog = console.log;
+    console.log = (...args) => logs.push(args.join(' '));
+
+    try {
+      await backlogCommand({ cwd, action: 'stats' });
+      assert.ok(logs.some((l) => l.includes('Backlog 需求池全景统计')));
+      assert.ok(logs.some((l) => l.includes('状态漏斗')));
+    } finally {
+      console.log = origLog;
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('supports batch status transitions on multiple IDs', async () => {
+    const cwd = mkWorkspace();
+    const { backlogCommand } = await import('../dist/commands/backlog.js');
+
+    const it1 = await createBacklogItem(cwd, sampleItem({ title: 'Batch Item 1' }));
+    const it2 = await createBacklogItem(cwd, sampleItem({ title: 'Batch Item 2' }));
+
+    await backlogCommand({ cwd, action: 'drop', id: `${it1.id}, ${it2.id}` });
+
+    const item1After = await readBacklogItem(cwd, it1.id, { readArchived: true });
+    const item2After = await readBacklogItem(cwd, it2.id, { readArchived: true });
+    assert.equal(item1After.status, 'dropped');
+    assert.equal(item2After.status, 'dropped');
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
 
 

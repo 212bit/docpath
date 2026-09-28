@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 Backlog 进阶功能全面升级：检索、统计、拓扑关键路径、批量操作与重构","timestamp":"2026-09-28T02:44:29.545Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-28T02:47:48.739Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译, 测试（受控并发）","timestamp":"2026-09-28T02:49:17.327Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-28T02:51:24.422Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog","step":"review","status":"done","context":"代码审查: 0 错误, 20 警告, 0 提示","timestamp":"2026-09-28T02:51:25.876Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-28T02:51:27.267Z"}

@@ -4,7 +4,14 @@
  * 支持多关键字搜索、状态/优先级过滤、依赖阻塞态过滤、父子层级检索与相关性打分。
  */
 
-import { listBacklogItems, type BacklogItem, type BacklogPriority, type BacklogStatus } from './backlog.js';
+import {
+  listBacklogItems,
+  listArchivedBacklogItems,
+  listAllBacklogItems,
+  type BacklogItem,
+  type BacklogPriority,
+  type BacklogStatus,
+} from './backlog.js';
 import { buildBacklogGraph } from './backlog-graph.js';
 
 export interface BacklogSearchOptions {
@@ -15,6 +22,8 @@ export interface BacklogSearchOptions {
   dependsOn?: string;
   readyOnly?: boolean;
   limit?: number;
+  includeArchived?: boolean;
+  archivedOnly?: boolean;
 }
 
 export interface BacklogSearchResultItem {
@@ -24,21 +33,44 @@ export interface BacklogSearchResultItem {
   isBlocked: boolean;
   unresolvedDependencies: string[];
   layer: number;
+  isArchived?: boolean;
 }
 
 /**
- * 在 Backlog 中执行搜索与过滤
+ * 在 Backlog 中执行搜索与过滤（支持跨 active 与 archived 全生命周期检索）
  */
 export async function searchBacklogItems(
   cwd: string,
   options: BacklogSearchOptions = {},
 ): Promise<BacklogSearchResultItem[]> {
-  const allItems = await listBacklogItems(cwd);
+  const statusFilter = options.status?.trim().toLowerCase();
+  const shouldIncludeArchived = options.includeArchived === true ||
+    options.archivedOnly === true ||
+    statusFilter === 'done' ||
+    statusFilter === 'dropped' ||
+    statusFilter === 'all';
+
+  let allItems: BacklogItem[];
+  let archivedSet = new Set<string>();
+
+  if (options.archivedOnly) {
+    allItems = await listArchivedBacklogItems(cwd);
+    archivedSet = new Set(allItems.map((it) => it.id));
+  } else if (shouldIncludeArchived) {
+    const [active, archived] = await Promise.all([
+      listBacklogItems(cwd),
+      listArchivedBacklogItems(cwd),
+    ]);
+    archivedSet = new Set(archived.map((it) => it.id));
+    allItems = [...active, ...archived];
+  } else {
+    allItems = await listBacklogItems(cwd);
+  }
+
   const graph = buildBacklogGraph(allItems);
 
   const query = options.query?.trim().toLowerCase() || '';
   const keywords = query ? query.split(/[\s,，]+/).filter(Boolean) : [];
-  const statusFilter = options.status?.trim().toLowerCase();
   const priorityFilter = options.priority?.trim().toUpperCase();
   const parentFilter = options.parent?.trim();
   const dependsOnFilter = options.dependsOn?.trim();
@@ -135,6 +167,7 @@ export async function searchBacklogItems(
       isBlocked: node.isBlocked,
       unresolvedDependencies: node.unresolvedDependencies,
       layer: node.layer,
+      isArchived: archivedSet.has(item.id),
     });
   }
 

@@ -472,6 +472,36 @@ export async function listBacklogItems(cwd: string): Promise<BacklogItem[]> {
 }
 
 /**
+ * 列出所有已归档的 backlog 条目（archived/ 目录）。
+ */
+export async function listArchivedBacklogItems(cwd: string): Promise<BacklogItem[]> {
+  const dir = archivedBacklogDir(await resolveDocpathDir(cwd));
+  if (!existsSync(dir)) return [];
+  const entries = await readdir(dir);
+  const items: BacklogItem[] = [];
+  for (const file of entries) {
+    if (!file.endsWith('.md') || file === 'backlog.md') continue;
+    if (!/^R-\d+/i.test(file)) continue;
+    const content = await readFileOrSkip(join(dir, file));
+    if (content === null) continue;
+    items.push(parseItem(content));
+  }
+  return items.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+}
+
+/**
+ * 列出全量 Backlog 条目（包含活跃和已归档）。
+ */
+export async function listAllBacklogItems(cwd: string): Promise<BacklogItem[]> {
+  const [active, archived] = await Promise.all([
+    listBacklogItems(cwd),
+    listArchivedBacklogItems(cwd),
+  ]);
+  const combined = [...active, ...archived];
+  return combined.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+}
+
+/**
  * 读取单条（含 archived/）；不存在返回 null（不报错）。
  *
  * R-352：archive 命令与幂等静默收尾需要能看到已归档副本。

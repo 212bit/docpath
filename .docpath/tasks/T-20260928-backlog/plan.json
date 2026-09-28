@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-28T02:47:48.742Z",
+    "updated_at": "2026-09-28T02:47:48.742Z",
+    "content_sha256": "10dfd587f608b237a7add6d2885248dd2b0e14c16ce069cd6b47172dcbc2c932"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-28T02:47:48.742Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 Backlog 进阶功能全面升级：检索、统计、拓扑关键路径、批量操作与重构",
+      "description": "完成 FR-1: Backlog 进阶功能全面升级：检索、统计、拓扑关键路径、批量操作与重构，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-424 与任务 T-20260928-backlog 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

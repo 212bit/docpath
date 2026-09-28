@@ -36,7 +36,8 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .option('--limit <number>', 'search: 限制输出条数')
     .option('--task <id>', 'done: 旁路闭环任务证据（quick 等绕过 promote 时链接已执行任务 id）')
     .option('--fix', 'groom: 自动修复悬空/已废弃依赖链接')
-    .option('--agent', 'list/groom/search/graph/shape/import/show: 输出 agent YAML')
+    .option('--archived, --all', 'search/export: 检索或导出时包含已归档条目')
+    .option('--agent', 'list/groom/search/graph/shape/import/show/stats: 输出 agent YAML')
     .option('--json', 'search/graph/import: 输出 JSON 结构')
     .option('--draft', 'promote: 跳过成熟度检查，快速通道推送')
     .option('--adopt', 'promote: 就地认领当前工作区变更并启动任务（不触发 Worktree 隔离）')
@@ -117,6 +118,8 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         limit: options.limit ? Number.parseInt(String(options.limit), 10) : undefined,
         task: options.task,
         fix: !!(options as { fix?: boolean }).fix,
+        all: !!(options as { all?: boolean; archived?: boolean }).all || !!(options as { all?: boolean; archived?: boolean }).archived,
+        includeArchived: !!(options as { all?: boolean; archived?: boolean }).all || !!(options as { all?: boolean; archived?: boolean }).archived,
         agent: !!options.agent,
         draft: !!options.draft,
         adopt: !!options.adopt,
