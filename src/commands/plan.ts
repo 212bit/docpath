@@ -150,9 +150,8 @@ export function renderDraftPlan(spec: string, level = 2, agentFlow = false): str
   const acceptances = extractChecklistEntries(spec, 'AC');
   const primaryFeature = features[0]?.text || title.replace(/^T-\d{8}-[a-z0-9-]+\s+-\s+/, '');
 
-  // R-306 比例刻度 + R-334：level ≤1 或 (agent_flow 且 level ≤2) 生成单步计划。
-  // R-306 实测中三段式(梳理/实现/验证)对小任务是虚构仪式；agent_flow 把压缩推广到 level-2。
-  if (level <= 1 || (agentFlow && level <= 2)) {
+  // 1. 单目标任务 (<=1 个 FR) 或 level <= 1 或 agentFlow 压缩模式：生成单步原子计划 (S1: 实现并验证)
+  if (level <= 1 || (agentFlow && level <= 2) || features.length <= 1) {
     const featureSummary = features.length > 0
       ? features.map((item) => `${item.id}: ${item.text}`).join('；')
       : primaryFeature;
@@ -163,7 +162,7 @@ export function renderDraftPlan(spec: string, level = 2, agentFlow = false): str
       '## 执行计划',
       '',
       `### S1: 实现并验证 ${primaryFeature}`,
-      `- **描述**: 完成 ${featureSummary}，随做随验（${level <= 1 ? 'level-1 压缩计划，R-306' : 'agent_flow 压缩计划，R-334'}）。`,
+      `- **描述**: 完成 ${featureSummary}，随做随验（${level <= 1 ? 'level-1 压缩计划，R-306' : agentFlow ? 'agent_flow 压缩计划，R-334' : '模块驱动单步计划'}）。`,
       `- **验收条件**: ${acceptanceSummary}`,
       '- **依赖**: 无',
       '',
@@ -175,46 +174,45 @@ export function renderDraftPlan(spec: string, level = 2, agentFlow = false): str
       '',
     ].join('\n');
   }
-  const primaryFeatureId = features[0]?.id;
-  const primaryAcceptance = acceptances[0]
-    ? `${acceptances[0].id}: ${acceptances[0].text}`
-    : 'plan.md 已生成并可进入执行';
-  const additionalFeatureSteps = features.slice(1).flatMap((feature, index) => {
-    const stepNumber = index + 3;
-    return [
+
+  // 2. 多模块任务 (features.length > 1)：按 FR 业务模块驱动拆解为具体的 S1..Sn 步骤
+  // 彻底告别形式主义的“S1 梳理 / S2 实现 / S3 验证”，每个步骤都是该模块的实现与定向自验。
+  const stepBlocks: string[] = [];
+  const checklistSteps: string[] = [];
+
+  for (let i = 0; i < features.length; i++) {
+    const feature = features[i];
+    const stepId = `S${i + 1}`;
+    checklistSteps.push(`- [ ] ${stepId}`);
+
+    // 分配对应的验收标准
+    let stepAcceptance: string;
+    if (i < features.length - 1) {
+      stepAcceptance = acceptances[i]
+        ? `${acceptances[i].id}: ${acceptances[i].text}`
+        : `${feature.id} 满足需求并通过单元测试`;
+    } else {
+      // 最后一个步骤包含剩余所有验收标准，确保 AC-1..N 100% 覆盖
+      const remainingAc = acceptances.slice(i);
+      stepAcceptance = remainingAc.length > 0
+        ? remainingAc.map((item) => `${item.id}: ${item.text}`).join('；')
+        : `${feature.id} 满足需求并通过全量门禁`;
+    }
+
+    const dependency = i === 0 ? '无' : `S${i}`;
+    stepBlocks.push(
+      `### ${stepId}: 实现并验证 ${feature.id} ${feature.text}`,
+      `- **描述**: 落地 ${feature.id}: ${feature.text}，并完成模块定向自验。`,
+      `- **验收条件**: ${stepAcceptance}`,
+      `- **依赖**: ${dependency}`,
       '',
-      `### S${stepNumber}: 实现 ${feature.id} ${feature.text}`,
-      `- **描述**: 在现有架构内完成 ${feature.id}: ${feature.text}。`,
-      `- **验收条件**: ${feature.id} 已实现，并保持现有工作流兼容。`,
-      `- **依赖**: S${stepNumber - 1}`,
-    ];
-  });
-  const verificationStepNumber = Math.max(3, features.length + 2);
-  const verificationDependency = `S${verificationStepNumber - 1}`;
-  const acceptanceSummary = acceptances.length > 0
-    ? acceptances.map((item) => `${item.id}: ${item.text}`).join('；')
-    : primaryAcceptance;
-  const checklistSteps = Array.from({ length: verificationStepNumber }, (_, index) => `- [ ] S${index + 1}`);
+    );
+  }
 
   return [
     '## 执行计划',
     '',
-    `### S1: 梳理 ${primaryFeature}`,
-    `- **描述**: 根据 spec 明确 ${primaryFeatureId ? `${primaryFeatureId}: ` : ''}${primaryFeature} 的实现边界和验收口径。`,
-    `- **验收条件**: ${primaryAcceptance}`,
-    '- **依赖**: 无',
-    '',
-    `### S2: 实现 ${primaryFeature}`,
-    `- **描述**: 在现有架构内完成 ${primaryFeatureId ? `${primaryFeatureId}: ` : ''}${primaryFeature} 的代码与文档更新。`,
-    `- **验收条件**: ${primaryFeatureId ? `${primaryFeatureId} ` : ''}${primaryFeature} 已实现，并保持现有工作流兼容。`,
-    '- **依赖**: S1',
-    ...additionalFeatureSteps,
-    '',
-    `### S${verificationStepNumber}: 验证验收标准`,
-    `- **描述**: 验证 spec 中声明的验收标准：${acceptanceSummary}`,
-    `- **验收条件**: ${acceptanceSummary}`,
-    `- **依赖**: ${verificationDependency}`,
-    '',
+    ...stepBlocks,
     '## Checklist',
     ...checklistSteps,
     '',

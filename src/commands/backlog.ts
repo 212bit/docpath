@@ -760,34 +760,113 @@ function stripBacklogChecklistLines(body: string, prefix: 'FR'): string {
   return lines.join('\n').trim();
 }
 
+function extractFunctionalRequirements(item: BacklogItem): BacklogChecklistItem[] {
+  // 1. 优先从 body 中解析显式的 FR-* 列表
+  const explicit = parseBacklogChecklist(item.body, 'FR');
+  if (explicit.length > 0) return explicit;
+
+  // 2. 从 body 中的功能清单 / 需求要点段落解析列表项
+  const parsed = parseBacklogBody(item.body);
+  const bulletLines: string[] = [];
+  for (const line of parsed.background.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || isPlaceholderValue(trimmed)) continue;
+    const match = trimmed.match(/^[-*+]\s+(.+)$/) || trimmed.match(/^\d+\.\s+(.+)$/);
+    if (match) {
+      const text = match[1].trim();
+      if (text && !isPlaceholderValue(text)) {
+        bulletLines.push(text);
+      }
+    }
+  }
+  if (bulletLines.length > 1) {
+    return bulletLines.map((text, idx) => ({
+      id: `FR-${idx + 1}`,
+      text: text.replace(/^(?:FR|fr)-\d+\s*:\s*/, '').trim(),
+      done: false,
+    }));
+  }
+
+  // 3. 从标题中智能提取复合子需求
+  // 例如: "HTTP C2 通信流程优化：握手合并 + Poll 精简 + Session Resumption + HTTP/2"
+  const title = item.title.trim();
+  const colonMatch = title.match(/^([^:：]+)[:：]\s*(.+)$/);
+  if (colonMatch) {
+    const rawItems = colonMatch[2].split(/\s*(?:[+&、,，;；]|\s+and\s+)\s*/).map((s) => s.trim()).filter(Boolean);
+    if (rawItems.length > 1) {
+      return rawItems.map((text, idx) => ({
+        id: `FR-${idx + 1}`,
+        text: text.replace(/^(?:FR|fr)-\d+\s*:\s*/, '').trim(),
+        done: false,
+      }));
+    }
+  }
+
+  // 4. 标题无冒号但有多个 '+' 或 '、' 连接
+  const plusItems = title.split(/\s*(?:\+|\s+and\s+|、)\s*/).map((s) => s.trim()).filter(Boolean);
+  if (plusItems.length > 1) {
+    return plusItems.map((text, idx) => ({
+      id: `FR-${idx + 1}`,
+      text: text.replace(/^(?:FR|fr)-\d+\s*:\s*/, '').trim(),
+      done: false,
+    }));
+  }
+
+  // 5. 兜底回退为单条需求
+  return [
+    {
+      id: 'FR-1',
+      text: item.title,
+      done: false,
+    },
+  ];
+}
+
 function renderPromotedSpec(item: BacklogItem, taskId: string, cwd?: string): string {
   const parsed = parseBacklogBody(item.body);
   const evidenceSection = renderEvidenceSummary(item.evidence);
-  const functionalRequirements = parseBacklogChecklist(item.body, 'FR');
-  const backgroundSection = (functionalRequirements.length > 0
+  const functionalRequirements = extractFunctionalRequirements(item);
+  const backgroundSection = (parseBacklogChecklist(item.body, 'FR').length > 0
     ? stripBacklogChecklistLines(parsed.background, 'FR')
     : parsed.background) || '- 待补充';
-  const functionalRequirementLines = functionalRequirements.length > 0
-    ? functionalRequirements.map((requirement) => `- [${requirement.done ? 'x' : ' '}] ${requirement.id}: ${requirement.text}`)
-    : [
-        `- [ ] FR-1: ${item.title}`,
-        `  - 来源 backlog: ${item.id}`,
-      ];
+  const functionalRequirementLines = functionalRequirements.map(
+    (requirement, idx) => {
+      const line = `- [${requirement.done ? 'x' : ' '}] ${requirement.id}: ${requirement.text}`;
+      return idx === 0 ? `${line}\n  - 来源 backlog: ${item.id}` : line;
+    }
+  );
 
-  // 验收标准：优先从 body 解析出的 acceptance，否则用默认骨架
+  // 验收标准：优先从 body 解析出的 acceptance，否则根据 FR 生成结构化 AC
   const acceptanceLines: string[] = [];
   if (parsed.acceptance) {
     // 将 body 中的验收内容转为 AC 条目，并去重 AC-1: 前缀
-    const acItems = parsed.acceptance
+    const rawItems = parsed.acceptance
       .split('\n')
-      .filter(l => l.trim())
-      .map((line, i) => {
-        let clean = line.replace(/^\s*(\d+\.\s*|[-*]\s*)+/, '').trim();
-        clean = clean.replace(/^(?:AC|ac)-\d+\s*:\s*/, '').trim();
-        return `- [ ] AC-${i + 1}: ${clean}`;
+      .map((l) => l.replace(/^\s*(\d+\.\s*|[-*]\s*)+/, '').trim())
+      .filter((l) => l && !isPlaceholderValue(l));
+
+    const isGenericOnly = rawItems.length > 0 && rawItems.every((line) =>
+      /^(?:AC-\d+\s*:\s*)?(?:满足需求并通过(?:门禁|测试)|通过门禁|测试通过)$/.test(line)
+    );
+
+    if (!isGenericOnly && rawItems.length > 0) {
+      rawItems.forEach((line, i) => {
+        const clean = line.replace(/^(?:AC|ac)-\d+\s*:\s*/, '').trim();
+        acceptanceLines.push(`- [ ] AC-${i + 1}: ${clean}`);
       });
-    if (acItems.length > 0) acceptanceLines.push(...acItems);
+    }
   }
+
+  if (acceptanceLines.length === 0) {
+    if (functionalRequirements.length > 1) {
+      functionalRequirements.forEach((fr, idx) => {
+        acceptanceLines.push(`- [ ] AC-${idx + 1}: ${fr.text} 满足功能要求并通过测试`);
+      });
+    } else {
+      acceptanceLines.push(`- [ ] AC-1: ${item.title} 满足需求并通过门禁`);
+    }
+  }
+
   // 始终保留关联 AC
   const acStart = acceptanceLines.length + 1;
   acceptanceLines.push(`- [ ] AC-${acStart}: 生成的 spec 可直接进入 \`docpath plan\``);

@@ -114,11 +114,11 @@ describe('renderDraftPlan agentFlow (FR-3)', async () => {
 
   const spec = '# T-20260911-test\n\n## 2. 需求\n\n### 功能需求\n- [ ] FR-1: 小功能\n- [ ] FR-2: 另一个功能\n\n## 5. 验收标准\n\n- [ ] AC-1: 能跑就行\n';
 
-  it('level-2 without agentFlow generates 3-step plan', () => {
+  it('level-2 without agentFlow generates per-FR module steps for multi-feature spec', () => {
     const plan = renderDraftPlan(spec, 2, false);
-    assert.ok(plan.includes('### S1:'), 'Should have S1');
-    assert.ok(plan.includes('### S2:'), 'Should have S2');
-    assert.ok(plan.includes('### S3:'), 'Should have S3');
+    assert.ok(plan.includes('### S1: 实现并验证 FR-1'), 'Should have S1 for FR-1');
+    assert.ok(plan.includes('### S2: 实现并验证 FR-2'), 'Should have S2 for FR-2');
+    assert.ok(!plan.includes('### S3:'), 'Should NOT have redundant S3');
   });
 
   it('level-2 with agentFlow generates single-step plan', () => {

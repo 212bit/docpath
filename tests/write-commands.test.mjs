@@ -786,8 +786,7 @@ describe('write commands', () => {
     assert.match(output, /next_hint:/);
     assert.match(output, /recommended_command: docpath go --step S1/);
     const currentPlan = readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), 'utf-8');
-    assert.match(currentPlan, /S1: 梳理 自动生成计划草案/);
-    assert.match(currentPlan, /S2: 实现 自动生成计划草案/);
+    assert.match(currentPlan, /S1: 实现并验证 自动生成计划草案/);
     assert.match(currentPlan, /FR-1/);
     assert.match(currentPlan, /AC-1/);
     assert.doesNotMatch(readFileSync(join(canonicalDir, 'plan.md'), 'utf-8'), /验证门禁并归档/);

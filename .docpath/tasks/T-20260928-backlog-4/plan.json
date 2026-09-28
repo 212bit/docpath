@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-28T11:18:30.865Z",
+    "updated_at": "2026-09-28T11:18:30.865Z",
+    "content_sha256": "eca85644c9eb1c7044ae1be9c1caab79c75e0e77bcc692c8bf1e3558878068bc"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-28T11:18:30.865Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 Backlog智能规约注入与模块驱动执行计划生成引擎",
+      "description": "完成 FR-1: Backlog智能规约注入与模块驱动执行计划生成引擎，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-428 与任务 T-20260928-backlog-4 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
