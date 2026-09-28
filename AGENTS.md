@@ -29,6 +29,7 @@ docpath arch check                 # architecture layer & dependency guard check
 docpath check                      # targeted quality check during iteration
 docpath done --commit              # compound: full gate sequence (check -> review -> journal -> commit) in 1-shot
 docpath quick-done --commit        # compound (R-340): quick gate sequence + commit in 1-shot
+docpath gc                         # workspace aging & historical task archive sweep
 ```
 <!-- /docpath:block -->
 
