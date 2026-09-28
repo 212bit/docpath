@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-28T09:16:04.300Z",
+    "updated_at": "2026-09-28T09:16:04.300Z",
+    "content_sha256": "663e4fb61d438acc5be863b3d978965292f0ba900540bca01382def40eb75b59"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-28T09:16:04.300Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 Backlog零参数全景看板直显与智能选单关键路径算法",
+      "description": "完成 FR-1: Backlog零参数全景看板直显与智能选单关键路径算法，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-427 与任务 T-20260928-backlog-3 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

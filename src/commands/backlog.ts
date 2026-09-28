@@ -33,6 +33,7 @@ import {
 } from '../engine/backlog.js';
 import {
   buildBacklogGraph,
+  rankBacklogByImpact,
   renderBacklogAsciiGraph,
   renderBacklogMermaidGraph,
 } from '../engine/backlog-graph.js';
@@ -101,6 +102,8 @@ export interface BacklogCommandOptions {
   agent?: boolean;
   draft?: boolean;
   adopt?: boolean;
+  start?: boolean;
+  promote?: boolean;
   nonInteractive?: boolean;
 }
 
@@ -1837,6 +1840,157 @@ async function backlogStats(options: BacklogCommandOptions): Promise<void> {
   console.log('');
 }
 
+async function backlogDashboard(options: BacklogCommandOptions): Promise<void> {
+  const allItems = await listBacklogItems(options.cwd);
+  const stats = await computeBacklogStats(options.cwd);
+  const rankResult = rankBacklogByImpact(allItems);
+
+  if (options.json) {
+    console.log(JSON.stringify({
+      stats,
+      rankedReadyItems: rankResult.rankedReadyItems.map((r) => ({
+        id: r.id,
+        title: r.title,
+        priority: r.priority,
+        score: r.score,
+        unblockImpactCount: r.unblockImpactCount,
+        reasons: r.reasons,
+      })),
+      criticalPath: rankResult.criticalPath,
+      bottlenecks: rankResult.bottlenecks,
+    }, null, 2));
+    return;
+  }
+
+  if (options.agent) {
+    console.log(stringify({
+      agent_view: 'backlog_dashboard',
+      stats: {
+        total: stats.summary.total,
+        active: stats.summary.active,
+        ready: stats.topology.ready,
+        blocked: stats.topology.blocked,
+        done: stats.status.done,
+      },
+      top_recommendations: rankResult.rankedReadyItems.slice(0, 3).map((r) => ({
+        id: r.id,
+        title: r.title,
+        priority: r.priority,
+        impact_score: r.score,
+        reasons: r.reasons,
+      })),
+      next_action: rankResult.rankedReadyItems.length > 0
+        ? `推荐启动最高收益就绪条目: docpath start ${rankResult.rankedReadyItems[0].id}`
+        : '当前无就绪条目，可运行 docpath backlog add 添加新需求',
+    }));
+    return;
+  }
+
+  console.log('\n📊  Backlog 需求全景看板 (Dashboard)\n');
+  console.log(`  • 需求总量: ${stats.summary.total} 条 | 活跃进行中: ${stats.summary.active} 条 | 已完成: ${stats.status.done} 条`);
+  console.log(`  • 优先级分布: P0: ${stats.priority.P0} | P1: ${stats.priority.P1} | P2: ${stats.priority.P2} | P3: ${stats.priority.P3}`);
+  console.log(`  • 拓扑状态: ⚡ 就绪可启动: ${stats.topology.ready} 条 | 🔒 前置阻塞中: ${stats.topology.blocked} 条\n`);
+
+  if (rankResult.rankedReadyItems.length > 0) {
+    console.log('⚡  【智能选单推荐 (Top Actionable Items)】:');
+    for (let i = 0; i < Math.min(5, rankResult.rankedReadyItems.length); i++) {
+      const r = rankResult.rankedReadyItems[i];
+      const pBadge = r.priority === 'P0' ? '🔴 [P0]' : r.priority === 'P1' ? '🟠 [P1]' : '🟡 [P2]';
+      const reasonStr = r.reasons.join(' · ');
+      console.log(`  ${i + 1}. ${pBadge} ${r.id}: ${r.title}`);
+      console.log(`     👉 得分: ${r.score} | ${reasonStr}`);
+    }
+    console.log('');
+    console.log(`💡 提示: 随时运行 \`docpath start ${rankResult.rankedReadyItems[0].id}\` 一键启动最高收益需求！`);
+  } else if (stats.summary.active > 0) {
+    console.log('🔒  所有活跃条目均处于前置依赖阻塞中，请先解决前置依赖。');
+  } else {
+    console.log('🎉  当前无待办需求！运行 `docpath backlog add --title "..."` 录入新需求。');
+  }
+  console.log('');
+}
+
+async function backlogPick(options: BacklogCommandOptions): Promise<void> {
+  const allItems = await listBacklogItems(options.cwd);
+  const rankResult = rankBacklogByImpact(allItems);
+
+  if (options.start || options.promote || options.adopt) {
+    const targetId = options.id || rankResult.rankedReadyItems[0]?.id;
+    if (!targetId) {
+      throw new Error('docpath backlog pick: 当前没有可启动的就绪条目');
+    }
+    if (options.promote && !options.start) {
+      await backlogPromote({
+        ...options,
+        id: targetId,
+      });
+      return;
+    }
+    console.log(`🚀  [智能选单] 自动选中并拉起条目: ${targetId}...\n`);
+    await backlogPromote({
+      ...options,
+      id: targetId,
+      draft: options.draft ?? true,
+    });
+    const { planCommand } = await import('./plan.js');
+    const { goCommand } = await import('./go.js');
+    const stateAfterPromote = await readCurrentState(options.cwd);
+    if (stateAfterPromote?.phase === 'drafting' || stateAfterPromote?.phase === 'planning') {
+      await planCommand({ cwd: options.cwd });
+    }
+    await goCommand({
+      cwd: options.cwd,
+      step: 'S1',
+      acceptDirty: options.adopt ? 'pick --adopt: claim workspace edits' : undefined,
+    });
+    return;
+  }
+
+  if (options.json) {
+    console.log(JSON.stringify(rankResult, null, 2));
+    return;
+  }
+
+  if (options.agent) {
+    console.log(stringify({
+      agent_view: 'backlog_pick',
+      ready_count: rankResult.readyCount,
+      critical_path: rankResult.criticalPath,
+      recommendations: rankResult.rankedReadyItems.map((r) => ({
+        id: r.id,
+        title: r.title,
+        priority: r.priority,
+        score: r.score,
+        unblock_impact: r.unblockImpactCount,
+        reasons: r.reasons,
+      })),
+      recommended_command: rankResult.rankedReadyItems.length > 0
+        ? `docpath start ${rankResult.rankedReadyItems[0].id}`
+        : 'docpath backlog list',
+    }));
+    return;
+  }
+
+  console.log('\n🎯  Backlog 关键路径与智能选单 (Top Actionable Queue)\n');
+  if (rankResult.criticalPath.length > 0) {
+    console.log(`🔗  关键依赖链 (Critical Path): ${rankResult.criticalPath.join(' ➔ ')}\n`);
+  }
+
+  if (rankResult.rankedReadyItems.length === 0) {
+    console.log('   (当前没有就绪可开发的条目)\n');
+    return;
+  }
+
+  for (let i = 0; i < rankResult.rankedReadyItems.length; i++) {
+    const r = rankResult.rankedReadyItems[i];
+    const pBadge = r.priority === 'P0' ? '🔴 [P0]' : r.priority === 'P1' ? '🟠 [P1]' : '🟡 [P2]';
+    console.log(`[${i + 1}] ${pBadge} ${r.id}: ${r.title} (得分: ${r.score})`);
+    console.log(`    💡 解锁分析: ${r.reasons.join(' · ')}`);
+    console.log(`    🚀 启动命令: docpath start ${r.id}`);
+    console.log('');
+  }
+}
+
 /**
  * FR-4 动作单一真源：backlog 动作 → 处理器映射。帮助文案 / 校验 / 报错全部由
  * BACKLOG_ACTIONS 派生，扩展一个动作只改这里一处的映射项，其余（roster、usage、报错）自动跟随。
@@ -1851,6 +2005,10 @@ const backlogActions = {
   view: backlogShow,
   stats: backlogStats,
   metrics: backlogStats,
+  dashboard: backlogDashboard,
+  overview: backlogDashboard,
+  pick: backlogPick,
+  next: backlogPick,
   list: backlogList,
   search: backlogSearch,
   find: backlogSearch,
@@ -1880,7 +2038,8 @@ function backlogActionUsage(): string {
 export async function backlogCommand(options: BacklogCommandOptions): Promise<void> {
   const raw = options.action?.trim().toLowerCase() ?? '';
   if (!raw) {
-    throw new Error(`docpath backlog requires <${backlogActionUsage()}>`);
+    await backlogDashboard(options);
+    return;
   }
   const handler = backlogActions[raw as BacklogActionName];
   if (!handler) {

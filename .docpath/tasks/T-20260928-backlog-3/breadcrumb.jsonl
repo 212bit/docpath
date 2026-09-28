@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-3","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 Backlog零参数全景看板直显与智能选单关键路径算法","timestamp":"2026-09-28T09:11:52.095Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-3","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-28T09:16:04.296Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-3","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译","timestamp":"2026-09-28T09:17:42.274Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-3","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-28T09:19:46.281Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-3","step":"review","status":"done","context":"代码审查: 0 错误, 16 警告, 0 提示","timestamp":"2026-09-28T09:19:47.353Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-3","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-28T09:19:48.818Z"}

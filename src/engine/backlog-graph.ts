@@ -371,3 +371,106 @@ export function renderBacklogMermaidGraph(graph: BacklogGraphResult): string {
   lines.push('```');
   return lines.join('\n');
 }
+
+export interface RankedBacklogItem {
+  id: string;
+  title: string;
+  priority: BacklogPriority;
+  kind?: string;
+  level: number;
+  unblockImpactCount: number;
+  directUnblockCount: number;
+  isCriticalPath: boolean;
+  score: number;
+  reasons: string[];
+  item: BacklogItem;
+}
+
+export interface BacklogImpactRankResult {
+  rankedReadyItems: RankedBacklogItem[];
+  criticalPath: string[];
+  bottlenecks: BacklogBottleneck[];
+  readyCount: number;
+  blockedCount: number;
+  totalActiveCount: number;
+}
+
+/**
+ * 拓扑关键路径与解锁收益排序 (Impact Ranking)
+ * 计算每个就绪需求项的解锁乘数与优先级得分，推荐最有价值的下一步开发条目
+ */
+export function rankBacklogByImpact(items: BacklogItem[]): BacklogImpactRankResult {
+  const graph = buildBacklogGraph(items);
+  const itemMap = new Map<string, BacklogItem>(items.map((i) => [i.id, i]));
+  const bottleneckMap = new Map<string, BacklogBottleneck>(graph.bottlenecks.map((b) => [b.id, b]));
+
+  const priorityScoreMap: Record<BacklogPriority, number> = {
+    P0: 100,
+    P1: 50,
+    P2: 20,
+    P3: 5,
+  };
+
+  const criticalPathSet = new Set<string>(graph.criticalPath);
+  const firstCriticalItem = graph.criticalPath[0];
+
+  const rankedReadyItems: RankedBacklogItem[] = [];
+
+  for (const readyId of graph.readyItems) {
+    const node = graph.nodes[readyId];
+    const item = itemMap.get(readyId);
+    if (!node || !item) continue;
+
+    const bn = bottleneckMap.get(readyId);
+    const directUnblockCount = node.blocks.filter((bId) => {
+      const bNode = graph.nodes[bId];
+      return bNode && bNode.status !== 'done' && bNode.status !== 'dropped';
+    }).length;
+    const unblockImpactCount = bn ? bn.totalTransitiveBlocks : directUnblockCount;
+    const isCriticalPath = criticalPathSet.has(readyId);
+    const isCriticalHead = firstCriticalItem === readyId;
+
+    const pScore = priorityScoreMap[node.priority] || 20;
+    const impactScore = unblockImpactCount * 15 + directUnblockCount * 10;
+    const criticalBonus = isCriticalHead ? 40 : isCriticalPath ? 20 : 0;
+    const totalScore = pScore + impactScore + criticalBonus;
+
+    const reasons: string[] = [
+      `优先级: ${node.priority}`,
+    ];
+    if (unblockImpactCount > 0) {
+      reasons.push(`解锁 ${unblockImpactCount} 个后续需求 (直属 ${directUnblockCount} 个)`);
+    }
+    if (isCriticalHead) {
+      reasons.push('处于关键路径首节点 ⚡');
+    } else if (isCriticalPath) {
+      reasons.push('处于最长依赖链上');
+    }
+
+    rankedReadyItems.push({
+      id: node.id,
+      title: node.title,
+      priority: node.priority,
+      kind: item.kind,
+      level: item.level,
+      unblockImpactCount,
+      directUnblockCount,
+      isCriticalPath,
+      score: totalScore,
+      reasons,
+      item,
+    });
+  }
+
+  // 按得分从高到低排序
+  rankedReadyItems.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+
+  return {
+    rankedReadyItems,
+    criticalPath: graph.criticalPath,
+    bottlenecks: graph.bottlenecks,
+    readyCount: graph.readyItems.length,
+    blockedCount: graph.blockedItems.length,
+    totalActiveCount: graph.readyItems.length + graph.blockedItems.length,
+  };
+}
