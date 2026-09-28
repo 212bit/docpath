@@ -75,16 +75,19 @@ DocPath 通过三个相互协作的“功能图层”，规范并支撑 AI 团�
 DocPath 将项目管理分为两个维度：**水平的需求管理（Backlog 层）** 与 **垂直的任务执行（Task 执行层）**。它们各自拥有独立的状态机，但又通过“提升 (Promote)”与“归档 (Archive)”紧密相扣。
 
 ### 3.1 水平维度：需求管理 (Backlog 层)
-用于回答**“我们有哪些待办需求、优先级如何、下一个该开发哪条”**。
+用于回答**“我们有哪些待办需求、优先级如何、下一个该开发哪条、需求之间有什么依赖关系”**。
 
 * **实体标识**：`R-###` (例如 `R-010`，每条需求独立为一个 Markdown 文件，存放在 `.docpath/backlog/` 下)。
 * **状态机转移**：
-  $$\text{proposed (已草拟)} \longrightarrow \text{accepted (已接受)} \longrightarrow \text{active (开发中)} \longrightarrow \text{done (已完成) / dropped (已废弃)}$$
-* **核心流转逻辑**：
-  1. **捕获 (Capture)**：使用 `docpath backlog capture` 录入原始想法（raw idea），此时为 `proposed`。
-  2. **细化 (Shape & Accept)**：补充需求背景和明确的验收标准（Acceptance Criteria）后，执行 `docpath backlog accept`，转为 `accepted`。对于复杂需求（Level 2+），在此阶段必须填补分析证据。
-  3. **提升 (Promote)**：当没有活跃 Task 时，`docpath next` 会自动推荐待办池中优先级最高的需求。使用 `docpath backlog promote <R-ID>` 将该需求激活，状态转为 `active`，并派生对应的垂直 Task 目录。
-  4. **回填 (Done)**：Task 开发完成后，Backlog 的状态自动回填为 `done`，并将 Task 的总结摘要同步写回需求文件作为归档证据。
+  $$\text{proposed (已草拟)} \longleftrightarrow \text{accepted (已接受)} \longleftrightarrow \text{planned (已排期)} \longrightarrow \text{active (开发中)} \longrightarrow \text{done (已完成) / dropped (已废弃)}$$
+* **核心能力图景**：
+  1. **捕获与快速录入 (Capture & Add)**：`docpath backlog capture` 录入原始灵感（raw），`docpath backlog add` 直接录入具备背景与验收条件的就绪需求。
+  2. **四段式规整与编辑 (Shape & Edit)**：`docpath backlog shape` 规范化为背景、功能要点、AC 验收、约束边界四段式模版；`docpath backlog edit` 支持修改状态、优先级、Kind、关联依赖及批量操作。
+  3. **依赖拓扑与卡点分析 (Graph & Stats)**：`docpath backlog graph` 实时渲染依赖拓扑（ASCII / Mermaid）；`docpath backlog stats` 全景度量需求池漏斗、关键路径 (Critical Path) 与核心卡点 (Top Blockers)。
+  4. **全生命周期检索 (Search & Show)**：`docpath backlog search` 支持跨 active/archived 多维度关键词过滤；`docpath backlog show` 聚合完整证据链。
+  5. **自动化巡检与自愈治理 (Groom & Auto-Heal)**：`docpath backlog groom --fix` 一键巡检并修复悬空依赖、循环引用与同内容冗余副本。
+  6. **提升与旁路闭环 (Promote & Done)**：`docpath backlog promote` 激活需求并派生任务目录；`docpath backlog done` 支持带 `--task` 证据的旁路完成，终态条目自动归档至 `archived/`。
+  7. **索引毫秒级自愈**：`docpath check` 自动感知需求条目更新，当 `backlog.md` 索引落后时毫秒级自动重构自愈。
 
 ---
 
@@ -264,22 +267,38 @@ docpath agent handoff
 
 | 阶段 / 目的 | 具体命令 | 图层归属 | 核心作用与输入输出 |
 | :--- | :--- | :--- | :--- |
-| **初始化** | `docpath init` | 状态层 | 在项目内创建 `.docpath` 目录，注册项目至本地项目中心 |
-| | `docpath install` | 适配层 | 为 Codex / Claude Code / OpenCode 写入相应的适配文件和 Agent 协议 |
-| **需求准备** | `docpath backlog capture` | 状态层 | 快速捕获一个待办灵感 (`proposed`) |
-| | `docpath backlog accept` | 状态层 | 丰富验收条件，批准需求进入就绪队列 (`accepted`) |
+| **初始化与接入** | `docpath init` | 状态层 | 在项目内创建 `.docpath` 目录，注册项目至本地项目中心 |
+| | `docpath install` | 适配层 | 为 Codex / Claude Code / OpenCode 写入适配文件和 Agent 协议 |
+| **需求准备 (Backlog)** | `docpath backlog capture` | 状态层 | 快速捕获一个待办灵感 (`proposed`, raw) |
+| | `docpath backlog add` | 状态层 | 录入结构化就绪需求 (`proposed`, shaped) |
+| | `docpath backlog shape` | 状态层 | 将需求规整为四段式规范模版 |
+| | `docpath backlog edit` | 状态层 | 编辑需求状态、优先级、Kind、依赖并支持批量修改 |
+| | `docpath backlog search` | 记忆层 | 全生命周期跨活跃/归档需求全文过滤检索 |
+| | `docpath backlog show` | 记忆层 | 查看单个需求条目详情与完整证据链 |
+| | `docpath backlog stats` | 状态层 | 统计需求漏斗、依赖拓扑健康度与关键路径 |
+| | `docpath backlog graph` | 状态层 | 渲染依赖拓扑图谱 (ASCII / Mermaid / Agent JSON) |
+| | `docpath backlog groom` | 纪律层 | 巡检需求池健康度，`--fix` 一键自动治理修复 |
 | | `docpath backlog promote` | 状态层 | 将需求提升为活跃任务 (`active`)，初始化 `tasks/current` 目录 |
 | **开发设计** | `docpath write-spec` | 记忆层 | 将 Agent 当前澄清的规格方案写入 `spec.md` (触发 `task.created` 事件) |
 | | `docpath write-plan` | 状态层 | 将拆解后的 S1/S2 步骤落盘到 `plan.md` (触发 `plan.ready` 事件) |
 | **编码推进** | `docpath go --step <id>` | 状态层 | 原子化认领并启动某一子步骤，将步骤状态标记为 `executing` |
 | | `docpath agent step` | 状态层 | 更新某一步骤的执行进度（完成、阻塞或跳过） |
-| **收尾验证** | `docpath check` | 纪律层 | 运行测试、构建与编译规则，输出 `last-check.md`，决定门禁通过或失败 |
+| | `docpath step-pass --commit` | 编排层 | 步骤收尾原子推进：中间步骤自动流转，终步原子执行门禁并自动 Git 提交 |
+| **任务隔离与切换** | `docpath task stash` | 编排层 | 热暂存当前活跃任务状态、文件与 Git 变更 |
+| | `docpath task pop` | 编排层 | 恢复最近暂存的任务状态与上下文 |
+| | `docpath task switch <id>` | 编排层 | 无缝切换任务：自动暂存当前任务并恢复目标任务 |
+| | `docpath worktree create` | 编排层 | 创建 Git Worktree 独立隔离工作区进行多 Agent 并发开发 |
+| **质量与收尾** | `docpath arch check` | 纪律层 | 架构分层单向依赖与 AST 循环引用防腐体检 |
+| | `docpath check` | 纪律层 | 运行测试、构建与编译规则，输出 `last-check.md`，决定门禁通过或失败 |
 | | `docpath review` | 纪律层 | 检查 Git 变更，对改动文件进行复杂度与质量审查，确认是否放行 |
 | | `docpath journal` | 记忆层 | 将任务沉淀的 ADR 写入决策树，输出 Lesson 候选，标记状态为 `completed` |
+| | `docpath done --commit` | 编排层 | 复合收口：一键原子执行 check → review → journal → git commit |
+| | `docpath quick-done --commit` | 编排层 | 轻量任务极速收口：跳过冗长交互审查，一键门禁加提交 |
 | | `docpath gc --force` | 状态层 | 将 `tasks/` 下已完成的任务物理归档到 `tasks/done/`，清理临时缓存 |
-| **断点恢复** | `docpath next --agent` | 编排层 | 只读获取当前断点状态、下一步指引及恢复命令提示 |
+| **断点恢复与检索** | `docpath next --agent` | 编排层 | 只读获取当前断点状态、下一步指引及恢复命令提示 |
 | | `docpath continue` | 编排层 | 提取最近执行日志和上下文摘要，辅助 Agent 恢复断线前记忆 |
 | | `docpath reveal` | 记忆层 | 根据关键词渐进式披露项目背景，按需拉取知识以节省 Token |
+| | `docpath docs doctor` | 记忆层 | 全景体检文档生态健康度（检查死链、未索引、空文档与陈旧索引） |
 
 ---
 

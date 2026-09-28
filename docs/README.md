@@ -31,7 +31,11 @@ docs/
 * [命令边界模型](file:///Users/mac/project/docpath/docs/design/command-boundaries.md) — CLI 命令的输入输出与副作用边界。
 
 ### 2. 功能与特性 (Features)
+* [Backlog 需求工程与全生命周期管理](file:///Users/mac/project/docpath/docs/features/backlog-lifecycle.md) — 声明式需求卡片、四段式规整、依赖拓扑分析、全周期检索与自动治理。
+* [测试影响分析与智能门禁加速体系](file:///Users/mac/project/docpath/docs/features/test-impact-analysis.md) — 调试期单用例定向测试、构建感知自愈与单次全量原子收口。
+* [架构分层与依赖防腐守卫](file:///Users/mac/project/docpath/docs/features/architecture-guard.md) — 6 层单向依赖规则模型、AST 循环依赖扫描与 `arch check` 体检。
 * [Git Worktree 并发工作流](file:///Users/mac/project/docpath/docs/features/worktree-workflow.md) — 多 Agent 并发开发与资源隔离模型。
+* [任务热暂存与无缝恢复 (Task Stash)](file:///Users/mac/project/docpath/docs/features/task-stash.md) — 工作区即时热暂存、弹出与原子切换。
 * [会话隔离设计 (Session Isolation)](file:///Users/mac/project/docpath/docs/design/session-isolation-mvp.md) — 多会话并发执行与状态隔离。
 * [经验沉淀与持续学习机制](file:///Users/mac/project/docpath/docs/features/knowledge-accumulation.md) — 经验捕获、候选清洗、规则固化与智能消费闭环。
 

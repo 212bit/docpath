@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-28T06:49:30.669Z",
+    "updated_at": "2026-09-28T06:49:30.669Z",
+    "content_sha256": "930880dc2f3cdbc59140818791f44c09c30055699c308b80e5cc649ba67911ae"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-28T06:49:30.669Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 DocPath 文档系统全景梳理与闭环沉淀",
+      "description": "完成 FR-1: DocPath 文档系统全景梳理与闭环沉淀，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-426 与任务 T-20260928-docpath 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
