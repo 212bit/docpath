@@ -529,9 +529,12 @@ async function completeLinkedBacklog(
 
 function shouldBackfillBacklogBody(body: string): boolean {
   if (!body.trim()) return true;
-  return body.split('\n').some((line) =>
-    /^\s*(?:[-*]\s*)?(?:待补充|暂无|无|none|n\/a|tbd|todo)\s*$/i.test(line.trim())
-  );
+  const lines = body.split('\n');
+  if (lines.some((line) => /^\s*(?:[-*]\s*)?(?:待补充|暂无|无|none|n\/a|tbd|todo)\s*$/i.test(line.trim()))) {
+    return true;
+  }
+  // 如果正文只有极简的默认骨架（行数 <= 8 且没有结构化 FR），也应当回填沉淀真实规约
+  return !/FR-\d+/i.test(body) && lines.length <= 8;
 }
 
 function renderBacklogBodyFromSpec(
@@ -540,14 +543,28 @@ function renderBacklogBodyFromSpec(
   fallbackTitle: string,
 ): string {
   const background = extractMarkdownSection(specMarkdown, '## 1. 背景与动机') || fallbackTitle;
+  const functionalRequirements = structuredSpec?.functional_requirements ?? [];
   const scopeIncluded = structuredSpec?.scope.included ?? [];
   const scopeExcluded = structuredSpec?.scope.excluded ?? [];
   const acceptance = structuredSpec?.acceptance_criteria ?? [];
   const decisionBrief = structuredSpec?.major_change_gate.decision_brief_markdown?.trim();
+
   const lines = [
     '## 背景',
     '',
     background.trim(),
+  ];
+
+  if (functionalRequirements.length > 0) {
+    lines.push(
+      '',
+      '## 功能要点',
+      '',
+      ...functionalRequirements.map((item) => `- [x] ${item.id}: ${item.text}`),
+    );
+  }
+
+  lines.push(
     '',
     '## 范围',
     '',
@@ -562,9 +579,9 @@ function renderBacklogBodyFromSpec(
     '## 验收',
     '',
     ...(acceptance.length > 0
-      ? acceptance.map((item) => `- ${item.id}: ${item.text}`)
-      : ['- 见 linked spec']),
-  ];
+      ? acceptance.map((item) => `- [x] ${item.id}: ${item.text}`)
+      : ['- 满足需求并通过全部门禁']),
+  );
 
   if (decisionBrief) {
     lines.push('', '## 决策证据', '', decisionBrief);

@@ -392,12 +392,18 @@ function comparePriority(a: BacklogPriority, b: BacklogPriority): number {
 function generateBacklogIndexMd(items: BacklogItem[]): string {
   // R-352：终态 done/dropped 均已归档进 archived/，索引只列非终态
   const activeItems = items.filter((item) => item.status !== 'done' && item.status !== 'dropped');
+  const p0 = activeItems.filter((i) => i.priority === 'P0').length;
+  const p1 = activeItems.filter((i) => i.priority === 'P1').length;
+  const p2 = activeItems.filter((i) => i.priority === 'P2').length;
+  const p3 = activeItems.filter((i) => i.priority === 'P3').length;
+
   const lines: string[] = [
     '# DocPath Backlog Index',
     '',
     '> 自动生成，供 agent / 人类稳定读取。',
     '',
     `> 扫描时间: ${new Date().toISOString()}`,
+    `> 📊 资产概览: 活跃需求 ${activeItems.length} 条 | 优先级分布: P0: ${p0}, P1: ${p1}, P2: ${p2}, P3: ${p3}`,
     '',
     '## 条目列表',
     '',
