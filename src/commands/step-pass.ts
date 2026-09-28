@@ -9,6 +9,7 @@
  * 的全部前置检查（worktree 契约、漂移锁、重大变更门禁、dirty guard）。
  */
 
+import { join } from 'path';
 import { readCurrentState, resolveBoundTaskId } from '../utils/workspace.js';
 import { resolveSessionContext } from '../utils/session.js';
 import { endStepExecution } from './runtime.js';
@@ -191,10 +192,46 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
     // fail-safe
   }
 
+  // ── 步骤前静默自动格式化自愈 ──
+  try {
+    const { performSilentAutoFormat } = await import('../utils/auto-format.js');
+    performSilentAutoFormat(cwd);
+  } catch {
+    // 格式化容错
+  }
+
   // 判断是否还有后续步骤：有则交给 go 原子领取并渲染执行上下文；
   // 全部完成则给出收口路线（quick-done 一键收口）。无 plan 时保持保守路线，交给 go。
   const stepsAfter = await loadPlanSteps(cwd, taskId);
   const remaining = stepsAfter ? stepsAfter.filter((t) => !t.done).map((t) => t.id) : null;
+
+  // 写入步骤交接 WIP 快照
+  try {
+    const docpathDir = await resolveDocpathDir(cwd);
+    const { writeFileAtomic } = await import('../utils/file.js');
+    const wipPath = join(docpathDir, 'workspace', 'wip-note.md');
+    const nextStepId = remaining && remaining.length > 0 ? remaining[0] : 'done';
+    const wipContent = [
+      '# WIP Note',
+      '',
+      '> source: step-pass',
+      `> task_id: ${taskId}`,
+      `> step: ${step}`,
+      `> completed_step: ${step}`,
+      `> next_step: ${nextStepId}`,
+      `> updated_at: ${new Date().toISOString()}`,
+      '',
+      `- Completed Step: ${step}`,
+      `- Next Step: ${nextStepId}`,
+      '- Status: step verified and recorded in breadcrumb. 可随时新开会话并运行 `docpath next --agent` 无缝继续。',
+      '- Next agent: run `docpath next --agent` or proceed to next step.',
+      '',
+    ].join('\n');
+    await writeFileAtomic(wipPath, wipContent);
+  } catch (err) {
+    // 容错
+  }
+
   if (remaining && remaining.length === 0) {
     console.log('\n🎉  所有计划步骤均已完成！');
     if (options.done || options.commit) {

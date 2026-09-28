@@ -58,6 +58,48 @@ export function formatSyncedTaskFiles(synced: Array<{ file: string; fromPath: st
   ].join('\n');
 }
 
+export function truncateErrorOutput(rawOutput: string, maxLines = 40): string {
+  const lines = rawOutput.split('\n');
+  if (lines.length <= maxLines) return rawOutput;
+
+  const failureIndices: number[] = [];
+  const failureRegex = /FAIL|FAILED|Error:|AssertionError|panic:|panicked at|Caused by:|stack backtrace:|Exception:|FAILURES!|✖/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (failureRegex.test(lines[i])) {
+      failureIndices.push(i);
+    }
+  }
+
+  if (failureIndices.length > 0) {
+    const included = new Set<number>();
+    for (let i = 0; i < Math.min(5, lines.length); i++) included.add(i);
+    for (let i = Math.max(0, lines.length - 6); i < lines.length; i++) included.add(i);
+    for (const idx of failureIndices.slice(0, 5)) {
+      for (let i = Math.max(0, idx - 2); i <= Math.min(lines.length - 1, idx + 3); i++) {
+        included.add(i);
+      }
+    }
+
+    const sorted = Array.from(included).sort((a, b) => a - b);
+    const result: string[] = [];
+    let last = -1;
+
+    for (const idx of sorted) {
+      if (last !== -1 && idx > last + 1) {
+        result.push(`... [已智能折叠 ${idx - last - 1} 行非核心日志，仅保留关键错误断言] ...`);
+      }
+      result.push(lines[idx]);
+      last = idx;
+    }
+    return result.join('\n');
+  }
+
+  const head = lines.slice(0, 15);
+  const tail = lines.slice(-15);
+  return [...head, `... [已智能折叠 ${lines.length - 30} 行非核心日志] ...`, ...tail].join('\n');
+}
+
 export function errorOutput(err: unknown): string {
   if (err instanceof Error) {
     const stderr = 'stderr' in err && typeof (err as { stderr?: unknown }).stderr === 'string'
@@ -66,17 +108,13 @@ export function errorOutput(err: unknown): string {
     const stdout = 'stdout' in err && typeof (err as { stdout?: unknown }).stdout === 'string'
       ? (err as { stdout: string }).stdout.trim()
       : '';
-    // R-350: runCheck 的命令一律带 `2>&1`（见 runners.ts runCheck），此时子进程 stderr
-    // 为空、真实输出去到了 stdout。旧实现先判 `'stderr' in err` 即返回空的 stderr，
-    // 于是所有 runCheck 失败都退化成通用文案 "Command failed: <cmd>"——
-    // 环境类失败因此永远无法被 looksLikeEnvironmentFailure 识别（R-023 那类
-    // "docker: command not found" 被当成代码失败，任务卡在无法 closeout）。
-    // 修法：按"哪个流有内容用哪个"，两者都空才退回 err.message。
-    if (stderr) return stderr;
-    if (stdout) return stdout;
-    return err.message;
+    let raw = '';
+    if (stderr) raw = stderr;
+    else if (stdout) raw = stdout;
+    else raw = err.message;
+    return truncateErrorOutput(raw);
   }
-  return String(err);
+  return truncateErrorOutput(String(err));
 }
 
 export function formatFailedOutput(output: string): string[] {

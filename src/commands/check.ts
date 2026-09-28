@@ -139,6 +139,18 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
       console.log('⚡  lite 模式（instant profile）：跳过 build/test/lint，仅 typecheck + 结构门禁\n');
     }
   }
+
+  // ── 执行本地静默自动格式化自愈 ──
+  try {
+    const { performSilentAutoFormat } = await import('../utils/auto-format.js');
+    const fmt = performSilentAutoFormat(cwd);
+    if (fmt.formatted && fmt.tool) {
+      console.log(`✨  已自动通过 ${fmt.tool} 完成静默代码格式化（避免排版报错占用 LLM 往返）`);
+    }
+  } catch {
+    // 格式化容错
+  }
+
   const results: CheckResult[] = [];
   normalizeHarnessOptions(options);
 

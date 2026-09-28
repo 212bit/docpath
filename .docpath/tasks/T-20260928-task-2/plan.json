@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-28T17:20:16.951Z",
+    "updated_at": "2026-09-28T17:20:16.951Z",
+    "content_sha256": "eedfcfb68030dedf78276d12813b310ac71038e8b1c1d985ee51c6f3a5d55fad"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-28T17:20:16.951Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 静默格式化自愈",
+      "description": "完成 FR-1: 静默格式化自愈；FR-2: 测试日志智能截断；FR-3: 步骤级交接，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 静默格式化自愈 满足功能要求并通过测试；AC-2: 测试日志智能截断 满足功能要求并通过测试；AC-3: 步骤级交接 满足功能要求并通过测试；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-436 与任务 T-20260928-task-2 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

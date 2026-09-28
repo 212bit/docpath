@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260928-task-2",
+  "taskTitle": "T-20260928-task-2 - 自动化效能守卫：静默格式化自愈、测试日志智能截断与步骤级交接",
+  "backlogId": "R-436",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-28T17:14:52.936Z",
+  "completedAt": "2026-09-28T17:22:06.716Z",
+  "durationMinutes": 7.2,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 475,
+  "filesChanged": 15,
+  "linesAdded": 464,
+  "linesDeleted": 11,
+  "engineering": {
+    "turnCount": 5,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 7.2,
+    "filesChanged": 15,
+    "linesAdded": 464,
+    "linesDeleted": 11,
+    "totalDiffLines": 475,
+    "speedLinesPerMinute": 66
+  },
+  "protocol": {
+    "specTokens": 984,
+    "planTokens": 307,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3091
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 31815,
+    "outputTokens": 13635,
+    "totalTokens": 45450,
+    "toolCallsCount": 71
+  }
+}
