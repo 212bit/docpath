@@ -605,7 +605,10 @@ export function renderSpecMarkdownFromDocument(doc: StructuredSpecDocument): str
   if (md.trim()) return md.endsWith('\n') ? md : `${md}\n`;
   const renderItems = (items: StructuredSpecItem[]) => items.map((item) => `- [${item.done ? 'x' : ' '}] ${item.id}: ${item.text}`);
   const renderList = (items: string[], fallback: string) => (items.length > 0 ? items : [fallback]).map((item) => `- ${item}`);
-  const renderMajorTypes = (items: string[]) => (items.length > 0 ? items : ['其他']).map((item) => `- [x] ${item}`);
+  const renderMajorTypes = (items: string[], required: boolean) => {
+    if (!required || items.length === 0) return ['- [ ] 无重大变更'];
+    return items.map((item) => `- [x] ${item}`);
+  };
   const majorGate = doc.major_change_gate;
   return [
     `# ${doc.title}`,
@@ -645,7 +648,7 @@ export function renderSpecMarkdownFromDocument(doc: StructuredSpecDocument): str
     `- [${majorGate.required ? 'x' : ' '}] 是，需要用户确认`,
     '',
     '### 变更类型',
-    ...renderMajorTypes(majorGate.types),
+    ...renderMajorTypes(majorGate.types, majorGate.required),
     '',
     '### UI 设计门禁',
     `- [${doc.ui_gate.state === 'exempt' ? 'x' : ' '}] 本任务不涉及产品 UI 实现（豁免 UI/UX 设计证据包）`,

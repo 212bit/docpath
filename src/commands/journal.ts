@@ -217,6 +217,11 @@ function isLowSignalAdrCandidate(candidate: AdrCandidate): boolean {
     /便于后续 plan\/go 接续/u,
     /^方案\s*[A-Z]$/iu,
     /方案\s*A\s*[:：]?\s*方案\s*A/iu,
+    /risk\.escalation/i,
+    /env\.exemption/i,
+    /gate\.(?:pass|fail|skip)/i,
+    /runner\s*event/i,
+    /health\s*check/i,
   ].some((pattern) => pattern.test(normalized));
 }
 

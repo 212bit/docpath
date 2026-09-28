@@ -135,11 +135,17 @@ export function isArchiveDocPath(filePath: string): boolean {
   return normalized.startsWith('tasks/done/')
     || normalized.startsWith('archive/')
     || normalized.startsWith('workspace/journal/')
+    || normalized.startsWith('backlog/archived/')
+    || normalized.startsWith('backlog/analysis/')
     || normalized === 'workspace/decisions.md'
     || normalized === 'workspace/check-history.md';
 }
 
-export function isArchiveDocumentExpired(mtime: Date, now = Date.now()): boolean {
+export function isArchiveDocumentExpired(filePath: string, mtime: Date, now = Date.now()): boolean {
+  const normalized = normalizeDocPath(filePath);
+  if (!normalized.startsWith('tasks/done/') && !normalized.startsWith('archive/')) {
+    return false;
+  }
   return now - mtime.getTime() > ARCHIVE_RETENTION_MS;
 }
 
@@ -232,7 +238,7 @@ export function inferContentTerms(content: string): string[] {
   const withoutFrontmatter = content.replace(/^---[\s\S]*?---\s*\n?/, '');
   for (const term of normalizedWordTags(withoutFrontmatter)) {
     terms.add(term);
-    if (terms.size >= 80) break;
+    if (terms.size >= 24) break;
   }
   return Array.from(terms);
 }
@@ -292,7 +298,7 @@ export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): Proje
     index_only: generatedView,
     task_id: taskId,
     topic_tags: inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId }),
-    content_terms: inferContentTerms(input.content),
+    content_terms: archive ? [] : inferContentTerms(input.content),
   };
 }
 
@@ -682,7 +688,7 @@ async function buildDocEntries(
       hasPreferredRules,
     });
 
-    if (entry.archive && isArchiveDocumentExpired(fileStat.mtime, now)) {
+    if (entry.archive && isArchiveDocumentExpired(relPath, fileStat.mtime, now)) {
       return;
     }
 
