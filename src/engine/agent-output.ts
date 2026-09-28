@@ -5,6 +5,7 @@ import { gatePolicyForProfile, resolveEffectiveWorkflowProfile } from './workflo
 import { selectCurrentFocus, summarizeDrift, loadAgentOutputContext, inferRouteFromContext, generateQuickFix, routeStepTopic } from './agent-output/formatters.js';
 import { formatActiveGuardrails } from './agent-output/context-injection.js';
 import { detectBinaryDrift, detectPathShadowing, takePathShadowAdvisory } from '../utils/version-drift.js';
+import { evaluateSessionWatchdog } from './session-watchdog.js';
 export type { AgentOutput } from './agent-output/formatters.js';
 
 /**
@@ -224,6 +225,26 @@ export async function generateAgentOutput(
     } : {}),
     ...(verbose && currentFocus ? { current_focus: currentFocus } : {}),
   };
+
+  const currentOpenStep = context.planTasks.find((task) => !task.done);
+  const sessionWatchdog = evaluateSessionWatchdog({
+    phase: context.state?.phase,
+    taskId: context.state?.task_id,
+    currentStep: currentOpenStep ? { id: currentOpenStep.id, title: currentOpenStep.title } : undefined,
+    planTasks: context.planTasks,
+    breadcrumbEventCount: context.bc.entries.length,
+    uncommittedFilesCount: context.dirtyWorktree?.files?.length || 0,
+  });
+
+  if (sessionWatchdog.status === 'rotate_recommended' || verbose) {
+    output.session_health = {
+      status: sessionWatchdog.status,
+      ...(sessionWatchdog.reason ? { reason: sessionWatchdog.reason } : {}),
+      ...(sessionWatchdog.recommended_action ? { recommended_action: sessionWatchdog.recommended_action } : {}),
+      ...(sessionWatchdog.subagent_prompt ? { subagent_prompt: sessionWatchdog.subagent_prompt } : {}),
+      ...(verbose && sessionWatchdog.metrics ? { metrics: sessionWatchdog.metrics } : {}),
+    };
+  }
 
   // Add active_sessions, concurrent_session_warning, and state_freshness to generateAgentOutput
   const { listActiveSessions, resolveSessionContext } = await import('../utils/session.js');

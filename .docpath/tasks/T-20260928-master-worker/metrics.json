@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260928-master-worker",
+  "taskTitle": "T-20260928-master-worker - 会话轮换看门狗与Master-Worker子代理调度协议",
+  "backlogId": "R-437",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-28T17:46:33.520Z",
+  "completedAt": "2026-09-28T17:50:43.014Z",
+  "durationMinutes": 4.2,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 609,
+  "filesChanged": 16,
+  "linesAdded": 595,
+  "linesDeleted": 14,
+  "engineering": {
+    "turnCount": 5,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 4.2,
+    "filesChanged": 16,
+    "linesAdded": 595,
+    "linesDeleted": 14,
+    "totalDiffLines": 609,
+    "speedLinesPerMinute": 145
+  },
+  "protocol": {
+    "specTokens": 859,
+    "planTokens": 277,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 2936
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 13651,
+    "outputTokens": 5851,
+    "totalTokens": 19502,
+    "toolCallsCount": 33
+  }
+}

@@ -53,6 +53,11 @@ docpath gc                         # workspace aging & historical task archive s
    - Retrieve topics via token-budgeted commands (`docpath reveal --topic <kw> --level 1`, `docpath context --smart --max-tokens 2000`).
    - Prune context bloat with `docpath budget --agent` / `docpath budget --prune`.
 
+4. **Master-Worker Subagent & Session Rotation (主从分工与防 Token 爆炸红线)**:
+   - **严禁跨 Task 连续长会话**：完成一个 Task 的 `done --commit` 归档后，**必须终结当前会话**，新任务在新会话中启动（`docpath start` / `docpath next --agent`），彻底阻断输入 Token 发生 $O(N^2)$ 平方级爆炸。
+   - **Master-Worker 步骤派发**：主调度 Agent 保持上下文极简（仅负责查看 `docpath next`、派发任务、验收结果），禁止在主会话中长篇大论读大文件或陷入多轮深改；复杂步骤（S1..Sn）推荐使用 `invoke_subagent` 派发专职 Worker 子代理，Worker 仅需读取 `wip-note.md` 极简接盘，单步完成通过 `step-pass` 退出，主会话零污染。
+   - **Research/Explore 范围红线**：严禁向子代理下达 "thorough scan whole codebase" 等无边界泛化指令；派发调研任务必须精确指定目标路径（≤ 3 个文件）与单一具体问题，探查完毕立即销毁。
+
 ## Required Gates & Boundaries
 
 1. **State & Preconditions**: Never act from memory alone. Do not hand-edit `state.json` or runtime views. If task identity drifts, do not patch with `agent step`; choose a restore/reset path.
