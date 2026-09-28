@@ -28,6 +28,7 @@ export interface GcDecisionsOptions {
   now?: Date;
   maxSizeKb?: number;
   maxRecords?: number;
+  dryRun?: boolean;
 }
 
 export interface GcDecisionsResult {
@@ -514,16 +515,22 @@ export async function gcDecisions(cwd: string, options: GcDecisionsOptions = {})
     byMonth.set(month, [...(byMonth.get(month) || []), block]);
   }
 
-  for (const [month, monthBlocks] of byMonth.entries()) {
-    const archivePath = join(workspaceDir, `decisions-${month}.md`);
-    const changed = await appendArchiveBlocks(archivePath, month, monthBlocks);
-    if (changed) archiveFiles.push(archivePath);
-    await splitArchiveIfBloated(workspaceDir, archivePath);
-  }
+  if (!options.dryRun) {
+    for (const [month, monthBlocks] of byMonth.entries()) {
+      const archivePath = join(workspaceDir, `decisions-${month}.md`);
+      const changed = await appendArchiveBlocks(archivePath, month, monthBlocks);
+      if (changed) archiveFiles.push(archivePath);
+      await splitArchiveIfBloated(workspaceDir, archivePath);
+    }
 
-  if (archivableRecords.length > 0) {
-    await writeDecisionJsonl(workspaceDir, retainedRecords);
-    await writeFile(decisionsPath, renderDecisionRecords(retainedRecords), 'utf-8');
+    if (archivableRecords.length > 0) {
+      await writeDecisionJsonl(workspaceDir, retainedRecords);
+      await writeFile(decisionsPath, renderDecisionRecords(retainedRecords), 'utf-8');
+    }
+  } else {
+    for (const month of byMonth.keys()) {
+      archiveFiles.push(join(workspaceDir, `decisions-${month}.md`));
+    }
   }
 
   return {

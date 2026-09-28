@@ -12,6 +12,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { cleanupWorkspace, planWorkspaceCleanup, renderWorkspaceCleanupSummary } from '../utils/workspace-cleanup.js';
 import { getGitTopLevel, isInWorktree, isGitRepo, listWorktrees } from '../utils/worktree.js';
+import { gcDecisions } from '../governance/decisions.js';
 
 interface GcOptions {
   cwd: string;
@@ -161,6 +162,7 @@ export async function gcCommand(options: GcOptions): Promise<void> {
   const workspaceCleanup = options.force
     ? await cleanupWorkspace(cwd)
     : await planWorkspaceCleanup(cwd);
+  const decisionsResult = await gcDecisions(cwd, { retentionDays: 14, dryRun: !options.force });
   const worktreeCandidates = await collectWorktreeGcCandidates(cwd);
 
   console.log('\n🧹  DocPath GC\n');
@@ -168,6 +170,9 @@ export async function gcCommand(options: GcOptions): Promise<void> {
   console.log('');
   for (const line of renderWorkspaceCleanupSummary(cwd, workspaceCleanup)) {
     console.log(line);
+  }
+  if (decisionsResult.archived > 0) {
+    console.log(`- decisions: ${options.force ? '已老化归档' : '可老化归档'} ${decisionsResult.archived} 条 ADR（保留活跃 ${decisionsResult.retained} 条）`);
   }
   console.log('');
   console.log('Worktree cleanup candidates');

@@ -64,3 +64,17 @@ test('renderSpecMarkdownFromDocument renders compact major gate when not require
   assert.ok(md.includes('- [ ] 无重大变更'));
   assert.ok(!md.includes('UI 框架 / 设计系统'));
 });
+
+test('compactIndexEntry strips default scope/level and normalizeProjectDocumentEntry restores them', async () => {
+  const { normalizeProjectDocumentEntry } = await import('../dist/utils/document-index.js');
+  const rawEntry = {
+    path: 'docs/test-doc.md',
+    title: 'Test Doc',
+  };
+  const normalized = normalizeProjectDocumentEntry(rawEntry);
+  assert.equal(normalized.scope, 'project');
+  assert.equal(normalized.level, '2');
+  assert.equal(normalized.default_read, false);
+  assert.equal(normalized.archive, false);
+});
+

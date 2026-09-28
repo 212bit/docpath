@@ -257,8 +257,13 @@ async function appendBreadcrumbJsonl(projectRoot: string, entry: BreadcrumbEntry
 }
 
 async function renderBreadcrumbMarkdown(projectRoot: string, entries: BreadcrumbEntry[]): Promise<void> {
-  const body = entries.map((entry) => formatEntry(entry)).join('');
-  await writeFileAtomic(breadcrumbPath(projectRoot), BREADCRUMB_HEADER + body);
+  const windowEntries = entries.slice(-MAX_ENTRIES);
+  const omitted = entries.length - windowEntries.length;
+  const prefix = omitted > 0
+    ? `\n> 💡 历史更早的 ${omitted} 条执行轨迹已在各任务目录与 breadcrumb.jsonl 中持久化保存，此处仅展示最近 ${windowEntries.length} 条视图。\n\n`
+    : '';
+  const body = windowEntries.map((entry) => formatEntry(entry)).join('');
+  await writeFileAtomic(breadcrumbPath(projectRoot), BREADCRUMB_HEADER + prefix + body);
 }
 
 async function ensureBreadcrumbJsonl(projectRoot: string): Promise<void> {

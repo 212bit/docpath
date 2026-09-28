@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-28T12:47:17.205Z",
+    "updated_at": "2026-09-28T12:47:17.205Z",
+    "content_sha256": "24592d66fbfb03304e6e5e2b8182697e3ce75920468ea2f827caf2598d628358"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-28T12:47:17.205Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 面包屑窗口收敛",
+      "description": "完成 FR-1: 面包屑窗口收敛；FR-2: GC决策联动与索引压缩，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 面包屑窗口收敛 满足功能要求并通过测试；AC-2: GC决策联动与索引压缩 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-431 与任务 T-20260928-docpath-gc 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
