@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-2","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 Backlog 状态编辑、索引自动巡检自愈与归档去重闭环","timestamp":"2026-09-28T04:27:17.557Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-2","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-28T04:32:14.761Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-2","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-28T04:33:50.266Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-2","step":"review","status":"done","context":"代码审查: 0 错误, 25 警告, 0 提示","timestamp":"2026-09-28T04:33:51.519Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-backlog-2","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-28T04:33:52.949Z"}

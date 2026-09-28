@@ -2,8 +2,12 @@
  * Backlog Groom 深度治理与健康度巡检引擎
  */
 
-import { type BacklogItem } from './backlog.js';
+import { existsSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { type BacklogItem, detectBacklogIdCollisions } from './backlog.js';
 import { buildBacklogGraph } from './backlog-graph.js';
+import { resolveDocpathDir } from '../utils/file.js';
 
 export interface BacklogGroomIssue {
   id: string;
@@ -274,6 +278,19 @@ export async function autoFixBacklogHygiene(
 
     if (modified) {
       await writeItem(cwd, item);
+    }
+  }
+
+  // 4. 自动清理已完全归档且内容一致的活跃冗余条目（如合并或分支残留的幽灵副本）
+  const collisions = await detectBacklogIdCollisions(cwd);
+  const docpathDir = await resolveDocpathDir(cwd);
+  for (const collision of collisions) {
+    if (collision.identical) {
+      const fullActivePath = join(docpathDir, collision.active_file.replace(/^\.docpath\//, ''));
+      if (existsSync(fullActivePath)) {
+        await rm(fullActivePath);
+        fixes.push(`[${collision.id}] 清理已归档且内容一致的活跃冗余副本: ${collision.active_file}`);
+      }
     }
   }
 

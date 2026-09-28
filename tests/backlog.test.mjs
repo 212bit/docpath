@@ -783,6 +783,93 @@ high id
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('supports editing status via docpath backlog edit --status', async () => {
+    const cwd = mkWorkspace();
+    const { backlogCommand } = await import('../dist/commands/backlog.js');
+
+    const it1 = await createBacklogItem(cwd, sampleItem({ title: 'Edit Status Test', priority: 'P2' }));
+    assert.equal(it1.status, 'proposed');
+
+    // Edit status to planned
+    await backlogCommand({ cwd, action: 'edit', id: it1.id, status: 'planned', priority: 'P0' });
+    const it1Updated = await readBacklogItem(cwd, it1.id);
+    assert.equal(it1Updated.status, 'planned');
+    assert.equal(it1Updated.priority, 'P0');
+
+    // Invalid status should throw
+    await assert.rejects(
+      async () => backlogCommand({ cwd, action: 'edit', id: it1.id, status: 'invalid_status' }),
+      /status 非法/
+    );
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('safely unlinks identical active copy when already archived in refreshBacklogIndex and autoFixBacklogHygiene', async () => {
+    const cwd = mkWorkspace();
+    const { autoFixBacklogHygiene } = await import('../dist/engine/backlog-groom.js');
+
+    // Create item
+    const item = await createBacklogItem(cwd, sampleItem({ title: 'Duplicate Archival Clean' }));
+    const activeFile = join(cwd, '.docpath', 'backlog', `${item.id}-duplicate-archival-clean.md`);
+    const archivedDir = join(cwd, '.docpath', 'backlog', 'archived');
+    mkdirSync(archivedDir, { recursive: true });
+    const archivedFile = join(archivedDir, `${item.id}-duplicate-archival-clean.md`);
+
+    // Simulate an identical file in archived
+    const content = readFileSync(activeFile, 'utf-8');
+    writeFileSync(archivedFile, content, 'utf-8');
+
+    // Both files exist
+    assert.equal(existsSync(activeFile), true);
+    assert.equal(existsSync(archivedFile), true);
+
+    // autoFixBacklogHygiene cleans up identical active copy
+    const result = await autoFixBacklogHygiene(cwd, [item], writeBacklogItem, refreshBacklogIndex);
+    assert.ok(result.fixedCount >= 1);
+    assert.equal(existsSync(activeFile), false);
+    assert.equal(existsSync(archivedFile), true);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('detects stale backlog.md and auto-refreshes in checkContextIndexHealth', async () => {
+    const cwd = mkWorkspace();
+    const { isBacklogIndexStale, checkContextIndexHealth } = await import('../dist/commands/check/validators.js');
+
+    const docpathDir = join(cwd, '.docpath');
+    const bdir = join(docpathDir, 'backlog');
+    mkdirSync(bdir, { recursive: true });
+
+    // Missing backlog.md is stale
+    assert.equal(await isBacklogIndexStale(docpathDir), true);
+
+    // Create item and refresh index
+    await createBacklogItem(cwd, sampleItem({ title: 'Stale Check Test' }));
+    await refreshBacklogIndex(cwd);
+    assert.equal(existsSync(join(bdir, 'backlog.md')), true);
+
+    // After refresh, it's not stale
+    assert.equal(await isBacklogIndexStale(docpathDir), false);
+
+    // Modify an item in backlog to have future mtime
+    const itemFile = join(bdir, 'R-001-stale-check-test.md');
+    const futureTime = new Date(Date.now() + 5000);
+    const { utimesSync } = await import('node:fs');
+    utimesSync(itemFile, futureTime, futureTime);
+
+    // Now it is stale
+    assert.equal(await isBacklogIndexStale(docpathDir), true);
+
+    // Running checkContextIndexHealth auto-heals and refreshes backlog.md
+    writeFileSync(join(docpathDir, 'docs-index.json'), JSON.stringify({ entries: [] }), 'utf-8');
+    const checkResults = await checkContextIndexHealth(docpathDir, undefined);
+    assert.ok(checkResults.some((r) => r.name.includes('backlog.md 索引已自动刷新')));
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
+
 
 

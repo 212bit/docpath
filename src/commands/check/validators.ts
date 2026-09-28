@@ -21,7 +21,8 @@ import {
 } from '../../utils/document-index.js';
 import { resolveRulePaths, type RuleName } from '../../utils/rules.js';
 import { gitSyncOptional } from '../../utils/git-run.js';
-import { readFile, stat } from 'fs/promises';
+import { readFile, stat, readdir } from 'fs/promises';
+import { refreshBacklogIndex } from '../../engine/backlog.js';
 import { select, isCancel } from '@clack/prompts';
 import { diagnoseDocumentHealth } from '../../utils/docs-doctor.js';
 import type { CheckOptions, CheckResult, TaskPlanProgress } from './types.js';
@@ -549,6 +550,40 @@ export async function checkDeliverablesIndex(cwd: string): Promise<CheckResult[]
   return results;
 }
 
+export async function isBacklogIndexStale(docpathDir: string): Promise<boolean> {
+  const bdir = join(docpathDir, 'backlog');
+  if (!existsSync(bdir)) return false;
+  const indexFile = join(bdir, 'backlog.md');
+  if (!existsSync(indexFile)) return true;
+
+  try {
+    const indexStat = await stat(indexFile);
+    const files = await readdir(bdir);
+    for (const f of files) {
+      if (f === 'backlog.md' || f.startsWith('.')) continue;
+      if (!f.endsWith('.md')) continue;
+      const fileStat = await stat(join(bdir, f));
+      if (fileStat.mtimeMs > indexStat.mtimeMs) {
+        return true;
+      }
+    }
+    const adir = join(bdir, 'archived');
+    if (existsSync(adir)) {
+      const afiles = await readdir(adir);
+      for (const f of afiles) {
+        if (f.startsWith('.') || !f.endsWith('.md')) continue;
+        const fileStat = await stat(join(adir, f));
+        if (fileStat.mtimeMs > indexStat.mtimeMs) {
+          return true;
+        }
+      }
+    }
+  } catch {
+    return true;
+  }
+  return false;
+}
+
 export async function checkContextIndexHealth(docpathDir: string, currentTaskId: string | undefined): Promise<CheckResult[]> {
   const indexPath = join(docpathDir, 'docs-index.json');
   if (!existsSync(indexPath)) {
@@ -598,6 +633,23 @@ export async function checkContextIndexHealth(docpathDir: string, currentTaskId:
         results.push(warningResult(
           'docs-index 可能陈旧',
           `检测到 .docpath 下存在比 docs-index 更新的 Markdown，但自动刷新失败。修复建议: 运行 \`docpath docs scan\`。\n${refreshError instanceof Error ? refreshError.message : String(refreshError)}`,
+        ));
+      }
+    }
+
+    if (await isBacklogIndexStale(docpathDir)) {
+      try {
+        await refreshBacklogIndex(dirname(docpathDir));
+        results.push({
+          name: 'backlog.md 索引已自动刷新',
+          passed: true,
+          output: '检测到 backlog.md 缺失或落后于需求条目，已自动刷新索引。',
+          category: 'context',
+        });
+      } catch (backlogRefreshError) {
+        results.push(warningResult(
+          'backlog.md 索引可能陈旧',
+          `检测到 backlog.md 索引落后于需求条目，但自动刷新失败。修复建议: 运行 \`docpath backlog refresh\`。\n${backlogRefreshError instanceof Error ? backlogRefreshError.message : String(backlogRefreshError)}`,
         ));
       }
     }

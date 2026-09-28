@@ -770,8 +770,16 @@ export async function refreshBacklogIndex(cwd: string): Promise<void> {
       if (existsSync(sourcePath) && !existsSync(targetPath)) {
         await rename(sourcePath, targetPath);
       } else if (existsSync(sourcePath) && existsSync(targetPath)) {
-        // FR-3：撞号安全阀拦截时「留痕」，不依赖事后 groom 才可见
-        await logArchiveCollision(docpathDir, item.id, filename);
+        const [sourceContent, targetContent] = await Promise.all([
+          readFile(sourcePath, 'utf-8'),
+          readFile(targetPath, 'utf-8'),
+        ]);
+        if (sourceContent.trim() === targetContent.trim()) {
+          await rm(sourcePath);
+        } else {
+          // FR-3：撞号安全阀拦截时「留痕」，不依赖事后 groom 才可见
+          await logArchiveCollision(docpathDir, item.id, filename);
+        }
       }
     }
   }
@@ -826,6 +834,17 @@ export async function archiveBacklogItem(
     await rename(sourcePath, targetPath);
     await refreshBacklogIndex(cwd);
     return { moved: true, file: `backlog/archived/${filename}` };
+  }
+  if (existsSync(sourcePath) && existsSync(targetPath)) {
+    const [sourceContent, targetContent] = await Promise.all([
+      readFile(sourcePath, 'utf-8'),
+      readFile(targetPath, 'utf-8'),
+    ]);
+    if (sourceContent.trim() === targetContent.trim()) {
+      await rm(sourcePath);
+      await refreshBacklogIndex(cwd);
+      return { moved: true, file: `backlog/archived/${filename}` };
+    }
   }
   // FR-3：撞号安全阀拦截（archived 已有同名副本）时留痕，再回落幂等静默
   await logArchiveCollision(docpathDir, item.id, filename);
