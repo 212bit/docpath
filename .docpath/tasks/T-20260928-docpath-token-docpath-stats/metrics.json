@@ -1,0 +1,21 @@
+{
+  "taskId": "T-20260928-docpath-token-docpath-stats",
+  "taskTitle": "T-20260928-docpath-token-docpath-stats - DocPath任务级效能与Token投入产出监控看板(docpath stats)",
+  "backlogId": "R-433",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-28T13:25:42.699Z",
+  "completedAt": "2026-09-28T13:36:12.997Z",
+  "durationSeconds": 630,
+  "durationMinutes": 10.5,
+  "totalSteps": 1,
+  "passedSteps": 1,
+  "blockedSteps": 2,
+  "firstTimePassRate": 0,
+  "filesChanged": 1,
+  "linesAdded": 2,
+  "linesDeleted": 0,
+  "totalDiffLines": 2,
+  "estimatedContextTokens": 10890,
+  "tokensPerDiffLine": 5445
+}

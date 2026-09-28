@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-docpath-token-docpath-stats","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 DocPath任务级效能与Token投入产出监控看板(docpath stats)","timestamp":"2026-09-28T13:25:42.699Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-docpath-token-docpath-stats","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-28T13:28:42.999Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-docpath-token-docpath-stats","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-28T13:30:13.225Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-docpath-token-docpath-stats","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-28T13:32:47.769Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-docpath-token-docpath-stats","step":"check","status":"done","context":"质量检查通过 (13 项)","timestamp":"2026-09-28T13:36:09.802Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-docpath-token-docpath-stats","step":"review","status":"done","context":"代码审查: 0 错误, 7 警告, 0 提示","timestamp":"2026-09-28T13:36:11.506Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260928-docpath-token-docpath-stats","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-28T13:36:12.991Z"}

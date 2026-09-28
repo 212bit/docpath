@@ -36,6 +36,7 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'learn', description: 'Promote validated lessons into durable rules', visibility: 'core' },
   { name: 'milestone', description: 'Aggregate completed tasks and generate release summaries', visibility: 'core' },
   { name: 'budget', description: 'Analyze context token budget and generate pruning suggestions', visibility: 'core' },
+  { name: 'stats', description: 'Analyze task efficiency, pass rate, and Token ROI telemetry', visibility: 'core' },
   { name: 'changes', description: 'Read-only git closeout view', visibility: 'core' },
   { name: 'context', description: 'Build a budgeted agent context package', visibility: 'core' },
   { name: 'reveal', description: 'Progressively expand indexed context', visibility: 'core' },

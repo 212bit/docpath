@@ -29,6 +29,7 @@ import {
 import type { StructuredSpecDocument } from '../utils/structured-docs.js';
 import { emitNextHint } from '../engine/next-hint.js';
 import { gitSync } from '../utils/git-run.js';
+import { collectTaskMetrics, persistTaskMetrics } from '../utils/task-metrics.js';
 
 interface JournalOptions {
   cwd: string;
@@ -388,6 +389,12 @@ async function finalizeJournal(
   await updateWorkspaceMeta(context.docpathDir, context.meta);
   await writeJournalDecisions(cwd, archive.taskDirName, summary, context);
   await gcJournalDecisions(cwd, skipDecisionGc);
+  try {
+    const metrics = await collectTaskMetrics(cwd, context.taskId);
+    await persistTaskMetrics(cwd, metrics);
+  } catch {
+    // 效能度量采集非致命
+  }
   if (!quiet) {
     console.log('─── 完成 ───');
     console.log('所有步骤已归档。运行 `docpath init` 开始新任务。');

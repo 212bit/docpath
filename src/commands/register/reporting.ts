@@ -6,6 +6,7 @@ import { projectsCommand } from '../projects.js';
 import { renderCommand } from '../render.js';
 import { milestoneCommand } from '../milestone.js';
 import { budgetCommand } from '../budget.js';
+import { statsCommand } from '../stats.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 function parseScopeFiles(value: string | string[] | undefined): string[] {
@@ -162,6 +163,19 @@ function registerRenderCommand(cli: CAC): void {
 }
 
 function registerStatsCommand(cli: CAC): void {
+  cli.command('stats', '任务级效能与 Token 投入产出看板')
+    .option('--cwd <path>', '项目目录')
+    .option('--limit <n>', '展示最近 N 个任务 (默认 10)')
+    .option('--agent', '输出 Agent 可读 YAML 效能概览')
+    .option('--json', '输出 JSON 格式度量数据')
+    .action(async (options: { cwd?: string; limit?: string | number; agent?: boolean; json?: boolean }) => {
+      await statsCommand({
+        cwd: options.cwd || process.cwd(),
+        limit: typeof options.limit === 'string' ? parseInt(options.limit, 10) : options.limit,
+        agent: !!options.agent,
+        json: !!options.json,
+      });
+    });
 }
 
 function registerProjectsCommand(cli: CAC): void {

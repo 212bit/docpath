@@ -28,7 +28,7 @@ agent-output.ts, agent-output/formatters.ts, agent-output/context-injection.ts, 
 install-core.ts, protocol-blocks.ts, detect.ts, package-info.ts, scan-existing-arch.ts, scan-existing-claude.ts, scan-existing-commands.ts, scan-existing-tree.ts
 
 ### observability — 追踪与清理
-trace.ts, trace-analyzer.ts, trace-matrix.ts, workspace-cleanup.ts, ceremony.ts, version-drift.ts, git-run.ts, breadcrumb.ts
+trace.ts, trace-analyzer.ts, trace-matrix.ts, workspace-cleanup.ts, ceremony.ts, version-drift.ts, git-run.ts, breadcrumb.ts, task-metrics.ts
 
 ### primitives — 真·通用工具（唯一允许"杂"的域）
 file.ts, config.ts, input.ts, stdin.ts
