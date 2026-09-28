@@ -540,8 +540,16 @@ export function inferNextAction(
   const activeStep = [...bc.entries].reverse().find(e => e.status === 'in_progress');
   if (!isCompleted && activeStep) {
     const required = ['.docpath/workspace/current.md', '.docpath/workspace/breadcrumb.md', '.docpath/tasks/current/plan.md'];
+    let stallHint = '';
+    if (activeStep.timestamp) {
+      const stepStartMs = new Date(activeStep.timestamp).getTime();
+      const elapsedMin = Math.round((Date.now() - stepStartMs) / 60000);
+      if (elapsedMin >= 15 && dirtyWorktree.dirty && dirtyWorktree.files.length > 0) {
+        stallHint = `（步骤已执行 ${elapsedMin} 分钟且工作区有 ${dirtyWorktree.files.length} 个文件变动，完成后请运行 docpath step-pass 推进）`;
+      }
+    }
     return withWorkflowConstraint({
-      next_action: `完成进行中的步骤: ${activeStep.step}`,
+      next_action: `完成进行中的步骤: ${activeStep.step}${stallHint}`,
       recommended_command: `docpath step-pass --step ${activeStep.step}`,
       required_context: required,
       required_files: required,

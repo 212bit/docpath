@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260928-task",
+  "taskTitle": "T-20260928-task - 提升工作流抗脱轨韧性：智能拆步、真理源自愈与停滞巡检",
+  "backlogId": "R-435",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-28T15:37:41.520Z",
+  "completedAt": "2026-09-28T15:49:19.501Z",
+  "durationMinutes": 11.6,
+  "firstTimePassRate": 0,
+  "totalDiffLines": 698,
+  "filesChanged": 13,
+  "linesAdded": 598,
+  "linesDeleted": 100,
+  "engineering": {
+    "turnCount": 6,
+    "retryCount": 1,
+    "firstTimePassRate": 0,
+    "cycleTimeMinutes": 11.6,
+    "filesChanged": 13,
+    "linesAdded": 598,
+    "linesDeleted": 100,
+    "totalDiffLines": 698,
+    "speedLinesPerMinute": 60.2
+  },
+  "protocol": {
+    "specTokens": 900,
+    "planTokens": 264,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 2964
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 25798,
+    "outputTokens": 11056,
+    "totalTokens": 36854,
+    "toolCallsCount": 62
+  }
+}

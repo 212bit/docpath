@@ -21,6 +21,7 @@ import { markPlanStep } from '../utils/plan-sync.js';
 import { endStepExecution } from './runtime.js';
 import { resolveUiDesignRequirement, missingDesignArtifacts, shouldAdviseUiDesignOptIn } from '../utils/ui-gate.js';
 import { readActiveStructuredSpecDocument, readActiveTaskFile, writeActiveTaskFile } from '../utils/task-files.js';
+import { healStructuredMarkdownDrift } from '../utils/structured-heal.js';
 import { renderDraftPlan } from './plan.js';
 import { resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
@@ -299,6 +300,12 @@ export async function goCommand(options: GoOptions): Promise<void> {
     process.exit(1);
   }
   await assertNoDriftLock(cwd, 'docpath go');
+  try {
+    await healStructuredMarkdownDrift(docpathDir, resolvedTaskId, 'spec.md');
+    await healStructuredMarkdownDrift(docpathDir, resolvedTaskId, 'plan.md');
+  } catch {
+    // 容错自愈
+  }
   let structuredSpec: Awaited<ReturnType<typeof readActiveStructuredSpecDocument>> = null;
   const agentFlow = (await readDocPathConfig(cwd)).workflow?.agent_flow === true;
   if (!status) {

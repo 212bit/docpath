@@ -768,13 +768,13 @@ function extractFunctionalRequirements(item: BacklogItem): BacklogChecklistItem[
   // 2. 从 body 中的功能清单 / 需求要点段落解析列表项
   const parsed = parseBacklogBody(item.body);
   const bulletLines: string[] = [];
-  for (const line of parsed.background.split('\n')) {
+  for (const line of (parsed.background || item.body).split('\n')) {
     const trimmed = line.trim();
     if (!trimmed || isPlaceholderValue(trimmed)) continue;
     const match = trimmed.match(/^[-*+]\s+(.+)$/) || trimmed.match(/^\d+\.\s+(.+)$/);
     if (match) {
       const text = match[1].trim();
-      if (text && !isPlaceholderValue(text)) {
+      if (text && !isPlaceholderValue(text) && text.length >= 2) {
         bulletLines.push(text);
       }
     }
@@ -788,11 +788,12 @@ function extractFunctionalRequirements(item: BacklogItem): BacklogChecklistItem[
   }
 
   // 3. 从标题中智能提取复合子需求
-  // 例如: "HTTP C2 通信流程优化：握手合并 + Poll 精简 + Session Resumption + HTTP/2"
   const title = item.title.trim();
+
+  // 3a. 冒号拆分: "标题前缀: 子需求1 + 子需求2"
   const colonMatch = title.match(/^([^:：]+)[:：]\s*(.+)$/);
   if (colonMatch) {
-    const rawItems = colonMatch[2].split(/\s*(?:[+&、,，;；]|\s+and\s+)\s*/).map((s) => s.trim()).filter(Boolean);
+    const rawItems = colonMatch[2].split(/\s*(?:[+&、,，;；]|\s+and\s+|与|及|以及)\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
     if (rawItems.length > 1) {
       return rawItems.map((text, idx) => ({
         id: `FR-${idx + 1}`,
@@ -802,8 +803,18 @@ function extractFunctionalRequirements(item: BacklogItem): BacklogChecklistItem[
     }
   }
 
-  // 4. 标题无冒号但有多个 '+' 或 '、' 连接
-  const plusItems = title.split(/\s*(?:\+|\s+and\s+|、)\s*/).map((s) => s.trim()).filter(Boolean);
+  // 3b. 破折号/连字符拆分: "主需求 — 补充/子需求"
+  const dashMatch = title.split(/\s*(?:——|—|--|\s+-\s+)\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
+  if (dashMatch.length > 1) {
+    return dashMatch.map((text, idx) => ({
+      id: `FR-${idx + 1}`,
+      text: text.replace(/^(?:FR|fr)-\d+\s*:\s*/, '').trim(),
+      done: false,
+    }));
+  }
+
+  // 3c. 标题复合连接词拆分: '+'、'、'、'与'、'及'、'以及'
+  const plusItems = title.split(/\s*(?:\+|\s+and\s+|、|以及|与|及)\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
   if (plusItems.length > 1) {
     return plusItems.map((text, idx) => ({
       id: `FR-${idx + 1}`,
@@ -812,7 +823,7 @@ function extractFunctionalRequirements(item: BacklogItem): BacklogChecklistItem[
     }));
   }
 
-  // 5. 兜底回退为单条需求
+  // 4. 兜底回退为单条需求
   return [
     {
       id: 'FR-1',

@@ -18,6 +18,7 @@ import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { readDocPathConfig } from '../utils/config.js';
 import { emitNextHint } from '../engine/next-hint.js';
 import { readBacklogItem } from '../engine/backlog.js';
+import { healStructuredMarkdownDrift } from '../utils/structured-heal.js';
 
 interface PlanOptions {
   cwd: string;
@@ -237,6 +238,13 @@ async function loadPlanContext(cwd: string): Promise<PlanContext> {
   }
 
   const state = await readCurrentState(docpathDir);
+  if (state?.task_id) {
+    try {
+      await healStructuredMarkdownDrift(docpathDir, state.task_id, 'spec.md');
+    } catch {
+      // 容错自愈
+    }
+  }
   const backlogEvidence = await loadBacklogEvidence(cwd, state?.backlog_id);
   return {
     docpathDir,
