@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -45,8 +45,7 @@ function mkWorkspace() {
     JSON.stringify({ timestamp: '2026-09-28T10:05:00.000Z', step: 'S2', status: 'done', taskId: 'T-100' }),
   ].join('\n') + '\n');
 
-  // Done Task 1 metrics.json
-  writeFileSync(join(dp, 'tasks', 'done', 'T-100', 'metrics.json'), JSON.stringify({
+  const taskMetricObj = {
     taskId: 'T-100',
     taskTitle: 'Task 100 Implementation',
     backlogId: 'R-100',
@@ -54,48 +53,50 @@ function mkWorkspace() {
     level: 2,
     startedAt: '2026-09-28T10:00:00.000Z',
     completedAt: '2026-09-28T10:05:00.000Z',
-    durationSeconds: 300,
     durationMinutes: 5,
-    totalSteps: 2,
-    passedSteps: 2,
-    blockedSteps: 0,
     firstTimePassRate: 100,
+    totalDiffLines: 90,
     filesChanged: 3,
     linesAdded: 80,
     linesDeleted: 10,
-    totalDiffLines: 90,
-    estimatedContextTokens: 6600,
-    tokensPerDiffLine: 73,
-  }, null, 2));
+    engineering: {
+      turnCount: 2,
+      retryCount: 0,
+      firstTimePassRate: 100,
+      cycleTimeMinutes: 5,
+      filesChanged: 3,
+      linesAdded: 80,
+      linesDeleted: 10,
+      totalDiffLines: 90,
+      speedLinesPerMinute: 18,
+    },
+    protocol: {
+      specTokens: 250,
+      planTokens: 150,
+      rulesTokens: 1800,
+      totalInjectedTokens: 2200,
+    },
+    realUsage: {
+      source: 'antigravity',
+      inputTokens: 35000,
+      outputTokens: 1200,
+      totalTokens: 36200,
+      costUsd: 0.045,
+      toolCallsCount: 14,
+    },
+  };
+
+  // Done Task 1 metrics.json
+  writeFileSync(join(dp, 'tasks', 'done', 'T-100', 'metrics.json'), JSON.stringify(taskMetricObj, null, 2));
 
   // 追加到全局 task-metrics.jsonl
-  writeFileSync(join(dp, 'workspace', 'task-metrics.jsonl'), JSON.stringify({
-    taskId: 'T-100',
-    taskTitle: 'Task 100 Implementation',
-    backlogId: 'R-100',
-    profile: 'standard',
-    level: 2,
-    startedAt: '2026-09-28T10:00:00.000Z',
-    completedAt: '2026-09-28T10:05:00.000Z',
-    durationSeconds: 300,
-    durationMinutes: 5,
-    totalSteps: 2,
-    passedSteps: 2,
-    blockedSteps: 0,
-    firstTimePassRate: 100,
-    filesChanged: 3,
-    linesAdded: 80,
-    linesDeleted: 10,
-    totalDiffLines: 90,
-    estimatedContextTokens: 6600,
-    tokensPerDiffLine: 73,
-  }) + '\n');
+  writeFileSync(join(dp, 'workspace', 'task-metrics.jsonl'), JSON.stringify(taskMetricObj) + '\n');
 
   return cwd;
 }
 
-describe('Task Metrics & stats Command (R-433)', () => {
-  it('collects and aggregates historical task metrics via stats --json', () => {
+describe('Refactored Task Metrics & stats Telemetry (R-434)', () => {
+  it('aggregates objective engineering metrics and real agent telemetry via stats --json', () => {
     const cwd = mkWorkspace();
     try {
       const stdout = execSync(`node "${BIN}" stats --cwd "${cwd}" --json`, {
@@ -106,37 +107,45 @@ describe('Task Metrics & stats Command (R-433)', () => {
       assert.equal(data.avgDurationMinutes, 5);
       assert.equal(data.avgFirstTimePassRate, 100);
       assert.equal(data.totalLinesChanged, 90);
+      assert.equal(data.avgProtocolTokensPerTask, 2200);
+      assert.ok(data.realUsageSummary);
+      assert.equal(data.realUsageSummary.totalRealTokens, 36200);
       assert.equal(data.recentTasks[0].taskId, 'T-100');
+      assert.equal(data.recentTasks[0].engineering.turnCount, 2);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
 
-  it('outputs compact YAML telemetry via stats --agent', () => {
+  it('outputs partitioned YAML telemetry via stats --agent', () => {
     const cwd = mkWorkspace();
     try {
       const stdout = execSync(`node "${BIN}" stats --cwd "${cwd}" --agent`, {
         encoding: 'utf-8',
       });
       assert.match(stdout, /agent_view:\s*task_efficiency_overview/);
-      assert.match(stdout, /total_tasks:\s*1/);
+      assert.match(stdout, /engineering_metrics:/);
       assert.match(stdout, /avg_cycle_time_minutes:\s*5/);
-      assert.match(stdout, /avg_first_time_pass_rate:\s*100%/);
-      assert.match(stdout, /task_id:\s*T-100/);
+      assert.match(stdout, /protocol_overhead:/);
+      assert.match(stdout, /avg_injected_tokens_per_task:\s*2200/);
+      assert.match(stdout, /real_agent_usage:/);
+      assert.match(stdout, /totalRealTokens:\s*36200/);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
 
-  it('renders human-readable stats dashboard cleanly', () => {
+  it('renders partitioned human-readable stats dashboard cleanly', () => {
     const cwd = mkWorkspace();
     try {
       const stdout = execSync(`node "${BIN}" stats --cwd "${cwd}"`, {
         encoding: 'utf-8',
       });
       assert.match(stdout, /DocPath 任务效能与 Token 投入产出看板/);
-      assert.match(stdout, /累计交付任务:\s*1/);
-      assert.match(stdout, /平均交付耗时:\s*5 分钟 \/ 任务/);
+      assert.match(stdout, /客观工程效能基线/);
+      assert.match(stdout, /Token 与协议开销透视/);
+      assert.match(stdout, /DocPath 协议注入/);
+      assert.match(stdout, /真实会话消耗/);
       assert.match(stdout, /T-100/);
     } finally {
       rmSync(cwd, { recursive: true, force: true });

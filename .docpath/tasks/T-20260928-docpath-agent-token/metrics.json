@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260928-docpath-agent-token",
+  "taskTitle": "T-20260928-docpath-agent-token - 重构DocPath效能监控：客观工程度量与真实Agent会话Token适配",
+  "backlogId": "R-434",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-28T14:35:29.883Z",
+  "completedAt": "2026-09-28T14:38:36.220Z",
+  "durationMinutes": 3.1,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 892,
+  "filesChanged": 18,
+  "linesAdded": 887,
+  "linesDeleted": 5,
+  "engineering": {
+    "turnCount": 5,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 3.1,
+    "filesChanged": 18,
+    "linesAdded": 887,
+    "linesDeleted": 5,
+    "totalDiffLines": 892,
+    "speedLinesPerMinute": 287.7
+  },
+  "protocol": {
+    "specTokens": 879,
+    "planTokens": 296,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 2975
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 5900,
+    "outputTokens": 2529,
+    "totalTokens": 8429,
+    "toolCallsCount": 13
+  }
+}

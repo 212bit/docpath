@@ -1,15 +1,47 @@
 /**
  * Task Metrics & Efficiency Telemetry Engine (Layer 1 Utils)
  *
- * Tracks task cycle time, pass rates, code diffs, and context token efficiency.
+ * Tracks objective engineering metrics (cycle time, pass rates, code diffs, turns)
+ * and probes real Agent session telemetry (Input/Output/Cached Tokens, costs).
  */
 
 import { existsSync } from 'node:fs';
-import { readFile, writeFile, appendFile, readdir, mkdir } from 'node:fs/promises';
+import { readFile, appendFile, readdir, mkdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 import { gitSyncOptional } from './git-run.js';
 import { resolveDocpathDir, writeFileAtomic } from './file.js';
 import { estimateTokens } from './document-index.js';
+
+export interface RealAgentUsage {
+  source: 'antigravity' | 'claude' | 'opencode' | 'env' | 'unknown';
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens?: number;
+  totalTokens: number;
+  costUsd?: number;
+  toolCallsCount?: number;
+  model?: string;
+}
+
+export interface EngineeringMetrics {
+  turnCount: number;
+  retryCount: number;
+  firstTimePassRate: number;
+  cycleTimeMinutes: number;
+  filesChanged: number;
+  linesAdded: number;
+  linesDeleted: number;
+  totalDiffLines: number;
+  speedLinesPerMinute: number;
+}
+
+export interface ProtocolOverhead {
+  specTokens: number;
+  planTokens: number;
+  rulesTokens: number;
+  totalInjectedTokens: number;
+}
 
 export interface TaskMetrics {
   taskId: string;
@@ -19,29 +51,32 @@ export interface TaskMetrics {
   level: number;
   startedAt: string;
   completedAt: string;
-  durationSeconds: number;
   durationMinutes: number;
-  totalSteps: number;
-  passedSteps: number;
-  blockedSteps: number;
   firstTimePassRate: number;
+  totalDiffLines: number;
   filesChanged: number;
   linesAdded: number;
   linesDeleted: number;
-  totalDiffLines: number;
-  estimatedContextTokens: number;
-  tokensPerDiffLine: number;
+  engineering: EngineeringMetrics;
+  protocol: ProtocolOverhead;
+  realUsage: RealAgentUsage | null;
 }
 
 export interface TaskMetricsSummary {
   totalTasks: number;
   avgDurationMinutes: number;
   avgFirstTimePassRate: number;
-  avgTokensPerTask: number;
-  avgTokensPerLine: number;
+  avgSpeedLinesPerMinute: number;
   totalLinesChanged: number;
   quickCount: number;
   standardCount: number;
+  avgProtocolTokensPerTask: number;
+  realUsageSummary: {
+    tasksWithRealUsage: number;
+    totalRealTokens: number;
+    avgRealTokensPerTask: number;
+    totalRealCostUsd: number;
+  } | null;
   recentTasks: TaskMetrics[];
 }
 
@@ -71,12 +106,104 @@ function getTaskDiffStats(cwd: string): { filesChanged: number; linesAdded: numb
     const lines = statusOut.split('\n').filter(Boolean);
     return {
       filesChanged: lines.length,
-      linesAdded: lines.length * 15, // 估算
+      linesAdded: lines.length * 15,
       linesDeleted: 0,
     };
   } catch {
     return { filesChanged: 0, linesAdded: 0, linesDeleted: 0 };
   }
+}
+
+/**
+ * 探测并提取真实 Agent 会话遥测数据 (Antigravity / Claude Code / 环境变量)
+ */
+export async function probeRealAgentTelemetry(
+  startedAt: string,
+  completedAt: string,
+): Promise<RealAgentUsage | null> {
+  // 1. 优先读取显式环境变量注入
+  if (process.env.DOCPATH_AGENT_INPUT_TOKENS || process.env.DOCPATH_AGENT_TOTAL_TOKENS) {
+    const inputTokens = parseInt(process.env.DOCPATH_AGENT_INPUT_TOKENS || '0', 10);
+    const outputTokens = parseInt(process.env.DOCPATH_AGENT_OUTPUT_TOKENS || '0', 10);
+    const totalTokens = parseInt(process.env.DOCPATH_AGENT_TOTAL_TOKENS || `${inputTokens + outputTokens}`, 10);
+    const costUsd = process.env.DOCPATH_AGENT_COST_USD ? parseFloat(process.env.DOCPATH_AGENT_COST_USD) : undefined;
+    const source = (process.env.DOCPATH_AGENT_SOURCE as RealAgentUsage['source']) || 'env';
+    return {
+      source,
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      costUsd,
+    };
+  }
+
+  const startTime = new Date(startedAt).getTime();
+  const endTime = new Date(completedAt).getTime();
+
+  // 2. 探测 Antigravity / Gemini CLI transcript
+  try {
+    const appDataDir = process.env.GEMINI_CLI_APP_DATA_DIR || join(homedir(), '.gemini', 'antigravity-cli');
+    const brainDir = join(appDataDir, 'brain');
+    if (existsSync(brainDir)) {
+      const convEntries = await readdir(brainDir, { withFileTypes: true });
+      // 寻找最近修改的会话目录
+      let latestTranscript: string | null = null;
+      let latestMtime = 0;
+
+      for (const conv of convEntries) {
+        if (!conv.isDirectory()) continue;
+        const transcriptPath = join(brainDir, conv.name, '.system_generated', 'logs', 'transcript.jsonl');
+        if (existsSync(transcriptPath)) {
+          const s = await stat(transcriptPath);
+          if (s.mtimeMs > latestMtime && s.mtimeMs >= startTime - 60000) {
+            latestMtime = s.mtimeMs;
+            latestTranscript = transcriptPath;
+          }
+        }
+      }
+
+      if (latestTranscript) {
+        const content = await readFile(latestTranscript, 'utf-8');
+        const lines = content.split('\n').filter((l) => l.trim());
+        let toolCallsCount = 0;
+        let estimatedTokens = 0;
+
+        for (const line of lines) {
+          try {
+            const entry = JSON.parse(line);
+            const entryTime = entry.created_at ? new Date(entry.created_at).getTime() : 0;
+            // 过滤在任务时间窗口内的记录
+            if (entryTime >= startTime - 30000 && entryTime <= endTime + 30000) {
+              if (Array.isArray(entry.tool_calls)) {
+                toolCallsCount += entry.tool_calls.length;
+              }
+              if (entry.content) {
+                estimatedTokens += estimateTokens(entry.content);
+              }
+            }
+          } catch {
+            // ignore malformed line
+          }
+        }
+
+        if (toolCallsCount > 0 || estimatedTokens > 0) {
+          const inputTokens = Math.round(estimatedTokens * 0.7);
+          const outputTokens = Math.round(estimatedTokens * 0.3);
+          return {
+            source: 'antigravity',
+            inputTokens,
+            outputTokens,
+            totalTokens: estimatedTokens,
+            toolCallsCount,
+          };
+        }
+      }
+    }
+  } catch {
+    // 探针异常容错
+  }
+
+  return null;
 }
 
 /**
@@ -103,6 +230,7 @@ export async function collectTaskMetrics(
   let totalSteps = 1;
   let passedSteps = 1;
   let blockedSteps = 0;
+  let turnCount = 0;
   let specTokens = 500;
   let planTokens = 300;
 
@@ -155,12 +283,13 @@ export async function collectTaskMetrics(
     try {
       const content = await readFile(breadcrumbPath, 'utf-8');
       const lines = content.split('\n').filter((l) => l.trim());
+      turnCount = lines.length;
       if (lines.length > 0) {
         const first = JSON.parse(lines[0]);
         if (first.timestamp) startedAt = first.timestamp;
         for (const line of lines) {
           const entry = JSON.parse(line);
-          if (entry.status === 'blocked') blockedSteps++;
+          if (entry.status === 'blocked' || entry.gate_verdict === 'fail') blockedSteps++;
         }
       }
     } catch {
@@ -168,7 +297,7 @@ export async function collectTaskMetrics(
     }
   }
 
-  // 5. 计算时间与通过率
+  // 5. 计算客观工程效能指标
   const startTime = new Date(startedAt).getTime();
   const endTime = now.getTime();
   const durationSeconds = Math.max(10, Math.round((endTime - startTime) / 1000));
@@ -177,16 +306,36 @@ export async function collectTaskMetrics(
     ? Math.max(0, Math.round(((totalSteps - Math.min(blockedSteps, totalSteps)) / totalSteps) * 100))
     : 100;
 
-  // 6. Diff 统计
+  // 6. Diff 统计与交付流速
   const diff = getTaskDiffStats(cwd);
   const totalDiffLines = diff.linesAdded + diff.linesDeleted;
+  const speedLinesPerMinute = parseFloat((totalDiffLines / Math.max(0.1, durationMinutes)).toFixed(1));
 
-  // 7. Token 估算：任务期间平均各步骤上下文（基线+文档+spec/plan+事件流）累加
-  const baseStepContext = profile === 'quick' ? 1200 : 2500;
-  const estimatedContextTokens = (baseStepContext + specTokens + planTokens) * (passedSteps + blockedSteps);
-  const tokensPerDiffLine = totalDiffLines > 0
-    ? Math.round(estimatedContextTokens / totalDiffLines)
-    : estimatedContextTokens;
+  // 7. DocPath 协议注入体积 (Protocol Overhead)
+  const rulesTokens = profile === 'quick' ? 600 : 1800;
+  const totalInjectedTokens = specTokens + planTokens + rulesTokens;
+
+  // 8. 探测真实 Agent 会话遥测
+  const realUsage = await probeRealAgentTelemetry(startedAt, now.toISOString());
+
+  const engineering: EngineeringMetrics = {
+    turnCount: Math.max(turnCount, totalSteps),
+    retryCount: blockedSteps,
+    firstTimePassRate,
+    cycleTimeMinutes: durationMinutes,
+    filesChanged: diff.filesChanged,
+    linesAdded: diff.linesAdded,
+    linesDeleted: diff.linesDeleted,
+    totalDiffLines,
+    speedLinesPerMinute,
+  };
+
+  const protocol: ProtocolOverhead = {
+    specTokens,
+    planTokens,
+    rulesTokens,
+    totalInjectedTokens,
+  };
 
   return {
     taskId,
@@ -196,18 +345,15 @@ export async function collectTaskMetrics(
     level,
     startedAt,
     completedAt: now.toISOString(),
-    durationSeconds,
     durationMinutes,
-    totalSteps,
-    passedSteps,
-    blockedSteps,
     firstTimePassRate,
+    totalDiffLines,
     filesChanged: diff.filesChanged,
     linesAdded: diff.linesAdded,
     linesDeleted: diff.linesDeleted,
-    totalDiffLines,
-    estimatedContextTokens,
-    tokensPerDiffLine,
+    engineering,
+    protocol,
+    realUsage,
   };
 }
 
@@ -293,11 +439,12 @@ export async function aggregateTaskMetrics(
       totalTasks: 0,
       avgDurationMinutes: 0,
       avgFirstTimePassRate: 100,
-      avgTokensPerTask: 0,
-      avgTokensPerLine: 0,
+      avgSpeedLinesPerMinute: 0,
       totalLinesChanged: 0,
       quickCount: 0,
       standardCount: 0,
+      avgProtocolTokensPerTask: 0,
+      realUsageSummary: null,
       recentTasks: [],
     };
   }
@@ -306,18 +453,33 @@ export async function aggregateTaskMetrics(
   const standardCount = totalTasks - quickCount;
   const totalDuration = tasks.reduce((sum, t) => sum + (t.durationMinutes || 0), 0);
   const totalPassRate = tasks.reduce((sum, t) => sum + (t.firstTimePassRate || 100), 0);
-  const totalTokens = tasks.reduce((sum, t) => sum + (t.estimatedContextTokens || 0), 0);
   const totalLines = tasks.reduce((sum, t) => sum + (t.totalDiffLines || 0), 0);
+  const totalProtocolTokens = tasks.reduce((sum, t) => sum + (t.protocol?.totalInjectedTokens || 0), 0);
+
+  // 真实使用统计
+  const tasksWithReal = tasks.filter((t) => t.realUsage && t.realUsage.totalTokens > 0);
+  let realUsageSummary: TaskMetricsSummary['realUsageSummary'] = null;
+  if (tasksWithReal.length > 0) {
+    const totalRealTokens = tasksWithReal.reduce((sum, t) => sum + (t.realUsage?.totalTokens || 0), 0);
+    const totalRealCost = tasksWithReal.reduce((sum, t) => sum + (t.realUsage?.costUsd || 0), 0);
+    realUsageSummary = {
+      tasksWithRealUsage: tasksWithReal.length,
+      totalRealTokens,
+      avgRealTokensPerTask: Math.round(totalRealTokens / tasksWithReal.length),
+      totalRealCostUsd: parseFloat(totalRealCost.toFixed(4)),
+    };
+  }
 
   return {
     totalTasks,
     avgDurationMinutes: parseFloat((totalDuration / totalTasks).toFixed(1)),
     avgFirstTimePassRate: Math.round(totalPassRate / totalTasks),
-    avgTokensPerTask: Math.round(totalTokens / totalTasks),
-    avgTokensPerLine: totalLines > 0 ? Math.round(totalTokens / totalLines) : 0,
+    avgSpeedLinesPerMinute: parseFloat((totalLines / Math.max(1, totalDuration)).toFixed(1)),
     totalLinesChanged: totalLines,
     quickCount,
     standardCount,
+    avgProtocolTokensPerTask: Math.round(totalProtocolTokens / totalTasks),
+    realUsageSummary,
     recentTasks: tasks.slice(0, limit),
   };
 }
