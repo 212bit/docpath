@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-28T02:12:17.599Z",
+    "updated_at": "2026-09-28T02:12:17.599Z",
+    "content_sha256": "913904b28952b9170ec3cf2001e761b99a7099832af4af8f0fce303e8bead020"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-28T02:12:17.599Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 Backlog 引擎与 CLI 全面优化升级",
+      "description": "完成 FR-1: Backlog 引擎与 CLI 全面优化升级，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-423 与任务 T-20260928-backlog-cli 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

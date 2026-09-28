@@ -44,6 +44,7 @@ import {
 } from '../engine/backlog-io.js';
 import {
   auditBacklogHygiene,
+  autoFixBacklogHygiene,
   type BacklogGroomIssue,
 } from '../engine/backlog-groom.js';
 import { today, resolveDocpathDir } from '../utils/file.js';
@@ -92,6 +93,7 @@ export interface BacklogCommandOptions {
   file?: string;
   dryRun?: boolean;
   overwrite?: boolean;
+  fix?: boolean;
   agent?: boolean;
   draft?: boolean;
   adopt?: boolean;
@@ -1213,6 +1215,12 @@ async function warnOnDuplicateRegistration(
       console.warn(
         `- [${d.id}] 同 id 撞号：active「${d.active_title}」(${d.active_file}) vs archived「${d.archived_title ?? ''}」(${d.archived_file ?? ''})${d.identical ? '（内容一致）' : '（内容不同=两种需求撞了同号，走独立迁移）'}`,
       );
+    } else if (d.kind === 'similar-title') {
+      const pct = Math.round((d.similarity ?? 0.8) * 100);
+      const target = d.archived_file ? `${d.archived_file}「${d.archived_title ?? ''}」` : `${d.active_file}「${d.active_title}」`;
+      console.warn(
+        `- [${d.id}] 相似标题预警（相似度 ${pct}%）：当前「${d.active_title}」 vs ${target}——请核实是否为同质需求`,
+      );
     } else if (d.archived_file) {
       console.warn(
         `- [${d.id}] 同标题已归档：当前「${d.active_title}」 vs ${d.archived_file}「${d.archived_title ?? ''}」——可能已做过，确认不是真新需求后再 promote`,
@@ -1459,6 +1467,23 @@ async function backlogRefresh(options: BacklogCommandOptions): Promise<void> {
 }
 
 async function backlogGroom(options: BacklogCommandOptions): Promise<void> {
+  if (options.fix) {
+    const allItems = await listBacklogItems(options.cwd);
+    const { fixedCount, fixes } = await autoFixBacklogHygiene(
+      options.cwd,
+      allItems,
+      writeBacklogItem,
+      refreshBacklogIndex,
+    );
+    if (!options.agent && fixedCount > 0) {
+      console.log(`🔧  Backlog 自动修复完成 (已修复 ${fixedCount} 项):`);
+      for (const fix of fixes) {
+        console.log(`    - ${fix}`);
+      }
+      console.log('');
+    }
+  }
+
   const { issues, warnings } = await collectBacklogGroomIssues(options);
   // R-321/FR-2：撞号检测为非破坏性告警，不计入 issues（不触发 groom 失败），
   // 只把 refreshBacklogIndex 归档时的「静默跳过」显式暴露；数据迁移另走独立条目。
@@ -1679,6 +1704,68 @@ async function backlogExport(options: BacklogCommandOptions): Promise<void> {
   }
 }
 
+async function backlogShow(options: BacklogCommandOptions): Promise<void> {
+  const targetId = (options.id || options.query || options.title)?.trim();
+  if (!targetId) {
+    throw new Error('docpath backlog show requires <id>');
+  }
+
+  const item = await readBacklogItem(options.cwd, targetId, { readArchived: true });
+  if (!item) {
+    throw new Error(`docpath backlog show: backlog 条目不存在: ${targetId}`);
+  }
+
+  if (options.json) {
+    console.log(JSON.stringify(item, null, 2));
+    return;
+  }
+
+  if (options.agent) {
+    console.log(stringify({
+      id: item.id,
+      title: item.title,
+      kind: item.kind || 'feature',
+      priority: item.priority,
+      level: item.level,
+      status: item.status,
+      readiness: item.readiness,
+      created_at: item.created_at || null,
+      links: {
+        parent: item.links.parent || null,
+        depends_on: item.links.depends_on || [],
+        blocks: item.links.blocks || [],
+        task: item.links.task || null,
+      },
+      evidence: item.evidence || {},
+      body: item.body || '',
+    }));
+    return;
+  }
+
+  console.log(`\n📋  Backlog 条目详情: ${item.id}`);
+  console.log(`   title:     ${item.title}`);
+  console.log(`   status:    ${item.status}`);
+  console.log(`   readiness: ${item.readiness}`);
+  console.log(`   kind:      ${item.kind || 'feature'}`);
+  console.log(`   priority:  ${item.priority}`);
+  console.log(`   level:     Level ${item.level}`);
+  if (item.created_at) console.log(`   created:   ${item.created_at}`);
+  if (item.links.parent) console.log(`   parent:    ${item.links.parent}`);
+  if (item.links.depends_on && item.links.depends_on.length > 0) {
+    console.log(`   depends:   ${item.links.depends_on.join(', ')}`);
+  }
+  if (item.links.blocks && item.links.blocks.length > 0) {
+    console.log(`   blocks:    ${item.links.blocks.join(', ')}`);
+  }
+  if (item.links.task) console.log(`   task:      ${item.links.task}`);
+
+  if (item.body) {
+    console.log('\n--- 正文内容 ---');
+    console.log(item.body.trim());
+    console.log('----------------\n');
+  }
+}
+
 /**
  * FR-4 动作单一真源：backlog 动作 → 处理器映射。帮助文案 / 校验 / 报错全部由
  * BACKLOG_ACTIONS 派生，扩展一个动作只改这里一处的映射项，其余（roster、usage、报错）自动跟随。
@@ -1688,6 +1775,9 @@ const backlogActions = {
   capture: backlogCapture,
   shape: backlogShape,
   edit: backlogEdit,
+  show: backlogShow,
+  get: backlogShow,
+  view: backlogShow,
   list: backlogList,
   search: backlogSearch,
   find: backlogSearch,

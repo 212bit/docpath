@@ -813,12 +813,37 @@ export async function archiveBacklogItem(
  */
 export interface BacklogDuplicateReport {
   id: string;
-  kind: 'same-id' | 'same-title';
+  kind: 'same-id' | 'same-title' | 'similar-title';
   active_file: string;
   archived_file: string | null;
   active_title: string;
   archived_title: string | null;
   identical: boolean;
+  similarity?: number;
+}
+
+export function calculateTitleSimilarity(a: string, b: string): number {
+  const normA = a.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+  const normB = b.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+  if (!normA || !normB) return 0;
+  if (normA === normB) return 1.0;
+
+  const bigramsA = new Set<string>();
+  for (let i = 0; i < normA.length - 1; i++) {
+    bigramsA.add(normA.slice(i, i + 2));
+  }
+  const bigramsB = new Set<string>();
+  for (let i = 0; i < normB.length - 1; i++) {
+    bigramsB.add(normB.slice(i, i + 2));
+  }
+  if (bigramsA.size === 0 || bigramsB.size === 0) {
+    return normA.includes(normB) || normB.includes(normA) ? 0.8 : 0;
+  }
+  let intersection = 0;
+  for (const bg of bigramsA) {
+    if (bigramsB.has(bg)) intersection++;
+  }
+  return (2 * intersection) / (bigramsA.size + bigramsB.size);
 }
 
 function normalizeBacklogTitle(title: string): string {
@@ -848,7 +873,7 @@ export async function detectBacklogDuplicates(
       identical: c.identical,
     });
   }
-  // 同标题：本地 + 主 checkout（worktree 快照可能 stale）的 active/archived
+  // 同标题 / 相似标题：本地 + 主 checkout（worktree 快照可能 stale）的 active/archived
   const needle = normalizeBacklogTitle(item.title);
   if (!needle) return reports;
 
@@ -882,7 +907,7 @@ export async function detectBacklogDuplicates(
 
   const selfLocalFile = (await findItemFile(join(docpathDir, 'backlog'), item.id)) ?? '';
   const seen = new Set<string>();
-  const peers: Array<{ label: string; file: string; title: string; isActive: boolean }> = [];
+  const peers: Array<{ label: string; file: string; title: string; isActive: boolean; kind: 'same-title' | 'similar-title'; similarity?: number }> = [];
   for (const root of roots) {
     if (!existsSync(root.dir)) continue;
     for (const file of await readdir(root.dir)) {
@@ -893,11 +918,24 @@ export async function detectBacklogDuplicates(
       // 本地 active 区跳过「本条」自身（R-040/R-040-slug），避免自报重复
       const isSelf = root.label === 'backlog' && (file.startsWith(`${item.id}-`) || file === `${item.id}.md`);
       if (isSelf) continue;
-      if (normalizeBacklogTitle(title) !== needle) continue;
+
+      const normTitle = normalizeBacklogTitle(title);
+      const isExact = normTitle === needle;
+      const sim = isExact ? 1.0 : calculateTitleSimilarity(normTitle, needle);
+
+      if (!isExact && sim < 0.75) continue;
+
       const key = `${root.label}:${file}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      peers.push({ label: root.label, file, title, isActive: root.isActive });
+      peers.push({
+        label: root.label,
+        file,
+        title,
+        isActive: root.isActive,
+        kind: isExact ? 'same-title' : 'similar-title',
+        similarity: isExact ? undefined : sim,
+      });
     }
   }
 
@@ -907,14 +945,15 @@ export async function detectBacklogDuplicates(
     const isLocalActive = peer.label === 'backlog';
     reports.push({
       id: item.id,
-      kind: 'same-title',
+      kind: peer.kind,
       active_file: peer.isActive
         ? (isLocalActive ? `backlog/${peer.file}` : `${peer.label}/${peer.file}`)
         : (selfLocalFile || item.id),
       archived_file: peer.isActive ? null : `${peer.label}/${peer.file}`,
       active_title: peer.isActive && !isLocalActive ? peer.title : item.title,
       archived_title: peer.isActive ? null : peer.title,
-      identical: !peer.isActive && peer.label === 'backlog/archived',
+      identical: !peer.isActive && peer.label === 'backlog/archived' && peer.kind === 'same-title',
+      similarity: peer.similarity,
     });
   }
 

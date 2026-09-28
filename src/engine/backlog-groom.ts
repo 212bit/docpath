@@ -26,9 +26,41 @@ const FUZZY_AC_PATTERNS = [
   /稳定运行/,
 ];
 
+const MULTI_CHANNEL_GROUPS = [
+  {
+    name: '传输协议',
+    terms: ['ws', 'websocket', 'http', 'https', 'dns', 'grpc', 'tcp', 'udp', 'quic', 'sse'],
+  },
+  {
+    name: '端平台',
+    terms: ['ios', 'android', 'web', 'h5', 'desktop', 'macos', 'windows', 'linux', '小程序'],
+  },
+  {
+    name: '数据存储',
+    terms: ['mysql', 'postgres', 'postgresql', 'sqlite', 'redis', 'mongodb'],
+  },
+];
+
 function hasQuantitativeIndicator(text: string): boolean {
   // Check if text contains numbers, ms, %, status codes, boolean assertions, etc.
   return /\d+|100%|<|>|==|!=|ms|s|kb|mb|gb|true|false|assert|exit code/i.test(text);
+}
+
+function detectCrossChannelTerms(line: string): string[] | null {
+  const lower = line.toLowerCase();
+  for (const group of MULTI_CHANNEL_GROUPS) {
+    const matched = group.terms.filter((term) => {
+      if (term.length <= 4) {
+        const regex = new RegExp(`(?:^|[^a-z0-9])${term}(?:[^a-z0-9]|$)`, 'i');
+        return regex.test(lower);
+      }
+      return lower.includes(term);
+    });
+    if (matched.length >= 2) {
+      return matched;
+    }
+  }
+  return null;
 }
 
 export function auditBacklogHygiene(items: BacklogItem[]): {
@@ -102,7 +134,7 @@ export function auditBacklogHygiene(items: BacklogItem[]): {
       }
     }
 
-    // 2.2 Fuzzy unverifiable AC anti-patterns
+    // 2.2 Fuzzy unverifiable AC anti-patterns & Cross-channel AC gaps
     if (item.body) {
       const normalizedBody = item.body.replace(/\r\n/g, '\n');
       const lines = normalizedBody.split('\n');
@@ -119,6 +151,8 @@ export function auditBacklogHygiene(items: BacklogItem[]): {
 
         if (inAcceptanceSection || /^[-*]\s*(?:\[AC-\d+\]|AC-\d+:|验收标准:?)/i.test(trimmed)) {
           if (!trimmed || trimmed.startsWith('#')) continue;
+
+          // 模糊词汇检测
           const matches = FUZZY_AC_PATTERNS.filter((pattern) => pattern.test(trimmed));
           if (matches.length > 0 && !hasQuantitativeIndicator(trimmed)) {
             warnings.push({
@@ -127,6 +161,19 @@ export function auditBacklogHygiene(items: BacklogItem[]): {
               field: 'body.acceptance',
               message: `验收标准包含模糊/主观词汇 (如: ${matches.map((p) => p.source).join(', ')}) 且缺少量化指标`,
               suggestion: `使用可断言句式 (如 Given-When-Then、测试用例或具体数字) 改写 AC`,
+            });
+            break;
+          }
+
+          // 跨通道 AC 空洞检测
+          const crossChannels = detectCrossChannelTerms(trimmed);
+          if (crossChannels && crossChannels.length >= 2) {
+            warnings.push({
+              id: item.id,
+              severity: 'warning',
+              field: 'body.acceptance',
+              message: `验收标准单条声明包含多通道/多协议 (${crossChannels.join('/')})，存在跨通道 AC 空洞风险`,
+              suggestion: `建议将多通道/多协议拆分为独立子验收项（如分别为 ${crossChannels.map((t) => `[${t}]`).join('、')} 编写断言），避免单通道通过后遗漏其他通道`,
             });
             break;
           }
@@ -167,4 +214,72 @@ export function auditBacklogHygiene(items: BacklogItem[]): {
   }
 
   return { issues, warnings };
+}
+
+/**
+ * 自动修复 Backlog 结构性依赖悬空（如已 drop 或不存在的 parent/depends_on）
+ */
+export async function autoFixBacklogHygiene(
+  cwd: string,
+  items: BacklogItem[],
+  writeItem: (cwd: string, item: BacklogItem) => Promise<void>,
+  refreshIndex: (cwd: string) => Promise<void>,
+): Promise<{ fixedCount: number; fixes: string[] }> {
+  const fixes: string[] = [];
+  const itemMap = new Map<string, BacklogItem>(items.map((it) => [it.id, it]));
+
+  for (const item of items) {
+    let modified = false;
+
+    // 1. 修复悬空/已废弃 parent
+    if (item.links.parent) {
+      const parent = itemMap.get(item.links.parent);
+      if (!parent || parent.status === 'dropped') {
+        const reason = !parent ? '不存在' : '已废弃(dropped)';
+        fixes.push(`[${item.id}] 清理无效 parent 链接: ${item.links.parent} (${reason})`);
+        item.links.parent = null;
+        modified = true;
+      }
+    }
+
+    // 2. 修复悬空/已废弃 depends_on
+    if (item.links.depends_on && item.links.depends_on.length > 0) {
+      const originalDeps = [...item.links.depends_on];
+      const validDeps = originalDeps.filter((dep) => {
+        const depItem = itemMap.get(dep);
+        return depItem && depItem.status !== 'dropped';
+      });
+      if (validDeps.length !== originalDeps.length) {
+        const removed = originalDeps.filter((d) => !validDeps.includes(d));
+        fixes.push(`[${item.id}] 清理无效 depends_on 依赖: ${removed.join(', ')}`);
+        item.links.depends_on = validDeps.length > 0 ? validDeps : undefined;
+        modified = true;
+      }
+    }
+
+    // 3. 修复悬空/已废弃 blocks
+    if (item.links.blocks && item.links.blocks.length > 0) {
+      const originalBlocks = [...item.links.blocks];
+      const validBlocks = originalBlocks.filter((blk) => {
+        const blkItem = itemMap.get(blk);
+        return blkItem && blkItem.status !== 'dropped';
+      });
+      if (validBlocks.length !== originalBlocks.length) {
+        const removed = originalBlocks.filter((b) => !validBlocks.includes(b));
+        fixes.push(`[${item.id}] 清理无效 blocks 链接: ${removed.join(', ')}`);
+        item.links.blocks = validBlocks.length > 0 ? validBlocks : undefined;
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      await writeItem(cwd, item);
+    }
+  }
+
+  if (fixes.length > 0) {
+    await refreshIndex(cwd);
+  }
+
+  return { fixedCount: fixes.length, fixes };
 }

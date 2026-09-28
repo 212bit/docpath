@@ -16,6 +16,7 @@ let detectBacklogIdCollisions;
 let archiveBacklogItem;
 let detectBacklogDuplicates;
 let cleanBacklogTitle;
+let calculateTitleSimilarity;
 
 before(async () => {
   ({
@@ -31,6 +32,7 @@ before(async () => {
     archiveBacklogItem,
     detectBacklogDuplicates,
     cleanBacklogTitle,
+    calculateTitleSimilarity,
   } = await import('../dist/engine/backlog.js'));
 });
 
@@ -599,6 +601,97 @@ high id
     assert.equal(items[0].readiness, 'raw');
 
     rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('detects similar titles with fuzzy similarity score', async () => {
+    assert.ok(calculateTitleSimilarity('修复用户登录鉴权漏洞', '修复用户登录鉴权缺陷') >= 0.75);
+    assert.ok(calculateTitleSimilarity('Support WebSocket Transport', 'Support WebSocket and HTTP Transport') >= 0.65);
+
+    const cwd = mkWorkspace();
+    await createBacklogItem(cwd, sampleItem({ title: '修复用户登录鉴权漏洞' }));
+    const dups = await detectBacklogDuplicates(cwd, { id: 'R-099', title: '修复用户登录鉴权缺陷' });
+    assert.ok(dups.some((d) => d.kind === 'similar-title' && (d.similarity ?? 0) >= 0.75));
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('detects cross-channel AC hole risks in auditBacklogHygiene', async () => {
+    const { auditBacklogHygiene } = await import('../dist/engine/backlog-groom.js');
+
+    const itemWithHole = sampleItem({
+      id: 'R-093',
+      title: '全传输通道支持',
+      body: `## 需求背景\n多协议通信\n\n## 验收标准\n- [AC-1] 全传输（ws/http/dns）正常连通并收发数据`,
+    });
+
+    const report = auditBacklogHygiene([itemWithHole]);
+    assert.ok(report.warnings.some((w) => w.message.includes('跨通道 AC 空洞风险') && w.message.includes('ws/http/dns')));
+  });
+
+  it('auto-fixes broken and dropped dependency links with autoFixBacklogHygiene', async () => {
+    const { autoFixBacklogHygiene, auditBacklogHygiene } = await import('../dist/engine/backlog-groom.js');
+    const cwd = mkWorkspace();
+
+    const item1 = await createBacklogItem(cwd, sampleItem({ title: 'Root Feature' }));
+    const item2 = await createBacklogItem(cwd, sampleItem({
+      title: 'Child Feature with Broken Parent',
+      links: { parent: 'R-999', depends_on: ['R-888', item1.id] },
+    }));
+
+    // Before fix: groom should find issues
+    const allBefore = await listBacklogItems(cwd);
+    const beforeAudit = auditBacklogHygiene(allBefore);
+    assert.ok(beforeAudit.issues.length > 0);
+
+    // Run auto-fix
+    const fixResult = await autoFixBacklogHygiene(cwd, allBefore, writeBacklogItem, refreshBacklogIndex);
+    assert.ok(fixResult.fixedCount >= 2);
+
+    // After fix: parent R-999 and dep R-888 should be cleaned, item1.id retained
+    const item2After = await readBacklogItem(cwd, item2.id);
+    assert.equal(item2After.links.parent, null);
+    assert.deepEqual(item2After.links.depends_on, [item1.id]);
+
+    const afterAudit = auditBacklogHygiene(await listBacklogItems(cwd));
+    assert.equal(afterAudit.issues.length, 0);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it('supports backlog show / get / view command with agent and json output', async () => {
+    const cwd = mkWorkspace();
+    const { backlogCommand } = await import('../dist/commands/backlog.js');
+
+    const created = await createBacklogItem(cwd, sampleItem({
+      title: 'Show Command Test Item',
+      priority: 'P1',
+      level: 2,
+      body: '## 背景\n测试详情查看',
+    }));
+
+    // Test text mode output
+    let logs = [];
+    const origLog = console.log;
+    console.log = (...args) => logs.push(args.join(' '));
+
+    try {
+      await backlogCommand({ cwd, action: 'show', id: created.id });
+      assert.ok(logs.some((l) => l.includes('Show Command Test Item')));
+      assert.ok(logs.some((l) => l.includes('P1')));
+
+      logs = [];
+      await backlogCommand({ cwd, action: 'get', id: created.id, json: true });
+      const parsedJson = JSON.parse(logs.join('\n'));
+      assert.equal(parsedJson.id, created.id);
+      assert.equal(parsedJson.title, 'Show Command Test Item');
+
+      logs = [];
+      await backlogCommand({ cwd, action: 'view', id: created.id, agent: true });
+      assert.ok(logs.some((l) => l.includes('title: Show Command Test Item')));
+    } finally {
+      console.log = origLog;
+      rmSync(cwd, { recursive: true, force: true });
+    }
   });
 });
 
