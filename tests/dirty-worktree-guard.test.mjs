@@ -601,4 +601,50 @@ describe('dirty worktree guard', () => {
     }
   });
 
+  it('allows dirty tracked files when replanning task returns to planning phase with prior breadcrumbs (R-444)', () => {
+    const cwd = mkBaseWorkspace({ phase: 'planning', state: 'planning', taskId: 'T-TEST', taskTitle: 'Test' });
+    try {
+      initGitRepo(cwd);
+      writeFileSync(join(cwd, 'src-app.ts'), 'original\n');
+      git(cwd, ['add', 'src-app.ts']);
+      git(cwd, ['commit', '-m', 'add src-app.ts']);
+      writeFileSync(join(cwd, 'src-app.ts'), 'modified by S1\n');
+
+      // Add prior step breadcrumb for T-TEST
+      writeFileSync(
+        join(cwd, '.docpath', 'workspace', 'breadcrumb.jsonl'),
+        JSON.stringify({ taskId: 'T-TEST', step: 'S1', status: 'done', action: 'step_pass', timestamp: new Date().toISOString() }) + '\n',
+      );
+
+      // Must allow tracked modifications during replanning
+      assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+        taskId: 'T-TEST',
+        step: 'S2',
+      });
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('still blocks brand-new task in planning phase without prior breadcrumbs when dirty tracked files exist (R-444)', () => {
+    const cwd = mkBaseWorkspace({ phase: 'planning', state: 'planning', taskId: 'T-TEST', taskTitle: 'Test' });
+    try {
+      initGitRepo(cwd);
+      writeFileSync(join(cwd, 'src-app.ts'), 'original\n');
+      git(cwd, ['add', 'src-app.ts']);
+      git(cwd, ['commit', '-m', 'add src-app.ts']);
+      writeFileSync(join(cwd, 'src-app.ts'), 'modified before task start\n');
+
+      // No breadcrumbs for T-TEST
+      assert.throws(
+        () => assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+          taskId: 'T-TEST',
+          step: 'S1',
+        }),
+        /当前 Git worktree 存在与当前任务无关或无法确认归属的未提交变更/
+      );
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });

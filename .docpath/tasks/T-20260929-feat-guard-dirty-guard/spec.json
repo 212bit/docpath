@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-29T12:05:33.709Z",
+    "updated_at": "2026-09-29T12:05:33.709Z",
+    "content_sha256": "13ed2d4b0d65475decb41b7185dc4955ac0a96b286709202e05308355efc5ce0"
+  },
+  "task_id": "T-20260929-feat-guard-dirty-guard",
+  "backlog_id": "R-444",
+  "title": "T-20260929-feat-guard-dirty-guard - feat(guard): 执行期 Dirty Guard 重规划智能自愈与同任务变更自动放行",
+  "generated_at": "2026-09-29T12:05:33.709Z",
+  "scope": {
+    "included": [
+      "feat(guard): 执行期 Dirty Guard 重规划智能自愈与同任务变更自动放行"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 在任务执行中途使用 `docpath plan --force` 或 `docpath write-plan` 修正计划后，状态回到 `planning` 阶段。\n- 目标: feat(guard): 执行期 Dirty Guard 重规划智能自愈与同任务变更自动放行\n- 背景: 来自 backlog R-444\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "在 `git-dirty-guard.ts` 中增强活跃任务判定，当 phase 为 `planning` 但当前 `state.task_id` 匹配且已存在执行事件（如 breadcrumb 中已发生过 `step.started`），或为同一任务的重规划重入时，判定为活跃任务。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "处于活跃任务期内的同任务 tracked 变更（非未跟踪的新增噪音文件）自动放行，不再强制拦截要求 `--accept-dirty`。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "补充单元测试验证重规划场景下 `docpath go` 的放行行为，并通过质量门禁。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "同任务在执行中途重规划回到 `planning` 状态后，`docpath go --step <step>` 对本任务已跟踪修改自动放行",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "未开工的全新任务在 `planning` 状态下如果有外部 dirty 变更，仍严格拦截防污染",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "补充对应的单元测试并通过质量门禁",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-444 与任务 T-20260929-feat-guard-dirty-guard 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "在任务执行中途使用 `docpath plan --force` 或 `docpath write-plan` 修正计划后，状态回到 `planning` 阶段。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

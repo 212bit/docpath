@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-feat-guard-dirty-guard",
+  "taskTitle": "T-20260929-feat-guard-dirty-guard - feat(guard): 执行期 Dirty Guard 重规划智能自愈与同任务变更自动放行",
+  "backlogId": "R-444",
+  "profile": "standard",
+  "level": 1,
+  "startedAt": "2026-09-29T12:05:34.806Z",
+  "completedAt": "2026-09-29T12:09:30.873Z",
+  "durationMinutes": 3.9,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 514,
+  "filesChanged": 14,
+  "linesAdded": 451,
+  "linesDeleted": 63,
+  "engineering": {
+    "turnCount": 5,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 3.9,
+    "filesChanged": 14,
+    "linesAdded": 451,
+    "linesDeleted": 63,
+    "totalDiffLines": 514,
+    "speedLinesPerMinute": 131.8
+  },
+  "protocol": {
+    "specTokens": 1204,
+    "planTokens": 617,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3621
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 7729,
+    "outputTokens": 3312,
+    "totalTokens": 11041,
+    "toolCallsCount": 17
+  }
+}

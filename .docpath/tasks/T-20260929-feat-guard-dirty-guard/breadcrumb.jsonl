@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-guard-dirty-guard","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 在 `git-dirty-guard.ts` 中增强活跃任务判定，当 phase 为 `planning` 但当前 `state.task_id` 匹配且已存在执行事件（如 breadcrumb 中已发生过 `step.started`），或为同一任务的重规划重入时，判定为活跃任务。","timestamp":"2026-09-29T12:05:34.806Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-guard-dirty-guard","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-29T12:07:20.492Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-guard-dirty-guard","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-29T12:09:28.540Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-guard-dirty-guard","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-09-29T12:09:29.272Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-guard-dirty-guard","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-29T12:09:30.867Z"}

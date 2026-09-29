@@ -223,6 +223,30 @@ export function isLinkedGitWorktree(gitRoot: string): boolean {
 // 仍属于同一任务的活跃执行期，不应重新拦截本任务自己的 tracked 改动。
 const ACTIVE_TASK_PHASES = new Set(['executing', 'checking', 'reviewing']);
 
+function hasTaskExecutionBreadcrumbs(docpathDir: string, taskId: string): boolean {
+  try {
+    const breadcrumbPath = join(docpathDir, 'workspace', 'breadcrumb.jsonl');
+    if (!existsSync(breadcrumbPath)) return false;
+    const content = readFileSync(breadcrumbPath, 'utf-8');
+    const lines = content.trim().split('\n').filter(Boolean);
+    return lines.some((line) => {
+      try {
+        const record = JSON.parse(line);
+        const recordTaskId = record.taskId || record.task_id;
+        if (recordTaskId !== taskId) return false;
+        const step = record.step || record.entry?.step;
+        const status = record.status || record.entry?.status;
+        const event = record.event || record.action;
+        return Boolean(step || status === 'done' || status === 'in_progress' || event?.startsWith('step.'));
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
+}
+
 export function assertNoNonDocPathChangesForExecutionStart(
   cwd: string,
   command: string,
@@ -237,8 +261,12 @@ export function assertNoNonDocPathChangesForExecutionStart(
     const statePath = join(docpathDir, 'workspace', 'state.json');
     if (existsSync(statePath)) {
       const state = JSON.parse(readFileSync(statePath, 'utf-8'));
-      if (state && state.task_id && options.taskId && state.task_id === options.taskId && ACTIVE_TASK_PHASES.has(state.phase)) {
-        isActiveTask = true;
+      if (state && state.task_id && options.taskId && state.task_id === options.taskId) {
+        if (ACTIVE_TASK_PHASES.has(state.phase)) {
+          isActiveTask = true;
+        } else if (state.phase === 'planning' && hasTaskExecutionBreadcrumbs(docpathDir, state.task_id)) {
+          isActiveTask = true;
+        }
       }
     }
   } catch {
