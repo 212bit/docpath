@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-fix-plan-fr-agentflow-s1",
+  "taskTitle": "T-20260929-fix-plan-fr-agentflow-s1 - fix(plan): 修复多FR任务在agentFlow下被过度压缩为单步S1的缺陷",
+  "backlogId": "R-440",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-29T08:40:21.134Z",
+  "completedAt": "2026-09-29T08:43:23.606Z",
+  "durationMinutes": 3,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 5,
+  "filesChanged": 53,
+  "linesAdded": 5,
+  "linesDeleted": 0,
+  "engineering": {
+    "turnCount": 5,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 3,
+    "filesChanged": 53,
+    "linesAdded": 5,
+    "linesDeleted": 0,
+    "totalDiffLines": 5,
+    "speedLinesPerMinute": 1.7
+  },
+  "protocol": {
+    "specTokens": 1176,
+    "planTokens": 297,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3273
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 5937,
+    "outputTokens": 2545,
+    "totalTokens": 8482,
+    "toolCallsCount": 10
+  }
+}

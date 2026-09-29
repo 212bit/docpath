@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-29T08:41:39.970Z",
+    "updated_at": "2026-09-29T08:41:39.970Z",
+    "content_sha256": "79e92bf92a54153f253c1b17aa7694325729d2a4d170ffc0529a355cd3872182"
+  },
+  "task_id": "T-20260929-fix-plan-fr-agentflow-s1",
+  "backlog_id": "R-440",
+  "title": "T-20260929-fix-plan-fr-agentflow-s1 - fix(plan): 修复多FR任务在agentFlow下被过度压缩为单步S1的缺陷",
+  "generated_at": "2026-09-29T08:41:39.970Z",
+  "scope": {
+    "included": [
+      "fix(plan): 修复多FR任务在agentFlow下被过度压缩为单步S1的缺陷"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "用户已在会话中明确同意优化。",
+    "decision_brief_markdown": "- 当前问题: 当开启 agentFlow 且 level <= 2 时，renderDraftPlan 无条件将包含多个 FR（如 6 个 FR、删插件、前端 UI）的任务强行压缩为单步 S1，破坏了「小步快跑」与「架构守卫分层兜底」原则。\n- 目标: 优化 renderDraftPlan 判定条件，使多 FR (features.length > 1) 且 level >= 2 的标准任务保持 S1..Sn 模块级多步拆解，单目标 (<= 1 FR) 或 level <= 1 保持单步 S1 压缩。\n- 背景: 来自用户真实开发反馈与协议一致性对齐。\n- 可选方案:\n  - 方案 A (推荐): 修正 `renderDraftPlan` 中的压缩条件为 `level <= 1 || features.length <= 1`，区分单目标极简与多 FR 小步拆解。\n  - 方案 B: 废弃整个 agentFlow 计划压缩机制。\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 既保留了单目标任务的极简体验，又彻底治愈了多模块/跨层任务被粗暴压为单步的架构风险。\n- 不做什么: 不修改底层 FSM 状态机转移逻辑。\n- 成本: 低，仅修改 plan 渲染逻辑与定向测试。\n- 风险: 极低，向下兼容现有单步与多步规范。\n- 回滚方案: Git revert 提交。\n- 用户确认: 用户已在会话中明确同意优化。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "fix(plan): 修复多FR任务在agentFlow下被过度压缩为单步S1的缺陷",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "fix(plan): 修复多FR任务在agentFlow下被过度压缩为单步S1的缺陷 满足需求并通过门禁",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "backlog 条目 R-440 与任务 T-20260929-fix-plan-fr-agentflow-s1 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "当开启 agentFlow 且 level <= 2 时，renderDraftPlan 无条件将包含多个 FR（如 6 个 FR、删插件、前端 UI）的任务强行压缩为单步 S1，破坏了「小步快跑」与「架构守卫分层兜底」原则。",
+    "options": [
+      "- 方案 A (推荐): 修正 `renderDraftPlan` 中的压缩条件为 `level <= 1 || features.length <= 1`，区分单目标极简与多 FR 小步拆解。"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 既保留了单目标任务的极简体验，又彻底治愈了多模块/跨层任务被粗暴压为单步的架构风险。"
+  }
+}

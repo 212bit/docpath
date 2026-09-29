@@ -112,25 +112,27 @@ describe('CJK path recognition (FR-7)', async () => {
 describe('renderDraftPlan agentFlow (FR-3)', async () => {
   const { renderDraftPlan } = await import('../dist/commands/plan.js');
 
-  const spec = '# T-20260911-test\n\n## 2. 需求\n\n### 功能需求\n- [ ] FR-1: 小功能\n- [ ] FR-2: 另一个功能\n\n## 5. 验收标准\n\n- [ ] AC-1: 能跑就行\n';
+  const multiSpec = '# T-20260911-test\n\n## 2. 需求\n\n### 功能需求\n- [ ] FR-1: 小功能\n- [ ] FR-2: 另一个功能\n\n## 5. 验收标准\n\n- [ ] AC-1: 能跑就行\n';
+  const singleSpec = '# T-20260911-test\n\n## 2. 需求\n\n### 功能需求\n- [ ] FR-1: 小功能\n\n## 5. 验收标准\n\n- [ ] AC-1: 能跑就行\n';
 
-  it('level-2 without agentFlow generates per-FR module steps for multi-feature spec', () => {
-    const plan = renderDraftPlan(spec, 2, false);
+  it('level-2 with multi-feature spec and agentFlow=true generates per-FR module steps (S1, S2...)', () => {
+    const plan = renderDraftPlan(multiSpec, 2, true);
     assert.ok(plan.includes('### S1: 实现并验证 FR-1'), 'Should have S1 for FR-1');
     assert.ok(plan.includes('### S2: 实现并验证 FR-2'), 'Should have S2 for FR-2');
     assert.ok(!plan.includes('### S3:'), 'Should NOT have redundant S3');
   });
 
-  it('level-2 with agentFlow generates single-step plan', () => {
-    const plan = renderDraftPlan(spec, 2, true);
+  it('level-2 with single-feature spec and agentFlow=true generates single-step plan', () => {
+    const plan = renderDraftPlan(singleSpec, 2, true);
     assert.ok(plan.includes('### S1:'), 'Should have S1');
     assert.ok(!plan.includes('### S2:'), 'Should NOT have S2');
     assert.ok(plan.includes('R-334'), 'Should note R-334 compression');
   });
 
   it('level-1 always generates single-step plan', () => {
-    const plan = renderDraftPlan(spec, 1, false);
+    const plan = renderDraftPlan(multiSpec, 1, false);
     assert.ok(plan.includes('### S1:'));
     assert.ok(!plan.includes('### S2:'));
   });
 });
+

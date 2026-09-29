@@ -151,8 +151,9 @@ export function renderDraftPlan(spec: string, level = 2, agentFlow = false): str
   const acceptances = extractChecklistEntries(spec, 'AC');
   const primaryFeature = features[0]?.text || title.replace(/^T-\d{8}-[a-z0-9-]+\s+-\s+/, '');
 
-  // 1. 单目标任务 (<=1 个 FR) 或 level <= 1 或 agentFlow 压缩模式：生成单步原子计划 (S1: 实现并验证)
-  if (level <= 1 || (agentFlow && level <= 2) || features.length <= 1) {
+  // 1. 单目标任务 (<=1 个 FR) 或 level <= 1 极简模式：生成单步原子计划 (S1: 实现并验证)
+  // 注意：多 FR 任务 (features.length > 1) 且 level >= 2 必须按模块拆解为 S1..Sn，严禁强行压入单步破坏小步快跑与 arch check
+  if (level <= 1 || features.length <= 1) {
     const featureSummary = features.length > 0
       ? features.map((item) => `${item.id}: ${item.text}`).join('；')
       : primaryFeature;
