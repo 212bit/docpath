@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-quick-docs-heal-deprecated-brainstorm-command-referenc",
+  "taskTitle": "T-20260929-quick-docs-heal-deprecated-brainstorm-command-referenc - docs: heal deprecated brainstorm command reference via docs fix",
+  "backlogId": "R-447",
+  "profile": "quick",
+  "level": 1,
+  "startedAt": "2026-09-29T16:47:38.793Z",
+  "completedAt": "2026-09-29T16:47:40.386Z",
+  "durationMinutes": 0.2,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 774,
+  "filesChanged": 19,
+  "linesAdded": 628,
+  "linesDeleted": 146,
+  "engineering": {
+    "turnCount": 2,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 0.2,
+    "filesChanged": 19,
+    "linesAdded": 628,
+    "linesDeleted": 146,
+    "totalDiffLines": 774,
+    "speedLinesPerMinute": 3870
+  },
+  "protocol": {
+    "specTokens": 569,
+    "planTokens": 300,
+    "rulesTokens": 600,
+    "totalInjectedTokens": 1469
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 1147,
+    "outputTokens": 492,
+    "totalTokens": 1639,
+    "toolCallsCount": 4
+  }
+}

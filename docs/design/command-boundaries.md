@@ -24,7 +24,7 @@ current host agent to execute.
 
 Examples:
 
-- `docpath brainstorm`
+- `docpath analyze`
 - `docpath refine`
 - `docpath analyze --dry-run`
 - `docpath plan --dry-run`
