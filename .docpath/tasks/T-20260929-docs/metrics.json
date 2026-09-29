@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-docs",
+  "taskTitle": "T-20260929-docs - 文档关联图谱：docs网状关联与孤岛治理",
+  "backlogId": "R-439",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-29T03:15:19.906Z",
+  "completedAt": "2026-09-29T03:56:22.986Z",
+  "durationMinutes": 41,
+  "firstTimePassRate": 0,
+  "totalDiffLines": 34,
+  "filesChanged": 2,
+  "linesAdded": 17,
+  "linesDeleted": 17,
+  "engineering": {
+    "turnCount": 7,
+    "retryCount": 1,
+    "firstTimePassRate": 0,
+    "cycleTimeMinutes": 41,
+    "filesChanged": 2,
+    "linesAdded": 17,
+    "linesDeleted": 17,
+    "totalDiffLines": 34,
+    "speedLinesPerMinute": 0.8
+  },
+  "protocol": {
+    "specTokens": 1126,
+    "planTokens": 249,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3175
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 809,
+    "outputTokens": 347,
+    "totalTokens": 1156,
+    "toolCallsCount": 0
+  }
+}

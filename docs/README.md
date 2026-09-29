@@ -65,3 +65,56 @@ DocPath 严格区分 **4 层文档资产**，避免运行时噪音与知识腐�
 | **2. 活项目文档** | `docs/` | 业务全景、模块契约、架构设计（随代码演进） | 按需查阅 / 主题检索 |
 | **3. 任务需求池** | `.docpath/backlog/` | 需求卡片与演进追踪 | 任务立项时消费 |
 | **4. 过程态与审计日志** | `.docpath/tasks/done/` & `workspace/` | 任务历史快照与执行审计（冷存储） | 问题回溯时查阅 |
+<!-- docpath:block docs-index -->
+<!-- 由 `docpath docs graph --fix` 自动生成；块外内容手工维护，请勿编辑本机器区 -->
+
+## 文档关联图谱 (docs graph)
+
+> 全部 24 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。
+
+### docs/
+
+- [docs/BUILD.md](./BUILD.md) — Build Guide — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/error-codes.md](./error-codes.md) — DocPath 错误码参考 — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/getting-started.md](./getting-started.md) — DocPath Getting Started — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/product-panorama.md](./product-panorama.md) — DocPath 产品全景文档 (Product Panorama) — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/README.md](./README.md) — DocPath 架构与项目文档中心 — ⚠️ 孤立 / 出 0 / 入 0
+
+### docs/architecture/
+
+- [docs/architecture/agent-context-injection-architecture.md](./architecture/agent-context-injection-architecture.md) — Agent 零点击上下文随路注入与智能路由体系架构 — 出 1 / 入 0
+- [docs/architecture/breadcrumb-task-level-architecture.md](./architecture/breadcrumb-task-level-architecture.md) — Breadcrumb 任务级优先架构 — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/architecture/documentation-lifecycle-guide.md](./architecture/documentation-lifecycle-guide.md) — DocPath 文档全生命周期管理规范与演进体系 — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/architecture/tool-evaluation-2026-06.md](./architecture/tool-evaluation-2026-06.md) — DocPath 工具评估报告 — ⚠️ 孤立 / 出 0 / 入 0
+
+### docs/design/
+
+- [docs/design/agent-integration.md](./design/agent-integration.md) — DocPath 2.0 Design: Agent Integration — 出 0 / 入 1
+- [docs/design/command-boundaries.md](./design/command-boundaries.md) — DocPath Command Boundaries — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/design/project-document-placement.md](./design/project-document-placement.md) — 项目文档放置决策 — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/design/refactor-doc-management-plan.md](./design/refactor-doc-management-plan.md) — 重构方案：docpath 转型为「文档管理 + 沉淀 + 一致性校验」 — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/design/session-isolation-mvp.md](./design/session-isolation-mvp.md) — Session Isolation MVP — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/design/state-machine-correctness-analysis.md](./design/state-machine-correctness-analysis.md) — 状态机正确性分析 (R-203) — ⚠️ 孤立 / 出 0 / 入 0
+
+### docs/features/
+
+- [docs/features/architecture-guard.md](./features/architecture-guard.md) — 架构分层与依赖防腐守卫 (Architecture Layers & Guardrails) — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/features/backlog-lifecycle.md](./features/backlog-lifecycle.md) — Backlog 需求工程与全生命周期管理 (Backlog Lifecycle & Engineering) — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/features/knowledge-accumulation.md](./features/knowledge-accumulation.md) — 经验沉淀与持续学习机制 (Knowledge Accumulation) — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/features/task-stash.md](./features/task-stash.md) — 任务热暂存与上下文恢复 (Task Stash & Switch) — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/features/test-impact-analysis.md](./features/test-impact-analysis.md) — 测试影响分析与智能门禁加速体系 (Test Impact Analysis & Smart Gates) — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/features/worktree-workflow.md](./features/worktree-workflow.md) — Agent-neutral Git Worktree 并发开发 - 使用指南 — ⚠️ 孤立 / 出 0 / 入 0
+
+### docs/guides/
+
+- [docs/guides/multi-stack-testing-efficiency.md](./guides/multi-stack-testing-efficiency.md) — 多技术栈定向测试与门禁效能最佳实践 — ⚠️ 孤立 / 出 0 / 入 0
+
+### docs/integrations/
+
+- [docs/integrations/codex-skill-adapter.md](./integrations/codex-skill-adapter.md) — Codex Skill Adapter — ⚠️ 孤立 / 出 0 / 入 0
+
+### docs/workflows/
+
+- [docs/workflows/artifact-policy.md](./workflows/artifact-policy.md) — DocPath Artifact Generation Policy — ⚠️ 孤立 / 出 0 / 入 0
+
+<!-- /docpath:block -->

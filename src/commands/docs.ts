@@ -13,16 +13,25 @@ import { readDeclaredDocumentScanPaths } from '../utils/config.js';
 import { isExcludedForScan } from '../utils/scan-existing-tree.js';
 import {
   ARCHIVE_RETENTION_DAYS,
+  DOC_GRAPH_HIGH_CONFIDENCE_SCORE,
+  DOC_GRAPH_MIN_REPORT_SCORE,
   PROJECT_DOCS_INDEX_VERSION,
+  buildDocGraph,
   buildProjectDocumentEntry,
   documentIndexStats,
+  findOrphanDocPaths,
   isArchiveDocumentExpired,
   isIndexOnlyDocument,
   isProjectDocumentScanExcludedPath,
   normalizeDocPath,
   readProjectDocumentIndex,
+  recommendRelatedDocs,
   refreshProjectDocumentIndex,
   sortDocumentEntries,
+  toDocsRelatedDeclaredValue,
+  upsertFrontmatterRelated,
+  type DocGraph,
+  type DocGraphNode,
   type ProjectDocumentIndexEntry,
 } from '../utils/document-index.js';
 
@@ -37,7 +46,7 @@ import {
 
 export interface DocsOptions {
   cwd: string;
-  /** 子命令：scan | list | add | lint | search | doctor | fix */
+  /** 子命令：scan | list | add | lint | search | doctor | fix | graph */
   action?: string;
   /** add/search 命令的参数 */
   args?: string[];
@@ -51,6 +60,10 @@ export interface DocsOptions {
   dryRun?: boolean;
   /** JSON 格式输出 */
   json?: boolean;
+  /** graph: 半自动修复模式（写入高置信度唯一候选 + 重建 README 机器区） */
+  graphFix?: boolean;
+  /** graph: 输出 mermaid 全景关联图 */
+  mermaid?: boolean;
 }
 
 /** 从 markdown 中提取标题 */
@@ -385,12 +398,32 @@ async function docsAdd(cwd: string, args: string[]): Promise<void> {
   console.log(`   kind: ${kind}, scope: ${scope}, level: ${level}\n`);
 }
 
-/** docs lint / doctor — 巡检文档健康度：检查死链、空文件、缺少标题与索引对齐 */
+/**
+ * 确保索引处于图谱就绪状态（version 2 且含 related/backlinks）。
+ * 缺失或 version < 2 时自动刷新一次（一次性迁移，向后兼容 v1 读取）。
+ */
+async function ensureGraphReadyIndex(cwd: string): Promise<{ docpathDir: string; entries: ProjectDocumentIndexEntry[] } | null> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  let index = await readProjectDocumentIndex(docpathDir);
+  if (!index || index.version < PROJECT_DOCS_INDEX_VERSION) {
+    await refreshProjectDocumentIndex(docpathDir, cwd);
+    index = await readProjectDocumentIndex(docpathDir);
+  }
+  if (!index?.entries.length) return null;
+  return { docpathDir, entries: index.entries };
+}
+
+/** docs lint / doctor — 巡检文档健康度：检查死链、空文件、缺少标题与索引对齐（+ docs graph 孤立规则） */
 async function docsDoctor(cwd: string, agent = false, json = false): Promise<void> {
   const report = await diagnoseDocumentHealth(cwd);
 
+  // 孤立文档规则（孤立 = 无出链且无入链，error 级报告项）：
+  // 并入 docs lint 规则集输出；仅单向一条不算孤立，不告警。
+  const graphContext = await ensureGraphReadyIndex(cwd);
+  const orphanPaths = graphContext ? findOrphanDocPaths(graphContext.entries) : [];
+
   if (json) {
-    console.log(JSON.stringify(report, null, 2));
+    console.log(JSON.stringify({ ...report, orphan_docs: orphanPaths }, null, 2));
     return;
   }
 
@@ -402,6 +435,8 @@ async function docsDoctor(cwd: string, agent = false, json = false): Promise<voi
         healthy: report.healthy,
         scanned_count: report.scannedCount,
         indexed_count: report.indexedCount,
+        orphan_count: orphanPaths.length,
+        orphan_docs: orphanPaths,
         stats: report.stats,
         issues: report.issues.map((i) => ({
           file: i.file,
@@ -416,6 +451,14 @@ async function docsDoctor(cwd: string, agent = false, json = false): Promise<voi
   }
 
   console.log(renderDocHealthTable(report));
+
+  if (orphanPaths.length > 0) {
+    console.log('🕸️  孤立文档检测 (docs graph 规则: 孤立 = 无出链且无入链):');
+    for (const path of orphanPaths) {
+      console.log(`    ⚠️  孤立文档: ${path}`);
+    }
+    console.log('    💡 运行 `docpath docs graph` 查看推荐关联，`docpath docs graph --fix` 半自动修复。\n');
+  }
 }
 
 /** docs fix — 一键自愈修复活文档问题 */
@@ -542,6 +585,237 @@ async function docsSearch(cwd: string, query: string, agent = false): Promise<vo
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* docs graph — 文档关联图谱：报告 / 半自动修复 / mermaid 全景图        */
+/* ------------------------------------------------------------------ */
+
+/** 转义 mermaid 双引号标签中的特殊字符 */
+function escapeMermaidLabel(value: string): string {
+  return value.replace(/\\/g, '/').replace(/"/g, '&quot;').replace(/[\r\n]+/g, ' ').trim();
+}
+
+/** 渲染合法 mermaid graph：节点全量声明 + related 有向边（A --> B） */
+export function renderGraphMermaid(graph: DocGraph): string {
+  const lines: string[] = ['graph TD'];
+  const ids = new Map<string, string>();
+  graph.nodes.forEach((node, index) => {
+    const id = `n${index}`;
+    ids.set(node.path, id);
+    lines.push(`  ${id}["${escapeMermaidLabel(node.path)}"]`);
+  });
+  for (const node of graph.nodes) {
+    for (const target of node.related) {
+      const targetId = ids.get(target);
+      if (!targetId) continue;
+      lines.push(`  ${ids.get(node.path)} --> ${targetId}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+/** 按目录分类渲染 docs-index 机器区（docs/README.md 的 docpath:block，块外手工内容不动） */
+export function renderDocsIndexBlock(graph: DocGraph): string {
+  const groups = new Map<string, DocGraphNode[]>();
+  for (const node of graph.nodes) {
+    const dir = node.path === 'docs/README.md' || !node.path.slice('docs/'.length).includes('/')
+      ? 'docs/'
+      : `docs/${node.path.slice('docs/'.length).split('/')[0]}/`;
+    const bucket = groups.get(dir) || [];
+    bucket.push(node);
+    groups.set(dir, bucket);
+  }
+
+  const lines: string[] = [
+    '<!-- docpath:block docs-index -->',
+    '<!-- 由 `docpath docs graph --fix` 自动生成；块外内容手工维护，请勿编辑本机器区 -->',
+    '',
+    '## 文档关联图谱 (docs graph)',
+    '',
+    `> 全部 ${graph.nodes.length} 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。`,
+    '',
+  ];
+
+  for (const dir of Array.from(groups.keys()).sort((a, b) => a.localeCompare(b))) {
+    lines.push(`### ${dir}`);
+    lines.push('');
+    for (const node of groups.get(dir)!) {
+      const flags = [
+        node.orphan ? '⚠️ 孤立' : '',
+        `出 ${node.related.length}`,
+        `入 ${node.backlinks.length}`,
+      ].filter(Boolean).join(' / ');
+      const relLink = `./${node.path.replace(/^docs\//, '')}`;
+      lines.push(`- [${node.path}](${relLink}) — ${node.title} — ${flags}`);
+    }
+    lines.push('');
+  }
+
+  lines.push('<!-- /docpath:block -->');
+  return lines.join('\n');
+}
+
+/** 重建 docs/README.md 的 docpath:block docs-index 机器区；块外内容逐字节保留 */
+async function rebuildDocsIndexBlock(
+  docpathDir: string,
+  graph: DocGraph,
+): Promise<{ updated: boolean; readmePath: string }> {
+  const readmePath = join(dirname(resolve(docpathDir)), 'docs', 'README.md');
+  const blockStart = '<!-- docpath:block docs-index -->';
+  const blockEnd = '<!-- /docpath:block -->';
+  const block = renderDocsIndexBlock(graph);
+
+  if (!existsSync(readmePath)) {
+    await writeFile(readmePath, `${block}\n`, 'utf-8');
+    return { updated: true, readmePath };
+  }
+
+  const content = await readFile(readmePath, 'utf-8');
+  const start = content.indexOf(blockStart);
+  const end = start === -1 ? -1 : content.indexOf(blockEnd, start);
+  let next: string;
+  if (start !== -1 && end !== -1) {
+    next = content.slice(0, start) + block + content.slice(end + blockEnd.length);
+  } else {
+    // 块外内容逐字节保留：仅在文档缺尾部换行时补接缝，其余原样追加
+    const seam = content.endsWith('\n') ? '' : '\n\n';
+    next = content + seam + block + '\n';
+  }
+  const updated = next !== content;
+  if (updated) {
+    await writeFile(readmePath, next, 'utf-8');
+  }
+  return { updated, readmePath };
+}
+
+/** docs graph — 报告孤立清单 + 每篇出入链 + 推荐候选（带分数） */
+async function docsGraph(
+  cwd: string,
+  options: { graphFix?: boolean; mermaid?: boolean } = {},
+): Promise<void> {
+  const { graphFix = false, mermaid = false } = options;
+  const ready = await ensureGraphReadyIndex(cwd);
+  if (!ready) {
+    console.error('❌  未找到 docs-index.json 或索引为空。请先运行 `docpath docs scan`');
+    process.exit(1);
+  }
+  const { docpathDir, entries } = ready;
+  const projectRoot = dirname(resolve(docpathDir));
+
+  const graph = buildDocGraph(entries);
+  const recommendations = recommendRelatedDocs(entries, { minScore: DOC_GRAPH_MIN_REPORT_SCORE });
+
+  if (mermaid) {
+    console.log(renderGraphMermaid(graph));
+    return;
+  }
+
+  const orphans = graph.nodes.filter((node) => node.orphan);
+
+  if (!graphFix) {
+    const totalOut = graph.nodes.reduce((sum, node) => sum + node.related.length, 0);
+    const totalIn = graph.nodes.reduce((sum, node) => sum + node.backlinks.length, 0);
+    console.log('\n🕸️  文档关联图谱报告 (docs graph)');
+    console.log(`    节点: ${graph.nodes.length} | 出链: ${totalOut} | 入链: ${totalIn} | 孤立: ${orphans.length}`);
+    console.log('');
+
+    if (orphans.length > 0) {
+      console.log('  ⚠️  孤立文档 (无出链且无入链):');
+      for (const node of orphans) console.log(`    - ${node.path}`);
+      console.log('');
+    }
+
+    console.log('  🔗 关联明细 (出 → related / 入 ← backlinks):');
+    for (const node of graph.nodes) {
+      const flags = node.orphan ? ' [孤立]' : '';
+      console.log(`    - ${node.path}${flags}`);
+      console.log(`        出 ${node.related.length}: ${node.related.join(', ') || '—'}`);
+      console.log(`        入 ${node.backlinks.length}: ${node.backlinks.join(', ') || '—'}`);
+    }
+    console.log('');
+
+    console.log(`  💡 推荐候选 (content_terms Jaccard + 标题词重叠, 0..1):`);
+    let recommended = 0;
+    for (const node of graph.nodes) {
+      const candidates = recommendations.get(node.path) || [];
+      if (candidates.length === 0) continue;
+      recommended++;
+      console.log(`    - ${node.path}`);
+      for (const candidate of candidates) {
+        const highConfidence = candidate.score >= DOC_GRAPH_HIGH_CONFIDENCE_SCORE;
+        console.log(`        → ${candidate.path} (score ${candidate.score.toFixed(2)})${highConfidence ? ' ✓高置信' : ''}`);
+      }
+    }
+    if (recommended === 0) console.log('    - 无候选（可调阈值常量 DOC_GRAPH_HIGH_CONFIDENCE_SCORE）');
+    console.log('');
+    return;
+  }
+
+  // ---- docs graph --fix: 半自动修复 ----
+  const highConfidenceThreshold = DOC_GRAPH_HIGH_CONFIDENCE_SCORE;
+  const writtenLinks: Array<{ file: string; added: string[] }> = [];
+  const ambiguous: Array<{ file: string; candidates: Array<{ path: string; score: number }> }> = [];
+  const noCandidate: string[] = [];
+
+  for (const node of graph.nodes) {
+    const candidates = (recommendations.get(node.path) || []).filter((item) => item.score >= highConfidenceThreshold);
+    if (candidates.length === 0) {
+      const anyCandidate = (recommendations.get(node.path) || []).length > 0;
+      if (anyCandidate) noCandidate.push(node.path);
+      continue;
+    }
+    if (candidates.length > 1) {
+      ambiguous.push({ file: node.path, candidates });
+      continue;
+    }
+    // 高置信度唯一候选 → 自动写入该文档 frontmatter related（原文声明相对 docs/）
+    const target = candidates[0];
+    const absPath = join(projectRoot, node.path);
+    if (!existsSync(absPath)) continue;
+    const content = await readFile(absPath, 'utf-8');
+    const { content: nextContent, added } = upsertFrontmatterRelated(content, [
+      toDocsRelatedDeclaredValue(target.path),
+    ]);
+    if (added.length === 0) continue;
+    await writeFile(absPath, nextContent, 'utf-8');
+    writtenLinks.push({ file: node.path, added: added.map((item) => `docs/${item}`) });
+  }
+
+  // 写入 related 后刷新索引，使 README 机器区基于最新图谱
+  await refreshProjectDocumentIndex(docpathDir, cwd);
+  const refreshed = await readProjectDocumentIndex(docpathDir);
+  const freshGraph = buildDocGraph(refreshed?.entries || []);
+
+  // 重建 docs/README.md 机器区（块外内容逐字节保留）
+  await rebuildDocsIndexBlock(docpathDir, freshGraph);
+  // README 自身体积变化后再同步一次索引，保证 size/updated_at 一致
+  await refreshProjectDocumentIndex(docpathDir, cwd);
+
+  const remaining = recommendRelatedDocs(refreshed?.entries || [], { minScore: DOC_GRAPH_MIN_REPORT_SCORE });
+
+  console.log('\n🛠️  docs graph --fix 完成');
+  console.log(`    - 高置信度唯一候选写入 frontmatter related: ${writtenLinks.length} 篇`);
+  for (const item of writtenLinks) {
+    console.log(`      + ${item.file} → ${item.added.join(', ')}`);
+  }
+  console.log(`    - docs/README.md 机器区 (docpath:block docs-index): 已重建`);
+
+  const remainingList: string[] = [];
+  for (const node of freshGraph.nodes) {
+    const candidates = remaining.get(node.path) || [];
+    if (candidates.length === 0) continue;
+    remainingList.push(node.path);
+    console.log(`    - 低置信度候选 (需人工决策): ${node.path}`);
+    for (const candidate of candidates) {
+      const highConfidence = candidate.score >= highConfidenceThreshold;
+      console.log(`        → ${candidate.path} (score ${candidate.score.toFixed(2)})${highConfidence ? ' (多候选未自动写入)' : ''}`);
+    }
+  }
+  if (remainingList.length === 0 && ambiguous.length === 0) {
+    console.log('    - 无剩余低置信度候选');
+  }
+  console.log('');
+}
+
 async function docsSync(cwd: string, agent: boolean, json: boolean): Promise<void> {
   console.log('🔄  文档资产全量同步与自愈...\n');
   await docsFix(cwd, { dryRun: false, agent, json });
@@ -551,7 +825,7 @@ async function docsSync(cwd: string, agent: boolean, json: boolean): Promise<voi
 
 /** 主命令入口 */
 export async function docsCommand(options: DocsOptions): Promise<void> {
-  const { cwd, action, args = [], full = false, query, agent = false, dryRun = false, json = false } = options;
+  const { cwd, action, args = [], full = false, query, agent = false, dryRun = false, json = false, graphFix = false, mermaid = false } = options;
 
   switch (action) {
     case 'scan':
@@ -574,6 +848,9 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
     case 'fix':
     case 'repair':
       await docsFix(cwd, { dryRun, agent, json });
+      break;
+    case 'graph':
+      await docsGraph(cwd, { graphFix, mermaid });
       break;
     case 'search':
     case 'find':

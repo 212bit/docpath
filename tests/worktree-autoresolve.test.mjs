@@ -75,7 +75,8 @@ describe('worktree merge auto-resolution (R-345)', () => {
     assert.match(out, /worktree-merge 完成/);
     // 主仓合并后 docs-index.json 存在且为合法 JSON（已消解）
     const merged = JSON.parse(readFileSync(join(cwd, '.docpath', 'docs-index.json'), 'utf-8'));
-    assert.equal(merged.version, 1);
+    // R-439: docs-index schema version 1→2；消解走 refreshProjectDocumentIndex 重建，落盘为当前 schema 版本
+    assert.equal(merged.version, 2);
     // 主仓无 mid-merge 残留
     assert.equal(existsSync(join(cwd, '.git', 'MERGE_HEAD')), false);
     rmSync(cwd, { recursive: true, force: true });

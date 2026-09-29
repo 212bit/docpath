@@ -1,11 +1,18 @@
 import { existsSync, type Dirent } from 'node:fs';
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { basename, extname, join, resolve, sep, dirname, relative } from 'node:path';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { normalizeTopic } from './topic-synonyms.js';
 import { readDeclaredDocumentScanPaths } from './config.js';
 import { isExcludedForScan } from './scan-existing-tree.js';
 
-export const PROJECT_DOCS_INDEX_VERSION = 1;
+export const PROJECT_DOCS_INDEX_VERSION = 2;
+/** docs graph 高置信度阈值：唯一候选且 score ≥ 该值才允许 --fix 自动写入 frontmatter（工程自定值，可调） */
+export const DOC_GRAPH_HIGH_CONFIDENCE_SCORE = 0.15;
+/** docs graph 报告中推荐候选的最低展示分数（低于此值的候选不进报告，避免噪音） */
+export const DOC_GRAPH_MIN_REPORT_SCORE = 0.05;
+/** docs graph 报告中每篇文档最多展示的推荐候选数 */
+export const DOC_GRAPH_RECOMMEND_LIMIT = 3;
 export const DEFAULT_CONTEXT_TOKEN_BUDGET = 15000;
 export const ARCHIVE_RETENTION_DAYS = 180;
 export const ARCHIVE_RETENTION_MS = ARCHIVE_RETENTION_DAYS * 24 * 60 * 60 * 1000;
@@ -38,12 +45,40 @@ export interface ProjectDocumentIndexEntry {
   task_id?: string;
   topic_tags: string[];
   content_terms?: string[];
+  /** frontmatter `related` 原文声明（相对 docs/ 的路径），docs graph 关联图谱数据源 */
+  related?: string[];
+  /** 反向链接聚合：A.related 含 B ⇒ B.backlinks 含 A（仅索引层存在，绝不回写对方文件） */
+  backlinks?: string[];
 }
 
 export interface ProjectDocumentIndex {
   version: number;
   generated_at: string;
   entries: ProjectDocumentIndexEntry[];
+}
+
+/** docs graph 图谱节点：仅覆盖 docs/*.md 与 docs/ 一级子目录 md（范围红线） */
+export interface DocGraphNode {
+  path: string;
+  title: string;
+  /** 出链（解析自 frontmatter related，仅保留指向图谱内节点的有效边） */
+  related: string[];
+  /** frontmatter 原文声明，未做路径归一 */
+  declaredRelated: string[];
+  /** 入链（由全图 related 反推聚合，不落文件） */
+  backlinks: string[];
+  /** 孤立 = 无出链且无入链 */
+  orphan: boolean;
+}
+
+export interface DocGraph {
+  nodes: DocGraphNode[];
+  byPath: Map<string, DocGraphNode>;
+}
+
+export interface RelatedRecommendation {
+  path: string;
+  score: number;
 }
 
 export interface DocumentIndexBuildInput {
@@ -243,6 +278,229 @@ export function inferContentTerms(content: string): string[] {
   return Array.from(terms);
 }
 
+/* ------------------------------------------------------------------ */
+/* 文档关联图谱 (docs graph) — frontmatter related / backlinks / 推荐  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 容错解析 frontmatter `related` 声明。
+ * 无 frontmatter、空 related、非法 YAML、非字符串项一律返回空数组，绝不抛异常。
+ */
+export function parseFrontmatterRelated(content: string): string[] {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!match) return [];
+  try {
+    const fm: unknown = parseYaml(match[1] || '');
+    if (!fm || typeof fm !== 'object' || Array.isArray(fm)) return [];
+    const related = (fm as Record<string, unknown>).related;
+    if (typeof related === 'string') {
+      const value = related.trim();
+      return value ? [value] : [];
+    }
+    if (!Array.isArray(related)) return [];
+    return related
+      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      .map((item) => item.trim());
+  } catch {
+    return [];
+  }
+}
+
+/** docs graph 节点范围红线：仅 docs/ 一级（根 md + 一级子目录 md），更深嵌套与 .docpath/ 资产不入图 */
+export function isDocsGraphNodePath(filePath: string): boolean {
+  const normalized = normalizeDocPath(filePath);
+  return /^docs\/[^/]+\.md$/.test(normalized) || /^docs\/[^/]+\/[^/]+\.md$/.test(normalized);
+}
+
+/** 图谱节点路径 → frontmatter 声明值（相对 docs/ 的路径，原文约定） */
+export function toDocsRelatedDeclaredValue(nodePath: string): string {
+  return normalizeDocPath(nodePath).replace(/^docs\//, '');
+}
+
+/**
+ * 解析 related 声明为图谱节点路径。容错：http/锚点/越出 docs/（../）等一律返回 null。
+ * 声明值约定相对 docs/；同时兼容 './x.md' 与 'docs/x.md' 全写形式。
+ */
+export function resolveDocsRelatedTarget(value: string): string | null {
+  const raw = String(value ?? '').trim().replace(/\\/g, '/');
+  if (!raw) return null;
+  if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('#') || raw.startsWith('mailto:') || raw.includes('\0')) return null;
+  const rel = raw.replace(/^\.\//, '').replace(/^docs\//, '');
+  if (!rel || rel.startsWith('../') || rel.startsWith('/')) return null;
+  const candidate = normalizeDocPath(`docs/${rel}`);
+  return isDocsGraphNodePath(candidate) ? candidate : null;
+}
+
+/**
+ * 由索引条目构建关联图谱：
+ * - 节点集 = isDocsGraphNodePath 命中的条目
+ * - 出链 = frontmatter related 解析（非法路径与自引用静默丢弃）
+ * - 入链 = 全图 related 反推聚合（A.related 含 B ⇒ B.backlinks 含 A），绝不回写文件
+ * - orphan = 无出链且无入链
+ */
+export function buildDocGraph(entries: ProjectDocumentIndexEntry[]): DocGraph {
+  const byPath = new Map<string, DocGraphNode>();
+  const nodeEntries = new Map<string, ProjectDocumentIndexEntry>();
+
+  for (const entry of entries) {
+    if (!isDocsGraphNodePath(entry.path)) continue;
+    nodeEntries.set(entry.path, entry);
+    byPath.set(entry.path, {
+      path: entry.path,
+      title: entry.title || basename(entry.path, extname(entry.path)),
+      related: [],
+      declaredRelated: [],
+      backlinks: [],
+      orphan: true,
+    });
+  }
+
+  for (const entry of nodeEntries.values()) {
+    const source = byPath.get(entry.path)!;
+    const declared = Array.isArray(entry.related) ? entry.related : [];
+    source.declaredRelated = [...declared];
+    for (const value of declared) {
+      const target = resolveDocsRelatedTarget(value);
+      if (!target || target === entry.path) continue;
+      const targetNode = byPath.get(target);
+      if (!targetNode) continue;
+      if (!source.related.includes(target)) source.related.push(target);
+      if (!targetNode.backlinks.includes(entry.path)) targetNode.backlinks.push(entry.path);
+    }
+  }
+
+  for (const node of byPath.values()) {
+    node.orphan = node.related.length === 0 && node.backlinks.length === 0;
+  }
+
+  return {
+    nodes: Array.from(byPath.values()).sort((a, b) => a.path.localeCompare(b.path)),
+    byPath,
+  };
+}
+
+/** 孤立文档路径清单（无出链且无入链，error 级报告项） */
+export function findOrphanDocPaths(entries: ProjectDocumentIndexEntry[]): string[] {
+  return buildDocGraph(entries).nodes.filter((node) => node.orphan).map((node) => node.path);
+}
+
+/**
+ * 推荐相似度（纯本地、零 LLM）：
+ * score = min(1, content_terms 交集 Jaccard + 0.5 × 标题词重叠)
+ * 归一到 0..1；两端均为空集合时分量记 0。
+ */
+export function relatedDocScore(a: ProjectDocumentIndexEntry, b: ProjectDocumentIndexEntry): number {
+  const termsA = new Set((a.content_terms || []).filter(Boolean));
+  const termsB = new Set((b.content_terms || []).filter(Boolean));
+  let shared = 0;
+  for (const term of termsA) {
+    if (termsB.has(term)) shared++;
+  }
+  const unionSize = new Set([...termsA, ...termsB]).size;
+  const jaccard = unionSize === 0 ? 0 : shared / unionSize;
+
+  const titleA = new Set(normalizedWordTags(a.title || ''));
+  const titleB = new Set(normalizedWordTags(b.title || ''));
+  const smaller = Math.min(titleA.size, titleB.size);
+  let titleShared = 0;
+  for (const word of titleA) {
+    if (titleB.has(word)) titleShared++;
+  }
+  const titleOverlap = smaller === 0 ? 0 : titleShared / smaller;
+
+  return Math.min(1, jaccard + 0.5 * titleOverlap);
+}
+
+/**
+ * 关联推荐：对每个图谱节点给出候选（排除自引用与已存在关联 related/backlinks），
+ * 按 score 降序取前 limit 个；score 低于 minScore 的候选不出现在结果中。
+ */
+export function recommendRelatedDocs(
+  entries: ProjectDocumentIndexEntry[],
+  options: { limit?: number; minScore?: number } = {},
+): Map<string, RelatedRecommendation[]> {
+  const limit = options.limit ?? DOC_GRAPH_RECOMMEND_LIMIT;
+  const minScore = options.minScore ?? DOC_GRAPH_MIN_REPORT_SCORE;
+  const graph = buildDocGraph(entries);
+  const nodes = entries.filter((entry) => isDocsGraphNodePath(entry.path));
+  const result = new Map<string, RelatedRecommendation[]>();
+
+  for (const entry of nodes) {
+    const node = graph.byPath.get(entry.path);
+    const linked = new Set<string>([...(node?.related || []), ...(node?.backlinks || [])]);
+    const candidates: RelatedRecommendation[] = [];
+    for (const other of nodes) {
+      if (other.path === entry.path || linked.has(other.path)) continue;
+      const score = relatedDocScore(entry, other);
+      if (score >= minScore) {
+        candidates.push({ path: other.path, score: Math.round(score * 1000) / 1000 });
+      }
+    }
+    candidates.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
+    result.set(entry.path, candidates.slice(0, limit));
+  }
+
+  return result;
+}
+
+/**
+ * 在 markdown 内容上安全写入 frontmatter `related`（合并去重，排除已存在关联）。
+ * - 已有 frontmatter：仅重写 frontmatter 区，正文逐字节保留；YAML 不可安全改写时原样返回
+ * - 无 frontmatter：前置新增 frontmatter 块，原文逐字节保留
+ * 返回 added 为空表示未发生任何写入。
+ */
+export function upsertFrontmatterRelated(
+  content: string,
+  relatedToAdd: string[],
+): { content: string; added: string[] } {
+  const normalizedKey = (value: string): string =>
+    String(value ?? '').trim().replace(/\\/g, '/').replace(/^\.\//, '').replace(/^docs\//, '');
+  const seen = new Set<string>();
+  const additions: string[] = [];
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+
+  if (match) {
+    for (const item of parseFrontmatterRelated(content)) seen.add(normalizedKey(item));
+    for (const raw of relatedToAdd) {
+      const key = normalizedKey(raw);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      additions.push(key);
+    }
+    if (additions.length === 0) return { content, added: [] };
+
+    let fm: Record<string, unknown>;
+    try {
+      const parsed: unknown = parseYaml(match[1] || '');
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { content, added: [] };
+      fm = parsed as Record<string, unknown>;
+    } catch {
+      return { content, added: [] };
+    }
+
+    const current = Array.isArray(fm.related)
+      ? fm.related.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim())
+      : typeof fm.related === 'string' && fm.related.trim()
+        ? [fm.related.trim()]
+        : [];
+    fm.related = [...current, ...additions];
+
+    const body = content.slice(match[0].length);
+    return { content: `---\n${stringifyYaml(fm).trim()}\n---\n${body}`, added: additions };
+  }
+
+  for (const raw of relatedToAdd) {
+    const key = normalizedKey(raw);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    additions.push(key);
+  }
+  if (additions.length === 0) return { content, added: [] };
+
+  const block = ['---', 'related:', ...additions.map((item) => `  - ${item}`), '---', ''].join('\n');
+  return { content: `${block}\n${content}`, added: additions };
+}
+
 export function shouldDefaultReadDocPath(filePath: string, _currentTaskId?: string, hasPreferredRules = false): boolean {
   const normalized = normalizeDocPath(filePath);
 
@@ -299,6 +557,7 @@ export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): Proje
     task_id: taskId,
     topic_tags: inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId }),
     content_terms: archive ? [] : inferContentTerms(input.content),
+    related: parseFrontmatterRelated(input.content),
   };
 }
 
@@ -348,6 +607,8 @@ export function normalizeProjectDocumentEntry(
       ? raw.topic_tags
       : inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId }),
     content_terms: Array.isArray(raw.content_terms) ? raw.content_terms.filter((term) => typeof term === 'string') : [],
+    related: Array.isArray(raw.related) ? raw.related.filter((item): item is string => typeof item === 'string') : [],
+    backlinks: Array.isArray(raw.backlinks) ? raw.backlinks.filter((item): item is string => typeof item === 'string') : [],
   };
 }
 
@@ -727,6 +988,13 @@ function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unk
   if (!isArchive && entry.content_terms && entry.content_terms.length > 0) {
     compact.content_terms = entry.content_terms.slice(0, 16);
   }
+  // docs graph（version 2）：related/backlinks 仅在非空时落盘，避免全量空数组膨胀索引
+  if (Array.isArray(entry.related) && entry.related.length > 0) {
+    compact.related = entry.related;
+  }
+  if (Array.isArray(entry.backlinks) && entry.backlinks.length > 0) {
+    compact.backlinks = entry.backlinks;
+  }
   if (entry.generated_view === true) compact.generated_view = true;
   if (entry.index_only === true) compact.index_only = true;
   if (entry.stale === true) compact.stale = true;
@@ -736,7 +1004,13 @@ function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unk
 
 async function writeDocsIndexes(docpathDir: string, entries: ProjectDocumentIndexEntry[]): Promise<string> {
   const docsIndexPath = join(docpathDir, 'docs-index.json');
-  const compactEntries = entries.map(compactIndexEntry);
+  // backlinks 是跨条目聚合视图，落盘前按 related 全图反推（仅索引层存在，绝不回写文档文件）
+  const graph = buildDocGraph(entries);
+  const compactEntries = entries.map((entry) => {
+    const node = graph.byPath.get(entry.path);
+    if (!node) return compactIndexEntry(entry);
+    return compactIndexEntry({ ...entry, backlinks: [...node.backlinks] });
+  });
   await writeFile(
     docsIndexPath,
     `${JSON.stringify({

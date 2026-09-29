@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-docs","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 docs网状关联","timestamp":"2026-09-29T03:15:19.906Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-docs","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 docs网状关联","timestamp":"2026-09-29T03:17:31.189Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-docs","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-29T03:48:51.263Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-docs","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-29T03:50:25.593Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-docs","step":"check","status":"done","context":"质量检查通过 (13 项)","timestamp":"2026-09-29T03:56:20.255Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-docs","step":"review","status":"done","context":"代码审查: 0 错误, 8 警告, 0 提示","timestamp":"2026-09-29T03:56:21.514Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-docs","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-29T03:56:22.981Z"}

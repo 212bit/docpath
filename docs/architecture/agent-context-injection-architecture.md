@@ -1,3 +1,8 @@
+---
+related:
+  - design/agent-integration.md
+---
+
 # Agent 零点击上下文随路注入与智能路由体系架构
 
 > **定位**：解决 Agent 辅助编程中的「行动偏差（Action Bias）」、「上下文爆炸（Token Bloat）」与「架构红线违背（Invariant Breaking）」三大核心难题，确保架构共识与历史踩坑经验 100% 确定性触达 Agent。
