@@ -57,6 +57,8 @@ export interface DocsOptions {
   by?: string;
   /** 状态变更或归档原因 */
   reason?: string;
+  /** 状态过滤 (active | wip | deprecated) */
+  status?: string;
   /** list: print the full generated docs.md table */
   full?: boolean;
   /** search/find 关键词 */
@@ -291,17 +293,30 @@ async function docsScan(cwd: string): Promise<void> {
   console.log('');
 }
 
-function renderCompactDocsList(entries: ProjectDocumentIndexEntry[]): string {
-  const stats = documentIndexStats(entries);
-  const indexOnlyCount = entries.filter(isIndexOnlyDocument).length;
-  const highSignal = sortDocumentEntries(entries)
+function renderCompactDocsList(entries: ProjectDocumentIndexEntry[], filterStatus?: string): string {
+  let filtered = entries;
+  if (filterStatus) {
+    const s = filterStatus.trim().toLowerCase();
+    filtered = entries.filter((e) => (e.status || (e.archive ? 'deprecated' : 'active')) === s);
+  }
+
+  const stats = documentIndexStats(filtered);
+  const indexOnlyCount = filtered.filter(isIndexOnlyDocument).length;
+
+  const activeCount = entries.filter((e) => (e.status || (e.archive ? 'deprecated' : 'active')) === 'active').length;
+  const wipCount = entries.filter((e) => e.status === 'wip').length;
+  const deprecatedCount = entries.filter((e) => (e.status === 'deprecated' || e.archive)).length;
+
+  const highSignal = sortDocumentEntries(filtered)
     .filter((entry) => !isIndexOnlyDocument(entry))
-    .slice(0, 12);
+    .slice(0, 15);
+
   const lines: string[] = [
     '',
-    '📚  DocPath 文档索引摘要',
+    `📚  DocPath 文档索引摘要${filterStatus ? ` [过滤状态: ${filterStatus}]` : ''}`,
     '',
     `  total_docs: ${stats.total}`,
+    `  lifecycle: 🟢 Active: ${activeCount} | 🟡 WIP: ${wipCount} | 🔴 Deprecated: ${deprecatedCount}`,
     `  default_read_docs: ${stats.defaultRead} (~${stats.defaultReadTokens} tokens)`,
     `  archive_docs: ${stats.archive}`,
     `  generated_or_index_only_docs: ${indexOnlyCount}`,
@@ -310,7 +325,9 @@ function renderCompactDocsList(entries: ProjectDocumentIndexEntry[]): string {
   ];
 
   for (const entry of highSignal) {
+    const statusTag = entry.status || (entry.archive ? 'deprecated' : 'active');
     const flags = [
+      statusTag,
       entry.default_read ? 'default' : '',
       entry.archive ? 'archive' : '',
       entry.task_id ? `task:${entry.task_id}` : '',
@@ -318,7 +335,7 @@ function renderCompactDocsList(entries: ProjectDocumentIndexEntry[]): string {
     lines.push(`    - ${entry.path} [${flags}] ~${entry.token_estimate} tokens — ${entry.summary || entry.title}`);
   }
 
-  if (highSignal.length === 0) lines.push('    - 无');
+  if (highSignal.length === 0) lines.push('    - 无匹配文档');
   lines.push('');
   lines.push('  完整表格: docpath docs list --full');
   lines.push('');
@@ -326,7 +343,7 @@ function renderCompactDocsList(entries: ProjectDocumentIndexEntry[]): string {
 }
 
 /** docs list — 列出注册文档摘要，--full 输出完整 human table（R-336: 从索引渲染，docs.md 已下线） */
-async function docsList(cwd: string, full = false): Promise<void> {
+async function docsList(cwd: string, full = false, status?: string): Promise<void> {
   const docpathDir = await resolveDocpathDir(cwd);
   const index = await readProjectDocumentIndex(docpathDir);
 
@@ -335,12 +352,18 @@ async function docsList(cwd: string, full = false): Promise<void> {
     process.exit(1);
   }
 
+  let entries = index.entries;
+  if (status) {
+    const s = status.trim().toLowerCase();
+    entries = entries.filter((e) => (e.status || (e.archive ? 'deprecated' : 'active')) === s);
+  }
+
   if (!full) {
-    console.log(renderCompactDocsList(index.entries));
+    console.log(renderCompactDocsList(index.entries, status));
     return;
   }
 
-  console.log(generateDocsMd(index.entries as ProjectDocumentIndexEntry[]));
+  console.log(generateDocsMd(entries as ProjectDocumentIndexEntry[]));
 }
 
 /** docs add — 添加文档到索引（R-336: 纯索引操作；旧实现只写 docs.md 表格行，会被下次 scan 冲掉） */
@@ -933,7 +956,7 @@ async function docsSync(cwd: string, agent: boolean, json: boolean): Promise<voi
 
 /** 主命令入口 */
 export async function docsCommand(options: DocsOptions): Promise<void> {
-  const { cwd, action, args = [], by, reason, full = false, query, agent = false, dryRun = false, json = false, graphFix = false, mermaid = false } = options;
+  const { cwd, action, args = [], by, reason, status, full = false, query, agent = false, dryRun = false, json = false, graphFix = false, mermaid = false } = options;
 
   switch (action) {
     case 'scan':
@@ -943,7 +966,7 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
       await docsSync(cwd, agent, json);
       break;
     case 'list':
-      await docsList(cwd, full);
+      await docsList(cwd, full, status);
       break;
     case 'add':
       await docsAdd(cwd, args);

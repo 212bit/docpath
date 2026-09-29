@@ -1067,6 +1067,8 @@ function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unk
   };
 
   if (entry.task_id) compact.task_id = entry.task_id;
+  if (entry.status) compact.status = entry.status;
+  if (entry.deprecated_by) compact.deprecated_by = entry.deprecated_by;
   if (!isArchive && entry.content_terms && entry.content_terms.length > 0) {
     compact.content_terms = entry.content_terms.slice(0, 16);
   }

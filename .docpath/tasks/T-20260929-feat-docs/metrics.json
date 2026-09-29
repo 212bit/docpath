@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-feat-docs",
+  "taskTitle": "T-20260929-feat-docs - feat(docs): 增加代码引用漂移检测与文档状态过滤列表能力",
+  "backlogId": "R-446",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-29T16:17:36.339Z",
+  "completedAt": "2026-09-29T16:25:07.739Z",
+  "durationMinutes": 7.5,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 753,
+  "filesChanged": 15,
+  "linesAdded": 720,
+  "linesDeleted": 33,
+  "engineering": {
+    "turnCount": 8,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 7.5,
+    "filesChanged": 15,
+    "linesAdded": 720,
+    "linesDeleted": 33,
+    "totalDiffLines": 753,
+    "speedLinesPerMinute": 100.4
+  },
+  "protocol": {
+    "specTokens": 911,
+    "planTokens": 354,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3065
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 26655,
+    "outputTokens": 11423,
+    "totalTokens": 38078,
+    "toolCallsCount": 55
+  }
+}

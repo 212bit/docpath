@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-09-29T15:49:26.787Z",
-    "updated_at": "2026-09-29T15:49:26.787Z",
-    "content_sha256": "e5e09f7f68f24ee31a7a4062dcabe07e4eefdb14992cedcd60675ac3d0ae5d8d"
+    "created_at": "2026-09-29T15:50:01.456Z",
+    "updated_at": "2026-09-29T15:50:01.456Z",
+    "content_sha256": "77799bd7f837ea443d79dd6352b0ba2469b4decfa03354cd588961ce42c2d84b"
   },
   "title": "执行计划",
-  "generated_at": "2026-09-29T15:49:26.787Z",
+  "generated_at": "2026-09-29T15:50:01.456Z",
   "steps": [
     {
       "id": "S1",
@@ -24,7 +24,7 @@
       "description": "落地 FR-2: 索引管理引擎，并完成模块定向自验。",
       "acceptance": "AC-2: 索引管理引擎 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-445 与任务 T-20260929-feat-docs-docpath-docs 建立双向关联",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

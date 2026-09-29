@@ -1,0 +1,4 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs","step":"S1","status":"in_progress","context":"go --accept-dirty: start --adopt: claim workspace edits","timestamp":"2026-09-29T16:17:36.339Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 增加代码引用漂移检测","timestamp":"2026-09-29T16:17:36.344Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-29T16:22:25.994Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 文档状态过滤列表能力","timestamp":"2026-09-29T16:22:26.397Z","sessionId":"default"}

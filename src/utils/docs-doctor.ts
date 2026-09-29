@@ -26,6 +26,7 @@ import {
 export type DocIssueType =
   | 'broken-link'
   | 'deprecated-reference'
+  | 'code-drift'
   | 'empty-doc'
   | 'missing-heading'
   | 'unindexed'
@@ -56,6 +57,7 @@ export interface DocHealthReport {
   stats: {
     brokenLinks: number;
     deprecatedReferences: number;
+    codeDrift: number;
     unindexed: number;
     missingHeadings: number;
     emptyDocs: number;
@@ -106,6 +108,33 @@ async function collectMarkdownFiles(dir: string): Promise<string[]> {
 }
 
 /**
+ * 递归收集源码与测试文件
+ */
+async function collectSourceFiles(dir: string): Promise<string[]> {
+  const results: string[] = [];
+  if (!existsSync(dir)) return results;
+
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules' && entry.name !== 'dist' && !entry.name.startsWith('.')) {
+          const sub = await collectSourceFiles(full);
+          results.push(...sub);
+        }
+      } else if (entry.isFile()) {
+        results.push(full);
+      }
+    }
+  } catch {
+    // 忽略权限错误
+  }
+
+  return results;
+}
+
+/**
  * 诊断活文档全景健康度
  */
 export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthReport> {
@@ -130,6 +159,19 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
   const rootReadme = join(projectRoot, 'README.md');
   if (existsSync(rootReadme)) {
     allMarkdownAbsPaths.add(rootReadme);
+  }
+
+  // 收集源码文件全集用于代码引用漂移检测
+  const sourceDirs = ['src', 'tests', 'lib', 'pkg', 'cmd'].map((d) => join(projectRoot, d));
+  const allSourceAbsPaths: string[] = [];
+  for (const d of sourceDirs) {
+    const sFiles = await collectSourceFiles(d);
+    allSourceAbsPaths.push(...sFiles);
+  }
+
+  const allSourceFilesBaseMap = new Map<string, string>(); // basename -> absPath
+  for (const sAbs of allSourceAbsPaths) {
+    allSourceFilesBaseMap.set(basename(sAbs).toLowerCase(), sAbs);
   }
 
   // 收集可用于死链重定向匹配的目标全集
@@ -265,6 +307,39 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
               originalText,
               originalTarget: linkTarget,
               suggestedTarget,
+            },
+          });
+        }
+      }
+
+      // 源码与代码引用漂移检查 (Code Drift Check)
+      const codeRefRegex = /`((?:src|tests|lib|cmd|pkg|internal|core)\/[a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)`/g;
+      let codeMatch: RegExpExecArray | null;
+      while ((codeMatch = codeRefRegex.exec(content)) !== null) {
+        const codeRef = codeMatch[1].trim();
+        if (codeRef.includes('*') || codeRef.includes('{')) continue;
+
+        const absCodePath = resolve(projectRoot, codeRef);
+        if (!existsSync(absCodePath)) {
+          const codeBase = basename(codeRef).toLowerCase();
+          const candidateCodeAbs = allSourceFilesBaseMap.get(codeBase);
+          let suggestedCodeTarget: string | undefined;
+
+          if (candidateCodeAbs && existsSync(candidateCodeAbs)) {
+            suggestedCodeTarget = normalizeDocPath(relative(projectRoot, candidateCodeAbs));
+          }
+
+          issues.push({
+            file: rel,
+            absPath: abs,
+            type: 'code-drift',
+            message: `代码引用漂移: \`${codeRef}\` 在源码目录中不存在`,
+            autoFixable: !!suggestedCodeTarget,
+            fixDetail: suggestedCodeTarget ? `更新代码引用为: \`${suggestedCodeTarget}\`` : '源码文件已删除或已重构',
+            linkData: {
+              originalText: codeRef,
+              originalTarget: codeRef,
+              suggestedTarget: suggestedCodeTarget,
             },
           });
         }
@@ -472,6 +547,7 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
   const stats = {
     brokenLinks: issues.filter((i) => i.type === 'broken-link').length,
     deprecatedReferences: issues.filter((i) => i.type === 'deprecated-reference').length,
+    codeDrift: issues.filter((i) => i.type === 'code-drift').length,
     unindexed: issues.filter((i) => i.type === 'unindexed').length,
     missingHeadings: issues.filter((i) => i.type === 'missing-heading').length,
     emptyDocs: issues.filter((i) => i.type === 'empty-doc').length,
@@ -568,7 +644,31 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     }
   }
 
-  // 3. 修复 Backlog 游离文件移动与证据死链自愈
+  // 3. 修复代码引用漂移 (Code Drift)
+  const codeDriftIssues = report.issues.filter((i) => i.type === 'code-drift' && i.autoFixable && i.linkData?.suggestedTarget);
+  for (const issue of codeDriftIssues) {
+    try {
+      const content = (await readFileSafe(issue.absPath)) || '';
+      const oldCodeRef = `\`${issue.linkData!.originalTarget}\``;
+      const newCodeRef = `\`${issue.linkData!.suggestedTarget}\``;
+      if (content.includes(oldCodeRef)) {
+        const updated = content.replaceAll(oldCodeRef, newCodeRef);
+        if (!dryRun) {
+          await writeFile(issue.absPath, updated, 'utf-8');
+        }
+        repairedLinks.push({
+          file: issue.file,
+          from: issue.linkData!.originalTarget,
+          to: issue.linkData!.suggestedTarget!,
+        });
+        fixedCount++;
+      }
+    } catch {
+      // 容错
+    }
+  }
+
+  // 4. 修复 Backlog 游离文件移动与证据死链自愈
   for (const issue of report.issues) {
     if (issue.type === 'backlog-misplaced' && issue.autoFixable && issue.linkData?.suggestedTarget) {
       try {
@@ -613,7 +713,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     }
   }
 
-  // 4. 刷新活文档索引 (如果有未索引或幽灵索引条目)
+  // 5. 刷新活文档索引 (如果有未索引或幽灵索引条目)
   const needsIndexRefresh = report.stats.unindexed > 0 || report.stats.staleIndex > 0;
   if (needsIndexRefresh) {
     if (!dryRun) {
@@ -623,7 +723,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     fixedCount += report.stats.unindexed + report.stats.staleIndex;
   }
 
-  // 5. 重新诊断剩余未自愈问题
+  // 6. 重新诊断剩余未自愈问题
   const afterReport = dryRun ? report : await diagnoseDocumentHealth(cwd);
 
   return {
@@ -655,6 +755,7 @@ export function renderDocHealthTable(report: DocHealthReport): string {
   lines.push('');
   lines.push(`  - 死链检查 (Broken Links)             : ${report.stats.brokenLinks === 0 ? '✅ 0 处断链' : `❌ ${report.stats.brokenLinks} 处断链`}`);
   lines.push(`  - 废弃引用 (Deprecated Reference)     : ${report.stats.deprecatedReferences === 0 ? '✅ 无过期引用' : `⚠️  ${report.stats.deprecatedReferences} 处引用已废弃文档`}`);
+  lines.push(`  - 代码引用漂移 (Code Drift)           : ${report.stats.codeDrift === 0 ? '✅ 路径完全对齐' : `⚠️  ${report.stats.codeDrift} 处源码引用失效`}`);
   lines.push(`  - 未索引文档 (Unindexed)              : ${report.stats.unindexed === 0 ? '✅ 全部同步' : `⚠️  ${report.stats.unindexed} 个文档未入索引`}`);
   lines.push(`  - 缺失一级标题 (Missing H1)           : ${report.stats.missingHeadings === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.missingHeadings} 个文档缺少 H1`}`);
   lines.push(`  - 空白占位文档 (Empty Docs)           : ${report.stats.emptyDocs === 0 ? '✅ 无空文档' : `⚠️  ${report.stats.emptyDocs} 个空文档`}`);

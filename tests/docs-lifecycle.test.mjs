@@ -41,6 +41,9 @@ function mkWorkspace() {
     '---\nstatus: active\n---\n\n# Caller Feature\n\nSee [Old Feature](./old-feature.md) for background.\n',
   );
 
+  // Initial scan to build docs-index.json
+  execSync(`node ${BIN} docs scan`, { cwd, encoding: 'utf-8' });
+
   return cwd;
 }
 
@@ -93,6 +96,52 @@ describe('docpath docs lifecycle & archive commands', () => {
       const content = readFileSync(archivePath, 'utf-8');
       assert.match(content, /status: deprecated/);
       assert.match(content, /deprecated_by: docs\/features\/draft-feature\.md/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('detects and heals code path drift with docs doctor and fix', () => {
+    const cwd = mkWorkspace();
+    try {
+      // Create real source file in new location
+      mkdirSync(join(cwd, 'src', 'engine'), { recursive: true });
+      writeFileSync(join(cwd, 'src', 'engine', 'state-machine.ts'), 'export const state = 1;\n');
+
+      // Create doc referencing old moved path `src/utils/state-machine.ts`
+      writeFileSync(
+        join(cwd, 'docs', 'features', 'drift-doc.md'),
+        '# Drift Doc\n\nReference to old path: `src/utils/state-machine.ts` in details.\n',
+      );
+
+      const doctorOut = run('docs doctor', cwd);
+      assert.match(doctorOut, /代码引用漂移 \(Code Drift\)/);
+      assert.match(doctorOut, /drift-doc\.md/);
+      assert.match(doctorOut, /state-machine\.ts/);
+
+      // Run docs fix to auto-heal
+      const fixOut = run('docs fix', cwd);
+      assert.match(fixOut, /活文档自愈修复完成/);
+
+      const fixedContent = readFileSync(join(cwd, 'docs', 'features', 'drift-doc.md'), 'utf-8');
+      assert.match(fixedContent, /`src\/engine\/state-machine\.ts`/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('filters document list by lifecycle status', () => {
+    const cwd = mkWorkspace();
+    try {
+      const activeOut = run('docs list --status active', cwd);
+      assert.match(activeOut, /过滤状态: active/);
+      assert.match(activeOut, /- docs\/features\/active-feature\.md/);
+      assert.doesNotMatch(activeOut, /- docs\/features\/old-feature\.md/);
+
+      const depOut = run('docs list --status deprecated', cwd);
+      assert.match(depOut, /过滤状态: deprecated/);
+      assert.match(depOut, /- docs\/features\/old-feature\.md/);
+      assert.doesNotMatch(depOut, /- docs\/features\/active-feature\.md/);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
