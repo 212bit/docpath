@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-29T11:09:12.872Z",
+    "updated_at": "2026-09-29T11:09:12.872Z",
+    "content_sha256": "5286c3a3e314ee20d8ae571762efc9355db58039f9f6963953c5d5166d4fa315"
+  },
+  "task_id": "T-20260929-fix-backlog-getmarkdownsection-ac",
+  "backlog_id": "R-442",
+  "title": "T-20260929-fix-backlog-getmarkdownsection-ac - fix(backlog): 修复 getMarkdownSection 解析被三级子标题过早截断及 AC 换行断裂缺陷",
+  "generated_at": "2026-09-29T11:09:12.872Z",
+  "scope": {
+    "included": [
+      "fix(backlog): 修复 getMarkdownSection 解析被三级子标题过早截断及 AC 换行断裂缺陷"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 实战 R-099 发现 backlog markdown 解析器存在两处缺陷：\n- 目标: fix(backlog): 修复 getMarkdownSection 解析被三级子标题过早截断及 AC 换行断裂缺陷\n- 背景: 来自 backlog R-442\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "`getMarkdownSection` 正则 `/^#{1,3}\\s+\\S/m` 在遇到 `###` 子标题时会误将二级章节截断，导致正文为空触发门禁误报。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "`parseBacklogBody` 对多行带缩进换行的 AC 按行硬切导致条目断裂。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "[ ] `getMarkdownSection` 解析 `##` 章节时正确包含 `###` 子标题内容，仅在遇到下一个 `##` 或 `#` 时截断",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "[ ] `replaceMarkdownSection` 正确处理包含 `###` 子标题的章节替换",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "[ ] AC 解析支持多行缩进内容合并为单条验收标准",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "[ ] 补充对应的单元测试并通过质量门禁",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "backlog 条目 R-442 与任务 T-20260929-fix-backlog-getmarkdownsection-ac 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "实战 R-099 发现 backlog markdown 解析器存在两处缺陷：",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

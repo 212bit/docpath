@@ -175,7 +175,7 @@ async function readBacklogBodyFile(cwd: string, bodyFile: string): Promise<strin
   return content.trim();
 }
 
-function getMarkdownSection(body: string, title: string): string | null {
+export function getMarkdownSection(body: string, title: string): string | null {
   const normalized = body.replace(/\r\n/g, '\n').trim();
   const sectionRegex = new RegExp(`^##\\s+(?:\\d+\\.\\s*)?.*${title}.*$`, 'm');
   const match = normalized.match(sectionRegex);
@@ -185,7 +185,7 @@ function getMarkdownSection(body: string, title: string): string | null {
   const headerLen = match[0].length;
   const contentStartIndex = startIndex + headerLen;
 
-  const nextHeadingRegex = /^#{1,3}\s+\S/m;
+  const nextHeadingRegex = /^#{1,2}\s+\S/m;
   const rest = normalized.slice(contentStartIndex);
   const nextMatch = rest.match(nextHeadingRegex);
 
@@ -196,7 +196,7 @@ function getMarkdownSection(body: string, title: string): string | null {
   return normalized.slice(contentStartIndex, contentEndIndex).trim();
 }
 
-function replaceMarkdownSection(body: string, title: string, content: string): string {
+export function replaceMarkdownSection(body: string, title: string, content: string): string {
   const normalized = body.replace(/\r\n/g, '\n').trim();
   const sectionRegex = new RegExp(`^##\\s+(?:\\d+\\.\\s*)?.*${title}.*$`, 'm');
   const match = normalized.match(sectionRegex);
@@ -208,7 +208,7 @@ function replaceMarkdownSection(body: string, title: string, content: string): s
   const headerLen = match[0].length;
   const contentStartIndex = startIndex + headerLen;
 
-  const nextHeadingRegex = /^#{1,3}\s+\S/m;
+  const nextHeadingRegex = /^#{1,2}\s+\S/m;
   const rest = normalized.slice(contentStartIndex);
   const nextMatch = rest.match(nextHeadingRegex);
 
@@ -868,6 +868,38 @@ export function extractFunctionalRequirements(item: BacklogItem): BacklogCheckli
   ];
 }
 
+export function parseMultilineListItems(text: string): string[] {
+  const items: string[] = [];
+  const lines = text.split('\n');
+  let current = '';
+
+  for (const line of lines) {
+    const listMatch = line.match(/^\s*(?:[-*+]|\d+\.)(?:\s+\[[ xX]\])?\s+(.+)$/);
+    if (listMatch) {
+      if (current.trim()) {
+        items.push(current.trim());
+      }
+      current = listMatch[1].trim();
+    } else if (current) {
+      const trimmed = line.trim();
+      if (trimmed) {
+        current += ' ' + trimmed;
+      }
+    } else {
+      const trimmed = line.trim();
+      if (trimmed) {
+        current = trimmed;
+      }
+    }
+  }
+
+  if (current.trim()) {
+    items.push(current.trim());
+  }
+
+  return items;
+}
+
 function renderPromotedSpec(item: BacklogItem, taskId: string, cwd?: string): string {
   const parsed = parseBacklogBody(item.body);
   const evidenceSection = renderEvidenceSummary(item.evidence);
@@ -885,10 +917,8 @@ function renderPromotedSpec(item: BacklogItem, taskId: string, cwd?: string): st
   // 验收标准：优先从 body 解析出的 acceptance，否则根据 FR 生成结构化 AC
   const acceptanceLines: string[] = [];
   if (parsed.acceptance) {
-    // 将 body 中的验收内容转为 AC 条目，并去重 AC-1: 前缀
-    const rawItems = parsed.acceptance
-      .split('\n')
-      .map((l) => l.replace(/^\s*(\d+\.\s*|[-*]\s*)+/, '').trim())
+    // 将 body 中的验收内容转为 AC 条目，并去重 AC-1: 前缀，支持多行缩进合并
+    const rawItems = parseMultilineListItems(parsed.acceptance)
       .filter((l) => l && !isPlaceholderValue(l));
 
     const isGenericOnly = rawItems.length > 0 && rawItems.every((line) =>

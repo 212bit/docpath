@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-fix-backlog-getmarkdownsection-ac",
+  "taskTitle": "T-20260929-fix-backlog-getmarkdownsection-ac - fix(backlog): 修复 getMarkdownSection 解析被三级子标题过早截断及 AC 换行断裂缺陷",
+  "backlogId": "R-442",
+  "profile": "standard",
+  "level": 1,
+  "startedAt": "2026-09-29T11:09:13.813Z",
+  "completedAt": "2026-09-29T11:12:44.357Z",
+  "durationMinutes": 3.5,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 74,
+  "filesChanged": 4,
+  "linesAdded": 71,
+  "linesDeleted": 3,
+  "engineering": {
+    "turnCount": 5,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 3.5,
+    "filesChanged": 4,
+    "linesAdded": 71,
+    "linesDeleted": 3,
+    "totalDiffLines": 74,
+    "speedLinesPerMinute": 21.1
+  },
+  "protocol": {
+    "specTokens": 1084,
+    "planTokens": 478,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3362
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 9171,
+    "outputTokens": 3930,
+    "totalTokens": 13101,
+    "toolCallsCount": 21
+  }
+}

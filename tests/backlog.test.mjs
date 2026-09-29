@@ -869,6 +869,56 @@ high id
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('correctly parses markdown sections containing level-3 subheadings (R-442)', async () => {
+    const { getMarkdownSection, replaceMarkdownSection } = await import('../dist/commands/backlog.js');
+
+    const markdownWithSubheadings = `
+## 背景
+
+### 现象
+这是现象描述
+
+### 成因
+这是成因分析
+
+## 验收
+- [ ] 验收点 1
+`;
+
+    const bg = getMarkdownSection(markdownWithSubheadings, '背景');
+    assert.ok(bg !== null);
+    assert.ok(bg.includes('### 现象'));
+    assert.ok(bg.includes('这是现象描述'));
+    assert.ok(bg.includes('### 成因'));
+    assert.ok(bg.includes('这是成因分析'));
+    assert.ok(!bg.includes('## 验收'));
+
+    const replaced = replaceMarkdownSection(markdownWithSubheadings, '背景', '全新背景段落');
+    assert.ok(replaced.includes('## 背景\n\n全新背景段落\n\n## 验收'));
+    assert.ok(!replaced.includes('### 现象'));
+  });
+
+  it('correctly parses multiline indented acceptance items without splitting (R-442)', async () => {
+    const { parseMultilineListItems } = await import('../dist/commands/backlog.js');
+
+    const multilineAcceptance = `
+- [ ] .workbuddy-ai/ 全部 6 个文件移出索引（本地文件保留）
+- [ ] .workbuddy/ 2 个文件移出，.gitignore 补规则
+      （含与 .workbuddy-ai 同款理由注释）
+- [ ] 提交后 git status 干净；追加修改记忆文件后仍报干净
+      （ignore 规则对新文件生效），验证后还原
+- [ ] git ls-files 返回空
+`;
+
+    const items = parseMultilineListItems(multilineAcceptance);
+    assert.equal(items.length, 4);
+    assert.ok(items[0].includes('.workbuddy-ai/ 全部 6 个文件移出索引'));
+    assert.ok(items[1].includes('.gitignore 补规则 （含与 .workbuddy-ai 同款理由注释）') || items[1].includes('.gitignore 补规则'));
+    assert.ok(items[1].includes('同款理由注释'));
+    assert.ok(items[2].includes('ignore 规则对新文件生效'));
+    assert.equal(items[3], 'git ls-files 返回空');
+  });
 });
 
 
