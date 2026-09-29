@@ -652,9 +652,9 @@ function generateUniqueTaskId(docpathDir: string, title: string): string {
  * 从 backlog body 中按 ## 标题拆出各段内容。
  * 支持 "## 背景" / "## 验收" 等常见段落名；未匹配的正文归入 background。
  */
-function parseBacklogBody(body: string): { background: string; acceptance: string } {
+function parseBacklogBody(body: string): { background: string; acceptance: string; requirements: string } {
   const trimmed = body.trim();
-  if (!trimmed) return { background: '', acceptance: '' };
+  if (!trimmed) return { background: '', acceptance: '', requirements: '' };
 
   const sectionPattern = /^##\s+(.+)$/gm;
   let match: RegExpExecArray | null;
@@ -665,13 +665,14 @@ function parseBacklogBody(body: string): { background: string; acceptance: strin
   }
 
   if (matches.length === 0) {
-    return { background: trimmed, acceptance: '' };
+    return { background: trimmed, acceptance: '', requirements: '' };
   }
 
   // 第一个 ## 之前的内容作为前言（归入 background）
   const preamble = trimmed.slice(0, matches[0].start).trim();
   const backgroundParts: string[] = [];
   const acceptanceParts: string[] = [];
+  const requirementsParts: string[] = [];
 
   if (preamble) backgroundParts.push(preamble);
 
@@ -683,6 +684,8 @@ function parseBacklogBody(body: string): { background: string; acceptance: strin
 
     if (/验收|acceptance|done\s*条件/i.test(heading)) {
       acceptanceParts.push(content);
+    } else if (/功能需求|需求要点|需求清单|functional\s*requirements?|fr\s*清单/i.test(heading)) {
+      requirementsParts.push(content);
     } else {
       backgroundParts.push(content);
     }
@@ -691,6 +694,7 @@ function parseBacklogBody(body: string): { background: string; acceptance: strin
   return {
     background: backgroundParts.join('\n\n'),
     acceptance: acceptanceParts.join('\n'),
+    requirements: requirementsParts.join('\n\n'),
   };
 }
 
@@ -810,26 +814,28 @@ export function extractFunctionalRequirements(item: BacklogItem): BacklogCheckli
   const explicit = parseBacklogChecklist(item.body, 'FR');
   if (explicit.length > 0) return explicit;
 
-  // 2. 从 body 中的功能清单 / 需求要点段落解析列表项
+  // 2. 从 body 中的专门功能需求 / 需求要点段落解析列表项（背景段落不参与列表泛化，防止调研散文误转 FR）
   const parsed = parseBacklogBody(item.body);
-  const bulletLines: string[] = [];
-  for (const line of (parsed.background || item.body).split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || isPlaceholderValue(trimmed)) continue;
-    const match = trimmed.match(/^[-*+]\s+(.+)$/) || trimmed.match(/^\d+\.\s+(.+)$/);
-    if (match) {
-      const text = match[1].trim();
-      if (text && !isPlaceholderValue(text) && text.length >= 2) {
-        bulletLines.push(text);
+  if (parsed.requirements) {
+    const bulletLines: string[] = [];
+    for (const line of parsed.requirements.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || isPlaceholderValue(trimmed)) continue;
+      const match = trimmed.match(/^[-*+]\s+(.+)$/) || trimmed.match(/^\d+\.\s+(.+)$/);
+      if (match) {
+        const text = match[1].trim();
+        if (text && !isPlaceholderValue(text) && text.length >= 2) {
+          bulletLines.push(text);
+        }
       }
     }
-  }
-  if (bulletLines.length > 1) {
-    return bulletLines.map((text, idx) => ({
-      id: `FR-${idx + 1}`,
-      text: text.replace(/^(?:FR|fr)-\d+\s*:\s*/, '').trim(),
-      done: false,
-    }));
+    if (bulletLines.length > 0) {
+      return bulletLines.map((text, idx) => ({
+        id: `FR-${idx + 1}`,
+        text: text.replace(/^(?:FR|fr)-\d+\s*:\s*/, '').trim(),
+        done: false,
+      }));
+    }
   }
 
   // 3. 从标题中智能提取复合子需求

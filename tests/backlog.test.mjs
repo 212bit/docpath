@@ -919,6 +919,97 @@ high id
     assert.ok(items[2].includes('ignore 规则对新文件生效'));
     assert.equal(items[3], 'git ls-files 返回空');
   });
+
+  it('does not over-generalize background bullet points into FRs and supports dedicated requirements section (R-443)', async () => {
+    const { extractFunctionalRequirements } = await import('../dist/commands/backlog.js');
+
+    // Case 1: Bullet points in background should NOT be promoted to FRs
+    const itemWithBgBullets = sampleItem({
+      id: 'R-443-1',
+      title: '单一条目需求',
+      body: `## 背景
+- 观察 1: 这是一个现象记录
+- 观察 2: 这是敏感信息扫描结果
+- 观察 3: 这是已被否决的方向 B
+
+## 验收
+- [ ] 满足需求`,
+    });
+
+    const frs1 = extractFunctionalRequirements(itemWithBgBullets);
+    assert.equal(frs1.length, 1);
+    assert.equal(frs1[0].id, 'FR-1');
+    assert.equal(frs1[0].text, '单一条目需求');
+
+    // Case 2: Explicit requirements section ## 功能需求 should be extracted as FRs
+    const itemWithReqSection = sampleItem({
+      id: 'R-443-2',
+      title: '多需求条目',
+      body: `## 背景
+- 背景调研调查笔记
+
+## 功能需求
+- 支持功能模块 A
+- 支持功能模块 B
+- 支持功能模块 C
+
+## 验收
+- [ ] 测试通过`,
+    });
+
+    const frs2 = extractFunctionalRequirements(itemWithReqSection);
+    assert.equal(frs2.length, 3);
+    assert.equal(frs2[0].id, 'FR-1');
+    assert.equal(frs2[0].text, '支持功能模块 A');
+    assert.equal(frs2[1].id, 'FR-2');
+    assert.equal(frs2[1].text, '支持功能模块 B');
+    assert.equal(frs2[2].id, 'FR-3');
+    assert.equal(frs2[2].text, '支持功能模块 C');
+  });
+
+  it('supports planCommand force parameter to overwrite existing plan (R-443)', async () => {
+    const { planCommand } = await import('../dist/commands/plan.js');
+    const { writeActiveTaskFile } = await import('../dist/utils/task-files.js');
+    const cwd = mkWorkspace();
+    const docpathDir = join(cwd, '.docpath');
+    const taskDir = join(docpathDir, 'tasks', 'current');
+    mkdirSync(taskDir, { recursive: true });
+
+    // Initial state
+    const state = {
+      task_id: 'T-test-force-plan',
+      phase: 'drafting',
+      gate: 'none',
+      level: 2,
+    };
+    writeFileSync(join(docpathDir, 'workspace', 'state.json'), JSON.stringify(state, null, 2), 'utf-8');
+
+    // Write initial spec & plan
+    const initialSpec = `# T-test-force-plan - 测试任务\n\n## 1. 背景与动机\n背景描述\n\n## 2. 需求清单\n### 功能需求\n- [ ] FR-1: 初始功能一\n\n## 5. 验收标准\n- [ ] AC-1: 验收通过\n`;
+    await writeActiveTaskFile(docpathDir, 'T-test-force-plan', 'spec.md', initialSpec);
+
+    // Generate first plan
+    await planCommand({ cwd });
+    const firstPlan = readFileSync(join(taskDir, 'plan.md'), 'utf-8');
+    assert.ok(firstPlan.includes('FR-1'));
+
+    // Update spec with FR-2
+    const updatedSpec = `# T-test-force-plan - 测试任务\n\n## 1. 背景与动机\n背景描述\n\n## 2. 需求清单\n### 功能需求\n- [ ] FR-1: 初始功能一\n- [ ] FR-2: 新增功能二\n\n## 5. 验收标准\n- [ ] AC-1: 验收通过\n- [ ] AC-2: 验收二通过\n`;
+    await writeActiveTaskFile(docpathDir, 'T-test-force-plan', 'spec.md', updatedSpec);
+
+    // Without force, existing plan fails coverage check because it lacks new FR-2 / AC-2
+    await assert.rejects(
+      async () => planCommand({ cwd }),
+      /generated plan coverage check failed/,
+    );
+
+    // With force, plan is regenerated from the new spec and includes FR-2
+    await planCommand({ cwd, force: true });
+    const forcedPlan = readFileSync(join(taskDir, 'plan.md'), 'utf-8');
+    assert.ok(forcedPlan.includes('FR-2'));
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
 
 

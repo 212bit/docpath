@@ -20,9 +20,10 @@ import { emitNextHint } from '../engine/next-hint.js';
 import { readBacklogItem } from '../engine/backlog.js';
 import { healStructuredMarkdownDrift } from '../utils/structured-heal.js';
 
-interface PlanOptions {
+export interface PlanOptions {
   cwd: string;
   dryRun?: boolean;
+  force?: boolean;
 }
 
 interface PlanContext {
@@ -342,11 +343,11 @@ function emitPlanPrompt(spec: string, analysis = '', backlogEvidence: BacklogEvi
   });
 }
 
-async function writeGeneratedPlan(cwd: string, docpathDir: string, spec: string): Promise<string> {
+async function writeGeneratedPlan(cwd: string, docpathDir: string, spec: string, force = false): Promise<string> {
   const current = await readCurrentState(cwd);
   const taskId = current?.task_id || 'current';
   const agentFlow = (await readDocPathConfig(cwd)).workflow?.agent_flow === true;
-  const existingPlan = taskId === 'current'
+  const existingPlan = (taskId === 'current' || force)
     ? ''
     : await readCanonicalPlan(docpathDir, taskId);
   const planContent = existingPlan.trim() ? existingPlan : renderDraftPlan(spec || '', current?.level ?? 2, agentFlow);
@@ -389,8 +390,8 @@ export async function planCommand(options: PlanOptions): Promise<void> {
   const agentFlow = (await readDocPathConfig(cwd)).workflow?.agent_flow === true;
   await assertMajorChangeGateReady(cwd, docpathDir, current?.task_id, 'plan', agentFlow);
 
-  // 已有计划时同步 active alias；无计划时生成保守草案，避免 planning 状态缺 plan.md。
-  const canonicalPath = await writeGeneratedPlan(cwd, docpathDir, spec);
+  // 已有计划时同步 active alias；无计划或 force 时生成保守草案，避免 planning 状态缺 plan.md。
+  const canonicalPath = await writeGeneratedPlan(cwd, docpathDir, spec, Boolean(options.force));
   console.log(`✅  plan.md 已写入: ${canonicalPath}`);
 
   await transitionWorkflow(cwd, 'plan.ready', { currentStep: '计划已生成，下一步: docpath go' });

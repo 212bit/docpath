@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-feat-plan-fr-docpath-plan-force",
+  "taskTitle": "T-20260929-feat-plan-fr-docpath-plan-force - feat(plan): 收敛背景列表过度推断FR陷阱并支持 docpath plan --force 重新生成",
+  "backlogId": "R-443",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-29T11:16:07.937Z",
+  "completedAt": "2026-09-29T11:22:26.956Z",
+  "durationMinutes": 6.3,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 441,
+  "filesChanged": 12,
+  "linesAdded": 396,
+  "linesDeleted": 45,
+  "engineering": {
+    "turnCount": 7,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 6.3,
+    "filesChanged": 12,
+    "linesAdded": 396,
+    "linesDeleted": 45,
+    "totalDiffLines": 441,
+    "speedLinesPerMinute": 70
+  },
+  "protocol": {
+    "specTokens": 1128,
+    "planTokens": 628,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3556
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 20312,
+    "outputTokens": 8705,
+    "totalTokens": 29017,
+    "toolCallsCount": 42
+  }
+}

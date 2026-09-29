@@ -132,10 +132,12 @@ function registerPlanCommand(cli: CAC): void {
   cli.command('plan', '输出 plan prompt；复杂计划由当前 Agent 用 write-plan 写入')
     .option('--cwd <path>', '项目目录')
     .option('--dry-run', '只预览 plan prompt，不写文件或状态')
-    .action(async (options: { cwd?: string; 'dry-run'?: boolean; dryRun?: boolean }) => {
+    .option('--force', '强制基于当前 spec 重新生成 plan.md，覆盖已有计划')
+    .action(async (options: { cwd?: string; 'dry-run'?: boolean; dryRun?: boolean; force?: boolean }) => {
       await planCommand({
         cwd: options.cwd || process.cwd(),
         dryRun: options['dry-run'] || options.dryRun,
+        force: options.force,
       });
     });
 }
