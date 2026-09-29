@@ -7,7 +7,7 @@ import { unlinkCommand } from '../unlink.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 export function registerDocsInstallCommands(cli: CAC): void {
-  cli.command('docs [action] [...query]', '文档资产管理与自愈 (scan | sync | list | lint | doctor | fix | search | graph)')
+  cli.command('docs [action] [...query]', '文档资产管理与自愈 (scan | sync | list | lint | doctor | fix | search | graph | archive | status)')
     .option('--cwd <path>', '项目目录')
     .option('--scan', '扫描文档生成索引')
     .option('--sync', '全量同步与自愈（诊断修复断链/未索引并重建索引）')
@@ -18,17 +18,21 @@ export function registerDocsInstallCommands(cli: CAC): void {
     .option('--mermaid', 'graph: 输出 mermaid 全景关联图')
     .option('--dry-run', '预览自愈修复操作，不修改文件')
     .option('--search <query>', '根据关键词检索文档')
+    .option('--by <target>', '归档或废弃文档时的替代文档路径')
+    .option('--reason <msg>', '状态变更或归档原因')
     .option('--full', 'list: 输出完整表格')
     .option('--add <path>', '添加文档到索引')
     .option('--agent', 'Agent 模式输出结构化 YAML')
     .option('--json', '输出 JSON 格式')
-    .action(async (action: string | undefined, query: string[] | undefined, options: { cwd?: string; scan?: boolean; sync?: boolean; list?: boolean; lint?: boolean; doctor?: boolean; fix?: boolean; mermaid?: boolean; 'dry-run'?: boolean; dryRun?: boolean; json?: boolean; full?: boolean; add?: string; search?: string; agent?: boolean }) => {
+    .action(async (action: string | undefined, query: string[] | undefined, options: { cwd?: string; scan?: boolean; sync?: boolean; list?: boolean; lint?: boolean; doctor?: boolean; fix?: boolean; mermaid?: boolean; 'dry-run'?: boolean; dryRun?: boolean; json?: boolean; full?: boolean; add?: string; search?: string; by?: string; reason?: string; agent?: boolean }) => {
       const sub = action || (options.sync ? 'sync' : options.fix ? 'fix' : options.doctor ? 'doctor' : options.scan ? 'scan' : options.lint ? 'lint' : options.search ? 'search' : options.add ? 'add' : 'list');
       const queryArgs = query && query.length > 0 ? query : options.search ? [options.search] : options.add ? [options.add] : [];
       await docsCommand({
         cwd: options.cwd || process.cwd(),
         action: sub,
         args: queryArgs,
+        by: options.by,
+        reason: options.reason,
         full: !!options.full,
         agent: !!options.agent,
         dryRun: !!(options.dryRun || options['dry-run']),

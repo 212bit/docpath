@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-feat-docs-docpath-docs",
+  "taskTitle": "T-20260929-feat-docs-docpath-docs - feat(docs): 新增 docpath docs 文档生命周期巡检与索引管理引擎",
+  "backlogId": "R-445",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-29T15:42:30.347Z",
+  "completedAt": "2026-09-29T15:51:54.368Z",
+  "durationMinutes": 9.4,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 402,
+  "filesChanged": 12,
+  "linesAdded": 397,
+  "linesDeleted": 5,
+  "engineering": {
+    "turnCount": 7,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 9.4,
+    "filesChanged": 12,
+    "linesAdded": 397,
+    "linesDeleted": 5,
+    "totalDiffLines": 402,
+    "speedLinesPerMinute": 42.8
+  },
+  "protocol": {
+    "specTokens": 904,
+    "planTokens": 350,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3054
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 36016,
+    "outputTokens": 15436,
+    "totalTokens": 51452,
+    "toolCallsCount": 69
+  }
+}

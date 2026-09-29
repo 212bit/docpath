@@ -18,11 +18,14 @@ import {
   readProjectDocumentIndex,
   normalizeDocPath,
   refreshProjectDocumentIndex,
+  parseFrontmatterMetadata,
+  type DocLifecycleStatus,
   type ProjectDocumentIndexEntry,
 } from './document-index.js';
 
 export type DocIssueType =
   | 'broken-link'
+  | 'deprecated-reference'
   | 'empty-doc'
   | 'missing-heading'
   | 'unindexed'
@@ -52,11 +55,17 @@ export interface DocHealthReport {
   issues: DocIssue[];
   stats: {
     brokenLinks: number;
+    deprecatedReferences: number;
     unindexed: number;
     missingHeadings: number;
     emptyDocs: number;
     staleIndex: number;
     backlogIssues: number;
+    lifecycle: {
+      active: number;
+      wip: number;
+      deprecated: number;
+    };
   };
 }
 
@@ -128,15 +137,37 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
   const allKnownMarkdown = new Set([...allMarkdownAbsPaths, ...taskDoneFiles]);
 
   const allFilesBaseMap = new Map<string, string>(); // basename -> absPath
+  const allFilesMetaMap = new Map<string, { status: DocLifecycleStatus; deprecatedBy?: string }>();
+
   for (const abs of allKnownMarkdown) {
     const bName = basename(abs).toLowerCase();
     allFilesBaseMap.set(bName, abs);
+    try {
+      const content = await readFileSafe(abs);
+      if (content) {
+        const meta = parseFrontmatterMetadata(content);
+        const isArchive = abs.includes('/tasks/done/') || abs.includes('/archive/');
+        const status: DocLifecycleStatus = meta.status || (isArchive ? 'deprecated' : 'active');
+        allFilesMetaMap.set(abs, { status, deprecatedBy: meta.deprecated_by });
+      }
+    } catch {
+      // 容错
+    }
   }
+
+  let activeDocsCount = 0;
+  let wipDocsCount = 0;
+  let deprecatedDocsCount = 0;
 
   // 2. 逐一检查每个文件内容
   for (const abs of allMarkdownAbsPaths) {
     const rel = normalizeDocPath(relative(projectRoot, abs));
     scannedFiles.push({ abs, rel });
+    const selfMeta = allFilesMetaMap.get(abs) || { status: 'active' };
+
+    if (selfMeta.status === 'active') activeDocsCount++;
+    else if (selfMeta.status === 'wip') wipDocsCount++;
+    else if (selfMeta.status === 'deprecated') deprecatedDocsCount++;
 
     try {
       const content = await readFile(abs, 'utf-8');
@@ -196,7 +227,21 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
           targetFilePath = resolve(dirname(abs), cleanPath);
         }
 
-        if (targetFilePath && !existsSync(targetFilePath)) {
+        if (targetFilePath && existsSync(targetFilePath)) {
+          // 检查是否引用了已废弃文档
+          const targetMeta = allFilesMetaMap.get(targetFilePath);
+          if (targetMeta?.status === 'deprecated' && selfMeta.status !== 'deprecated') {
+            const targetRel = normalizeDocPath(relative(projectRoot, targetFilePath));
+            issues.push({
+              file: rel,
+              absPath: abs,
+              type: 'deprecated-reference',
+              message: `引用了已废弃/归档文档: [${originalText}](${linkTarget})${targetMeta.deprecatedBy ? ` (替代方案: ${targetMeta.deprecatedBy})` : ''}`,
+              autoFixable: false,
+              fixDetail: targetMeta.deprecatedBy ? `建议更新引用为: ${targetMeta.deprecatedBy}` : '建议评估是否更新引用或明确废弃依赖',
+            });
+          }
+        } else if (targetFilePath && !existsSync(targetFilePath)) {
           // 尝试根据文件名模糊寻找重命名或移动后的目标
           const targetBase = basename(targetFilePath).toLowerCase();
           const candidateAbs = allFilesBaseMap.get(targetBase);
@@ -426,11 +471,17 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
 
   const stats = {
     brokenLinks: issues.filter((i) => i.type === 'broken-link').length,
+    deprecatedReferences: issues.filter((i) => i.type === 'deprecated-reference').length,
     unindexed: issues.filter((i) => i.type === 'unindexed').length,
     missingHeadings: issues.filter((i) => i.type === 'missing-heading').length,
     emptyDocs: issues.filter((i) => i.type === 'empty-doc').length,
     staleIndex: issues.filter((i) => i.type === 'stale-index').length,
     backlogIssues: issues.filter((i) => i.type === 'backlog-misplaced' || i.type === 'broken-evidence').length,
+    lifecycle: {
+      active: activeDocsCount,
+      wip: wipDocsCount,
+      deprecated: deprecatedDocsCount,
+    },
   };
 
   return {
@@ -596,16 +647,18 @@ export function renderDocHealthTable(report: DocHealthReport): string {
   lines.push('');
   lines.push(`📚  DocPath 活文档全景体检报告 [状态: ${statusBadge}]`);
   lines.push(`    扫描文档: ${report.scannedCount} 个 | 索引有效: ${report.indexedCount} 个 | 待治理项: ${report.issues.length} 个`);
+  lines.push(`    生命周期: 🟢 Active: ${report.stats.lifecycle?.active ?? 0} | 🟡 WIP: ${report.stats.lifecycle?.wip ?? 0} | 🔴 Deprecated: ${report.stats.lifecycle?.deprecated ?? 0}`);
   lines.push('');
 
   lines.push('─'.repeat(72));
   lines.push('📊 巡检指标概览:');
   lines.push('');
-  lines.push(`  - 死链检查 (Broken Links)       : ${report.stats.brokenLinks === 0 ? '✅ 0 处断链' : `❌ ${report.stats.brokenLinks} 处断链`}`);
-  lines.push(`  - 未索引文档 (Unindexed)        : ${report.stats.unindexed === 0 ? '✅ 全部同步' : `⚠️  ${report.stats.unindexed} 个文档未入索引`}`);
-  lines.push(`  - 缺失一级标题 (Missing H1)     : ${report.stats.missingHeadings === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.missingHeadings} 个文档缺少 H1`}`);
-  lines.push(`  - 空白占位文档 (Empty Docs)     : ${report.stats.emptyDocs === 0 ? '✅ 无空文档' : `⚠️  ${report.stats.emptyDocs} 个空文档`}`);
-  lines.push(`  - 幽灵过期索引 (Stale Index)    : ${report.stats.staleIndex === 0 ? '✅ 索引纯净' : `⚠️  ${report.stats.staleIndex} 个幽灵条目`}`);
+  lines.push(`  - 死链检查 (Broken Links)             : ${report.stats.brokenLinks === 0 ? '✅ 0 处断链' : `❌ ${report.stats.brokenLinks} 处断链`}`);
+  lines.push(`  - 废弃引用 (Deprecated Reference)     : ${report.stats.deprecatedReferences === 0 ? '✅ 无过期引用' : `⚠️  ${report.stats.deprecatedReferences} 处引用已废弃文档`}`);
+  lines.push(`  - 未索引文档 (Unindexed)              : ${report.stats.unindexed === 0 ? '✅ 全部同步' : `⚠️  ${report.stats.unindexed} 个文档未入索引`}`);
+  lines.push(`  - 缺失一级标题 (Missing H1)           : ${report.stats.missingHeadings === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.missingHeadings} 个文档缺少 H1`}`);
+  lines.push(`  - 空白占位文档 (Empty Docs)           : ${report.stats.emptyDocs === 0 ? '✅ 无空文档' : `⚠️  ${report.stats.emptyDocs} 个空文档`}`);
+  lines.push(`  - 幽灵过期索引 (Stale Index)          : ${report.stats.staleIndex === 0 ? '✅ 索引纯净' : `⚠️  ${report.stats.staleIndex} 个幽灵条目`}`);
   lines.push(`  - Backlog 规范与证据 (Backlog Health) : ${report.stats.backlogIssues === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.backlogIssues} 个 Backlog 待治理项`}`);
   lines.push('');
 

@@ -25,6 +25,8 @@ export const PROJECT_DOCS_SCAN_EXCLUDED_DIRS = [
   'promote-backups',
 ];
 
+export type DocLifecycleStatus = 'active' | 'wip' | 'deprecated';
+
 export interface ProjectDocumentIndexEntry {
   path: string;
   type: string;
@@ -43,6 +45,8 @@ export interface ProjectDocumentIndexEntry {
   index_only?: boolean;
   stale?: boolean;
   task_id?: string;
+  status?: DocLifecycleStatus;
+  deprecated_by?: string;
   topic_tags: string[];
   content_terms?: string[];
   /** frontmatter `related` 原文声明（相对 docs/ 的路径），docs graph 关联图谱数据源 */
@@ -282,28 +286,100 @@ export function inferContentTerms(content: string): string[] {
 /* 文档关联图谱 (docs graph) — frontmatter related / backlinks / 推荐  */
 /* ------------------------------------------------------------------ */
 
+export interface DocFrontmatterMetadata {
+  related: string[];
+  status?: DocLifecycleStatus;
+  deprecated_by?: string;
+  status_reason?: string;
+}
+
+/**
+ * 容错解析 frontmatter 元数据（related, status, deprecated_by 等）。
+ */
+export function parseFrontmatterMetadata(content: string): DocFrontmatterMetadata {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!match) return { related: [] };
+  try {
+    const fm: unknown = parseYaml(match[1] || '');
+    if (!fm || typeof fm !== 'object' || Array.isArray(fm)) return { related: [] };
+    const rec = fm as Record<string, unknown>;
+
+    let related: string[] = [];
+    if (typeof rec.related === 'string') {
+      const value = rec.related.trim();
+      if (value) related = [value];
+    } else if (Array.isArray(rec.related)) {
+      related = rec.related
+        .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        .map((item) => item.trim());
+    }
+
+    let status: DocLifecycleStatus | undefined;
+    if (typeof rec.status === 'string') {
+      const s = rec.status.trim().toLowerCase();
+      if (s === 'active' || s === 'wip' || s === 'deprecated') {
+        status = s;
+      }
+    }
+
+    const deprecated_by = typeof rec.deprecated_by === 'string' && rec.deprecated_by.trim()
+      ? rec.deprecated_by.trim()
+      : undefined;
+
+    const status_reason = typeof rec.status_reason === 'string' && rec.status_reason.trim()
+      ? rec.status_reason.trim()
+      : undefined;
+
+    return { related, status, deprecated_by, status_reason };
+  } catch {
+    return { related: [] };
+  }
+}
+
 /**
  * 容错解析 frontmatter `related` 声明。
  * 无 frontmatter、空 related、非法 YAML、非字符串项一律返回空数组，绝不抛异常。
  */
 export function parseFrontmatterRelated(content: string): string[] {
+  return parseFrontmatterMetadata(content).related;
+}
+
+/**
+ * 更新或插入文档的生命周期状态 (status, deprecated_by, status_reason)
+ */
+export function upsertFrontmatterStatus(
+  content: string,
+  status: DocLifecycleStatus,
+  options?: { deprecatedBy?: string; statusReason?: string },
+): string {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
-  if (!match) return [];
-  try {
-    const fm: unknown = parseYaml(match[1] || '');
-    if (!fm || typeof fm !== 'object' || Array.isArray(fm)) return [];
-    const related = (fm as Record<string, unknown>).related;
-    if (typeof related === 'string') {
-      const value = related.trim();
-      return value ? [value] : [];
+  if (match) {
+    let fm: Record<string, unknown>;
+    try {
+      const parsed: unknown = parseYaml(match[1] || '');
+      fm = (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      fm = {};
     }
-    if (!Array.isArray(related)) return [];
-    return related
-      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-      .map((item) => item.trim());
-  } catch {
-    return [];
+    fm.status = status;
+    if (options?.deprecatedBy) {
+      fm.deprecated_by = options.deprecatedBy;
+    } else if (status === 'active' && fm.deprecated_by) {
+      delete fm.deprecated_by;
+    }
+    if (options?.statusReason) {
+      fm.status_reason = options.statusReason;
+    } else if (status === 'active' && fm.status_reason) {
+      delete fm.status_reason;
+    }
+    const body = content.slice(match[0].length);
+    return `---\n${stringifyYaml(fm).trim()}\n---\n${body}`;
   }
+
+  const fmObj: Record<string, unknown> = { status };
+  if (options?.deprecatedBy) fmObj.deprecated_by = options.deprecatedBy;
+  if (options?.statusReason) fmObj.status_reason = options.statusReason;
+  return `---\n${stringifyYaml(fmObj).trim()}\n---\n\n${content}`;
 }
 
 /** docs graph 节点范围红线：仅 docs/ 一级（根 md + 一级子目录 md），更深嵌套与 .docpath/ 资产不入图 */
@@ -537,6 +613,7 @@ export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): Proje
   const summary = input.summary || compactFirstLine(input.content, title);
   const archive = isArchiveDocPath(normalizedPath);
   const generatedView = isGeneratedViewDocPath(normalizedPath);
+  const metadata = parseFrontmatterMetadata(input.content);
 
   return {
     path: normalizedPath,
@@ -555,9 +632,11 @@ export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): Proje
     generated_view: generatedView,
     index_only: generatedView,
     task_id: taskId,
+    status: metadata.status || (archive ? 'deprecated' : 'active'),
+    deprecated_by: metadata.deprecated_by,
     topic_tags: inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId }),
     content_terms: archive ? [] : inferContentTerms(input.content),
-    related: parseFrontmatterRelated(input.content),
+    related: metadata.related,
   };
 }
 
@@ -582,6 +661,7 @@ export function normalizeProjectDocumentEntry(
   const tokenEstimate = typeof raw.token_estimate === 'number'
     ? raw.token_estimate
     : estimateTokens(summary || '') + estimateTokensFromBytes(size);
+  const archive = typeof raw.archive === 'boolean' ? raw.archive : isArchiveDocPath(normalizedPath);
 
   return {
     path: normalizedPath,
@@ -598,11 +678,13 @@ export function normalizeProjectDocumentEntry(
     default_read: typeof raw.default_read === 'boolean'
       ? raw.default_read
       : shouldDefaultReadDocPath(normalizedPath, currentTaskId, hasPreferredRules),
-    archive: typeof raw.archive === 'boolean' ? raw.archive : isArchiveDocPath(normalizedPath),
+    archive,
     generated_view: generatedView,
     index_only: indexOnly,
     stale: raw.stale,
     task_id: taskId,
+    status: raw.status || (archive ? 'deprecated' : 'active'),
+    deprecated_by: raw.deprecated_by,
     topic_tags: Array.isArray(raw.topic_tags) && raw.topic_tags.length > 0
       ? raw.topic_tags
       : inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId }),

@@ -1,0 +1,3 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs-docpath-docs","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 新增 docpath docs 文档生命周期巡检","timestamp":"2026-09-29T15:42:30.347Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs-docpath-docs","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-29T15:49:26.783Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs-docpath-docs","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 索引管理引擎","timestamp":"2026-09-29T15:49:31.211Z","sessionId":"default"}

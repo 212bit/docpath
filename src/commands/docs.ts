@@ -6,8 +6,8 @@
  */
 
 import { existsSync } from 'fs';
-import { readFile, readdir, writeFile, stat } from 'fs/promises';
-import { join, relative, extname, basename, dirname, resolve, sep } from 'path';
+import { readFile, readdir, writeFile, stat, rm, mkdir } from 'fs/promises';
+import { join, relative, extname, basename, dirname, resolve, sep, isAbsolute } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readDeclaredDocumentScanPaths } from '../utils/config.js';
 import { isExcludedForScan } from '../utils/scan-existing-tree.js';
@@ -30,8 +30,11 @@ import {
   sortDocumentEntries,
   toDocsRelatedDeclaredValue,
   upsertFrontmatterRelated,
+  upsertFrontmatterStatus,
+  parseFrontmatterMetadata,
   type DocGraph,
   type DocGraphNode,
+  type DocLifecycleStatus,
   type ProjectDocumentIndexEntry,
 } from '../utils/document-index.js';
 
@@ -46,10 +49,14 @@ import {
 
 export interface DocsOptions {
   cwd: string;
-  /** 子命令：scan | list | add | lint | search | doctor | fix | graph */
+  /** 子命令：scan | list | add | lint | search | doctor | fix | graph | archive | status */
   action?: string;
-  /** add/search 命令的参数 */
+  /** add/search/archive/status 命令的参数 */
   args?: string[];
+  /** 替代文档路径（archive/status 时使用） */
+  by?: string;
+  /** 状态变更或归档原因 */
+  reason?: string;
   /** list: print the full generated docs.md table */
   full?: boolean;
   /** search/find 关键词 */
@@ -816,6 +823,107 @@ async function docsGraph(
   console.log('');
 }
 
+/** docs archive — 安全归档废弃或过期文档到 docs/archive/YYYY-MM/ 并标记 status: deprecated */
+async function docsArchive(
+  cwd: string,
+  targetPath: string,
+  options: { by?: string; reason?: string; agent?: boolean } = {},
+): Promise<void> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const projectRoot = dirname(resolve(docpathDir));
+  if (!targetPath) {
+    console.error('❌ 请指定要归档的文档路径: docpath docs archive <filePath>');
+    return;
+  }
+  const cleanRel = normalizeDocPath(targetPath.replace(/^\.\//, ''));
+  const absPath = isAbsolute(cleanRel) ? cleanRel : resolve(projectRoot, cleanRel);
+  if (!existsSync(absPath)) {
+    console.error(`❌ 指定的文档不存在: ${cleanRel}`);
+    return;
+  }
+
+  const dateStr = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const fileName = basename(absPath);
+  const archiveDir = join(projectRoot, 'docs', 'archive', dateStr);
+  const destAbs = join(archiveDir, fileName);
+
+  await mkdir(archiveDir, { recursive: true });
+
+  const rawContent = await readFile(absPath, 'utf-8');
+  const updatedContent = upsertFrontmatterStatus(rawContent, 'deprecated', {
+    deprecatedBy: options.by,
+    statusReason: options.reason || 'Manual archive via docpath docs archive',
+  });
+
+  if (absPath !== destAbs) {
+    await writeFile(destAbs, updatedContent, 'utf-8');
+    await rm(absPath, { force: true });
+  } else {
+    await writeFile(destAbs, updatedContent, 'utf-8');
+  }
+
+  await refreshProjectDocumentIndex(docpathDir, cwd);
+
+  const destRel = normalizeDocPath(relative(projectRoot, destAbs));
+  if (options.agent) {
+    const { stringify } = await import('yaml');
+    console.log(stringify({ agent_view: 'docs_archive', from: cleanRel, to: destRel, status: 'deprecated' }));
+    return;
+  }
+
+  console.log(`\n📦  已归档文档: ${cleanRel} → ${destRel}`);
+  console.log(`    - 生命周期状态: 🔴 Deprecated`);
+  if (options.by) console.log(`    - 替代方案: ${options.by}`);
+  console.log(`    - 索引已自动刷新 (docs-index.json)\n`);
+}
+
+/** docs status — 快速更新文档生命周期状态 (active | wip | deprecated) */
+async function docsStatus(
+  cwd: string,
+  targetPath: string,
+  status: string,
+  options: { by?: string; reason?: string; agent?: boolean } = {},
+): Promise<void> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const projectRoot = dirname(resolve(docpathDir));
+  if (!targetPath || !status) {
+    console.error('❌ 参数不足。用法: docpath docs status <path> <active|wip|deprecated>');
+    return;
+  }
+  const s = status.trim().toLowerCase();
+  if (s !== 'active' && s !== 'wip' && s !== 'deprecated') {
+    console.error(`❌ 无效状态 "${status}"。必须为: active, wip, deprecated`);
+    return;
+  }
+
+  const cleanRel = normalizeDocPath(targetPath.replace(/^\.\//, ''));
+  const absPath = isAbsolute(cleanRel) ? cleanRel : resolve(projectRoot, cleanRel);
+  if (!existsSync(absPath)) {
+    console.error(`❌ 指定的文档不存在: ${cleanRel}`);
+    return;
+  }
+
+  const rawContent = await readFile(absPath, 'utf-8');
+  const updatedContent = upsertFrontmatterStatus(rawContent, s as DocLifecycleStatus, {
+    deprecatedBy: options.by,
+    statusReason: options.reason,
+  });
+
+  await writeFile(absPath, updatedContent, 'utf-8');
+  await refreshProjectDocumentIndex(docpathDir, cwd);
+
+  if (options.agent) {
+    const { stringify } = await import('yaml');
+    console.log(stringify({ agent_view: 'docs_status', path: cleanRel, status: s }));
+    return;
+  }
+
+  const emoji = s === 'active' ? '🟢' : s === 'wip' ? '🟡' : '🔴';
+  console.log(`\n${emoji}  文档状态已更新: ${cleanRel} → [${s.toUpperCase()}]`);
+  if (options.by) console.log(`    - 替代方案: ${options.by}`);
+  console.log(`    - 索引已自动刷新 (docs-index.json)\n`);
+}
+
 async function docsSync(cwd: string, agent: boolean, json: boolean): Promise<void> {
   console.log('🔄  文档资产全量同步与自愈...\n');
   await docsFix(cwd, { dryRun: false, agent, json });
@@ -825,7 +933,7 @@ async function docsSync(cwd: string, agent: boolean, json: boolean): Promise<voi
 
 /** 主命令入口 */
 export async function docsCommand(options: DocsOptions): Promise<void> {
-  const { cwd, action, args = [], full = false, query, agent = false, dryRun = false, json = false, graphFix = false, mermaid = false } = options;
+  const { cwd, action, args = [], by, reason, full = false, query, agent = false, dryRun = false, json = false, graphFix = false, mermaid = false } = options;
 
   switch (action) {
     case 'scan':
@@ -839,6 +947,12 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
       break;
     case 'add':
       await docsAdd(cwd, args);
+      break;
+    case 'archive':
+      await docsArchive(cwd, args[0] || query || '', { by, reason, agent });
+      break;
+    case 'status':
+      await docsStatus(cwd, args[0] || '', args[1] || query || '', { by, reason, agent });
       break;
     case 'lint':
     case 'doctor':
