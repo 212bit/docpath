@@ -1,0 +1,12 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 多步骤启动全景","timestamp":"2026-09-29T09:21:55.214Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 多步骤启动全景","timestamp":"2026-09-29T09:23:27.210Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-29T09:23:59.806Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 commit延期提示","timestamp":"2026-09-29T09:24:00.045Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-09-29T09:24:39.041Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"S3","status":"in_progress","context":"开始执行: 实现并验证 FR-3 单步arch守卫","timestamp":"2026-09-29T09:24:39.274Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"S3","status":"done","context":"step-pass: S3","timestamp":"2026-09-29T09:25:12.540Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"S4","status":"in_progress","context":"开始执行: 实现并验证 FR-4 FR智能拆解增强","timestamp":"2026-09-29T09:25:12.821Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"S4","status":"done","context":"step-pass: S4","timestamp":"2026-09-29T09:26:55.370Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-29T09:28:32.306Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"review","status":"done","context":"代码审查: 0 错误, 16 警告, 0 提示","timestamp":"2026-09-29T09:28:33.337Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-workflow-commit-arch-fr","step":"journal","status":"done","context":"知识归档完成 (4/4 步)","timestamp":"2026-09-29T09:28:34.687Z"}

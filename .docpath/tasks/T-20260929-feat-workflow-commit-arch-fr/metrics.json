@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-feat-workflow-commit-arch-fr",
+  "taskTitle": "T-20260929-feat-workflow-commit-arch-fr - feat(workflow): 多步骤启动全景、commit延期提示、单步arch守卫与FR智能拆解增强",
+  "backlogId": "R-441",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-29T09:21:55.214Z",
+  "completedAt": "2026-09-29T09:28:34.704Z",
+  "durationMinutes": 6.7,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 0,
+  "filesChanged": 7,
+  "linesAdded": 0,
+  "linesDeleted": 0,
+  "engineering": {
+    "turnCount": 12,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 6.7,
+    "filesChanged": 7,
+    "linesAdded": 0,
+    "linesDeleted": 0,
+    "totalDiffLines": 0,
+    "speedLinesPerMinute": 0
+  },
+  "protocol": {
+    "specTokens": 1267,
+    "planTokens": 510,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3577
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 28248,
+    "outputTokens": 12106,
+    "totalTokens": 40354,
+    "toolCallsCount": 91
+  }
+}

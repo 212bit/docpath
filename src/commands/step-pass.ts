@@ -252,6 +252,19 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
     // 容错
   }
 
+  // ── S3: 单步 arch 守卫（仅在 Level >= 2 标准任务且非终步时触发）──
+  if ((current?.level ?? 2) >= 2 && remaining && remaining.length > 0) {
+    try {
+      const { checkArchitectureLayers } = await import('../engine/arch-guard.js');
+      const archResult = await checkArchitectureLayers(cwd);
+      if (!archResult.passed) {
+        console.warn(`\n⚠️  [架构守卫] 步骤 ${step} 引入了架构违规 (${archResult.violations.length} 项)，请注意排查：\n` + archResult.violations.map(i => `   - ${i.message}`).join('\n'));
+      }
+    } catch {
+      // 容错防崩
+    }
+  }
+
   if (remaining && remaining.length === 0) {
     console.log('\n🎉  所有计划步骤均已完成！');
     if (options.done || options.commit) {
@@ -271,6 +284,11 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
     await emitNextHint(cwd);
     return;
   }
+
+  if (remaining && remaining.length > 0 && (options.commit || options.done)) {
+    console.log(`ℹ️  检测到后续仍有 ${remaining.length} 个未完成步骤，--commit / --done 将在终步收口时原子触发。`);
+  }
+
   console.log(`⏭️  自动推进下一步${remaining ? `（剩余 ${remaining.length} 步）` : ''}`);
   await goCommand({ cwd, session: options.session, acceptDirty: options.acceptDirty });
 }

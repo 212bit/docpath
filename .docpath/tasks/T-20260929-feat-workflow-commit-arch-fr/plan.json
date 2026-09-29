@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-29T09:26:55.374Z",
+    "updated_at": "2026-09-29T09:26:55.374Z",
+    "content_sha256": "168ae4d0f7eaf20581d7bf681e5304d2b67579266379610772aeea2a0784236b"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-29T09:26:55.374Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 多步骤启动全景",
+      "description": "落地 FR-1: 多步骤启动全景，并完成模块定向自验。",
+      "acceptance": "AC-1: 多步骤启动全景 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 commit延期提示",
+      "description": "落地 FR-2: commit延期提示，并完成模块定向自验。",
+      "acceptance": "AC-2: commit延期提示 满足功能要求并通过测试",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现并验证 FR-3 单步arch守卫",
+      "description": "落地 FR-3: 单步arch守卫，并完成模块定向自验。",
+      "acceptance": "AC-3: 单步arch守卫 满足功能要求并通过测试",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现并验证 FR-4 FR智能拆解增强",
+      "description": "落地 FR-4: FR智能拆解增强，并完成模块定向自验。",
+      "acceptance": "AC-4: FR智能拆解增强 满足功能要求并通过测试；AC-5: 生成的 spec 可直接进入 `docpath plan`；AC-6: backlog 条目 R-441 与任务 T-20260929-feat-workflow-commit-arch-fr 建立双向关联",
+      "dependencies": "S3",
+      "status": "done"
+    }
+  ]
+}

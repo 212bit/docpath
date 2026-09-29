@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-29T09:23:27.126Z",
+    "updated_at": "2026-09-29T09:23:27.126Z",
+    "content_sha256": "799bbb35b8f6b8ae67fbfb270e966c198002268af24bce2d4cd3d82c8165707c"
+  },
+  "task_id": "T-20260929-feat-workflow-commit-arch-fr",
+  "backlog_id": "R-441",
+  "title": "T-20260929-feat-workflow-commit-arch-fr - feat(workflow): 多步骤启动全景、commit延期提示、单步arch守卫与FR智能拆解增强",
+  "generated_at": "2026-09-29T09:23:27.126Z",
+  "scope": {
+    "included": [
+      "feat(workflow): 多步骤启动全景、commit延期提示、单步arch守卫与FR智能拆解增强"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "用户已在会话中明确同意推进这 4 项优化。",
+    "decision_brief_markdown": "- 当前问题: 多步骤启动缺乏全貌透出、中间态 commit 缺乏延期提示、单步交接缺乏增量 arch 守卫、Backlog 复合序号格式提取不全。\n- 目标: 落地 4 项工作流效能增强：\n  1. FR-1: `docpath start` 冷启动透出步骤拓扑全景与推进提示；\n  2. FR-2: `step-pass --commit` 在非终步输出显式的延迟提交反馈；\n  3. FR-3: `step-pass` 单步交接集成轻量架构分层防腐巡检；\n  4. FR-4: `extractFunctionalRequirements` 支持序号（1./(1)/①）与分号复合语法拆解。\n- 背景: 用户同意推进 4 项优化建议。\n- 可选方案:\n  - 方案 A (推荐): 在 start、step-pass、backlog 模块中增量落地 4 项增强，配齐针对性测试。\n  - 方案 B: 仅修改提示层，不接入 arch 巡检。\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 既提升了开发者可观测性与操作确定性，又真正实现了「小步快跑 + 每步 arch 兜底」。\n- 不做什么: 不修改底层 FSM 核心流转。\n- 成本: 低，改动量约 80-100 行。\n- 风险: 极低，均为非破坏性增强。\n- 回滚方案: Git revert 提交。\n- 用户确认: 用户已在会话中明确同意推进这 4 项优化。"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "多步骤启动全景",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "commit延期提示",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "单步arch守卫",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "FR智能拆解增强",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "多步骤启动全景 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "commit延期提示 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "单步arch守卫 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "FR智能拆解增强 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-6",
+      "text": "backlog 条目 R-441 与任务 T-20260929-feat-workflow-commit-arch-fr 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "多步骤启动缺乏全貌透出、中间态 commit 缺乏延期提示、单步交接缺乏增量 arch 守卫、Backlog 复合序号格式提取不全。",
+    "options": [
+      "- 方案 A (推荐): 在 start、step-pass、backlog 模块中增量落地 4 项增强，配齐针对性测试。"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 既提升了开发者可观测性与操作确定性，又真正实现了「小步快跑 + 每步 arch 兜底」。"
+  }
+}

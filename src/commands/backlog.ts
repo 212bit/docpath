@@ -760,7 +760,52 @@ function stripBacklogChecklistLines(body: string, prefix: 'FR'): string {
   return lines.join('\n').trim();
 }
 
-function extractFunctionalRequirements(item: BacklogItem): BacklogChecklistItem[] {
+export function splitCompoundRequirements(text: string): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  // 1. ① ② ③ 序号
+  if (/[①②③④⑤⑥⑦⑧⑨⑩]/.test(trimmed)) {
+    const parts = trimmed.split(/\s*[①②③④⑤⑥⑦⑧⑨⑩]\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
+    if (parts.length > 1) return parts;
+  }
+
+  // 2. (1) (2) / （1）（2）序号
+  if (/[(（]\d+[)）]/.test(trimmed)) {
+    const parts = trimmed.split(/\s*[(（]\d+[)）]\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
+    if (parts.length > 1) return parts;
+  }
+
+  // 3. [1] [2] 序号
+  if (/\[\d+\]/.test(trimmed)) {
+    const parts = trimmed.split(/\s*\[\d+\]\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
+    if (parts.length > 1) return parts;
+  }
+
+  // 4. 1. xxx 2. yyy 或 1、xxx 2、yyy 序号
+  if (/(?:^|\s+)\d+[\.、]\s+/.test(trimmed) || /(?:^|\s+)1[\.、]\s*.+?\s+2[\.、]\s*/.test(trimmed)) {
+    const parts = trimmed.split(/(?:^|\s+)\d+[\.、]\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
+    if (parts.length > 1) return parts;
+  }
+
+  // 5. 中英文分号分割: xxx; yyy; zzz 或 xxx；yyy；zzz
+  if (/[;；]/.test(trimmed)) {
+    const parts = trimmed.split(/\s*[;；]\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
+    if (parts.length > 1) return parts;
+  }
+
+  // 6. 破折号/连字符拆分: "主需求 — 补充/子需求"
+  const dashParts = trimmed.split(/\s*(?:——|—|--|\s+-\s+)\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
+  if (dashParts.length > 1) return dashParts;
+
+  // 7. 复合连接词拆分: '+'、'&'、'、'、','、'，'、'and'、'与'、'及'、'以及'
+  const plusParts = trimmed.split(/\s*(?:[+&、,，]|\s+and\s+|与|及|以及)\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
+  if (plusParts.length > 1) return plusParts;
+
+  return [trimmed];
+}
+
+export function extractFunctionalRequirements(item: BacklogItem): BacklogChecklistItem[] {
   // 1. 优先从 body 中解析显式的 FR-* 列表
   const explicit = parseBacklogChecklist(item.body, 'FR');
   if (explicit.length > 0) return explicit;
@@ -790,10 +835,10 @@ function extractFunctionalRequirements(item: BacklogItem): BacklogChecklistItem[
   // 3. 从标题中智能提取复合子需求
   const title = item.title.trim();
 
-  // 3a. 冒号拆分: "标题前缀: 子需求1 + 子需求2"
+  // 3a. 冒号拆分: "标题前缀: 子需求"
   const colonMatch = title.match(/^([^:：]+)[:：]\s*(.+)$/);
   if (colonMatch) {
-    const rawItems = colonMatch[2].split(/\s*(?:[+&、,，;；]|\s+and\s+|与|及|以及)\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
+    const rawItems = splitCompoundRequirements(colonMatch[2]);
     if (rawItems.length > 1) {
       return rawItems.map((text, idx) => ({
         id: `FR-${idx + 1}`,
@@ -803,20 +848,10 @@ function extractFunctionalRequirements(item: BacklogItem): BacklogChecklistItem[
     }
   }
 
-  // 3b. 破折号/连字符拆分: "主需求 — 补充/子需求"
-  const dashMatch = title.split(/\s*(?:——|—|--|\s+-\s+)\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
-  if (dashMatch.length > 1) {
-    return dashMatch.map((text, idx) => ({
-      id: `FR-${idx + 1}`,
-      text: text.replace(/^(?:FR|fr)-\d+\s*:\s*/, '').trim(),
-      done: false,
-    }));
-  }
-
-  // 3c. 标题复合连接词拆分: '+'、'、'、'与'、'及'、'以及'
-  const plusItems = title.split(/\s*(?:\+|\s+and\s+|、|以及|与|及)\s*/).map((s) => s.trim()).filter((s) => s.length >= 2);
-  if (plusItems.length > 1) {
-    return plusItems.map((text, idx) => ({
+  // 3b. 整体标题拆分
+  const titleItems = splitCompoundRequirements(title);
+  if (titleItems.length > 1) {
+    return titleItems.map((text, idx) => ({
       id: `FR-${idx + 1}`,
       text: text.replace(/^(?:FR|fr)-\d+\s*:\s*/, '').trim(),
       done: false,

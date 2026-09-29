@@ -15,6 +15,9 @@ import { goCommand } from './go.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { createBacklogItem, refreshBacklogIndex } from '../engine/backlog.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
+import { resolveDocpathDir } from '../utils/file.js';
+import { readActiveTaskFile } from '../utils/task-files.js';
+import { parsePlanSteps } from '../utils/doc-parser.js';
 
 export interface StartOptions {
   cwd: string;
@@ -91,6 +94,30 @@ export async function startCommand(options: StartOptions): Promise<void> {
 
   // 步骤 3: 认领并启动第一步（默认 S1）
   const stepToStart = options.step || 'S1';
+
+  // 多步骤启动全景展示 (S1)
+  try {
+    const docpathDir = await resolveDocpathDir(effectiveCwd);
+    const activeTaskId = (await readCurrentState(effectiveCwd))?.task_id || targetId;
+    const planContent = await readActiveTaskFile(docpathDir, activeTaskId, 'plan.md');
+    if (planContent.trim()) {
+      const planSteps = parsePlanSteps(planContent);
+      if (planSteps && planSteps.length > 1) {
+        console.log(`\n📋  执行计划已生成 (共 ${planSteps.length} 步):`);
+        for (const s of planSteps) {
+          if (s.id.toLowerCase() === stepToStart.toLowerCase()) {
+            console.log(`   👉 ${s.id}: ${s.name || s.description} (当前认领)`);
+          } else {
+            console.log(`      ${s.id}: ${s.name || s.description}`);
+          }
+        }
+        console.log('💡  提示: 当前步骤完成后运行 docpath step-pass 自动接力推进下一步。\n');
+      }
+    }
+  } catch {
+    // 容错
+  }
+
   await goCommand({
     cwd: effectiveCwd,
     step: stepToStart,
