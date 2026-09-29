@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-step-pass",
+  "taskTitle": "T-20260929-step-pass - 拦截报错紧凑化与step-pass步骤容错自愈",
+  "backlogId": "R-438",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-29T02:47:22.841Z",
+  "completedAt": "2026-09-29T02:54:09.028Z",
+  "durationMinutes": 6.8,
+  "firstTimePassRate": 0,
+  "totalDiffLines": 544,
+  "filesChanged": 15,
+  "linesAdded": 541,
+  "linesDeleted": 3,
+  "engineering": {
+    "turnCount": 6,
+    "retryCount": 1,
+    "firstTimePassRate": 0,
+    "cycleTimeMinutes": 6.8,
+    "filesChanged": 15,
+    "linesAdded": 541,
+    "linesDeleted": 3,
+    "totalDiffLines": 544,
+    "speedLinesPerMinute": 80
+  },
+  "protocol": {
+    "specTokens": 839,
+    "planTokens": 271,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 2910
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 19782,
+    "outputTokens": 8478,
+    "totalTokens": 28260,
+    "toolCallsCount": 39
+  }
+}

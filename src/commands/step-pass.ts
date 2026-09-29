@@ -119,18 +119,38 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
   // 缺省收尾必须能在 plan 中对应到真实步骤，否则 phantom 事件会污染 breadcrumb。
   if (!explicitStep && step && planSteps && !planSteps.some((t) => t.id.toLowerCase() === step.toLowerCase())) {
     const pending = planSteps.filter((t) => !t.done).map((t) => t.id);
+    if (pending.length === 0) {
+      if (options.done || options.commit) {
+        console.log('🚀  所有计划步骤已完成且 --commit 已启用，直接进入复合收口门禁序列...\n');
+        const { doneCommand } = await import('./done.js');
+        await doneCommand({
+          cwd,
+          commit: options.commit,
+          note: options.note,
+          session: options.session,
+        });
+        return;
+      }
+      console.log(renderCloseoutRoute(resolveCloseoutRoute(cwd)));
+      await emitNextHint(cwd);
+      return;
+    }
     throw new Error(
       `docpath step-pass: current_step "${step}" 不是 plan 中的有效步骤（可能被状态污染）。\n` +
-      (pending.length > 0
-        ? `    待完成步骤: ${pending.join(', ')}。请先用 \`docpath go --step ${pending[0]}\` 领取，或显式传入 \`--step <id>\`。`
-        : `    所有计划步骤均已完成，请直接运行 \`${resolveCloseoutRoute(cwd).recommendedCommand}\` 收口。`),
+      `    待完成步骤: ${pending.join(', ')}。请先用 \`docpath go --step ${pending[0]}\` 领取，或显式传入 \`--step <id>\`。`,
     );
   }
   if (!step) {
-    throw new Error(
-      'docpath step-pass: 没有进行中的步骤可收尾。\n' +
-      '    请先用 `docpath go --step <id>` 领取步骤，或显式传入 `--step <id>` 补账。',
-    );
+    const pending = planSteps ? planSteps.filter((t) => !t.done).map((t) => t.id) : [];
+    if (pending.length === 1 && current?.phase === 'executing') {
+      step = pending[0];
+      console.log(`🩹  step-pass: 自动对齐唯一待完成步骤 -> ${step}`);
+    } else {
+      throw new Error(
+        'docpath step-pass: 没有进行中的步骤可收尾。\n' +
+        '    请先用 `docpath go --step <id>` 领取步骤，或显式传入 `--step <id>` 补账。',
+      );
+    }
   }
   if (explicitStep && currentStep && explicitStep !== currentStep) {
     console.warn(`⚠️  step-pass: 指定步骤 ${explicitStep} 与当前执行步骤 ${currentStep} 不一致，按指定值收尾。`);

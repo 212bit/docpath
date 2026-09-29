@@ -109,6 +109,11 @@ function isCurrentTaskExecutionPath(path: string, options: ExecutionStartDirtyOp
   return false;
 }
 
+function formatDirtyCompact(files: string[]): string {
+  const preview = files.slice(0, 3).join(', ');
+  return files.length > 3 ? `${preview} ... (+${files.length - 3} 个)` : preview;
+}
+
 function buildDirtyWorktreeError(
   command: string,
   report: DirtyWorktreeReport,
@@ -119,71 +124,30 @@ function buildDirtyWorktreeError(
   const reason = mode === 'new-task'
     ? '当前 Git worktree 存在未提交变更，拒绝在 dirty worktree 上启动新任务。'
     : '当前 Git worktree 存在与当前任务无关或无法确认归属的未提交变更，拒绝进入执行步骤。';
+  const fileSummary = `(${files.length} 个文件: ${formatDirtyCompact(files)})`;
   const lines = [
-    `${command}: ${reason}`,
+    `${command}: ${reason} ${fileSummary}`,
     formatDirtySummary(report, files),
   ];
 
   if (mode === 'new-task') {
     if (command.includes('quick')) {
-      lines.push(
-        '   💡 解决方案 (事后补录认领): 若这些未提交变动属于即将登记的微型任务，请使用 --adopt:',
-        '     docpath quick "<title>" --adopt',
-      );
+      lines.push('   💡 解决方案: 认领: docpath quick "<title>" --adopt | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>');
     } else {
-      lines.push(
-        '   💡 解决方案 1 (认领现有改动): 若这些未提交变动属于新任务，添加 --adopt 直接拉起并认领:',
-        '     docpath start <id | "title"> --draft --adopt',
-        '     或 docpath backlog promote <id> --adopt',
-        '   💡 解决方案 2 (暂存稍后处理): 若这些未提交变动属于其他未完工作，暂存后启动:',
-        '     docpath task stash "WIP: 暂存当前未提交改动"',
-        '     docpath start <id | "title"> --draft',
-        '     (新任务完成后运行 docpath task pop 恢复暂存)',
-      );
+      lines.push('   💡 解决方案: 认领: docpath start <id> --draft --adopt | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>');
     }
-  }
-
-  if (mode === 'execution-start') {
+  } else {
     const step = options.step?.trim() || '<step>';
-    lines.push(
-      '   正常启动步骤:',
-      `     docpath go --step ${step}`,
-    );
-    // R-330: run start 只解锁 phase 门（planning→executing），对 untracked 新文件无效。
-    // 恢复指引必须按阻塞文件构成分支，否则 agent 照建议执行后仍会弹回。
     const untrackedSet = new Set(report.untrackedFiles);
     const blockedUntracked = files.filter((file) => untrackedSet.has(file));
     if (blockedUntracked.length > 0) {
-      lines.push(
-        '   未跟踪新文件 = 尚未被 git 认领归属。门禁无法判断它属于哪个任务，故拒绝进入。',
-        '   若确属本任务，逐一 git add 认领（不要 git add -A：worktree 常有别的 agent 在改，',
-        '   半成品会被扫进同一 commit 难以回滚）后重试:',
-        ...blockedUntracked.slice(0, 5).map((file) => `     git add ${file}`),
-      );
-      if (blockedUntracked.length > 5) {
-        lines.push(`     （其余 ${blockedUntracked.length - 5} 个未跟踪文件同理）`);
-      }
-    }
-    if (blockedUntracked.length < files.length) {
-      lines.push(
-        '   如果这些已跟踪源码/测试改动已确认属于当前任务，用恢复入口记录意图:',
-        `     docpath go --step ${step} --accept-dirty "recover current-task edits before go"`,
-        `     或 docpath run start --step ${step} --note "recover current-task edits before go"`,
-      );
+      const gitAddList = blockedUntracked.slice(0, 3).map((f) => `git add ${f}`).join(' && ');
+      lines.push(`   💡 解决方案: 认领归属: ${gitAddList} (或 docpath go --step ${step} --accept-dirty "recover current-task edits before go") | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>`);
     } else {
-      lines.push(
-        '   全部为未跟踪文件时也可用首等恢复旗标:',
-        `     docpath go --step ${step} --accept-dirty "recover current-task edits before go"`,
-      );
+      lines.push(`   💡 解决方案: 认领: docpath go --step ${step} --accept-dirty "recover current-task edits before go" (或 docpath run start --step ${step} --note "recover current-task edits before go") | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>`);
     }
   }
 
-  lines.push(
-    '   先收口当前变更:',
-    '     docpath changes --agent',
-    '   并行开发请创建隔离 worktree:',
-    '     docpath worktree create <slug>',
-  );
   return new Error(lines.join('\n'));
 }
 

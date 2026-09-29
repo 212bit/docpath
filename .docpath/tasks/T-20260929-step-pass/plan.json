@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-29T02:49:52.301Z",
+    "updated_at": "2026-09-29T02:49:52.301Z",
+    "content_sha256": "2fa44edf9d3fae22697a7fac2e7435ccab3f069263e3d5fa672c2615db874bb5"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-29T02:49:52.301Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 拦截报错紧凑化",
+      "description": "完成 FR-1: 拦截报错紧凑化；FR-2: step-pass步骤容错自愈，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 拦截报错紧凑化 满足功能要求并通过测试；AC-2: step-pass步骤容错自愈 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-438 与任务 T-20260929-step-pass 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
