@@ -1,3 +1,9 @@
+---
+related:
+  - architecture/agent-context-injection-architecture.md
+  - integrations/codex-skill-adapter.md
+---
+
 # DocPath 2.0 Design: Agent Integration
 
 > Status: Draft  

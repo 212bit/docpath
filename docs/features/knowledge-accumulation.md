@@ -1,3 +1,9 @@
+---
+related:
+  - features/architecture-guard.md
+  - features/backlog-lifecycle.md
+---
+
 # 经验沉淀与持续学习机制 (Knowledge Accumulation)
 
 > DocPath 的核心设计理念之一是**“让每一次开发都成为知识积累，而非一次性消耗”**。

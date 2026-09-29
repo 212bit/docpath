@@ -1,3 +1,9 @@
+---
+related:
+  - design/project-document-placement.md
+  - design/refactor-doc-management-plan.md
+---
+
 # DocPath 文档全生命周期管理规范与演进体系
 
 > 本规范定义 DocPath 及其衍生工程项目的**文档全生命周期管理体系**，确保架构文档、决策记录（ADR）、活项目文档与任务经验与代码变更**同频演进、长期保鲜、双向可追溯**。

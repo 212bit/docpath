@@ -1,3 +1,9 @@
+---
+related:
+  - error-codes.md
+  - design/session-isolation-mvp.md
+---
+
 # DocPath Command Boundaries
 
 DocPath CLI is the workflow engine for agents. Its core job is not to replace the

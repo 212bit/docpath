@@ -1,3 +1,10 @@
+---
+related:
+  - product-panorama.md
+  - BUILD.md
+  - error-codes.md
+---
+
 # DocPath Getting Started
 
 这份指南覆盖从一个已有代码仓库开始，到完成第一个 DocPath 任务闭环所需的最小命令。示例默认你已经可以在终端运行 `docpath`。

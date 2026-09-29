@@ -1,0 +1,39 @@
+{
+  "taskId": "T-20260929-quick-docs",
+  "taskTitle": "T-20260929-quick-docs - T-20260929-quick-docs - docs: 治理文档孤岛并建立网状关联",
+  "backlogId": "R-439",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-29T04:51:03.867Z",
+  "completedAt": "2026-09-29T04:52:46.348Z",
+  "durationMinutes": 1.7,
+  "firstTimePassRate": 100,
+  "totalDiffLines": 1266,
+  "filesChanged": 17,
+  "linesAdded": 1253,
+  "linesDeleted": 13,
+  "engineering": {
+    "turnCount": 4,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 1.7,
+    "filesChanged": 17,
+    "linesAdded": 1253,
+    "linesDeleted": 13,
+    "totalDiffLines": 1266,
+    "speedLinesPerMinute": 744.7
+  },
+  "protocol": {
+    "specTokens": 371,
+    "planTokens": 205,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 2376
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 3095,
+    "outputTokens": 1326,
+    "totalTokens": 4421,
+    "toolCallsCount": 10
+  }
+}

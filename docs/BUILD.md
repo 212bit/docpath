@@ -1,3 +1,9 @@
+---
+related:
+  - getting-started.md
+  - guides/multi-stack-testing-efficiency.md
+---
+
 # Build Guide
 
 ## Commands

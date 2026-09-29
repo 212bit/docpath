@@ -1,3 +1,9 @@
+---
+related:
+  - integrations/codex-skill-adapter.md
+  - architecture/agent-context-injection-architecture.md
+---
+
 # DocPath 工具评估报告
 
 > **⚠️ 历史档案 —— 本报告基于 2026-06-23 的 v0.1.1 (commit f9fdbcc)，部分信息已过时。**

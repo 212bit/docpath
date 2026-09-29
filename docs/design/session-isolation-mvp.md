@@ -1,3 +1,9 @@
+---
+related:
+  - features/worktree-workflow.md
+  - design/command-boundaries.md
+---
+
 # Session Isolation MVP
 
 > Status: Implemented MVP direction

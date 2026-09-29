@@ -1,3 +1,9 @@
+---
+related:
+  - getting-started.md
+  - design/command-boundaries.md
+---
+
 # DocPath 错误码参考
 
 本文档列出所有 DocPath 错误码及其含义、原因和解决方案。

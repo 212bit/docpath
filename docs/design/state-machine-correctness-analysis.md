@@ -1,3 +1,9 @@
+---
+related:
+  - architecture/breadcrumb-task-level-architecture.md
+  - features/backlog-lifecycle.md
+---
+
 # 状态机正确性分析 (R-203)
 
 ## 背景

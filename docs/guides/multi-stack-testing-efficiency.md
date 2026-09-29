@@ -1,3 +1,9 @@
+---
+related:
+  - features/test-impact-analysis.md
+  - BUILD.md
+---
+
 # 多技术栈定向测试与门禁效能最佳实践
 
 > 规范 DocPath 在不同语言与技术栈下的测试验证分工，杜绝调试期盲目跑全量测试导致的耗时增加与 Token 浪费，建立「调试期定向单测」与「收口期法定门禁」的高效双层体系。

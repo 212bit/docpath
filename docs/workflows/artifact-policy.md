@@ -1,3 +1,9 @@
+---
+related:
+  - architecture/breadcrumb-task-level-architecture.md
+  - features/knowledge-accumulation.md
+---
+
 # DocPath Artifact Generation Policy
 
 > 定义 DocPath 系统生成哪些文件、何时生成、如何控制

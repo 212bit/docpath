@@ -1,3 +1,9 @@
+---
+related:
+  - design/session-isolation-mvp.md
+  - features/task-stash.md
+---
+
 # Agent-neutral Git Worktree 并发开发 - 使用指南
 
 > DocPath Worktree 支持真并发开发：Codex、Claude Code、OpenCode 或兼容 Agent 在独立的 Git worktrees 中同时开发不同 features。

@@ -1,3 +1,9 @@
+---
+related:
+  - getting-started.md
+  - architecture/documentation-lifecycle-guide.md
+---
+
 # DocPath 产品全景文档 (Product Panorama)
 
 > **💡 阅读指引**

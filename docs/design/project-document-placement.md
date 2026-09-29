@@ -1,3 +1,9 @@
+---
+related:
+  - design/refactor-doc-management-plan.md
+  - architecture/documentation-lifecycle-guide.md
+---
+
 # 项目文档放置决策
 
 ## Decision

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-29T04:51:03.871Z",
+    "updated_at": "2026-09-29T04:51:03.871Z",
+    "content_sha256": "1c3cb3e1e5a09f7880e422df8f22c78c8f0c174b53f31325cbcd8e31354c76c9"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-29T04:51:03.871Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 T-20260929-quick-docs - docs: 治理文档孤岛并建立网状关联",
+      "description": "完成 T-20260929-quick-docs - docs: 治理文档孤岛并建立网状关联（quick 升级 standard 压缩计划）。",
+      "acceptance": "代码实现就绪并通过质量门禁与审查",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

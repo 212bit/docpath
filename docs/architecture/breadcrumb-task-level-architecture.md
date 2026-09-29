@@ -1,3 +1,9 @@
+---
+related:
+  - design/state-machine-correctness-analysis.md
+  - workflows/artifact-policy.md
+---
+
 # Breadcrumb 任务级优先架构
 
 ## 概述

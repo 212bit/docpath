@@ -1,3 +1,9 @@
+---
+related:
+  - features/worktree-workflow.md
+  - features/backlog-lifecycle.md
+---
+
 # 任务热暂存与上下文恢复 (Task Stash & Switch)
 
 ## 概述

@@ -1,3 +1,9 @@
+---
+related:
+  - design/project-document-placement.md
+  - architecture/documentation-lifecycle-guide.md
+---
+
 # 重构方案：docpath 转型为「文档管理 + 沉淀 + 一致性校验」
 
 > 状态：**已否决，不执行**（2026-09-06 用户裁决）

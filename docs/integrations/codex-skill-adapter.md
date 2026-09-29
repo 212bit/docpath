@@ -1,3 +1,9 @@
+---
+related:
+  - design/agent-integration.md
+  - architecture/tool-evaluation-2026-06.md
+---
+
 # Codex Skill Adapter
 
 DocPath can install project-level Codex Skills that expose a `$docpath` style entry while keeping DocPath as the task state machine.

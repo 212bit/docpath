@@ -1,3 +1,9 @@
+---
+related:
+  - guides/multi-stack-testing-efficiency.md
+  - features/architecture-guard.md
+---
+
 # 测试影响分析与智能门禁加速体系 (Test Impact Analysis & Smart Gates)
 
 > DocPath 测试与门禁效能体系旨在彻底解决 AI 辅助编程中的**“全量测试泛滥”、“反复多余构建”与“假绿假红误报”**问题。

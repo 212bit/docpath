@@ -1,3 +1,9 @@
+---
+related:
+  - features/test-impact-analysis.md
+  - features/knowledge-accumulation.md
+---
+
 # 架构分层与依赖防腐守卫 (Architecture Layers & Guardrails)
 
 > DocPath 架构守卫体系通过代码级 AST 静态分析与依赖图拓扑扫描，

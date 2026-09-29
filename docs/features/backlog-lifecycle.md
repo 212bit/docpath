@@ -1,3 +1,9 @@
+---
+related:
+  - features/knowledge-accumulation.md
+  - features/task-stash.md
+---
+
 # Backlog 需求工程与全生命周期管理 (Backlog Lifecycle & Engineering)
 
 > DocPath 需求工程系统是面向 Agent 与人类协同的**去中心化、声明式需求管理底座**。
