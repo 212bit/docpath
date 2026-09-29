@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, utimesSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -146,4 +146,49 @@ describe('docpath docs lifecycle & archive commands', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('detects and heals CLI command drift in docs', () => {
+    const cwd = mkWorkspace();
+    try {
+      // Create doc referencing deprecated commands `docpath switch` and `docpath brainstorm`
+      writeFileSync(
+        join(cwd, 'docs', 'features', 'cmd-drift-doc.md'),
+        '# Command Drift Doc\n\nPlease run `docpath switch` or `docpath brainstorm` to proceed.\n',
+      );
+
+      const doctorOut = run('docs doctor', cwd);
+      assert.match(doctorOut, /命令调用漂移 \(Command Drift\)/);
+      assert.match(doctorOut, /cmd-drift-doc\.md/);
+      assert.match(doctorOut, /命令已废弃: `docpath switch`/);
+
+      // Run docs fix to auto-heal
+      const fixOut = run('docs fix', cwd);
+      assert.match(fixOut, /活文档自愈修复完成/);
+
+      const fixedContent = readFileSync(join(cwd, 'docs', 'features', 'cmd-drift-doc.md'), 'utf-8');
+      assert.match(fixedContent, /`docpath task switch`/);
+      assert.match(fixedContent, /`docpath analyze`/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('detects stale unreviewed active documents older than 180 days', () => {
+    const cwd = mkWorkspace();
+    try {
+      const activePath = join(cwd, 'docs', 'features', 'active-feature.md');
+      // Set mtime to 200 days ago
+      const pastTime = (Date.now() - 200 * 24 * 60 * 60 * 1000) / 1000;
+      utimesSync(activePath, pastTime, pastTime);
+
+      const doctorOut = run('docs doctor', cwd);
+      assert.match(doctorOut, /长期未复核 \(Stale Unreviewed\)/);
+      assert.match(doctorOut, /active-feature\.md/);
+      assert.match(doctorOut, /文档长期未复核/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
+
+

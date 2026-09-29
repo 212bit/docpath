@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-09-29T16:22:25.999Z",
-    "updated_at": "2026-09-29T16:22:25.999Z",
-    "content_sha256": "8c74c60b3fca1021b69a882bf59cf6b38868dfe53f267435194c833edbc06d54"
+    "created_at": "2026-09-29T16:22:52.299Z",
+    "updated_at": "2026-09-29T16:22:52.299Z",
+    "content_sha256": "87d9df2e9643bd2734536652bd8bf2a7793d602264cd7f604dcae046afb396cc"
   },
   "title": "执行计划",
-  "generated_at": "2026-09-29T16:22:25.999Z",
+  "generated_at": "2026-09-29T16:22:52.299Z",
   "steps": [
     {
       "id": "S1",
@@ -24,7 +24,7 @@
       "description": "落地 FR-2: 文档状态过滤列表能力，并完成模块定向自验。",
       "acceptance": "AC-2: 文档状态过滤列表能力 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-446 与任务 T-20260929-feat-docs 建立双向关联",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }

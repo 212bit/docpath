@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs-cli","step":"S1","status":"in_progress","context":"go --accept-dirty: start --adopt: claim workspace edits","timestamp":"2026-09-29T16:36:46.201Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs-cli","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 增加 CLI 命令参数漂移检测","timestamp":"2026-09-29T16:36:46.206Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs-cli","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-29T16:39:21.967Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs-cli","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 文档老化体检引擎","timestamp":"2026-09-29T16:39:22.271Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs-cli","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-09-29T16:40:47.446Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260929-feat-docs-cli","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）, Living docs integrity gate","timestamp":"2026-09-29T16:42:37.206Z"}

@@ -10,7 +10,7 @@
  */
 
 import { existsSync } from 'node:fs';
-import { readFile, writeFile, readdir, rm, rename, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, readdir, rm, rename, mkdir, stat } from 'node:fs/promises';
 import { join, relative, extname, basename, dirname, resolve, isAbsolute } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { resolveDocpathDir, readFileSafe, writeFileAtomic } from './file.js';
@@ -23,10 +23,14 @@ import {
   type ProjectDocumentIndexEntry,
 } from './document-index.js';
 
+import { COMMAND_METADATA } from './command-metadata.js';
+
 export type DocIssueType =
   | 'broken-link'
   | 'deprecated-reference'
   | 'code-drift'
+  | 'command-drift'
+  | 'stale-unreviewed'
   | 'empty-doc'
   | 'missing-heading'
   | 'unindexed'
@@ -58,6 +62,8 @@ export interface DocHealthReport {
     brokenLinks: number;
     deprecatedReferences: number;
     codeDrift: number;
+    commandDrift: number;
+    staleUnreviewed: number;
     unindexed: number;
     missingHeadings: number;
     emptyDocs: number;
@@ -344,6 +350,56 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
           });
         }
       }
+
+      // DocPath CLI 命令漂移检查 (Command Drift Check)
+      const validCommands = new Set(COMMAND_METADATA.map((c) => c.name));
+      const commandReplacements = new Map<string, string>();
+      for (const cmd of COMMAND_METADATA) {
+        if (cmd.replacement) commandReplacements.set(cmd.name, cmd.replacement);
+      }
+      validCommands.add('help');
+      validCommands.add('version');
+
+      const cmdRegex = /`docpath\s+([a-zA-Z0-9_-]+)`/g;
+      let cmdMatch: RegExpExecArray | null;
+      while ((cmdMatch = cmdRegex.exec(content)) !== null) {
+        const fullCmd = cmdMatch[0];
+        const sub = cmdMatch[1].trim();
+        if (sub.startsWith('<') || sub.startsWith('[') || sub.startsWith('$') || sub === '...') continue;
+
+        if (commandReplacements.has(sub)) {
+          const repl = commandReplacements.get(sub)!;
+          issues.push({
+            file: rel,
+            absPath: abs,
+            type: 'command-drift',
+            message: `命令已废弃: \`docpath ${sub}\` (建议使用 \`docpath ${repl}\`)`,
+            autoFixable: true,
+            fixDetail: `更新废弃命令为: \`docpath ${repl}\``,
+            linkData: {
+              originalText: fullCmd,
+              originalTarget: `docpath ${sub}`,
+              suggestedTarget: `docpath ${repl}`,
+            },
+          });
+        }
+      }
+
+      // 活文档长期未复核检查 (Stale Unreviewed Check - 超过 180 天未更新)
+      if (rel.startsWith('docs/') && !rel.startsWith('docs/archive/') && selfMeta.status !== 'deprecated') {
+        const fileStat = await stat(abs);
+        const daysSinceModified = Math.floor((Date.now() - fileStat.mtimeMs) / (1000 * 60 * 60 * 24));
+        if (daysSinceModified > 180) {
+          issues.push({
+            file: rel,
+            absPath: abs,
+            type: 'stale-unreviewed',
+            message: `文档长期未复核 (距今已 ${daysSinceModified} 天未校准)`,
+            autoFixable: false,
+            fixDetail: `建议人工复核其有效性，或使用 docpath docs touch ${rel} 确认有效`,
+          });
+        }
+      }
     } catch {
       // 容错
     }
@@ -548,6 +604,8 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
     brokenLinks: issues.filter((i) => i.type === 'broken-link').length,
     deprecatedReferences: issues.filter((i) => i.type === 'deprecated-reference').length,
     codeDrift: issues.filter((i) => i.type === 'code-drift').length,
+    commandDrift: issues.filter((i) => i.type === 'command-drift').length,
+    staleUnreviewed: issues.filter((i) => i.type === 'stale-unreviewed').length,
     unindexed: issues.filter((i) => i.type === 'unindexed').length,
     missingHeadings: issues.filter((i) => i.type === 'missing-heading').length,
     emptyDocs: issues.filter((i) => i.type === 'empty-doc').length,
@@ -668,7 +726,31 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     }
   }
 
-  // 4. 修复 Backlog 游离文件移动与证据死链自愈
+  // 4. 修复 DocPath 命令漂移 (Command Drift)
+  const commandDriftIssues = report.issues.filter((i) => i.type === 'command-drift' && i.autoFixable && i.linkData?.suggestedTarget);
+  for (const issue of commandDriftIssues) {
+    try {
+      const content = (await readFileSafe(issue.absPath)) || '';
+      const oldCmd = `\`${issue.linkData!.originalTarget}\``;
+      const newCmd = `\`${issue.linkData!.suggestedTarget}\``;
+      if (content.includes(oldCmd)) {
+        const updated = content.replaceAll(oldCmd, newCmd);
+        if (!dryRun) {
+          await writeFile(issue.absPath, updated, 'utf-8');
+        }
+        repairedLinks.push({
+          file: issue.file,
+          from: issue.linkData!.originalTarget,
+          to: issue.linkData!.suggestedTarget!,
+        });
+        fixedCount++;
+      }
+    } catch {
+      // 容错
+    }
+  }
+
+  // 5. 修复 Backlog 游离文件移动与证据死链自愈
   for (const issue of report.issues) {
     if (issue.type === 'backlog-misplaced' && issue.autoFixable && issue.linkData?.suggestedTarget) {
       try {
@@ -713,7 +795,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     }
   }
 
-  // 5. 刷新活文档索引 (如果有未索引或幽灵索引条目)
+  // 6. 刷新活文档索引 (如果有未索引或幽灵索引条目)
   const needsIndexRefresh = report.stats.unindexed > 0 || report.stats.staleIndex > 0;
   if (needsIndexRefresh) {
     if (!dryRun) {
@@ -723,7 +805,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     fixedCount += report.stats.unindexed + report.stats.staleIndex;
   }
 
-  // 6. 重新诊断剩余未自愈问题
+  // 7. 重新诊断剩余未自愈问题
   const afterReport = dryRun ? report : await diagnoseDocumentHealth(cwd);
 
   return {
@@ -756,6 +838,8 @@ export function renderDocHealthTable(report: DocHealthReport): string {
   lines.push(`  - 死链检查 (Broken Links)             : ${report.stats.brokenLinks === 0 ? '✅ 0 处断链' : `❌ ${report.stats.brokenLinks} 处断链`}`);
   lines.push(`  - 废弃引用 (Deprecated Reference)     : ${report.stats.deprecatedReferences === 0 ? '✅ 无过期引用' : `⚠️  ${report.stats.deprecatedReferences} 处引用已废弃文档`}`);
   lines.push(`  - 代码引用漂移 (Code Drift)           : ${report.stats.codeDrift === 0 ? '✅ 路径完全对齐' : `⚠️  ${report.stats.codeDrift} 处源码引用失效`}`);
+  lines.push(`  - 命令调用漂移 (Command Drift)        : ${report.stats.commandDrift === 0 ? '✅ 语法完全有效' : `⚠️  ${report.stats.commandDrift} 处命令用法已变更`}`);
+  lines.push(`  - 长期未复核 (Stale Unreviewed)       : ${report.stats.staleUnreviewed === 0 ? '✅ 时效完备' : `⚠️  ${report.stats.staleUnreviewed} 个文档超过 180 天未更新`}`);
   lines.push(`  - 未索引文档 (Unindexed)              : ${report.stats.unindexed === 0 ? '✅ 全部同步' : `⚠️  ${report.stats.unindexed} 个文档未入索引`}`);
   lines.push(`  - 缺失一级标题 (Missing H1)           : ${report.stats.missingHeadings === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.missingHeadings} 个文档缺少 H1`}`);
   lines.push(`  - 空白占位文档 (Empty Docs)           : ${report.stats.emptyDocs === 0 ? '✅ 无空文档' : `⚠️  ${report.stats.emptyDocs} 个空文档`}`);

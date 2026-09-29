@@ -58,7 +58,7 @@ L3 输出层   output/ api.ts   --agent YAML / 人类可读 / Node API
 | `core/model.ts` | 类型契约 | — | — | doc-lens `kernel/model` |
 | `core/extract.ts` | 事实提取（api-paths / identifiers / regex） | 文件内容 + 提取器配置 | 事实值[] | doc-lens `kernel/extract` |
 | `core/drift.ts` | 权威源 vs 下游集合比对 | 事实快照[] + 权威源 | 漂移项[] | doc-lens `kernel/drift` |
-| `core/spec.ts` | 规范规则求值 | 产物 + 规则集 | 违规项[]（含改法） | **新增** |
+| `src/commands/register/spec.ts` | 规范规则求值 | 产物 + 规则集 | 违规项[]（含改法） | **新增** |
 | `core/adjudicate.ts` | 裁决分组 + 指纹 + 台账渲染 | issues + 裁决记录 | 分组状态 / markdown | doc-lens `kernel/adjudicate` |
 | `core/ledger.ts` | 需求/决策条目数据模型与状态链 | 条目 / 查询 | 条目[] | **新增**（吸收 `governance/decisions`） |
 | `core/retrieve.ts` | BM25 检索排序 | 查询 + 语料 | 命中[]（含命中依据） | **新增**（替代 27 组同义词） |
