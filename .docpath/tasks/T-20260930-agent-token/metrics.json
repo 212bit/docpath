@@ -1,0 +1,144 @@
+{
+  "taskId": "T-20260930-agent-token",
+  "taskTitle": "T-20260930-agent-token - 基于 Agent 会话日志的流程合规审计与 Token 消耗漂移监控体系",
+  "backlogId": "R-450",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-30T03:14:07.925Z",
+  "completedAt": "2026-09-30T03:27:14.175Z",
+  "durationMinutes": 13.1,
+  "firstTimePassRate": 50,
+  "complianceScore": 65,
+  "violations": [
+    {
+      "ruleId": "CR-03",
+      "ruleName": "Flapping Tool / Harness Retry Loops",
+      "severity": "high",
+      "description": "检测到 0 次连续相同工具/命令重试死循环或 4 次工具执行错误",
+      "penalty": 20,
+      "evidence": {
+        "flappingCount": 0,
+        "errorCount": 4
+      }
+    },
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 31, 消耗: 17100 Tokens, 时长: 67 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 31,
+        "totalTokens": 17100,
+        "durationMinutes": 67
+      }
+    }
+  ],
+  "totalDiffLines": 464,
+  "filesChanged": 14,
+  "linesAdded": 458,
+  "linesDeleted": 6,
+  "engineering": {
+    "turnCount": 10,
+    "retryCount": 1,
+    "firstTimePassRate": 50,
+    "cycleTimeMinutes": 13.1,
+    "filesChanged": 14,
+    "linesAdded": 458,
+    "linesDeleted": 6,
+    "totalDiffLines": 464,
+    "speedLinesPerMinute": 35.4
+  },
+  "protocol": {
+    "specTokens": 1153,
+    "planTokens": 559,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3512
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 11970,
+    "outputTokens": 5130,
+    "totalTokens": 17100,
+    "costUsd": 0.1129,
+    "toolCallsCount": 22,
+    "complianceScore": 65,
+    "violations": [
+      {
+        "ruleId": "CR-03",
+        "ruleName": "Flapping Tool / Harness Retry Loops",
+        "severity": "high",
+        "description": "检测到 0 次连续相同工具/命令重试死循环或 4 次工具执行错误",
+        "penalty": 20,
+        "evidence": {
+          "flappingCount": 0,
+          "errorCount": 4
+        }
+      },
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 31, 消耗: 17100 Tokens, 时长: 67 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 31,
+          "totalTokens": 17100,
+          "durationMinutes": 67
+        }
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 11970,
+      "outputTokens": 5130,
+      "totalTokens": 17100,
+      "costUsd": 0.1129
+    },
+    "toolCalls": {
+      "total": 22,
+      "byName": {
+        "run_command": 16,
+        "invoke_subagent": 2,
+        "manage_subagents": 1,
+        "view_file": 2,
+        "replace_file_content": 1
+      },
+      "errorCount": 4
+    },
+    "turnsCount": 31,
+    "errorCount": 4,
+    "heavyReadsCount": 1,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-03",
+        "ruleName": "Flapping Tool / Harness Retry Loops",
+        "severity": "high",
+        "description": "检测到 0 次连续相同工具/命令重试死循环或 4 次工具执行错误",
+        "penalty": 20,
+        "evidence": {
+          "flappingCount": 0,
+          "errorCount": 4
+        }
+      },
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 31, 消耗: 17100 Tokens, 时长: 67 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 31,
+          "totalTokens": 17100,
+          "durationMinutes": 67
+        }
+      }
+    ],
+    "complianceScore": 65,
+    "durationMs": 4012000
+  }
+}

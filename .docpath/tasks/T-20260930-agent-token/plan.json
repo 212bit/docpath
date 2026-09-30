@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-30T03:21:40.747Z",
+    "updated_at": "2026-09-30T03:21:40.747Z",
+    "content_sha256": "9c67da86885403999dda81da533d34092cc8ab61322029f2a93b0b72e79fd366"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-30T03:21:40.747Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 基于 Agent 会话日志的流程合规审计",
+      "description": "落地 FR-1: 基于 Agent 会话日志的流程合规审计，并完成模块定向自验。",
+      "acceptance": "AC-1: 设计统一 Agent 会话遥测接口（AgentTelemetryAdapter），首发支持 Antigravity 与标准环境变量适配",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 Token 消耗漂移监控体系",
+      "description": "落地 FR-2: Token 消耗漂移监控体系，并完成模块定向自验。",
+      "acceptance": "AC-2: 实现会话级合规行为审计引擎（检测违规 quick、大文件滥读、死循环卡点、跨任务长会话未轮转）；AC-3: 实现 Token 漂移与突增告警机制（基线偏离预警、协议膨胀率计算）；AC-4: 提供 docpath monitor 监控大盘（含人类交互视图、--agent 紧凑视图及 --strict 门禁检测）；AC-1: 基于 Agent 会话日志的流程合规审计 满足功能要求并通过测试；AC-2: Token 消耗漂移监控体系 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-450 与任务 T-20260930-agent-token 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}
