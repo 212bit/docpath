@@ -54,6 +54,13 @@ export interface DocPathEfficacyEvidence {
   summary: string;
 }
 
+export interface DocPathRedundantPattern {
+  subcommand: string;
+  count: number;
+  tokensWasted: number;
+  reason: string;
+}
+
 export interface DocPathSerialChain {
   chain: string; // e.g. "go -> next" or "next -> next"
   count: number;
@@ -72,6 +79,7 @@ export interface DocPathHeavyOutputCommand {
 export interface DocPathCliFrictionEvidence {
   redundantCallsCount: number;
   redundantTokensWasted: number;
+  redundantPatterns: DocPathRedundantPattern[];
   serialChains: DocPathSerialChain[];
   heavyOutputCommands: DocPathHeavyOutputCommand[];
   actionableOptimizations: string[];
@@ -464,6 +472,7 @@ export function computeDocPathFrictionEvidence(
 ): DocPathCliFrictionEvidence {
   let redundantCallsCount = 0;
   let redundantTokensWasted = 0;
+  const redundantPatternsMap = new Map<string, { subcommand: string; count: number; tokensWasted: number; reason: string }>();
   const serialChainsMap = new Map<string, { chain: string; count: number; tokensWasted: number; recommendation: string }>();
   const heavyOutputsMap = new Map<string, { subcommand: string; count: number; totalOutputTokens: number; maxOutputTokens: number; optimizationHint: string }>();
 
@@ -477,6 +486,25 @@ export function computeDocPathFrictionEvidence(
         if (prev.subcommand === curr.subcommand) {
           redundantCallsCount++;
           redundantTokensWasted += callTokens;
+
+          let reason = `Consecutive \`${curr.subcommand}\` polling without intermediate actions`;
+          if (curr.subcommand === 'next') {
+            reason = 'Consecutive `next` polling without intermediate file edits or subagent dispatch';
+          } else if (curr.subcommand === 'status') {
+            reason = 'Consecutive `status` polling without intermediate state-changing actions';
+          } else if (curr.subcommand === 'check') {
+            reason = 'Repeated `check` executions without intermediate code changes';
+          }
+
+          const existingPattern = redundantPatternsMap.get(curr.subcommand) || {
+            subcommand: curr.subcommand,
+            count: 0,
+            tokensWasted: 0,
+            reason,
+          };
+          existingPattern.count++;
+          existingPattern.tokensWasted += callTokens;
+          redundantPatternsMap.set(curr.subcommand, existingPattern);
         }
         let recommendation = `Avoid serial chaining of "${chainKey}" without intervening actions.`;
         if (chainKey === 'go -> next') {
@@ -512,6 +540,9 @@ export function computeDocPathFrictionEvidence(
     }
   }
 
+  const redundantPatterns = Array.from(redundantPatternsMap.values()).sort(
+    (a, b) => b.tokensWasted - a.tokensWasted || b.count - a.count
+  );
   const serialChains = Array.from(serialChainsMap.values()).sort((a, b) => b.count - a.count || b.tokensWasted - a.tokensWasted);
   const heavyOutputCommands = Array.from(heavyOutputsMap.values()).map((h) => ({
     subcommand: h.subcommand,
@@ -539,6 +570,7 @@ export function computeDocPathFrictionEvidence(
   return {
     redundantCallsCount,
     redundantTokensWasted,
+    redundantPatterns,
     serialChains,
     heavyOutputCommands,
     actionableOptimizations,
@@ -1315,23 +1347,122 @@ export class FallbackBreadcrumbAdapter {
       const lines = raw.split('\n').filter((l) => l.trim());
       if (lines.length === 0) return null;
 
-      let turnsCount = lines.length;
+      let turnsCount = 0;
       let errorCount = 0;
       let blockedSteps = 0;
       let estimatedTokens = 0;
+      let subagentDispatchesCount = 0;
+      let hasInterveningCodeChange = false;
+      const docStatsMap = new Map<string, { count: number; errorCount: number; inputTokens: number; outputTokens: number }>();
+      const docpathCallHistory: DocPathCommandEvent[] = [];
 
       for (const line of lines) {
         try {
           const entry = JSON.parse(line);
-          estimatedTokens += estimateTokens(line);
-          if (entry.status === 'blocked' || entry.gate_verdict === 'fail') {
+          if (options.taskId && options.taskId !== 'current' && entry.taskId && entry.taskId !== options.taskId) {
+            continue;
+          }
+          turnsCount++;
+          const lineTokens = estimateTokens(line);
+          estimatedTokens += lineTokens;
+
+          const isError =
+            entry.status === 'blocked' ||
+            entry.gate_verdict === 'fail' ||
+            entry.status === 'error' ||
+            entry.event === 'error' ||
+            entry.event === 'gate_failed' ||
+            (typeof entry.exit_code === 'number' && entry.exit_code !== 0) ||
+            (entry.error && entry.status !== 'blocked');
+
+          if (isError) {
             errorCount++;
-            blockedSteps++;
+            if (entry.status === 'blocked' || entry.gate_verdict === 'fail' || entry.event === 'gate_failed') {
+              blockedSteps++;
+            }
+          }
+
+          // 检查子代理与代码修改动作以判断干预
+          const actionStr = String(entry.action || entry.event || entry.type || '').toLowerCase();
+          if (actionStr.includes('subagent') || actionStr.includes('invoke')) {
+            subagentDispatchesCount++;
+            hasInterveningCodeChange = true;
+          }
+          if (actionStr.includes('edit') || actionStr.includes('write') || entry.diff || entry.changedFiles) {
+            hasInterveningCodeChange = true;
+          }
+
+          // 提取 DocPath CLI 命令
+          let subcmd: string | null = null;
+          if (entry.subcommand && typeof entry.subcommand === 'string') {
+            subcmd = entry.subcommand.toLowerCase();
+          } else if (entry.command || entry.commandLine || entry.cmd) {
+            subcmd = extractDocpathSubcommand(entry.command || entry.commandLine || entry.cmd);
+          } else if (entry.action && typeof entry.action === 'string') {
+            subcmd = extractDocpathSubcommand(entry.action);
+            if (!subcmd && /^(?:go|step-pass|check|done|next|start|quick|journal|backlog|monitor|status|context|budget|arch|step-skip|task|gate|repair|stats|switch|stash|pop)$/i.test(entry.action)) {
+              subcmd = entry.action.toLowerCase();
+            }
+          }
+
+          if (!subcmd && entry.context && typeof entry.context === 'string') {
+            subcmd = extractDocpathSubcommand(entry.context);
+            if (!subcmd) {
+              const ctxMatch = entry.context.match(/(?:^|[;&|\s]|docpath\s+)(go|step-pass|check|done|next|start|quick|journal|backlog|monitor|status|context|budget|arch|step-skip|task|gate|repair|stats|switch|stash|pop)(?:\s|:|$)/i);
+              if (ctxMatch && ctxMatch[1]) {
+                subcmd = ctxMatch[1].toLowerCase();
+              }
+            }
+          }
+
+          if (!subcmd && entry.event && typeof entry.event === 'string') {
+            if (entry.event === 'step-pass' || entry.event === 'step.completed') {
+              subcmd = 'step-pass';
+            } else if (entry.event === 'step.started' || entry.event === 'start') {
+              subcmd = 'go';
+            } else if (entry.event === 'gate_failed' || entry.event === 'check') {
+              subcmd = 'check';
+            }
+          }
+
+          if (!subcmd && entry.step) {
+            if (entry.status === 'in_progress' || entry.status === 'started') {
+              subcmd = 'go';
+            } else if (entry.status === 'done' || entry.status === 'passed') {
+              subcmd = 'step-pass';
+            } else if (entry.status === 'blocked' || entry.gate_verdict === 'fail') {
+              subcmd = 'check';
+            } else if (entry.status === 'skipped') {
+              subcmd = 'step-skip';
+            }
+          }
+
+          if (subcmd) {
+            const inTok = Math.max(30, estimateTokens(entry.context || entry.command || `docpath ${subcmd}`));
+            const outTok = Math.max(40, estimateTokens(entry.output || entry.message || JSON.stringify(entry)));
+            const dStat = docStatsMap.get(subcmd) || { count: 0, errorCount: 0, inputTokens: 0, outputTokens: 0 };
+            dStat.count++;
+            if (isError) dStat.errorCount++;
+            dStat.inputTokens += inTok;
+            dStat.outputTokens += outTok;
+            docStatsMap.set(subcmd, dStat);
+
+            const hadInterveningChange = hasInterveningCodeChange;
+            hasInterveningCodeChange = false;
+            docpathCallHistory.push({
+              subcommand: subcmd,
+              inputTokens: inTok,
+              outputTokens: outTok,
+              isError,
+              hadInterveningChange,
+            });
           }
         } catch {
           // ignore
         }
       }
+
+      if (turnsCount === 0) return null;
 
       const inputTokens = Math.round(estimatedTokens * 0.7);
       const outputTokens = Math.round(estimatedTokens * 0.3);
@@ -1352,11 +1483,58 @@ export class FallbackBreadcrumbAdapter {
         spec: options.spec,
       });
 
+      let docpathCliOverhead: DocPathCliOverhead | undefined;
+      if (docStatsMap.size > 0) {
+        const commands: DocPathCommandStat[] = Array.from(docStatsMap.entries()).map(([subcommand, s]) => {
+          const totalTokens = s.inputTokens + s.outputTokens;
+          const avgTokens = s.count > 0 ? Math.round(totalTokens / s.count) : 0;
+          return {
+            subcommand,
+            count: s.count,
+            errorCount: s.errorCount,
+            inputTokens: s.inputTokens,
+            outputTokens: s.outputTokens,
+            totalTokens,
+            avgTokens,
+          };
+        });
+
+        commands.sort((a, b) => {
+          if (b.count !== a.count) return b.count - a.count;
+          return b.totalTokens - a.totalTokens;
+        });
+
+        const totalCalls = commands.reduce((sum, c) => sum + c.count, 0);
+        const errorCalls = commands.reduce((sum, c) => sum + c.errorCount, 0);
+        const docInputTokens = commands.reduce((sum, c) => sum + c.inputTokens, 0);
+        const docOutputTokens = commands.reduce((sum, c) => sum + c.outputTokens, 0);
+        const docTotalTokens = docInputTokens + docOutputTokens;
+        const finalTotal = estimatedTokens > 0 ? estimatedTokens : docTotalTokens;
+        const percentageOfSessionTokens = finalTotal > 0
+          ? parseFloat(((docTotalTokens / finalTotal) * 100).toFixed(1))
+          : 0;
+
+        docpathCliOverhead = {
+          totalCalls,
+          errorCalls,
+          totalTokens: docTotalTokens,
+          inputTokens: docInputTokens,
+          outputTokens: docOutputTokens,
+          percentageOfSessionTokens,
+          commands,
+        };
+      }
+
+      const docpathCliFriction = docpathCallHistory.length > 0
+        ? computeDocPathFrictionEvidence(docpathCallHistory)
+        : undefined;
+
       const docpathEfficacy = computeDocPathEfficacyEvidence({
         gateInterceptionCount: blockedSteps,
+        subagentDispatchesCount,
         flappingCount: blockedSteps >= 3 ? 1 : 0,
         errorCount,
-        turnsCount,
+        turnsCount: Math.max(1, turnsCount),
       });
 
       return {
@@ -1370,6 +1548,8 @@ export class FallbackBreadcrumbAdapter {
           total: turnsCount,
           byName: {},
         },
+        docpathCliOverhead,
+        docpathCliFriction,
         docpathEfficacy,
         turnsCount,
         errorCount,
@@ -2110,22 +2290,89 @@ export class ZCodeTelemetryAdapter {
 }
 
 /**
- * 统一遥测探针入口：按优先级调度各适配器并完成流程审计
+ * 统一遥测探针入口：按优先级调度各适配器并完成流程审计与遥测融合
  */
 export async function resolveAgentTelemetry(
   options: TelemetryProbeOptions
 ): Promise<SessionTelemetryRecord> {
   // 1. 显式环境变量优先
   const envRecord = await EnvTelemetryAdapter.probe(options);
-  if (envRecord) return envRecord;
+  if (envRecord) {
+    if (!envRecord.docpathCliOverhead || !envRecord.docpathCliFriction || !envRecord.docpathEfficacy) {
+      const bc = await FallbackBreadcrumbAdapter.probe(options);
+      if (bc) {
+        envRecord.docpathCliOverhead = envRecord.docpathCliOverhead || bc.docpathCliOverhead;
+        envRecord.docpathCliFriction = envRecord.docpathCliFriction || bc.docpathCliFriction;
+        envRecord.docpathEfficacy = envRecord.docpathEfficacy || bc.docpathEfficacy;
+      }
+    }
+    return envRecord;
+  }
 
-  // 2. ZCode 原生 SQLite / Rollout 遥测直连
-  const zcodeRecord = await ZCodeTelemetryAdapter.probe(options);
-  if (zcodeRecord) return zcodeRecord;
-
-  // 3. 真实 Antigravity / Gemini CLI 会话日志
+  // 2. 探测 Antigravity transcript 与 ZCode 原生 SQLite / Rollout
   const antigravityRecord = await AntigravityTelemetryAdapter.probe(options);
-  if (antigravityRecord) return antigravityRecord;
+  const zcodeRecord = await ZCodeTelemetryAdapter.probe(options);
+
+  // 3. 融合决策与遥测水合
+  if (antigravityRecord && (antigravityRecord.tokens.totalTokens > 0 || (antigravityRecord.toolCalls && antigravityRecord.toolCalls.total > 0))) {
+    // 运行在 Antigravity 环境
+    if (zcodeRecord && zcodeRecord.tokens.totalTokens > 0) {
+      if (!antigravityRecord.docpathCliOverhead && zcodeRecord.docpathCliOverhead) {
+        antigravityRecord.docpathCliOverhead = zcodeRecord.docpathCliOverhead;
+      }
+      if (!antigravityRecord.docpathCliFriction && zcodeRecord.docpathCliFriction) {
+        antigravityRecord.docpathCliFriction = zcodeRecord.docpathCliFriction;
+      }
+      if (!antigravityRecord.docpathEfficacy && zcodeRecord.docpathEfficacy) {
+        antigravityRecord.docpathEfficacy = zcodeRecord.docpathEfficacy;
+      }
+    }
+    if (!antigravityRecord.docpathCliOverhead || !antigravityRecord.docpathCliFriction) {
+      const bc = await FallbackBreadcrumbAdapter.probe(options);
+      if (bc) {
+        antigravityRecord.docpathCliOverhead = antigravityRecord.docpathCliOverhead || bc.docpathCliOverhead;
+        antigravityRecord.docpathCliFriction = antigravityRecord.docpathCliFriction || bc.docpathCliFriction;
+        antigravityRecord.docpathEfficacy = antigravityRecord.docpathEfficacy || bc.docpathEfficacy;
+      }
+    }
+    return antigravityRecord;
+  }
+
+  if (zcodeRecord && (zcodeRecord.tokens.totalTokens > 0 || zcodeRecord.turnsCount > 0)) {
+    // ZCode 记录存在。如果缺失 docpathCliOverhead / docpathCliFriction，从 antigravity 或 breadcrumb 融合水合
+    if (!zcodeRecord.docpathCliOverhead || !zcodeRecord.docpathCliFriction) {
+      if (antigravityRecord?.docpathCliOverhead) {
+        zcodeRecord.docpathCliOverhead = antigravityRecord.docpathCliOverhead;
+        zcodeRecord.docpathCliFriction = antigravityRecord.docpathCliFriction;
+        zcodeRecord.docpathEfficacy = antigravityRecord.docpathEfficacy || zcodeRecord.docpathEfficacy;
+      } else {
+        const bc = await FallbackBreadcrumbAdapter.probe(options);
+        if (bc) {
+          zcodeRecord.docpathCliOverhead = bc.docpathCliOverhead;
+          zcodeRecord.docpathCliFriction = bc.docpathCliFriction;
+          zcodeRecord.docpathEfficacy = zcodeRecord.docpathEfficacy || bc.docpathEfficacy;
+        }
+      }
+      if (zcodeRecord.docpathCliOverhead && zcodeRecord.tokens.totalTokens > 0) {
+        zcodeRecord.docpathCliOverhead.percentageOfSessionTokens = parseFloat(
+          ((zcodeRecord.docpathCliOverhead.totalTokens / zcodeRecord.tokens.totalTokens) * 100).toFixed(1)
+        );
+      }
+    }
+    return zcodeRecord;
+  }
+
+  if (antigravityRecord) {
+    if (!antigravityRecord.docpathCliOverhead || !antigravityRecord.docpathCliFriction) {
+      const bc = await FallbackBreadcrumbAdapter.probe(options);
+      if (bc) {
+        antigravityRecord.docpathCliOverhead = antigravityRecord.docpathCliOverhead || bc.docpathCliOverhead;
+        antigravityRecord.docpathCliFriction = antigravityRecord.docpathCliFriction || bc.docpathCliFriction;
+        antigravityRecord.docpathEfficacy = antigravityRecord.docpathEfficacy || bc.docpathEfficacy;
+      }
+    }
+    return antigravityRecord;
+  }
 
   // 4. Fallback 到 DocPath breadcrumb.jsonl
   const breadcrumbRecord = await FallbackBreadcrumbAdapter.probe(options);

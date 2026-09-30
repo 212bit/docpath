@@ -106,7 +106,13 @@ function renderDocPathEfficacyPanel(efficacy?: DocPathEfficacyEvidence | null): 
  */
 function renderDocPathCliFrictionPanel(friction?: DocPathCliFrictionEvidence | null): void {
   console.log('┌ 🔍  DocPath 自身摩擦与优化实证 (DocPath CLI Friction & Optimization) ┐');
-  if (!friction || (friction.redundantCallsCount === 0 && (!friction.serialChains || friction.serialChains.length === 0) && (!friction.heavyOutputCommands || friction.heavyOutputCommands.length === 0))) {
+  if (
+    !friction ||
+    (friction.redundantCallsCount === 0 &&
+      (!friction.redundantPatterns || friction.redundantPatterns.length === 0) &&
+      (!friction.serialChains || friction.serialChains.length === 0) &&
+      (!friction.heavyOutputCommands || friction.heavyOutputCommands.length === 0))
+  ) {
     console.log(`│  重复/空转调用:      🟢 0 次重复调用 (浪费 0 Tokens)`.padEnd(58) + '│');
     console.log(`│  串行链路与重构:     🟢 未检测到低效串行命令调用链`.padEnd(58) + '│');
     console.log(`│  大体积输出命令:     🟢 无超载输出命令 (均输出正常)`.padEnd(58) + '│');
@@ -119,33 +125,31 @@ function renderDocPathCliFrictionPanel(friction?: DocPathCliFrictionEvidence | n
   const redIcon = redCount > 0 ? '⚠️' : '🟢';
   console.log(`│  重复/空转调用:      ${redIcon} 重复/空转调用: ${redCount} 次 (浪费 ~${formatTokens(redWasted)} Tokens)`.padEnd(58) + '│');
 
+  if (friction.redundantPatterns && friction.redundantPatterns.length > 0) {
+    for (const p of friction.redundantPatterns.slice(0, 6)) {
+      const reasonStr = p.reason ? ` - ${p.reason}` : '';
+      console.log(`│  重复调用明细:      🔴 ${p.subcommand}: ${p.count} 次重复 (浪费 ~${formatTokens(p.tokensWasted)} Tokens)${reasonStr}`.padEnd(58) + '│');
+    }
+  }
+
   if (friction.serialChains && friction.serialChains.length > 0) {
-    console.log('│  ' + '─'.repeat(58) + '│');
-    console.log('│  ⚠️  低效串行命令链 (Serial Command Chaining):'.padEnd(58) + '│');
-    for (const sc of friction.serialChains.slice(0, 4)) {
-      const wastedStr = sc.tokensWasted > 0 ? ` (浪费 ~${formatTokens(sc.tokensWasted)} Tokens)` : '';
-      console.log(`│    • ${sc.chain}: 发生 ${sc.count} 次${wastedStr}`.padEnd(58) + '│');
-      if (sc.recommendation) {
-        console.log(`│      建议: ${sc.recommendation}`.padEnd(58) + '│');
-      }
+    for (const sc of friction.serialChains.slice(0, 6)) {
+      const recStr = sc.recommendation ? ` | 建议: ${sc.recommendation}` : '';
+      console.log(`│  串行调用链路:      🟠 [${sc.chain}] 发生 ${sc.count} 次 (消耗 ~${formatTokens(sc.tokensWasted)} Tokens)${recStr}`.padEnd(58) + '│');
     }
   }
 
   if (friction.heavyOutputCommands && friction.heavyOutputCommands.length > 0) {
-    console.log('│  ' + '─'.repeat(58) + '│');
-    console.log('│  ⚠️  大体积输出命令 (Heavy Output Commands):'.padEnd(58) + '│');
-    for (const hc of friction.heavyOutputCommands.slice(0, 4)) {
-      console.log(`│    • ${hc.subcommand}: 均输出 ~${formatTokens(hc.avgOutputTokens)} Tokens (最高 ~${formatTokens(hc.maxOutputTokens)} Tokens, 调用 ${hc.count} 次)`.padEnd(58) + '│');
-      if (hc.optimizationHint) {
-        console.log(`│      优化指引: ${hc.optimizationHint}`.padEnd(58) + '│');
-      }
+    for (const hc of friction.heavyOutputCommands.slice(0, 6)) {
+      const hintStr = hc.optimizationHint ? ` | ${hc.optimizationHint}` : '';
+      console.log(`│  超长输出命令:      🟡 [${hc.subcommand}] 均输出 ~${formatTokens(hc.avgOutputTokens)} Tokens${hintStr}`.padEnd(58) + '│');
     }
   }
 
   if (friction.actionableOptimizations && friction.actionableOptimizations.length > 0) {
     console.log('│  ' + '─'.repeat(58) + '│');
     console.log('│  💡 消除命令摩擦优化建议 (Actionable Optimizations):'.padEnd(58) + '│');
-    for (const opt of friction.actionableOptimizations.slice(0, 3)) {
+    for (const opt of friction.actionableOptimizations.slice(0, 5)) {
       console.log(`│    • ${opt}`.padEnd(58) + '│');
     }
   }
@@ -219,6 +223,7 @@ function formatDocPathCliFrictionForAgent(friction?: DocPathCliFrictionEvidence 
     return {
       redundant_calls_count: 0,
       redundant_tokens_wasted: 0,
+      redundant_patterns: [],
       serial_chains: [],
       heavy_output_commands: [],
       actionable_optimizations: [],
@@ -227,6 +232,12 @@ function formatDocPathCliFrictionForAgent(friction?: DocPathCliFrictionEvidence 
   return {
     redundant_calls_count: friction.redundantCallsCount,
     redundant_tokens_wasted: friction.redundantTokensWasted,
+    redundant_patterns: (friction.redundantPatterns || []).map((rp) => ({
+      subcommand: rp.subcommand,
+      count: rp.count,
+      tokens_wasted: rp.tokensWasted,
+      reason: rp.reason,
+    })),
     serial_chains: (friction.serialChains || []).map((sc) => ({
       chain: sc.chain,
       count: sc.count,

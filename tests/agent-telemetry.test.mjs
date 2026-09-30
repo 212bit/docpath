@@ -13,9 +13,11 @@ import {
   detectCurrentSessionId,
   captureGitCommit,
   extractDocpathSubcommand,
+  computeDocPathFrictionEvidence,
 } from '../dist/utils/agent-telemetry-adapter.js';
 import {
   collectTaskMetrics,
+  loadAllTaskMetrics,
   probeRealAgentTelemetry,
   probeActiveTaskMetrics,
   extractStepTelemetrySlices,
@@ -1494,6 +1496,11 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
       const friction = result.docpathCliFriction;
       assert.ok(friction.redundantCallsCount >= 1);
       assert.ok(friction.redundantTokensWasted > 0);
+      assert.ok(Array.isArray(friction.redundantPatterns));
+      const nextPattern = friction.redundantPatterns.find((p) => p.subcommand === 'next');
+      assert.ok(nextPattern, 'Should detect redundant pattern for next');
+      assert.equal(nextPattern.count, 1);
+      assert.ok(nextPattern.tokensWasted > 0);
 
       // Check serial chains
       const nextNextChain = friction.serialChains.find((c) => c.chain === 'next -> next');
@@ -1778,6 +1785,419 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
       const emptyFriction = aggregateDocPathCliFriction([]);
       assert.equal(emptyFriction.redundantCallsCount, 0);
       assert.equal(emptyFriction.serialChains.length, 0);
+      assert.equal(emptyFriction.redundantPatterns.length, 0);
+    });
+
+    it('computeDocPathFrictionEvidence extracts and aggregates redundantPatterns for repeated subcommands (FR-2 / AC-2)', () => {
+      const events = [
+        { subcommand: 'next', inputTokens: 50, outputTokens: 150, isError: false, hadInterveningChange: false },
+        { subcommand: 'next', inputTokens: 50, outputTokens: 150, isError: false, hadInterveningChange: false },
+        { subcommand: 'next', inputTokens: 50, outputTokens: 150, isError: false, hadInterveningChange: false },
+        { subcommand: 'go', inputTokens: 40, outputTokens: 100, isError: false, hadInterveningChange: false },
+        { subcommand: 'status', inputTokens: 30, outputTokens: 70, isError: false, hadInterveningChange: false },
+        { subcommand: 'status', inputTokens: 30, outputTokens: 70, isError: false, hadInterveningChange: false },
+        { subcommand: 'check', inputTokens: 100, outputTokens: 400, isError: false, hadInterveningChange: false },
+        { subcommand: 'check', inputTokens: 100, outputTokens: 400, isError: false, hadInterveningChange: false },
+      ];
+
+      const friction = computeDocPathFrictionEvidence(events);
+
+      assert.equal(friction.redundantCallsCount, 4);
+      assert.equal(friction.redundantTokensWasted, 200 + 200 + 100 + 500); // 1000
+
+      assert.ok(Array.isArray(friction.redundantPatterns));
+      assert.equal(friction.redundantPatterns.length, 3);
+
+      // Verify sorted by tokensWasted descending: check (500) > next (400) > status (100)
+      assert.equal(friction.redundantPatterns[0].subcommand, 'check');
+      assert.equal(friction.redundantPatterns[0].count, 1);
+      assert.equal(friction.redundantPatterns[0].tokensWasted, 500);
+      assert.match(friction.redundantPatterns[0].reason, /check/i);
+
+      assert.equal(friction.redundantPatterns[1].subcommand, 'next');
+      assert.equal(friction.redundantPatterns[1].count, 2);
+      assert.equal(friction.redundantPatterns[1].tokensWasted, 400);
+      assert.match(friction.redundantPatterns[1].reason, /next/i);
+
+      assert.equal(friction.redundantPatterns[2].subcommand, 'status');
+      assert.equal(friction.redundantPatterns[2].count, 1);
+      assert.equal(friction.redundantPatterns[2].tokensWasted, 100);
+      assert.match(friction.redundantPatterns[2].reason, /status/i);
+    });
+
+    it('aggregateDocPathCliFriction merges redundantPatterns across multiple tasks (FR-2 / AC-2)', () => {
+      const mockTasks = [
+        {
+          taskId: 'T-001',
+          docpathCliFriction: {
+            redundantCallsCount: 2,
+            redundantTokensWasted: 600,
+            redundantPatterns: [
+              {
+                subcommand: 'next',
+                count: 2,
+                tokensWasted: 600,
+                reason: 'Consecutive `next` polling without intermediate file edits or subagent dispatch',
+              },
+            ],
+            serialChains: [],
+            heavyOutputCommands: [],
+            actionableOptimizations: [],
+          },
+        },
+        {
+          taskId: 'T-002',
+          docpathCliFriction: {
+            redundantCallsCount: 3,
+            redundantTokensWasted: 1200,
+            redundantPatterns: [
+              {
+                subcommand: 'next',
+                count: 1,
+                tokensWasted: 300,
+                reason: 'Consecutive `next` polling without intermediate file edits or subagent dispatch',
+              },
+              {
+                subcommand: 'check',
+                count: 2,
+                tokensWasted: 900,
+                reason: 'Repeated `check` executions without intermediate code changes',
+              },
+            ],
+            serialChains: [],
+            heavyOutputCommands: [],
+            actionableOptimizations: [],
+          },
+        },
+      ];
+
+      const friction = aggregateDocPathCliFriction(mockTasks);
+
+      assert.equal(friction.redundantCallsCount, 5);
+      assert.equal(friction.redundantTokensWasted, 1800);
+
+      assert.ok(Array.isArray(friction.redundantPatterns));
+      assert.equal(friction.redundantPatterns.length, 2);
+
+      // Both next and check have 900 tokensWasted, count breaks tie: next (3) > check (2)
+      assert.equal(friction.redundantPatterns[0].subcommand, 'next');
+      assert.equal(friction.redundantPatterns[0].count, 3);
+      assert.equal(friction.redundantPatterns[0].tokensWasted, 900);
+
+      assert.equal(friction.redundantPatterns[1].subcommand, 'check');
+      assert.equal(friction.redundantPatterns[1].count, 2);
+      assert.equal(friction.redundantPatterns[1].tokensWasted, 900);
+    });
+  });
+
+  describe('Real Command Telemetry Fusion & Historical Hydration (FR-1 / AC-1)', () => {
+    it('FallbackBreadcrumbAdapter parses breadcrumb event history into DocPathCliOverhead and DocPathCliFrictionEvidence', async () => {
+      const cwd = mkdtempSync(join(tmpdir(), 'dp-bc-enrich-'));
+      const dp = join(cwd, '.docpath');
+      mkdirSync(join(dp, 'tasks', 'T-501'), { recursive: true });
+
+      const breadcrumbLines = [
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-501',
+          step: 'S1',
+          status: 'in_progress',
+          action: 'go',
+          context: 'docpath go --step S1',
+          timestamp: '2026-09-30T10:00:00.000Z',
+        }),
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-501',
+          step: 'S1',
+          status: 'in_progress',
+          action: 'next',
+          context: 'docpath next --agent',
+          timestamp: '2026-09-30T10:01:00.000Z',
+        }),
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-501',
+          step: 'S1',
+          status: 'blocked',
+          action: 'check',
+          context: 'check: tests failed',
+          gate_verdict: 'fail',
+          timestamp: '2026-09-30T10:02:00.000Z',
+        }),
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-501',
+          step: 'S1',
+          status: 'done',
+          action: 'step-pass',
+          context: 'docpath step-pass --commit',
+          timestamp: '2026-09-30T10:03:00.000Z',
+        }),
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-501',
+          step: 'S1',
+          status: 'done',
+          action: 'done',
+          context: 'docpath done --commit',
+          timestamp: '2026-09-30T10:04:00.000Z',
+        }),
+      ].join('\n');
+
+      writeFileSync(join(dp, 'tasks', 'T-501', 'breadcrumb.jsonl'), breadcrumbLines);
+
+      try {
+        const record = await FallbackBreadcrumbAdapter.probe({
+          cwd,
+          taskId: 'T-501',
+        });
+
+        assert.ok(record, 'Record should be returned');
+        assert.equal(record.source, 'breadcrumb');
+        assert.equal(record.turnsCount, 5);
+        assert.equal(record.errorCount, 1);
+
+        // Check docpathCliOverhead
+        assert.ok(record.docpathCliOverhead, 'docpathCliOverhead should be extracted');
+        assert.equal(record.docpathCliOverhead.totalCalls, 5);
+        assert.equal(record.docpathCliOverhead.errorCalls, 1);
+        assert.ok(record.docpathCliOverhead.totalTokens > 0);
+        assert.ok(record.docpathCliOverhead.commands.length >= 4);
+
+        const goCmd = record.docpathCliOverhead.commands.find((c) => c.subcommand === 'go');
+        assert.ok(goCmd);
+        assert.equal(goCmd.count, 1);
+
+        const checkCmd = record.docpathCliOverhead.commands.find((c) => c.subcommand === 'check');
+        assert.ok(checkCmd);
+        assert.equal(checkCmd.errorCount, 1);
+
+        // Check docpathCliFriction
+        assert.ok(record.docpathCliFriction, 'docpathCliFriction should be calculated');
+        const goNextChain = record.docpathCliFriction.serialChains.find((c) => c.chain === 'go -> next');
+        assert.ok(goNextChain, 'Should detect go -> next serial chain');
+        assert.equal(goNextChain.count, 1);
+
+        // Check docpathEfficacy
+        assert.ok(record.docpathEfficacy, 'docpathEfficacy should be calculated');
+        assert.equal(record.docpathEfficacy.gateInterceptionCount, 1);
+        assert.ok(record.docpathEfficacy.contextCompressionRatio > 70);
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+
+    it('resolveAgentTelemetry fuses ZCode tokens with breadcrumb CLI command overhead and friction', async () => {
+      const cwd = mkdtempSync(join(tmpdir(), 'dp-fusion-'));
+      const dp = join(cwd, '.docpath');
+      mkdirSync(join(dp, 'tasks', 'T-502'), { recursive: true });
+
+      const breadcrumbLines = [
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-502',
+          step: 'S1',
+          status: 'in_progress',
+          action: 'go',
+          context: 'docpath go --step S1',
+          timestamp: '2026-09-30T10:00:00.000Z',
+        }),
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-502',
+          step: 'S1',
+          status: 'done',
+          action: 'step-pass',
+          context: 'docpath step-pass --commit',
+          timestamp: '2026-09-30T10:05:00.000Z',
+        }),
+      ].join('\n');
+
+      writeFileSync(join(dp, 'tasks', 'T-502', 'breadcrumb.jsonl'), breadcrumbLines);
+
+      // Create mock ZCode rollout JSONL with model tokens but no command line strings
+      const rolloutDir = join(cwd, 'mock-rollout');
+      mkdirSync(rolloutDir, { recursive: true });
+      const rolloutLines = [
+        JSON.stringify({
+          sessionId: 'sess-zcode-fusion',
+          startedAt: '2026-09-30T10:00:00.000Z',
+          model: 'claude-3-5-sonnet',
+          usage: {
+            input_tokens: 12000,
+            output_tokens: 3000,
+            total_tokens: 15000,
+          },
+          response: {
+            toolCalls: [
+              {
+                name: 'run_command',
+                args: { command: 'node test.js' },
+              },
+            ],
+          },
+        }),
+      ].join('\n');
+      writeFileSync(join(rolloutDir, 'model-io-sess-zcode-fusion.jsonl'), rolloutLines);
+
+      try {
+        const record = await resolveAgentTelemetry({
+          cwd,
+          taskId: 'T-502',
+          sessionId: 'sess-zcode-fusion',
+          zcodeRolloutDir: rolloutDir,
+          // Empty brainDir to ensure no Antigravity transcript overrides
+          brainDir: join(cwd, 'non-existent-brain'),
+        });
+
+        assert.ok(record);
+        assert.equal(record.source, 'zcode');
+        assert.equal(record.tokens.totalTokens, 15000);
+        assert.equal(record.tokens.inputTokens, 12000);
+        assert.equal(record.tokens.outputTokens, 3000);
+
+        // Verify CLI overhead fused from breadcrumb
+        assert.ok(record.docpathCliOverhead, 'docpathCliOverhead should be fused from breadcrumb');
+        assert.equal(record.docpathCliOverhead.totalCalls, 2);
+        assert.ok(record.docpathCliOverhead.totalTokens > 0);
+        assert.ok(record.docpathCliOverhead.percentageOfSessionTokens > 0);
+
+        // Verify efficacy and friction fused
+        assert.ok(record.docpathCliFriction);
+        assert.ok(record.docpathEfficacy);
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+
+    it('loadAllTaskMetrics auto-hydrates missing CLI overhead and friction from task breadcrumb files', async () => {
+      const cwd = mkdtempSync(join(tmpdir(), 'dp-hydrate-metrics-'));
+      const dp = join(cwd, '.docpath');
+      mkdirSync(join(dp, 'workspace'), { recursive: true });
+      mkdirSync(join(dp, 'tasks', 'done', 'T-HIST-01'), { recursive: true });
+
+      // Create historical metrics.json WITHOUT docpathCliOverhead or docpathCliFriction
+      const historicalMetrics = {
+        taskId: 'T-HIST-01',
+        taskTitle: 'Historical Refactoring',
+        backlogId: 'R-HIST',
+        profile: 'standard',
+        level: 2,
+        startedAt: '2026-09-30T09:00:00.000Z',
+        completedAt: '2026-09-30T09:20:00.000Z',
+        durationMinutes: 20,
+        firstTimePassRate: 100,
+        complianceScore: 100,
+        totalDiffLines: 120,
+        filesChanged: 3,
+        linesAdded: 100,
+        linesDeleted: 20,
+        engineering: {
+          turnCount: 4,
+          retryCount: 0,
+          firstTimePassRate: 100,
+          cycleTimeMinutes: 20,
+          filesChanged: 3,
+          linesAdded: 100,
+          linesDeleted: 20,
+          totalDiffLines: 120,
+          speedLinesPerMinute: 6.0,
+        },
+        protocol: {
+          specTokens: 400,
+          planTokens: 300,
+          rulesTokens: 1800,
+          totalInjectedTokens: 2500,
+        },
+        realUsage: {
+          source: 'zcode',
+          inputTokens: 20000,
+          outputTokens: 4000,
+          totalTokens: 24000,
+          costUsd: 0.12,
+        },
+      };
+
+      writeFileSync(
+        join(dp, 'tasks', 'done', 'T-HIST-01', 'metrics.json'),
+        JSON.stringify(historicalMetrics, null, 2)
+      );
+
+      // Create task breadcrumb.jsonl with rich DocPath execution events
+      const taskBreadcrumbs = [
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-HIST-01',
+          step: 'S1',
+          status: 'in_progress',
+          action: 'go',
+          context: 'docpath go --step S1',
+          timestamp: '2026-09-30T09:00:00.000Z',
+        }),
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-HIST-01',
+          step: 'S1',
+          status: 'done',
+          action: 'step-pass',
+          context: 'docpath step-pass --commit',
+          timestamp: '2026-09-30T09:10:00.000Z',
+        }),
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-HIST-01',
+          step: 'S2',
+          status: 'in_progress',
+          action: 'go',
+          context: 'docpath go --step S2',
+          timestamp: '2026-09-30T09:11:00.000Z',
+        }),
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-HIST-01',
+          step: 'S2',
+          status: 'done',
+          action: 'done',
+          context: 'docpath done --commit',
+          timestamp: '2026-09-30T09:20:00.000Z',
+        }),
+      ].join('\n');
+
+      writeFileSync(join(dp, 'tasks', 'done', 'T-HIST-01', 'breadcrumb.jsonl'), taskBreadcrumbs);
+
+      try {
+        const loadedTasks = await loadAllTaskMetrics(cwd);
+        assert.equal(loadedTasks.length, 1);
+        const task = loadedTasks[0];
+        assert.equal(task.taskId, 'T-HIST-01');
+
+        // Verify auto-hydration
+        assert.ok(task.docpathCliOverhead, 'task.docpathCliOverhead should be auto-hydrated from breadcrumb');
+        assert.equal(task.docpathCliOverhead.totalCalls, 4);
+        assert.ok(task.docpathCliOverhead.commands.length >= 3);
+
+        assert.ok(task.docpathCliFriction, 'task.docpathCliFriction should be auto-hydrated');
+        assert.ok(task.docpathEfficacy, 'task.docpathEfficacy should be auto-hydrated');
+
+        // Verify realUsage is also enriched
+        assert.ok(task.realUsage?.docpathCliOverhead, 'realUsage.docpathCliOverhead should be hydrated');
+        assert.equal(task.realUsage?.docpathCliOverhead.totalCalls, 4);
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
     });
   });
 });
+

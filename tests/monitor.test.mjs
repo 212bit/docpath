@@ -2634,6 +2634,9 @@ describe('DocPath Efficacy & Friction Evidence Dashboard (FR-2 / AC-2, AC-3, AC-
         docpathCliFriction: {
           redundantCallsCount: 2,
           redundantTokensWasted: 1000,
+          redundantPatterns: [
+            { subcommand: 'next', count: 2, tokensWasted: 1000, reason: 'Avoid calling next consecutively' },
+          ],
           serialChains: [
             { chain: 'go -> next', count: 2, tokensWasted: 1000, recommendation: '建议升级为复合原子命令消除串行交互' },
           ],
@@ -2659,10 +2662,9 @@ describe('DocPath Efficacy & Friction Evidence Dashboard (FR-2 / AC-2, AC-3, AC-
 
       assert.match(stdoutHuman, /DocPath 自身摩擦与优化实证 \(DocPath CLI Friction & Optimization\)/);
       assert.match(stdoutHuman, /重复\/空转调用:\s*⚠️ 重复\/空转调用: 2 次 \(浪费 ~1,000 \(~1K\) Tokens\)/);
-      assert.match(stdoutHuman, /低效串行命令链 \(Serial Command Chaining\)/);
-      assert.match(stdoutHuman, /go -> next: 发生 2 次/);
-      assert.match(stdoutHuman, /大体积输出命令 \(Heavy Output Commands\)/);
-      assert.match(stdoutHuman, /review: 均输出 ~1,420 \(~1\.4K\) Tokens/);
+      assert.match(stdoutHuman, /重复调用明细:\s*🔴 next: 2 次重复 \(浪费 ~1,000 \(~1K\) Tokens\) - Avoid calling next consecutively/);
+      assert.match(stdoutHuman, /串行调用链路:\s*🟠 \[go -> next\] 发生 2 次 \(消耗 ~1,000 \(~1K\) Tokens\) \| 建议: 建议升级为复合原子命令消除串行交互/);
+      assert.match(stdoutHuman, /超长输出命令:\s*🟡 \[review\] 均输出 ~1,420 \(~1\.4K\) Tokens \| 建议默认启用 --compact/);
       assert.match(stdoutHuman, /消除命令摩擦优化建议 \(Actionable Optimizations\)/);
 
       // 2. YAML agent view
@@ -2673,10 +2675,18 @@ describe('DocPath Efficacy & Friction Evidence Dashboard (FR-2 / AC-2, AC-3, AC-
       assert.match(stdoutAgent, /prevented_loops_count:\s*2/);
       assert.match(stdoutAgent, /context_compression_ratio:\s*['"]?93\.5%['"]?/);
       assert.match(stdoutAgent, /subagent_tokens_saved:\s*15000/);
+      assert.match(stdoutAgent, /gate_interception_count:\s*1/);
+      assert.match(stdoutAgent, /first_time_pass_rate:\s*['"]?100%['"]?/);
+      assert.match(stdoutAgent, /summary:/);
       assert.match(stdoutAgent, /docpath_cli_friction:/);
       assert.match(stdoutAgent, /redundant_calls_count:\s*2/);
+      assert.match(stdoutAgent, /redundant_patterns:/);
+      assert.match(stdoutAgent, /subcommand:\s*next/);
+      assert.match(stdoutAgent, /serial_chains:/);
       assert.match(stdoutAgent, /chain:\s*go -> next/);
+      assert.match(stdoutAgent, /heavy_output_commands:/);
       assert.match(stdoutAgent, /subcommand:\s*review/);
+      assert.match(stdoutAgent, /actionable_optimizations:/);
 
       // 3. JSON view
       const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --json`, {
@@ -2688,11 +2698,15 @@ describe('DocPath Efficacy & Friction Evidence Dashboard (FR-2 / AC-2, AC-3, AC-
       assert.equal(data.activeTask.docpathEfficacy.preventedLoopsCount, 2);
       assert.equal(data.activeTask.docpathEfficacy.deadlockTokensSaved, 7000);
       assert.equal(data.activeTask.docpathEfficacy.subagentTokensSaved, 15000);
+      assert.equal(data.activeTask.docpathEfficacy.gateInterceptionCount, 1);
       assert.equal(data.activeTask.docpathEfficacy.contextCompressionRatio, 93.5);
 
       assert.ok(data.activeTask.docpathCliFriction);
       assert.equal(data.activeTask.docpathCliFriction.redundantCallsCount, 2);
+      assert.equal(data.activeTask.docpathCliFriction.redundantPatterns.length, 1);
+      assert.equal(data.activeTask.docpathCliFriction.redundantPatterns[0].subcommand, 'next');
       assert.equal(data.activeTask.docpathCliFriction.serialChains.length, 1);
+      assert.equal(data.activeTask.docpathCliFriction.serialChains[0].chain, 'go -> next');
       assert.equal(data.activeTask.docpathCliFriction.heavyOutputCommands.length, 1);
       assert.ok(data.activeTask.docpathCliFriction.actionableOptimizations.length >= 2);
     } finally {
@@ -2734,6 +2748,9 @@ describe('DocPath Efficacy & Friction Evidence Dashboard (FR-2 / AC-2, AC-3, AC-
         docpathCliFriction: {
           redundantCallsCount: 3,
           redundantTokensWasted: 1500,
+          redundantPatterns: [
+            { subcommand: 'status', count: 3, tokensWasted: 1500, reason: 'Duplicate status check' },
+          ],
           serialChains: [
             { chain: 'go -> next', count: 2, tokensWasted: 1000, recommendation: '建议升级为复合原子命令消除串行交互' },
             { chain: 'check -> done', count: 1, tokensWasted: 500, recommendation: 'docpath done 自动执行 check' },
@@ -2760,11 +2777,10 @@ describe('DocPath Efficacy & Friction Evidence Dashboard (FR-2 / AC-2, AC-3, AC-
 
       assert.match(stdoutHuman, /DocPath 自身摩擦与优化实证 \(DocPath CLI Friction & Optimization\)/);
       assert.match(stdoutHuman, /重复\/空转调用:\s*⚠️ 重复\/空转调用: 3 次 \(浪费 ~1,500 \(~1\.5K\) Tokens\)/);
-      assert.match(stdoutHuman, /低效串行命令链 \(Serial Command Chaining\)/);
-      assert.match(stdoutHuman, /go -> next: 发生 2 次/);
-      assert.match(stdoutHuman, /check -> done: 发生 1 次/);
-      assert.match(stdoutHuman, /大体积输出命令 \(Heavy Output Commands\)/);
-      assert.match(stdoutHuman, /review: 均输出 ~1,420 \(~1\.4K\) Tokens/);
+      assert.match(stdoutHuman, /重复调用明细:\s*🔴 status: 3 次重复 \(浪费 ~1,500 \(~1\.5K\) Tokens\) - Duplicate status check/);
+      assert.match(stdoutHuman, /串行调用链路:\s*🟠 \[go -> next\] 发生 2 次 \(消耗 ~1,000 \(~1K\) Tokens\) \| 建议: 建议升级为复合原子命令消除串行交互/);
+      assert.match(stdoutHuman, /串行调用链路:\s*🟠 \[check -> done\] 发生 1 次 \(消耗 ~500 Tokens\) \| 建议: docpath done 自动执行 check/);
+      assert.match(stdoutHuman, /超长输出命令:\s*🟡 \[review\] 均输出 ~1,420 \(~1\.4K\) Tokens \| 建议默认启用 --compact/);
       assert.match(stdoutHuman, /消除命令摩擦优化建议 \(Actionable Optimizations\)/);
 
       // 2. YAML agent view
@@ -2775,10 +2791,19 @@ describe('DocPath Efficacy & Friction Evidence Dashboard (FR-2 / AC-2, AC-3, AC-
       assert.match(stdoutAgent, /prevented_loops_count:\s*3/);
       assert.match(stdoutAgent, /context_compression_ratio:\s*['"]?92\.5%['"]?/);
       assert.match(stdoutAgent, /subagent_tokens_saved:\s*30000/);
+      assert.match(stdoutAgent, /gate_interception_count:\s*2/);
+      assert.match(stdoutAgent, /first_time_pass_rate:\s*['"]?100%['"]?/);
+      assert.match(stdoutAgent, /summary:/);
       assert.match(stdoutAgent, /docpath_cli_friction:/);
       assert.match(stdoutAgent, /redundant_calls_count:\s*3/);
+      assert.match(stdoutAgent, /redundant_patterns:/);
+      assert.match(stdoutAgent, /subcommand:\s*status/);
+      assert.match(stdoutAgent, /serial_chains:/);
       assert.match(stdoutAgent, /chain:\s*go -> next/);
       assert.match(stdoutAgent, /chain:\s*check -> done/);
+      assert.match(stdoutAgent, /heavy_output_commands:/);
+      assert.match(stdoutAgent, /subcommand:\s*review/);
+      assert.match(stdoutAgent, /actionable_optimizations:/);
 
       // 3. JSON view
       const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --json`, {
@@ -2793,6 +2818,8 @@ describe('DocPath Efficacy & Friction Evidence Dashboard (FR-2 / AC-2, AC-3, AC-
 
       assert.ok(data.globalDocPathCliFriction);
       assert.equal(data.globalDocPathCliFriction.redundantCallsCount, 3);
+      assert.equal(data.globalDocPathCliFriction.redundantPatterns.length, 1);
+      assert.equal(data.globalDocPathCliFriction.redundantPatterns[0].subcommand, 'status');
       assert.equal(data.globalDocPathCliFriction.serialChains.length, 2);
       assert.equal(data.globalDocPathCliFriction.heavyOutputCommands.length, 1);
       assert.ok(data.globalDocPathCliFriction.actionableOptimizations.length >= 2);

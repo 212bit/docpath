@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-30T15:15:09.729Z",
+    "updated_at": "2026-09-30T15:15:09.729Z",
+    "content_sha256": "3b1974705472553a3097857d8b3847b53cc28fb22dc959a275d11bb1420379a3"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-30T15:15:09.729Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 DocPath 真实全量命令遥测融合",
+      "description": "落地 FR-1: DocPath 真实全量命令遥测融合，并完成模块定向自验。",
+      "acceptance": "AC-1: DocPath 真实全量命令遥测融合 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 重复调用",
+      "description": "落地 FR-2: 重复调用，并完成模块定向自验。",
+      "acceptance": "AC-2: 重复调用 满足功能要求并通过测试",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现并验证 FR-3 串行链优化实证引擎",
+      "description": "落地 FR-3: 串行链优化实证引擎，并完成模块定向自验。",
+      "acceptance": "AC-3: 串行链优化实证引擎 满足功能要求并通过测试；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-458 与任务 T-20260930-docpath-2 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

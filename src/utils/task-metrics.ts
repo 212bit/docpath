@@ -16,6 +16,7 @@ import {
   detectCurrentSessionId,
   captureGitCommit,
   detectWorkflowFrictions,
+  FallbackBreadcrumbAdapter,
   type LifecycleAnchor,
   type StepTelemetrySlice,
   type SessionTelemetryRecord,
@@ -32,6 +33,7 @@ import {
   type DocPathCliFrictionEvidence,
   type DocPathSerialChain,
   type DocPathHeavyOutputCommand,
+  type DocPathRedundantPattern,
 } from './agent-telemetry-adapter.js';
 
 export type {
@@ -47,6 +49,7 @@ export type {
   DocPathCliFrictionEvidence,
   DocPathSerialChain,
   DocPathHeavyOutputCommand,
+  DocPathRedundantPattern,
 };
 export { detectCurrentSessionId, captureGitCommit, detectWorkflowFrictions };
 
@@ -823,6 +826,33 @@ export async function collectTaskMetrics(
     level,
   });
 
+  let docpathCliOverhead = sessionRecord?.docpathCliOverhead;
+  let docpathCliFriction = sessionRecord?.docpathCliFriction;
+  let docpathEfficacy = sessionRecord?.docpathEfficacy;
+
+  if (!docpathCliOverhead || !docpathCliFriction || !docpathEfficacy) {
+    try {
+      const bcRecord = await FallbackBreadcrumbAdapter.probe({
+        cwd,
+        taskId,
+        startedAt,
+        completedAt: now.toISOString(),
+        profile,
+        level,
+        spec: parsedSpec,
+        plan: parsedPlan,
+        state: parsedState,
+      });
+      if (bcRecord) {
+        docpathCliOverhead = docpathCliOverhead || bcRecord.docpathCliOverhead;
+        docpathCliFriction = docpathCliFriction || bcRecord.docpathCliFriction;
+        docpathEfficacy = docpathEfficacy || bcRecord.docpathEfficacy;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   const realUsage: RealAgentUsage | null =
     sessionRecord && (sessionRecord.tokens.totalTokens > 0 || sessionRecord.source !== 'unknown')
       ? {
@@ -835,12 +865,12 @@ export async function collectTaskMetrics(
           toolCallsCount: sessionRecord.toolCalls.total,
           toolAttributions: sessionRecord.toolAttributions,
           toolInefficiencies: sessionRecord.toolInefficiencies,
-          docpathCliOverhead: sessionRecord.docpathCliOverhead,
+          docpathCliOverhead: sessionRecord.docpathCliOverhead || docpathCliOverhead,
           model: sessionRecord.model,
           complianceScore: sessionRecord.complianceScore,
           violations: sessionRecord.violations,
-          docpathEfficacy: sessionRecord.docpathEfficacy,
-          docpathCliFriction: sessionRecord.docpathCliFriction,
+          docpathEfficacy: sessionRecord.docpathEfficacy || docpathEfficacy,
+          docpathCliFriction: sessionRecord.docpathCliFriction || docpathCliFriction,
         }
       : null;
 
@@ -908,9 +938,9 @@ export async function collectTaskMetrics(
     sessionRecord,
     toolAttributions: sessionRecord?.toolAttributions || realUsage?.toolAttributions,
     toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
-    docpathCliOverhead: sessionRecord?.docpathCliOverhead || realUsage?.docpathCliOverhead,
-    docpathEfficacy: sessionRecord?.docpathEfficacy || realUsage?.docpathEfficacy,
-    docpathCliFriction: sessionRecord?.docpathCliFriction || realUsage?.docpathCliFriction,
+    docpathCliOverhead: docpathCliOverhead || sessionRecord?.docpathCliOverhead || realUsage?.docpathCliOverhead,
+    docpathEfficacy: docpathEfficacy || sessionRecord?.docpathEfficacy || realUsage?.docpathEfficacy,
+    docpathCliFriction: docpathCliFriction || sessionRecord?.docpathCliFriction || realUsage?.docpathCliFriction,
     frictionFindings: frictionFindings.length > 0 ? frictionFindings : undefined,
     lifecycleAnchor,
     stepSlices: stepSlices.length > 0 ? stepSlices : undefined,
@@ -1001,6 +1031,32 @@ export async function loadAllTaskMetrics(cwd: string): Promise<TaskMetrics[]> {
 
   tasks.sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime());
   for (const t of tasks) {
+    // 自动回溯水合缺失的 CLI 开销、摩擦与效能度量 (FR-1 / AC-1)
+    if (!t.docpathCliOverhead || !t.docpathCliFriction || !t.docpathEfficacy) {
+      try {
+        const hydrated = await FallbackBreadcrumbAdapter.probe({
+          cwd,
+          taskId: t.taskId,
+          startedAt: t.startedAt,
+          completedAt: t.completedAt,
+          profile: t.profile,
+          level: t.level,
+        });
+        if (hydrated) {
+          t.docpathCliOverhead = t.docpathCliOverhead || hydrated.docpathCliOverhead;
+          t.docpathCliFriction = t.docpathCliFriction || hydrated.docpathCliFriction;
+          t.docpathEfficacy = t.docpathEfficacy || hydrated.docpathEfficacy;
+          if (t.realUsage) {
+            t.realUsage.docpathCliOverhead = t.realUsage.docpathCliOverhead || t.docpathCliOverhead;
+            t.realUsage.docpathCliFriction = t.realUsage.docpathCliFriction || t.docpathCliFriction;
+            t.realUsage.docpathEfficacy = t.realUsage.docpathEfficacy || t.docpathEfficacy;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     if (!t.docpathValueRoi) {
       t.docpathValueRoi = calculateDocPathValueRoi({
         protocolTokens: t.protocol?.totalInjectedTokens || 0,
@@ -1435,6 +1491,29 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       }
     }
 
+    if (!fileDocpathCliOverhead || !fileDocpathCliFriction || !fileDocpathEfficacy) {
+      try {
+        const bcRecord = await FallbackBreadcrumbAdapter.probe({
+          cwd,
+          taskId,
+          startedAt,
+          completedAt: now.toISOString(),
+          profile,
+          level,
+          spec: parsedSpec,
+          plan: parsedPlan,
+          state: parsedState,
+        });
+        if (bcRecord) {
+          fileDocpathCliOverhead = fileDocpathCliOverhead || bcRecord.docpathCliOverhead;
+          fileDocpathCliFriction = fileDocpathCliFriction || bcRecord.docpathCliFriction;
+          fileDocpathEfficacy = fileDocpathEfficacy || bcRecord.docpathEfficacy;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     let realUsage: RealAgentUsage | null = fileMetricsUsage || (
       sessionRecord && (sessionRecord.tokens.totalTokens > 0 || sessionRecord.source !== 'unknown')
         ? {
@@ -1447,15 +1526,21 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
             toolCallsCount: sessionRecord.toolCalls.total,
             toolAttributions: sessionRecord.toolAttributions,
             toolInefficiencies: sessionRecord.toolInefficiencies,
-            docpathCliOverhead: sessionRecord.docpathCliOverhead,
+            docpathCliOverhead: sessionRecord.docpathCliOverhead || fileDocpathCliOverhead,
             model: sessionRecord.model,
             complianceScore: sessionRecord.complianceScore,
             violations: sessionRecord.violations,
-            docpathEfficacy: sessionRecord.docpathEfficacy,
-            docpathCliFriction: sessionRecord.docpathCliFriction,
+            docpathEfficacy: sessionRecord.docpathEfficacy || fileDocpathEfficacy,
+            docpathCliFriction: sessionRecord.docpathCliFriction || fileDocpathCliFriction,
           }
         : null
     );
+
+    if (realUsage) {
+      realUsage.docpathCliOverhead = realUsage.docpathCliOverhead || fileDocpathCliOverhead;
+      realUsage.docpathEfficacy = realUsage.docpathEfficacy || fileDocpathEfficacy;
+      realUsage.docpathCliFriction = realUsage.docpathCliFriction || fileDocpathCliFriction;
+    }
 
     const complianceScore = sessionRecord ? sessionRecord.complianceScore : 100;
     const violations = sessionRecord ? sessionRecord.violations : [];
@@ -1811,6 +1896,7 @@ export function calculateDocPathEfficacy(tasks: TaskMetrics[]): DocPathEfficacyE
 export function aggregateDocPathCliFriction(tasks: TaskMetrics[]): DocPathCliFrictionEvidence {
   let redundantCallsCount = 0;
   let redundantTokensWasted = 0;
+  const patternMap = new Map<string, { subcommand: string; count: number; tokensWasted: number; reason: string }>();
   const chainMap = new Map<string, { count: number; tokensWasted: number; recommendation: string }>();
   const heavyMap = new Map<string, { count: number; totalOutputTokens: number; maxOutputTokens: number; optimizationHint: string }>();
   const optimSet = new Set<string>();
@@ -1820,6 +1906,19 @@ export function aggregateDocPathCliFriction(tasks: TaskMetrics[]): DocPathCliFri
     if (friction) {
       redundantCallsCount += friction.redundantCallsCount || 0;
       redundantTokensWasted += friction.redundantTokensWasted || 0;
+      if (Array.isArray(friction.redundantPatterns)) {
+        for (const rp of friction.redundantPatterns) {
+          const existing = patternMap.get(rp.subcommand) || {
+            subcommand: rp.subcommand,
+            count: 0,
+            tokensWasted: 0,
+            reason: rp.reason,
+          };
+          existing.count += rp.count || 0;
+          existing.tokensWasted += rp.tokensWasted || 0;
+          patternMap.set(rp.subcommand, existing);
+        }
+      }
       if (Array.isArray(friction.serialChains)) {
         for (const sc of friction.serialChains) {
           const existing = chainMap.get(sc.chain) || { count: 0, tokensWasted: 0, recommendation: sc.recommendation };
@@ -1844,6 +1943,10 @@ export function aggregateDocPathCliFriction(tasks: TaskMetrics[]): DocPathCliFri
       }
     }
   }
+
+  const redundantPatterns: DocPathRedundantPattern[] = Array.from(patternMap.values()).sort(
+    (a, b) => b.tokensWasted - a.tokensWasted || b.count - a.count
+  );
 
   const serialChains: DocPathSerialChain[] = Array.from(chainMap.entries()).map(([chain, val]) => ({
     chain,
@@ -1880,6 +1983,7 @@ export function aggregateDocPathCliFriction(tasks: TaskMetrics[]): DocPathCliFri
   return {
     redundantCallsCount,
     redundantTokensWasted,
+    redundantPatterns,
     serialChains,
     heavyOutputCommands,
     actionableOptimizations,
