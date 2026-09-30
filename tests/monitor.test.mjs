@@ -17,6 +17,10 @@ import {
   aggregateTaskMetrics,
   formatTokens,
   extractStepTelemetrySlices,
+  calculateDocPathValueRoi,
+  collectTaskMetrics,
+  detectWorkflowFrictions,
+  aggregateWorkflowFrictions,
 } from '../dist/utils/task-metrics.js';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
@@ -1864,6 +1868,425 @@ describe('Step-Level Telemetry Slices & Lifecycle Anchors in Monitor (FR-2 / AC-
     }
   });
 });
+
+describe('DocPath Lightweight Overhead Ratio & Value ROI Engine (FR-2 / AC-2)', () => {
+  it('calculateDocPathValueRoi calculates overhead ratio, compliance, pass rate, and summary', () => {
+    const roi = calculateDocPathValueRoi({
+      protocolTokens: 2300,
+      realModelTokens: 100000,
+      complianceScore: 95,
+      firstTimePassRate: 100,
+    });
+
+    assert.equal(roi.protocolTokens, 2300);
+    assert.equal(roi.realModelTokens, 100000);
+    assert.equal(roi.overheadRatio, 2.3);
+    assert.equal(roi.complianceScore, 95);
+    assert.equal(roi.firstTimePassRate, 100);
+    assert.match(roi.summaryText, /以极低 Token 负担/);
+
+    // When realModelTokens is 0
+    const fallbackRoi = calculateDocPathValueRoi({
+      protocolTokens: 1500,
+      realModelTokens: 0,
+    });
+    assert.equal(fallbackRoi.overheadRatio, 100);
+    assert.equal(fallbackRoi.complianceScore, 100);
+    assert.equal(fallbackRoi.firstTimePassRate, 100);
+  });
+
+  it('probeActiveTaskMetrics and docpath monitor --current render DocPath Value ROI in Human, YAML, and JSON views', () => {
+    const cwd = mkWorkspaceWithActiveTask({
+      taskId: 'T-ROI-ACTIVE',
+      taskTitle: 'Active Task for Value ROI Test',
+      profile: 'standard',
+    });
+
+    const dp = join(cwd, '.docpath');
+    const metricsJson = {
+      taskId: 'T-ROI-ACTIVE',
+      taskTitle: 'Active Task for Value ROI Test',
+      profile: 'standard',
+      level: 2,
+      realUsage: {
+        source: 'antigravity',
+        totalTokens: 80000,
+        inputTokens: 70000,
+        outputTokens: 10000,
+        cachedTokens: 20000,
+      },
+    };
+    writeFileSync(join(dp, 'tasks', 'current', 'metrics.json'), JSON.stringify(metricsJson, null, 2));
+
+    try {
+      // 1. Human Dashboard view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /DocPath 极轻量价值透视 \(DocPath Protocol ROI\)/);
+      assert.match(stdoutHuman, /协议注入占比:\s*⚡\s*\d+(\.\d+)?%/);
+      assert.match(stdoutHuman, /工程治理收益:/);
+      assert.match(stdoutHuman, /合规指数/);
+      assert.match(stdoutHuman, /门禁首次通过率/);
+      assert.match(stdoutHuman, /效能保障结论:\s*以极低 Token 负担/);
+
+      // 2. YAML agent view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /docpath_roi:/);
+      assert.match(stdoutAgent, /overhead_ratio:\s*['"]?\d+(\.\d+)?%['"]?/);
+      assert.match(stdoutAgent, /protocol_tokens:\s*\d+/);
+      assert.match(stdoutAgent, /real_tokens:\s*80000/);
+      assert.match(stdoutAgent, /compliance_score:\s*\d+/);
+      assert.match(stdoutAgent, /first_time_pass_rate:\s*['"]?\d+(\.\d+)?%['"]?/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.equal(data.active, true);
+      assert.ok(data.activeTask.docpathValueRoi);
+      assert.equal(data.activeTask.docpathValueRoi.realModelTokens, 80000);
+      assert.ok(data.activeTask.docpathValueRoi.overheadRatio > 0);
+      assert.ok(typeof data.activeTask.docpathValueRoi.complianceScore === 'number');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('aggregateMonitorMetrics and global docpath monitor render DocPath Value ROI in Human, YAML, and JSON views', () => {
+    const task1 = {
+      taskId: 'T-ROI-HIST-01',
+      taskTitle: 'Historical ROI Task 1',
+      profile: 'standard',
+      level: 2,
+      startedAt: '2026-09-30T10:00:00.000Z',
+      completedAt: '2026-09-30T10:15:00.000Z',
+      durationMinutes: 15,
+      firstTimePassRate: 100,
+      complianceScore: 100,
+      violations: [],
+      totalDiffLines: 150,
+      filesChanged: 3,
+      linesAdded: 130,
+      linesDeleted: 20,
+      protocol: { totalInjectedTokens: 2500 },
+      realUsage: { totalTokens: 100000, inputTokens: 90000, outputTokens: 10000 },
+    };
+
+    const cwd = mkWorkspaceWithTasks([task1]);
+    try {
+      // 1. Human Dashboard view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}"`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /DocPath 极轻量价值透视 \(DocPath Protocol ROI\)/);
+      assert.match(stdoutHuman, /协议注入占比:\s*⚡\s*2\.5%/); // 2500 / 100000 = 2.5%
+      assert.match(stdoutHuman, /工程治理收益:\s*🟢\s*100分 合规指数 \| 100% 门禁首次通过率/);
+      assert.match(stdoutHuman, /效能保障结论:\s*以极低 Token 负担/);
+
+      // 2. YAML agent view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /docpath_roi:/);
+      assert.match(stdoutAgent, /overhead_ratio:\s*['"]?2\.5%['"]?/);
+      assert.match(stdoutAgent, /protocol_tokens:\s*2500/);
+      assert.match(stdoutAgent, /real_tokens:\s*100000/);
+      assert.match(stdoutAgent, /compliance_score:\s*100/);
+      assert.match(stdoutAgent, /first_time_pass_rate:\s*['"]?100%['"]?/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.equal(data.totalTasks, 1);
+      assert.ok(data.docpathValueRoi);
+      assert.equal(data.docpathValueRoi.protocolTokens, 2500);
+      assert.equal(data.docpathValueRoi.realModelTokens, 100000);
+      assert.equal(data.docpathValueRoi.overheadRatio, 2.5);
+      assert.equal(data.docpathValueRoi.complianceScore, 100);
+      assert.equal(data.docpathValueRoi.firstTimePassRate, 100);
+      assert.ok(data.recentTasks[0].docpathValueRoi);
+      assert.equal(data.recentTasks[0].docpathValueRoi.overheadRatio, 2.5);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('Workflow Friction Diagnostics & Efficiency Dashboard (FR-3 / AC-3, AC-4, AC-5)', () => {
+  it('detectWorkflowFrictions detects command_error, gate_block, step_rework, spec_friction, and tool_waste', () => {
+    const rawContext = {
+      breadcrumbs: [
+        { timestamp: '2026-09-30T10:00:00.000Z', step: 'S1', status: 'error', error: 'invalid CLI argument' },
+        { timestamp: '2026-09-30T10:01:00.000Z', step: 'S1', action: 'check', status: 'fail', message: 'check failed: type error' },
+        { timestamp: '2026-09-30T10:02:00.000Z', step: 'S1', gate_verdict: 'fail' },
+        { timestamp: '2026-09-30T10:03:00.000Z', step: 'S1', action: 'retry' },
+        { timestamp: '2026-09-30T10:04:00.000Z', step: 'S1', status: 'blocked' },
+      ],
+      violations: [
+        { ruleId: 'CR-05', ruleName: 'Missing Decision Brief', severity: 'medium', description: 'No brief', penalty: 10 },
+      ],
+      toolInefficiencies: [
+        { type: 'duplicate_file_reads', severity: 'medium', tool: 'view_file', description: 'Read file 3 times', tokensWasted: 1200 },
+      ],
+    };
+
+    const findings = detectWorkflowFrictions(rawContext);
+    assert.ok(findings.length >= 4);
+
+    const cmdErr = findings.find((f) => f.category === 'command_error');
+    assert.ok(cmdErr);
+    assert.equal(cmdErr.id, 'FRIC-CMD-ERR');
+    assert.equal(cmdErr.count, 1);
+    assert.match(cmdErr.optimizationHint, /AGENTS\.md/);
+
+    const gateBlock = findings.find((f) => f.category === 'gate_block');
+    assert.ok(gateBlock);
+    assert.equal(gateBlock.id, 'FRIC-GATE-BLOCK');
+    assert.equal(gateBlock.count, 2);
+    assert.match(gateBlock.optimizationHint, /node --test/);
+
+    const rework = findings.find((f) => f.category === 'step_rework');
+    assert.ok(rework);
+    assert.equal(rework.id, 'FRIC-STEP-REWORK');
+    assert.equal(rework.count, 2);
+    assert.match(rework.optimizationHint, /docpath go --step/);
+
+    const specFriction = findings.find((f) => f.category === 'spec_friction');
+    assert.ok(specFriction);
+    assert.equal(specFriction.id, 'FRIC-SPEC-FRICTION');
+    assert.equal(specFriction.count, 1);
+
+    const toolWaste = findings.find((f) => f.category === 'tool_waste');
+    assert.ok(toolWaste);
+    assert.equal(toolWaste.id, 'FRIC-TOOL-WASTE');
+    assert.equal(toolWaste.tokensWasted, 1200);
+  });
+
+  it('aggregateWorkflowFrictions sums occurrences and preserves highest severity across tasks', () => {
+    const task1 = {
+      taskId: 'T-F1',
+      frictionFindings: [
+        {
+          id: 'FRIC-CMD-ERR',
+          category: 'command_error',
+          severity: 'low',
+          title: 'Command Error',
+          description: '1 error',
+          count: 1,
+          tokensWasted: 200,
+          optimizationHint: 'Hint 1',
+        },
+      ],
+    };
+    const task2 = {
+      taskId: 'T-F2',
+      frictionFindings: [
+        {
+          id: 'FRIC-CMD-ERR',
+          category: 'command_error',
+          severity: 'high',
+          title: 'Command Error',
+          description: '2 errors',
+          count: 2,
+          tokensWasted: 400,
+          optimizationHint: 'Hint 1',
+        },
+        {
+          id: 'FRIC-GATE-BLOCK',
+          category: 'gate_block',
+          severity: 'medium',
+          title: 'Gate Block',
+          description: 'Gate blocked',
+          count: 1,
+          tokensWasted: 400,
+          optimizationHint: 'Hint 2',
+        },
+      ],
+    };
+
+    const aggregated = aggregateWorkflowFrictions([task1, task2]);
+    assert.equal(aggregated.length, 2);
+    const cmd = aggregated.find((f) => f.id === 'FRIC-CMD-ERR');
+    assert.ok(cmd);
+    assert.equal(cmd.count, 3);
+    assert.equal(cmd.tokensWasted, 600);
+    assert.equal(cmd.severity, 'high');
+  });
+
+  it('generateRemediations outputs targeted REM-FRICTION actionable advice', () => {
+    const remediations = generateRemediations({
+      compliance: {
+        avgComplianceScore: 100,
+        totalViolations: 0,
+        violationsByRule: {},
+        violationsBySeverity: { critical: 0, high: 0, medium: 0, low: 0 },
+        criticalViolationsCount: 0,
+        unhealthyTasksCount: 0,
+      },
+      drift: {
+        quick: { profile: 'quick', taskCount: 0, baselineProtocolTokens: 800, recentProtocolTokens: 800, protocolInflationRate: 0, baselineRealTokensMedian: 8000, roiTokensPerLine: 0, spikeThresholdTokens: 20000 },
+        standard: { profile: 'standard', taskCount: 1, baselineProtocolTokens: 2000, recentProtocolTokens: 2000, protocolInflationRate: 0, baselineRealTokensMedian: 30000, roiTokensPerLine: 100, spikeThresholdTokens: 75000 },
+        overallProtocolInflationRate: 0,
+      },
+      spikes: [],
+      frictionFindings: [
+        {
+          id: 'FRIC-CMD-ERR',
+          category: 'command_error',
+          severity: 'high',
+          title: 'Command Execution Errors',
+          description: 'Errors found',
+          count: 3,
+          optimizationHint: 'Check CLI',
+        },
+        {
+          id: 'FRIC-GATE-BLOCK',
+          category: 'gate_block',
+          severity: 'high',
+          title: 'Quality Gate Blockage',
+          description: 'Gate failed',
+          count: 2,
+          optimizationHint: 'Run single test',
+        },
+        {
+          id: 'FRIC-STEP-REWORK',
+          category: 'step_rework',
+          severity: 'medium',
+          title: 'Step Rework & Retries',
+          description: 'Retries occurred',
+          count: 2,
+          optimizationHint: 'Atomic steps',
+        },
+        {
+          id: 'FRIC-SPEC-FRICTION',
+          category: 'spec_friction',
+          severity: 'medium',
+          title: 'Spec Ambiguity',
+          description: 'No brief',
+          count: 1,
+          optimizationHint: 'Refine spec',
+        },
+      ],
+    });
+
+    assert.ok(remediations.some((r) => r.id === 'REM-FRICTION-CMD'));
+    assert.ok(remediations.some((r) => r.id === 'REM-FRICTION-GATE'));
+    assert.ok(remediations.some((r) => r.id === 'REM-FRICTION-REWORK'));
+    assert.ok(remediations.some((r) => r.id === 'REM-FRICTION-SPEC'));
+  });
+
+  it('docpath monitor --current renders workflow friction diagnostics in Human, YAML, and JSON views', () => {
+    const cwd = mkWorkspaceWithActiveTask({
+      taskId: 'T-ACTIVE-FRICTION',
+      taskTitle: 'Active Task with Frictions',
+      breadcrumbs: [
+        { timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(), step: 'S1', status: 'error', error: 'bad arg' },
+        { timestamp: new Date(Date.now() - 4 * 60 * 1000).toISOString(), step: 'S1', gate_verdict: 'fail' },
+        { timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(), step: 'S1', action: 'retry' },
+      ],
+    });
+
+    try {
+      // 1. Human Dashboard view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /研发流程摩擦与阻力诊断 \(Workflow Friction & Pain Points\)/);
+      assert.match(stdoutHuman, /command_error/);
+      assert.match(stdoutHuman, /gate_block/);
+      assert.match(stdoutHuman, /step_rework/);
+      assert.match(stdoutHuman, /优化指引:/);
+
+      // 2. YAML view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /workflow_frictions:/);
+      assert.match(stdoutAgent, /category:\s*command_error/);
+      assert.match(stdoutAgent, /optimization_hint:/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.equal(data.active, true);
+      assert.ok(Array.isArray(data.activeTask.workflowFrictions));
+      assert.ok(data.activeTask.workflowFrictions.length >= 3);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('docpath monitor (global) renders workflow friction diagnostics in Human, YAML, and JSON views', () => {
+    const task1 = {
+      taskId: 'T-GLOBAL-FRICTION-01',
+      taskTitle: 'Historical Friction Task',
+      profile: 'standard',
+      level: 2,
+      startedAt: '2026-09-30T10:00:00.000Z',
+      completedAt: '2026-09-30T10:15:00.000Z',
+      durationMinutes: 15,
+      firstTimePassRate: 80,
+      complianceScore: 90,
+      violations: [],
+      totalDiffLines: 100,
+      filesChanged: 2,
+      linesAdded: 80,
+      linesDeleted: 20,
+      frictionFindings: [
+        {
+          id: 'FRIC-CMD-ERR',
+          category: 'command_error',
+          severity: 'high',
+          title: 'CLI 命令调用异常与参数拦截 (Command Execution Errors)',
+          description: '检测到 2 次命令调用失败或参数报错',
+          count: 2,
+          tokensWasted: 400,
+          optimizationHint: '查阅 docpath --help 或 AGENTS.md 规范',
+        },
+      ],
+    };
+
+    const cwd = mkWorkspaceWithTasks([task1]);
+    try {
+      // 1. Human Dashboard view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}"`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /研发流程摩擦与阻力诊断 \(Workflow Friction & Pain Points\)/);
+      assert.match(stdoutHuman, /CLI 命令调用异常与参数拦截/);
+      assert.match(stdoutHuman, /优化指引:\s*查阅 docpath --help 或 AGENTS\.md 规范/);
+
+      // 2. YAML view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /workflow_frictions:/);
+      assert.match(stdoutAgent, /category:\s*command_error/);
+      assert.match(stdoutAgent, /optimization_hint:\s*查阅 docpath --help 或 AGENTS\.md 规范/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.ok(Array.isArray(data.workflowFrictions));
+      assert.equal(data.workflowFrictions.length, 1);
+      assert.equal(data.workflowFrictions[0].id, 'FRIC-CMD-ERR');
+      assert.equal(data.workflowFrictions[0].count, 2);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+});
+
 
 
 

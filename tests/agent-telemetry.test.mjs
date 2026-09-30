@@ -13,7 +13,12 @@ import {
   detectCurrentSessionId,
   captureGitCommit,
 } from '../dist/utils/agent-telemetry-adapter.js';
-import { collectTaskMetrics, probeRealAgentTelemetry, probeActiveTaskMetrics } from '../dist/utils/task-metrics.js';
+import {
+  collectTaskMetrics,
+  probeRealAgentTelemetry,
+  probeActiveTaskMetrics,
+  extractStepTelemetrySlices,
+} from '../dist/utils/task-metrics.js';
 
 describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', () => {
   describe('AntigravityTelemetryAdapter', () => {
@@ -1039,6 +1044,191 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
         assert.equal(collected.lifecycleAnchor.sessionId, 'sess_anchor_999');
         assert.equal(collected.lifecycleAnchor.startedAt, '2026-09-30T10:00:00.000Z');
         assert.equal(collected.lifecycleAnchor.completedAt, '2026-09-30T10:10:00.000Z');
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('Real Cumulative Token Aggregation & Multi-turn Step Slices (FR-1 / AC-1)', () => {
+    it('aggregates multi-turn explicit model usage in Antigravity transcript', () => {
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          usage: {
+            prompt_tokens: 12000,
+            completion_tokens: 450,
+            total_tokens: 12450,
+            prompt_tokens_details: { cached_tokens: 8000 },
+          },
+          tool_calls: [{ name: 'view_file', args: { AbsolutePath: '/src/a.ts' } }],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'VIEW_FILE',
+          content: 'file contents',
+        }),
+        JSON.stringify({
+          step_index: 3,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          usage: {
+            input_tokens: 18000,
+            output_tokens: 950,
+            total_tokens: 18950,
+            cached_tokens: 14000,
+          },
+          tool_calls: [{ name: 'replace_file_content', args: { TargetFile: '/src/a.ts' } }],
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+
+      assert.equal(result.tokens.inputTokens, 30000);
+      assert.equal(result.tokens.outputTokens, 1400);
+      assert.equal(result.tokens.cachedTokens, 22000);
+      assert.equal(result.tokens.totalTokens, 31400);
+      assert.ok(result.tokens.costUsd && result.tokens.costUsd > 0);
+    });
+
+    it('extracts multi-turn step slices with accurate cumulative tokens and cost per step window', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'dp-step-slices-'));
+      const docpathDir = join(tempDir, '.docpath');
+      mkdirSync(join(docpathDir, 'workspace'), { recursive: true });
+      mkdirSync(join(docpathDir, 'tasks', 'T-SLICE-TEST'), { recursive: true });
+
+      const dbPath = join(tempDir, 'db.sqlite');
+      const { DatabaseSync } = await import('node:sqlite');
+      const db = new DatabaseSync(dbPath);
+
+      db.exec(`
+        CREATE TABLE model_usage (
+          id text primary key,
+          session_id text,
+          model_id text,
+          started_at integer,
+          completed_at integer,
+          input_tokens integer default 0,
+          output_tokens integer default 0,
+          reasoning_tokens integer default 0,
+          cache_read_input_tokens integer default 0,
+          computed_total_tokens integer default 0,
+          tool_call_count integer default 0,
+          status text default 'completed'
+        );
+        CREATE TABLE turn_usage (
+          session_id text,
+          turn_id text,
+          started_at integer,
+          tool_call_count integer default 0,
+          tool_error_count integer default 0
+        );
+        CREATE TABLE tool_usage (
+          id text primary key,
+          session_id text,
+          tool_name text,
+          status text,
+          started_at integer,
+          exit_code integer,
+          output_bytes integer default 0,
+          duration_ms integer default 0
+        );
+      `);
+
+      const tS1Start = 1790900000000;
+      const tS1End = 1790900010000;
+      const tS2Start = 1790900011000;
+      const tS2End = 1790900020000;
+
+      db.exec(`
+        INSERT INTO model_usage (id, session_id, model_id, started_at, completed_at, input_tokens, output_tokens, cache_read_input_tokens, computed_total_tokens, tool_call_count)
+        VALUES
+          ('m1', 'sess_slice_1', 'GLM-5.3', ${tS1Start}, ${tS1End}, 10000, 500, 8000, 10500, 1),
+          ('m2', 'sess_slice_1', 'GLM-5.3', ${tS2Start}, ${tS2End}, 25000, 1200, 20000, 26200, 2);
+
+        INSERT INTO turn_usage (session_id, turn_id, started_at, tool_call_count, tool_error_count)
+        VALUES
+          ('sess_slice_1', 'turn_1', ${tS1Start}, 1, 0),
+          ('sess_slice_1', 'turn_2', ${tS2Start}, 2, 0);
+
+        INSERT INTO tool_usage (id, session_id, tool_name, status, started_at, exit_code, output_bytes, duration_ms)
+        VALUES
+          ('t1', 'sess_slice_1', 'Read', 'completed', ${tS1Start + 1000}, 0, 512, 50),
+          ('t2', 'sess_slice_1', 'Edit', 'completed', ${tS2Start + 1000}, 0, 1024, 100),
+          ('t3', 'sess_slice_1', 'Bash', 'completed', ${tS2Start + 2000}, 0, 2048, 150);
+      `);
+      db.close();
+
+      const planJson = {
+        steps: [
+          { id: 'S1', title: 'Step 1: Setup', status: 'done' },
+          { id: 'S2', title: 'Step 2: Implementation', status: 'done' },
+        ],
+      };
+
+      const breadcrumbLines = [
+        JSON.stringify({
+          timestamp: new Date(tS1Start).toISOString(),
+          step: 'S1',
+          status: 'started',
+          turnId: 'turn_1',
+        }),
+        JSON.stringify({
+          timestamp: new Date(tS1End).toISOString(),
+          step: 'S1',
+          status: 'done',
+          turnId: 'turn_1',
+        }),
+        JSON.stringify({
+          timestamp: new Date(tS2Start).toISOString(),
+          step: 'S2',
+          status: 'started',
+          turnId: 'turn_2',
+        }),
+        JSON.stringify({
+          timestamp: new Date(tS2End).toISOString(),
+          step: 'S2',
+          status: 'done',
+          turnId: 'turn_2',
+        }),
+      ].join('\n');
+
+      writeFileSync(join(docpathDir, 'tasks', 'T-SLICE-TEST', 'plan.json'), JSON.stringify(planJson, null, 2));
+      writeFileSync(join(docpathDir, 'tasks', 'T-SLICE-TEST', 'breadcrumb.jsonl'), breadcrumbLines);
+
+      try {
+        const slices = await extractStepTelemetrySlices(tempDir, 'T-SLICE-TEST', {
+          plan: planJson,
+          sessionId: 'sess_slice_1',
+          zcodeDbPath: dbPath,
+        });
+
+        assert.equal(slices.length, 2);
+
+        // Step S1 Slice verification
+        const s1 = slices[0];
+        assert.equal(s1.stepId, 'S1');
+        assert.equal(s1.stepTitle, 'Step 1: Setup');
+        assert.equal(s1.inputTokens, 10000);
+        assert.equal(s1.outputTokens, 500);
+        assert.equal(s1.cachedTokens, 8000);
+        assert.equal(s1.totalTokens, 10500);
+        assert.ok(s1.costUsd && s1.costUsd > 0);
+        assert.equal(s1.toolCallsCount, 1);
+
+        // Step S2 Slice verification
+        const s2 = slices[1];
+        assert.equal(s2.stepId, 'S2');
+        assert.equal(s2.stepTitle, 'Step 2: Implementation');
+        assert.equal(s2.inputTokens, 25000);
+        assert.equal(s2.outputTokens, 1200);
+        assert.equal(s2.cachedTokens, 20000);
+        assert.equal(s2.totalTokens, 26200);
+        assert.ok(s2.costUsd && s2.costUsd > 0);
+        assert.equal(s2.toolCallsCount, 2);
       } finally {
         rmSync(tempDir, { recursive: true, force: true });
       }

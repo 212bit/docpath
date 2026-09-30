@@ -1,0 +1,211 @@
+{
+  "taskId": "T-20260930-token-docpath",
+  "taskTitle": "T-20260930-token-docpath - 真实 Token 消耗全景、DocPath 极轻量价值透视与开发摩擦诊断体系",
+  "backlogId": "R-455",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-30T12:02:20.458Z",
+  "completedAt": "2026-09-30T12:19:45.267Z",
+  "durationMinutes": 17.4,
+  "firstTimePassRate": 100,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 42, 消耗: 4762633 Tokens, 时长: 15 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 42,
+        "totalTokens": 4762633,
+        "durationMinutes": 15
+      }
+    }
+  ],
+  "totalDiffLines": 1538,
+  "filesChanged": 18,
+  "linesAdded": 1520,
+  "linesDeleted": 18,
+  "engineering": {
+    "turnCount": 12,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 17.4,
+    "filesChanged": 18,
+    "linesAdded": 1520,
+    "linesDeleted": 18,
+    "totalDiffLines": 1538,
+    "speedLinesPerMinute": 88.4
+  },
+  "protocol": {
+    "specTokens": 1303,
+    "planTokens": 732,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3835
+  },
+  "realUsage": {
+    "source": "zcode",
+    "inputTokens": 4712899,
+    "outputTokens": 49734,
+    "totalTokens": 4762633,
+    "costUsd": 14.8847,
+    "toolCallsCount": 69,
+    "model": {
+      "modelId": "big-pickle",
+      "providerId": "8aafb336-1279-4968-93b8-0d2490726729"
+    },
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 42, 消耗: 4762633 Tokens, 时长: 15 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 42,
+          "totalTokens": 4762633,
+          "durationMinutes": 15
+        }
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "zcode",
+    "sessionId": "8873cc53-6a72-4572-b9a9-101a1869a488",
+    "model": {
+      "modelId": "big-pickle",
+      "providerId": "8aafb336-1279-4968-93b8-0d2490726729"
+    },
+    "tokens": {
+      "inputTokens": 4712899,
+      "outputTokens": 49734,
+      "totalTokens": 4762633,
+      "costUsd": 14.8847
+    },
+    "toolCalls": {
+      "total": 69,
+      "byName": {
+        "Bash": 29,
+        "Read": 15,
+        "Edit": 24,
+        "TodoWrite": 1
+      }
+    },
+    "turnsCount": 42,
+    "errorCount": 0,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 42, 消耗: 4762633 Tokens, 时长: 15 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 42,
+          "totalTokens": 4762633,
+          "durationMinutes": 15
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 915319
+  },
+  "lifecycleAnchor": {
+    "sessionId": "8873cc53-6a72-4572-b9a9-101a1869a488",
+    "baseCommit": "c4147490c9fbdb0a7ff393abeb1157b5896971e7",
+    "headCommit": "c4147490c9fbdb0a7ff393abeb1157b5896971e7",
+    "startedAt": "2026-09-30T12:02:20.458Z",
+    "completedAt": "2026-09-30T12:19:45.267Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 FR-1 真实 Token 消耗全景",
+      "startedAt": "2026-09-30T12:02:20.458Z",
+      "completedAt": "2026-09-30T12:05:55.247Z",
+      "durationMinutes": 3.6,
+      "totalTokens": 723693,
+      "inputTokens": 709355,
+      "outputTokens": 14338,
+      "costUsd": 2.3431,
+      "toolCallsCount": 11,
+      "topTools": [
+        {
+          "name": "Bash",
+          "count": 7,
+          "tokens": 0
+        },
+        {
+          "name": "Read",
+          "count": 4,
+          "tokens": 0
+        }
+      ]
+    },
+    {
+      "stepId": "S2",
+      "stepTitle": "实现并验证 FR-2 DocPath 极轻量价值透视",
+      "startedAt": "2026-09-30T12:05:55.518Z",
+      "completedAt": "2026-09-30T12:09:43.548Z",
+      "durationMinutes": 3.8,
+      "totalTokens": 428357,
+      "inputTokens": 416662,
+      "outputTokens": 11695,
+      "costUsd": 1.4254,
+      "toolCallsCount": 4,
+      "topTools": [
+        {
+          "name": "Read",
+          "count": 2,
+          "tokens": 0
+        },
+        {
+          "name": "Bash",
+          "count": 2,
+          "tokens": 0
+        }
+      ]
+    },
+    {
+      "stepId": "S3",
+      "stepTitle": "实现并验证 FR-3 开发摩擦诊断体系",
+      "startedAt": "2026-09-30T12:09:43.824Z",
+      "completedAt": "2026-09-30T12:16:45.482Z",
+      "durationMinutes": 7,
+      "totalTokens": 3191904,
+      "inputTokens": 3161785,
+      "outputTokens": 30119,
+      "costUsd": 9.9371,
+      "toolCallsCount": 49,
+      "topTools": [
+        {
+          "name": "Bash",
+          "count": 18,
+          "tokens": 0
+        },
+        {
+          "name": "Read",
+          "count": 9,
+          "tokens": 0
+        },
+        {
+          "name": "Edit",
+          "count": 21,
+          "tokens": 0
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 3835,
+    "realModelTokens": 4762633,
+    "overheadRatio": 0.08,
+    "complianceScore": 85,
+    "firstTimePassRate": 100,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}

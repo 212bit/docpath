@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-30T12:16:45.460Z",
+    "updated_at": "2026-09-30T12:16:45.460Z",
+    "content_sha256": "e0ece0c293a65a09724d01aaba631ef2337d266f84f392b31a87f763e1f10ab8"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-30T12:16:45.460Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 真实 Token 消耗全景",
+      "description": "落地 FR-1: 真实 Token 消耗全景，并完成模块定向自验。",
+      "acceptance": "AC-1: 全面统一以真实模型交互总消耗（Total Model Tokens，含多轮累计与缓存命中）作为核心统计真源",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 DocPath 极轻量价值透视",
+      "description": "落地 FR-2: DocPath 极轻量价值透视，并完成模块定向自验。",
+      "acceptance": "AC-2: 实现 DocPath 轻量化价值透视（计算 DocPath 协议开销占真实总消耗的比率，量化其以极低成本换取的门禁通过率与合规收益）",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现并验证 FR-3 开发摩擦诊断体系",
+      "description": "落地 FR-3: 开发摩擦诊断体系，并完成模块定向自验。",
+      "acceptance": "AC-3: 实现研发摩擦与阻力诊断引擎（检测命令调用失败、门禁反复拦截、步骤返工等摩擦事件，并生成 DocPath 流程优化建议）；AC-4: 升级 `docpath monitor`（全局与 `--current` 实时看板），直观展示「总消耗与 DocPath 价值透视」及「开发摩擦与提效诊断」；AC-5: 完成单元测试覆盖并在全量门禁中通过验证；AC-1: 真实 Token 消耗全景 满足功能要求并通过测试；AC-2: DocPath 极轻量价值透视 满足功能要求并通过测试；AC-3: 开发摩擦诊断体系 满足功能要求并通过测试；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-455 与任务 T-20260930-token-docpath 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

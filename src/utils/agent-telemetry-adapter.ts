@@ -73,6 +73,32 @@ export interface TelemetryToolCallSummary {
   errorCount: number;
 }
 
+export interface WorkflowFrictionFinding {
+  id: string;
+  category: 'command_error' | 'gate_block' | 'step_rework' | 'spec_friction' | 'tool_waste';
+  severity: 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  count: number;
+  tokensWasted?: number;
+  optimizationHint: string;
+}
+
+export interface WorkflowFrictionContext {
+  cwd?: string;
+  taskId?: string;
+  breadcrumbs?: Array<Record<string, any>>;
+  sessionRecord?: SessionTelemetryRecord | null;
+  spec?: Record<string, any>;
+  plan?: Record<string, any>;
+  state?: Record<string, any>;
+  toolInefficiencies?: ToolInefficiencyFinding[];
+  violations?: ComplianceViolation[];
+  blockedSteps?: number;
+  retryCount?: number;
+  diffStats?: DiffStats;
+}
+
 export type ComplianceSeverity = 'low' | 'medium' | 'high' | 'critical';
 
 export interface ComplianceViolation {
@@ -396,6 +422,11 @@ export class AntigravityTelemetryAdapter {
     let flappingCount = 0;
     let turnsCount = 0;
     let totalEstimated = 0;
+    let explicitInputTokens = 0;
+    let explicitOutputTokens = 0;
+    let explicitCachedTokens = 0;
+    let explicitTotalTokens = 0;
+    let hasExplicitUsage = false;
     let firstTimestamp = 0;
     let lastTimestamp = 0;
     let detectedModel: string | undefined;
@@ -475,7 +506,47 @@ export class AntigravityTelemetryAdapter {
           detectedModel = entry.model;
         }
 
-        // Token 估算
+        // 真实 Token 消耗与多轮累计 (FR-1 / AC-1)
+        const usage = entry.usage || entry.response?.usage || entry.tokens;
+        if (usage && typeof usage === 'object') {
+          hasExplicitUsage = true;
+          const inTok = Number(usage.prompt_tokens ?? usage.input_tokens ?? usage.inputTokens ?? usage.input ?? 0);
+          const outTok = Number(usage.completion_tokens ?? usage.output_tokens ?? usage.outputTokens ?? usage.output ?? 0);
+          const cacheTok = Number(
+            usage.cached_tokens ??
+            usage.cachedTokens ??
+            usage.prompt_tokens_details?.cached_tokens ??
+            usage.cache_read_input_tokens ??
+            usage.cached ??
+            0
+          );
+          const totTok = Number(usage.total_tokens ?? usage.totalTokens ?? usage.total ?? (inTok + outTok));
+
+          explicitInputTokens += inTok;
+          explicitOutputTokens += outTok;
+          explicitCachedTokens += cacheTok;
+          explicitTotalTokens += totTok;
+        } else if (
+          entry.input_tokens !== undefined ||
+          entry.output_tokens !== undefined ||
+          entry.inputTokens !== undefined ||
+          entry.outputTokens !== undefined ||
+          entry.total_tokens !== undefined ||
+          entry.totalTokens !== undefined
+        ) {
+          hasExplicitUsage = true;
+          const inTok = Number(entry.input_tokens ?? entry.inputTokens ?? 0);
+          const outTok = Number(entry.output_tokens ?? entry.outputTokens ?? 0);
+          const cacheTok = Number(entry.cached_tokens ?? entry.cachedTokens ?? 0);
+          const totTok = Number(entry.total_tokens ?? entry.totalTokens ?? (inTok + outTok));
+
+          explicitInputTokens += inTok;
+          explicitOutputTokens += outTok;
+          explicitCachedTokens += cacheTok;
+          explicitTotalTokens += totTok;
+        }
+
+        // Token 估算兜底
         if (entry.content) {
           totalEstimated += estimateTokens(entry.content);
         }
@@ -630,21 +701,26 @@ export class AntigravityTelemetryAdapter {
       }
     }
 
-    const inputTokens = Math.round(totalEstimated * 0.7);
-    const outputTokens = Math.round(totalEstimated * 0.3);
+    const inputTokens = hasExplicitUsage ? explicitInputTokens : Math.round(totalEstimated * 0.7);
+    const outputTokens = hasExplicitUsage ? explicitOutputTokens : Math.round(totalEstimated * 0.3);
+    const cachedTokens = hasExplicitUsage && explicitCachedTokens > 0 ? explicitCachedTokens : undefined;
+    const finalTotalTokens = hasExplicitUsage
+      ? (explicitTotalTokens > 0 ? explicitTotalTokens : inputTokens + outputTokens)
+      : totalEstimated;
     const durationMs = lastTimestamp && firstTimestamp ? Math.max(0, lastTimestamp - firstTimestamp) : 0;
+    const costUsd = parseFloat(((inputTokens * 0.000003) + (outputTokens * 0.000015)).toFixed(4));
 
     const toolAttributions: ToolAttribution[] = Array.from(toolStatsMap.entries()).map(([name, stat]) => {
-      const totalTokens = stat.inputTokens + stat.outputTokens;
-      const percentage = totalEstimated > 0
-        ? parseFloat(((totalTokens / totalEstimated) * 100).toFixed(1))
+      const toolTokensSum = stat.inputTokens + stat.outputTokens;
+      const percentage = finalTotalTokens > 0
+        ? parseFloat(((toolTokensSum / finalTotalTokens) * 100).toFixed(1))
         : 0;
       return {
         name,
         count: stat.count,
         inputTokens: stat.inputTokens,
         outputTokens: stat.outputTokens,
-        totalTokens,
+        totalTokens: toolTokensSum,
         percentage,
         errorCount: stat.errorCount,
       };
@@ -708,8 +784,9 @@ export class AntigravityTelemetryAdapter {
       tokens: {
         inputTokens,
         outputTokens,
-        totalTokens: totalEstimated,
-        costUsd: parseFloat(((inputTokens * 0.000003) + (outputTokens * 0.000015)).toFixed(4)),
+        cachedTokens,
+        totalTokens: finalTotalTokens,
+        costUsd,
       },
       toolCalls: {
         total: toolCallsTotal,
@@ -1059,8 +1136,8 @@ export class ZCodeTelemetryAdapter {
             turnTimeParams
           );
           if (turnTimeRows && turnTimeRows.length > 0) {
-            if (turnTimeRows[0].min_t && !derivedStartTime) derivedStartTime = Number(turnTimeRows[0].min_t);
-            if (turnTimeRows[0].max_t && !derivedEndTime) derivedEndTime = Number(turnTimeRows[0].max_t);
+            if (turnTimeRows[0].min_t) derivedStartTime = Number(turnTimeRows[0].min_t);
+            if (turnTimeRows[0].max_t) derivedEndTime = Number(turnTimeRows[0].max_t);
           }
         } catch {
           // ignore
@@ -1075,7 +1152,7 @@ export class ZCodeTelemetryAdapter {
       }
       if (typeof derivedEndTime === 'number' && derivedEndTime > 0) {
         whereClauses.push('started_at <= ?');
-        params.push(isTurnBounded ? derivedEndTime + 1000 : derivedEndTime + 30_000);
+        params.push(isTurnBounded ? derivedEndTime : derivedEndTime + 30_000);
       }
 
       // 如果未指定任何过滤条件，默认检索近 30 分钟记录
@@ -1167,7 +1244,7 @@ export class ZCodeTelemetryAdapter {
         }
         if (typeof derivedEndTime === 'number' && derivedEndTime > 0) {
           turnWhereClauses.push('started_at <= ?');
-          turnParams.push(isTurnBounded ? derivedEndTime + 1000 : derivedEndTime + 30_000);
+          turnParams.push(isTurnBounded ? derivedEndTime : derivedEndTime + 30_000);
         }
         const turnWhereSql = turnWhereClauses.length > 0 ? `WHERE ${turnWhereClauses.join(' AND ')}` : '';
         const turnSql = `
@@ -1341,15 +1418,43 @@ export class ZCodeTelemetryAdapter {
             }
           }
 
+          // 轮次与 Turn ID 范围过滤
+          const stepIndex = typeof entry.step_index === 'number'
+            ? entry.step_index
+            : (typeof entry.turn_index === 'number' ? entry.turn_index : undefined);
+          const turnId = entry.turn_id || entry.turnId || entry.step_id || (stepIndex !== undefined ? String(stepIndex) : undefined);
+
+          if (stepIndex !== undefined) {
+            if (options.startTurnId !== undefined && typeof options.startTurnId === 'number' && stepIndex < options.startTurnId) {
+              continue;
+            }
+            if (options.endTurnId !== undefined && typeof options.endTurnId === 'number' && stepIndex > options.endTurnId) {
+              continue;
+            }
+          } else if (turnId && (options.startTurnId !== undefined || options.endTurnId !== undefined)) {
+            if (options.startTurnId !== undefined && String(turnId) < String(options.startTurnId)) {
+              continue;
+            }
+            if (options.endTurnId !== undefined && String(turnId) > String(options.endTurnId)) {
+              continue;
+            }
+          }
+
           turnsCount++;
           if (entry.model && !detectedModel) detectedModel = entry.model;
 
-          const usage = entry.response?.usage;
+          const usage = entry.response?.usage || entry.usage;
           if (usage) {
-            const inTok = Number(usage.prompt_tokens) || Number(usage.input_tokens) || 0;
-            const outTok = Number(usage.completion_tokens) || Number(usage.output_tokens) || 0;
-            const cacheTok = Number(usage.prompt_tokens_details?.cached_tokens) || Number(usage.cache_read_input_tokens) || 0;
-            const totTok = Number(usage.total_tokens) || (inTok + outTok);
+            const inTok = Number(usage.prompt_tokens ?? usage.input_tokens ?? usage.inputTokens ?? 0);
+            const outTok = Number(usage.completion_tokens ?? usage.output_tokens ?? usage.outputTokens ?? 0);
+            const cacheTok = Number(
+              usage.prompt_tokens_details?.cached_tokens ??
+              usage.cache_read_input_tokens ??
+              usage.cached_tokens ??
+              usage.cachedTokens ??
+              0
+            );
+            const totTok = Number(usage.total_tokens ?? usage.totalTokens ?? (inTok + outTok));
 
             inputTokens += inTok;
             outputTokens += outTok;
@@ -1523,6 +1628,179 @@ export async function resolveAgentTelemetry(
   };
 }
 
+/**
+ * 研发流程摩擦与阻力诊断引擎 (Workflow Friction Diagnostics Engine)
+ *
+ * 扫描 breadcrumb.jsonl、会话遥测以及任务执行上下文，智能诊断：
+ * 1. CLI 命令调用异常与参数报错 (command_error)
+ * 2. 质量门禁与构建拦截阻力 (gate_block)
+ * 3. 步骤受阻与反复重试返工 (step_rework)
+ * 4. 需求规格与架构决策不确定性 (spec_friction)
+ * 5. 工具调用低效与上下文浪费 (tool_waste)
+ */
+export function detectWorkflowFrictions(
+  contextOrBreadcrumbs?: WorkflowFrictionContext | Array<Record<string, any>>
+): WorkflowFrictionFinding[] {
+  const context: WorkflowFrictionContext = Array.isArray(contextOrBreadcrumbs)
+    ? { breadcrumbs: contextOrBreadcrumbs }
+    : contextOrBreadcrumbs || {};
+
+  const findings: WorkflowFrictionFinding[] = [];
+  const breadcrumbs = context.breadcrumbs || [];
+  const sessionRecord = context.sessionRecord;
+
+  // 1. Command CLI errors (command_error)
+  let cmdErrCount = 0;
+  for (const entry of breadcrumbs) {
+    if (
+      entry.status === 'error' ||
+      entry.action === 'error' ||
+      entry.event === 'command_error' ||
+      entry.event === 'error' ||
+      entry.type === 'error' ||
+      (typeof entry.exit_code === 'number' && entry.exit_code !== 0) ||
+      (entry.error && entry.status !== 'blocked')
+    ) {
+      cmdErrCount++;
+    } else if (typeof entry.message === 'string' && /error:\s*(unknown option|invalid argument|command failed)/i.test(entry.message)) {
+      cmdErrCount++;
+    }
+  }
+  if (sessionRecord) {
+    const toolErr = (sessionRecord.toolAttributions || []).reduce((sum, a) => sum + (a.errorCount || 0), 0);
+    if (toolErr > 0 && cmdErrCount === 0) {
+      cmdErrCount += toolErr;
+    } else if (sessionRecord.errorCount > 0 && cmdErrCount === 0) {
+      cmdErrCount += sessionRecord.errorCount;
+    }
+  }
+
+  if (cmdErrCount > 0) {
+    findings.push({
+      id: 'FRIC-CMD-ERR',
+      category: 'command_error',
+      severity: cmdErrCount >= 3 ? 'high' : cmdErrCount >= 2 ? 'medium' : 'low',
+      title: 'CLI 命令调用异常与参数拦截 (Command Execution Errors)',
+      description: `检测到 ${cmdErrCount} 次命令调用失败或参数报错，可能由于命令语法错误或环境不匹配导致`,
+      count: cmdErrCount,
+      tokensWasted: cmdErrCount * 200,
+      optimizationHint: '查阅 docpath --help 或 AGENTS.md 规范，确保 CLI 命令与参数格式准确',
+    });
+  }
+
+  // 2. Quality gate blockage (gate_block)
+  let gateBlockCount = 0;
+  for (const entry of breadcrumbs) {
+    if (
+      entry.gate_verdict === 'fail' ||
+      entry.event === 'gate_failed' ||
+      entry.check_status === 'fail' ||
+      entry.type === 'gate_block' ||
+      (entry.action === 'check' && (entry.status === 'fail' || entry.status === 'failed'))
+    ) {
+      gateBlockCount++;
+    } else if (typeof entry.message === 'string' && /check failed|build error|lint error|gate.*fail/i.test(entry.message)) {
+      gateBlockCount++;
+    }
+  }
+  if (typeof context.blockedSteps === 'number' && context.blockedSteps > 0 && gateBlockCount === 0) {
+    gateBlockCount += context.blockedSteps;
+  }
+
+  if (gateBlockCount > 0) {
+    findings.push({
+      id: 'FRIC-GATE-BLOCK',
+      category: 'gate_block',
+      severity: gateBlockCount >= 3 ? 'high' : gateBlockCount >= 2 ? 'medium' : 'low',
+      title: '质量门禁与构建拦截阻力 (Quality Gate Blockage)',
+      description: `检测到 ${gateBlockCount} 次质量门禁拦截或测试/构建失败，阻碍了任务顺利推进`,
+      count: gateBlockCount,
+      tokensWasted: gateBlockCount * 400,
+      optimizationHint: '利用构建感知自愈机制运行定向单测 (node --test)，并在终步统一执行收口门禁',
+    });
+  }
+
+  // 3. Step rework & retries (step_rework)
+  let reworkCount = 0;
+  for (const entry of breadcrumbs) {
+    if (
+      entry.status === 'blocked' ||
+      entry.action === 'retry' ||
+      entry.action === 'rework' ||
+      entry.event === 'step_rework' ||
+      entry.event === 'step_blocked'
+    ) {
+      reworkCount++;
+    }
+  }
+  if (typeof context.retryCount === 'number' && context.retryCount > 0 && reworkCount === 0) {
+    reworkCount += context.retryCount;
+  }
+
+  if (reworkCount > 0) {
+    findings.push({
+      id: 'FRIC-STEP-REWORK',
+      category: 'step_rework',
+      severity: reworkCount >= 3 ? 'high' : reworkCount >= 2 ? 'medium' : 'low',
+      title: '步骤返工与多次重试阻力 (Step Rework & Retries)',
+      description: `检测到 ${reworkCount} 次步骤受阻、重试或返工，增加了任务执行周期与上下文损耗`,
+      count: reworkCount,
+      tokensWasted: reworkCount * 500,
+      optimizationHint: '执行 docpath go --step 原子认领；对复杂长步骤派发 Worker 子代理独立攻坚',
+    });
+  }
+
+  // 4. Spec ambiguity & decision friction (spec_friction)
+  let specFrictionCount = 0;
+  const violations = context.violations || sessionRecord?.violations || [];
+  const cr05 = violations.filter((v) => v.ruleId === 'CR-05');
+  specFrictionCount += cr05.length;
+
+  if (context.spec?.major_change_gate?.required && context.spec?.major_change_gate?.user_confirmed === '待确认') {
+    specFrictionCount++;
+  }
+
+  if (specFrictionCount > 0) {
+    findings.push({
+      id: 'FRIC-SPEC-FRICTION',
+      category: 'spec_friction',
+      severity: specFrictionCount >= 2 ? 'high' : 'medium',
+      title: '需求决策与规格不确定性摩擦 (Spec Ambiguity & Churn)',
+      description: `检测到 ${specFrictionCount} 处规格决策未固化或架构变更未提前记录 Decision Brief`,
+      count: specFrictionCount,
+      tokensWasted: specFrictionCount * 300,
+      optimizationHint: '在进入编码前运行 docpath spec refine --brief 固化架构与契约决策并取得确认',
+    });
+  }
+
+  // 5. Tool waste & context bloat (tool_waste)
+  const ineffs = context.toolInefficiencies || sessionRecord?.toolInefficiencies || [];
+  if (ineffs.length > 0) {
+    const totalWasted = ineffs.reduce((sum, i) => sum + (i.tokensWasted || 0), 0);
+    const count = ineffs.length;
+    findings.push({
+      id: 'FRIC-TOOL-WASTE',
+      category: 'tool_waste',
+      severity: totalWasted > 5000 || ineffs.some((i) => i.severity === 'high') ? 'high' : 'medium',
+      title: '工具调用低效与上下文浪费 (Tool Waste & Context Bloat)',
+      description: `检测到 ${count} 处工具低效行为 (重复读大文件、超长命令输出或编辑失真)，造成上下文浪费`,
+      count,
+      tokensWasted: totalWasted,
+      optimizationHint: '精准指定目标行范围切片读写，善用子代理进行大文件调研与探查',
+    });
+  }
+
+  const sevWeight = { high: 3, medium: 2, low: 1 };
+  findings.sort((a, b) => {
+    const diffSev = (sevWeight[b.severity] || 0) - (sevWeight[a.severity] || 0);
+    if (diffSev !== 0) return diffSev;
+    return b.count - a.count;
+  });
+
+  return findings;
+}
+
 export type { ActiveTaskMetrics, ActiveTaskStepProgress } from './task-metrics.js';
 export { probeActiveTaskMetrics } from './task-metrics.js';
+
 

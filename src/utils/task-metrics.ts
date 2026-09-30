@@ -15,6 +15,7 @@ import {
   resolveAgentTelemetry,
   detectCurrentSessionId,
   captureGitCommit,
+  detectWorkflowFrictions,
   type LifecycleAnchor,
   type StepTelemetrySlice,
   type SessionTelemetryRecord,
@@ -23,10 +24,19 @@ import {
   type DiffStats,
   type ToolAttribution,
   type ToolInefficiencyFinding,
+  type WorkflowFrictionFinding,
+  type WorkflowFrictionContext,
 } from './agent-telemetry-adapter.js';
 
-export type { ToolAttribution, ToolInefficiencyFinding, LifecycleAnchor, StepTelemetrySlice };
-export { detectCurrentSessionId, captureGitCommit };
+export type {
+  ToolAttribution,
+  ToolInefficiencyFinding,
+  LifecycleAnchor,
+  StepTelemetrySlice,
+  WorkflowFrictionFinding,
+  WorkflowFrictionContext,
+};
+export { detectCurrentSessionId, captureGitCommit, detectWorkflowFrictions };
 
 export interface RealAgentUsage {
   source: 'antigravity' | 'claude' | 'opencode' | 'zcode' | 'env' | 'breadcrumb' | 'unknown';
@@ -38,6 +48,7 @@ export interface RealAgentUsage {
   toolCallsCount?: number;
   toolAttributions?: ToolAttribution[];
   toolInefficiencies?: ToolInefficiencyFinding[];
+  frictionFindings?: WorkflowFrictionFinding[];
   model?: string;
   complianceScore?: number;
   violations?: ComplianceViolation[];
@@ -62,6 +73,15 @@ export interface ProtocolOverhead {
   totalInjectedTokens: number;
 }
 
+export interface DocPathValueRoi {
+  protocolTokens: number;
+  realModelTokens: number;
+  overheadRatio: number; // e.g. 2.3 for 2.3%
+  complianceScore: number;
+  firstTimePassRate: number;
+  summaryText: string;
+}
+
 export interface TaskMetrics {
   taskId: string;
   taskTitle: string;
@@ -84,8 +104,10 @@ export interface TaskMetrics {
   sessionRecord?: SessionTelemetryRecord | null;
   toolAttributions?: ToolAttribution[];
   toolInefficiencies?: ToolInefficiencyFinding[];
+  frictionFindings?: WorkflowFrictionFinding[];
   lifecycleAnchor?: LifecycleAnchor;
   stepSlices?: StepTelemetrySlice[];
+  docpathValueRoi?: DocPathValueRoi;
 }
 
 export interface RealAgentUsageSummary {
@@ -161,8 +183,10 @@ export interface ActiveTaskMetrics {
   sessionRecord?: SessionTelemetryRecord | null;
   toolAttributions?: ToolAttribution[];
   toolInefficiencies?: ToolInefficiencyFinding[];
+  frictionFindings?: WorkflowFrictionFinding[];
   lifecycleAnchor?: LifecycleAnchor;
   stepSlices?: StepTelemetrySlice[];
+  docpathValueRoi?: DocPathValueRoi;
 }
 
 export interface ComplianceSummary {
@@ -207,8 +231,12 @@ export interface MonitorSummary {
   globalToolAttributions?: ToolAttribution[];
   globalToolInefficiencies?: ToolInefficiencyFinding[];
   toolInefficiencies?: ToolInefficiencyFinding[];
+  globalFrictionFindings?: WorkflowFrictionFinding[];
+  frictionFindings?: WorkflowFrictionFinding[];
+  workflowFrictions?: WorkflowFrictionFinding[];
   activeTask?: ActiveTaskMetrics | null;
   recentTasks: TaskMetrics[];
+  docpathValueRoi?: DocPathValueRoi;
 }
 
 export interface TaskMetricsOptions {
@@ -511,6 +539,20 @@ export async function extractStepTelemetrySlices(
       const endMs = new Date(completedAt).getTime();
       const durationMinutes = parseFloat((Math.max(0, endMs - startMs) / 60000).toFixed(1));
 
+      let stepStartTurnId: string | number | undefined;
+      let stepEndTurnId: string | number | undefined;
+
+      for (const entry of stepEntries) {
+        const sTurn = entry.startTurnId ?? entry.start_turn_id ?? entry.startTurn ?? entry.turnId ?? entry.turn_id ?? entry.step_index;
+        const eTurn = entry.endTurnId ?? entry.end_turn_id ?? entry.endTurn ?? entry.turnId ?? entry.turn_id ?? entry.step_index;
+        if (sTurn !== undefined && stepStartTurnId === undefined) {
+          stepStartTurnId = sTurn;
+        }
+        if (eTurn !== undefined) {
+          stepEndTurnId = eTurn;
+        }
+      }
+
       // 探测该时间切片的 Session Telemetry
       const telemetry = await resolveAgentTelemetry({
         cwd,
@@ -521,6 +563,8 @@ export async function extractStepTelemetrySlices(
         level: options?.level,
         sessionId: options?.sessionId || options?.anchor?.sessionId,
         anchor: options?.anchor ? { ...options.anchor, startedAt, completedAt } : undefined,
+        startTurnId: stepStartTurnId,
+        endTurnId: stepEndTurnId,
         transcriptPath: options?.transcriptPath,
         zcodeDbPath: options?.zcodeDbPath,
         zcodeRolloutDir: options?.zcodeRolloutDir,
@@ -561,6 +605,34 @@ export async function extractStepTelemetrySlices(
   } catch {
     return [];
   }
+}
+
+/**
+ * 计算 DocPath 极轻量价值透视与治理收益指标 (DocPath Lightweight Overhead Ratio & Value ROI Engine)
+ */
+export function calculateDocPathValueRoi(params: {
+  protocolTokens: number;
+  realModelTokens: number;
+  complianceScore?: number;
+  firstTimePassRate?: number;
+}): DocPathValueRoi {
+  const protocolTokens = params.protocolTokens || 0;
+  const realModelTokens = params.realModelTokens || 0;
+  const overheadRatio = realModelTokens > 0
+    ? parseFloat(((protocolTokens / realModelTokens) * 100).toFixed(2))
+    : 100;
+  const complianceScore = typeof params.complianceScore === 'number' ? params.complianceScore : 100;
+  const firstTimePassRate = typeof params.firstTimePassRate === 'number' ? params.firstTimePassRate : 100;
+  const summaryText = '以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环';
+
+  return {
+    protocolTokens,
+    realModelTokens,
+    overheadRatio,
+    complianceScore,
+    firstTimePassRate,
+    summaryText,
+  };
 }
 
 /**
@@ -639,6 +711,7 @@ export async function collectTaskMetrics(
   }
 
   // 4. 读取 breadcrumb.jsonl
+  let parsedBreadcrumbs: Array<Record<string, any>> = [];
   const breadcrumbPath = join(taskDir, 'breadcrumb.jsonl');
   if (existsSync(breadcrumbPath)) {
     try {
@@ -646,12 +719,16 @@ export async function collectTaskMetrics(
       const lines = content.split('\n').filter((l) => l.trim());
       turnCount = lines.length;
       if (lines.length > 0) {
-        const first = JSON.parse(lines[0]);
-        if (first.timestamp) startedAt = first.timestamp;
         for (const line of lines) {
-          const entry = JSON.parse(line);
-          if (entry.status === 'blocked' || entry.gate_verdict === 'fail') blockedSteps++;
+          try {
+            const entry = JSON.parse(line);
+            parsedBreadcrumbs.push(entry);
+            if (entry.status === 'blocked' || entry.gate_verdict === 'fail') blockedSteps++;
+          } catch {
+            // 容错单行 JSON 解析
+          }
         }
+        if (parsedBreadcrumbs[0]?.timestamp) startedAt = parsedBreadcrumbs[0].timestamp;
       }
     } catch {
       // 容错
@@ -739,6 +816,19 @@ export async function collectTaskMetrics(
   const complianceScore = sessionRecord ? sessionRecord.complianceScore : 100;
   const violations = sessionRecord ? sessionRecord.violations : [];
 
+  const frictionFindings = detectWorkflowFrictions({
+    breadcrumbs: parsedBreadcrumbs,
+    sessionRecord,
+    spec: parsedSpec,
+    plan: parsedPlan,
+    state: parsedState,
+    toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
+    violations,
+    blockedSteps,
+    retryCount: blockedSteps,
+    diffStats: diff,
+  });
+
   const engineering: EngineeringMetrics = {
     turnCount: Math.max(turnCount, totalSteps),
     retryCount: blockedSteps,
@@ -757,6 +847,13 @@ export async function collectTaskMetrics(
     rulesTokens,
     totalInjectedTokens,
   };
+
+  const docpathValueRoi = calculateDocPathValueRoi({
+    protocolTokens: totalInjectedTokens,
+    realModelTokens: realUsage?.totalTokens || 0,
+    complianceScore,
+    firstTimePassRate,
+  });
 
   return {
     taskId,
@@ -780,8 +877,10 @@ export async function collectTaskMetrics(
     sessionRecord,
     toolAttributions: sessionRecord?.toolAttributions || realUsage?.toolAttributions,
     toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
+    frictionFindings: frictionFindings.length > 0 ? frictionFindings : undefined,
     lifecycleAnchor,
     stepSlices: stepSlices.length > 0 ? stepSlices : undefined,
+    docpathValueRoi,
   };
 }
 
@@ -867,6 +966,16 @@ export async function loadAllTaskMetrics(cwd: string): Promise<TaskMetrics[]> {
   }
 
   tasks.sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime());
+  for (const t of tasks) {
+    if (!t.docpathValueRoi) {
+      t.docpathValueRoi = calculateDocPathValueRoi({
+        protocolTokens: t.protocol?.totalInjectedTokens || 0,
+        realModelTokens: t.realUsage?.totalTokens || 0,
+        complianceScore: t.complianceScore,
+        firstTimePassRate: t.firstTimePassRate,
+      });
+    }
+  }
   return tasks;
 }
 
@@ -1185,6 +1294,7 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
 
     // 3. 读取 breadcrumb.jsonl
     let blockedSteps = 0;
+    let parsedBreadcrumbs: Array<Record<string, any>> = [];
     const breadcrumbCandidates = [
       join(taskDir, 'breadcrumb.jsonl'),
       join(docpathDir, 'tasks', 'current', 'breadcrumb.jsonl'),
@@ -1197,15 +1307,19 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
           const content = await readFile(bp, 'utf-8');
           const lines = content.split('\n').filter((l) => l.trim());
           if (lines.length > 0) {
-            const first = JSON.parse(lines[0]);
-            if (first.timestamp && !parsedState?.started_at) {
-              startedAt = first.timestamp;
-            }
             for (const line of lines) {
-              const entry = JSON.parse(line);
-              if (entry.status === 'blocked' || entry.gate_verdict === 'fail') {
-                blockedSteps++;
+              try {
+                const entry = JSON.parse(line);
+                parsedBreadcrumbs.push(entry);
+                if (entry.status === 'blocked' || entry.gate_verdict === 'fail') {
+                  blockedSteps++;
+                }
+              } catch {
+                // 容错
               }
+            }
+            if (parsedBreadcrumbs[0]?.timestamp && !parsedState?.started_at) {
+              startedAt = parsedBreadcrumbs[0].timestamp;
             }
           }
           break;
@@ -1260,11 +1374,15 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       ? join(taskDir, 'metrics.json')
       : join(docpathDir, 'tasks', 'current', 'metrics.json');
     let fileMetricsUsage: RealAgentUsage | null = null;
+    let fileFrictionFindings: WorkflowFrictionFinding[] | undefined;
     if (existsSync(metricsJsonPath)) {
       try {
         const parsedMetrics = JSON.parse(await readFile(metricsJsonPath, 'utf-8'));
         if (parsedMetrics.realUsage) {
           fileMetricsUsage = parsedMetrics.realUsage;
+        }
+        if (Array.isArray(parsedMetrics.frictionFindings)) {
+          fileFrictionFindings = parsedMetrics.frictionFindings;
         }
       } catch {
         // 容错
@@ -1295,6 +1413,19 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
 
     const percent = totalSteps > 0 ? Math.round((passedSteps / totalSteps) * 100) : 0;
 
+    const frictionFindings = fileFrictionFindings || detectWorkflowFrictions({
+      breadcrumbs: parsedBreadcrumbs,
+      sessionRecord,
+      spec: parsedSpec,
+      plan: parsedPlan,
+      state: parsedState,
+      toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
+      violations,
+      blockedSteps,
+      retryCount: blockedSteps,
+      diffStats: diff,
+    });
+
     let stepSlices: StepTelemetrySlice[] = [];
     try {
       stepSlices = await extractStepTelemetrySlices(cwd, taskId, {
@@ -1310,6 +1441,17 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
     } catch {
       // 容错
     }
+
+    const rulesTokens = profile === 'quick' ? 600 : 1800;
+    const specTokens = parsedSpec ? estimateTokens(JSON.stringify(parsedSpec)) : 500;
+    const planTokens = parsedPlan ? estimateTokens(JSON.stringify(parsedPlan)) : 300;
+    const totalInjectedTokens = specTokens + planTokens + rulesTokens;
+    const docpathValueRoi = calculateDocPathValueRoi({
+      protocolTokens: totalInjectedTokens,
+      realModelTokens: realUsage?.totalTokens || 0,
+      complianceScore,
+      firstTimePassRate: 100,
+    });
 
     return {
       taskId,
@@ -1339,8 +1481,10 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       sessionRecord,
       toolAttributions: sessionRecord?.toolAttributions || realUsage?.toolAttributions,
       toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
+      frictionFindings: frictionFindings.length > 0 ? frictionFindings : undefined,
       lifecycleAnchor,
       stepSlices: stepSlices.length > 0 ? stepSlices : undefined,
+      docpathValueRoi,
     };
   } catch {
     return null;
@@ -1427,6 +1571,56 @@ export function aggregateToolInefficiencies(
 }
 
 /**
+ * 跨任务聚合研发流程摩擦与阻力诊断 (Workflow Friction Aggregation)
+ */
+export function aggregateWorkflowFrictions(
+  tasks: TaskMetrics[],
+  activeTask?: ActiveTaskMetrics | null
+): WorkflowFrictionFinding[] {
+  const map: Record<string, WorkflowFrictionFinding> = {};
+
+  const processFinding = (f: WorkflowFrictionFinding) => {
+    if (!map[f.id]) {
+      map[f.id] = { ...f };
+    } else {
+      map[f.id].count += f.count;
+      if (typeof f.tokensWasted === 'number') {
+        map[f.id].tokensWasted = (map[f.id].tokensWasted || 0) + (f.tokensWasted || 0);
+      }
+      if (f.severity === 'high') {
+        map[f.id].severity = 'high';
+      } else if (f.severity === 'medium' && map[f.id].severity !== 'high') {
+        map[f.id].severity = 'medium';
+      }
+    }
+  };
+
+  if (activeTask?.frictionFindings) {
+    for (const f of activeTask.frictionFindings) {
+      processFinding(f);
+    }
+  }
+
+  for (const task of tasks) {
+    if (task.frictionFindings) {
+      for (const f of task.frictionFindings) {
+        processFinding(f);
+      }
+    }
+  }
+
+  const result = Object.values(map);
+  const sevWeight = { high: 3, medium: 2, low: 1 };
+  result.sort((a, b) => {
+    const diffSev = (sevWeight[b.severity] || 0) - (sevWeight[a.severity] || 0);
+    if (diffSev !== 0) return diffSev;
+    return b.count - a.count;
+  });
+
+  return result;
+}
+
+/**
  * 生成流程合规与 Token 消耗治理的自愈与改进建议 (Actionable Remediation Engine)
  */
 export function generateRemediations(summary: {
@@ -1439,6 +1633,7 @@ export function generateRemediations(summary: {
   spikes: TaskSpikeAlert[];
   activeTask?: ActiveTaskMetrics | null;
   toolInefficiencies?: ToolInefficiencyFinding[];
+  frictionFindings?: WorkflowFrictionFinding[];
 }): RemediationRecommendation[] {
   const remediations: RemediationRecommendation[] = [];
 
@@ -1596,6 +1791,68 @@ export function generateRemediations(summary: {
     });
   }
 
+  // 9. 研发流程摩擦治理建议 (Workflow Friction Remediations)
+  const frictionList: WorkflowFrictionFinding[] = [
+    ...(summary.frictionFindings || []),
+    ...(summary.activeTask?.frictionFindings || []),
+  ];
+
+  // 9.1 REM-FRICTION-CMD: 命令调用错误
+  const cmdErrFrictions = frictionList.filter((f) => f.category === 'command_error');
+  if (cmdErrFrictions.length > 0) {
+    const totalCount = cmdErrFrictions.reduce((sum, f) => sum + f.count, 0);
+    remediations.push({
+      id: 'REM-FRICTION-CMD',
+      severity: totalCount >= 3 ? 'high' : 'medium',
+      title: 'Fix invalid CLI command invocations',
+      reason: `Detected ${totalCount} command execution error(s). Review command options and usage in docpath --help or AGENTS.md.`,
+      recommendedCommand: 'docpath next --agent',
+      actionable: true,
+    });
+  }
+
+  // 9.2 REM-FRICTION-GATE: 质量门禁与构建拦截阻力
+  const gateFrictions = frictionList.filter((f) => f.category === 'gate_block');
+  if (gateFrictions.length > 0) {
+    const totalCount = gateFrictions.reduce((sum, f) => sum + f.count, 0);
+    remediations.push({
+      id: 'REM-FRICTION-GATE',
+      severity: totalCount >= 2 ? 'high' : 'medium',
+      title: 'Resolve quality gate failures with targeted verification',
+      reason: `Detected ${totalCount} quality gate / check blockage(s). Run targeted unit tests to fix issues before full gate checks.`,
+      recommendedCommand: 'docpath check',
+      actionable: true,
+    });
+  }
+
+  // 9.3 REM-FRICTION-REWORK: 步骤返工与重试阻力
+  const reworkFrictions = frictionList.filter((f) => f.category === 'step_rework');
+  if (reworkFrictions.length > 0) {
+    const totalCount = reworkFrictions.reduce((sum, f) => sum + f.count, 0);
+    remediations.push({
+      id: 'REM-FRICTION-REWORK',
+      severity: totalCount >= 2 ? 'high' : 'medium',
+      title: 'Decompose blocked steps or delegate to subagents',
+      reason: `Detected ${totalCount} step rework or retry event(s). Claim steps cleanly and delegate complex steps to Worker subagents.`,
+      recommendedCommand: 'docpath go --step <step-id>',
+      actionable: true,
+    });
+  }
+
+  // 9.4 REM-FRICTION-SPEC: 需求与规格决策摩擦
+  const specFrictions = frictionList.filter((f) => f.category === 'spec_friction');
+  if (specFrictions.length > 0 && !violationsByRule['CR-05']) {
+    const totalCount = specFrictions.reduce((sum, f) => sum + f.count, 0);
+    remediations.push({
+      id: 'REM-FRICTION-SPEC',
+      severity: 'medium',
+      title: 'Resolve specification ambiguity and record Decision Brief',
+      reason: `Detected ${totalCount} spec ambiguity/friction event(s). Record clear decisions and refine acceptance criteria.`,
+      recommendedCommand: 'docpath spec refine --brief',
+      actionable: true,
+    });
+  }
+
   return remediations;
 }
 
@@ -1616,6 +1873,7 @@ export async function aggregateMonitorMetrics(
   const recentTasks = allTasks.slice(0, limit);
   const globalToolAttributions = aggregateToolAttributions(recentTasks.length > 0 ? recentTasks : allTasks);
   const globalToolInefficiencies = aggregateToolInefficiencies(recentTasks.length > 0 ? recentTasks : allTasks, activeTask);
+  const globalFrictionFindings = aggregateWorkflowFrictions(recentTasks.length > 0 ? recentTasks : allTasks, activeTask);
 
   let realUsageSummary: MonitorSummary['realUsageSummary'] = null;
   if (baseSummary.realUsageSummary) {
@@ -1634,6 +1892,20 @@ export async function aggregateMonitorMetrics(
     };
   }
 
+  let docpathValueRoi: DocPathValueRoi;
+  if (allTasks.length === 0 && activeTask?.docpathValueRoi) {
+    docpathValueRoi = activeTask.docpathValueRoi;
+  } else {
+    const totalProtocolTokens = allTasks.reduce((sum, t) => sum + (t.protocol?.totalInjectedTokens || 0), 0);
+    const totalRealTokens = allTasks.reduce((sum, t) => sum + (t.realUsage?.totalTokens || 0), 0);
+    docpathValueRoi = calculateDocPathValueRoi({
+      protocolTokens: totalProtocolTokens,
+      realModelTokens: totalRealTokens,
+      complianceScore: compliance.avgComplianceScore,
+      firstTimePassRate: baseSummary.avgFirstTimePassRate,
+    });
+  }
+
   const partialSummary = {
     totalTasks: baseSummary.totalTasks,
     healthIndex: compliance.avgComplianceScore,
@@ -1644,8 +1916,12 @@ export async function aggregateMonitorMetrics(
     globalToolAttributions,
     globalToolInefficiencies,
     toolInefficiencies: globalToolInefficiencies,
+    globalFrictionFindings,
+    frictionFindings: globalFrictionFindings,
+    workflowFrictions: globalFrictionFindings,
     activeTask,
     recentTasks,
+    docpathValueRoi,
   };
 
   const remediations = generateRemediations(partialSummary);

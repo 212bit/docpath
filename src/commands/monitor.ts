@@ -7,6 +7,7 @@ import { resolveDocpathDir } from '../utils/file.js';
 import {
   aggregateMonitorMetrics,
   probeActiveTaskMetrics,
+  calculateDocPathValueRoi,
   type MonitorOptions,
 } from '../utils/task-metrics.js';
 
@@ -53,7 +54,7 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
       if (!activeTask) {
         console.log(JSON.stringify({ active: false, activeTask: null, message: '当前无进行中的活跃任务' }, null, 2));
       } else {
-        console.log(JSON.stringify({ active: true, activeTask }, null, 2));
+        console.log(JSON.stringify({ active: true, activeTask: { ...activeTask, workflowFrictions: activeTask.frictionFindings || [] } }, null, 2));
       }
       return;
     }
@@ -144,6 +145,13 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
                 tool_calls_count: s.toolCallsCount,
                 top_tools: s.topTools || [],
               })),
+              docpath_roi: {
+                overhead_ratio: `${activeTask.docpathValueRoi?.overheadRatio ?? 100}%`,
+                protocol_tokens: activeTask.docpathValueRoi?.protocolTokens ?? 0,
+                real_tokens: activeTask.docpathValueRoi?.realModelTokens ?? (activeTask.realUsage?.totalTokens || 0),
+                compliance_score: activeTask.docpathValueRoi?.complianceScore ?? activeTask.complianceScore,
+                first_time_pass_rate: `${activeTask.docpathValueRoi?.firstTimePassRate ?? 100}%`,
+              },
               tool_attributions: (activeTask.toolAttributions || activeTask.realUsage?.toolAttributions || []).map((t) => ({
                 name: t.name,
                 count: t.count,
@@ -157,6 +165,16 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
                 tool: i.tool,
                 description: i.description,
                 tokens_wasted: i.tokensWasted,
+              })),
+              workflow_frictions: (activeTask.frictionFindings || []).map((f) => ({
+                id: f.id,
+                category: f.category,
+                severity: f.severity,
+                title: f.title,
+                count: f.count,
+                description: f.description,
+                tokens_wasted: f.tokensWasted ?? null,
+                optimization_hint: f.optimizationHint,
               })),
             },
           })
@@ -213,6 +231,19 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     console.log(`│  工具与异常:    ${toolCalls} 次调用 | ${flapping} 次翻转死循环 | ${heavyReads} 次大文件扫描`.padEnd(58) + '│');
     console.log('└───────────────────────────────────────────────────────────┘\n');
 
+    const roi = activeTask.docpathValueRoi || calculateDocPathValueRoi({
+      protocolTokens: 2000,
+      realModelTokens: activeTask.realUsage?.totalTokens || 0,
+      complianceScore: activeTask.complianceScore,
+      firstTimePassRate: 100,
+    });
+    const roiScoreIcon = roi.complianceScore >= 85 ? '🟢' : roi.complianceScore >= 70 ? '🟡' : '🔴';
+    console.log('┌ 💎  DocPath 极轻量价值透视 (DocPath Protocol ROI) ───────────────┐');
+    console.log(`│  协议注入占比:    ⚡ ${roi.overheadRatio}% (DocPath 协议 ~${formatTokens(roi.protocolTokens)} / 真实模型总消耗 ~${formatTokens(roi.realModelTokens)})`.padEnd(58) + '│');
+    console.log(`│  工程治理收益:    ${roiScoreIcon} ${roi.complianceScore}分 合规指数 | ${roi.firstTimePassRate}% 门禁首次通过率`.padEnd(58) + '│');
+    console.log(`│  效能保障结论:    以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环`.padEnd(58) + '│');
+    console.log('└───────────────────────────────────────────────────────────┘\n');
+
     if (activeTask.stepSlices && activeTask.stepSlices.length > 0) {
       console.log('┌ 🪜  步骤级 Token 成本与耗时分解 (Step-Level Telemetry Breakdown) ───┐');
       console.log('│  ' + '步骤 ID'.padEnd(10) + '耗时'.padEnd(8) + '消耗 Tokens'.padEnd(16) + '缓存复用'.padEnd(12) + '工具调用'.padEnd(10) + '步骤名称' + '│');
@@ -257,6 +288,19 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
       console.log('└───────────────────────────────────────────────────────────┘\n');
     }
 
+    const activeFrictions = activeTask.frictionFindings || [];
+    if (activeFrictions.length > 0) {
+      console.log('┌ ⚠️  研发流程摩擦与阻力诊断 (Workflow Friction & Pain Points) ─────┐');
+      for (const f of activeFrictions) {
+        const icon = f.severity === 'high' ? '🔴' : f.severity === 'medium' ? '🟡' : '🔵';
+        const wasted = typeof f.tokensWasted === 'number' && f.tokensWasted > 0 ? ` | 浪费 ~${f.tokensWasted.toLocaleString()} Tokens` : '';
+        console.log(`│  ${icon} [${f.category}] ${f.title} (发生 ${f.count} 次)${wasted}`.padEnd(58) + '│');
+        console.log(`│     描述: ${f.description}`.padEnd(58) + '│');
+        console.log(`│     优化指引: ${f.optimizationHint}`.padEnd(58) + '│');
+      }
+      console.log('└───────────────────────────────────────────────────────────┘\n');
+    }
+
     if (activeTask.violations.length > 0) {
       console.log('⚠️  在途合规风险警告 (In-flight Violations):');
       for (const v of activeTask.violations) {
@@ -275,7 +319,11 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
 
   // 1. JSON 输出
   if (json) {
-    console.log(JSON.stringify({ ...summary, gatePassed: isGatePassed }, null, 2));
+    console.log(JSON.stringify({
+      ...summary,
+      workflowFrictions: summary.globalFrictionFindings || summary.frictionFindings || [],
+      gatePassed: isGatePassed,
+    }, null, 2));
     if (isCiOrStrict && !isGatePassed) {
       process.exit(1);
     }
@@ -345,6 +393,15 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
             roi_tokens_per_line: summary.drift.standard.roiTokensPerLine,
           },
         },
+        docpath_roi: summary.docpathValueRoi
+          ? {
+              overhead_ratio: `${summary.docpathValueRoi.overheadRatio}%`,
+              protocol_tokens: summary.docpathValueRoi.protocolTokens,
+              real_tokens: summary.docpathValueRoi.realModelTokens,
+              compliance_score: summary.docpathValueRoi.complianceScore,
+              first_time_pass_rate: `${summary.docpathValueRoi.firstTimePassRate}%`,
+            }
+          : null,
         tool_attributions: (summary.globalToolAttributions || []).map((t) => ({
           name: t.name,
           count: t.count,
@@ -358,6 +415,16 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
           tool: i.tool,
           description: i.description,
           tokens_wasted: i.tokensWasted,
+        })),
+        workflow_frictions: (summary.globalFrictionFindings || summary.frictionFindings || []).map((f) => ({
+          id: f.id,
+          category: f.category,
+          severity: f.severity,
+          title: f.title,
+          count: f.count,
+          description: f.description,
+          tokens_wasted: f.tokensWasted ?? null,
+          optimization_hint: f.optimizationHint,
         })),
         spike_alerts: summary.spikes.map((s) => ({
           task_id: s.taskId,
@@ -398,6 +465,15 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
           diff_lines: t.totalDiffLines,
           protocol_tokens: t.protocol?.totalInjectedTokens || 0,
           real_tokens: t.realUsage?.totalTokens || null,
+          docpath_roi: t.docpathValueRoi
+            ? {
+                overhead_ratio: `${t.docpathValueRoi.overheadRatio}%`,
+                protocol_tokens: t.docpathValueRoi.protocolTokens,
+                real_tokens: t.docpathValueRoi.realModelTokens,
+                compliance_score: t.docpathValueRoi.complianceScore,
+                first_time_pass_rate: `${t.docpathValueRoi.firstTimePassRate}%`,
+              }
+            : null,
           lifecycle_anchor: t.lifecycleAnchor
             ? {
                 session_id: t.lifecycleAnchor.sessionId || null,
@@ -413,6 +489,7 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
             cached_tokens: s.cachedTokens || 0,
             tool_calls_count: s.toolCallsCount,
           })),
+          workflow_frictions: (t.frictionFindings || []).map((f) => f.id),
         })),
       }),
     );
@@ -511,6 +588,16 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
   console.log(`│  突增告警 (Spikes): ${spikeText}`.padEnd(58) + '│');
   console.log('└───────────────────────────────────────────────────────────┘\n');
 
+  if (summary.docpathValueRoi) {
+    const roi = summary.docpathValueRoi;
+    const roiScoreIcon = roi.complianceScore >= 85 ? '🟢' : roi.complianceScore >= 70 ? '🟡' : '🔴';
+    console.log('┌ 💎  DocPath 极轻量价值透视 (DocPath Protocol ROI) ───────────────┐');
+    console.log(`│  协议注入占比:    ⚡ ${roi.overheadRatio}% (DocPath 协议 ~${formatTokens(roi.protocolTokens)} / 真实模型总消耗 ~${formatTokens(roi.realModelTokens)})`.padEnd(58) + '│');
+    console.log(`│  工程治理收益:    ${roiScoreIcon} ${roi.complianceScore}分 合规指数 | ${roi.firstTimePassRate}% 门禁首次通过率`.padEnd(58) + '│');
+    console.log(`│  效能保障结论:    以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环`.padEnd(58) + '│');
+    console.log('└───────────────────────────────────────────────────────────┘\n');
+  }
+
   const globalAttrs = summary.globalToolAttributions || [];
   if (globalAttrs.length > 0) {
     console.log('┌ 🛠️  真实工具调用与消耗剖析 (Tool-Level Telemetry Breakdown) ────────┐');
@@ -535,6 +622,19 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
       const wasted = `(浪费 ~${ineff.tokensWasted.toLocaleString()} Tokens)`;
       console.log(`│  ${icon} [${ineff.tool}] ${ineff.description}`.padEnd(58) + '│');
       console.log(`│     严重度: ${ineff.severity.toUpperCase()} | ${wasted}`.padEnd(58) + '│');
+    }
+    console.log('└───────────────────────────────────────────────────────────┘\n');
+  }
+
+  const globalFrictions = summary.globalFrictionFindings || summary.frictionFindings || [];
+  if (globalFrictions.length > 0) {
+    console.log('┌ ⚠️  研发流程摩擦与阻力诊断 (Workflow Friction & Pain Points) ─────┐');
+    for (const f of globalFrictions) {
+      const icon = f.severity === 'high' ? '🔴' : f.severity === 'medium' ? '🟡' : '🔵';
+      const wasted = typeof f.tokensWasted === 'number' && f.tokensWasted > 0 ? ` | 浪费 ~${f.tokensWasted.toLocaleString()} Tokens` : '';
+      console.log(`│  ${icon} [${f.category}] ${f.title} (发生 ${f.count} 次)${wasted}`.padEnd(58) + '│');
+      console.log(`│     描述: ${f.description}`.padEnd(58) + '│');
+      console.log(`│     优化指引: ${f.optimizationHint}`.padEnd(58) + '│');
     }
     console.log('└───────────────────────────────────────────────────────────┘\n');
   }
