@@ -26,6 +26,8 @@ import {
   type ToolInefficiencyFinding,
   type WorkflowFrictionFinding,
   type WorkflowFrictionContext,
+  type DocPathCommandStat,
+  type DocPathCliOverhead,
 } from './agent-telemetry-adapter.js';
 
 export type {
@@ -35,6 +37,8 @@ export type {
   StepTelemetrySlice,
   WorkflowFrictionFinding,
   WorkflowFrictionContext,
+  DocPathCommandStat,
+  DocPathCliOverhead,
 };
 export { detectCurrentSessionId, captureGitCommit, detectWorkflowFrictions };
 
@@ -48,6 +52,7 @@ export interface RealAgentUsage {
   toolCallsCount?: number;
   toolAttributions?: ToolAttribution[];
   toolInefficiencies?: ToolInefficiencyFinding[];
+  docpathCliOverhead?: DocPathCliOverhead;
   frictionFindings?: WorkflowFrictionFinding[];
   model?: string;
   complianceScore?: number;
@@ -104,6 +109,7 @@ export interface TaskMetrics {
   sessionRecord?: SessionTelemetryRecord | null;
   toolAttributions?: ToolAttribution[];
   toolInefficiencies?: ToolInefficiencyFinding[];
+  docpathCliOverhead?: DocPathCliOverhead;
   frictionFindings?: WorkflowFrictionFinding[];
   lifecycleAnchor?: LifecycleAnchor;
   stepSlices?: StepTelemetrySlice[];
@@ -183,6 +189,7 @@ export interface ActiveTaskMetrics {
   sessionRecord?: SessionTelemetryRecord | null;
   toolAttributions?: ToolAttribution[];
   toolInefficiencies?: ToolInefficiencyFinding[];
+  docpathCliOverhead?: DocPathCliOverhead;
   frictionFindings?: WorkflowFrictionFinding[];
   lifecycleAnchor?: LifecycleAnchor;
   stepSlices?: StepTelemetrySlice[];
@@ -234,6 +241,8 @@ export interface MonitorSummary {
   globalFrictionFindings?: WorkflowFrictionFinding[];
   frictionFindings?: WorkflowFrictionFinding[];
   workflowFrictions?: WorkflowFrictionFinding[];
+  globalDocPathCliOverhead?: DocPathCliOverhead;
+  docpathCliOverhead?: DocPathCliOverhead;
   activeTask?: ActiveTaskMetrics | null;
   recentTasks: TaskMetrics[];
   docpathValueRoi?: DocPathValueRoi;
@@ -344,6 +353,7 @@ export async function probeRealAgentTelemetry(
     toolCallsCount: telemetry.toolCalls.total,
     toolAttributions: telemetry.toolAttributions,
     toolInefficiencies: telemetry.toolInefficiencies,
+    docpathCliOverhead: telemetry.docpathCliOverhead,
     model: telemetry.model,
     complianceScore: telemetry.complianceScore,
     violations: telemetry.violations,
@@ -807,6 +817,7 @@ export async function collectTaskMetrics(
           toolCallsCount: sessionRecord.toolCalls.total,
           toolAttributions: sessionRecord.toolAttributions,
           toolInefficiencies: sessionRecord.toolInefficiencies,
+          docpathCliOverhead: sessionRecord.docpathCliOverhead,
           model: sessionRecord.model,
           complianceScore: sessionRecord.complianceScore,
           violations: sessionRecord.violations,
@@ -877,6 +888,7 @@ export async function collectTaskMetrics(
     sessionRecord,
     toolAttributions: sessionRecord?.toolAttributions || realUsage?.toolAttributions,
     toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
+    docpathCliOverhead: sessionRecord?.docpathCliOverhead || realUsage?.docpathCliOverhead,
     frictionFindings: frictionFindings.length > 0 ? frictionFindings : undefined,
     lifecycleAnchor,
     stepSlices: stepSlices.length > 0 ? stepSlices : undefined,
@@ -1375,6 +1387,7 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       : join(docpathDir, 'tasks', 'current', 'metrics.json');
     let fileMetricsUsage: RealAgentUsage | null = null;
     let fileFrictionFindings: WorkflowFrictionFinding[] | undefined;
+    let fileDocpathCliOverhead: DocPathCliOverhead | undefined;
     if (existsSync(metricsJsonPath)) {
       try {
         const parsedMetrics = JSON.parse(await readFile(metricsJsonPath, 'utf-8'));
@@ -1383,6 +1396,9 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
         }
         if (Array.isArray(parsedMetrics.frictionFindings)) {
           fileFrictionFindings = parsedMetrics.frictionFindings;
+        }
+        if (parsedMetrics.docpathCliOverhead || parsedMetrics.realUsage?.docpathCliOverhead) {
+          fileDocpathCliOverhead = parsedMetrics.docpathCliOverhead || parsedMetrics.realUsage?.docpathCliOverhead;
         }
       } catch {
         // 容错
@@ -1401,6 +1417,7 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
             toolCallsCount: sessionRecord.toolCalls.total,
             toolAttributions: sessionRecord.toolAttributions,
             toolInefficiencies: sessionRecord.toolInefficiencies,
+            docpathCliOverhead: sessionRecord.docpathCliOverhead,
             model: sessionRecord.model,
             complianceScore: sessionRecord.complianceScore,
             violations: sessionRecord.violations,
@@ -1481,6 +1498,7 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       sessionRecord,
       toolAttributions: sessionRecord?.toolAttributions || realUsage?.toolAttributions,
       toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
+      docpathCliOverhead: fileDocpathCliOverhead || sessionRecord?.docpathCliOverhead || realUsage?.docpathCliOverhead,
       frictionFindings: frictionFindings.length > 0 ? frictionFindings : undefined,
       lifecycleAnchor,
       stepSlices: stepSlices.length > 0 ? stepSlices : undefined,
@@ -1618,6 +1636,75 @@ export function aggregateWorkflowFrictions(
   });
 
   return result;
+}
+
+/**
+ * 跨任务聚合 DocPath CLI 命令调用与真实 Token 消耗归因 (DocPath CLI Overhead Aggregation)
+ */
+export function aggregateDocPathCliOverhead(tasks: TaskMetrics[]): DocPathCliOverhead {
+  const cmdMap = new Map<string, { count: number; errorCount: number; inputTokens: number; outputTokens: number; totalTokens: number }>();
+  let totalRealTokens = 0;
+
+  for (const task of tasks) {
+    const taskTokens = task.realUsage?.totalTokens || task.sessionRecord?.tokens?.totalTokens || 0;
+    totalRealTokens += taskTokens;
+
+    const overhead = task.docpathCliOverhead || task.realUsage?.docpathCliOverhead || task.sessionRecord?.docpathCliOverhead;
+    if (overhead && Array.isArray(overhead.commands)) {
+      for (const cmd of overhead.commands) {
+        const existing = cmdMap.get(cmd.subcommand) || {
+          count: 0,
+          errorCount: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+        };
+        existing.count += cmd.count || 0;
+        existing.errorCount += cmd.errorCount || 0;
+        existing.inputTokens += cmd.inputTokens || 0;
+        existing.outputTokens += cmd.outputTokens || 0;
+        existing.totalTokens += cmd.totalTokens || (cmd.inputTokens + cmd.outputTokens) || 0;
+        cmdMap.set(cmd.subcommand, existing);
+      }
+    }
+  }
+
+  const commands: DocPathCommandStat[] = Array.from(cmdMap.entries()).map(([subcommand, stat]) => {
+    const avgTokens = stat.count > 0 ? Math.round(stat.totalTokens / stat.count) : 0;
+    return {
+      subcommand,
+      count: stat.count,
+      errorCount: stat.errorCount,
+      inputTokens: stat.inputTokens,
+      outputTokens: stat.outputTokens,
+      totalTokens: stat.totalTokens,
+      avgTokens,
+    };
+  });
+
+  commands.sort((a, b) => {
+    if (b.totalTokens !== a.totalTokens) return b.totalTokens - a.totalTokens;
+    return b.count - a.count;
+  });
+
+  const totalCalls = commands.reduce((sum, c) => sum + c.count, 0);
+  const errorCalls = commands.reduce((sum, c) => sum + c.errorCount, 0);
+  const inputTokens = commands.reduce((sum, c) => sum + c.inputTokens, 0);
+  const outputTokens = commands.reduce((sum, c) => sum + c.outputTokens, 0);
+  const totalTokens = inputTokens + outputTokens;
+  const percentageOfSessionTokens = totalRealTokens > 0
+    ? parseFloat(((totalTokens / totalRealTokens) * 100).toFixed(1))
+    : (totalTokens > 0 ? 100 : 0);
+
+  return {
+    totalCalls,
+    errorCalls,
+    totalTokens,
+    inputTokens,
+    outputTokens,
+    percentageOfSessionTokens,
+    commands,
+  };
 }
 
 /**
@@ -1874,6 +1961,7 @@ export async function aggregateMonitorMetrics(
   const globalToolAttributions = aggregateToolAttributions(recentTasks.length > 0 ? recentTasks : allTasks);
   const globalToolInefficiencies = aggregateToolInefficiencies(recentTasks.length > 0 ? recentTasks : allTasks, activeTask);
   const globalFrictionFindings = aggregateWorkflowFrictions(recentTasks.length > 0 ? recentTasks : allTasks, activeTask);
+  const globalDocPathCliOverhead = aggregateDocPathCliOverhead(recentTasks.length > 0 ? recentTasks : allTasks);
 
   let realUsageSummary: MonitorSummary['realUsageSummary'] = null;
   if (baseSummary.realUsageSummary) {
@@ -1919,6 +2007,8 @@ export async function aggregateMonitorMetrics(
     globalFrictionFindings,
     frictionFindings: globalFrictionFindings,
     workflowFrictions: globalFrictionFindings,
+    globalDocPathCliOverhead,
+    docpathCliOverhead: globalDocPathCliOverhead,
     activeTask,
     recentTasks,
     docpathValueRoi,

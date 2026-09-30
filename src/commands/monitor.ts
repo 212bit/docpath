@@ -9,6 +9,7 @@ import {
   probeActiveTaskMetrics,
   calculateDocPathValueRoi,
   type MonitorOptions,
+  type DocPathCliOverhead,
 } from '../utils/task-metrics.js';
 
 /**
@@ -25,6 +26,75 @@ export function formatTokens(n: number): string {
     return `${n.toLocaleString()} (~${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}K)`;
   }
   return n.toLocaleString();
+}
+
+/**
+ * 渲染 DocPath CLI 命令调用与真实 Token 消耗透视面板 (Human UI)
+ */
+function renderDocPathCliOverheadPanel(overhead?: DocPathCliOverhead | null): void {
+  console.log('┌ ⚡ DocPath 命令调用与 Token 消耗透视 (DocPath CLI Overhead) ────────┐');
+  if (!overhead || overhead.totalCalls === 0 || overhead.commands.length === 0) {
+    console.log(`│  CLI 调用总量:    0 次调用 | 0 次错误 (占会话总 Token 0%)`.padEnd(58) + '│');
+    console.log(`│  CLI 消耗 Tokens: 0 Tokens (均 0 / 次)`.padEnd(58) + '│');
+    console.log('└───────────────────────────────────────────────────────────┘\n');
+    return;
+  }
+
+  const errStr = overhead.errorCalls > 0 ? ` | 🔴 ${overhead.errorCalls} 次错误` : ' | 0 次错误';
+  const pctStr = ` (占会话总 Token ~${overhead.percentageOfSessionTokens}%)`;
+  console.log(`│  CLI 调用总量:    ${overhead.totalCalls} 次调用${errStr}${pctStr}`.padEnd(58) + '│');
+  const avgTok = overhead.totalCalls > 0 ? Math.round(overhead.totalTokens / overhead.totalCalls) : 0;
+  console.log(`│  CLI 消耗 Tokens: ~${overhead.totalTokens.toLocaleString()} Tokens (均 ~${avgTok} / 次 | 入: ~${overhead.inputTokens.toLocaleString()} / 出: ~${overhead.outputTokens.toLocaleString()})`.padEnd(58) + '│');
+
+  if (overhead.commands && overhead.commands.length > 0) {
+    console.log('│  ' + '─'.repeat(58) + '│');
+    console.log('│  ' + '子命令'.padEnd(16) + '频次'.padEnd(8) + '错误'.padEnd(8) + '消耗 Tokens'.padEnd(16) + '占比'.padEnd(8) + '│');
+    console.log('│  ' + '─'.repeat(58) + '│');
+    for (const cmd of overhead.commands.slice(0, 6)) {
+      const nameStr = cmd.subcommand.padEnd(16);
+      const countStr = `${cmd.count}次`.padEnd(8);
+      const cmdErrStr = `${cmd.errorCount || 0}次`.padEnd(8);
+      const tokStr = `~${cmd.totalTokens.toLocaleString()}`.padEnd(16);
+      const share = overhead.totalTokens > 0
+        ? parseFloat(((cmd.totalTokens / overhead.totalTokens) * 100).toFixed(1))
+        : 0;
+      const shareStr = `${share}%`.padEnd(8);
+      console.log(`│  ${nameStr}${countStr}${cmdErrStr}${tokStr}${shareStr}│`);
+    }
+  }
+  console.log('└───────────────────────────────────────────────────────────┘\n');
+}
+
+/**
+ * 转换 DocPath CLI 开销对象为 Agent YAML 结构
+ */
+function formatDocPathCliOverheadForAgent(overhead?: DocPathCliOverhead | null) {
+  if (!overhead) {
+    return {
+      total_calls: 0,
+      error_calls: 0,
+      total_tokens: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+      percentage: '0%',
+      commands: [],
+    };
+  }
+  return {
+    total_calls: overhead.totalCalls,
+    error_calls: overhead.errorCalls,
+    total_tokens: overhead.totalTokens,
+    input_tokens: overhead.inputTokens,
+    output_tokens: overhead.outputTokens,
+    percentage: `${overhead.percentageOfSessionTokens}%`,
+    commands: (overhead.commands || []).map((c) => ({
+      subcommand: c.subcommand,
+      count: c.count,
+      error_count: c.errorCount,
+      tokens: c.totalTokens,
+      avg_tokens: c.avgTokens,
+    })),
+  };
 }
 
 export async function monitorCommand(options: MonitorOptions): Promise<void> {
@@ -54,7 +124,8 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
       if (!activeTask) {
         console.log(JSON.stringify({ active: false, activeTask: null, message: '当前无进行中的活跃任务' }, null, 2));
       } else {
-        console.log(JSON.stringify({ active: true, activeTask: { ...activeTask, workflowFrictions: activeTask.frictionFindings || [] } }, null, 2));
+        const activeOverhead = activeTask.docpathCliOverhead || activeTask.realUsage?.docpathCliOverhead || activeTask.sessionRecord?.docpathCliOverhead || null;
+        console.log(JSON.stringify({ active: true, activeTask: { ...activeTask, docpathCliOverhead: activeOverhead, workflowFrictions: activeTask.frictionFindings || [] } }, null, 2));
       }
       return;
     }
@@ -152,6 +223,7 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
                 compliance_score: activeTask.docpathValueRoi?.complianceScore ?? activeTask.complianceScore,
                 first_time_pass_rate: `${activeTask.docpathValueRoi?.firstTimePassRate ?? 100}%`,
               },
+              docpath_cli_overhead: formatDocPathCliOverheadForAgent(activeTask.docpathCliOverhead || activeTask.realUsage?.docpathCliOverhead || activeTask.sessionRecord?.docpathCliOverhead),
               tool_attributions: (activeTask.toolAttributions || activeTask.realUsage?.toolAttributions || []).map((t) => ({
                 name: t.name,
                 count: t.count,
@@ -244,6 +316,8 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     console.log(`│  效能保障结论:    以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环`.padEnd(58) + '│');
     console.log('└───────────────────────────────────────────────────────────┘\n');
 
+    renderDocPathCliOverheadPanel(activeTask.docpathCliOverhead || activeTask.realUsage?.docpathCliOverhead || activeTask.sessionRecord?.docpathCliOverhead);
+
     if (activeTask.stepSlices && activeTask.stepSlices.length > 0) {
       console.log('┌ 🪜  步骤级 Token 成本与耗时分解 (Step-Level Telemetry Breakdown) ───┐');
       console.log('│  ' + '步骤 ID'.padEnd(10) + '耗时'.padEnd(8) + '消耗 Tokens'.padEnd(16) + '缓存复用'.padEnd(12) + '工具调用'.padEnd(10) + '步骤名称' + '│');
@@ -319,8 +393,11 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
 
   // 1. JSON 输出
   if (json) {
+    const globalOverhead = summary.globalDocPathCliOverhead || summary.docpathCliOverhead || null;
     console.log(JSON.stringify({
       ...summary,
+      globalDocPathCliOverhead: globalOverhead,
+      docpathCliOverhead: globalOverhead,
       workflowFrictions: summary.globalFrictionFindings || summary.frictionFindings || [],
       gatePassed: isGatePassed,
     }, null, 2));
@@ -367,6 +444,7 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
                 cached_tokens: s.cachedTokens || 0,
                 tool_calls_count: s.toolCallsCount,
               })),
+              docpath_cli_overhead: formatDocPathCliOverheadForAgent(summary.activeTask.docpathCliOverhead || summary.activeTask.realUsage?.docpathCliOverhead || summary.activeTask.sessionRecord?.docpathCliOverhead),
             }
           : null,
         compliance: {
@@ -402,6 +480,7 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
               first_time_pass_rate: `${summary.docpathValueRoi.firstTimePassRate}%`,
             }
           : null,
+        docpath_cli_overhead: formatDocPathCliOverheadForAgent(summary.globalDocPathCliOverhead || summary.docpathCliOverhead),
         tool_attributions: (summary.globalToolAttributions || []).map((t) => ({
           name: t.name,
           count: t.count,
@@ -474,6 +553,7 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
                 first_time_pass_rate: `${t.docpathValueRoi.firstTimePassRate}%`,
               }
             : null,
+          docpath_cli_overhead: formatDocPathCliOverheadForAgent(t.docpathCliOverhead || t.realUsage?.docpathCliOverhead || t.sessionRecord?.docpathCliOverhead),
           lifecycle_anchor: t.lifecycleAnchor
             ? {
                 session_id: t.lifecycleAnchor.sessionId || null,
@@ -597,6 +677,8 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     console.log(`│  效能保障结论:    以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环`.padEnd(58) + '│');
     console.log('└───────────────────────────────────────────────────────────┘\n');
   }
+
+  renderDocPathCliOverheadPanel(summary.globalDocPathCliOverhead || summary.docpathCliOverhead);
 
   const globalAttrs = summary.globalToolAttributions || [];
   if (globalAttrs.length > 0) {

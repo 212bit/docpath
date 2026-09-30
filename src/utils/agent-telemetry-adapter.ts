@@ -24,6 +24,41 @@ export interface LifecycleAnchor {
   completedAt?: string;
 }
 
+export interface DocPathCommandStat {
+  subcommand: string; // e.g. "next", "step-pass", "go", "done", "check", "monitor", "start", "backlog"
+  count: number;
+  errorCount: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  avgTokens: number;
+}
+
+export interface DocPathCliOverhead {
+  totalCalls: number;
+  errorCalls: number;
+  totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  percentageOfSessionTokens: number;
+  commands: DocPathCommandStat[];
+}
+
+export function extractDocpathSubcommand(commandLine?: string): string | null {
+  if (!commandLine || typeof commandLine !== 'string') return null;
+  const trimmed = commandLine.trim();
+  const match = trimmed.match(
+    /(?:^|[;&|\s]|node\s+(?:\.\/)?bin\/|pnpm\s+(?:run\s+)?|npx\s+(?:--[a-z0-9-]+\s+)?|(?:\.\/)?bin\/)docpath(?:\.m?js)?\s+([a-z0-9-]+)/i
+  );
+  if (match && match[1] && !match[1].startsWith('-')) {
+    return match[1].toLowerCase();
+  }
+  if (/(?:^|[;&|\s]|node\s+(?:\.\/)?bin\/|pnpm\s+|npx\s+|(?:\.\/)?bin\/)docpath(?:\.m?js)?(?:\s|$)/i.test(trimmed)) {
+    return 'root';
+  }
+  return null;
+}
+
 export interface StepTelemetrySlice {
   stepId: string;
   stepTitle?: string;
@@ -122,6 +157,7 @@ export interface SessionTelemetryRecord {
   };
   toolAttributions?: ToolAttribution[];
   toolInefficiencies?: ToolInefficiencyFinding[];
+  docpathCliOverhead?: DocPathCliOverhead;
   turnsCount: number;
   errorCount: number;
   heavyReadsCount?: number;
@@ -400,6 +436,7 @@ export class AntigravityTelemetryAdapter {
     toolCalls: { total: number; byName: Record<string, number>; errorCount: number };
     toolAttributions: ToolAttribution[];
     toolInefficiencies: ToolInefficiencyFinding[];
+    docpathCliOverhead?: DocPathCliOverhead;
     turnsCount: number;
     errorCount: number;
     heavyReadsCount: number;
@@ -412,7 +449,8 @@ export class AntigravityTelemetryAdapter {
     let toolCallsTotal = 0;
     const byName: Record<string, number> = {};
     const toolStatsMap = new Map<string, { count: number; inputTokens: number; outputTokens: number; errorCount: number }>();
-    const pendingToolCalls: Array<{ name: string; args?: Record<string, any>; inputTokens: number }> = [];
+    const docpathStatsMap = new Map<string, { count: number; errorCount: number; inputTokens: number; outputTokens: number }>();
+    const pendingToolCalls: Array<{ name: string; args?: Record<string, any>; inputTokens: number; docpathSubcommand?: string | null }> = [];
     const fileReadStats = new Map<string, { count: number; totalTokens: number; readTokens: number[] }>();
     const oversizedOutputs: Array<{ cmd: string; outputTokens: number; wasted: number }> = [];
     const editMisses: Array<{ targetFile: string; inputTokens: number; outputTokens: number; error: string }> = [];
@@ -565,10 +603,25 @@ export class AntigravityTelemetryAdapter {
             stat.count++;
 
             let argsTokens = 0;
+            let docpathSubcommand: string | null = null;
             if (tc.args) {
               argsTokens = estimateTokens(JSON.stringify(tc.args));
               totalEstimated += argsTokens;
               stat.inputTokens += argsTokens;
+
+              const cmdLine =
+                typeof tc.args === 'string'
+                  ? tc.args
+                  : (tc.args.CommandLine || tc.args.command || tc.args.cmd || tc.args.script || tc.args.input || '');
+              if (cmdLine && typeof cmdLine === 'string') {
+                docpathSubcommand = extractDocpathSubcommand(cmdLine);
+              }
+              if (docpathSubcommand) {
+                const dStat = docpathStatsMap.get(docpathSubcommand) || { count: 0, errorCount: 0, inputTokens: 0, outputTokens: 0 };
+                dStat.count++;
+                dStat.inputTokens += argsTokens;
+                docpathStatsMap.set(docpathSubcommand, dStat);
+              }
 
               // 检测大文件泛读与重复文件读取统计
               if (name === 'view_file') {
@@ -589,7 +642,7 @@ export class AntigravityTelemetryAdapter {
               }
             }
             toolStatsMap.set(name, stat);
-            pendingToolCalls.push({ name, args: tc.args, inputTokens: argsTokens });
+            pendingToolCalls.push({ name, args: tc.args, inputTokens: argsTokens, docpathSubcommand });
           }
         }
 
@@ -607,7 +660,7 @@ export class AntigravityTelemetryAdapter {
 
         // 工具执行响应 Token 归因
         if (entry.type !== 'USER_INPUT' && entry.type !== 'PLANNER_RESPONSE') {
-          let matchedItem: { name: string; args?: Record<string, any>; inputTokens: number } | undefined;
+          let matchedItem: { name: string; args?: Record<string, any>; inputTokens: number; docpathSubcommand?: string | null } | undefined;
           const normalizedType = typeof entry.type === 'string' ? entry.type.toLowerCase().replace(/[\s_-]+/g, '') : '';
 
           if (pendingToolCalls.length > 0) {
@@ -635,6 +688,17 @@ export class AntigravityTelemetryAdapter {
               stat.errorCount += 1;
             }
             toolStatsMap.set(matchedToolName, stat);
+
+            // DocPath CLI 命令统计归因
+            if (matchedItem?.docpathSubcommand) {
+              const dStat = docpathStatsMap.get(matchedItem.docpathSubcommand);
+              if (dStat) {
+                dStat.outputTokens += outTokens;
+                if (isToolError) {
+                  dStat.errorCount += 1;
+                }
+              }
+            }
 
             // 1. 重复读取文件 Token 归因
             if (matchedToolName === 'view_file') {
@@ -780,6 +844,48 @@ export class AntigravityTelemetryAdapter {
       });
     }
 
+    // DocPath CLI 开销统计构建 (FR-1 / AC-1)
+    let docpathCliOverhead: DocPathCliOverhead | undefined;
+    if (docpathStatsMap.size > 0) {
+      const commands: DocPathCommandStat[] = Array.from(docpathStatsMap.entries()).map(([subcommand, s]) => {
+        const totalTokens = s.inputTokens + s.outputTokens;
+        const avgTokens = s.count > 0 ? Math.round(totalTokens / s.count) : 0;
+        return {
+          subcommand,
+          count: s.count,
+          errorCount: s.errorCount,
+          inputTokens: s.inputTokens,
+          outputTokens: s.outputTokens,
+          totalTokens,
+          avgTokens,
+        };
+      });
+
+      commands.sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return b.totalTokens - a.totalTokens;
+      });
+
+      const totalCalls = commands.reduce((sum, c) => sum + c.count, 0);
+      const errorCalls = commands.reduce((sum, c) => sum + c.errorCount, 0);
+      const docInputTokens = commands.reduce((sum, c) => sum + c.inputTokens, 0);
+      const docOutputTokens = commands.reduce((sum, c) => sum + c.outputTokens, 0);
+      const docTotalTokens = docInputTokens + docOutputTokens;
+      const percentageOfSessionTokens = finalTotalTokens > 0
+        ? parseFloat(((docTotalTokens / finalTotalTokens) * 100).toFixed(1))
+        : 0;
+
+      docpathCliOverhead = {
+        totalCalls,
+        errorCalls,
+        totalTokens: docTotalTokens,
+        inputTokens: docInputTokens,
+        outputTokens: docOutputTokens,
+        percentageOfSessionTokens,
+        commands,
+      };
+    }
+
     return {
       tokens: {
         inputTokens,
@@ -795,6 +901,7 @@ export class AntigravityTelemetryAdapter {
       },
       toolAttributions,
       toolInefficiencies,
+      docpathCliOverhead,
       turnsCount: Math.max(1, turnsCount),
       errorCount,
       heavyReadsCount,
@@ -886,6 +993,7 @@ export class AntigravityTelemetryAdapter {
         toolCalls: parsed.toolCalls,
         toolAttributions: parsed.toolAttributions,
         toolInefficiencies: parsed.toolInefficiencies,
+        docpathCliOverhead: parsed.docpathCliOverhead,
         turnsCount: parsed.turnsCount,
         errorCount: parsed.errorCount,
         heavyReadsCount: parsed.heavyReadsCount,
@@ -1316,6 +1424,65 @@ export class ZCodeTelemetryAdapter {
         // ignore tool_usage query failure
       }
 
+      let docpathCliOverhead: DocPathCliOverhead | undefined;
+      try {
+        const toolRowsAll = await ZCodeTelemetryAdapter.querySqlite(
+          dbPath,
+          `SELECT * FROM tool_usage ${whereSql}`,
+          params
+        );
+        if (toolRowsAll && toolRowsAll.length > 0) {
+          const docStatsMap = new Map<string, { count: number; errorCount: number; inputTokens: number; outputTokens: number }>();
+          for (const row of toolRowsAll) {
+            const cmd = row.command_line || row.command || row.cmd || row.input || row.args || '';
+            const cmdStr = typeof cmd === 'string' ? cmd : JSON.stringify(cmd);
+            const sub = extractDocpathSubcommand(cmdStr);
+            if (sub) {
+              const stat = docStatsMap.get(sub) || { count: 0, errorCount: 0, inputTokens: 0, outputTokens: 0 };
+              stat.count++;
+              const isErr = row.status === 'error' || (row.exit_code !== undefined && row.exit_code !== null && Number(row.exit_code) !== 0);
+              if (isErr) stat.errorCount++;
+              const inTok = row.input_tokens ? Number(row.input_tokens) : (row.input_bytes ? Math.round(Number(row.input_bytes) / 4) : estimateTokens(cmdStr));
+              const outTok = row.output_tokens ? Number(row.output_tokens) : (row.output_bytes ? Math.round(Number(row.output_bytes) / 4) : (row.output ? estimateTokens(String(row.output)) : 0));
+              stat.inputTokens += inTok;
+              stat.outputTokens += outTok;
+              docStatsMap.set(sub, stat);
+            }
+          }
+          if (docStatsMap.size > 0) {
+            const commands: DocPathCommandStat[] = Array.from(docStatsMap.entries()).map(([subcommand, s]) => {
+              const totalTokens = s.inputTokens + s.outputTokens;
+              return {
+                subcommand,
+                count: s.count,
+                errorCount: s.errorCount,
+                inputTokens: s.inputTokens,
+                outputTokens: s.outputTokens,
+                totalTokens,
+                avgTokens: s.count > 0 ? Math.round(totalTokens / s.count) : 0,
+              };
+            });
+            commands.sort((a, b) => (b.count !== a.count ? b.count - a.count : b.totalTokens - a.totalTokens));
+            const totalCalls = commands.reduce((sum, c) => sum + c.count, 0);
+            const errorCalls = commands.reduce((sum, c) => sum + c.errorCount, 0);
+            const docInput = commands.reduce((sum, c) => sum + c.inputTokens, 0);
+            const docOutput = commands.reduce((sum, c) => sum + c.outputTokens, 0);
+            const docTotal = docInput + docOutput;
+            docpathCliOverhead = {
+              totalCalls,
+              errorCalls,
+              totalTokens: docTotal,
+              inputTokens: docInput,
+              outputTokens: docOutput,
+              percentageOfSessionTokens: totalTokens > 0 ? parseFloat(((docTotal / totalTokens) * 100).toFixed(1)) : 0,
+              commands,
+            };
+          }
+        }
+      } catch {
+        // ignore tool_usage query failure
+      }
+
       if (totalToolCalls === 0 && modelToolCalls > 0) {
         totalToolCalls = modelToolCalls;
       }
@@ -1337,6 +1504,7 @@ export class ZCodeTelemetryAdapter {
         },
         toolAttributions: toolAttributions.length > 0 ? toolAttributions : undefined,
         toolInefficiencies: [],
+        docpathCliOverhead,
         turnsCount: Math.max(1, turnsCount),
         errorCount,
         heavyReadsCount: 0,
@@ -1403,6 +1571,8 @@ export class ZCodeTelemetryAdapter {
       let firstTime = 0;
       let lastTime = 0;
 
+      const docStatsMap = new Map<string, { count: number; errorCount: number; inputTokens: number; outputTokens: number }>();
+
       for (const line of lines) {
         try {
           const entry = JSON.parse(line);
@@ -1468,6 +1638,24 @@ export class ZCodeTelemetryAdapter {
               const name = tc.name || tc.function?.name || 'unknown_tool';
               byName[name] = (byName[name] || 0) + 1;
               totalToolCalls++;
+
+              let cmdLine = '';
+              if (tc.args) {
+                cmdLine = typeof tc.args === 'string' ? tc.args : (tc.args.CommandLine || tc.args.command || tc.args.cmd || JSON.stringify(tc.args));
+              } else if (tc.arguments) {
+                cmdLine = typeof tc.arguments === 'string' ? tc.arguments : JSON.stringify(tc.arguments);
+              } else if (tc.function?.arguments) {
+                cmdLine = typeof tc.function.arguments === 'string' ? tc.function.arguments : JSON.stringify(tc.function.arguments);
+              }
+
+              const sub = extractDocpathSubcommand(cmdLine);
+              if (sub) {
+                const stat = docStatsMap.get(sub) || { count: 0, errorCount: 0, inputTokens: 0, outputTokens: 0 };
+                stat.count++;
+                const inTok = estimateTokens(cmdLine);
+                stat.inputTokens += inTok;
+                docStatsMap.set(sub, stat);
+              }
             }
           }
         } catch {
@@ -1477,6 +1665,37 @@ export class ZCodeTelemetryAdapter {
 
       if (totalTokens === 0 && turnsCount === 0) {
         return null;
+      }
+
+      let docpathCliOverhead: DocPathCliOverhead | undefined;
+      if (docStatsMap.size > 0) {
+        const commands: DocPathCommandStat[] = Array.from(docStatsMap.entries()).map(([subcommand, s]) => {
+          const total = s.inputTokens + s.outputTokens;
+          return {
+            subcommand,
+            count: s.count,
+            errorCount: s.errorCount,
+            inputTokens: s.inputTokens,
+            outputTokens: s.outputTokens,
+            totalTokens: total,
+            avgTokens: s.count > 0 ? Math.round(total / s.count) : 0,
+          };
+        });
+        commands.sort((a, b) => (b.count !== a.count ? b.count - a.count : b.totalTokens - a.totalTokens));
+        const totalCalls = commands.reduce((sum, c) => sum + c.count, 0);
+        const errorCalls = commands.reduce((sum, c) => sum + c.errorCount, 0);
+        const docInput = commands.reduce((sum, c) => sum + c.inputTokens, 0);
+        const docOutput = commands.reduce((sum, c) => sum + c.outputTokens, 0);
+        const docTotal = docInput + docOutput;
+        docpathCliOverhead = {
+          totalCalls,
+          errorCalls,
+          totalTokens: docTotal,
+          inputTokens: docInput,
+          outputTokens: docOutput,
+          percentageOfSessionTokens: totalTokens > 0 ? parseFloat(((docTotal / totalTokens) * 100).toFixed(1)) : 0,
+          commands,
+        };
       }
 
       const durationMs = lastTime && firstTime ? Math.max(0, lastTime - firstTime) : undefined;
@@ -1497,6 +1716,7 @@ export class ZCodeTelemetryAdapter {
           total: totalToolCalls,
           byName,
         },
+        docpathCliOverhead,
         turnsCount: Math.max(1, turnsCount),
         errorCount: 0,
         heavyReadsCount: 0,

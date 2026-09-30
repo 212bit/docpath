@@ -12,6 +12,7 @@ import {
   resolveAgentTelemetry,
   detectCurrentSessionId,
   captureGitCommit,
+  extractDocpathSubcommand,
 } from '../dist/utils/agent-telemetry-adapter.js';
 import {
   collectTaskMetrics,
@@ -246,6 +247,175 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
       const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
       assert.equal(result.errorCount, 3);
       assert.equal(result.flappingCount, 1);
+    });
+
+    it('extracts docpath subcommands with extractDocpathSubcommand across CLI formats (FR-1 / AC-1)', () => {
+      assert.equal(extractDocpathSubcommand('docpath next --agent'), 'next');
+      assert.equal(extractDocpathSubcommand('node bin/docpath.js check'), 'check');
+      assert.equal(extractDocpathSubcommand('node ./bin/docpath.mjs step-pass --commit'), 'step-pass');
+      assert.equal(extractDocpathSubcommand('pnpm docpath go --step S1'), 'go');
+      assert.equal(extractDocpathSubcommand('npx docpath start "new task" --draft'), 'start');
+      assert.equal(extractDocpathSubcommand('docpath quick "fix typo"'), 'quick');
+      assert.equal(extractDocpathSubcommand('docpath monitor --agent'), 'monitor');
+      assert.equal(extractDocpathSubcommand('docpath done --commit'), 'done');
+      assert.equal(extractDocpathSubcommand('docpath backlog list'), 'backlog');
+      assert.equal(extractDocpathSubcommand('git status'), null);
+      assert.equal(extractDocpathSubcommand('npm test'), null);
+      assert.equal(extractDocpathSubcommand(''), null);
+    });
+
+    it('extracts DocPathCliOverhead telemetry, command frequency, error rate and token attribution (FR-1 / AC-1)', () => {
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:00.000Z',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath next --agent' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:05.000Z',
+          content: '{"next_action": "go", "step": "S1"}',
+        }),
+        JSON.stringify({
+          step_index: 3,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:10.000Z',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath go --step S1' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 4,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:15.000Z',
+          content: 'Step S1 started',
+        }),
+        JSON.stringify({
+          step_index: 5,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:20.000Z',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath next --agent' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 6,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:25.000Z',
+          content: '{"next_action": "step-pass", "step": "S1"}',
+        }),
+        JSON.stringify({
+          step_index: 7,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:30.000Z',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath step-pass --commit' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 8,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'ERROR',
+          created_at: '2026-09-30T10:00:35.000Z',
+          content: 'Error: quality gate check failed',
+        }),
+        JSON.stringify({
+          step_index: 9,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:40.000Z',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath done --commit' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 10,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:45.000Z',
+          content: 'Task completed successfully',
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+
+      assert.ok(result.docpathCliOverhead, 'docpathCliOverhead should be present');
+      const overhead = result.docpathCliOverhead;
+
+      assert.equal(overhead.totalCalls, 5);
+      assert.equal(overhead.errorCalls, 1);
+      assert.ok(overhead.totalTokens > 0);
+      assert.ok(overhead.inputTokens > 0);
+      assert.ok(overhead.outputTokens > 0);
+      assert.equal(overhead.totalTokens, overhead.inputTokens + overhead.outputTokens);
+      assert.ok(overhead.percentageOfSessionTokens > 0 && overhead.percentageOfSessionTokens <= 100);
+
+      // Verify commands breakdown
+      assert.equal(overhead.commands.length, 4); // 'next' (2 calls), 'go', 'step-pass', 'done'
+
+      // Top command should be 'next' with count 2
+      const topCmd = overhead.commands[0];
+      assert.equal(topCmd.subcommand, 'next');
+      assert.equal(topCmd.count, 2);
+      assert.equal(topCmd.errorCount, 0);
+      assert.ok(topCmd.inputTokens > 0);
+      assert.ok(topCmd.outputTokens > 0);
+      assert.equal(topCmd.totalTokens, topCmd.inputTokens + topCmd.outputTokens);
+      assert.equal(topCmd.avgTokens, Math.round(topCmd.totalTokens / 2));
+
+      // Check step-pass has errorCount = 1
+      const stepPassCmd = overhead.commands.find((c) => c.subcommand === 'step-pass');
+      assert.ok(stepPassCmd);
+      assert.equal(stepPassCmd.count, 1);
+      assert.equal(stepPassCmd.errorCount, 1);
+      assert.equal(stepPassCmd.avgTokens, stepPassCmd.totalTokens);
+
+      // Check go and done
+      const goCmd = overhead.commands.find((c) => c.subcommand === 'go');
+      assert.ok(goCmd);
+      assert.equal(goCmd.count, 1);
+      assert.equal(goCmd.errorCount, 0);
+
+      const doneCmd = overhead.commands.find((c) => c.subcommand === 'done');
+      assert.ok(doneCmd);
+      assert.equal(doneCmd.count, 1);
+      assert.equal(doneCmd.errorCount, 0);
     });
   });
 

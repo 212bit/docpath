@@ -1,0 +1,214 @@
+{
+  "taskId": "T-20260930-docpath-cli-token",
+  "taskTitle": "T-20260930-docpath-cli-token - DocPath CLI 命令调用频次与真实 Token 消耗分析引擎",
+  "backlogId": "R-456",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-30T12:49:03.128Z",
+  "completedAt": "2026-09-30T13:07:52.175Z",
+  "durationMinutes": 18.8,
+  "firstTimePassRate": 50,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 32, 消耗: 4655153 Tokens, 时长: 63 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 32,
+        "totalTokens": 4655153,
+        "durationMinutes": 63
+      }
+    }
+  ],
+  "totalDiffLines": 1887,
+  "filesChanged": 15,
+  "linesAdded": 1850,
+  "linesDeleted": 37,
+  "engineering": {
+    "turnCount": 9,
+    "retryCount": 1,
+    "firstTimePassRate": 50,
+    "cycleTimeMinutes": 18.8,
+    "filesChanged": 15,
+    "linesAdded": 1850,
+    "linesDeleted": 37,
+    "totalDiffLines": 1887,
+    "speedLinesPerMinute": 100.4
+  },
+  "protocol": {
+    "specTokens": 1136,
+    "planTokens": 576,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3512
+  },
+  "realUsage": {
+    "source": "zcode",
+    "inputTokens": 4637418,
+    "outputTokens": 17735,
+    "totalTokens": 4655153,
+    "costUsd": 14.1783,
+    "toolCallsCount": 43,
+    "model": {
+      "modelId": "big-pickle",
+      "providerId": "8aafb336-1279-4968-93b8-0d2490726729"
+    },
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 32, 消耗: 4655153 Tokens, 时长: 63 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 32,
+          "totalTokens": 4655153,
+          "durationMinutes": 63
+        }
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "zcode",
+    "sessionId": "8873cc53-6a72-4572-b9a9-101a1869a488",
+    "model": {
+      "modelId": "big-pickle",
+      "providerId": "8aafb336-1279-4968-93b8-0d2490726729"
+    },
+    "tokens": {
+      "inputTokens": 4637418,
+      "outputTokens": 17735,
+      "totalTokens": 4655153,
+      "costUsd": 14.1783
+    },
+    "toolCalls": {
+      "total": 43,
+      "byName": {
+        "Bash": 24,
+        "Read": 6,
+        "TodoWrite": 2,
+        "Edit": 11
+      }
+    },
+    "turnsCount": 32,
+    "errorCount": 0,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 32, 消耗: 4655153 Tokens, 时长: 63 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 32,
+          "totalTokens": 4655153,
+          "durationMinutes": 63
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 3757003
+  },
+  "frictionFindings": [
+    {
+      "id": "FRIC-GATE-BLOCK",
+      "category": "gate_block",
+      "severity": "low",
+      "title": "质量门禁与构建拦截阻力 (Quality Gate Blockage)",
+      "description": "检测到 1 次质量门禁拦截或测试/构建失败，阻碍了任务顺利推进",
+      "count": 1,
+      "tokensWasted": 400,
+      "optimizationHint": "利用构建感知自愈机制运行定向单测 (node --test)，并在终步统一执行收口门禁"
+    },
+    {
+      "id": "FRIC-STEP-REWORK",
+      "category": "step_rework",
+      "severity": "low",
+      "title": "步骤返工与多次重试阻力 (Step Rework & Retries)",
+      "description": "检测到 1 次步骤受阻、重试或返工，增加了任务执行周期与上下文损耗",
+      "count": 1,
+      "tokensWasted": 500,
+      "optimizationHint": "执行 docpath go --step 原子认领；对复杂长步骤派发 Worker 子代理独立攻坚"
+    }
+  ],
+  "lifecycleAnchor": {
+    "sessionId": "8873cc53-6a72-4572-b9a9-101a1869a488",
+    "baseCommit": "6dc8914b885f56ffee7d1196c5803af645804166",
+    "headCommit": "6dc8914b885f56ffee7d1196c5803af645804166",
+    "startedAt": "2026-09-30T12:49:03.128Z",
+    "completedAt": "2026-09-30T13:07:52.175Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 FR-1 DocPath CLI 命令调用频次",
+      "startedAt": "2026-09-30T12:49:03.128Z",
+      "completedAt": "2026-09-30T12:54:42.078Z",
+      "durationMinutes": 5.6,
+      "totalTokens": 3176178,
+      "inputTokens": 3162154,
+      "outputTokens": 14024,
+      "costUsd": 9.6968,
+      "toolCallsCount": 32,
+      "topTools": [
+        {
+          "name": "Bash",
+          "count": 17,
+          "tokens": 0
+        },
+        {
+          "name": "Read",
+          "count": 5,
+          "tokens": 0
+        },
+        {
+          "name": "TodoWrite",
+          "count": 1,
+          "tokens": 0
+        }
+      ]
+    },
+    {
+      "stepId": "S2",
+      "stepTitle": "实现并验证 FR-2 真实 Token 消耗分析引擎",
+      "startedAt": "2026-09-30T12:54:42.382Z",
+      "completedAt": "2026-09-30T12:59:28.218Z",
+      "durationMinutes": 4.8,
+      "totalTokens": 1757499,
+      "inputTokens": 1752764,
+      "outputTokens": 4735,
+      "costUsd": 5.3293,
+      "toolCallsCount": 15,
+      "topTools": [
+        {
+          "name": "Bash",
+          "count": 6,
+          "tokens": 0
+        },
+        {
+          "name": "Read",
+          "count": 3,
+          "tokens": 0
+        },
+        {
+          "name": "Edit",
+          "count": 6,
+          "tokens": 0
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 3512,
+    "realModelTokens": 4655153,
+    "overheadRatio": 0.08,
+    "complianceScore": 85,
+    "firstTimePassRate": 50,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}

@@ -21,6 +21,7 @@ import {
   collectTaskMetrics,
   detectWorkflowFrictions,
   aggregateWorkflowFrictions,
+  aggregateDocPathCliOverhead,
 } from '../dist/utils/task-metrics.js';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
@@ -2286,6 +2287,218 @@ describe('Workflow Friction Diagnostics & Efficiency Dashboard (FR-3 / AC-3, AC-
     }
   });
 });
+
+describe('DocPath CLI Overhead Dashboard & Token Attribution Engine (FR-2 / AC-2, AC-3, AC-4)', () => {
+  it('aggregateDocPathCliOverhead accurately aggregates total calls, errors, input/output tokens, command breakdowns, and percentage', () => {
+    const task1 = {
+      taskId: 'T-CLI-01',
+      taskTitle: 'CLI Task 1',
+      realUsage: {
+        totalTokens: 50000,
+        docpathCliOverhead: {
+          totalCalls: 5,
+          errorCalls: 0,
+          totalTokens: 2500,
+          inputTokens: 1000,
+          outputTokens: 1500,
+          percentageOfSessionTokens: 5.0,
+          commands: [
+            { subcommand: 'next', count: 3, errorCount: 0, inputTokens: 600, outputTokens: 900, totalTokens: 1500, avgTokens: 500 },
+            { subcommand: 'step-pass', count: 2, errorCount: 0, inputTokens: 400, outputTokens: 600, totalTokens: 1000, avgTokens: 500 },
+          ],
+        },
+      },
+    };
+
+    const task2 = {
+      taskId: 'T-CLI-02',
+      taskTitle: 'CLI Task 2',
+      realUsage: {
+        totalTokens: 50000,
+        docpathCliOverhead: {
+          totalCalls: 4,
+          errorCalls: 1,
+          totalTokens: 2000,
+          inputTokens: 800,
+          outputTokens: 1200,
+          percentageOfSessionTokens: 4.0,
+          commands: [
+            { subcommand: 'next', count: 2, errorCount: 0, inputTokens: 400, outputTokens: 600, totalTokens: 1000, avgTokens: 500 },
+            { subcommand: 'check', count: 2, errorCount: 1, inputTokens: 400, outputTokens: 600, totalTokens: 1000, avgTokens: 500 },
+          ],
+        },
+      },
+    };
+
+    const aggregated = aggregateDocPathCliOverhead([task1, task2]);
+    assert.equal(aggregated.totalCalls, 9);
+    assert.equal(aggregated.errorCalls, 1);
+    assert.equal(aggregated.inputTokens, 1800);
+    assert.equal(aggregated.outputTokens, 2700);
+    assert.equal(aggregated.totalTokens, 4500);
+    assert.equal(aggregated.percentageOfSessionTokens, 4.5); // 4500 / 100000 * 100 = 4.5%
+    assert.equal(aggregated.commands.length, 3);
+
+    const nextCmd = aggregated.commands.find((c) => c.subcommand === 'next');
+    assert.ok(nextCmd);
+    assert.equal(nextCmd.count, 5);
+    assert.equal(nextCmd.totalTokens, 2500);
+    assert.equal(nextCmd.avgTokens, 500);
+
+    const checkCmd = aggregated.commands.find((c) => c.subcommand === 'check');
+    assert.ok(checkCmd);
+    assert.equal(checkCmd.count, 2);
+    assert.equal(checkCmd.errorCount, 1);
+    assert.equal(checkCmd.totalTokens, 1000);
+  });
+
+  it('docpath monitor --current renders DocPath CLI Overhead panel in Human, YAML, and JSON views', () => {
+    const cwd = mkWorkspaceWithActiveTask({
+      taskId: 'T-CLI-ACTIVE',
+      taskTitle: 'Active Task with CLI Overhead',
+      profile: 'standard',
+    });
+
+    const dp = join(cwd, '.docpath');
+    const metricsJson = {
+      taskId: 'T-CLI-ACTIVE',
+      taskTitle: 'Active Task with CLI Overhead',
+      profile: 'standard',
+      level: 2,
+      realUsage: {
+        source: 'antigravity',
+        totalTokens: 60000,
+        inputTokens: 50000,
+        outputTokens: 10000,
+        cachedTokens: 15000,
+        docpathCliOverhead: {
+          totalCalls: 6,
+          errorCalls: 1,
+          totalTokens: 3000,
+          inputTokens: 1200,
+          outputTokens: 1800,
+          percentageOfSessionTokens: 5.0,
+          commands: [
+            { subcommand: 'next', count: 3, errorCount: 0, inputTokens: 600, outputTokens: 900, totalTokens: 1500, avgTokens: 500 },
+            { subcommand: 'go', count: 2, errorCount: 0, inputTokens: 400, outputTokens: 600, totalTokens: 1000, avgTokens: 500 },
+            { subcommand: 'check', count: 1, errorCount: 1, inputTokens: 200, outputTokens: 300, totalTokens: 500, avgTokens: 500 },
+          ],
+        },
+      },
+    };
+    writeFileSync(join(dp, 'tasks', 'current', 'metrics.json'), JSON.stringify(metricsJson, null, 2));
+
+    try {
+      // 1. Human Dashboard view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /DocPath 命令调用与 Token 消耗透视 \(DocPath CLI Overhead\)/);
+      assert.match(stdoutHuman, /CLI 调用总量:\s*6 次调用/);
+      assert.match(stdoutHuman, /1 次错误/);
+      assert.match(stdoutHuman, /CLI 消耗 Tokens:\s*~3,000 Tokens/);
+      assert.match(stdoutHuman, /next/);
+      assert.match(stdoutHuman, /go/);
+      assert.match(stdoutHuman, /check/);
+
+      // 2. YAML agent view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /docpath_cli_overhead:/);
+      assert.match(stdoutAgent, /total_calls:\s*6/);
+      assert.match(stdoutAgent, /error_calls:\s*1/);
+      assert.match(stdoutAgent, /total_tokens:\s*3000/);
+      assert.match(stdoutAgent, /subcommand:\s*next/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.equal(data.active, true);
+      assert.ok(data.activeTask.docpathCliOverhead);
+      assert.equal(data.activeTask.docpathCliOverhead.totalCalls, 6);
+      assert.equal(data.activeTask.docpathCliOverhead.errorCalls, 1);
+      assert.equal(data.activeTask.docpathCliOverhead.totalTokens, 3000);
+      assert.equal(data.activeTask.docpathCliOverhead.commands.length, 3);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('docpath monitor (global) renders DocPath CLI Overhead panel in Human, YAML, and JSON views', () => {
+    const task1 = {
+      taskId: 'T-CLI-GLOBAL-01',
+      taskTitle: 'Global Task with CLI Telemetry',
+      profile: 'standard',
+      level: 2,
+      startedAt: '2026-09-30T10:00:00.000Z',
+      completedAt: '2026-09-30T10:15:00.000Z',
+      durationMinutes: 15,
+      firstTimePassRate: 100,
+      complianceScore: 100,
+      violations: [],
+      totalDiffLines: 120,
+      filesChanged: 3,
+      linesAdded: 100,
+      linesDeleted: 20,
+      protocol: { totalInjectedTokens: 2000 },
+      realUsage: {
+        totalTokens: 80000,
+        inputTokens: 70000,
+        outputTokens: 10000,
+        docpathCliOverhead: {
+          totalCalls: 8,
+          errorCalls: 0,
+          totalTokens: 4000,
+          inputTokens: 1600,
+          outputTokens: 2400,
+          percentageOfSessionTokens: 5.0,
+          commands: [
+            { subcommand: 'next', count: 4, errorCount: 0, inputTokens: 800, outputTokens: 1200, totalTokens: 2000, avgTokens: 500 },
+            { subcommand: 'step-pass', count: 2, errorCount: 0, inputTokens: 400, outputTokens: 600, totalTokens: 1000, avgTokens: 500 },
+            { subcommand: 'done', count: 2, errorCount: 0, inputTokens: 400, outputTokens: 600, totalTokens: 1000, avgTokens: 500 },
+          ],
+        },
+      },
+    };
+
+    const cwd = mkWorkspaceWithTasks([task1]);
+    try {
+      // 1. Human Dashboard view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}"`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /DocPath 命令调用与 Token 消耗透视 \(DocPath CLI Overhead\)/);
+      assert.match(stdoutHuman, /CLI 调用总量:\s*8 次调用/);
+      assert.match(stdoutHuman, /CLI 消耗 Tokens:\s*~4,000 Tokens/);
+      assert.match(stdoutHuman, /next/);
+      assert.match(stdoutHuman, /step-pass/);
+
+      // 2. YAML agent view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /docpath_cli_overhead:/);
+      assert.match(stdoutAgent, /total_calls:\s*8/);
+      assert.match(stdoutAgent, /total_tokens:\s*4000/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.ok(data.globalDocPathCliOverhead);
+      assert.equal(data.globalDocPathCliOverhead.totalCalls, 8);
+      assert.equal(data.globalDocPathCliOverhead.totalTokens, 4000);
+      assert.equal(data.globalDocPathCliOverhead.commands.length, 3);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+});
+
 
 
 
