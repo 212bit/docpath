@@ -1,0 +1,171 @@
+{
+  "taskId": "T-20260930-token",
+  "taskTitle": "T-20260930-token - 基于真实工具调用的深度 Token 归因与低效诊断引擎",
+  "backlogId": "R-452",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-30T06:40:42.033Z",
+  "completedAt": "2026-09-30T06:52:34.490Z",
+  "durationMinutes": 11.9,
+  "firstTimePassRate": 100,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 11, 消耗: 7660 Tokens, 时长: 272 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 11,
+        "totalTokens": 7660,
+        "durationMinutes": 272
+      }
+    }
+  ],
+  "totalDiffLines": 1575,
+  "filesChanged": 15,
+  "linesAdded": 1570,
+  "linesDeleted": 5,
+  "engineering": {
+    "turnCount": 8,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 11.9,
+    "filesChanged": 15,
+    "linesAdded": 1570,
+    "linesDeleted": 5,
+    "totalDiffLines": 1575,
+    "speedLinesPerMinute": 132.4
+  },
+  "protocol": {
+    "specTokens": 1173,
+    "planTokens": 601,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3574
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 5362,
+    "outputTokens": 2298,
+    "totalTokens": 7660,
+    "costUsd": 0.0506,
+    "toolCallsCount": 7,
+    "toolAttributions": [
+      {
+        "name": "run_command",
+        "count": 5,
+        "inputTokens": 896,
+        "outputTokens": 2884,
+        "totalTokens": 3780,
+        "percentage": 49.3,
+        "errorCount": 0
+      },
+      {
+        "name": "invoke_subagent",
+        "count": 2,
+        "inputTokens": 1121,
+        "outputTokens": 266,
+        "totalTokens": 1387,
+        "percentage": 18.1,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [],
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 11, 消耗: 7660 Tokens, 时长: 272 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 11,
+          "totalTokens": 7660,
+          "durationMinutes": 272
+        }
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 5362,
+      "outputTokens": 2298,
+      "totalTokens": 7660,
+      "costUsd": 0.0506
+    },
+    "toolCalls": {
+      "total": 7,
+      "byName": {
+        "run_command": 5,
+        "invoke_subagent": 2
+      },
+      "errorCount": 0
+    },
+    "toolAttributions": [
+      {
+        "name": "run_command",
+        "count": 5,
+        "inputTokens": 896,
+        "outputTokens": 2884,
+        "totalTokens": 3780,
+        "percentage": 49.3,
+        "errorCount": 0
+      },
+      {
+        "name": "invoke_subagent",
+        "count": 2,
+        "inputTokens": 1121,
+        "outputTokens": 266,
+        "totalTokens": 1387,
+        "percentage": 18.1,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [],
+    "turnsCount": 11,
+    "errorCount": 0,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 11, 消耗: 7660 Tokens, 时长: 272 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 11,
+          "totalTokens": 7660,
+          "durationMinutes": 272
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 16329000
+  },
+  "toolAttributions": [
+    {
+      "name": "run_command",
+      "count": 5,
+      "inputTokens": 896,
+      "outputTokens": 2884,
+      "totalTokens": 3780,
+      "percentage": 49.3,
+      "errorCount": 0
+    },
+    {
+      "name": "invoke_subagent",
+      "count": 2,
+      "inputTokens": 1121,
+      "outputTokens": 266,
+      "totalTokens": 1387,
+      "percentage": 18.1,
+      "errorCount": 0
+    }
+  ],
+  "toolInefficiencies": []
+}

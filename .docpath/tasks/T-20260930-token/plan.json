@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-30T06:50:51.224Z",
+    "updated_at": "2026-09-30T06:50:51.224Z",
+    "content_sha256": "c8d3648a2fa64cb1d56e86f17f8b4da2ef1083c08b2a96812c5155d6a4e73c63"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-30T06:50:51.224Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 基于真实工具调用的深度 Token 归因",
+      "description": "落地 FR-1: 基于真实工具调用的深度 Token 归因，并完成模块定向自验。",
+      "acceptance": "AC-1: 实现工具级真实 Token 归因分析（统计每个工具的调用频次、参数及输出真实 Token 消耗、占比分布与错误率）",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 低效诊断引擎",
+      "description": "落地 FR-2: 低效诊断引擎，并完成模块定向自验。",
+      "acceptance": "AC-2: 实现真实工具低效与失真诊断器（检测重复读取相同文件、超长命令输出污染、代码编辑失败反复重试、无并发子代理直接深改等）；AC-3: 在 `docpath monitor` 全局与 `--current` 实时看板中置入「🛠️ 真实工具调用与消耗剖析」与「⚠️ 工具低效诊断」模块，并提供 `--agent` 与 `--json`；AC-4: 完成单元测试覆盖并在全量门禁中通过验证；AC-1: 基于真实工具调用的深度 Token 归因 满足功能要求并通过测试；AC-2: 低效诊断引擎 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-452 与任务 T-20260930-token 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

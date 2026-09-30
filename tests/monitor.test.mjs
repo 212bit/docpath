@@ -11,6 +11,9 @@ import {
   calculateComplianceSummary,
   probeActiveTaskMetrics,
   generateRemediations,
+  aggregateToolAttributions,
+  aggregateToolInefficiencies,
+  aggregateMonitorMetrics,
 } from '../dist/utils/task-metrics.js';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
@@ -43,6 +46,98 @@ function mkWorkspaceWithTasks(tasks = []) {
     mkdirSync(taskDir, { recursive: true });
     writeFileSync(join(taskDir, 'metrics.json'), JSON.stringify(t, null, 2));
   }
+
+  return cwd;
+}
+
+function mkWorkspaceWithActiveTask({
+  taskId = 'T-20260930-active',
+  taskTitle = 'Active In-Flight Task',
+  profile = 'standard',
+  level = 2,
+  phase = 'execution',
+  currentStep = 'S1',
+  steps = [
+    { id: 'S1', title: 'Implement probe', status: 'in_progress' },
+    { id: 'S2', title: 'Add CLI tests', status: 'pending' },
+  ],
+  breadcrumbs = [
+    { timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(), step: 'S1', status: 'active' },
+  ],
+  idle = false,
+} = {}) {
+  const cwd = mkdtempSync(join(tmpdir(), 'dp-monitor-active-'));
+  const dp = join(cwd, '.docpath');
+  mkdirSync(join(dp, 'workspace'), { recursive: true });
+  mkdirSync(join(dp, 'rules'), { recursive: true });
+  mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
+  mkdirSync(join(dp, 'tasks', 'done'), { recursive: true });
+
+  writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: active-task-test\n');
+
+  try {
+    execSync('git init -b main', { cwd, stdio: 'ignore' });
+    execSync('git config user.name "Tester"', { cwd, stdio: 'ignore' });
+    execSync('git config user.email "test@example.com"', { cwd, stdio: 'ignore' });
+    writeFileSync(join(cwd, 'sample.txt'), 'line1\nline2\n');
+    execSync('git add . && git commit -m "initial commit"', { cwd, stdio: 'ignore' });
+  } catch {
+    // ignore
+  }
+
+  if (idle) {
+    writeFileSync(
+      join(dp, 'workspace', 'state.json'),
+      JSON.stringify({
+        level: 1,
+        workflow_profile: 'standard',
+        task_id: '',
+        phase: 'idle',
+        current_step: '',
+      }, null, 2)
+    );
+    return cwd;
+  }
+
+  // 写入 state.json
+  writeFileSync(
+    join(dp, 'workspace', 'state.json'),
+    JSON.stringify({
+      level,
+      workflow_profile: profile,
+      task_id: taskId,
+      task_title: taskTitle,
+      backlog_id: 'R-451',
+      phase,
+      current_step: currentStep,
+      started_at: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    }, null, 2)
+  );
+
+  // 写入 spec.json
+  writeFileSync(
+    join(dp, 'tasks', 'current', 'spec.json'),
+    JSON.stringify({
+      id: taskId,
+      title: taskTitle,
+      backlog_id: 'R-451',
+      workflow_profile: profile,
+    }, null, 2)
+  );
+
+  // 写入 plan.json
+  writeFileSync(
+    join(dp, 'tasks', 'current', 'plan.json'),
+    JSON.stringify({
+      task_id: taskId,
+      steps,
+    }, null, 2)
+  );
+
+  // 写入 breadcrumb.jsonl
+  const bcLines = breadcrumbs.map((b) => JSON.stringify(b)).join('\n') + '\n';
+  writeFileSync(join(dp, 'tasks', 'current', 'breadcrumb.jsonl'), bcLines);
 
   return cwd;
 }
@@ -380,98 +475,6 @@ describe('docpath monitor Dashboard & CI Gate Command (R-450 / AC-4)', () => {
 });
 
 describe('In-flight Active Task Telemetry Probe (FR-1 / AC-1)', () => {
-  function mkWorkspaceWithActiveTask({
-    taskId = 'T-20260930-active',
-    taskTitle = 'Active In-Flight Task',
-    profile = 'standard',
-    level = 2,
-    phase = 'execution',
-    currentStep = 'S1',
-    steps = [
-      { id: 'S1', title: 'Implement probe', status: 'in_progress' },
-      { id: 'S2', title: 'Add CLI tests', status: 'pending' },
-    ],
-    breadcrumbs = [
-      { timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(), step: 'S1', status: 'active' },
-    ],
-    idle = false,
-  } = {}) {
-    const cwd = mkdtempSync(join(tmpdir(), 'dp-monitor-active-'));
-    const dp = join(cwd, '.docpath');
-    mkdirSync(join(dp, 'workspace'), { recursive: true });
-    mkdirSync(join(dp, 'rules'), { recursive: true });
-    mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
-    mkdirSync(join(dp, 'tasks', 'done'), { recursive: true });
-
-    writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: active-task-test\n');
-
-    try {
-      execSync('git init -b main', { cwd, stdio: 'ignore' });
-      execSync('git config user.name "Tester"', { cwd, stdio: 'ignore' });
-      execSync('git config user.email "test@example.com"', { cwd, stdio: 'ignore' });
-      writeFileSync(join(cwd, 'sample.txt'), 'line1\nline2\n');
-      execSync('git add . && git commit -m "initial commit"', { cwd, stdio: 'ignore' });
-    } catch {
-      // ignore
-    }
-
-    if (idle) {
-      writeFileSync(
-        join(dp, 'workspace', 'state.json'),
-        JSON.stringify({
-          level: 1,
-          workflow_profile: 'standard',
-          task_id: '',
-          phase: 'idle',
-          current_step: '',
-        }, null, 2)
-      );
-      return cwd;
-    }
-
-    // 写入 state.json
-    writeFileSync(
-      join(dp, 'workspace', 'state.json'),
-      JSON.stringify({
-        level,
-        workflow_profile: profile,
-        task_id: taskId,
-        task_title: taskTitle,
-        backlog_id: 'R-451',
-        phase,
-        current_step: currentStep,
-        started_at: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-        updated_at: new Date().toISOString(),
-      }, null, 2)
-    );
-
-    // 写入 spec.json
-    writeFileSync(
-      join(dp, 'tasks', 'current', 'spec.json'),
-      JSON.stringify({
-        id: taskId,
-        title: taskTitle,
-        backlog_id: 'R-451',
-        workflow_profile: profile,
-      }, null, 2)
-    );
-
-    // 写入 plan.json
-    writeFileSync(
-      join(dp, 'tasks', 'current', 'plan.json'),
-      JSON.stringify({
-        task_id: taskId,
-        steps,
-      }, null, 2)
-    );
-
-    // 写入 breadcrumb.jsonl
-    const bcLines = breadcrumbs.map((b) => JSON.stringify(b)).join('\n') + '\n';
-    writeFileSync(join(dp, 'tasks', 'current', 'breadcrumb.jsonl'), bcLines);
-
-    return cwd;
-  }
-
   it('probeActiveTaskMetrics returns null when workspace has no active task (idle state)', async () => {
     const cwd = mkWorkspaceWithActiveTask({ idle: true });
     try {
@@ -951,6 +954,511 @@ describe('Actionable Remediation & Self-healing Engine (FR-2 / AC-2, AC-3, AC-4)
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
+  });
+
+  describe('Global Tool-Level Token Attribution Aggregation (FR-1 / AC-1)', () => {
+    it('aggregates tool attributions across multiple tasks with accurate percentages and error counts', () => {
+      const tasks = [
+        {
+          taskId: 'T-ATTR-1',
+          taskTitle: 'Task 1',
+          profile: 'standard',
+          completedAt: '2026-09-30T10:00:00.000Z',
+          toolAttributions: [
+            {
+              name: 'view_file',
+              count: 5,
+              inputTokens: 200,
+              outputTokens: 800,
+              totalTokens: 1000,
+              percentage: 50.0,
+              errorCount: 0,
+            },
+            {
+              name: 'run_command',
+              count: 2,
+              inputTokens: 100,
+              outputTokens: 400,
+              totalTokens: 500,
+              percentage: 25.0,
+              errorCount: 1,
+            },
+          ],
+        },
+        {
+          taskId: 'T-ATTR-2',
+          taskTitle: 'Task 2',
+          profile: 'standard',
+          completedAt: '2026-09-30T10:10:00.000Z',
+          realUsage: {
+            totalTokens: 2500,
+            inputTokens: 1500,
+            outputTokens: 1000,
+            source: 'antigravity',
+            toolAttributions: [
+              {
+                name: 'view_file',
+                count: 3,
+                inputTokens: 100,
+                outputTokens: 400,
+                totalTokens: 500,
+                percentage: 20.0,
+                errorCount: 0,
+              },
+              {
+                name: 'replace_file_content',
+                count: 4,
+                inputTokens: 500,
+                outputTokens: 500,
+                totalTokens: 1000,
+                percentage: 40.0,
+                errorCount: 0,
+              },
+            ],
+          },
+        },
+      ];
+
+      const globalAttrs = aggregateToolAttributions(tasks);
+
+      assert.equal(globalAttrs.length, 3);
+      // Total tokens across all tools: 1000 (view_file) + 500 (view_file) = 1500; 1000 (replace_file_content); 500 (run_command)
+      // Grand total = 3000
+
+      // 1. view_file: totalTokens = 1500 (50.0%)
+      assert.equal(globalAttrs[0].name, 'view_file');
+      assert.equal(globalAttrs[0].count, 8);
+      assert.equal(globalAttrs[0].inputTokens, 300);
+      assert.equal(globalAttrs[0].outputTokens, 1200);
+      assert.equal(globalAttrs[0].totalTokens, 1500);
+      assert.equal(globalAttrs[0].percentage, 50.0);
+      assert.equal(globalAttrs[0].errorCount, 0);
+
+      // 2. replace_file_content: totalTokens = 1000 (33.3%)
+      assert.equal(globalAttrs[1].name, 'replace_file_content');
+      assert.equal(globalAttrs[1].count, 4);
+      assert.equal(globalAttrs[1].inputTokens, 500);
+      assert.equal(globalAttrs[1].outputTokens, 500);
+      assert.equal(globalAttrs[1].totalTokens, 1000);
+      assert.equal(globalAttrs[1].percentage, 33.3);
+
+      // 3. run_command: totalTokens = 500 (16.7%)
+      assert.equal(globalAttrs[2].name, 'run_command');
+      assert.equal(globalAttrs[2].count, 2);
+      assert.equal(globalAttrs[2].errorCount, 1);
+      assert.equal(globalAttrs[2].totalTokens, 500);
+      assert.equal(globalAttrs[2].percentage, 16.7);
+    });
+
+    it('propagates globalToolAttributions in aggregateMonitorMetrics', async () => {
+      const task = {
+        taskId: 'T-GLOBAL-ATTR',
+        taskTitle: 'Global Attribution Task',
+        profile: 'standard',
+        completedAt: '2026-09-30T10:00:00.000Z',
+        totalDiffLines: 50,
+        protocol: { totalInjectedTokens: 2000 },
+        realUsage: {
+          totalTokens: 5000,
+          inputTokens: 3000,
+          outputTokens: 2000,
+          source: 'antigravity',
+          toolAttributions: [
+            {
+              name: 'run_command',
+              count: 3,
+              inputTokens: 300,
+              outputTokens: 1200,
+              totalTokens: 1500,
+              percentage: 30.0,
+              errorCount: 0,
+            },
+          ],
+        },
+      };
+
+      const cwd = mkWorkspaceWithTasks([task]);
+      try {
+        const summary = await aggregateMonitorMetrics(cwd);
+        assert.ok(summary.globalToolAttributions);
+        assert.equal(summary.globalToolAttributions.length, 1);
+        assert.equal(summary.globalToolAttributions[0].name, 'run_command');
+        assert.equal(summary.globalToolAttributions[0].totalTokens, 1500);
+        assert.equal(summary.globalToolAttributions[0].percentage, 100.0);
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('Global Tool-Level Inefficiency Aggregation & Remediations (FR-2 / AC-2, AC-3)', () => {
+    it('aggregates and deduplicates tool inefficiencies across tasks and activeTask', () => {
+      const tasks = [
+        {
+          taskId: 'T-IN-1',
+          taskTitle: 'Task 1',
+          profile: 'standard',
+          completedAt: '2026-09-30T10:00:00.000Z',
+          toolInefficiencies: [
+            {
+              type: 'duplicate_file_reads',
+              severity: 'medium',
+              tool: 'view_file',
+              description: '文件 "index.ts" 被重复读取了 3 次',
+              tokensWasted: 1200,
+            },
+            {
+              type: 'oversized_command_output',
+              severity: 'high',
+              tool: 'run_command',
+              description: 'run_command 执行产生了超长输出 (~4000 tokens)',
+              tokensWasted: 3500,
+            },
+          ],
+        },
+        {
+          taskId: 'T-IN-2',
+          taskTitle: 'Task 2',
+          profile: 'standard',
+          completedAt: '2026-09-30T10:10:00.000Z',
+          toolInefficiencies: [
+            {
+              type: 'duplicate_file_reads',
+              severity: 'medium',
+              tool: 'view_file',
+              description: '文件 "index.ts" 被重复读取了 3 次', // duplicate finding, should be deduped
+              tokensWasted: 1200,
+            },
+            {
+              type: 'edit_target_miss',
+              severity: 'high',
+              tool: 'replace_file_content',
+              description: 'replace_file_content 发生了 2 次目标内容不匹配',
+              tokensWasted: 2500,
+            },
+          ],
+        },
+      ];
+
+      const activeTask = {
+        taskId: 'T-ACTIVE-IN',
+        taskTitle: 'Active Task',
+        profile: 'standard',
+        level: 2,
+        phase: 'execution',
+        startedAt: new Date().toISOString(),
+        durationMinutes: 1,
+        durationSeconds: 60,
+        progress: { totalSteps: 1, passedSteps: 0, blockedSteps: 0, currentStep: 'S1', percent: 0 },
+        complianceScore: 100,
+        violations: [],
+        totalDiffLines: 10,
+        filesChanged: 1,
+        linesAdded: 10,
+        linesDeleted: 0,
+        realUsage: null,
+        toolInefficiencies: [
+          {
+            type: 'oversized_command_output',
+            severity: 'high',
+            tool: 'run_command',
+            description: 'run_command 产生极端输出 (~8000 tokens)',
+            tokensWasted: 7500,
+          },
+        ],
+      };
+
+      const ineffs = aggregateToolInefficiencies(tasks, activeTask);
+
+      assert.equal(ineffs.length, 4); // 1 active oversized + 1 task oversized + 1 edit miss + 1 dup reads (deduped)
+      // High severity findings should come before medium severity findings
+      assert.equal(ineffs[0].severity, 'high');
+      assert.equal(ineffs[0].tokensWasted, 7500);
+      assert.equal(ineffs[1].severity, 'high');
+      assert.equal(ineffs[2].severity, 'high');
+      assert.equal(ineffs[3].severity, 'medium');
+      assert.equal(ineffs[3].type, 'duplicate_file_reads');
+    });
+
+    it('generates REM-DUP-READS, REM-OVERSIZED-OUTPUT, and REM-EDIT-MISS in generateRemediations', () => {
+      const recs = generateRemediations({
+        compliance: {
+          avgComplianceScore: 100,
+          totalViolations: 0,
+          violationsByRule: { 'CR-01': 0, 'CR-02': 0, 'CR-03': 0, 'CR-04': 0, 'CR-05': 0 },
+          violationsBySeverity: { critical: 0, high: 0, medium: 0, low: 0 },
+          criticalViolationsCount: 0,
+          unhealthyTasksCount: 0,
+        },
+        drift: {
+          quick: { profile: 'quick', taskCount: 0, baselineProtocolTokens: 800, recentProtocolTokens: 800, protocolInflationRate: 0, baselineRealTokensMedian: 8000, roiTokensPerLine: 0, spikeThresholdTokens: 20000 },
+          standard: { profile: 'standard', taskCount: 1, baselineProtocolTokens: 2000, recentProtocolTokens: 2000, protocolInflationRate: 0, baselineRealTokensMedian: 30000, roiTokensPerLine: 0, spikeThresholdTokens: 75000 },
+          overallProtocolInflationRate: 0,
+        },
+        spikes: [],
+        toolInefficiencies: [
+          {
+            type: 'duplicate_file_reads',
+            severity: 'medium',
+            tool: 'view_file',
+            description: '文件 "app.ts" 被重复读取了 4 次',
+            tokensWasted: 1500,
+          },
+          {
+            type: 'oversized_command_output',
+            severity: 'high',
+            tool: 'run_command',
+            description: 'run_command 超长输出',
+            tokensWasted: 4000,
+          },
+          {
+            type: 'edit_target_miss',
+            severity: 'high',
+            tool: 'replace_file_content',
+            description: 'replace_file_content 编辑失败重试',
+            tokensWasted: 2000,
+          },
+        ],
+      });
+
+      const remDup = recs.find((r) => r.id === 'REM-DUP-READS');
+      assert.ok(remDup, 'REM-DUP-READS should be generated');
+      assert.equal(remDup.severity, 'medium');
+      assert.equal(remDup.recommendedCommand, 'invoke_subagent');
+      assert.match(remDup.reason, /repeated file read pattern/);
+
+      const remOversized = recs.find((r) => r.id === 'REM-OVERSIZED-OUTPUT');
+      assert.ok(remOversized, 'REM-OVERSIZED-OUTPUT should be generated');
+      assert.equal(remOversized.severity, 'high');
+      assert.match(remOversized.recommendedCommand, /node --test/);
+      assert.match(remOversized.reason, /oversized command output/);
+
+      const remEdit = recs.find((r) => r.id === 'REM-EDIT-MISS');
+      assert.ok(remEdit, 'REM-EDIT-MISS should be generated');
+      assert.equal(remEdit.severity, 'high');
+      assert.equal(remEdit.recommendedCommand, 'docpath check');
+      assert.match(remEdit.reason, /replace target miss/);
+    });
+
+    it('renders tool-level telemetry breakdown and tool inefficiencies in docpath monitor human dashboard', () => {
+      const task = {
+        taskId: 'T-TOOL-UI',
+        taskTitle: 'Tool Breakdown UI Task',
+        profile: 'standard',
+        completedAt: '2026-09-30T10:00:00.000Z',
+        totalDiffLines: 80,
+        protocol: { totalInjectedTokens: 2000 },
+        realUsage: {
+          totalTokens: 12000,
+          inputTokens: 8000,
+          outputTokens: 4000,
+          source: 'antigravity',
+          toolAttributions: [
+            {
+              name: 'view_file',
+              count: 6,
+              inputTokens: 600,
+              outputTokens: 2400,
+              totalTokens: 3000,
+              percentage: 25.0,
+              errorCount: 0,
+            },
+            {
+              name: 'run_command',
+              count: 4,
+              inputTokens: 400,
+              outputTokens: 3600,
+              totalTokens: 4000,
+              percentage: 33.3,
+              errorCount: 1,
+            },
+          ],
+          toolInefficiencies: [
+            {
+              type: 'duplicate_file_reads',
+              severity: 'medium',
+              tool: 'view_file',
+              description: '文件 "server.ts" 被重复读取了 4 次',
+              tokensWasted: 1800,
+            },
+            {
+              type: 'oversized_command_output',
+              severity: 'high',
+              tool: 'run_command',
+              description: 'run_command 执行产生了超长输出 (~3500 tokens)',
+              tokensWasted: 3000,
+            },
+          ],
+        },
+      };
+
+      const cwd = mkWorkspaceWithTasks([task]);
+      try {
+        const stdout = execSync(`node "${BIN}" monitor --cwd "${cwd}"`, {
+          encoding: 'utf-8',
+        });
+        assert.match(stdout, /真实工具调用与消耗剖析 \(Tool-Level Telemetry Breakdown\)/);
+        assert.match(stdout, /view_file/);
+        assert.match(stdout, /run_command/);
+        assert.match(stdout, /工具低效与上下文浪费诊断 \(Tool Inefficiencies & Waste\)/);
+        assert.match(stdout, /server\.ts/);
+        assert.match(stdout, /超长输出/);
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+
+    it('outputs tool_attributions and tool_inefficiencies in docpath monitor --agent YAML', () => {
+      const task = {
+        taskId: 'T-TOOL-YAML',
+        taskTitle: 'Tool Breakdown YAML Task',
+        profile: 'standard',
+        completedAt: '2026-09-30T10:00:00.000Z',
+        totalDiffLines: 50,
+        protocol: { totalInjectedTokens: 2000 },
+        realUsage: {
+          totalTokens: 8000,
+          source: 'antigravity',
+          toolAttributions: [
+            {
+              name: 'replace_file_content',
+              count: 3,
+              inputTokens: 500,
+              outputTokens: 500,
+              totalTokens: 1000,
+              percentage: 12.5,
+              errorCount: 1,
+            },
+          ],
+          toolInefficiencies: [
+            {
+              type: 'edit_target_miss',
+              severity: 'high',
+              tool: 'replace_file_content',
+              description: 'replace_file_content 目标匹配失败',
+              tokensWasted: 1000,
+            },
+          ],
+        },
+      };
+
+      const cwd = mkWorkspaceWithTasks([task]);
+      try {
+        const stdout = execSync(`node "${BIN}" monitor --cwd "${cwd}" --agent`, {
+          encoding: 'utf-8',
+        });
+        assert.match(stdout, /tool_attributions:/);
+        assert.match(stdout, /name:\s*replace_file_content/);
+        assert.match(stdout, /tool_inefficiencies:/);
+        assert.match(stdout, /type:\s*edit_target_miss/);
+        assert.match(stdout, /tokens_wasted:\s*1000/);
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+
+    it('outputs structured toolAttributions and toolInefficiencies in docpath monitor --json', () => {
+      const task = {
+        taskId: 'T-TOOL-JSON',
+        taskTitle: 'Tool Breakdown JSON Task',
+        profile: 'standard',
+        completedAt: '2026-09-30T10:00:00.000Z',
+        totalDiffLines: 50,
+        protocol: { totalInjectedTokens: 2000 },
+        realUsage: {
+          totalTokens: 8000,
+          source: 'antigravity',
+          toolAttributions: [
+            {
+              name: 'view_file',
+              count: 5,
+              inputTokens: 200,
+              outputTokens: 800,
+              totalTokens: 1000,
+              percentage: 12.5,
+              errorCount: 0,
+            },
+          ],
+          toolInefficiencies: [
+            {
+              type: 'duplicate_file_reads',
+              severity: 'medium',
+              tool: 'view_file',
+              description: 'view_file repeated',
+              tokensWasted: 800,
+            },
+          ],
+        },
+      };
+
+      const cwd = mkWorkspaceWithTasks([task]);
+      try {
+        const stdout = execSync(`node "${BIN}" monitor --cwd "${cwd}" --json`, {
+          encoding: 'utf-8',
+        });
+        const data = JSON.parse(stdout);
+        assert.ok(Array.isArray(data.globalToolAttributions));
+        assert.equal(data.globalToolAttributions[0].name, 'view_file');
+        assert.ok(Array.isArray(data.globalToolInefficiencies));
+        assert.equal(data.globalToolInefficiencies[0].type, 'duplicate_file_reads');
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+
+    it('renders tool-level breakdown and inefficiencies in docpath monitor --current for in-flight tasks', () => {
+      const cwd = mkWorkspaceWithActiveTask({
+        taskId: 'T-INFLIGHT-TOOL-UI',
+        taskTitle: 'Active Tool Breakdown Task',
+      });
+
+      // Write mock real usage into active task state/breadcrumb
+      const dp = join(cwd, '.docpath');
+      const metricsJson = {
+        taskId: 'T-INFLIGHT-TOOL-UI',
+        taskTitle: 'Active Tool Breakdown Task',
+        profile: 'standard',
+        level: 2,
+        realUsage: {
+          source: 'antigravity',
+          totalTokens: 10000,
+          inputTokens: 7000,
+          outputTokens: 3000,
+          toolCallsCount: 8,
+          toolAttributions: [
+            {
+              name: 'run_command',
+              count: 4,
+              inputTokens: 400,
+              outputTokens: 2600,
+              totalTokens: 3000,
+              percentage: 30.0,
+              errorCount: 0,
+            },
+          ],
+          toolInefficiencies: [
+            {
+              type: 'oversized_command_output',
+              severity: 'high',
+              tool: 'run_command',
+              description: 'run_command 超长输出',
+              tokensWasted: 2100,
+            },
+          ],
+        },
+      };
+      writeFileSync(join(dp, 'tasks', 'current', 'metrics.json'), JSON.stringify(metricsJson, null, 2));
+
+      try {
+        const stdout = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current`, {
+          encoding: 'utf-8',
+        });
+        assert.match(stdout, /DocPath 活跃任务实时遥测/);
+        assert.match(stdout, /T-INFLIGHT-TOOL-UI/);
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
   });
 });
 

@@ -17,7 +17,11 @@ import {
   type ComplianceViolation,
   type ComplianceSeverity,
   type DiffStats,
+  type ToolAttribution,
+  type ToolInefficiencyFinding,
 } from './agent-telemetry-adapter.js';
+
+export type { ToolAttribution, ToolInefficiencyFinding };
 
 export interface RealAgentUsage {
   source: 'antigravity' | 'claude' | 'opencode' | 'env' | 'breadcrumb' | 'unknown';
@@ -27,6 +31,8 @@ export interface RealAgentUsage {
   totalTokens: number;
   costUsd?: number;
   toolCallsCount?: number;
+  toolAttributions?: ToolAttribution[];
+  toolInefficiencies?: ToolInefficiencyFinding[];
   model?: string;
   complianceScore?: number;
   violations?: ComplianceViolation[];
@@ -71,6 +77,8 @@ export interface TaskMetrics {
   protocol: ProtocolOverhead;
   realUsage: RealAgentUsage | null;
   sessionRecord?: SessionTelemetryRecord | null;
+  toolAttributions?: ToolAttribution[];
+  toolInefficiencies?: ToolInefficiencyFinding[];
 }
 
 export interface TaskMetricsSummary {
@@ -140,6 +148,8 @@ export interface ActiveTaskMetrics {
   linesDeleted: number;
   realUsage: RealAgentUsage | null;
   sessionRecord?: SessionTelemetryRecord | null;
+  toolAttributions?: ToolAttribution[];
+  toolInefficiencies?: ToolInefficiencyFinding[];
 }
 
 export interface ComplianceSummary {
@@ -179,6 +189,9 @@ export interface MonitorSummary {
     avgCostPerTaskUsd: number;
     overallRoiTokensPerLine: number;
   } | null;
+  globalToolAttributions?: ToolAttribution[];
+  globalToolInefficiencies?: ToolInefficiencyFinding[];
+  toolInefficiencies?: ToolInefficiencyFinding[];
   activeTask?: ActiveTaskMetrics | null;
   recentTasks: TaskMetrics[];
 }
@@ -286,6 +299,8 @@ export async function probeRealAgentTelemetry(
     totalTokens: telemetry.tokens.totalTokens,
     costUsd: telemetry.tokens.costUsd,
     toolCallsCount: telemetry.toolCalls.total,
+    toolAttributions: telemetry.toolAttributions,
+    toolInefficiencies: telemetry.toolInefficiencies,
     model: telemetry.model,
     complianceScore: telemetry.complianceScore,
     violations: telemetry.violations,
@@ -429,6 +444,8 @@ export async function collectTaskMetrics(
           totalTokens: sessionRecord.tokens.totalTokens,
           costUsd: sessionRecord.tokens.costUsd,
           toolCallsCount: sessionRecord.toolCalls.total,
+          toolAttributions: sessionRecord.toolAttributions,
+          toolInefficiencies: sessionRecord.toolInefficiencies,
           model: sessionRecord.model,
           complianceScore: sessionRecord.complianceScore,
           violations: sessionRecord.violations,
@@ -477,6 +494,8 @@ export async function collectTaskMetrics(
     protocol,
     realUsage,
     sessionRecord,
+    toolAttributions: sessionRecord?.toolAttributions || realUsage?.toolAttributions,
+    toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
   };
 }
 
@@ -937,6 +956,8 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
             totalTokens: sessionRecord.tokens.totalTokens,
             costUsd: sessionRecord.tokens.costUsd,
             toolCallsCount: sessionRecord.toolCalls.total,
+            toolAttributions: sessionRecord.toolAttributions,
+            toolInefficiencies: sessionRecord.toolInefficiencies,
             model: sessionRecord.model,
             complianceScore: sessionRecord.complianceScore,
             violations: sessionRecord.violations,
@@ -974,10 +995,91 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       linesDeleted: diff.linesDeleted,
       realUsage,
       sessionRecord,
+      toolAttributions: sessionRecord?.toolAttributions || realUsage?.toolAttributions,
+      toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
     };
   } catch {
     return null;
   }
+}
+
+/**
+ * 跨任务聚合工具级 Token 深度归因
+ */
+export function aggregateToolAttributions(tasks: TaskMetrics[]): ToolAttribution[] {
+  const map: Record<string, { count: number; inputTokens: number; outputTokens: number; totalTokens: number; errorCount: number }> = {};
+  let grandTotal = 0;
+
+  for (const task of tasks) {
+    const attributions = task.toolAttributions || task.realUsage?.toolAttributions || task.sessionRecord?.toolAttributions || [];
+    for (const attr of attributions) {
+      if (!map[attr.name]) {
+        map[attr.name] = { count: 0, inputTokens: 0, outputTokens: 0, totalTokens: 0, errorCount: 0 };
+      }
+      map[attr.name].count += attr.count || 0;
+      map[attr.name].inputTokens += attr.inputTokens || 0;
+      map[attr.name].outputTokens += attr.outputTokens || 0;
+      const total = attr.totalTokens || (attr.inputTokens + attr.outputTokens);
+      map[attr.name].totalTokens += total;
+      map[attr.name].errorCount += attr.errorCount || 0;
+      grandTotal += total;
+    }
+  }
+
+  const result: ToolAttribution[] = Object.entries(map).map(([name, stat]) => ({
+    name,
+    count: stat.count,
+    inputTokens: stat.inputTokens,
+    outputTokens: stat.outputTokens,
+    totalTokens: stat.totalTokens,
+    percentage: grandTotal > 0 ? parseFloat(((stat.totalTokens / grandTotal) * 100).toFixed(1)) : 0,
+    errorCount: stat.errorCount,
+  }));
+
+  result.sort((a, b) => b.totalTokens - a.totalTokens);
+  return result;
+}
+
+/**
+ * 跨任务聚合工具低效与上下文浪费诊断
+ */
+export function aggregateToolInefficiencies(
+  tasks: TaskMetrics[],
+  activeTask?: ActiveTaskMetrics | null
+): ToolInefficiencyFinding[] {
+  const list: ToolInefficiencyFinding[] = [];
+  const seen = new Set<string>();
+
+  if (activeTask) {
+    const ineffs = activeTask.toolInefficiencies || activeTask.realUsage?.toolInefficiencies || activeTask.sessionRecord?.toolInefficiencies || [];
+    for (const ineff of ineffs) {
+      const key = `${ineff.type}:${ineff.tool}:${ineff.description}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        list.push(ineff);
+      }
+    }
+  }
+
+  for (const task of tasks) {
+    const ineffs = task.toolInefficiencies || task.realUsage?.toolInefficiencies || task.sessionRecord?.toolInefficiencies || [];
+    for (const ineff of ineffs) {
+      const key = `${ineff.type}:${ineff.tool}:${ineff.description}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        list.push(ineff);
+      }
+    }
+  }
+
+  const sevWeight = { high: 3, medium: 2, low: 1 };
+  list.sort((a, b) => {
+    const diffSev = (sevWeight[b.severity] || 0) - (sevWeight[a.severity] || 0);
+    if (diffSev !== 0) return diffSev;
+    return (b.tokensWasted || 0) - (a.tokensWasted || 0);
+  });
+
+  return list;
 }
 
 /**
@@ -992,6 +1094,7 @@ export function generateRemediations(summary: {
   };
   spikes: TaskSpikeAlert[];
   activeTask?: ActiveTaskMetrics | null;
+  toolInefficiencies?: ToolInefficiencyFinding[];
 }): RemediationRecommendation[] {
   const remediations: RemediationRecommendation[] = [];
 
@@ -1099,6 +1202,56 @@ export function generateRemediations(summary: {
     });
   }
 
+  // 8. 工具低效与上下文浪费建议 (Tool Inefficiencies)
+  const ineffList: ToolInefficiencyFinding[] = [
+    ...(summary.toolInefficiencies || []),
+    ...(summary.activeTask?.toolInefficiencies || []),
+    ...(summary.activeTask?.realUsage?.toolInefficiencies || []),
+    ...(summary.activeTask?.sessionRecord?.toolInefficiencies || []),
+  ];
+
+  // 8.1 REM-DUP-READS: 重复读取相同文件
+  const dupReads = ineffList.filter((i) => i.type === 'duplicate_file_reads');
+  if (dupReads.length > 0) {
+    const totalWasted = dupReads.reduce((sum, i) => sum + (i.tokensWasted || 0), 0);
+    remediations.push({
+      id: 'REM-DUP-READS',
+      severity: totalWasted > 5000 ? 'high' : 'medium',
+      title: 'Delegate file exploration or cache duplicate reads',
+      reason: `Detected ${dupReads.length} repeated file read pattern(s) wasting ~${totalWasted.toLocaleString()} tokens. Reading the same file repeatedly bloats context.`,
+      recommendedCommand: 'invoke_subagent',
+      actionable: true,
+    });
+  }
+
+  // 8.2 REM-OVERSIZED-OUTPUT: 超长命令输出
+  const oversized = ineffList.filter((i) => i.type === 'oversized_command_output');
+  if (oversized.length > 0) {
+    const totalWasted = oversized.reduce((sum, i) => sum + (i.tokensWasted || 0), 0);
+    remediations.push({
+      id: 'REM-OVERSIZED-OUTPUT',
+      severity: 'high',
+      title: 'Truncate command output or run targeted test slice',
+      reason: `Detected ${oversized.length} oversized command output(s) wasting ~${totalWasted.toLocaleString()} tokens. Uncapped command outputs saturate context.`,
+      recommendedCommand: 'node --test <single-test>',
+      actionable: true,
+    });
+  }
+
+  // 8.3 REM-EDIT-MISS: 代码编辑目标失真与重试
+  const editMisses = ineffList.filter((i) => i.type === 'edit_target_miss');
+  if (editMisses.length > 0) {
+    const totalWasted = editMisses.reduce((sum, i) => sum + (i.tokensWasted || 0), 0);
+    remediations.push({
+      id: 'REM-EDIT-MISS',
+      severity: 'high',
+      title: 'Inspect target file content before replacing',
+      reason: `Detected ${editMisses.length} replace target miss/failure(s) wasting ~${totalWasted.toLocaleString()} tokens. Replace target strings must match exact file content.`,
+      recommendedCommand: 'docpath check',
+      actionable: true,
+    });
+  }
+
   return remediations;
 }
 
@@ -1116,6 +1269,9 @@ export async function aggregateMonitorMetrics(
   const compliance = calculateComplianceSummary(allTasks);
   const drift = calculateTokenDrift(allTasks);
   const spikes = detectTaskSpikes(allTasks, drift);
+  const recentTasks = allTasks.slice(0, limit);
+  const globalToolAttributions = aggregateToolAttributions(recentTasks.length > 0 ? recentTasks : allTasks);
+  const globalToolInefficiencies = aggregateToolInefficiencies(recentTasks.length > 0 ? recentTasks : allTasks, activeTask);
 
   let realUsageSummary: MonitorSummary['realUsageSummary'] = null;
   if (baseSummary.realUsageSummary) {
@@ -1141,8 +1297,11 @@ export async function aggregateMonitorMetrics(
     drift,
     spikes,
     realUsageSummary,
+    globalToolAttributions,
+    globalToolInefficiencies,
+    toolInefficiencies: globalToolInefficiencies,
     activeTask,
-    recentTasks: allTasks.slice(0, limit),
+    recentTasks,
   };
 
   const remediations = generateRemediations(partialSummary);

@@ -102,6 +102,20 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
                 turns_count: activeTask.sessionRecord?.turnsCount || 1,
                 model: activeTask.realUsage?.model || activeTask.sessionRecord?.model || 'unknown',
               },
+              tool_attributions: (activeTask.toolAttributions || activeTask.realUsage?.toolAttributions || []).map((t) => ({
+                name: t.name,
+                count: t.count,
+                tokens: t.totalTokens,
+                percentage: `${t.percentage}%`,
+                error_count: t.errorCount,
+              })),
+              tool_inefficiencies: (activeTask.toolInefficiencies || activeTask.realUsage?.toolInefficiencies || []).map((i) => ({
+                type: i.type,
+                severity: i.severity,
+                tool: i.tool,
+                description: i.description,
+                tokens_wasted: i.tokensWasted,
+              })),
             },
           })
         );
@@ -143,6 +157,34 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     const heavyReads = activeTask.sessionRecord?.heavyReadsCount || 0;
     console.log(`│  工具与异常:    ${toolCalls} 次调用 | ${flapping} 次翻转死循环 | ${heavyReads} 次大文件扫描`.padEnd(58) + '│');
     console.log('└───────────────────────────────────────────────────────────┘\n');
+
+    const toolAttrs = activeTask.toolAttributions || activeTask.realUsage?.toolAttributions || activeTask.sessionRecord?.toolAttributions || [];
+    if (toolAttrs.length > 0) {
+      console.log('┌ 🛠️  真实工具调用与消耗剖析 (Tool-Level Telemetry Breakdown) ────────┐');
+      console.log('│  ' + '工具名称'.padEnd(24) + '频次'.padEnd(8) + '错误'.padEnd(8) + '消耗 Tokens'.padEnd(16) + '占比'.padEnd(8) + '│');
+      console.log('│  ' + '─'.repeat(58) + '│');
+      for (const attr of toolAttrs.slice(0, 5)) {
+        const nameStr = attr.name.padEnd(24);
+        const countStr = `${attr.count}次`.padEnd(8);
+        const errStr = `${attr.errorCount || 0}次`.padEnd(8);
+        const tokStr = `~${attr.totalTokens.toLocaleString()}`.padEnd(16);
+        const pctStr = `${attr.percentage}%`.padEnd(8);
+        console.log(`│  ${nameStr}${countStr}${errStr}${tokStr}${pctStr}│`);
+      }
+      console.log('└───────────────────────────────────────────────────────────┘\n');
+    }
+
+    const ineffs = activeTask.toolInefficiencies || activeTask.realUsage?.toolInefficiencies || activeTask.sessionRecord?.toolInefficiencies || [];
+    if (ineffs.length > 0) {
+      console.log('┌ ⚠️  工具低效与上下文浪费诊断 (Tool Inefficiencies & Waste) ────────┐');
+      for (const ineff of ineffs) {
+        const icon = ineff.severity === 'high' ? '🔴' : ineff.severity === 'medium' ? '🟡' : '🔵';
+        const wasted = `(浪费 ~${ineff.tokensWasted.toLocaleString()} Tokens)`;
+        console.log(`│  ${icon} [${ineff.tool}] ${ineff.description}`.padEnd(58) + '│');
+        console.log(`│     严重度: ${ineff.severity.toUpperCase()} | ${wasted}`.padEnd(58) + '│');
+      }
+      console.log('└───────────────────────────────────────────────────────────┘\n');
+    }
 
     if (activeTask.violations.length > 0) {
       console.log('⚠️  在途合规风险警告 (In-flight Violations):');
@@ -212,6 +254,20 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
             roi_tokens_per_line: summary.drift.standard.roiTokensPerLine,
           },
         },
+        tool_attributions: (summary.globalToolAttributions || []).map((t) => ({
+          name: t.name,
+          count: t.count,
+          tokens: t.totalTokens,
+          percentage: `${t.percentage}%`,
+          error_count: t.errorCount,
+        })),
+        tool_inefficiencies: (summary.globalToolInefficiencies || summary.toolInefficiencies || []).map((i) => ({
+          type: i.type,
+          severity: i.severity,
+          tool: i.tool,
+          description: i.description,
+          tokens_wasted: i.tokensWasted,
+        })),
         spike_alerts: summary.spikes.map((s) => ({
           task_id: s.taskId,
           title: s.taskTitle,
@@ -305,6 +361,34 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     : `🚨 ${summary.spikes.length} 个任务异常突增 (>2.5x 基线)`;
   console.log(`│  突增告警 (Spikes): ${spikeText}`.padEnd(58) + '│');
   console.log('└───────────────────────────────────────────────────────────┘\n');
+
+  const globalAttrs = summary.globalToolAttributions || [];
+  if (globalAttrs.length > 0) {
+    console.log('┌ 🛠️  真实工具调用与消耗剖析 (Tool-Level Telemetry Breakdown) ────────┐');
+    console.log('│  ' + '工具名称'.padEnd(24) + '频次'.padEnd(8) + '错误'.padEnd(8) + '消耗 Tokens'.padEnd(16) + '占比'.padEnd(8) + '│');
+    console.log('│  ' + '─'.repeat(58) + '│');
+    for (const attr of globalAttrs.slice(0, 6)) {
+      const nameStr = attr.name.padEnd(24);
+      const countStr = `${attr.count}次`.padEnd(8);
+      const errStr = `${attr.errorCount || 0}次`.padEnd(8);
+      const tokStr = `~${attr.totalTokens.toLocaleString()}`.padEnd(16);
+      const pctStr = `${attr.percentage}%`.padEnd(8);
+      console.log(`│  ${nameStr}${countStr}${errStr}${tokStr}${pctStr}│`);
+    }
+    console.log('└───────────────────────────────────────────────────────────┘\n');
+  }
+
+  const globalIneffs = summary.globalToolInefficiencies || summary.toolInefficiencies || [];
+  if (globalIneffs.length > 0) {
+    console.log('┌ ⚠️  工具低效与上下文浪费诊断 (Tool Inefficiencies & Waste) ────────┐');
+    for (const ineff of globalIneffs) {
+      const icon = ineff.severity === 'high' ? '🔴' : ineff.severity === 'medium' ? '🟡' : '🔵';
+      const wasted = `(浪费 ~${ineff.tokensWasted.toLocaleString()} Tokens)`;
+      console.log(`│  ${icon} [${ineff.tool}] ${ineff.description}`.padEnd(58) + '│');
+      console.log(`│     严重度: ${ineff.severity.toUpperCase()} | ${wasted}`.padEnd(58) + '│');
+    }
+    console.log('└───────────────────────────────────────────────────────────┘\n');
+  }
 
   if (summary.spikes.length > 0) {
     console.log('🚨  Token 异常突增任务:');

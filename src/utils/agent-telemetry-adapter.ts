@@ -21,6 +21,25 @@ export interface TelemetryTokens {
   costUsd?: number;
 }
 
+export interface ToolAttribution {
+  name: string;
+  count: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  percentage: number; // 0 - 100
+  errorCount: number;
+}
+
+export interface ToolInefficiencyFinding {
+  type: 'duplicate_file_reads' | 'oversized_command_output' | 'edit_target_miss' | 'unbudgeted_web_searches';
+  severity: 'high' | 'medium' | 'low';
+  tool: string;
+  description: string;
+  tokensWasted: number;
+  evidence?: Record<string, any>;
+}
+
 export interface TelemetryToolCallSummary {
   name: string;
   count: number;
@@ -48,6 +67,8 @@ export interface SessionTelemetryRecord {
     byName: Record<string, number>;
     details?: TelemetryToolCallSummary[];
   };
+  toolAttributions?: ToolAttribution[];
+  toolInefficiencies?: ToolInefficiencyFinding[];
   turnsCount: number;
   errorCount: number;
   heavyReadsCount?: number;
@@ -238,6 +259,8 @@ export class AntigravityTelemetryAdapter {
   ): {
     tokens: TelemetryTokens;
     toolCalls: { total: number; byName: Record<string, number>; errorCount: number };
+    toolAttributions: ToolAttribution[];
+    toolInefficiencies: ToolInefficiencyFinding[];
     turnsCount: number;
     errorCount: number;
     heavyReadsCount: number;
@@ -249,6 +272,12 @@ export class AntigravityTelemetryAdapter {
     const lines = content.split('\n').filter((l) => l.trim());
     let toolCallsTotal = 0;
     const byName: Record<string, number> = {};
+    const toolStatsMap = new Map<string, { count: number; inputTokens: number; outputTokens: number; errorCount: number }>();
+    const pendingToolCalls: Array<{ name: string; args?: Record<string, any>; inputTokens: number }> = [];
+    const fileReadStats = new Map<string, { count: number; totalTokens: number; readTokens: number[] }>();
+    const oversizedOutputs: Array<{ cmd: string; outputTokens: number; wasted: number }> = [];
+    const editMisses: Array<{ targetFile: string; inputTokens: number; outputTokens: number; error: string }> = [];
+
     let errorCount = 0;
     let heavyReadsCount = 0;
     let flappingCount = 0;
@@ -304,10 +333,16 @@ export class AntigravityTelemetryAdapter {
             const name = tc.name || 'unknown';
             byName[name] = (byName[name] || 0) + 1;
 
-            if (tc.args) {
-              totalEstimated += estimateTokens(JSON.stringify(tc.args));
+            const stat = toolStatsMap.get(name) || { count: 0, inputTokens: 0, outputTokens: 0, errorCount: 0 };
+            stat.count++;
 
-              // 检测大文件泛读
+            let argsTokens = 0;
+            if (tc.args) {
+              argsTokens = estimateTokens(JSON.stringify(tc.args));
+              totalEstimated += argsTokens;
+              stat.inputTokens += argsTokens;
+
+              // 检测大文件泛读与重复文件读取统计
               if (name === 'view_file') {
                 const startLine = tc.args.StartLine;
                 const endLine = tc.args.EndLine;
@@ -317,8 +352,16 @@ export class AntigravityTelemetryAdapter {
                 ) {
                   heavyReadsCount++;
                 }
+
+                const filePath = tc.args.AbsolutePath || tc.args.TargetFile || tc.args.path || 'unknown_file';
+                const fileStat = fileReadStats.get(filePath) || { count: 0, totalTokens: 0, readTokens: [] };
+                fileStat.count++;
+                fileStat.totalTokens += argsTokens;
+                fileReadStats.set(filePath, fileStat);
               }
             }
+            toolStatsMap.set(name, stat);
+            pendingToolCalls.push({ name, args: tc.args, inputTokens: argsTokens });
           }
         }
 
@@ -332,7 +375,84 @@ export class AntigravityTelemetryAdapter {
             entry.content.includes('Error:') ||
             entry.content.includes('UnhandledPromiseRejection'));
 
-        if (isErrorStatus || hasErrorContent) {
+        const isToolError = isErrorStatus || hasErrorContent;
+
+        // 工具执行响应 Token 归因
+        if (entry.type !== 'USER_INPUT' && entry.type !== 'PLANNER_RESPONSE') {
+          let matchedItem: { name: string; args?: Record<string, any>; inputTokens: number } | undefined;
+          const normalizedType = typeof entry.type === 'string' ? entry.type.toLowerCase().replace(/[\s_-]+/g, '') : '';
+
+          if (pendingToolCalls.length > 0) {
+            const idx = pendingToolCalls.findIndex((t) => t.name.toLowerCase().replace(/[\s_-]+/g, '') === normalizedType);
+            if (idx >= 0) {
+              matchedItem = pendingToolCalls.splice(idx, 1)[0];
+            } else {
+              matchedItem = pendingToolCalls.shift();
+            }
+          }
+
+          const matchedToolName = matchedItem?.name || entry.tool_name || entry.name || (
+            Array.from(toolStatsMap.keys()).find((k) => k.toLowerCase().replace(/[\s_-]+/g, '') === normalizedType)
+          );
+
+          if (matchedToolName) {
+            const stat = toolStatsMap.get(matchedToolName) || { count: 0, inputTokens: 0, outputTokens: 0, errorCount: 0 };
+            let outTokens = 0;
+            if (entry.content) {
+              const outContent = typeof entry.content === 'string' ? entry.content : JSON.stringify(entry.content);
+              outTokens = estimateTokens(outContent);
+              stat.outputTokens += outTokens;
+            }
+            if (isToolError) {
+              stat.errorCount += 1;
+            }
+            toolStatsMap.set(matchedToolName, stat);
+
+            // 1. 重复读取文件 Token 归因
+            if (matchedToolName === 'view_file') {
+              const filePath = matchedItem?.args?.AbsolutePath || matchedItem?.args?.TargetFile || matchedItem?.args?.path || 'unknown_file';
+              const fileStat = fileReadStats.get(filePath);
+              if (fileStat) {
+                fileStat.totalTokens += outTokens;
+                fileStat.readTokens.push((matchedItem?.inputTokens || 0) + outTokens);
+              }
+            }
+
+            // 2. 超长命令输出检测 (run_command 输出 > 2000 tokens)
+            if (matchedToolName === 'run_command' && outTokens > 2000) {
+              const cmd = matchedItem?.args?.CommandLine || 'run_command';
+              const wasted = Math.max(0, outTokens - 500);
+              oversizedOutputs.push({ cmd, outputTokens: outTokens, wasted });
+            }
+
+            // 3. 代码编辑目标失真与重试检测 (replace_file_content 错误)
+            if (matchedToolName === 'replace_file_content' && isToolError) {
+              const targetFile = matchedItem?.args?.TargetFile || matchedItem?.args?.AbsolutePath || 'unknown';
+              const inputTokens = matchedItem?.inputTokens || 200;
+              editMisses.push({
+                targetFile,
+                inputTokens,
+                outputTokens: outTokens,
+                error: typeof entry.content === 'string' ? entry.content : 'Edit target miss / failure',
+              });
+            }
+          } else {
+            // 兜底未匹配到 pending 工具调用时的直接检测
+            let outTokens = 0;
+            if (entry.content) {
+              const outContent = typeof entry.content === 'string' ? entry.content : JSON.stringify(entry.content);
+              outTokens = estimateTokens(outContent);
+            }
+            if (normalizedType === 'runcommand' && outTokens > 2000) {
+              oversizedOutputs.push({ cmd: 'run_command', outputTokens: outTokens, wasted: Math.max(0, outTokens - 500) });
+            }
+            if (normalizedType === 'replacefilecontent' && isToolError) {
+              editMisses.push({ targetFile: 'unknown', inputTokens: 200, outputTokens: outTokens, error: 'Edit failure' });
+            }
+          }
+        }
+
+        if (isToolError) {
           errorCount++;
           const currentToolOrCmd = entry.type || 'unknown_tool';
           if (currentToolOrCmd === lastFailedToolOrCmd) {
@@ -357,6 +477,76 @@ export class AntigravityTelemetryAdapter {
     const outputTokens = Math.round(totalEstimated * 0.3);
     const durationMs = lastTimestamp && firstTimestamp ? Math.max(0, lastTimestamp - firstTimestamp) : 0;
 
+    const toolAttributions: ToolAttribution[] = Array.from(toolStatsMap.entries()).map(([name, stat]) => {
+      const totalTokens = stat.inputTokens + stat.outputTokens;
+      const percentage = totalEstimated > 0
+        ? parseFloat(((totalTokens / totalEstimated) * 100).toFixed(1))
+        : 0;
+      return {
+        name,
+        count: stat.count,
+        inputTokens: stat.inputTokens,
+        outputTokens: stat.outputTokens,
+        totalTokens,
+        percentage,
+        errorCount: stat.errorCount,
+      };
+    });
+
+    toolAttributions.sort((a, b) => b.totalTokens - a.totalTokens);
+
+    // 汇总工具低效诊断 (Tool Inefficiencies)
+    const toolInefficiencies: ToolInefficiencyFinding[] = [];
+
+    // 1. 重复读取相同文件 (view_file 同路径 >= 3 次)
+    for (const [filePath, stat] of fileReadStats.entries()) {
+      if (stat.count >= 3) {
+        let tokensWasted = 0;
+        if (stat.readTokens.length >= 2) {
+          tokensWasted = stat.readTokens.slice(1).reduce((sum, t) => sum + t, 0);
+        } else {
+          const avg = stat.count > 0 ? Math.round(stat.totalTokens / stat.count) : 100;
+          tokensWasted = Math.max(avg * (stat.count - 1), 100);
+        }
+        const fileName = basename(filePath) || filePath;
+        toolInefficiencies.push({
+          type: 'duplicate_file_reads',
+          severity: stat.count >= 5 || tokensWasted > 5000 ? 'high' : 'medium',
+          tool: 'view_file',
+          description: `文件 "${fileName}" 被重复读取了 ${stat.count} 次，建议派发子代理或在内存中缓存/按行切片读取`,
+          tokensWasted,
+          evidence: { path: filePath, readCount: stat.count, wastedTokens: tokensWasted },
+        });
+      }
+    }
+
+    // 2. 超长命令输出污染 (run_command 输出 > 2000 tokens)
+    for (const item of oversizedOutputs) {
+      toolInefficiencies.push({
+        type: 'oversized_command_output',
+        severity: item.outputTokens > 5000 ? 'high' : 'medium',
+        tool: 'run_command',
+        description: `run_command 执行产生了超长输出 (~${item.outputTokens.toLocaleString()} tokens)，建议过滤命令输出或改用定向测试`,
+        tokensWasted: item.wasted,
+        evidence: { commandLine: item.cmd, outputTokens: item.outputTokens, wastedTokens: item.wasted },
+      });
+    }
+
+    // 3. 代码编辑目标失真与重试 (replace_file_content 失败/重试)
+    if (editMisses.length > 0) {
+      const totalWasted = editMisses.reduce((sum, e) => sum + e.inputTokens + e.outputTokens, 0) || (editMisses.length * 300);
+      const uniqueFiles = Array.from(new Set(editMisses.map((e) => e.targetFile).filter((f) => f !== 'unknown')));
+      const fileSuffix = uniqueFiles.length > 0 ? ` (涉及文件: ${uniqueFiles.map((f) => basename(f)).join(', ')})` : '';
+      toolInefficiencies.push({
+        type: 'edit_target_miss',
+        severity: editMisses.length >= 2 ? 'high' : 'medium',
+        tool: 'replace_file_content',
+        description: `replace_file_content 发生了 ${editMisses.length} 次目标内容不匹配或编辑失败重试${fileSuffix}，导致上下文浪费`,
+        tokensWasted: totalWasted,
+        evidence: { errorCount: editMisses.length, targetFiles: uniqueFiles, wastedTokens: totalWasted },
+      });
+    }
+
     return {
       tokens: {
         inputTokens,
@@ -369,6 +559,8 @@ export class AntigravityTelemetryAdapter {
         byName,
         errorCount,
       },
+      toolAttributions,
+      toolInefficiencies,
       turnsCount: Math.max(1, turnsCount),
       errorCount,
       heavyReadsCount,
@@ -446,6 +638,8 @@ export class AntigravityTelemetryAdapter {
         model: parsed.model,
         tokens: parsed.tokens,
         toolCalls: parsed.toolCalls,
+        toolAttributions: parsed.toolAttributions,
+        toolInefficiencies: parsed.toolInefficiencies,
         turnsCount: parsed.turnsCount,
         errorCount: parsed.errorCount,
         heavyReadsCount: parsed.heavyReadsCount,

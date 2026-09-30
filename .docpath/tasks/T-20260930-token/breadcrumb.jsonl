@@ -1,0 +1,8 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-token","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 基于真实工具调用的深度 Token 归因","timestamp":"2026-09-30T06:40:42.033Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-token","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-30T06:44:52.237Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-token","step":"S2","status":"in_progress","context":"go --accept-dirty: S1 real tool-level token attribution done","timestamp":"2026-09-30T06:44:52.430Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-token","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 低效诊断引擎","timestamp":"2026-09-30T06:44:52.434Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-token","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-09-30T06:50:51.220Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-token","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-30T06:52:31.912Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-token","step":"review","status":"done","context":"代码审查: 0 错误, 6 警告, 0 提示","timestamp":"2026-09-30T06:52:33.084Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-token","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-09-30T06:52:34.471Z"}

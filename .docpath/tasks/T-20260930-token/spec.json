@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-30T06:40:41.129Z",
+    "updated_at": "2026-09-30T06:40:41.129Z",
+    "content_sha256": "a756ae0a4caa393fc2f3028d43df145a7fd6063dfc74241d6fba7b5d0fc1ff45"
+  },
+  "task_id": "T-20260930-token",
+  "backlog_id": "R-452",
+  "title": "T-20260930-token - 基于真实工具调用的深度 Token 归因与低效诊断引擎",
+  "generated_at": "2026-09-30T06:40:41.129Z",
+  "scope": {
+    "included": [
+      "基于真实工具调用的深度 Token 归因与低效诊断引擎"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 基于真实工具调用的深度 Token 归因与低效诊断引擎\n- 目标: 基于真实工具调用的深度 Token 归因与低效诊断引擎\n- 背景: 来自 backlog R-452\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "基于真实工具调用的深度 Token 归因",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "低效诊断引擎",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "实现工具级真实 Token 归因分析（统计每个工具的调用频次、参数及输出真实 Token 消耗、占比分布与错误率）",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "实现真实工具低效与失真诊断器（检测重复读取相同文件、超长命令输出污染、代码编辑失败反复重试、无并发子代理直接深改等）",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "在 `docpath monitor` 全局与 `--current` 实时看板中置入「🛠️ 真实工具调用与消耗剖析」与「⚠️ 工具低效诊断」模块，并提供 `--agent` 与 `--json`",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "完成单元测试覆盖并在全量门禁中通过验证",
+      "done": false
+    },
+    {
+      "id": "AC-1",
+      "text": "基于真实工具调用的深度 Token 归因 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "低效诊断引擎 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "backlog 条目 R-452 与任务 T-20260930-token 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "基于真实工具调用的深度 Token 归因与低效诊断引擎",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

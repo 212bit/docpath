@@ -73,6 +73,109 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
       assert.ok(result.tokens.totalTokens > 0);
       assert.ok(result.tokens.inputTokens > 0);
       assert.ok(result.tokens.outputTokens > 0);
+      assert.ok(Array.isArray(result.toolAttributions));
+      assert.equal(result.toolAttributions.length, 2);
+      const vf = result.toolAttributions.find((t) => t.name === 'view_file');
+      assert.ok(vf);
+      assert.equal(vf.count, 1);
+      assert.ok(vf.inputTokens > 0);
+      assert.ok(vf.outputTokens > 0);
+      assert.equal(vf.totalTokens, vf.inputTokens + vf.outputTokens);
+      assert.ok(vf.percentage > 0 && vf.percentage <= 100);
+      assert.equal(vf.errorCount, 0);
+    });
+
+    it('calculates tool-level real token attribution and percentage distribution (FR-1 / AC-1)', () => {
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:00.000Z',
+          tool_calls: [
+            {
+              name: 'replace_file_content',
+              args: { TargetFile: '/src/main.ts', ReplacementContent: 'export const a = 1;\nexport const b = 2;\n' },
+            },
+            {
+              name: 'run_command',
+              args: { CommandLine: 'npm test' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'REPLACE_FILE_CONTENT',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:05.000Z',
+          content: 'Successfully replaced content',
+        }),
+        JSON.stringify({
+          step_index: 3,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:10.000Z',
+          content: 'Tests passed: 10 passed, 0 failed',
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+
+      assert.ok(Array.isArray(result.toolAttributions));
+      assert.equal(result.toolAttributions.length, 2);
+
+      // Verify sorting descending by totalTokens
+      for (let i = 0; i < result.toolAttributions.length - 1; i++) {
+        assert.ok(result.toolAttributions[i].totalTokens >= result.toolAttributions[i + 1].totalTokens);
+      }
+
+      for (const attr of result.toolAttributions) {
+        assert.ok(attr.name === 'replace_file_content' || attr.name === 'run_command');
+        assert.equal(attr.count, 1);
+        assert.ok(attr.inputTokens > 0);
+        assert.ok(attr.outputTokens > 0);
+        assert.equal(attr.totalTokens, attr.inputTokens + attr.outputTokens);
+        assert.ok(attr.percentage > 0 && attr.percentage <= 100);
+        assert.equal(attr.errorCount, 0);
+      }
+    });
+
+    it('tracks tool-level error counts in toolAttributions', () => {
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          created_at: '2026-09-30T10:00:00.000Z',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'invalid-command' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'ERROR',
+          created_at: '2026-09-30T10:00:05.000Z',
+          content: 'Command failed with exit code 127',
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+
+      assert.equal(result.toolAttributions.length, 1);
+      const rc = result.toolAttributions[0];
+      assert.equal(rc.name, 'run_command');
+      assert.equal(rc.errorCount, 1);
+      assert.ok(rc.inputTokens > 0);
+      assert.ok(rc.outputTokens > 0);
     });
 
     it('identifies heavy file reads in main session', () => {
@@ -385,6 +488,144 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
       } finally {
         rmSync(cwd, { recursive: true, force: true });
       }
+    });
+  });
+
+  describe('Tool Inefficiency & Context Waste Diagnostic Engine (FR-2 / AC-2)', () => {
+    it('detects duplicate file reads when the same path is read >= 3 times in a session', () => {
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [{ name: 'view_file', args: { AbsolutePath: '/Users/mac/project/src/index.ts', StartLine: 1, EndLine: 50 } }],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'VIEW_FILE',
+          status: 'DONE',
+          content: 'export const a = 1;',
+        }),
+        JSON.stringify({
+          step_index: 3,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [{ name: 'view_file', args: { AbsolutePath: '/Users/mac/project/src/index.ts', StartLine: 1, EndLine: 50 } }],
+        }),
+        JSON.stringify({
+          step_index: 4,
+          source: 'MODEL',
+          type: 'VIEW_FILE',
+          status: 'DONE',
+          content: 'export const a = 1;',
+        }),
+        JSON.stringify({
+          step_index: 5,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [{ name: 'view_file', args: { AbsolutePath: '/Users/mac/project/src/index.ts', StartLine: 1, EndLine: 50 } }],
+        }),
+        JSON.stringify({
+          step_index: 6,
+          source: 'MODEL',
+          type: 'VIEW_FILE',
+          status: 'DONE',
+          content: 'export const a = 1;',
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+
+      assert.ok(Array.isArray(result.toolInefficiencies));
+      const dup = result.toolInefficiencies.find((i) => i.type === 'duplicate_file_reads');
+      assert.ok(dup, 'Should detect duplicate_file_reads inefficiency');
+      assert.equal(dup.tool, 'view_file');
+      assert.match(dup.description, /index\.ts/);
+      assert.match(dup.description, /3 次/);
+      assert.ok(dup.tokensWasted > 0);
+      assert.equal(dup.evidence?.readCount, 3);
+      assert.equal(dup.evidence?.path, '/Users/mac/project/src/index.ts');
+    });
+
+    it('detects oversized command outputs exceeding token threshold (>2000 tokens)', () => {
+      // 2500 tokens of command output (approx 10000 chars)
+      const bigOutput = 'LOG LINE OF LONG OUTPUT: ' + 'x'.repeat(12000);
+
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [{ name: 'run_command', args: { CommandLine: 'npm test --verbose' } }],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          content: bigOutput,
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+
+      assert.ok(Array.isArray(result.toolInefficiencies));
+      const oversized = result.toolInefficiencies.find((i) => i.type === 'oversized_command_output');
+      assert.ok(oversized, 'Should detect oversized_command_output inefficiency');
+      assert.equal(oversized.tool, 'run_command');
+      assert.match(oversized.description, /超长输出/);
+      assert.ok(oversized.tokensWasted > 0);
+      assert.ok(oversized.evidence?.outputTokens > 2000);
+      assert.equal(oversized.evidence?.commandLine, 'npm test --verbose');
+    });
+
+    it('detects edit target miss and error retries for replace_file_content', () => {
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [{ name: 'replace_file_content', args: { TargetFile: '/src/main.ts', TargetContent: 'not found string', ReplacementContent: 'replacement' } }],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'REPLACE_FILE_CONTENT',
+          status: 'ERROR',
+          content: 'Error: TargetContent was not found in /src/main.ts',
+        }),
+        JSON.stringify({
+          step_index: 3,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [{ name: 'replace_file_content', args: { TargetFile: '/src/main.ts', TargetContent: 'another wrong string', ReplacementContent: 'replacement' } }],
+        }),
+        JSON.stringify({
+          step_index: 4,
+          source: 'MODEL',
+          type: 'REPLACE_FILE_CONTENT',
+          status: 'ERROR',
+          content: 'Error: TargetContent was not found in /src/main.ts',
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+
+      assert.ok(Array.isArray(result.toolInefficiencies));
+      const editMiss = result.toolInefficiencies.find((i) => i.type === 'edit_target_miss');
+      assert.ok(editMiss, 'Should detect edit_target_miss inefficiency');
+      assert.equal(editMiss.tool, 'replace_file_content');
+      assert.match(editMiss.description, /2 次/);
+      assert.match(editMiss.description, /main\.ts/);
+      assert.ok(editMiss.tokensWasted > 0);
+      assert.equal(editMiss.evidence?.errorCount, 2);
     });
   });
 });
