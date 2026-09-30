@@ -14,6 +14,8 @@ import {
   aggregateToolAttributions,
   aggregateToolInefficiencies,
   aggregateMonitorMetrics,
+  aggregateTaskMetrics,
+  formatTokens,
 } from '../dist/utils/task-metrics.js';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
@@ -1461,5 +1463,221 @@ describe('Actionable Remediation & Self-healing Engine (FR-2 / AC-2, AC-3, AC-4)
     });
   });
 });
+
+describe('Multi-Turn Cumulative Token Metrics & Cache Hit Ratio in Monitor (FR-2 / AC-2, AC-3, AC-4)', () => {
+  it('formatTokens formats zero, small numbers, thousands, and millions cleanly', () => {
+    assert.equal(formatTokens(0), '0');
+    assert.equal(formatTokens(500), '500');
+    assert.equal(formatTokens(1000), '1,000 (~1K)');
+    assert.equal(formatTokens(423000), '423,000 (~423K)');
+    assert.equal(formatTokens(423450), '423,450 (~423.5K)');
+    assert.equal(formatTokens(1000000), '1,000,000 (~1.0M)');
+    assert.equal(formatTokens(30033457), '30,033,457 (~30.0M)');
+  });
+
+  it('aggregates totalCachedTokens and computes cacheHitRatio correctly across tasks', async () => {
+    const tasks = [
+      {
+        taskId: 'T-CACHE-01',
+        taskTitle: 'Cache Task 1',
+        profile: 'standard',
+        totalDiffLines: 100,
+        completedAt: '2026-09-30T10:00:00.000Z',
+        protocol: { totalInjectedTokens: 2000 },
+        realUsage: {
+          totalTokens: 30000,
+          inputTokens: 20000,
+          outputTokens: 10000,
+          cachedTokens: 10000,
+          costUsd: 0.05,
+        },
+      },
+      {
+        taskId: 'T-CACHE-02',
+        taskTitle: 'Cache Task 2',
+        profile: 'standard',
+        totalDiffLines: 50,
+        completedAt: '2026-09-30T10:10:00.000Z',
+        protocol: { totalInjectedTokens: 2000 },
+        realUsage: {
+          totalTokens: 40000,
+          inputTokens: 30000,
+          outputTokens: 10000,
+          cachedTokens: 20000,
+          costUsd: 0.06,
+        },
+      },
+    ];
+
+    const cwd = mkWorkspaceWithTasks(tasks);
+    try {
+      const summary = await aggregateTaskMetrics(cwd);
+      assert.ok(summary.realUsageSummary);
+      assert.equal(summary.realUsageSummary.tasksWithRealUsage, 2);
+      assert.equal(summary.realUsageSummary.totalRealTokens, 70000);
+      assert.equal(summary.realUsageSummary.totalCachedTokens, 30000);
+      // (30000 / (70000 + 30000)) * 100 = 30.0%
+      assert.equal(summary.realUsageSummary.cacheHitRatio, 30.0);
+
+      const monSummary = await aggregateMonitorMetrics(cwd);
+      assert.ok(monSummary.realUsageSummary);
+      assert.equal(monSummary.realUsageSummary.totalRealTokens, 70000);
+      assert.equal(monSummary.realUsageSummary.totalCachedTokens, 30000);
+      assert.equal(monSummary.realUsageSummary.cacheHitRatio, 30.0);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('renders cache hit ratio and cached tokens in docpath monitor human dashboard', () => {
+    const tasks = [
+      {
+        taskId: 'T-CACHE-DASH',
+        taskTitle: 'Dashboard Cache Telemetry Task',
+        profile: 'standard',
+        totalDiffLines: 60,
+        completedAt: '2026-09-30T10:00:00.000Z',
+        protocol: { totalInjectedTokens: 2000 },
+        realUsage: {
+          totalTokens: 40000,
+          inputTokens: 30000,
+          outputTokens: 10000,
+          cachedTokens: 30000,
+          costUsd: 0.05,
+        },
+      },
+    ];
+
+    const cwd = mkWorkspaceWithTasks(tasks);
+    try {
+      const stdout = execSync(`node "${BIN}" monitor --cwd "${cwd}"`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdout, /DocPath 智能监控大盘/);
+      assert.match(stdout, /Token 消耗与漂移监控/);
+      // cacheHitRatio = (30000 / (40000 + 30000)) * 100 = 42.9%
+      assert.match(stdout, /缓存复用与命中率:\s*⚡\s*42\.9%\s*\(已复用缓存 30,000 \(~30K\) Tokens\)/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('outputs totalCachedTokens and cacheHitRatio in docpath monitor --json', () => {
+    const tasks = [
+      {
+        taskId: 'T-CACHE-JSON',
+        taskTitle: 'JSON Cache Task',
+        profile: 'standard',
+        totalDiffLines: 40,
+        completedAt: '2026-09-30T10:00:00.000Z',
+        protocol: { totalInjectedTokens: 2000 },
+        realUsage: {
+          totalTokens: 30000,
+          inputTokens: 20000,
+          outputTokens: 10000,
+          cachedTokens: 10000,
+        },
+      },
+    ];
+
+    const cwd = mkWorkspaceWithTasks(tasks);
+    try {
+      const stdout = execSync(`node "${BIN}" monitor --cwd "${cwd}" --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdout);
+      assert.ok(data.realUsageSummary);
+      assert.equal(data.realUsageSummary.totalCachedTokens, 10000);
+      // (10000 / (30000 + 10000)) * 100 = 25.0%
+      assert.equal(data.realUsageSummary.cacheHitRatio, 25.0);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('outputs cached_tokens and cache_hit_ratio in docpath monitor --agent YAML', () => {
+    const tasks = [
+      {
+        taskId: 'T-CACHE-YAML',
+        taskTitle: 'YAML Cache Task',
+        profile: 'standard',
+        totalDiffLines: 40,
+        completedAt: '2026-09-30T10:00:00.000Z',
+        protocol: { totalInjectedTokens: 2000 },
+        realUsage: {
+          totalTokens: 50000,
+          inputTokens: 40000,
+          outputTokens: 10000,
+          cachedTokens: 25000,
+        },
+      },
+    ];
+
+    const cwd = mkWorkspaceWithTasks(tasks);
+    try {
+      const stdout = execSync(`node "${BIN}" monitor --cwd "${cwd}" --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdout, /real_usage:/);
+      assert.match(stdout, /cached_tokens:\s*25000/);
+      // (25000 / 75000) * 100 = 33.3%
+      assert.match(stdout, /cache_hit_ratio:\s*['"]?33\.3%['"]?/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('displays cachedTokens and live cache hit ratio in docpath monitor --current for in-flight tasks', () => {
+    const cwd = mkWorkspaceWithActiveTask({
+      taskId: 'T-INFLIGHT-CACHE',
+      taskTitle: 'In Flight Cache Telemetry Task',
+    });
+
+    const dp = join(cwd, '.docpath');
+    const metricsJson = {
+      taskId: 'T-INFLIGHT-CACHE',
+      taskTitle: 'In Flight Cache Telemetry Task',
+      profile: 'standard',
+      level: 2,
+      realUsage: {
+        source: 'antigravity',
+        totalTokens: 30000,
+        inputTokens: 20000,
+        outputTokens: 10000,
+        cachedTokens: 10000,
+        costUsd: 0.045,
+        toolCallsCount: 12,
+      },
+    };
+    writeFileSync(join(dp, 'tasks', 'current', 'metrics.json'), JSON.stringify(metricsJson, null, 2));
+
+    try {
+      // 1. Human readable view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /DocPath 活跃任务实时遥测/);
+      assert.match(stdoutHuman, /缓存复用率:\s*⚡\s*\d+(\.\d+)?%\s*\(已复用缓存 .+\s*Tokens\)/);
+
+      // 2. Agent YAML view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /cached_tokens:\s*\d+/);
+      assert.match(stdoutAgent, /cache_hit_ratio:\s*['"]?\d+(\.\d+)?%['"]?/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.equal(data.active, true);
+      assert.ok(typeof data.activeTask.realUsage?.cachedTokens === 'number');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+});
+
 
 

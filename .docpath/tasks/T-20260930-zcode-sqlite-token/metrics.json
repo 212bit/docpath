@@ -1,0 +1,106 @@
+{
+  "taskId": "T-20260930-zcode-sqlite-token",
+  "taskTitle": "T-20260930-zcode-sqlite-token - ZCode 原生 SQLite 遥测直连适配器与多轮累加 Token 真实度量",
+  "backlogId": "R-453",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-30T07:29:58.759Z",
+  "completedAt": "2026-09-30T07:42:15.306Z",
+  "durationMinutes": 12.3,
+  "firstTimePassRate": 50,
+  "complianceScore": 100,
+  "violations": [],
+  "totalDiffLines": 1885,
+  "filesChanged": 15,
+  "linesAdded": 1786,
+  "linesDeleted": 99,
+  "engineering": {
+    "turnCount": 9,
+    "retryCount": 1,
+    "firstTimePassRate": 50,
+    "cycleTimeMinutes": 12.3,
+    "filesChanged": 15,
+    "linesAdded": 1786,
+    "linesDeleted": 99,
+    "totalDiffLines": 1885,
+    "speedLinesPerMinute": 153.3
+  },
+  "protocol": {
+    "specTokens": 1131,
+    "planTokens": 551,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3482
+  },
+  "realUsage": {
+    "source": "zcode",
+    "inputTokens": 128775,
+    "outputTokens": 5712,
+    "cachedTokens": 123008,
+    "totalTokens": 134487,
+    "costUsd": 0.472,
+    "toolCallsCount": 1,
+    "toolAttributions": [
+      {
+        "name": "Bash",
+        "count": 1,
+        "inputTokens": 94141,
+        "outputTokens": 40346,
+        "totalTokens": 134487,
+        "percentage": 100,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [],
+    "model": "GLM-5.3-Flash",
+    "complianceScore": 100,
+    "violations": []
+  },
+  "sessionRecord": {
+    "source": "zcode",
+    "model": "GLM-5.3-Flash",
+    "tokens": {
+      "inputTokens": 128775,
+      "outputTokens": 5712,
+      "cachedTokens": 123008,
+      "totalTokens": 134487,
+      "costUsd": 0.472
+    },
+    "toolCalls": {
+      "total": 1,
+      "byName": {
+        "Bash": 1
+      }
+    },
+    "toolAttributions": [
+      {
+        "name": "Bash",
+        "count": 1,
+        "inputTokens": 94141,
+        "outputTokens": 40346,
+        "totalTokens": 134487,
+        "percentage": 100,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [],
+    "turnsCount": 1,
+    "errorCount": 0,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [],
+    "complianceScore": 100,
+    "durationMs": 222050
+  },
+  "toolAttributions": [
+    {
+      "name": "Bash",
+      "count": 1,
+      "inputTokens": 94141,
+      "outputTokens": 40346,
+      "totalTokens": 134487,
+      "percentage": 100,
+      "errorCount": 0
+    }
+  ],
+  "toolInefficiencies": []
+}

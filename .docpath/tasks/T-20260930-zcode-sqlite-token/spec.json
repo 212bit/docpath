@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-30T07:29:57.888Z",
+    "updated_at": "2026-09-30T07:29:57.888Z",
+    "content_sha256": "9ffc45e42925e5553cadaf6e0e87ddc953a2ec9e8e1e78754d5010b404ee1e99"
+  },
+  "task_id": "T-20260930-zcode-sqlite-token",
+  "backlog_id": "R-453",
+  "title": "T-20260930-zcode-sqlite-token - ZCode 原生 SQLite 遥测直连适配器与多轮累加 Token 真实度量",
+  "generated_at": "2026-09-30T07:29:57.888Z",
+  "scope": {
+    "included": [
+      "ZCode 原生 SQLite 遥测直连适配器与多轮累加 Token 真实度量"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: ZCode 原生 SQLite 遥测直连适配器与多轮累加 Token 真实度量\n- 目标: ZCode 原生 SQLite 遥测直连适配器与多轮累加 Token 真实度量\n- 背景: 来自 backlog R-453\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "ZCode 原生 SQLite 遥测直连适配器",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "多轮累加 Token 真实度量",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "实现 `ZCodeTelemetryAdapter` 深度适配器，支持自动探测并直连 `~/.zcode/cli/db/db.sqlite`（解析 `model_usage` 与 `turn_usage`）及 rollout JSONL",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "精确提取多轮累计 Token（`input_tokens`、`output_tokens`、`computed_total_tokens`、`cache_read_input_tokens` 缓存命中）与模型规格",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "在 `docpath monitor`（全局与 `--current`）中集成 ZCode 真实度量，展现缓存命中率（Cache Hit Ratio）与多轮会话真实消耗",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "完成单元测试覆盖并在全量门禁中通过验证",
+      "done": false
+    },
+    {
+      "id": "AC-1",
+      "text": "ZCode 原生 SQLite 遥测直连适配器 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "多轮累加 Token 真实度量 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "backlog 条目 R-453 与任务 T-20260930-zcode-sqlite-token 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "ZCode 原生 SQLite 遥测直连适配器与多轮累加 Token 真实度量",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

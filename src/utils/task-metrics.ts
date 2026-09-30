@@ -24,7 +24,7 @@ import {
 export type { ToolAttribution, ToolInefficiencyFinding };
 
 export interface RealAgentUsage {
-  source: 'antigravity' | 'claude' | 'opencode' | 'env' | 'breadcrumb' | 'unknown';
+  source: 'antigravity' | 'claude' | 'opencode' | 'zcode' | 'env' | 'breadcrumb' | 'unknown';
   inputTokens: number;
   outputTokens: number;
   cachedTokens?: number;
@@ -81,6 +81,15 @@ export interface TaskMetrics {
   toolInefficiencies?: ToolInefficiencyFinding[];
 }
 
+export interface RealAgentUsageSummary {
+  tasksWithRealUsage: number;
+  totalRealTokens: number;
+  totalCachedTokens: number;
+  cacheHitRatio: number; // 0 - 100 percentage
+  avgRealTokensPerTask: number;
+  totalRealCostUsd: number;
+}
+
 export interface TaskMetricsSummary {
   totalTasks: number;
   avgDurationMinutes: number;
@@ -90,12 +99,7 @@ export interface TaskMetricsSummary {
   quickCount: number;
   standardCount: number;
   avgProtocolTokensPerTask: number;
-  realUsageSummary: {
-    tasksWithRealUsage: number;
-    totalRealTokens: number;
-    avgRealTokensPerTask: number;
-    totalRealCostUsd: number;
-  } | null;
+  realUsageSummary: RealAgentUsageSummary | null;
   recentTasks: TaskMetrics[];
 }
 
@@ -184,6 +188,8 @@ export interface MonitorSummary {
   realUsageSummary: {
     tasksWithRealUsage: number;
     totalRealTokens: number;
+    totalCachedTokens: number;
+    cacheHitRatio: number;
     avgRealTokensPerTask: number;
     totalRealCostUsd: number;
     avgCostPerTaskUsd: number;
@@ -783,10 +789,17 @@ export async function aggregateTaskMetrics(
   let realUsageSummary: TaskMetricsSummary['realUsageSummary'] = null;
   if (tasksWithReal.length > 0) {
     const totalRealTokens = tasksWithReal.reduce((sum, t) => sum + (t.realUsage?.totalTokens || 0), 0);
+    const totalCachedTokens = tasksWithReal.reduce((sum, t) => sum + (t.realUsage?.cachedTokens || 0), 0);
     const totalRealCost = tasksWithReal.reduce((sum, t) => sum + (t.realUsage?.costUsd || 0), 0);
+    const cacheHitRatio = totalCachedTokens > 0
+      ? parseFloat(((totalCachedTokens / (totalRealTokens + totalCachedTokens)) * 100).toFixed(1))
+      : 0;
+
     realUsageSummary = {
       tasksWithRealUsage: tasksWithReal.length,
       totalRealTokens,
+      totalCachedTokens,
+      cacheHitRatio,
       avgRealTokensPerTask: Math.round(totalRealTokens / tasksWithReal.length),
       totalRealCostUsd: parseFloat(totalRealCost.toFixed(4)),
     };
@@ -946,7 +959,23 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       state: parsedState,
     });
 
-    const realUsage: RealAgentUsage | null =
+    // 优先读取显式落盘的 metrics.json（如果已存在），以便承载明确的遥测快照
+    const metricsJsonPath = existsSync(join(taskDir, 'metrics.json'))
+      ? join(taskDir, 'metrics.json')
+      : join(docpathDir, 'tasks', 'current', 'metrics.json');
+    let fileMetricsUsage: RealAgentUsage | null = null;
+    if (existsSync(metricsJsonPath)) {
+      try {
+        const parsedMetrics = JSON.parse(await readFile(metricsJsonPath, 'utf-8'));
+        if (parsedMetrics.realUsage) {
+          fileMetricsUsage = parsedMetrics.realUsage;
+        }
+      } catch {
+        // 容错
+      }
+    }
+
+    let realUsage: RealAgentUsage | null = fileMetricsUsage || (
       sessionRecord && (sessionRecord.tokens.totalTokens > 0 || sessionRecord.source !== 'unknown')
         ? {
             source: sessionRecord.source,
@@ -962,7 +991,8 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
             complianceScore: sessionRecord.complianceScore,
             violations: sessionRecord.violations,
           }
-        : null;
+        : null
+    );
 
     const complianceScore = sessionRecord ? sessionRecord.complianceScore : 100;
     const violations = sessionRecord ? sessionRecord.violations : [];
@@ -1310,6 +1340,22 @@ export async function aggregateMonitorMetrics(
     ...partialSummary,
     remediations,
   };
+}
+
+/**
+ * 格式化 Token 计数，清晰展示百万/千级缩写 (Clean Token Formatter)
+ */
+export function formatTokens(n: number): string {
+  if (!n || n <= 0) return '0';
+  if (n >= 1_000_000) {
+    const val = (n / 1_000_000).toFixed(1);
+    return `${n.toLocaleString()} (~${val}M)`;
+  }
+  if (n >= 1_000) {
+    const val = Math.round((n / 1_000) * 10) / 10;
+    return `${n.toLocaleString()} (~${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}K)`;
+  }
+  return n.toLocaleString();
 }
 
 

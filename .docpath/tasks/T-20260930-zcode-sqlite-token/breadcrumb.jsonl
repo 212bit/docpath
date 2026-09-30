@@ -1,0 +1,9 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-zcode-sqlite-token","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 ZCode 原生 SQLite 遥测直连适配器","timestamp":"2026-09-30T07:29:58.759Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-zcode-sqlite-token","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-30T07:33:16.819Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-zcode-sqlite-token","step":"S2","status":"in_progress","context":"go --accept-dirty: S1 ZCode native SQLite telemetry adapter done","timestamp":"2026-09-30T07:33:17.102Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-zcode-sqlite-token","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 多轮累加 Token 真实度量","timestamp":"2026-09-30T07:33:17.107Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-zcode-sqlite-token","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-09-30T07:37:15.455Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-zcode-sqlite-token","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译, 测试（受控并发）, Living docs integrity gate","timestamp":"2026-09-30T07:39:00.880Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-zcode-sqlite-token","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-09-30T07:42:12.755Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-zcode-sqlite-token","step":"review","status":"done","context":"代码审查: 0 错误, 6 警告, 0 提示","timestamp":"2026-09-30T07:42:13.954Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-zcode-sqlite-token","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-09-30T07:42:15.289Z"}

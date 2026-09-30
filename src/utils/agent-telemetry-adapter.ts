@@ -58,7 +58,7 @@ export interface ComplianceViolation {
 }
 
 export interface SessionTelemetryRecord {
-  source: 'antigravity' | 'claude' | 'opencode' | 'env' | 'breadcrumb' | 'unknown';
+  source: 'antigravity' | 'claude' | 'opencode' | 'zcode' | 'env' | 'breadcrumb' | 'unknown';
   sessionId?: string;
   model?: string;
   tokens: TelemetryTokens;
@@ -100,6 +100,8 @@ export interface TelemetryProbeOptions {
   state?: Record<string, any>;
   brainDir?: string;
   transcriptPath?: string;
+  zcodeDbPath?: string;
+  zcodeRolloutDir?: string;
   env?: Record<string, string | undefined>;
 }
 
@@ -802,6 +804,435 @@ export class FallbackBreadcrumbAdapter {
 }
 
 /**
+ * ZCode 原生 SQLite 遥测直连与 Rollout 适配器 (FR-1 / AC-1)
+ */
+export class ZCodeTelemetryAdapter {
+  public static async querySqlite(
+    dbPath: string,
+    sql: string,
+    params: (string | number)[] = []
+  ): Promise<any[]> {
+    // 1. 尝试 node:sqlite DatabaseSync 原生直连
+    try {
+      const { DatabaseSync } = await import('node:sqlite');
+      const db = new (DatabaseSync as any)(dbPath, { readOnly: true });
+      try {
+        const stmt = db.prepare(sql);
+        return stmt.all(...params) as any[];
+      } finally {
+        db.close();
+      }
+    } catch {
+      // 2. 降级尝试 sqlite3 CLI 执行
+      try {
+        const { execSync } = await import('node:child_process');
+        let formattedSql = sql;
+        for (const p of params) {
+          const val = typeof p === 'number' ? p : `'${String(p).replace(/'/g, "''")}'`;
+          formattedSql = formattedSql.replace('?', String(val));
+        }
+        const output = execSync(`sqlite3 "${dbPath}" "${formattedSql.replace(/"/g, '\\"')}" -json`, {
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+          timeout: 5000,
+        });
+        if (!output || !output.trim()) return [];
+        return JSON.parse(output.trim());
+      } catch {
+        return [];
+      }
+    }
+  }
+
+  public static async probeSqlite(options: {
+    dbPath?: string;
+    startTime?: number;
+    endTime?: number;
+    sessionId?: string;
+  }): Promise<SessionTelemetryRecord | null> {
+    try {
+      const dbPath = options.dbPath || join(homedir(), '.zcode', 'cli', 'db', 'db.sqlite');
+      if (!existsSync(dbPath)) {
+        return null;
+      }
+
+      const whereClauses: string[] = [];
+      const params: (string | number)[] = [];
+
+      if (options.sessionId) {
+        whereClauses.push('session_id = ?');
+        params.push(options.sessionId);
+      }
+      if (typeof options.startTime === 'number' && options.startTime > 0) {
+        whereClauses.push('started_at >= ?');
+        params.push(options.startTime - 30_000);
+      }
+      if (typeof options.endTime === 'number' && options.endTime > 0) {
+        whereClauses.push('started_at <= ?');
+        params.push(options.endTime + 30_000);
+      }
+
+      // 如果未指定任何过滤条件，默认检索近 30 分钟记录
+      if (whereClauses.length === 0) {
+        whereClauses.push('started_at >= ?');
+        params.push(Date.now() - 30 * 60 * 1000);
+      }
+
+      const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+      // 1. 查询 model_usage
+      const modelSql = `
+        SELECT
+          model_id,
+          SUM(input_tokens) AS input_tokens,
+          SUM(output_tokens) AS output_tokens,
+          SUM(reasoning_tokens) AS reasoning_tokens,
+          SUM(cache_read_input_tokens) AS cache_read_input_tokens,
+          SUM(computed_total_tokens) AS computed_total_tokens,
+          SUM(tool_call_count) AS tool_call_count,
+          COUNT(*) AS request_count,
+          MIN(started_at) AS min_started_at,
+          MAX(completed_at) AS max_completed_at
+        FROM model_usage
+        ${whereSql}
+        GROUP BY model_id
+        ORDER BY request_count DESC
+      `;
+
+      const modelRows = await ZCodeTelemetryAdapter.querySqlite(dbPath, modelSql, params);
+      if (!modelRows || modelRows.length === 0) {
+        return null;
+      }
+
+      let inputTokens = 0;
+      let outputTokens = 0;
+      let reasoningTokens = 0;
+      let cachedTokens = 0;
+      let computedTotal = 0;
+      let modelToolCalls = 0;
+      let totalRequests = 0;
+      let minStartedAt: number | null = null;
+      let maxCompletedAt: number | null = null;
+
+      for (const row of modelRows) {
+        inputTokens += Number(row.input_tokens) || 0;
+        outputTokens += Number(row.output_tokens) || 0;
+        reasoningTokens += Number(row.reasoning_tokens) || 0;
+        cachedTokens += Number(row.cache_read_input_tokens) || 0;
+        computedTotal += Number(row.computed_total_tokens) || 0;
+        modelToolCalls += Number(row.tool_call_count) || 0;
+        totalRequests += Number(row.request_count) || 0;
+        const rowMin = Number(row.min_started_at) || 0;
+        const rowMax = Number(row.max_completed_at) || 0;
+        if (rowMin > 0 && (!minStartedAt || rowMin < minStartedAt)) minStartedAt = rowMin;
+        if (rowMax > 0 && (!maxCompletedAt || rowMax > maxCompletedAt)) maxCompletedAt = rowMax;
+      }
+
+      const totalTokens = computedTotal > 0 ? computedTotal : inputTokens + outputTokens;
+      if (totalTokens === 0 && totalRequests === 0) {
+        return null;
+      }
+
+      const model = modelRows[0]?.model_id || 'zcode-model';
+      const durationMs = maxCompletedAt && minStartedAt ? Math.max(0, maxCompletedAt - minStartedAt) : undefined;
+      const costUsd = parseFloat(((inputTokens * 0.000003) + (outputTokens * 0.000015)).toFixed(4));
+
+      // 2. 查询 turn_usage
+      let turnsCount = totalRequests;
+      let errorCount = 0;
+      try {
+        const turnSql = `
+          SELECT
+            COUNT(*) AS turns_count,
+            SUM(tool_call_count) AS tool_call_count,
+            SUM(tool_error_count) AS tool_error_count
+          FROM turn_usage
+          ${whereSql}
+        `;
+        const turnRows = await ZCodeTelemetryAdapter.querySqlite(dbPath, turnSql, params);
+        if (turnRows && turnRows.length > 0 && Number(turnRows[0].turns_count) > 0) {
+          turnsCount = Number(turnRows[0].turns_count);
+          errorCount = Number(turnRows[0].tool_error_count) || 0;
+        }
+      } catch {
+        // ignore turn_usage query failure
+      }
+
+      // 3. 查询 tool_usage
+      const byName: Record<string, number> = {};
+      const toolAttributions: ToolAttribution[] = [];
+      let totalToolCalls = 0;
+
+      try {
+        const toolSql = `
+          SELECT
+            tool_name,
+            COUNT(*) AS count,
+            SUM(CASE WHEN status = 'error' OR (exit_code IS NOT NULL AND exit_code != 0) THEN 1 ELSE 0 END) AS error_count,
+            SUM(output_bytes) AS total_output_bytes,
+            SUM(duration_ms) AS total_duration_ms
+          FROM tool_usage
+          ${whereSql}
+          GROUP BY tool_name
+          ORDER BY count DESC
+        `;
+        const toolRows = await ZCodeTelemetryAdapter.querySqlite(dbPath, toolSql, params);
+        if (toolRows && toolRows.length > 0) {
+          for (const row of toolRows) {
+            const name = String(row.tool_name);
+            const count = Number(row.count) || 0;
+            byName[name] = count;
+            totalToolCalls += count;
+          }
+
+          for (const row of toolRows) {
+            const name = String(row.tool_name);
+            const count = Number(row.count) || 0;
+            const toolErr = Number(row.error_count) || 0;
+            const fraction = totalToolCalls > 0 ? count / totalToolCalls : 0;
+            const toolTotal = Math.round(totalTokens * fraction);
+            const inTok = Math.round(toolTotal * 0.7);
+            const outTok = toolTotal - inTok;
+            const percentage = totalTokens > 0 ? parseFloat(((toolTotal / totalTokens) * 100).toFixed(1)) : 0;
+
+            toolAttributions.push({
+              name,
+              count,
+              inputTokens: inTok,
+              outputTokens: outTok,
+              totalTokens: toolTotal,
+              percentage,
+              errorCount: toolErr,
+            });
+          }
+        }
+      } catch {
+        // ignore tool_usage query failure
+      }
+
+      if (totalToolCalls === 0 && modelToolCalls > 0) {
+        totalToolCalls = modelToolCalls;
+      }
+
+      return {
+        source: 'zcode',
+        sessionId: options.sessionId,
+        model,
+        tokens: {
+          inputTokens,
+          outputTokens,
+          cachedTokens: cachedTokens > 0 ? cachedTokens : undefined,
+          totalTokens,
+          costUsd,
+        },
+        toolCalls: {
+          total: totalToolCalls,
+          byName,
+        },
+        toolAttributions: toolAttributions.length > 0 ? toolAttributions : undefined,
+        toolInefficiencies: [],
+        turnsCount: Math.max(1, turnsCount),
+        errorCount,
+        heavyReadsCount: 0,
+        flappingCount: 0,
+        violations: [],
+        complianceScore: 100,
+        durationMs,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  public static async probeRolloutJsonl(options: {
+    rolloutDir?: string;
+    startTime?: number;
+    endTime?: number;
+    sessionId?: string;
+  }): Promise<SessionTelemetryRecord | null> {
+    try {
+      const rolloutDir = options.rolloutDir || join(homedir(), '.zcode', 'cli', 'rollout');
+      if (!existsSync(rolloutDir)) {
+        return null;
+      }
+
+      const files = await readdir(rolloutDir);
+      const jsonlFiles = files.filter((f) => f.startsWith('model-io-') && f.endsWith('.jsonl'));
+      if (jsonlFiles.length === 0) return null;
+
+      let matchedFile: string | null = null;
+      if (options.sessionId) {
+        matchedFile = jsonlFiles.find((f) => f.includes(options.sessionId!)) || null;
+      }
+
+      if (!matchedFile) {
+        let latestMtime = 0;
+        for (const file of jsonlFiles) {
+          const filePath = join(rolloutDir, file);
+          const s = await stat(filePath);
+          if (s.mtimeMs > latestMtime && (!options.startTime || s.mtimeMs >= options.startTime - 60_000)) {
+            latestMtime = s.mtimeMs;
+            matchedFile = file;
+          }
+        }
+      }
+
+      if (!matchedFile) return null;
+
+      const fullPath = join(rolloutDir, matchedFile);
+      const content = await readFile(fullPath, 'utf-8');
+      const lines = content.split('\n').filter((l) => l.trim());
+      if (lines.length === 0) return null;
+
+      let inputTokens = 0;
+      let outputTokens = 0;
+      let cachedTokens = 0;
+      let totalTokens = 0;
+      let turnsCount = 0;
+      let detectedModel: string | undefined;
+      const byName: Record<string, number> = {};
+      let totalToolCalls = 0;
+      let firstTime = 0;
+      let lastTime = 0;
+
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          const t = entry.startedAt ? new Date(entry.startedAt).getTime() : 0;
+          if (t > 0) {
+            if (!firstTime || t < firstTime) firstTime = t;
+            if (t > lastTime) lastTime = t;
+          }
+
+          if (options.startTime && options.endTime) {
+            if (t > 0 && (t < options.startTime - 30_000 || t > options.endTime + 30_000)) {
+              continue;
+            }
+          }
+
+          turnsCount++;
+          if (entry.model && !detectedModel) detectedModel = entry.model;
+
+          const usage = entry.response?.usage;
+          if (usage) {
+            const inTok = Number(usage.prompt_tokens) || Number(usage.input_tokens) || 0;
+            const outTok = Number(usage.completion_tokens) || Number(usage.output_tokens) || 0;
+            const cacheTok = Number(usage.prompt_tokens_details?.cached_tokens) || Number(usage.cache_read_input_tokens) || 0;
+            const totTok = Number(usage.total_tokens) || (inTok + outTok);
+
+            inputTokens += inTok;
+            outputTokens += outTok;
+            cachedTokens += cacheTok;
+            totalTokens += totTok;
+          }
+
+          const toolCalls = entry.response?.toolCalls;
+          if (Array.isArray(toolCalls)) {
+            for (const tc of toolCalls) {
+              const name = tc.name || tc.function?.name || 'unknown_tool';
+              byName[name] = (byName[name] || 0) + 1;
+              totalToolCalls++;
+            }
+          }
+        } catch {
+          // ignore line
+        }
+      }
+
+      if (totalTokens === 0 && turnsCount === 0) {
+        return null;
+      }
+
+      const durationMs = lastTime && firstTime ? Math.max(0, lastTime - firstTime) : undefined;
+      const costUsd = parseFloat(((inputTokens * 0.000003) + (outputTokens * 0.000015)).toFixed(4));
+
+      return {
+        source: 'zcode',
+        sessionId: options.sessionId,
+        model: detectedModel,
+        tokens: {
+          inputTokens,
+          outputTokens,
+          cachedTokens: cachedTokens > 0 ? cachedTokens : undefined,
+          totalTokens: totalTokens > 0 ? totalTokens : inputTokens + outputTokens,
+          costUsd,
+        },
+        toolCalls: {
+          total: totalToolCalls,
+          byName,
+        },
+        turnsCount: Math.max(1, turnsCount),
+        errorCount: 0,
+        heavyReadsCount: 0,
+        flappingCount: 0,
+        violations: [],
+        complianceScore: 100,
+        durationMs,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  public static async probe(options: TelemetryProbeOptions): Promise<SessionTelemetryRecord | null> {
+    try {
+      const startTime = options.startedAt ? new Date(options.startedAt).getTime() : undefined;
+      const endTime = options.completedAt ? new Date(options.completedAt).getTime() : undefined;
+      const sessionId = options.state?.session_id || options.env?.ZCODE_SESSION_ID;
+      const dbPath = options.zcodeDbPath || options.env?.ZCODE_DB_PATH || (process.env.ZCODE_DB_PATH || undefined);
+      const rolloutDir = options.zcodeRolloutDir || options.env?.ZCODE_ROLLOUT_DIR || (process.env.ZCODE_ROLLOUT_DIR || undefined);
+
+      let record = await ZCodeTelemetryAdapter.probeSqlite({
+        dbPath,
+        startTime,
+        endTime,
+        sessionId,
+      });
+
+      if (!record || record.tokens.totalTokens === 0) {
+        record = await ZCodeTelemetryAdapter.probeRolloutJsonl({
+          rolloutDir,
+          startTime,
+          endTime,
+          sessionId,
+        });
+      }
+
+      if (!record) {
+        return null;
+      }
+
+      const durationMinutes = record.durationMs
+        ? Math.round(record.durationMs / 60000)
+        : options.startedAt && options.completedAt
+          ? Math.max(1, Math.round((new Date(options.completedAt).getTime() - new Date(options.startedAt).getTime()) / 60000))
+          : 5;
+
+      const audit = ComplianceAuditor.evaluate({
+        profile: options.profile,
+        level: options.level,
+        diffStats: options.diffStats,
+        turnsCount: record.turnsCount,
+        errorCount: record.errorCount,
+        heavyReadsCount: record.heavyReadsCount || 0,
+        flappingCount: record.flappingCount || 0,
+        totalTokens: record.tokens.totalTokens,
+        durationMinutes,
+        spec: options.spec,
+        toolCalls: record.toolCalls.byName,
+      });
+
+      record.violations = audit.violations;
+      record.complianceScore = audit.complianceScore;
+
+      return record;
+    } catch {
+      return null;
+    }
+  }
+}
+
+/**
  * 统一遥测探针入口：按优先级调度各适配器并完成流程审计
  */
 export async function resolveAgentTelemetry(
@@ -811,15 +1242,19 @@ export async function resolveAgentTelemetry(
   const envRecord = await EnvTelemetryAdapter.probe(options);
   if (envRecord) return envRecord;
 
-  // 2. 真实 Antigravity / Gemini CLI 会话日志
+  // 2. ZCode 原生 SQLite / Rollout 遥测直连
+  const zcodeRecord = await ZCodeTelemetryAdapter.probe(options);
+  if (zcodeRecord) return zcodeRecord;
+
+  // 3. 真实 Antigravity / Gemini CLI 会话日志
   const antigravityRecord = await AntigravityTelemetryAdapter.probe(options);
   if (antigravityRecord) return antigravityRecord;
 
-  // 3. Fallback 到 DocPath breadcrumb.jsonl
+  // 4. Fallback 到 DocPath breadcrumb.jsonl
   const breadcrumbRecord = await FallbackBreadcrumbAdapter.probe(options);
   if (breadcrumbRecord) return breadcrumbRecord;
 
-  // 4. 默认兜底合规记录
+  // 5. 默认兜底合规记录
   const audit = ComplianceAuditor.evaluate({
     profile: options.profile,
     level: options.level,

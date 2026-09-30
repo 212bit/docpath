@@ -10,6 +10,22 @@ import {
   type MonitorOptions,
 } from '../utils/task-metrics.js';
 
+/**
+ * 格式化 Token 计数，清晰展示百万/千级缩写 (Clean Token Formatter)
+ */
+export function formatTokens(n: number): string {
+  if (!n || n <= 0) return '0';
+  if (n >= 1_000_000) {
+    const val = (n / 1_000_000).toFixed(1);
+    return `${n.toLocaleString()} (~${val}M)`;
+  }
+  if (n >= 1_000) {
+    const val = Math.round((n / 1_000) * 10) / 10;
+    return `${n.toLocaleString()} (~${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}K)`;
+  }
+  return n.toLocaleString();
+}
+
 export async function monitorCommand(options: MonitorOptions): Promise<void> {
   const {
     cwd,
@@ -95,6 +111,10 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
                 total_tokens: activeTask.realUsage?.totalTokens || 0,
                 input_tokens: activeTask.realUsage?.inputTokens || 0,
                 output_tokens: activeTask.realUsage?.outputTokens || 0,
+                cached_tokens: activeTask.realUsage?.cachedTokens || 0,
+                cache_hit_ratio: (activeTask.realUsage?.cachedTokens || 0) > 0
+                  ? `${parseFloat(((activeTask.realUsage!.cachedTokens! / (activeTask.realUsage!.totalTokens + activeTask.realUsage!.cachedTokens!)) * 100).toFixed(1))}%`
+                  : '0%',
                 cost_usd: activeTask.realUsage?.costUsd ?? null,
                 tool_calls_count: activeTask.realUsage?.toolCallsCount || activeTask.sessionRecord?.toolCalls.total || 0,
                 flapping_count: activeTask.sessionRecord?.flappingCount || 0,
@@ -149,6 +169,10 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     if (real && real.totalTokens > 0) {
       const costStr = real.costUsd ? ` (~$${real.costUsd})` : '';
       console.log(`│  实时 Tokens:   ~${real.totalTokens.toLocaleString()} Tokens${costStr} (来源: ${real.source})`.padEnd(58) + '│');
+      if (real.cachedTokens && real.cachedTokens > 0) {
+        const liveHitRatio = parseFloat(((real.cachedTokens / (real.totalTokens + real.cachedTokens)) * 100).toFixed(1));
+        console.log(`│  缓存复用率:    ⚡ ${liveHitRatio}% (已复用缓存 ${formatTokens(real.cachedTokens)} Tokens)`.padEnd(58) + '│');
+      }
     } else {
       console.log(`│  实时 Tokens:   未探测到独立 Agent 遥测 (已降级)`.padEnd(58) + '│');
     }
@@ -228,6 +252,10 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
               progress_percent: `${summary.activeTask.progress.percent}%`,
               compliance_score: summary.activeTask.complianceScore,
               live_tokens: summary.activeTask.realUsage?.totalTokens || null,
+              cached_tokens: summary.activeTask.realUsage?.cachedTokens || 0,
+              cache_hit_ratio: (summary.activeTask.realUsage?.cachedTokens || 0) > 0
+                ? `${parseFloat(((summary.activeTask.realUsage!.cachedTokens! / (summary.activeTask.realUsage!.totalTokens + summary.activeTask.realUsage!.cachedTokens!)) * 100).toFixed(1))}%`
+                : '0%',
             }
           : null,
         compliance: {
@@ -285,7 +313,19 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
           recommended_command: r.recommendedCommand,
           actionable: r.actionable,
         })),
-        real_usage: summary.realUsageSummary || 'no_real_agent_telemetry',
+        real_usage: summary.realUsageSummary
+          ? {
+              tasks_with_real_usage: summary.realUsageSummary.tasksWithRealUsage,
+              total_real_tokens: summary.realUsageSummary.totalRealTokens,
+              total_cached_tokens: summary.realUsageSummary.totalCachedTokens,
+              cached_tokens: summary.realUsageSummary.totalCachedTokens,
+              cache_hit_ratio: `${summary.realUsageSummary.cacheHitRatio}%`,
+              avg_real_tokens_per_task: summary.realUsageSummary.avgRealTokensPerTask,
+              total_real_cost_usd: summary.realUsageSummary.totalRealCostUsd,
+              avg_cost_per_task_usd: summary.realUsageSummary.avgCostPerTaskUsd,
+              overall_roi_tokens_per_line: summary.realUsageSummary.overallRoiTokensPerLine,
+            }
+          : 'no_real_agent_telemetry',
         recent_tasks: summary.recentTasks.map((t) => ({
           task_id: t.taskId,
           title: t.taskTitle,
@@ -315,9 +355,12 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     const stepLabel = at.progress.currentStepTitle ? `${at.progress.currentStep} (${at.progress.currentStepTitle})` : at.progress.currentStep;
     console.log(`│  当前步骤/耗时: ${stepLabel} | 运行 ${at.durationMinutes}m (进度 ${at.progress.percent}%)`.padEnd(58) + '│');
     const tokCount = at.realUsage?.totalTokens ? `~${at.realUsage.totalTokens.toLocaleString()}` : '-';
+    const cacheStr = at.realUsage?.cachedTokens && at.realUsage.cachedTokens > 0
+      ? ` | ⚡ 缓存 ${formatTokens(at.realUsage.cachedTokens)}`
+      : '';
     const tools = at.realUsage?.toolCallsCount || at.sessionRecord?.toolCalls.total || 0;
     const flp = at.sessionRecord?.flappingCount || 0;
-    console.log(`│  实时消耗/工具: ${tokCount} Tokens | ${tools} 工具调用 | ${flp} 翻转`.padEnd(58) + '│');
+    console.log(`│  实时消耗/工具: ${tokCount} Tokens${cacheStr} | ${tools} 工具调用 | ${flp} 翻转`.padEnd(58) + '│');
     const violCount = at.violations.length;
     const violText = violCount === 0 ? '无违规' : `${violCount} 项合规风险`;
     console.log(`│  实时合规状态:  ${scoreIcon} ${at.complianceScore}分 (${violText})`.padEnd(58) + '│');
@@ -352,6 +395,9 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     const totalTokensFormatted = summary.realUsageSummary.totalRealTokens.toLocaleString();
     const costStr = summary.realUsageSummary.totalRealCostUsd > 0 ? ` (~$${summary.realUsageSummary.totalRealCostUsd})` : '';
     console.log(`│  全仓真实会话消耗:  ~${totalTokensFormatted} Tokens${costStr} (均 ${summary.realUsageSummary.avgRealTokensPerTask.toLocaleString()} / 任务)`.padEnd(58) + '│');
+    if ((summary.realUsageSummary.cacheHitRatio || 0) > 0 || (summary.realUsageSummary.totalCachedTokens || 0) > 0) {
+      console.log(`│  缓存复用与命中率:  ⚡ ${summary.realUsageSummary.cacheHitRatio}% (已复用缓存 ${formatTokens(summary.realUsageSummary.totalCachedTokens)} Tokens)`.padEnd(58) + '│');
+    }
     console.log(`│  代码投产 ROI:      ~${summary.realUsageSummary.overallRoiTokensPerLine} Tokens / Diff 行`.padEnd(58) + '│');
   } else {
     console.log(`│  全仓真实会话消耗:  未挂载真实 Agent 遥测 (已降级)`.padEnd(58) + '│');

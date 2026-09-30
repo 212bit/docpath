@@ -7,6 +7,7 @@ import {
   AntigravityTelemetryAdapter,
   EnvTelemetryAdapter,
   FallbackBreadcrumbAdapter,
+  ZCodeTelemetryAdapter,
   ComplianceAuditor,
   resolveAgentTelemetry,
 } from '../dist/utils/agent-telemetry-adapter.js';
@@ -626,6 +627,218 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
       assert.match(editMiss.description, /main\.ts/);
       assert.ok(editMiss.tokensWasted > 0);
       assert.equal(editMiss.evidence?.errorCount, 2);
+    });
+  });
+
+  describe('ZCodeTelemetryAdapter & SQLite Telemetry Direct Connection (FR-1 / AC-1)', () => {
+    it('parses SQLite database model_usage, turn_usage, and tool_usage tables', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'dp-zcode-fixture-'));
+      const dbPath = join(tempDir, 'db.sqlite');
+
+      const { DatabaseSync } = await import('node:sqlite');
+      const db = new DatabaseSync(dbPath);
+
+      db.exec(`
+        CREATE TABLE model_usage (
+          id text primary key,
+          session_id text,
+          model_id text,
+          started_at integer,
+          completed_at integer,
+          input_tokens integer default 0,
+          output_tokens integer default 0,
+          reasoning_tokens integer default 0,
+          cache_read_input_tokens integer default 0,
+          computed_total_tokens integer default 0,
+          tool_call_count integer default 0,
+          status text default 'completed'
+        );
+        CREATE TABLE turn_usage (
+          session_id text,
+          turn_id text,
+          started_at integer,
+          tool_call_count integer default 0,
+          tool_error_count integer default 0
+        );
+        CREATE TABLE tool_usage (
+          id text primary key,
+          session_id text,
+          tool_name text,
+          status text,
+          started_at integer,
+          exit_code integer,
+          output_bytes integer default 0,
+          duration_ms integer default 0
+        );
+      `);
+
+      const tStart = 1790750000000;
+      const tEnd = 1790750050000;
+
+      db.exec(`
+        INSERT INTO model_usage (id, session_id, model_id, started_at, completed_at, input_tokens, output_tokens, reasoning_tokens, cache_read_input_tokens, computed_total_tokens, tool_call_count)
+        VALUES ('m1', 'sess_test_1', 'GLM-5.3-Flash', ${tStart}, ${tEnd}, 50000, 2500, 0, 42000, 52500, 4);
+
+        INSERT INTO turn_usage (session_id, turn_id, started_at, tool_call_count, tool_error_count)
+        VALUES ('sess_test_1', 'turn_1', ${tStart}, 4, 1);
+
+        INSERT INTO tool_usage (id, session_id, tool_name, status, started_at, exit_code, output_bytes, duration_ms)
+        VALUES
+          ('t1', 'sess_test_1', 'Bash', 'completed', ${tStart + 1000}, 0, 1024, 150),
+          ('t2', 'sess_test_1', 'Bash', 'completed', ${tStart + 2000}, 0, 2048, 200),
+          ('t3', 'sess_test_1', 'Edit', 'error', ${tStart + 3000}, 1, 512, 80),
+          ('t4', 'sess_test_1', 'Read', 'completed', ${tStart + 4000}, 0, 4096, 50);
+      `);
+
+      db.close();
+
+      try {
+        const record = await ZCodeTelemetryAdapter.probeSqlite({
+          dbPath,
+          startTime: tStart,
+          endTime: tEnd,
+          sessionId: 'sess_test_1',
+        });
+
+        assert.ok(record, 'Should return a valid SessionTelemetryRecord');
+        assert.equal(record.source, 'zcode');
+        assert.equal(record.model, 'GLM-5.3-Flash');
+        assert.equal(record.tokens.inputTokens, 50000);
+        assert.equal(record.tokens.outputTokens, 2500);
+        assert.equal(record.tokens.cachedTokens, 42000);
+        assert.equal(record.tokens.totalTokens, 52500);
+        assert.ok(record.tokens.costUsd && record.tokens.costUsd > 0);
+        assert.equal(record.turnsCount, 1);
+        assert.equal(record.errorCount, 1);
+        assert.equal(record.toolCalls.total, 4);
+        assert.equal(record.toolCalls.byName['Bash'], 2);
+        assert.equal(record.toolCalls.byName['Edit'], 1);
+        assert.equal(record.toolCalls.byName['Read'], 1);
+
+        assert.ok(Array.isArray(record.toolAttributions));
+        assert.equal(record.toolAttributions.length, 3);
+        const bashAttr = record.toolAttributions.find((t) => t.name === 'Bash');
+        assert.ok(bashAttr);
+        assert.equal(bashAttr.count, 2);
+        assert.equal(bashAttr.errorCount, 0);
+        assert.ok(bashAttr.percentage > 0);
+
+        const editAttr = record.toolAttributions.find((t) => t.name === 'Edit');
+        assert.ok(editAttr);
+        assert.equal(editAttr.count, 1);
+        assert.equal(editAttr.errorCount, 1);
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it('falls back to rollout JSONL when SQLite DB is not available or empty', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'dp-zcode-rollout-'));
+      const rolloutFile = join(tempDir, 'model-io-sess_fallback_1.jsonl');
+
+      const mockIo = [
+        JSON.stringify({
+          type: 'model_io',
+          sessionId: 'sess_fallback_1',
+          startedAt: '2026-09-30T10:00:00.000Z',
+          model: 'GLM-5.3',
+          response: {
+            usage: {
+              prompt_tokens: 15000,
+              completion_tokens: 800,
+              total_tokens: 15800,
+              prompt_tokens_details: { cached_tokens: 12000 },
+            },
+            toolCalls: [{ name: 'Bash' }, { name: 'Read' }],
+          },
+        }),
+      ].join('\n');
+
+      writeFileSync(rolloutFile, mockIo);
+
+      try {
+        const record = await ZCodeTelemetryAdapter.probeRolloutJsonl({
+          rolloutDir: tempDir,
+          sessionId: 'sess_fallback_1',
+        });
+
+        assert.ok(record, 'Should parse rollout JSONL fallback');
+        assert.equal(record.source, 'zcode');
+        assert.equal(record.model, 'GLM-5.3');
+        assert.equal(record.tokens.inputTokens, 15000);
+        assert.equal(record.tokens.outputTokens, 800);
+        assert.equal(record.tokens.cachedTokens, 12000);
+        assert.equal(record.tokens.totalTokens, 15800);
+        assert.equal(record.toolCalls.total, 2);
+        assert.equal(record.toolCalls.byName['Bash'], 1);
+        assert.equal(record.toolCalls.byName['Read'], 1);
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it('resolveAgentTelemetry auto-selects ZCode when ZCode database is present within task time window', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'dp-zcode-resolve-'));
+      const dbPath = join(tempDir, 'db.sqlite');
+
+      const { DatabaseSync } = await import('node:sqlite');
+      const db = new DatabaseSync(dbPath);
+
+      db.exec(`
+        CREATE TABLE model_usage (
+          id text primary key,
+          session_id text,
+          model_id text,
+          started_at integer,
+          completed_at integer,
+          input_tokens integer default 0,
+          output_tokens integer default 0,
+          reasoning_tokens integer default 0,
+          cache_read_input_tokens integer default 0,
+          computed_total_tokens integer default 0,
+          tool_call_count integer default 0
+        );
+        CREATE TABLE turn_usage (
+          session_id text,
+          turn_id text,
+          started_at integer,
+          tool_call_count integer default 0,
+          tool_error_count integer default 0
+        );
+      `);
+
+      const tStart = 1790750000000;
+      const tEnd = 1790750030000;
+
+      db.exec(`
+        INSERT INTO model_usage (id, session_id, model_id, started_at, completed_at, input_tokens, output_tokens, cache_read_input_tokens, computed_total_tokens, tool_call_count)
+        VALUES ('m1', 'sess_task_auto', 'GLM-5.3-Flash', ${tStart}, ${tEnd}, 30000, 1200, 25000, 31200, 2);
+
+        INSERT INTO turn_usage (session_id, turn_id, started_at, tool_call_count, tool_error_count)
+        VALUES ('sess_task_auto', 'turn_1', ${tStart}, 2, 0);
+      `);
+
+      db.close();
+
+      try {
+        const record = await resolveAgentTelemetry({
+          cwd: tempDir,
+          taskId: 'T-ZCODE-AUTO',
+          startedAt: new Date(tStart).toISOString(),
+          completedAt: new Date(tEnd).toISOString(),
+          zcodeDbPath: dbPath,
+          state: { session_id: 'sess_task_auto' },
+        });
+
+        assert.ok(record);
+        assert.equal(record.source, 'zcode');
+        assert.equal(record.model, 'GLM-5.3-Flash');
+        assert.equal(record.tokens.totalTokens, 31200);
+        assert.equal(record.tokens.cachedTokens, 25000);
+        assert.ok(record.complianceScore >= 0 && record.complianceScore <= 100);
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
     });
   });
 });
