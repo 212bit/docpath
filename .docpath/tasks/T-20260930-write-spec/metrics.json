@@ -1,0 +1,33 @@
+{
+  "taskId": "T-20260930-write-spec",
+  "taskTitle": "T-20260930-write-spec - write-spec 前置暴露结构契约并在校验失败时附可复制最小骨架",
+  "backlogId": "R-448",
+  "profile": "standard",
+  "level": 1,
+  "startedAt": "2026-09-30T00:53:15.891Z",
+  "completedAt": "2026-09-30T01:07:35.199Z",
+  "durationMinutes": 14.3,
+  "firstTimePassRate": 0,
+  "totalDiffLines": 198,
+  "filesChanged": 9,
+  "linesAdded": 193,
+  "linesDeleted": 5,
+  "engineering": {
+    "turnCount": 6,
+    "retryCount": 1,
+    "firstTimePassRate": 0,
+    "cycleTimeMinutes": 14.3,
+    "filesChanged": 9,
+    "linesAdded": 193,
+    "linesDeleted": 5,
+    "totalDiffLines": 198,
+    "speedLinesPerMinute": 13.8
+  },
+  "protocol": {
+    "specTokens": 1312,
+    "planTokens": 580,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3692
+  },
+  "realUsage": null
+}

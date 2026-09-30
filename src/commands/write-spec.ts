@@ -17,6 +17,48 @@ import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 import { readStdin } from '../utils/stdin.js';
 import { taskIdFromMarkdown } from '../utils/structured-docs.js';
 
+/**
+ * write-spec 的硬性结构契约（与 doc-parser.validateSpecContent 一一对应）。
+ * 该骨架同时用于 `--help` 的 Examples 段与校验失败时的提示输出，
+ * 保证帮助文本、失败提示、校验规则三者同源，不各自漂移。
+ */
+export const MINIMAL_SPEC_SKELETON = [
+  '# T-20260101-my-task - 任务标题',
+  '',
+  '## 1. 背景与动机',
+  '- 为什么要做这件事',
+  '',
+  '## 2. 需求清单',
+  '',
+  '### 功能需求',
+  '- [ ] FR-1: 功能要点（必须用 `- [ ] ` checkbox 形式）',
+  '',
+  '### 非功能需求',
+  '- [ ] NFR-1: 非功能要点',
+  '',
+  '## 4.1 重大变更门禁',
+  '',
+  '### Decision Brief',
+  '- 当前问题: 待决策的问题',
+  '- 推荐方案: 选中的方案',
+  '- 决策理由: 为什么选它',
+  '- 用户确认: 已确认',
+  '',
+  '## 5. 验收标准',
+  '- [ ] AC-1: 验收要点（必须用 `- [ ] ` checkbox 形式）',
+  '',
+].join('\n');
+
+/** 结构契约要点清单，供 --help 与失败提示复用。 */
+export const SPEC_CONTRACT_RULES = [
+  '必须有 `# 任务标题`（一级标题，缺则判定无标题）',
+  '首行 task_id 须为真实 `# T-<date>-<slug> - 标题` 或 `# R-<id>` 形式（不含尖括号，骨架示例可直接用）',
+  '必须有 `### 功能需求` 章节，且至少一条 `- [ ] FR-N:`',
+  '必须有 `## 5. 验收标准` 章节，且至少一条 `- [ ] AC-N:`',
+  'FR-* / AC-* 必须是 `- [ ] ` checkbox 形式，裸 `- FR-1:` 不识别',
+  '决策简报须置于 `## 4.1 重大变更门禁` 下的 `### Decision Brief`',
+];
+
 interface WriteSpecOptions {
   cwd: string;
   /** spec 内容（YAML/Markdown） */
@@ -70,7 +112,26 @@ async function validateSpecOrExit(cwd: string, docpathDir: string, specContent: 
   for (const issue of validation.issues) {
     console.error(`   - ${formatValidationIssue(issue)}`);
   }
+  printSpecContractHint();
   process.exit(1);
+}
+
+/**
+ * 校验失败时把结构契约与最小骨架一并打印出来。
+ * 目的：让调用方（尤其是 Agent）在同一次调用里就能拿到可复制的修正模板，
+ * 不必靠「写失败 → 猜格式 → 再写」反复试错（R-448）。
+ */
+function printSpecContractHint(): void {
+  console.error('');
+  console.error('   结构契约（缺任一即校验失败）:');
+  for (const rule of SPEC_CONTRACT_RULES) {
+    console.error(`     · ${rule}`);
+  }
+  console.error('');
+  console.error('   最小可过校验骨架（复制后按需填充即可）:');
+  for (const line of MINIMAL_SPEC_SKELETON.split('\n')) {
+    console.error(`   ${line}`);
+  }
 }
 
 function titleFromSpecHeading(specContent: string): string {

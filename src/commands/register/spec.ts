@@ -5,7 +5,7 @@ import { planCommand } from '../plan.js';
 import { refineCommand } from '../refine.js';
 import { writeAnalysisCommand } from '../write-analysis.js';
 import { writePlanCommand } from '../write-plan.js';
-import { writeSpecCommand } from '../write-spec.js';
+import { writeSpecCommand, MINIMAL_SPEC_SKELETON, SPEC_CONTRACT_RULES } from '../write-spec.js';
 import { writeDesignCommand } from '../write-design.js';
 import { warnDeprecatedCommand } from './command-metadata.js';
 
@@ -97,7 +97,7 @@ function registerWriteAnalysisCommand(cli: CAC): void {
 }
 
 function registerWriteSpecCommand(cli: CAC): void {
-  cli.command('write-spec', 'artifact sink：写入当前 Agent 生成的 spec.md')
+  const writeSpec = cli.command('write-spec', 'artifact sink：写入当前 Agent 生成的 spec.md')
     .option('--cwd <path>', '项目目录')
     .option('--content <content>', 'spec 内容（YAML/Markdown）')
     .option('--stdin', '从 stdin 读取内容')
@@ -108,6 +108,15 @@ function registerWriteSpecCommand(cli: CAC): void {
         stdin: options.stdin,
       });
     });
+
+  // 结构契约前置暴露：Agent 不必靠「写失败 → 猜格式 → 再写」试错（R-448）。
+  // 骨架与校验规则同源，均取自 write-spec.ts 导出常量，避免帮助文本与校验逻辑漂移。
+  writeSpec.example('docpath write-spec --stdin < spec.md');
+  writeSpec.example('docpath write-spec --content "$(cat spec.md)"');
+  for (const rule of SPEC_CONTRACT_RULES) {
+    writeSpec.example(`结构契约: ${rule}`);
+  }
+  writeSpec.example('最小可过校验骨架:\n' + MINIMAL_SPEC_SKELETON);
 }
 
 function registerWriteDesignCommand(cli: CAC): void {

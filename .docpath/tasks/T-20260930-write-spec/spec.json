@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-30T00:53:02.988Z",
+    "updated_at": "2026-09-30T00:53:02.988Z",
+    "content_sha256": "3825b5fa4fbcfac914b8bf4f062714b9162d40d019edd893b97ef38dcc656d62"
+  },
+  "task_id": "T-20260930-write-spec",
+  "backlog_id": "R-448",
+  "title": "T-20260930-write-spec - write-spec 前置暴露结构契约并在校验失败时附可复制最小骨架",
+  "generated_at": "2026-09-30T00:53:02.988Z",
+  "scope": {
+    "included": [
+      "src/commands/register/spec.ts 的 write-spec --help 描述",
+      "src/commands/write-spec.ts 的 validateSpecOrExit 失败输出"
+    ],
+    "excluded": [
+      "覆盖写告警与非规范 ADR 位检测（属 R-449，本任务不实现）",
+      "改动 validateSpecContent 本身的校验规则"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "用户已确认走标准生命周期实施 R-448",
+    "decision_brief_markdown": "- 当前问题: agent 拿不到 write-spec 的结构契约，靠猜格式反复试错重写，整份 spec 正文被重复注入上下文\n- 目标: 让契约在 --help 与校验失败输出两处前置可见，agent 一次写对\n- 可选方案:\n  - 方案 A: 只改帮助文本与失败输出，不动校验规则\n  - 方案 B: 同时放宽校验规则，兼容裸 `- FR-1:` 写法\n- 推荐方案: 方案 A\n- 决策理由: 方案 B 会改变既有 spec 的合法性判定属行为变更，且放宽后 FR/AC 无法被 structured-docs 解析进 spec.json 机器真源，反而制造新的静默丢失；方案 A 零行为风险且直击病灶（契约不可见）\n- 用户确认: 用户已确认走标准生命周期实施 R-448"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "`docpath write-spec --help` 输出新增 Examples 段，给出最小可过校验的 spec 骨架；骨架须覆盖全部五条硬性结构契约（`# 任务标题` / `### 功能需求` / `## 5. 验收标准` / `- [ ] FR-N:` / `- [ ] AC-N:`），骨架内 ADR 位使用 `## 4.1 重大变更门禁 > ### Decision Brief` 规范写法",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "结构校验失败时（validateSpecOrExit 分支），除逐条列 issue 外额外打印可直接复制复用的最小骨架模板，使 agent 一次调用即可自行修正",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "成功写入路径的输出保持现状不变，不新增噪音（仅在失败分支与 --help 输出新增内容）",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "骨架内容与 doc-parser.ts 的校验规则保持单一真源，避免帮助文本与校验逻辑漂移",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`docpath write-spec --help` 输出含 Examples 段与最小可过校验 spec 骨架",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "校验失败输出除 issue 列表外附可复制最小骨架",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "成功写入路径输出与现状一致，无新增噪音",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "骨架通过 write-spec 自身校验（骨架直接喂入可成功写入）",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "agent 拿不到 write-spec 的结构契约，靠猜格式反复试错重写，整份 spec 正文被重复注入上下文",
+    "options": [
+      "- 方案 A: 只改帮助文本与失败输出，不动校验规则"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 B 会改变既有 spec 的合法性判定属行为变更，且放宽后 FR/AC 无法被 structured-docs 解析进 spec.json 机器真源，反而制造新的静默丢失；方案 A 零行为风险且直击病灶（契约不可见）"
+  }
+}

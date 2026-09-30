@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-write-spec","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 `docpath write-spec --help` 输出新增 Examples 段，给出最小可过校验的 spec 骨架；骨架须覆盖全部五条硬性结构契约（`# 任务标题` / `### 功能需求` / `## 5. 验收标准` / `- [ ] FR-N:` / `- [ ] AC-N:`），骨架内 ADR 位使用 `## 4.1 重大变更门禁 > ### Decision Brief` 规范写法","timestamp":"2026-09-30T00:53:15.891Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-write-spec","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-30T00:57:28.223Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-write-spec","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-09-30T00:59:10.876Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-write-spec","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-09-30T01:05:45.068Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-write-spec","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-09-30T01:07:33.556Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-write-spec","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-09-30T01:07:35.194Z"}

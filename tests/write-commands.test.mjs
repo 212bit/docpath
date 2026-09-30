@@ -1054,4 +1054,75 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  // R-448：write-spec 前置暴露结构契约。帮助文本与校验规则同源，
+  // 骨架必须是可直接喂回并成功落盘的真实内容（而非含尖括号的占位符）。
+  describe('write-spec 结构契约前置暴露 (R-448)', () => {
+    const skeletonFromHelp = () => {
+      const cwd = mkWorkspace();
+      const help = run('write-spec --help', cwd);
+      rmSync(cwd, { recursive: true, force: true });
+      const lines = help.split('\n');
+      const start = lines.findIndex((line) => line.startsWith('最小可过校验骨架:'));
+      assert.ok(start >= 0, 'help 应含最小可过校验骨架段');
+      return lines.slice(start + 1).join('\n').trim();
+    };
+
+    it('AC-1: --help 输出含 Examples 段与结构契约要点', () => {
+      const cwd = mkWorkspace();
+      const help = run('write-spec --help', cwd);
+      assert.match(help, /Examples:/);
+      assert.match(help, /FR-\* \/ AC-\* 必须是/);
+      assert.match(help, /Decision Brief/);
+      assert.match(help, /最小可过校验骨架/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+
+    it('AC-2: 校验失败时附结构契约与可复制骨架', () => {
+      const cwd = mkWorkspace();
+      const bad = ['# 缺验收标准与 checkbox', '', '### 功能需求', '- FR-1: 裸写法', ''].join('\n');
+      const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, bad);
+      assert.equal(result.code, 1);
+      assert.match(result.out, /结构契约（缺任一即校验失败）/);
+      assert.match(result.out, /最小可过校验骨架（复制后按需填充即可）/);
+      assert.match(result.out, /- \[ \] FR-1:/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+
+    it('AC-4: help 抽取的骨架原样喂回可成功落盘并解析出 FR/AC', () => {
+      const cwd = mkWorkspace({ phase: 'idle', taskId: '' });
+      const skeleton = skeletonFromHelp();
+      // 骨架首行须是真实 task_id（不含尖括号），否则 taskIdFromMarkdown 解析失败。
+      assert.doesNotMatch(skeleton.split('\n')[0], /[<>]/);
+      const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, skeleton);
+      assert.equal(result.code, 0, result.out);
+      const specJson = JSON.parse(
+        readFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.json'), 'utf-8'),
+      );
+      assert.ok(specJson.functional_requirements.some((item) => item.id === 'FR-1'));
+      assert.ok(specJson.acceptance_criteria.some((item) => item.id === 'AC-1'));
+      assert.ok(specJson.major_change_gate.decision_brief_markdown.length > 0);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+
+    it('AC-3: 成功写入路径不新增契约噪音', () => {
+      const cwd = mkWorkspace();
+      const good = [
+        '# T-WRITE - Write Commands',
+        '',
+        '## 2. 需求清单',
+        '### 功能需求',
+        '- [ ] FR-1: ok',
+        '',
+        '## 5. 验收标准',
+        '- [ ] AC-1: ok',
+        '',
+      ].join('\n');
+      const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, good);
+      assert.equal(result.code, 0);
+      assert.doesNotMatch(result.out, /结构契约（缺任一即校验失败）/);
+      assert.doesNotMatch(result.out, /最小可过校验骨架/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+  });
+
 });
