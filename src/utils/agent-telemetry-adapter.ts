@@ -656,3 +656,7 @@ export async function resolveAgentTelemetry(
     complianceScore: audit.complianceScore,
   };
 }
+
+export type { ActiveTaskMetrics, ActiveTaskStepProgress } from './task-metrics.js';
+export { probeActiveTaskMetrics } from './task-metrics.js';
+

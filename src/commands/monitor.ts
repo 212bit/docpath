@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs';
 import { resolveDocpathDir } from '../utils/file.js';
 import {
   aggregateMonitorMetrics,
+  probeActiveTaskMetrics,
   type MonitorOptions,
 } from '../utils/task-metrics.js';
 
@@ -18,6 +19,7 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     strict = false,
     ci = false,
     threshold = 70,
+    current = false,
   } = options;
 
   const docpathDir = await resolveDocpathDir(cwd);
@@ -25,6 +27,131 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
   if (!existsSync(docpathDir)) {
     console.error('❌  未找到 .docpath/ 目录。请先运行 `docpath init`');
     process.exit(1);
+  }
+
+  // 1. 若指定 --current，仅探查并输出当前在途活跃任务的实时遥测
+  if (current) {
+    const activeTask = await probeActiveTaskMetrics(cwd);
+
+    if (json) {
+      if (!activeTask) {
+        console.log(JSON.stringify({ active: false, activeTask: null, message: '当前无进行中的活跃任务' }, null, 2));
+      } else {
+        console.log(JSON.stringify({ active: true, activeTask }, null, 2));
+      }
+      return;
+    }
+
+    if (agent) {
+      const { stringify } = await import('yaml');
+      if (!activeTask) {
+        console.log(
+          stringify({
+            agent_view: 'active_task_telemetry',
+            status: 'idle',
+            active_task: null,
+            message: '当前无进行中的活跃任务',
+          })
+        );
+      } else {
+        console.log(
+          stringify({
+            agent_view: 'active_task_telemetry',
+            status: 'active',
+            active_task: {
+              task_id: activeTask.taskId,
+              title: activeTask.taskTitle,
+              backlog_id: activeTask.backlogId,
+              profile: activeTask.profile,
+              level: activeTask.level,
+              phase: activeTask.phase,
+              started_at: activeTask.startedAt,
+              duration_minutes: activeTask.durationMinutes,
+              progress: {
+                total_steps: activeTask.progress.totalSteps,
+                passed_steps: activeTask.progress.passedSteps,
+                current_step: activeTask.progress.currentStep,
+                current_step_title: activeTask.progress.currentStepTitle || null,
+                blocked_steps: activeTask.progress.blockedSteps,
+                percent: `${activeTask.progress.percent}%`,
+              },
+              compliance: {
+                score: activeTask.complianceScore,
+                violations: activeTask.violations.map((v) => ({
+                  rule_id: v.ruleId,
+                  rule_name: v.ruleName,
+                  severity: v.severity,
+                  description: v.description,
+                })),
+              },
+              diff: {
+                files_changed: activeTask.filesChanged,
+                lines_added: activeTask.linesAdded,
+                lines_deleted: activeTask.linesDeleted,
+                total_diff_lines: activeTask.totalDiffLines,
+              },
+              live_telemetry: {
+                source: activeTask.realUsage?.source || 'unknown',
+                total_tokens: activeTask.realUsage?.totalTokens || 0,
+                input_tokens: activeTask.realUsage?.inputTokens || 0,
+                output_tokens: activeTask.realUsage?.outputTokens || 0,
+                cost_usd: activeTask.realUsage?.costUsd ?? null,
+                tool_calls_count: activeTask.realUsage?.toolCallsCount || activeTask.sessionRecord?.toolCalls.total || 0,
+                flapping_count: activeTask.sessionRecord?.flappingCount || 0,
+                heavy_reads_count: activeTask.sessionRecord?.heavyReadsCount || 0,
+                turns_count: activeTask.sessionRecord?.turnsCount || 1,
+                model: activeTask.realUsage?.model || activeTask.sessionRecord?.model || 'unknown',
+              },
+            },
+          })
+        );
+      }
+      return;
+    }
+
+    console.log('\n🚀  DocPath 活跃任务实时遥测 (In-flight Telemetry)\n');
+    if (!activeTask) {
+      console.log('ℹ️   当前无进行中的活跃任务。\n');
+      return;
+    }
+
+    const scoreIcon = activeTask.complianceScore >= 85 ? '🟢' : activeTask.complianceScore >= 70 ? '🟡' : '🔴';
+    console.log('┌ 📋 任务基本信息 (Active Task Info) ────────────────────────┐');
+    console.log(`│  任务标识:      [${activeTask.taskId}] ${activeTask.taskTitle}`.padEnd(58) + '│');
+    const backlogStr = activeTask.backlogId ? ` (需求: ${activeTask.backlogId})` : '';
+    const profileStr = activeTask.profile === 'quick' ? '⚡ quick' : `📦 standard (L${activeTask.level})`;
+    console.log(`│  任务档位:      ${profileStr}${backlogStr}`.padEnd(58) + '│');
+    console.log(`│  运行阶段:      ${activeTask.phase} (已运行: ${activeTask.durationMinutes} 分钟)`.padEnd(58) + '│');
+    const stepInfo = activeTask.progress.currentStepTitle
+      ? `${activeTask.progress.currentStep} (${activeTask.progress.currentStepTitle})`
+      : activeTask.progress.currentStep;
+    console.log(`│  步骤进度:      ${stepInfo} | ${activeTask.progress.passedSteps}/${activeTask.progress.totalSteps} 步 (${activeTask.progress.percent}%)`.padEnd(58) + '│');
+    console.log(`│  代码变更:      +${activeTask.linesAdded} / -${activeTask.linesDeleted} 行 (${activeTask.filesChanged} 个文件, 共 ${activeTask.totalDiffLines} 行)`.padEnd(58) + '│');
+    console.log('└───────────────────────────────────────────────────────────┘');
+
+    console.log('┌ ⚡ 实时会话与合规状态 (In-flight Session & Compliance) ────┐');
+    console.log(`│  实时合规评分:  ${scoreIcon} ${activeTask.complianceScore} / 100分`.padEnd(58) + '│');
+    const real = activeTask.realUsage;
+    if (real && real.totalTokens > 0) {
+      const costStr = real.costUsd ? ` (~$${real.costUsd})` : '';
+      console.log(`│  实时 Tokens:   ~${real.totalTokens.toLocaleString()} Tokens${costStr} (来源: ${real.source})`.padEnd(58) + '│');
+    } else {
+      console.log(`│  实时 Tokens:   未探测到独立 Agent 遥测 (已降级)`.padEnd(58) + '│');
+    }
+    const toolCalls = real?.toolCallsCount || activeTask.sessionRecord?.toolCalls.total || 0;
+    const flapping = activeTask.sessionRecord?.flappingCount || 0;
+    const heavyReads = activeTask.sessionRecord?.heavyReadsCount || 0;
+    console.log(`│  工具与异常:    ${toolCalls} 次调用 | ${flapping} 次翻转死循环 | ${heavyReads} 次大文件扫描`.padEnd(58) + '│');
+    console.log('└───────────────────────────────────────────────────────────┘\n');
+
+    if (activeTask.violations.length > 0) {
+      console.log('⚠️  在途合规风险警告 (In-flight Violations):');
+      for (const v of activeTask.violations) {
+        console.log(`  - [${v.ruleId}] ${v.ruleName} (${v.severity.toUpperCase()}): ${v.description}`);
+      }
+      console.log('');
+    }
+    return;
   }
 
   const summary = await aggregateMonitorMetrics(cwd, limit);
@@ -50,6 +177,17 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
         agent_view: 'monitor_health_telemetry',
         health_index: summary.healthIndex,
         gate_status: isGatePassed ? 'pass' : 'fail',
+        active_task: summary.activeTask
+          ? {
+              task_id: summary.activeTask.taskId,
+              title: summary.activeTask.taskTitle,
+              profile: summary.activeTask.profile,
+              current_step: summary.activeTask.progress.currentStep,
+              progress_percent: `${summary.activeTask.progress.percent}%`,
+              compliance_score: summary.activeTask.complianceScore,
+              live_tokens: summary.activeTask.realUsage?.totalTokens || null,
+            }
+          : null,
         compliance: {
           avg_score: summary.compliance.avgComplianceScore,
           total_violations: summary.compliance.totalViolations,
@@ -83,6 +221,14 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
           spike_ratio: `${s.spikeRatio}x`,
           reason: s.reason,
         })),
+        remediations: (summary.remediations || []).map((r) => ({
+          id: r.id,
+          severity: r.severity,
+          title: r.title,
+          reason: r.reason,
+          recommended_command: r.recommendedCommand,
+          actionable: r.actionable,
+        })),
         real_usage: summary.realUsageSummary || 'no_real_agent_telemetry',
         recent_tasks: summary.recentTasks.map((t) => ({
           task_id: t.taskId,
@@ -104,6 +250,23 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
 
   // 3. 人类交互视图 (Human-readable Dashboard)
   console.log('\n📈  DocPath 智能监控大盘 (Health & Token Telemetry)\n');
+
+  if (summary.activeTask) {
+    const at = summary.activeTask;
+    const scoreIcon = at.complianceScore >= 85 ? '🟢' : at.complianceScore >= 70 ? '🟡' : '🔴';
+    console.log('┌ 🚀 活跃任务实时遥测 (In-flight Active Task) ───────────────┐');
+    console.log(`│  进行中任务:    [${at.taskId}] ${at.taskTitle}`.padEnd(58) + '│');
+    const stepLabel = at.progress.currentStepTitle ? `${at.progress.currentStep} (${at.progress.currentStepTitle})` : at.progress.currentStep;
+    console.log(`│  当前步骤/耗时: ${stepLabel} | 运行 ${at.durationMinutes}m (进度 ${at.progress.percent}%)`.padEnd(58) + '│');
+    const tokCount = at.realUsage?.totalTokens ? `~${at.realUsage.totalTokens.toLocaleString()}` : '-';
+    const tools = at.realUsage?.toolCallsCount || at.sessionRecord?.toolCalls.total || 0;
+    const flp = at.sessionRecord?.flappingCount || 0;
+    console.log(`│  实时消耗/工具: ${tokCount} Tokens | ${tools} 工具调用 | ${flp} 翻转`.padEnd(58) + '│');
+    const violCount = at.violations.length;
+    const violText = violCount === 0 ? '无违规' : `${violCount} 项合规风险`;
+    console.log(`│  实时合规状态:  ${scoreIcon} ${at.complianceScore}分 (${violText})`.padEnd(58) + '│');
+    console.log('└───────────────────────────────────────────────────────────┘\n');
+  }
 
   if (summary.totalTasks === 0) {
     console.log('ℹ️   暂无历史任务度量数据。当任务执行 `docpath step-pass --commit` 或 `docpath done` 收口时将自动采集。\n');
@@ -147,6 +310,17 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     console.log('🚨  Token 异常突增任务:');
     for (const spike of summary.spikes) {
       console.log(`  - 任务 [${spike.taskId}] "${spike.taskTitle}": 消耗 ~${spike.realTokens.toLocaleString()} Tokens (基线 ~${spike.baselineTokens.toLocaleString()}, 突增 ${spike.spikeRatio}x)`);
+    }
+    console.log('');
+  }
+
+  if (summary.remediations && summary.remediations.length > 0) {
+    console.log('💡  智能治理与自愈建议 (Actionable Recommendations):');
+    for (const rem of summary.remediations) {
+      const sevIcon = rem.severity === 'critical' ? '🔴' : rem.severity === 'high' ? '🟠' : rem.severity === 'medium' ? '🟡' : '🔵';
+      console.log(`  - [${rem.id}] ${sevIcon} ${rem.title} (${rem.severity.toUpperCase()})`);
+      console.log(`    原因: ${rem.reason}`);
+      console.log(`    建议: \`${rem.recommendedCommand}\``);
     }
     console.log('');
   }

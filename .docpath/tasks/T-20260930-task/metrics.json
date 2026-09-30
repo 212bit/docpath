@@ -1,0 +1,108 @@
+{
+  "taskId": "T-20260930-task",
+  "taskTitle": "T-20260930-task - 活跃任务实时会话探针与监控智能治理自愈引导体系",
+  "backlogId": "R-451",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-30T04:49:42.776Z",
+  "completedAt": "2026-09-30T04:57:06.611Z",
+  "durationMinutes": 7.4,
+  "firstTimePassRate": 100,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 10, 消耗: 6531 Tokens, 时长: 157 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 10,
+        "totalTokens": 6531,
+        "durationMinutes": 157
+      }
+    }
+  ],
+  "totalDiffLines": 2668,
+  "filesChanged": 18,
+  "linesAdded": 2545,
+  "linesDeleted": 123,
+  "engineering": {
+    "turnCount": 8,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 7.4,
+    "filesChanged": 18,
+    "linesAdded": 2545,
+    "linesDeleted": 123,
+    "totalDiffLines": 2668,
+    "speedLinesPerMinute": 360.5
+  },
+  "protocol": {
+    "specTokens": 1158,
+    "planTokens": 576,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3534
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 4572,
+    "outputTokens": 1959,
+    "totalTokens": 6531,
+    "costUsd": 0.0431,
+    "toolCallsCount": 6,
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 10, 消耗: 6531 Tokens, 时长: 157 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 10,
+          "totalTokens": 6531,
+          "durationMinutes": 157
+        }
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 4572,
+      "outputTokens": 1959,
+      "totalTokens": 6531,
+      "costUsd": 0.0431
+    },
+    "toolCalls": {
+      "total": 6,
+      "byName": {
+        "run_command": 4,
+        "invoke_subagent": 2
+      },
+      "errorCount": 0
+    },
+    "turnsCount": 10,
+    "errorCount": 0,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 10, 消耗: 6531 Tokens, 时长: 157 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 10,
+          "totalTokens": 6531,
+          "durationMinutes": 157
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 9404000
+  }
+}

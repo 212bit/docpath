@@ -1,0 +1,8 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-task","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 活跃任务实时会话探针","timestamp":"2026-09-30T04:49:42.776Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-task","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-09-30T04:52:55.771Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-task","step":"S2","status":"in_progress","context":"go --accept-dirty: S1 in-flight active task telemetry probe done","timestamp":"2026-09-30T04:52:56.010Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-task","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 监控智能治理自愈引导体系","timestamp":"2026-09-30T04:52:56.015Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-task","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-09-30T04:55:24.801Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-task","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-09-30T04:57:04.073Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-task","step":"review","status":"done","context":"代码审查: 0 错误, 6 警告, 0 提示","timestamp":"2026-09-30T04:57:05.197Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20260930-task","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-09-30T04:57:06.595Z"}

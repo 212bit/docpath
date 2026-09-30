@@ -210,15 +210,17 @@ function registerBudgetCommand(cli: CAC): void {
 function registerMonitorCommand(cli: CAC): void {
   cli.command('monitor', '统一流程合规与 Token 消耗漂移监控看板及 CI 门禁')
     .option('--cwd <path>', '项目目录')
+    .option('--current', '仅探查并输出当前活跃任务的实时会话遥测数据')
     .option('--limit <n>', '展示最近 N 个任务 (默认 10)')
     .option('--agent', '输出 Agent 可读 YAML 监控状态')
     .option('--json', '输出 JSON 格式监控数据')
     .option('--strict', '严格模式：若存在严重违规或健康分低于阈值则返回非零退出码')
     .option('--ci', 'CI 模式：同 --strict 门禁检测')
     .option('--threshold <n>', '健康分及格阈值 (默认 70)')
-    .action(async (options: { cwd?: string; limit?: string | number; agent?: boolean; json?: boolean; strict?: boolean; ci?: boolean; threshold?: string | number }) => {
+    .action(async (options: { cwd?: string; current?: boolean; limit?: string | number; agent?: boolean; json?: boolean; strict?: boolean; ci?: boolean; threshold?: string | number }) => {
       await monitorCommand({
         cwd: options.cwd || process.cwd(),
+        current: !!options.current,
         limit: typeof options.limit === 'string' ? parseInt(options.limit, 10) : options.limit,
         agent: !!options.agent,
         json: !!options.json,

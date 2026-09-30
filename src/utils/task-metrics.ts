@@ -112,6 +112,36 @@ export interface TaskSpikeAlert {
   reason: string;
 }
 
+export interface ActiveTaskStepProgress {
+  totalSteps: number;
+  passedSteps: number;
+  blockedSteps: number;
+  currentStep: string;
+  currentStepTitle?: string;
+  percent: number;
+}
+
+export interface ActiveTaskMetrics {
+  taskId: string;
+  taskTitle: string;
+  backlogId: string | null;
+  profile: 'quick' | 'standard';
+  level: number;
+  phase: string;
+  startedAt: string;
+  durationMinutes: number;
+  durationSeconds: number;
+  progress: ActiveTaskStepProgress;
+  complianceScore: number;
+  violations: ComplianceViolation[];
+  totalDiffLines: number;
+  filesChanged: number;
+  linesAdded: number;
+  linesDeleted: number;
+  realUsage: RealAgentUsage | null;
+  sessionRecord?: SessionTelemetryRecord | null;
+}
+
 export interface ComplianceSummary {
   avgComplianceScore: number;
   totalViolations: number;
@@ -119,6 +149,15 @@ export interface ComplianceSummary {
   violationsBySeverity: Record<ComplianceSeverity, number>;
   criticalViolationsCount: number;
   unhealthyTasksCount: number;
+}
+
+export interface RemediationRecommendation {
+  id: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  reason: string;
+  recommendedCommand: string;
+  actionable: boolean;
 }
 
 export interface MonitorSummary {
@@ -131,6 +170,7 @@ export interface MonitorSummary {
     overallProtocolInflationRate: number;
   };
   spikes: TaskSpikeAlert[];
+  remediations: RemediationRecommendation[];
   realUsageSummary: {
     tasksWithRealUsage: number;
     totalRealTokens: number;
@@ -139,6 +179,7 @@ export interface MonitorSummary {
     avgCostPerTaskUsd: number;
     overallRoiTokensPerLine: number;
   } | null;
+  activeTask?: ActiveTaskMetrics | null;
   recentTasks: TaskMetrics[];
 }
 
@@ -157,6 +198,7 @@ export interface MonitorOptions {
   strict?: boolean;
   ci?: boolean;
   threshold?: number;
+  current?: boolean;
 }
 
 /**
@@ -746,6 +788,321 @@ export async function aggregateTaskMetrics(
 }
 
 /**
+ * 实时探测当前正在执行的活跃任务遥测数据 (In-flight Active Task Telemetry Probe)
+ */
+export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMetrics | null> {
+  try {
+    const docpathDir = await resolveDocpathDir(cwd);
+    const statePath = join(docpathDir, 'workspace', 'state.json');
+
+    if (!existsSync(statePath)) {
+      return null;
+    }
+
+    let parsedState: Record<string, any> | undefined;
+    try {
+      parsedState = JSON.parse(await readFile(statePath, 'utf-8'));
+    } catch {
+      return null;
+    }
+
+    const taskId = parsedState?.task_id?.trim();
+    if (!taskId || taskId === 'idle') {
+      return null;
+    }
+
+    const profile: 'quick' | 'standard' = parsedState?.workflow_profile === 'quick' ? 'quick' : 'standard';
+    const level = typeof parsedState?.level === 'number' ? parsedState.level : 2;
+    let taskTitle = parsedState?.task_title || taskId;
+    let backlogId: string | null = parsedState?.backlog_id || null;
+    const phase = parsedState?.phase || 'execution';
+    let startedAt = parsedState?.started_at || new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+    const taskDir = existsSync(join(docpathDir, 'tasks', taskId))
+      ? join(docpathDir, 'tasks', taskId)
+      : existsSync(join(docpathDir, 'tasks', 'current'))
+        ? join(docpathDir, 'tasks', 'current')
+        : join(docpathDir, 'tasks', taskId);
+
+    let parsedSpec: Record<string, any> | undefined;
+    let parsedPlan: Record<string, any> | undefined;
+
+    // 1. 读取 spec.json
+    const specJsonPath = existsSync(join(taskDir, 'spec.json'))
+      ? join(taskDir, 'spec.json')
+      : join(docpathDir, 'tasks', 'current', 'spec.json');
+
+    if (existsSync(specJsonPath)) {
+      try {
+        parsedSpec = JSON.parse(await readFile(specJsonPath, 'utf-8'));
+        if (parsedSpec?.title) taskTitle = parsedSpec.title;
+        if (parsedSpec?.backlog_id) backlogId = parsedSpec.backlog_id;
+      } catch {
+        // 容错
+      }
+    }
+
+    // 2. 读取 plan.json 并计算步骤进度
+    let totalSteps = 1;
+    let passedSteps = 0;
+    let currentStep = parsedState?.current_step || 'S1';
+    let currentStepTitle: string | undefined;
+
+    const planJsonPath = existsSync(join(taskDir, 'plan.json'))
+      ? join(taskDir, 'plan.json')
+      : join(docpathDir, 'tasks', 'current', 'plan.json');
+
+    if (existsSync(planJsonPath)) {
+      try {
+        parsedPlan = JSON.parse(await readFile(planJsonPath, 'utf-8'));
+        if (Array.isArray(parsedPlan?.steps) && parsedPlan.steps.length > 0) {
+          totalSteps = parsedPlan.steps.length;
+          passedSteps = parsedPlan.steps.filter((s: { status?: string }) => s.status === 'done' || s.status === 'passed').length;
+          const activeStep = parsedPlan.steps.find((s: { status?: string }) => s.status === 'in_progress' || s.status === 'active' || s.status === 'current' || s.status === 'blocked')
+            || parsedPlan.steps.find((s: { status?: string }) => s.status !== 'done' && s.status !== 'passed')
+            || parsedPlan.steps[0];
+          if (activeStep) {
+            currentStep = activeStep.id || activeStep.step || currentStep;
+            currentStepTitle = activeStep.title || activeStep.name;
+          }
+        }
+      } catch {
+        // 容错
+      }
+    }
+
+    // 3. 读取 breadcrumb.jsonl
+    let blockedSteps = 0;
+    const breadcrumbCandidates = [
+      join(taskDir, 'breadcrumb.jsonl'),
+      join(docpathDir, 'tasks', 'current', 'breadcrumb.jsonl'),
+      join(docpathDir, 'workspace', 'breadcrumb.jsonl'),
+    ];
+
+    for (const bp of breadcrumbCandidates) {
+      if (existsSync(bp)) {
+        try {
+          const content = await readFile(bp, 'utf-8');
+          const lines = content.split('\n').filter((l) => l.trim());
+          if (lines.length > 0) {
+            const first = JSON.parse(lines[0]);
+            if (first.timestamp && !parsedState?.started_at) {
+              startedAt = first.timestamp;
+            }
+            for (const line of lines) {
+              const entry = JSON.parse(line);
+              if (entry.status === 'blocked' || entry.gate_verdict === 'fail') {
+                blockedSteps++;
+              }
+            }
+          }
+          break;
+        } catch {
+          // 容错
+        }
+      }
+    }
+
+    // 4. 计算实时运行时长
+    const now = new Date();
+    const startTime = new Date(startedAt).getTime();
+    const endTime = now.getTime();
+    const durationSeconds = Math.max(0, Math.round((endTime - startTime) / 1000));
+    const durationMinutes = parseFloat((durationSeconds / 60).toFixed(1));
+
+    // 5. Git Diff 统计
+    const diff = getTaskDiffStats(cwd);
+
+    // 6. 探测实时 Agent 遥测与合规违规审计
+    const sessionRecord = await resolveAgentTelemetry({
+      cwd,
+      taskId,
+      startedAt,
+      completedAt: now.toISOString(),
+      profile,
+      level,
+      diffStats: diff,
+      spec: parsedSpec,
+      plan: parsedPlan,
+      state: parsedState,
+    });
+
+    const realUsage: RealAgentUsage | null =
+      sessionRecord && (sessionRecord.tokens.totalTokens > 0 || sessionRecord.source !== 'unknown')
+        ? {
+            source: sessionRecord.source,
+            inputTokens: sessionRecord.tokens.inputTokens,
+            outputTokens: sessionRecord.tokens.outputTokens,
+            cachedTokens: sessionRecord.tokens.cachedTokens,
+            totalTokens: sessionRecord.tokens.totalTokens,
+            costUsd: sessionRecord.tokens.costUsd,
+            toolCallsCount: sessionRecord.toolCalls.total,
+            model: sessionRecord.model,
+            complianceScore: sessionRecord.complianceScore,
+            violations: sessionRecord.violations,
+          }
+        : null;
+
+    const complianceScore = sessionRecord ? sessionRecord.complianceScore : 100;
+    const violations = sessionRecord ? sessionRecord.violations : [];
+
+    const percent = totalSteps > 0 ? Math.round((passedSteps / totalSteps) * 100) : 0;
+
+    return {
+      taskId,
+      taskTitle,
+      backlogId,
+      profile,
+      level,
+      phase,
+      startedAt,
+      durationMinutes,
+      durationSeconds,
+      progress: {
+        totalSteps,
+        passedSteps,
+        blockedSteps,
+        currentStep,
+        currentStepTitle,
+        percent,
+      },
+      complianceScore,
+      violations,
+      totalDiffLines: diff.totalDiffLines,
+      filesChanged: diff.filesChanged,
+      linesAdded: diff.linesAdded,
+      linesDeleted: diff.linesDeleted,
+      realUsage,
+      sessionRecord,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 生成流程合规与 Token 消耗治理的自愈与改进建议 (Actionable Remediation Engine)
+ */
+export function generateRemediations(summary: {
+  compliance: ComplianceSummary;
+  drift: {
+    quick: TokenDriftMetrics;
+    standard: TokenDriftMetrics;
+    overallProtocolInflationRate: number;
+  };
+  spikes: TaskSpikeAlert[];
+  activeTask?: ActiveTaskMetrics | null;
+}): RemediationRecommendation[] {
+  const remediations: RemediationRecommendation[] = [];
+
+  const violationsByRule = { ...(summary.compliance?.violationsByRule || {}) };
+  // 纳入活跃任务的即时违规
+  if (summary.activeTask?.violations) {
+    for (const v of summary.activeTask.violations) {
+      violationsByRule[v.ruleId] = (violationsByRule[v.ruleId] || 0) + 1;
+    }
+  }
+
+  // 1. CR-01: Quick 越级/非法修改红线
+  if ((violationsByRule['CR-01'] || 0) > 0) {
+    const count = violationsByRule['CR-01'];
+    remediations.push({
+      id: 'REM-CR01',
+      severity: 'critical',
+      title: 'Upgrade Quick task or promote to Standard tier',
+      reason: `Found ${count} CR-01 (Quick Tiering Violation) occurrence(s). Quick profile is strictly for diff < 50 lines and localized fixes without touching scheduler or core engine.`,
+      recommendedCommand: 'docpath quick upgrade',
+      actionable: true,
+    });
+  }
+
+  // 2. CR-02: 主会话长文本大文件直接读取
+  if ((violationsByRule['CR-02'] || 0) > 0) {
+    const count = violationsByRule['CR-02'];
+    remediations.push({
+      id: 'REM-CR02',
+      severity: 'high',
+      title: 'Delegate heavy file reading to subagents',
+      reason: `Found ${count} CR-02 (Heavy Reads in Main Session) occurrence(s). Reading large files in the main conversation causes quadratic token context bloat.`,
+      recommendedCommand: 'invoke_subagent',
+      actionable: true,
+    });
+  }
+
+  // 3. CR-03: 工具翻转与死循环
+  if ((violationsByRule['CR-03'] || 0) > 0) {
+    const count = violationsByRule['CR-03'];
+    remediations.push({
+      id: 'REM-CR03',
+      severity: 'high',
+      title: 'Break tool flapping loops with targeted single-test execution',
+      reason: `Found ${count} CR-03 (Flapping Loops) occurrence(s). Avoid repeated full test suites during debugging; run targeted single tests instead.`,
+      recommendedCommand: 'node --test <single-test-path>',
+      actionable: true,
+    });
+  }
+
+  // 4. CR-04: 跨任务不轮转长会话
+  if ((violationsByRule['CR-04'] || 0) > 0) {
+    const count = violationsByRule['CR-04'];
+    remediations.push({
+      id: 'REM-CR04',
+      severity: 'high',
+      title: 'Rotate long-running agent sessions',
+      reason: `Found ${count} CR-04 (Unrotated Session) occurrence(s). Long multi-turn sessions degrade reasoning and inflate token consumption. End current session and start fresh.`,
+      recommendedCommand: 'docpath start <task-id>',
+      actionable: true,
+    });
+  }
+
+  // 5. CR-05: 架构与跨模块变更缺少 Decision Brief
+  if ((violationsByRule['CR-05'] || 0) > 0) {
+    const count = violationsByRule['CR-05'];
+    remediations.push({
+      id: 'REM-CR05',
+      severity: 'medium',
+      title: 'Record architectural Decision Brief in spec',
+      reason: `Found ${count} CR-05 (Missing Decision Brief) occurrence(s). Architecture or cross-module changes require explicit Decision Brief in spec.md before implementation.`,
+      recommendedCommand: 'docpath spec refine --brief',
+      actionable: true,
+    });
+  }
+
+  // 6. 协议膨胀率 > 10%
+  const overallInflation = summary.drift?.overallProtocolInflationRate || 0;
+  const standardInflation = summary.drift?.standard?.protocolInflationRate || 0;
+  const quickInflation = summary.drift?.quick?.protocolInflationRate || 0;
+  const maxInflation = Math.max(overallInflation, standardInflation, quickInflation);
+
+  if (maxInflation > 10) {
+    const formattedInflation = maxInflation > 0 ? `+${maxInflation}%` : `${maxInflation}%`;
+    remediations.push({
+      id: 'REM-PROTOCOL-INFLATION',
+      severity: 'medium',
+      title: 'Deduplicate rules and prune prompt token bloat',
+      reason: `Protocol inflation rate (${formattedInflation}) exceeds 10% threshold. Prompt overhead is growing over historical baseline.`,
+      recommendedCommand: 'docpath rule dedupe',
+      actionable: true,
+    });
+  }
+
+  // 7. Token 异常突增告警
+  if (summary.spikes && summary.spikes.length > 0) {
+    const firstSpike = summary.spikes[0];
+    remediations.push({
+      id: 'REM-TOKEN-SPIKE',
+      severity: 'high',
+      title: 'Inspect anomalous token spike tasks',
+      reason: `Detected ${summary.spikes.length} task(s) with token consumption exceeding 2.5x baseline median (e.g. ${firstSpike.taskId} used ~${firstSpike.realTokens.toLocaleString()} tokens, ${firstSpike.spikeRatio}x baseline).`,
+      recommendedCommand: `docpath stats --task ${firstSpike.taskId}`,
+      actionable: true,
+    });
+  }
+
+  return remediations;
+}
+
+/**
  * 汇总全仓监控大盘度量数据 (monitor 命令底层)
  */
 export async function aggregateMonitorMetrics(
@@ -754,6 +1111,7 @@ export async function aggregateMonitorMetrics(
 ): Promise<MonitorSummary> {
   const allTasks = await loadAllTaskMetrics(cwd);
   const baseSummary = await aggregateTaskMetrics(cwd, limit);
+  const activeTask = await probeActiveTaskMetrics(cwd);
 
   const compliance = calculateComplianceSummary(allTasks);
   const drift = calculateTokenDrift(allTasks);
@@ -776,14 +1134,24 @@ export async function aggregateMonitorMetrics(
     };
   }
 
-  return {
+  const partialSummary = {
     totalTasks: baseSummary.totalTasks,
     healthIndex: compliance.avgComplianceScore,
     compliance,
     drift,
     spikes,
     realUsageSummary,
+    activeTask,
     recentTasks: allTasks.slice(0, limit),
   };
+
+  const remediations = generateRemediations(partialSummary);
+
+  return {
+    ...partialSummary,
+    remediations,
+  };
 }
+
+
 
