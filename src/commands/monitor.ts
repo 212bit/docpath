@@ -83,6 +83,14 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
               phase: activeTask.phase,
               started_at: activeTask.startedAt,
               duration_minutes: activeTask.durationMinutes,
+              lifecycle_anchor: activeTask.lifecycleAnchor
+                ? {
+                    session_id: activeTask.lifecycleAnchor.sessionId || null,
+                    base_commit: activeTask.lifecycleAnchor.baseCommit || null,
+                    head_commit: activeTask.lifecycleAnchor.headCommit || null,
+                    started_at: activeTask.lifecycleAnchor.startedAt || null,
+                  }
+                : null,
               progress: {
                 total_steps: activeTask.progress.totalSteps,
                 passed_steps: activeTask.progress.passedSteps,
@@ -122,6 +130,20 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
                 turns_count: activeTask.sessionRecord?.turnsCount || 1,
                 model: activeTask.realUsage?.model || activeTask.sessionRecord?.model || 'unknown',
               },
+              step_slices: (activeTask.stepSlices || []).map((s) => ({
+                step_id: s.stepId,
+                step_title: s.stepTitle || null,
+                started_at: s.startedAt,
+                completed_at: s.completedAt,
+                duration_minutes: s.durationMinutes,
+                total_tokens: s.totalTokens,
+                input_tokens: s.inputTokens,
+                output_tokens: s.outputTokens,
+                cached_tokens: s.cachedTokens || 0,
+                cost_usd: s.costUsd ?? null,
+                tool_calls_count: s.toolCallsCount,
+                top_tools: s.topTools || [],
+              })),
               tool_attributions: (activeTask.toolAttributions || activeTask.realUsage?.toolAttributions || []).map((t) => ({
                 name: t.name,
                 count: t.count,
@@ -152,6 +174,15 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     const scoreIcon = activeTask.complianceScore >= 85 ? '🟢' : activeTask.complianceScore >= 70 ? '🟡' : '🔴';
     console.log('┌ 📋 任务基本信息 (Active Task Info) ────────────────────────┐');
     console.log(`│  任务标识:      [${activeTask.taskId}] ${activeTask.taskTitle}`.padEnd(58) + '│');
+    if (activeTask.lifecycleAnchor) {
+      const anchor = activeTask.lifecycleAnchor;
+      const sessStr = anchor.sessionId ? `Session: ${anchor.sessionId.length > 20 ? anchor.sessionId.slice(0, 18) + '..' : anchor.sessionId}` : '';
+      const commitStr = anchor.baseCommit ? `Git: ${anchor.baseCommit.slice(0, 7)}..${(anchor.headCommit || 'HEAD').slice(0, 7)}` : '';
+      const anchorLine = [sessStr, commitStr].filter(Boolean).join(' | ');
+      if (anchorLine) {
+        console.log(`│  生命周期锚点:  ${anchorLine}`.padEnd(58) + '│');
+      }
+    }
     const backlogStr = activeTask.backlogId ? ` (需求: ${activeTask.backlogId})` : '';
     const profileStr = activeTask.profile === 'quick' ? '⚡ quick' : `📦 standard (L${activeTask.level})`;
     console.log(`│  任务档位:      ${profileStr}${backlogStr}`.padEnd(58) + '│');
@@ -181,6 +212,22 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     const heavyReads = activeTask.sessionRecord?.heavyReadsCount || 0;
     console.log(`│  工具与异常:    ${toolCalls} 次调用 | ${flapping} 次翻转死循环 | ${heavyReads} 次大文件扫描`.padEnd(58) + '│');
     console.log('└───────────────────────────────────────────────────────────┘\n');
+
+    if (activeTask.stepSlices && activeTask.stepSlices.length > 0) {
+      console.log('┌ 🪜  步骤级 Token 成本与耗时分解 (Step-Level Telemetry Breakdown) ───┐');
+      console.log('│  ' + '步骤 ID'.padEnd(10) + '耗时'.padEnd(8) + '消耗 Tokens'.padEnd(16) + '缓存复用'.padEnd(12) + '工具调用'.padEnd(10) + '步骤名称' + '│');
+      console.log('│  ' + '─'.repeat(58) + '│');
+      for (const s of activeTask.stepSlices) {
+        const idStr = s.stepId.padEnd(10);
+        const durStr = `${s.durationMinutes}m`.padEnd(8);
+        const tokStr = `~${s.totalTokens.toLocaleString()}`.padEnd(16);
+        const cacheStr = s.cachedTokens && s.cachedTokens > 0 ? `⚡ ${formatTokens(s.cachedTokens)}`.padEnd(12) : '-'.padEnd(12);
+        const toolsStr = `${s.toolCallsCount}次`.padEnd(10);
+        const titleStr = s.stepTitle ? s.stepTitle.slice(0, 16) : '';
+        console.log(`│  ${idStr}${durStr}${tokStr}${cacheStr}${toolsStr}${titleStr}`.padEnd(58) + '│');
+      }
+      console.log('└───────────────────────────────────────────────────────────┘\n');
+    }
 
     const toolAttrs = activeTask.toolAttributions || activeTask.realUsage?.toolAttributions || activeTask.sessionRecord?.toolAttributions || [];
     if (toolAttrs.length > 0) {
@@ -256,6 +303,22 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
               cache_hit_ratio: (summary.activeTask.realUsage?.cachedTokens || 0) > 0
                 ? `${parseFloat(((summary.activeTask.realUsage!.cachedTokens! / (summary.activeTask.realUsage!.totalTokens + summary.activeTask.realUsage!.cachedTokens!)) * 100).toFixed(1))}%`
                 : '0%',
+              lifecycle_anchor: summary.activeTask.lifecycleAnchor
+                ? {
+                    session_id: summary.activeTask.lifecycleAnchor.sessionId || null,
+                    base_commit: summary.activeTask.lifecycleAnchor.baseCommit || null,
+                    head_commit: summary.activeTask.lifecycleAnchor.headCommit || null,
+                    started_at: summary.activeTask.lifecycleAnchor.startedAt || null,
+                  }
+                : null,
+              step_slices: (summary.activeTask.stepSlices || []).map((s) => ({
+                step_id: s.stepId,
+                step_title: s.stepTitle || null,
+                duration_minutes: s.durationMinutes,
+                total_tokens: s.totalTokens,
+                cached_tokens: s.cachedTokens || 0,
+                tool_calls_count: s.toolCallsCount,
+              })),
             }
           : null,
         compliance: {
@@ -335,6 +398,21 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
           diff_lines: t.totalDiffLines,
           protocol_tokens: t.protocol?.totalInjectedTokens || 0,
           real_tokens: t.realUsage?.totalTokens || null,
+          lifecycle_anchor: t.lifecycleAnchor
+            ? {
+                session_id: t.lifecycleAnchor.sessionId || null,
+                base_commit: t.lifecycleAnchor.baseCommit || null,
+                head_commit: t.lifecycleAnchor.headCommit || null,
+              }
+            : null,
+          step_slices: (t.stepSlices || []).map((s) => ({
+            step_id: s.stepId,
+            step_title: s.stepTitle || null,
+            duration_minutes: s.durationMinutes,
+            total_tokens: s.totalTokens,
+            cached_tokens: s.cachedTokens || 0,
+            tool_calls_count: s.toolCallsCount,
+          })),
         })),
       }),
     );
@@ -352,6 +430,15 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     const scoreIcon = at.complianceScore >= 85 ? '🟢' : at.complianceScore >= 70 ? '🟡' : '🔴';
     console.log('┌ 🚀 活跃任务实时遥测 (In-flight Active Task) ───────────────┐');
     console.log(`│  进行中任务:    [${at.taskId}] ${at.taskTitle}`.padEnd(58) + '│');
+    if (at.lifecycleAnchor) {
+      const anchor = at.lifecycleAnchor;
+      const sessStr = anchor.sessionId ? `Session: ${anchor.sessionId.length > 20 ? anchor.sessionId.slice(0, 18) + '..' : anchor.sessionId}` : '';
+      const commitStr = anchor.baseCommit ? `Git: ${anchor.baseCommit.slice(0, 7)}..${(anchor.headCommit || 'HEAD').slice(0, 7)}` : '';
+      const anchorLine = [sessStr, commitStr].filter(Boolean).join(' | ');
+      if (anchorLine) {
+        console.log(`│  生命周期锚点:  ${anchorLine}`.padEnd(58) + '│');
+      }
+    }
     const stepLabel = at.progress.currentStepTitle ? `${at.progress.currentStep} (${at.progress.currentStepTitle})` : at.progress.currentStep;
     console.log(`│  当前步骤/耗时: ${stepLabel} | 运行 ${at.durationMinutes}m (进度 ${at.progress.percent}%)`.padEnd(58) + '│');
     const tokCount = at.realUsage?.totalTokens ? `~${at.realUsage.totalTokens.toLocaleString()}` : '-';
@@ -365,6 +452,22 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     const violText = violCount === 0 ? '无违规' : `${violCount} 项合规风险`;
     console.log(`│  实时合规状态:  ${scoreIcon} ${at.complianceScore}分 (${violText})`.padEnd(58) + '│');
     console.log('└───────────────────────────────────────────────────────────┘\n');
+
+    if (at.stepSlices && at.stepSlices.length > 0) {
+      console.log('┌ 🪜  步骤级 Token 成本与耗时分解 (Step-Level Telemetry Breakdown) ───┐');
+      console.log('│  ' + '步骤 ID'.padEnd(10) + '耗时'.padEnd(8) + '消耗 Tokens'.padEnd(16) + '缓存复用'.padEnd(12) + '工具调用'.padEnd(10) + '步骤名称' + '│');
+      console.log('│  ' + '─'.repeat(58) + '│');
+      for (const s of at.stepSlices) {
+        const idStr = s.stepId.padEnd(10);
+        const durStr = `${s.durationMinutes}m`.padEnd(8);
+        const tokStr = `~${s.totalTokens.toLocaleString()}`.padEnd(16);
+        const cacheStr = s.cachedTokens && s.cachedTokens > 0 ? `⚡ ${formatTokens(s.cachedTokens)}`.padEnd(12) : '-'.padEnd(12);
+        const toolsStr = `${s.toolCallsCount}次`.padEnd(10);
+        const titleStr = s.stepTitle ? s.stepTitle.slice(0, 16) : '';
+        console.log(`│  ${idStr}${durStr}${tokStr}${cacheStr}${toolsStr}${titleStr}`.padEnd(58) + '│');
+      }
+      console.log('└───────────────────────────────────────────────────────────┘\n');
+    }
   }
 
   if (summary.totalTasks === 0) {
@@ -464,9 +567,10 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     '代码变更'.padEnd(12) +
     '协议开销'.padEnd(14) +
     '真实 Tokens'.padEnd(14) +
+    '生命周期锚点'.padEnd(20) +
     '标题'
   );
-  console.log('  ' + '─'.repeat(110));
+  console.log('  ' + '─'.repeat(130));
 
   for (const t of summary.recentTasks) {
     const idStr = (t.taskId.length > 20 ? t.taskId.slice(0, 18) + '..' : t.taskId).padEnd(22);
@@ -477,10 +581,12 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     const violStr = (violations.length > 0 ? violations.join(',') : '无').padEnd(16);
     const diffStr = `+${t.linesAdded}/-${t.linesDeleted}`.padEnd(12);
     const protocolStr = `~${(t.protocol?.totalInjectedTokens || 0).toLocaleString()}`.padEnd(14);
-    const realStr = t.realUsage?.totalTokens ? `~${t.realUsage.totalTokens.toLocaleString()}` : '-'.padEnd(14);
+    const realStr = (t.realUsage?.totalTokens ? `~${t.realUsage.totalTokens.toLocaleString()}` : '-').padEnd(14);
+    const anchor = t.lifecycleAnchor;
+    const anchorStr = (anchor?.sessionId ? anchor.sessionId.slice(0, 16) + '..' : anchor?.baseCommit ? `${anchor.baseCommit.slice(0, 7)}..` : '-').padEnd(20);
     const titleStr = t.taskTitle.slice(0, 24);
 
-    console.log(`  ${idStr}${profileStr}${scoreStr}${violStr}${diffStr}${protocolStr}${realStr}${titleStr}`);
+    console.log(`  ${idStr}${profileStr}${scoreStr}${violStr}${diffStr}${protocolStr}${realStr}${anchorStr}${titleStr}`);
   }
   console.log('');
 

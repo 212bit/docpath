@@ -55,6 +55,10 @@ export interface CurrentState {
   escalation?: EscalationInfo;
   /** 任务风险档位 R0–R3（R-338；缺省未评估，读取侧按 R1 兜底） */
   risk_tier?: number;
+  base_commit?: string;
+  session_id?: string;
+  lifecycle_anchor?: any;
+  [key: string]: unknown;
 }
 
 // ── 核心读写函数 ──
@@ -221,6 +225,9 @@ function normalizeStoredState(raw: Partial<CurrentState> & { state?: string; pha
     updated_at: raw.updated_at || new Date().toISOString(),
     escalation: raw.escalation,
     risk_tier: raw.risk_tier,
+    ...(raw.base_commit ? { base_commit: raw.base_commit as string } : {}),
+    ...(raw.session_id ? { session_id: raw.session_id as string } : {}),
+    ...(raw.lifecycle_anchor ? { lifecycle_anchor: raw.lifecycle_anchor as any } : {}),
   };
 }
 

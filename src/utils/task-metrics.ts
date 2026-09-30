@@ -13,6 +13,10 @@ import { resolveDocpathDir, writeFileAtomic } from './file.js';
 import { estimateTokens } from './document-index.js';
 import {
   resolveAgentTelemetry,
+  detectCurrentSessionId,
+  captureGitCommit,
+  type LifecycleAnchor,
+  type StepTelemetrySlice,
   type SessionTelemetryRecord,
   type ComplianceViolation,
   type ComplianceSeverity,
@@ -21,7 +25,8 @@ import {
   type ToolInefficiencyFinding,
 } from './agent-telemetry-adapter.js';
 
-export type { ToolAttribution, ToolInefficiencyFinding };
+export type { ToolAttribution, ToolInefficiencyFinding, LifecycleAnchor, StepTelemetrySlice };
+export { detectCurrentSessionId, captureGitCommit };
 
 export interface RealAgentUsage {
   source: 'antigravity' | 'claude' | 'opencode' | 'zcode' | 'env' | 'breadcrumb' | 'unknown';
@@ -79,6 +84,8 @@ export interface TaskMetrics {
   sessionRecord?: SessionTelemetryRecord | null;
   toolAttributions?: ToolAttribution[];
   toolInefficiencies?: ToolInefficiencyFinding[];
+  lifecycleAnchor?: LifecycleAnchor;
+  stepSlices?: StepTelemetrySlice[];
 }
 
 export interface RealAgentUsageSummary {
@@ -154,6 +161,8 @@ export interface ActiveTaskMetrics {
   sessionRecord?: SessionTelemetryRecord | null;
   toolAttributions?: ToolAttribution[];
   toolInefficiencies?: ToolInefficiencyFinding[];
+  lifecycleAnchor?: LifecycleAnchor;
+  stepSlices?: StepTelemetrySlice[];
 }
 
 export interface ComplianceSummary {
@@ -314,6 +323,247 @@ export async function probeRealAgentTelemetry(
 }
 
 /**
+ * 步骤级 Token 成本与耗时切片提取引擎 (FR-2 / AC-3, AC-4)
+ */
+export async function extractStepTelemetrySlices(
+  cwd: string,
+  taskId: string,
+  options?: {
+    taskDir?: string;
+    plan?: Record<string, any>;
+    state?: Record<string, any>;
+    spec?: Record<string, any>;
+    anchor?: LifecycleAnchor;
+    sessionId?: string;
+    profile?: 'quick' | 'standard';
+    level?: number;
+    breadcrumbs?: Array<Record<string, any>>;
+    transcriptPath?: string;
+    zcodeDbPath?: string;
+    zcodeRolloutDir?: string;
+  }
+): Promise<StepTelemetrySlice[]> {
+  try {
+    const docpathDir = await resolveDocpathDir(cwd);
+    const taskDir = options?.taskDir || (
+      existsSync(join(docpathDir, 'tasks', taskId))
+        ? join(docpathDir, 'tasks', taskId)
+        : existsSync(join(docpathDir, 'tasks', 'done', taskId))
+          ? join(docpathDir, 'tasks', 'done', taskId)
+          : join(docpathDir, 'tasks', 'current')
+    );
+
+    // 1. 获取 steps 定义
+    let planSteps: Array<{ id: string; title?: string; status?: string }> = [];
+    if (Array.isArray(options?.plan?.steps)) {
+      planSteps = options.plan.steps.map((s: any) => ({
+        id: s.id || s.step || s.stepId,
+        title: s.title || s.name || s.stepTitle,
+        status: s.status,
+      }));
+    } else {
+      const planJsonPath = join(taskDir, 'plan.json');
+      if (existsSync(planJsonPath)) {
+        try {
+          const parsedPlan = JSON.parse(await readFile(planJsonPath, 'utf-8'));
+          if (Array.isArray(parsedPlan?.steps)) {
+            planSteps = parsedPlan.steps.map((s: any) => ({
+              id: s.id || s.step || s.stepId,
+              title: s.title || s.name || s.stepTitle,
+              status: s.status,
+            }));
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // 2. 收集 breadcrumb 记录
+    let breadcrumbRecords: Array<Record<string, any>> = [];
+    if (Array.isArray(options?.breadcrumbs)) {
+      breadcrumbRecords = options.breadcrumbs;
+    } else {
+      const candidates = [
+        join(taskDir, 'breadcrumb.jsonl'),
+        join(docpathDir, 'tasks', taskId, 'breadcrumb.jsonl'),
+        join(docpathDir, 'tasks', 'done', taskId, 'breadcrumb.jsonl'),
+        join(docpathDir, 'tasks', 'current', 'breadcrumb.jsonl'),
+        join(docpathDir, 'workspace', 'breadcrumb.jsonl'),
+      ];
+      for (const p of candidates) {
+        if (existsSync(p)) {
+          try {
+            const raw = await readFile(p, 'utf-8');
+            const lines = raw.split('\n').filter((l) => l.trim());
+            for (const line of lines) {
+              try {
+                breadcrumbRecords.push(JSON.parse(line));
+              } catch {
+                // ignore
+              }
+            }
+            if (breadcrumbRecords.length > 0) {
+              break;
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+
+    // 如果 planSteps 为空，从 breadcrumbs 中推断 steps
+    if (planSteps.length === 0) {
+      const stepIdsSeen = new Set<string>();
+      for (const b of breadcrumbRecords) {
+        const sId = b.step || b.stepId || b.step_id;
+        if (sId && !stepIdsSeen.has(sId)) {
+          stepIdsSeen.add(sId);
+          planSteps.push({ id: sId, title: b.stepTitle || b.title });
+        }
+      }
+    }
+
+    if (planSteps.length === 0) {
+      return [];
+    }
+
+    const slices: StepTelemetrySlice[] = [];
+    const taskStartedAt = options?.anchor?.startedAt || options?.state?.started_at || (breadcrumbRecords[0]?.timestamp) || new Date().toISOString();
+
+    for (let i = 0; i < planSteps.length; i++) {
+      const step = planSteps[i];
+      const stepId = step.id;
+      const stepTitle = step.title;
+
+      // 筛选该 step 关联的所有 breadcrumb 条目
+      const stepEntries = breadcrumbRecords.filter((b) => {
+        const s = b.step || b.stepId || b.step_id;
+        return s === stepId;
+      });
+
+      let startedAt: string | undefined;
+      let completedAt: string | undefined;
+
+      // 寻找 start 事件
+      const startEntry = stepEntries.find((b) => {
+        const st = b.status || b.state;
+        const ev = b.event || b.action || b.type;
+        return st === 'in_progress' || st === 'active' || st === 'started' || ev === 'step.started' || ev === 'start' || ev === 'step_started';
+      });
+
+      if (startEntry) {
+        startedAt = startEntry.timestamp || startEntry.created_at || startEntry.time;
+      } else if (stepEntries.length > 0) {
+        startedAt = stepEntries[0].timestamp || stepEntries[0].created_at || stepEntries[0].time;
+      } else if (i === 0) {
+        startedAt = taskStartedAt;
+      } else if (slices[i - 1]?.completedAt) {
+        startedAt = slices[i - 1].completedAt;
+      }
+
+      // 寻找 end / pass / completion 事件
+      const endEntry = stepEntries.slice().reverse().find((b) => {
+        const st = b.status || b.state;
+        const ev = b.event || b.action || b.type;
+        const ctx = typeof b.context === 'string' ? b.context : '';
+        return (
+          st === 'done' ||
+          st === 'passed' ||
+          st === 'completed' ||
+          st === 'skipped' ||
+          ev === 'step-pass' ||
+          ev === 'step.completed' ||
+          ev === 'agent.step' ||
+          ev === 'end' ||
+          ctx.startsWith('step-pass')
+        );
+      });
+
+      if (endEntry) {
+        completedAt = endEntry.timestamp || endEntry.created_at || endEntry.time;
+      } else {
+        // 检查后续 step 是否有开始时间
+        let nextStepStart: string | undefined;
+        for (let j = i + 1; j < planSteps.length; j++) {
+          const nextEntries = breadcrumbRecords.filter((b) => (b.step || b.stepId || b.step_id) === planSteps[j].id);
+          if (nextEntries.length > 0) {
+            nextStepStart = nextEntries[0].timestamp || nextEntries[0].created_at || nextEntries[0].time;
+            break;
+          }
+        }
+        if (nextStepStart) {
+          completedAt = nextStepStart;
+        } else if (stepEntries.length > 0) {
+          completedAt = new Date().toISOString();
+        }
+      }
+
+      if (!startedAt) {
+        continue;
+      }
+      if (!completedAt) {
+        completedAt = new Date().toISOString();
+      }
+
+      const startMs = new Date(startedAt).getTime();
+      const endMs = new Date(completedAt).getTime();
+      const durationMinutes = parseFloat((Math.max(0, endMs - startMs) / 60000).toFixed(1));
+
+      // 探测该时间切片的 Session Telemetry
+      const telemetry = await resolveAgentTelemetry({
+        cwd,
+        taskId,
+        startedAt,
+        completedAt,
+        profile: options?.profile,
+        level: options?.level,
+        sessionId: options?.sessionId || options?.anchor?.sessionId,
+        anchor: options?.anchor ? { ...options.anchor, startedAt, completedAt } : undefined,
+        transcriptPath: options?.transcriptPath,
+        zcodeDbPath: options?.zcodeDbPath,
+        zcodeRolloutDir: options?.zcodeRolloutDir,
+        spec: options?.spec,
+        plan: options?.plan,
+        state: options?.state,
+      });
+
+      const totalTokens = telemetry?.tokens?.totalTokens || 0;
+      const inputTokens = telemetry?.tokens?.inputTokens || 0;
+      const outputTokens = telemetry?.tokens?.outputTokens || 0;
+      const cachedTokens = telemetry?.tokens?.cachedTokens;
+      const costUsd = telemetry?.tokens?.costUsd;
+      const toolCallsCount = telemetry?.toolCalls?.total || 0;
+      const topTools = telemetry?.toolAttributions && telemetry.toolAttributions.length > 0
+        ? telemetry.toolAttributions.slice(0, 3).map((t) => ({ name: t.name, count: t.count, tokens: t.totalTokens }))
+        : Object.keys(telemetry?.toolCalls?.byName || {}).length > 0
+          ? Object.entries(telemetry!.toolCalls.byName).slice(0, 3).map(([name, count]) => ({ name, count, tokens: 0 }))
+          : undefined;
+
+      slices.push({
+        stepId,
+        stepTitle,
+        startedAt,
+        completedAt,
+        durationMinutes,
+        totalTokens,
+        inputTokens,
+        outputTokens,
+        cachedTokens: (cachedTokens && cachedTokens > 0) ? cachedTokens : undefined,
+        costUsd: (costUsd !== undefined && costUsd > 0) ? costUsd : undefined,
+        toolCallsCount,
+        topTools,
+      });
+    }
+
+    return slices;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * 从任务目录结构化数据收集指标与合规遥测
  */
 export async function collectTaskMetrics(
@@ -427,6 +677,21 @@ export async function collectTaskMetrics(
   const totalInjectedTokens = specTokens + planTokens + rulesTokens;
 
   // 8. 探测真实 Agent 会话遥测并执行合规审计
+  const baseCommit = parsedState?.base_commit || (parsedState?.lifecycle_anchor as any)?.baseCommit;
+  const headCommit = captureGitCommit(cwd);
+  const sessionId =
+    parsedState?.session_id ||
+    (parsedState?.lifecycle_anchor as any)?.sessionId ||
+    (await detectCurrentSessionId(cwd));
+
+  const lifecycleAnchor: LifecycleAnchor = {
+    sessionId: sessionId || undefined,
+    baseCommit: baseCommit || undefined,
+    headCommit: headCommit || undefined,
+    startedAt,
+    completedAt: now.toISOString(),
+  };
+
   const sessionRecord = await resolveAgentTelemetry({
     cwd,
     taskId,
@@ -438,6 +703,19 @@ export async function collectTaskMetrics(
     spec: parsedSpec,
     plan: parsedPlan,
     state: parsedState,
+    anchor: lifecycleAnchor,
+    sessionId: lifecycleAnchor.sessionId,
+  });
+
+  const stepSlices = await extractStepTelemetrySlices(cwd, taskId, {
+    taskDir,
+    plan: parsedPlan,
+    state: parsedState,
+    spec: parsedSpec,
+    anchor: lifecycleAnchor,
+    sessionId: lifecycleAnchor.sessionId,
+    profile,
+    level,
   });
 
   const realUsage: RealAgentUsage | null =
@@ -502,6 +780,8 @@ export async function collectTaskMetrics(
     sessionRecord,
     toolAttributions: sessionRecord?.toolAttributions || realUsage?.toolAttributions,
     toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
+    lifecycleAnchor,
+    stepSlices: stepSlices.length > 0 ? stepSlices : undefined,
   };
 }
 
@@ -946,6 +1226,20 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
     const diff = getTaskDiffStats(cwd);
 
     // 6. 探测实时 Agent 遥测与合规违规审计
+    const baseCommit = parsedState?.base_commit || (parsedState?.lifecycle_anchor as any)?.baseCommit;
+    const headCommit = captureGitCommit(cwd);
+    const sessionId =
+      parsedState?.session_id ||
+      (parsedState?.lifecycle_anchor as any)?.sessionId ||
+      (await detectCurrentSessionId(cwd));
+
+    const lifecycleAnchor: LifecycleAnchor = {
+      sessionId: sessionId || undefined,
+      baseCommit: baseCommit || undefined,
+      headCommit: headCommit || undefined,
+      startedAt,
+    };
+
     const sessionRecord = await resolveAgentTelemetry({
       cwd,
       taskId,
@@ -957,6 +1251,8 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       spec: parsedSpec,
       plan: parsedPlan,
       state: parsedState,
+      anchor: lifecycleAnchor,
+      sessionId: lifecycleAnchor.sessionId,
     });
 
     // 优先读取显式落盘的 metrics.json（如果已存在），以便承载明确的遥测快照
@@ -999,6 +1295,22 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
 
     const percent = totalSteps > 0 ? Math.round((passedSteps / totalSteps) * 100) : 0;
 
+    let stepSlices: StepTelemetrySlice[] = [];
+    try {
+      stepSlices = await extractStepTelemetrySlices(cwd, taskId, {
+        taskDir,
+        plan: parsedPlan,
+        state: parsedState,
+        spec: parsedSpec,
+        anchor: lifecycleAnchor,
+        sessionId: lifecycleAnchor.sessionId,
+        profile,
+        level,
+      });
+    } catch {
+      // 容错
+    }
+
     return {
       taskId,
       taskTitle,
@@ -1027,6 +1339,8 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       sessionRecord,
       toolAttributions: sessionRecord?.toolAttributions || realUsage?.toolAttributions,
       toolInefficiencies: sessionRecord?.toolInefficiencies || realUsage?.toolInefficiencies,
+      lifecycleAnchor,
+      stepSlices: stepSlices.length > 0 ? stepSlices : undefined,
     };
   } catch {
     return null;

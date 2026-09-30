@@ -16,6 +16,7 @@ import {
   aggregateMonitorMetrics,
   aggregateTaskMetrics,
   formatTokens,
+  extractStepTelemetrySlices,
 } from '../dist/utils/task-metrics.js';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
@@ -1673,6 +1674,191 @@ describe('Multi-Turn Cumulative Token Metrics & Cache Hit Ratio in Monitor (FR-2
       const data = JSON.parse(stdoutJson);
       assert.equal(data.active, true);
       assert.ok(typeof data.activeTask.realUsage?.cachedTokens === 'number');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('Step-Level Telemetry Slices & Lifecycle Anchors in Monitor (FR-2 / AC-3, AC-4, AC-5)', () => {
+  it('extractStepTelemetrySlices extracts per-step time window and telemetry from breadcrumb events', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-step-slices-'));
+    const t0 = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const t1 = new Date(Date.now() - 6 * 60 * 1000).toISOString();
+    const t2 = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const t3 = new Date(Date.now() - 1 * 60 * 1000).toISOString();
+
+    const plan = {
+      task_id: 'T-STEP-01',
+      steps: [
+        { id: 'S1', title: 'Implement adapter logic', status: 'done' },
+        { id: 'S2', title: 'Add telemetry tests', status: 'in_progress' },
+      ],
+    };
+
+    const breadcrumbs = [
+      { event: 'step.started', step: 'S1', timestamp: t0 },
+      { event: 'step-pass', step: 'S1', status: 'done', context: 'step-pass: S1', timestamp: t1 },
+      { type: 'agent.step', stepId: 'S2', status: 'in_progress', timestamp: t2 },
+      { event: 'step-pass', step: 'S2', status: 'done', context: 'step-pass: S2', timestamp: t3 },
+    ];
+
+    try {
+      const slices = await extractStepTelemetrySlices(cwd, 'T-STEP-01', {
+        plan,
+        breadcrumbs,
+      });
+
+      assert.equal(slices.length, 2);
+      assert.equal(slices[0].stepId, 'S1');
+      assert.equal(slices[0].stepTitle, 'Implement adapter logic');
+      assert.equal(slices[0].startedAt, t0);
+      assert.equal(slices[0].completedAt, t1);
+      assert.ok(slices[0].durationMinutes >= 3.9);
+
+      assert.equal(slices[1].stepId, 'S2');
+      assert.equal(slices[1].stepTitle, 'Add telemetry tests');
+      assert.equal(slices[1].startedAt, t2);
+      assert.equal(slices[1].completedAt, t3);
+      assert.ok(slices[1].durationMinutes >= 3.9);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('renders lifecycle anchor and step breakdown in docpath monitor --current (Human, YAML, JSON)', () => {
+    const t0 = new Date(Date.now() - 6 * 60 * 1000).toISOString();
+    const t1 = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+    const t2 = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+
+    const cwd = mkWorkspaceWithActiveTask({
+      taskId: 'T-20260930-active-slices',
+      taskTitle: 'Active Task with Step Slices',
+      steps: [
+        { id: 'S1', title: 'Setup probe', status: 'done' },
+        { id: 'S2', title: 'Verify slices', status: 'in_progress' },
+      ],
+      breadcrumbs: [
+        { step: 'S1', status: 'in_progress', timestamp: t0 },
+        { step: 'S1', status: 'done', context: 'step-pass: S1', timestamp: t1 },
+        { step: 'S2', status: 'in_progress', timestamp: t2 },
+      ],
+    });
+
+    const dp = join(cwd, '.docpath');
+    const state = JSON.parse(execSync(`cat "${join(dp, 'workspace', 'state.json')}"`, { encoding: 'utf-8' }));
+    state.session_id = 'sess-test-uuid-9999';
+    state.base_commit = 'abcdef123456';
+    writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify(state, null, 2));
+
+    try {
+      // 1. Human view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /生命周期锚点:\s*Session:\s*sess-test-uuid-9999/);
+      assert.match(stdoutHuman, /步骤级 Token 成本与耗时分解/);
+      assert.match(stdoutHuman, /S1/);
+      assert.match(stdoutHuman, /S2/);
+
+      // 2. Agent YAML view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /lifecycle_anchor:/);
+      assert.match(stdoutAgent, /session_id:\s*sess-test-uuid-9999/);
+      assert.match(stdoutAgent, /base_commit:\s*abcdef123456/);
+      assert.match(stdoutAgent, /step_slices:/);
+      assert.match(stdoutAgent, /step_id:\s*S1/);
+      assert.match(stdoutAgent, /step_id:\s*S2/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.equal(data.active, true);
+      assert.equal(data.activeTask.lifecycleAnchor.sessionId, 'sess-test-uuid-9999');
+      assert.equal(data.activeTask.lifecycleAnchor.baseCommit, 'abcdef123456');
+      assert.ok(Array.isArray(data.activeTask.stepSlices));
+      assert.ok(data.activeTask.stepSlices.length >= 2);
+      assert.equal(data.activeTask.stepSlices[0].stepId, 'S1');
+      assert.equal(data.activeTask.stepSlices[1].stepId, 'S2');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('renders lifecycle anchor and step breakdown in global docpath monitor dashboard (Human, YAML, JSON)', () => {
+    const historicalTask = {
+      taskId: 'T-HIST-01',
+      taskTitle: 'Historical Task with Anchors',
+      profile: 'standard',
+      level: 2,
+      startedAt: '2026-09-30T09:00:00.000Z',
+      completedAt: '2026-09-30T09:15:00.000Z',
+      durationMinutes: 15,
+      firstTimePassRate: 100,
+      complianceScore: 100,
+      violations: [],
+      totalDiffLines: 80,
+      filesChanged: 2,
+      linesAdded: 60,
+      linesDeleted: 20,
+      protocol: { totalInjectedTokens: 2000 },
+      realUsage: { totalTokens: 25000, inputTokens: 18000, outputTokens: 7000 },
+      lifecycleAnchor: {
+        sessionId: 'sess-hist-anchor-111',
+        baseCommit: 'commit000111',
+        headCommit: 'commit000222',
+        startedAt: '2026-09-30T09:00:00.000Z',
+        completedAt: '2026-09-30T09:15:00.000Z',
+      },
+      stepSlices: [
+        {
+          stepId: 'S1',
+          stepTitle: 'Step 1 of Hist',
+          startedAt: '2026-09-30T09:00:00.000Z',
+          completedAt: '2026-09-30T09:08:00.000Z',
+          durationMinutes: 8,
+          totalTokens: 12000,
+          inputTokens: 9000,
+          outputTokens: 3000,
+          toolCallsCount: 5,
+        },
+      ],
+    };
+
+    const cwd = mkWorkspaceWithTasks([historicalTask]);
+    try {
+      // 1. Human view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}"`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /DocPath 智能监控大盘/);
+      assert.match(stdoutHuman, /生命周期锚点/);
+      assert.match(stdoutHuman, /sess-hist-anchor/);
+      assert.match(stdoutHuman, /T-HIST-01/);
+
+      // 2. Agent YAML view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /recent_tasks:/);
+      assert.match(stdoutAgent, /lifecycle_anchor:/);
+      assert.match(stdoutAgent, /session_id:\s*sess-hist-anchor-111/);
+      assert.match(stdoutAgent, /step_slices:/);
+      assert.match(stdoutAgent, /step_id:\s*S1/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.equal(data.totalTasks, 1);
+      assert.equal(data.recentTasks[0].lifecycleAnchor.sessionId, 'sess-hist-anchor-111');
+      assert.ok(Array.isArray(data.recentTasks[0].stepSlices));
+      assert.equal(data.recentTasks[0].stepSlices[0].stepId, 'S1');
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

@@ -1,0 +1,20 @@
+## 执行计划
+
+### S1: 实现并验证 FR-1 三维强锚定任务生命周期边界机制
+- [x] S1: 实现并验证 FR-1 三维强锚定任务生命周期边界机制
+- **描述**: 落地 FR-1: 三维强锚定任务生命周期边界机制，并完成模块定向自验。
+- **验收条件**: AC-1: 实现任务生命周期三维强锚定（在 start/quick 及收口中自动捕获并持久化 session_id、start_turn_id、base_commit 与 head_commit）
+- **依赖**: 无
+
+### S2: 实现并验证 FR-2 步骤级 Token 成本切片
+- [x] S2: 实现并验证 FR-2 步骤级 Token 成本切片
+- **描述**: 落地 FR-2: 步骤级 Token 成本切片，并完成模块定向自验。
+- **验收条件**: AC-2: 升级 ZCode 与 Antigravity 遥测探针，优先基于 Session ID 与 Turn 范围精准切片，彻底消除时间窗口噪点；AC-3: 实现步骤级（Step-Level）Token 增量切片与记录，在 breadcrumb 与 metrics 中精确追踪 S1/S2 等各步骤的 Token 与工具分布；AC-4: 在 `docpath monitor`（全局与 `--current`）中展现生命周期锚点元数据与步骤级 Token 分解看板；AC-5: 完成单元测试覆盖并在全量门禁中通过验证；AC-1: 三维强锚定任务生命周期边界机制 满足功能要求并通过测试；AC-2: 步骤级 Token 成本切片 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-454 与任务 T-20260930-token-2 建立双向关联
+- **依赖**: S1
+
+## Checklist
+- [x] S1
+- [x] S2
+
+## 依赖关系图
+S1 → S2

@@ -10,8 +10,10 @@ import {
   ZCodeTelemetryAdapter,
   ComplianceAuditor,
   resolveAgentTelemetry,
+  detectCurrentSessionId,
+  captureGitCommit,
 } from '../dist/utils/agent-telemetry-adapter.js';
-import { collectTaskMetrics, probeRealAgentTelemetry } from '../dist/utils/task-metrics.js';
+import { collectTaskMetrics, probeRealAgentTelemetry, probeActiveTaskMetrics } from '../dist/utils/task-metrics.js';
 
 describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', () => {
   describe('AntigravityTelemetryAdapter', () => {
@@ -836,6 +838,207 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
         assert.equal(record.tokens.totalTokens, 31200);
         assert.equal(record.tokens.cachedTokens, 25000);
         assert.ok(record.complianceScore >= 0 && record.complianceScore <= 100);
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it('probes SQLite database with precise sessionId and turnId bounds (FR-1 / AC-1 & AC-2)', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'dp-zcode-bounds-'));
+      const dbPath = join(tempDir, 'db.sqlite');
+
+      const { DatabaseSync } = await import('node:sqlite');
+      const db = new DatabaseSync(dbPath);
+
+      db.exec(`
+        CREATE TABLE model_usage (
+          id text primary key,
+          session_id text,
+          model_id text,
+          started_at integer,
+          completed_at integer,
+          input_tokens integer default 0,
+          output_tokens integer default 0,
+          reasoning_tokens integer default 0,
+          cache_read_input_tokens integer default 0,
+          computed_total_tokens integer default 0,
+          tool_call_count integer default 0,
+          status text default 'completed'
+        );
+        CREATE TABLE turn_usage (
+          session_id text,
+          turn_id text,
+          started_at integer,
+          tool_call_count integer default 0,
+          tool_error_count integer default 0
+        );
+        CREATE TABLE tool_usage (
+          id text primary key,
+          session_id text,
+          tool_name text,
+          status text,
+          started_at integer,
+          exit_code integer,
+          output_bytes integer default 0,
+          duration_ms integer default 0
+        );
+      `);
+
+      const t1 = 1790800000000;
+      const t2 = 1790800010000;
+      const t3 = 1790800020000;
+
+      db.exec(`
+        INSERT INTO model_usage (id, session_id, model_id, started_at, completed_at, input_tokens, output_tokens, cache_read_input_tokens, computed_total_tokens, tool_call_count)
+        VALUES
+          ('m1', 'sess_bound_A', 'GLM-5.3-Flash', ${t1}, ${t1 + 1000}, 10000, 500, 8000, 10500, 1),
+          ('m2', 'sess_bound_A', 'GLM-5.3-Flash', ${t2}, ${t2 + 1000}, 20000, 1000, 15000, 21000, 2),
+          ('m3', 'sess_bound_B', 'GLM-5.3-Flash', ${t3}, ${t3 + 1000}, 50000, 2000, 40000, 52000, 3);
+
+        INSERT INTO turn_usage (session_id, turn_id, started_at, tool_call_count, tool_error_count)
+        VALUES
+          ('sess_bound_A', 'turn_1', ${t1}, 1, 0),
+          ('sess_bound_A', 'turn_2', ${t2}, 2, 0),
+          ('sess_bound_B', 'turn_1', ${t3}, 3, 0);
+      `);
+
+      db.close();
+
+      try {
+        // Query specifically sess_bound_A with turn_2 bounds
+        const record = await ZCodeTelemetryAdapter.probeSqlite({
+          dbPath,
+          sessionId: 'sess_bound_A',
+          startTurnId: 'turn_2',
+          endTurnId: 'turn_2',
+        });
+
+        assert.ok(record);
+        assert.equal(record.source, 'zcode');
+        assert.equal(record.sessionId, 'sess_bound_A');
+        assert.equal(record.turnsCount, 1);
+        assert.equal(record.tokens.inputTokens, 20000);
+        assert.equal(record.tokens.outputTokens, 1000);
+        assert.equal(record.tokens.cachedTokens, 15000);
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('Triple Anchor Lifecycle Boundary Engine (FR-1 / AC-1 & AC-2)', () => {
+    it('detects session ID from environment variables in priority order', async () => {
+      const origEnv = { ...process.env };
+      try {
+        process.env.DOCPATH_SESSION = 'sess_from_docpath_env';
+        process.env.SESSION_ID = 'sess_from_session_id';
+        let detected = await detectCurrentSessionId();
+        assert.equal(detected, 'sess_from_docpath_env');
+
+        delete process.env.DOCPATH_SESSION;
+        detected = await detectCurrentSessionId();
+        assert.equal(detected, 'sess_from_session_id');
+
+        delete process.env.SESSION_ID;
+        process.env.GEMINI_CONVERSATION_ID = 'sess_gemini_123';
+        detected = await detectCurrentSessionId();
+        assert.equal(detected, 'sess_gemini_123');
+
+        delete process.env.GEMINI_CONVERSATION_ID;
+        process.env.ZCODE_SESSION_ID = 'sess_zcode_456';
+        detected = await detectCurrentSessionId();
+        assert.equal(detected, 'sess_zcode_456');
+      } finally {
+        process.env = origEnv;
+      }
+    });
+
+    it('captures Git commit hash using captureGitCommit', () => {
+      const commit = captureGitCommit(process.cwd());
+      assert.ok(typeof commit === 'string' && commit.length >= 7, 'Should capture valid git commit hash');
+    });
+
+    it('filters Antigravity transcript by sessionId and turnId/step_index range', () => {
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          session_id: 'conv_1',
+          type: 'USER_INPUT',
+          content: 'First turn in conv 1',
+        }),
+        JSON.stringify({
+          step_index: 2,
+          session_id: 'conv_1',
+          type: 'PLANNER_RESPONSE',
+          thinking: 'Planning 1',
+        }),
+        JSON.stringify({
+          step_index: 3,
+          session_id: 'conv_2',
+          type: 'USER_INPUT',
+          content: 'First turn in conv 2',
+        }),
+        JSON.stringify({
+          step_index: 4,
+          session_id: 'conv_2',
+          type: 'PLANNER_RESPONSE',
+          thinking: 'Planning 2',
+        }),
+      ].join('\n');
+
+      // Filter by session conv_1
+      const conv1Result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent, {
+        sessionId: 'conv_1',
+      });
+      assert.equal(conv1Result.turnsCount, 2);
+      assert.equal(conv1Result.sessionId, 'conv_1');
+
+      // Filter by step_index range 3 to 4
+      const conv2StepResult = AntigravityTelemetryAdapter.parseTranscript(transcriptContent, {
+        startTurnId: 3,
+        endTurnId: 4,
+      });
+      assert.equal(conv2StepResult.turnsCount, 2);
+      assert.equal(conv2StepResult.sessionId, 'conv_2');
+    });
+
+    it('propagates lifecycleAnchor in collectTaskMetrics and probeActiveTaskMetrics', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'dp-anchor-test-'));
+      const docpathDir = join(tempDir, '.docpath');
+      mkdirSync(join(docpathDir, 'workspace'), { recursive: true });
+      mkdirSync(join(docpathDir, 'tasks', 'current'), { recursive: true });
+
+      const stateJson = {
+        level: 2,
+        workflow_profile: 'standard',
+        state: 'executing',
+        phase: 'executing',
+        gate: 'none',
+        task_id: 'T-ANCHOR-TEST',
+        task_title: 'Test Anchor Task',
+        current_step: 'S1',
+        started_at: '2026-09-30T10:00:00.000Z',
+        updated_at: '2026-09-30T10:05:00.000Z',
+        base_commit: 'abc1234',
+        session_id: 'sess_anchor_999',
+      };
+      writeFileSync(join(docpathDir, 'workspace', 'state.json'), JSON.stringify(stateJson, null, 2));
+
+      try {
+        const active = await probeActiveTaskMetrics(tempDir);
+        assert.ok(active);
+        assert.ok(active.lifecycleAnchor);
+        assert.equal(active.lifecycleAnchor.baseCommit, 'abc1234');
+        assert.equal(active.lifecycleAnchor.sessionId, 'sess_anchor_999');
+        assert.equal(active.lifecycleAnchor.startedAt, '2026-09-30T10:00:00.000Z');
+
+        const collected = await collectTaskMetrics(tempDir, 'T-ANCHOR-TEST', new Date('2026-09-30T10:10:00.000Z'));
+        assert.ok(collected);
+        assert.ok(collected.lifecycleAnchor);
+        assert.equal(collected.lifecycleAnchor.baseCommit, 'abc1234');
+        assert.equal(collected.lifecycleAnchor.sessionId, 'sess_anchor_999');
+        assert.equal(collected.lifecycleAnchor.startedAt, '2026-09-30T10:00:00.000Z');
+        assert.equal(collected.lifecycleAnchor.completedAt, '2026-09-30T10:10:00.000Z');
       } finally {
         rmSync(tempDir, { recursive: true, force: true });
       }

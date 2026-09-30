@@ -9,6 +9,7 @@ import { withLock } from '../utils/lock.js';
 import { DocPathError } from '../utils/error-helpers.js';
 import { normalizeWorkflowSnapshot, type GateStatus, type WorkflowPhase } from './state-machine.js';
 import { normalizeWorkflowProfile, type WorkflowProfile } from './workflow-profile.js';
+import { captureGitCommit, detectCurrentSessionId } from '../utils/agent-telemetry-adapter.js';
 
 export type WorkflowEvent =
   | 'task.created'
@@ -34,6 +35,8 @@ export interface TransitionPayload {
   workflowProfile?: WorkflowProfile;
   /** 任务风险档位 R0–R3（R-338）；创建期评估，缺省视为未评估 */
   riskTier?: number;
+  baseCommit?: string;
+  sessionId?: string;
 }
 
 interface TransitionTarget {
@@ -390,6 +393,15 @@ export async function transitionWorkflow(
 
     if (previous.phase !== next.phase) {
       next.started_at = nowIso();
+    }
+
+    if (createsDifferentTask || event === 'task.created' || !next.base_commit) {
+      const commit = payload.baseCommit || captureGitCommit(cwd);
+      if (commit) next.base_commit = commit;
+    }
+    if (createsDifferentTask || event === 'task.created' || !next.session_id) {
+      const sess = payload.sessionId || (await detectCurrentSessionId(cwd));
+      if (sess) next.session_id = sess;
     }
 
     await writeCurrentState(cwd, next);

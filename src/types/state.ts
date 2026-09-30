@@ -95,6 +95,9 @@ export interface CurrentState {
   backlog_id?: string | null;
   risk_tier?: number;
   escalation?: any;
+  base_commit?: string;
+  session_id?: string;
+  lifecycle_anchor?: any;
   [key: string]: unknown;
 }
 

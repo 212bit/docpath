@@ -12,6 +12,33 @@ import { join, basename } from 'node:path';
 import { homedir } from 'node:os';
 import { estimateTokens } from './document-index.js';
 import { resolveDocpathDir } from './file.js';
+import { gitSyncOptional } from './git-run.js';
+
+export interface LifecycleAnchor {
+  sessionId?: string;
+  startTurnId?: string;
+  endTurnId?: string;
+  baseCommit?: string;
+  headCommit?: string;
+  startedAt: string;
+  completedAt?: string;
+}
+
+export interface StepTelemetrySlice {
+  stepId: string;
+  stepTitle?: string;
+  startedAt: string;
+  completedAt: string;
+  durationMinutes: number;
+  totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens?: number;
+  costUsd?: number;
+  toolCallsCount: number;
+  topTools?: Array<{ name: string; count: number; tokens: number }>;
+  diffLines?: number;
+}
 
 export interface TelemetryTokens {
   inputTokens: number;
@@ -103,6 +130,10 @@ export interface TelemetryProbeOptions {
   zcodeDbPath?: string;
   zcodeRolloutDir?: string;
   env?: Record<string, string | undefined>;
+  anchor?: LifecycleAnchor;
+  sessionId?: string;
+  startTurnId?: string | number;
+  endTurnId?: string | number;
 }
 
 export interface ComplianceAuditContext {
@@ -252,12 +283,92 @@ export class ComplianceAuditor {
 }
 
 /**
+ * 捕获当前 Git HEAD 提交哈希
+ */
+export function captureGitCommit(cwd: string): string | undefined {
+  try {
+    const commit = gitSyncOptional(cwd, ['rev-parse', 'HEAD']);
+    return commit ? commit.trim() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * 自动探测当前活跃 Agent 会话 Session ID
+ */
+export async function detectCurrentSessionId(cwd?: string): Promise<string | undefined> {
+  const env = process.env;
+  const envSessionId =
+    env.DOCPATH_SESSION ||
+    env.SESSION_ID ||
+    env.GEMINI_CONVERSATION_ID ||
+    env.ZCODE_SESSION_ID ||
+    env.DOCPATH_AGENT_SESSION_ID;
+  if (envSessionId && envSessionId.trim()) {
+    return envSessionId.trim();
+  }
+
+  let latestSession: { sessionId: string; mtime: number } | null = null;
+
+  // 1. Antigravity brain
+  try {
+    const appDataDir = env.GEMINI_CLI_APP_DATA_DIR || join(homedir(), '.gemini', 'antigravity-cli');
+    const brainDir = join(appDataDir, 'brain');
+    if (existsSync(brainDir)) {
+      const convEntries = await readdir(brainDir, { withFileTypes: true });
+      for (const conv of convEntries) {
+        if (!conv.isDirectory()) continue;
+        const tp = join(brainDir, conv.name, '.system_generated', 'logs', 'transcript.jsonl');
+        if (existsSync(tp)) {
+          const s = await stat(tp);
+          if (!latestSession || s.mtimeMs > latestSession.mtime) {
+            latestSession = { sessionId: conv.name, mtime: s.mtimeMs };
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2. ZCode sqlite
+  try {
+    const zcodeDb = env.ZCODE_DB_PATH || join(homedir(), '.zcode', 'cli', 'db', 'db.sqlite');
+    if (existsSync(zcodeDb)) {
+      const rows = await ZCodeTelemetryAdapter.querySqlite(
+        zcodeDb,
+        'SELECT session_id, started_at FROM model_usage ORDER BY started_at DESC LIMIT 1'
+      );
+      if (rows && rows.length > 0 && rows[0].session_id) {
+        const t = Number(rows[0].started_at) || 0;
+        if (!latestSession || t > latestSession.mtime) {
+          latestSession = { sessionId: String(rows[0].session_id), mtime: t };
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return latestSession?.sessionId;
+}
+
+/**
  * Antigravity / Gemini CLI transcript 遥测适配器
  */
 export class AntigravityTelemetryAdapter {
   public static parseTranscript(
     content: string,
-    options?: { startTime?: number; endTime?: number }
+    options?: {
+      startTime?: number;
+      endTime?: number;
+      sessionId?: string;
+      startTurnId?: string | number;
+      endTurnId?: string | number;
+      startTurnIndex?: number;
+      endTurnIndex?: number;
+    }
   ): {
     tokens: TelemetryTokens;
     toolCalls: { total: number; byName: Record<string, number>; errorCount: number };
@@ -288,6 +399,7 @@ export class AntigravityTelemetryAdapter {
     let firstTimestamp = 0;
     let lastTimestamp = 0;
     let detectedModel: string | undefined;
+    let detectedSessionId: string | undefined;
 
     let lastFailedToolOrCmd: string | null = null;
     let consecutiveFailures = 0;
@@ -298,6 +410,49 @@ export class AntigravityTelemetryAdapter {
     for (const line of lines) {
       try {
         const entry = JSON.parse(line);
+
+        // 会话过滤
+        if (options?.sessionId) {
+          const entrySession = entry.session_id || entry.sessionId || entry.conversation_id || entry.conversationId;
+          if (entrySession && entrySession !== options.sessionId) {
+            continue;
+          }
+        }
+
+        // 轮次与 Turn ID 范围过滤
+        const stepIndex = typeof entry.step_index === 'number'
+          ? entry.step_index
+          : (typeof entry.turn_index === 'number' ? entry.turn_index : undefined);
+
+        const turnId = entry.turn_id || entry.step_id || (stepIndex !== undefined ? String(stepIndex) : undefined);
+
+        const startTurn = options?.startTurnIndex ?? (options?.startTurnId !== undefined
+          ? (typeof options.startTurnId === 'number' ? options.startTurnId : (Number.isNaN(Number(options.startTurnId)) ? undefined : Number(options.startTurnId)))
+          : undefined);
+        const endTurn = options?.endTurnIndex ?? (options?.endTurnId !== undefined
+          ? (typeof options.endTurnId === 'number' ? options.endTurnId : (Number.isNaN(Number(options.endTurnId)) ? undefined : Number(options.endTurnId)))
+          : undefined);
+
+        if (stepIndex !== undefined) {
+          if (typeof startTurn === 'number' && !isNaN(startTurn) && stepIndex < startTurn) {
+            continue;
+          }
+          if (typeof endTurn === 'number' && !isNaN(endTurn) && stepIndex > endTurn) {
+            continue;
+          }
+        } else if (turnId && (options?.startTurnId || options?.endTurnId)) {
+          if (options.startTurnId && String(turnId) < String(options.startTurnId)) {
+            continue;
+          }
+          if (options.endTurnId && String(turnId) > String(options.endTurnId)) {
+            continue;
+          }
+        }
+
+        if (!detectedSessionId && (entry.session_id || entry.sessionId || entry.conversation_id || entry.conversationId)) {
+          detectedSessionId = entry.session_id || entry.sessionId || entry.conversation_id || entry.conversationId;
+        }
+
         const entryTime = entry.created_at ? new Date(entry.created_at).getTime() : 0;
 
         if (entryTime) {
@@ -568,6 +723,7 @@ export class AntigravityTelemetryAdapter {
       heavyReadsCount,
       flappingCount,
       model: detectedModel,
+      sessionId: options?.sessionId || detectedSessionId,
       durationMs,
     };
   }
@@ -575,6 +731,9 @@ export class AntigravityTelemetryAdapter {
   public static async probe(options: TelemetryProbeOptions): Promise<SessionTelemetryRecord | null> {
     try {
       let transcriptPath = options.transcriptPath;
+      const targetSessionId = options.sessionId || options.anchor?.sessionId;
+      const startTurnId = options.startTurnId || options.anchor?.startTurnId;
+      const endTurnId = options.endTurnId || options.anchor?.endTurnId;
 
       if (!transcriptPath) {
         const appDataDir =
@@ -583,7 +742,9 @@ export class AntigravityTelemetryAdapter {
           join(homedir(), '.gemini', 'antigravity-cli');
         const brainDir = join(appDataDir, 'brain');
 
-        if (existsSync(brainDir)) {
+        if (targetSessionId && existsSync(join(brainDir, targetSessionId, '.system_generated', 'logs', 'transcript.jsonl'))) {
+          transcriptPath = join(brainDir, targetSessionId, '.system_generated', 'logs', 'transcript.jsonl');
+        } else if (existsSync(brainDir)) {
           const convEntries = await readdir(brainDir, { withFileTypes: true });
           let latestTranscript: string | null = null;
           let latestMtime = 0;
@@ -612,7 +773,13 @@ export class AntigravityTelemetryAdapter {
       const startTime = options.startedAt ? new Date(options.startedAt).getTime() : undefined;
       const endTime = options.completedAt ? new Date(options.completedAt).getTime() : undefined;
 
-      const parsed = AntigravityTelemetryAdapter.parseTranscript(content, { startTime, endTime });
+      const parsed = AntigravityTelemetryAdapter.parseTranscript(content, {
+        startTime,
+        endTime,
+        sessionId: targetSessionId,
+        startTurnId,
+        endTurnId,
+      });
 
       const durationMinutes = parsed.durationMs
         ? Math.round(parsed.durationMs / 60000)
@@ -849,6 +1016,8 @@ export class ZCodeTelemetryAdapter {
     startTime?: number;
     endTime?: number;
     sessionId?: string;
+    startTurnId?: string | number;
+    endTurnId?: string | number;
   }): Promise<SessionTelemetryRecord | null> {
     try {
       const dbPath = options.dbPath || join(homedir(), '.zcode', 'cli', 'db', 'db.sqlite');
@@ -863,13 +1032,50 @@ export class ZCodeTelemetryAdapter {
         whereClauses.push('session_id = ?');
         params.push(options.sessionId);
       }
-      if (typeof options.startTime === 'number' && options.startTime > 0) {
-        whereClauses.push('started_at >= ?');
-        params.push(options.startTime - 30_000);
+
+      let derivedStartTime = options.startTime;
+      let derivedEndTime = options.endTime;
+
+      if (options.startTurnId !== undefined || options.endTurnId !== undefined) {
+        try {
+          const turnTimeClauses: string[] = [];
+          const turnTimeParams: (string | number)[] = [];
+          if (options.sessionId) {
+            turnTimeClauses.push('session_id = ?');
+            turnTimeParams.push(options.sessionId);
+          }
+          if (options.startTurnId !== undefined) {
+            turnTimeClauses.push('turn_id >= ?');
+            turnTimeParams.push(String(options.startTurnId));
+          }
+          if (options.endTurnId !== undefined) {
+            turnTimeClauses.push('turn_id <= ?');
+            turnTimeParams.push(String(options.endTurnId));
+          }
+          const turnWhere = turnTimeClauses.length > 0 ? `WHERE ${turnTimeClauses.join(' AND ')}` : '';
+          const turnTimeRows = await ZCodeTelemetryAdapter.querySqlite(
+            dbPath,
+            `SELECT MIN(started_at) AS min_t, MAX(started_at) AS max_t FROM turn_usage ${turnWhere}`,
+            turnTimeParams
+          );
+          if (turnTimeRows && turnTimeRows.length > 0) {
+            if (turnTimeRows[0].min_t && !derivedStartTime) derivedStartTime = Number(turnTimeRows[0].min_t);
+            if (turnTimeRows[0].max_t && !derivedEndTime) derivedEndTime = Number(turnTimeRows[0].max_t);
+          }
+        } catch {
+          // ignore
+        }
       }
-      if (typeof options.endTime === 'number' && options.endTime > 0) {
+
+      const isTurnBounded = options.startTurnId !== undefined || options.endTurnId !== undefined;
+
+      if (typeof derivedStartTime === 'number' && derivedStartTime > 0) {
+        whereClauses.push('started_at >= ?');
+        params.push(isTurnBounded ? derivedStartTime : derivedStartTime - 30_000);
+      }
+      if (typeof derivedEndTime === 'number' && derivedEndTime > 0) {
         whereClauses.push('started_at <= ?');
-        params.push(options.endTime + 30_000);
+        params.push(isTurnBounded ? derivedEndTime + 1000 : derivedEndTime + 30_000);
       }
 
       // 如果未指定任何过滤条件，默认检索近 30 分钟记录
@@ -941,15 +1147,38 @@ export class ZCodeTelemetryAdapter {
       let turnsCount = totalRequests;
       let errorCount = 0;
       try {
+        const turnWhereClauses: string[] = [];
+        const turnParams: (string | number)[] = [];
+        if (options.sessionId) {
+          turnWhereClauses.push('session_id = ?');
+          turnParams.push(options.sessionId);
+        }
+        if (options.startTurnId !== undefined) {
+          turnWhereClauses.push('turn_id >= ?');
+          turnParams.push(String(options.startTurnId));
+        }
+        if (options.endTurnId !== undefined) {
+          turnWhereClauses.push('turn_id <= ?');
+          turnParams.push(String(options.endTurnId));
+        }
+        if (typeof derivedStartTime === 'number' && derivedStartTime > 0) {
+          turnWhereClauses.push('started_at >= ?');
+          turnParams.push(isTurnBounded ? derivedStartTime : derivedStartTime - 30_000);
+        }
+        if (typeof derivedEndTime === 'number' && derivedEndTime > 0) {
+          turnWhereClauses.push('started_at <= ?');
+          turnParams.push(isTurnBounded ? derivedEndTime + 1000 : derivedEndTime + 30_000);
+        }
+        const turnWhereSql = turnWhereClauses.length > 0 ? `WHERE ${turnWhereClauses.join(' AND ')}` : '';
         const turnSql = `
           SELECT
             COUNT(*) AS turns_count,
             SUM(tool_call_count) AS tool_call_count,
             SUM(tool_error_count) AS tool_error_count
           FROM turn_usage
-          ${whereSql}
+          ${turnWhereSql}
         `;
-        const turnRows = await ZCodeTelemetryAdapter.querySqlite(dbPath, turnSql, params);
+        const turnRows = await ZCodeTelemetryAdapter.querySqlite(dbPath, turnSql, turnParams);
         if (turnRows && turnRows.length > 0 && Number(turnRows[0].turns_count) > 0) {
           turnsCount = Number(turnRows[0].turns_count);
           errorCount = Number(turnRows[0].tool_error_count) || 0;
@@ -1049,6 +1278,8 @@ export class ZCodeTelemetryAdapter {
     startTime?: number;
     endTime?: number;
     sessionId?: string;
+    startTurnId?: string | number;
+    endTurnId?: string | number;
   }): Promise<SessionTelemetryRecord | null> {
     try {
       const rolloutDir = options.rolloutDir || join(homedir(), '.zcode', 'cli', 'rollout');
@@ -1178,7 +1409,9 @@ export class ZCodeTelemetryAdapter {
     try {
       const startTime = options.startedAt ? new Date(options.startedAt).getTime() : undefined;
       const endTime = options.completedAt ? new Date(options.completedAt).getTime() : undefined;
-      const sessionId = options.state?.session_id || options.env?.ZCODE_SESSION_ID;
+      const sessionId = options.sessionId || options.anchor?.sessionId || options.state?.session_id || options.env?.ZCODE_SESSION_ID;
+      const startTurnId = options.startTurnId || options.anchor?.startTurnId;
+      const endTurnId = options.endTurnId || options.anchor?.endTurnId;
       const dbPath = options.zcodeDbPath || options.env?.ZCODE_DB_PATH || (process.env.ZCODE_DB_PATH || undefined);
       const rolloutDir = options.zcodeRolloutDir || options.env?.ZCODE_ROLLOUT_DIR || (process.env.ZCODE_ROLLOUT_DIR || undefined);
 
@@ -1187,6 +1420,8 @@ export class ZCodeTelemetryAdapter {
         startTime,
         endTime,
         sessionId,
+        startTurnId,
+        endTurnId,
       });
 
       if (!record || record.tokens.totalTokens === 0) {
@@ -1195,6 +1430,8 @@ export class ZCodeTelemetryAdapter {
           startTime,
           endTime,
           sessionId,
+          startTurnId,
+          endTurnId,
         });
       }
 
