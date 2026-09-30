@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-09-30T13:40:38.520Z",
+    "updated_at": "2026-09-30T13:40:38.520Z",
+    "content_sha256": "99bb03451ca35720e4ea74ec689b15dafe9e55f1ee39f9684575d43667da1cdd"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-09-30T13:40:38.520Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 DocPath 必要性效能实证",
+      "description": "落地 FR-1: DocPath 必要性效能实证，并完成模块定向自验。",
+      "acceptance": "AC-1: DocPath 必要性效能实证 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 命令摩擦优化分析引擎",
+      "description": "落地 FR-2: 命令摩擦优化分析引擎，并完成模块定向自验。",
+      "acceptance": "AC-2: 命令摩擦优化分析引擎 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-457 与任务 T-20260930-docpath 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

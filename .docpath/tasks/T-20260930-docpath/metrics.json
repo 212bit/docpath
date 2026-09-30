@@ -1,0 +1,213 @@
+{
+  "taskId": "T-20260930-docpath",
+  "taskTitle": "T-20260930-docpath - DocPath 必要性效能实证与命令摩擦优化分析引擎",
+  "backlogId": "R-457",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-09-30T13:25:26.804Z",
+  "completedAt": "2026-09-30T13:43:04.651Z",
+  "durationMinutes": 17.6,
+  "firstTimePassRate": 100,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 43, 消耗: 1122347 Tokens, 时长: 4 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 43,
+        "totalTokens": 1122347,
+        "durationMinutes": 4
+      }
+    }
+  ],
+  "totalDiffLines": 1334,
+  "filesChanged": 15,
+  "linesAdded": 1327,
+  "linesDeleted": 7,
+  "engineering": {
+    "turnCount": 7,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 17.6,
+    "filesChanged": 15,
+    "linesAdded": 1327,
+    "linesDeleted": 7,
+    "totalDiffLines": 1334,
+    "speedLinesPerMinute": 75.8
+  },
+  "protocol": {
+    "specTokens": 877,
+    "planTokens": 346,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3023
+  },
+  "realUsage": {
+    "source": "zcode",
+    "inputTokens": 1112464,
+    "outputTokens": 9883,
+    "totalTokens": 1122347,
+    "costUsd": 3.4856,
+    "toolCallsCount": 48,
+    "model": {
+      "modelId": "big-pickle",
+      "providerId": "8aafb336-1279-4968-93b8-0d2490726729"
+    },
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 43, 消耗: 1122347 Tokens, 时长: 4 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 43,
+          "totalTokens": 1122347,
+          "durationMinutes": 4
+        }
+      }
+    ],
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 100,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    }
+  },
+  "sessionRecord": {
+    "source": "zcode",
+    "sessionId": "8873cc53-6a72-4572-b9a9-101a1869a488",
+    "model": {
+      "modelId": "big-pickle",
+      "providerId": "8aafb336-1279-4968-93b8-0d2490726729"
+    },
+    "tokens": {
+      "inputTokens": 1112464,
+      "outputTokens": 9883,
+      "totalTokens": 1122347,
+      "costUsd": 3.4856
+    },
+    "toolCalls": {
+      "total": 48,
+      "byName": {
+        "Bash": 21,
+        "Edit": 18,
+        "Read": 9
+      }
+    },
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 100,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "turnsCount": 43,
+    "errorCount": 0,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 43, 消耗: 1122347 Tokens, 时长: 4 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 43,
+          "totalTokens": 1122347,
+          "durationMinutes": 4
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 239875
+  },
+  "docpathEfficacy": {
+    "preventedLoopsCount": 0,
+    "deadlockTokensSaved": 0,
+    "contextCompressionRatio": 92.5,
+    "subagentTokensSaved": 0,
+    "gateInterceptionCount": 0,
+    "firstTimePassRate": 100,
+    "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+  },
+  "lifecycleAnchor": {
+    "sessionId": "8873cc53-6a72-4572-b9a9-101a1869a488",
+    "baseCommit": "1cc9bc5ae33dda35878e65d69585337061b1c30f",
+    "headCommit": "1cc9bc5ae33dda35878e65d69585337061b1c30f",
+    "startedAt": "2026-09-30T13:25:26.804Z",
+    "completedAt": "2026-09-30T13:43:04.651Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 FR-1 DocPath 必要性效能实证",
+      "startedAt": "2026-09-30T13:25:26.804Z",
+      "completedAt": "2026-09-30T13:36:09.969Z",
+      "durationMinutes": 10.7,
+      "totalTokens": 6220,
+      "inputTokens": 4354,
+      "outputTokens": 1866,
+      "costUsd": 0.0411,
+      "toolCallsCount": 5,
+      "topTools": [
+        {
+          "name": "run_command",
+          "count": 3,
+          "tokens": 2016
+        },
+        {
+          "name": "invoke_subagent",
+          "count": 2,
+          "tokens": 1498
+        }
+      ]
+    },
+    {
+      "stepId": "S2",
+      "stepTitle": "实现并验证 FR-2 命令摩擦优化分析引擎",
+      "startedAt": "2026-09-30T13:36:10.278Z",
+      "completedAt": "2026-09-30T13:40:38.524Z",
+      "durationMinutes": 4.5,
+      "totalTokens": 687792,
+      "inputTokens": 681272,
+      "outputTokens": 6520,
+      "costUsd": 2.1416,
+      "toolCallsCount": 33,
+      "topTools": [
+        {
+          "name": "Bash",
+          "count": 16,
+          "tokens": 0
+        },
+        {
+          "name": "Edit",
+          "count": 11,
+          "tokens": 0
+        },
+        {
+          "name": "Read",
+          "count": 6,
+          "tokens": 0
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 3023,
+    "realModelTokens": 1122347,
+    "overheadRatio": 0.27,
+    "complianceScore": 85,
+    "firstTimePassRate": 100,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}

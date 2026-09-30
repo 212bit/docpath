@@ -22,6 +22,8 @@ import {
   detectWorkflowFrictions,
   aggregateWorkflowFrictions,
   aggregateDocPathCliOverhead,
+  calculateDocPathEfficacy,
+  aggregateDocPathCliFriction,
 } from '../dist/utils/task-metrics.js';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
@@ -2498,6 +2500,308 @@ describe('DocPath CLI Overhead Dashboard & Token Attribution Engine (FR-2 / AC-2
     }
   });
 });
+
+describe('DocPath Efficacy & Friction Evidence Dashboard (FR-2 / AC-2, AC-3, AC-4)', () => {
+  it('calculateDocPathEfficacy computes context compression, prevented loops, and saved tokens', () => {
+    const tasks = [
+      {
+        taskId: 'T-EFF-01',
+        firstTimePassRate: 100,
+        engineering: { retryCount: 0 },
+        docpathEfficacy: {
+          preventedLoopsCount: 2,
+          deadlockTokensSaved: 7000,
+          contextCompressionRatio: 94.5,
+          subagentTokensSaved: 15000,
+          gateInterceptionCount: 1,
+          firstTimePassRate: 100,
+          summary: 'Summary 1',
+        },
+      },
+      {
+        taskId: 'T-EFF-02',
+        firstTimePassRate: 90,
+        engineering: { retryCount: 1 },
+        docpathEfficacy: {
+          preventedLoopsCount: 1,
+          deadlockTokensSaved: 3500,
+          contextCompressionRatio: 91.5,
+          subagentTokensSaved: 0,
+          gateInterceptionCount: 0,
+          firstTimePassRate: 90,
+          summary: 'Summary 2',
+        },
+      },
+    ];
+
+    const efficacy = calculateDocPathEfficacy(tasks);
+    assert.equal(efficacy.preventedLoopsCount, 3);
+    assert.equal(efficacy.deadlockTokensSaved, 10500);
+    assert.equal(efficacy.subagentTokensSaved, 15000);
+    assert.equal(efficacy.gateInterceptionCount, 1);
+    assert.equal(efficacy.contextCompressionRatio, 93.0); // (94.5 + 91.5) / 2
+    assert.equal(efficacy.firstTimePassRate, 95); // (100 + 90) / 2
+    assert.match(efficacy.summary, /拦截了 3 次潜在死循环/);
+  });
+
+  it('aggregateDocPathCliFriction aggregates serial chains, heavy outputs, and actionable optimizations', () => {
+    const task1 = {
+      taskId: 'T-FRIC-01',
+      realUsage: {
+        docpathCliFriction: {
+          redundantCallsCount: 2,
+          redundantTokensWasted: 1200,
+          serialChains: [
+            { chain: 'go -> next', count: 2, tokensWasted: 1200, recommendation: 'Avoid serial go -> next' },
+          ],
+          heavyOutputCommands: [
+            { subcommand: 'review', avgOutputTokens: 1420, maxOutputTokens: 1500, count: 1, optimizationHint: 'Enable --compact' },
+          ],
+          actionableOptimizations: ['Avoid serial go -> next', 'Enable --compact'],
+        },
+      },
+    };
+
+    const task2 = {
+      taskId: 'T-FRIC-02',
+      realUsage: {
+        docpathCliFriction: {
+          redundantCallsCount: 1,
+          redundantTokensWasted: 600,
+          serialChains: [
+            { chain: 'go -> next', count: 1, tokensWasted: 600, recommendation: 'Avoid serial go -> next' },
+            { chain: 'check -> done', count: 1, tokensWasted: 500, recommendation: 'Avoid check prior to done' },
+          ],
+          heavyOutputCommands: [
+            { subcommand: 'review', avgOutputTokens: 1300, maxOutputTokens: 1300, count: 1, optimizationHint: 'Enable --compact' },
+          ],
+          actionableOptimizations: ['Avoid check prior to done'],
+        },
+      },
+    };
+
+    const friction = aggregateDocPathCliFriction([task1, task2]);
+    assert.equal(friction.redundantCallsCount, 3);
+    assert.equal(friction.redundantTokensWasted, 1800);
+    assert.equal(friction.serialChains.length, 2);
+
+    const goNext = friction.serialChains.find((s) => s.chain === 'go -> next');
+    assert.ok(goNext);
+    assert.equal(goNext.count, 3);
+    assert.equal(goNext.tokensWasted, 1800);
+
+    const checkDone = friction.serialChains.find((s) => s.chain === 'check -> done');
+    assert.ok(checkDone);
+    assert.equal(checkDone.count, 1);
+
+    assert.equal(friction.heavyOutputCommands.length, 1);
+    assert.equal(friction.heavyOutputCommands[0].subcommand, 'review');
+    assert.equal(friction.heavyOutputCommands[0].count, 2);
+    assert.equal(friction.heavyOutputCommands[0].maxOutputTokens, 1500);
+
+    assert.ok(friction.actionableOptimizations.length >= 3);
+    assert.ok(friction.actionableOptimizations.some((o) => o.includes('redundant CLI calls')));
+  });
+
+  it('docpath monitor --current renders DocPath Efficacy and Friction Evidence panels in Human, YAML, and JSON views', () => {
+    const cwd = mkWorkspaceWithActiveTask({
+      taskId: 'T-EVIDENCE-ACTIVE',
+      taskTitle: 'Active Task Evidence Test',
+      profile: 'standard',
+    });
+
+    const dp = join(cwd, '.docpath');
+    const metricsJson = {
+      taskId: 'T-EVIDENCE-ACTIVE',
+      taskTitle: 'Active Task Evidence Test',
+      profile: 'standard',
+      level: 2,
+      realUsage: {
+        source: 'antigravity',
+        totalTokens: 80000,
+        inputTokens: 65000,
+        outputTokens: 15000,
+        cachedTokens: 20000,
+        docpathEfficacy: {
+          preventedLoopsCount: 2,
+          deadlockTokensSaved: 7000,
+          contextCompressionRatio: 93.5,
+          subagentTokensSaved: 15000,
+          gateInterceptionCount: 1,
+          firstTimePassRate: 100,
+          summary: 'DocPath 架构通过契约门禁与轻量路由拦截了 2 次潜在死循环，节省约 7,000 Tokens，上下文压缩比达 93.5%',
+        },
+        docpathCliFriction: {
+          redundantCallsCount: 2,
+          redundantTokensWasted: 1000,
+          serialChains: [
+            { chain: 'go -> next', count: 2, tokensWasted: 1000, recommendation: '建议升级为复合原子命令消除串行交互' },
+          ],
+          heavyOutputCommands: [
+            { subcommand: 'review', avgOutputTokens: 1420, maxOutputTokens: 1500, count: 1, optimizationHint: '建议默认启用 --compact' },
+          ],
+          actionableOptimizations: ['💡 建议升级为原子复合命令消除串行交互', '建议默认启用 --compact'],
+        },
+      },
+    };
+    writeFileSync(join(dp, 'tasks', 'current', 'metrics.json'), JSON.stringify(metricsJson, null, 2));
+
+    try {
+      // 1. Human view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /DocPath 效能与必要性实证 \(DocPath Efficacy Evidence\)/);
+      assert.match(stdoutHuman, /上下文治理与压缩率:\s*⚡ ~93\.5% 上下文压缩率/);
+      assert.match(stdoutHuman, /死循环与翻转拦截:\s*🛡️ 已拦截 2 次死循环，挽救 ~7,000 \(~7K\) Tokens/);
+      assert.match(stdoutHuman, /子代理分治隔离收益:\s*👥 子代理分治隔离主会话 ~15,000 \(~15K\) Tokens/);
+      assert.match(stdoutHuman, /质量门禁拦截兜底:\s*🎯 1 次质量门禁拦截兜底 \| 100% 门禁首次通过率/);
+
+      assert.match(stdoutHuman, /DocPath 自身摩擦与优化实证 \(DocPath CLI Friction & Optimization\)/);
+      assert.match(stdoutHuman, /重复\/空转调用:\s*⚠️ 重复\/空转调用: 2 次 \(浪费 ~1,000 \(~1K\) Tokens\)/);
+      assert.match(stdoutHuman, /低效串行命令链 \(Serial Command Chaining\)/);
+      assert.match(stdoutHuman, /go -> next: 发生 2 次/);
+      assert.match(stdoutHuman, /大体积输出命令 \(Heavy Output Commands\)/);
+      assert.match(stdoutHuman, /review: 均输出 ~1,420 \(~1\.4K\) Tokens/);
+      assert.match(stdoutHuman, /消除命令摩擦优化建议 \(Actionable Optimizations\)/);
+
+      // 2. YAML agent view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /docpath_efficacy:/);
+      assert.match(stdoutAgent, /prevented_loops_count:\s*2/);
+      assert.match(stdoutAgent, /context_compression_ratio:\s*['"]?93\.5%['"]?/);
+      assert.match(stdoutAgent, /subagent_tokens_saved:\s*15000/);
+      assert.match(stdoutAgent, /docpath_cli_friction:/);
+      assert.match(stdoutAgent, /redundant_calls_count:\s*2/);
+      assert.match(stdoutAgent, /chain:\s*go -> next/);
+      assert.match(stdoutAgent, /subcommand:\s*review/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --current --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.equal(data.active, true);
+      assert.ok(data.activeTask.docpathEfficacy);
+      assert.equal(data.activeTask.docpathEfficacy.preventedLoopsCount, 2);
+      assert.equal(data.activeTask.docpathEfficacy.deadlockTokensSaved, 7000);
+      assert.equal(data.activeTask.docpathEfficacy.subagentTokensSaved, 15000);
+      assert.equal(data.activeTask.docpathEfficacy.contextCompressionRatio, 93.5);
+
+      assert.ok(data.activeTask.docpathCliFriction);
+      assert.equal(data.activeTask.docpathCliFriction.redundantCallsCount, 2);
+      assert.equal(data.activeTask.docpathCliFriction.serialChains.length, 1);
+      assert.equal(data.activeTask.docpathCliFriction.heavyOutputCommands.length, 1);
+      assert.ok(data.activeTask.docpathCliFriction.actionableOptimizations.length >= 2);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('docpath monitor (global) renders DocPath Efficacy and Friction Evidence panels in Human, YAML, and JSON views', () => {
+    const task1 = {
+      taskId: 'T-EVIDENCE-GLOBAL-01',
+      taskTitle: 'Global Evidence Task',
+      profile: 'standard',
+      level: 2,
+      startedAt: '2026-09-30T10:00:00.000Z',
+      completedAt: '2026-09-30T10:15:00.000Z',
+      durationMinutes: 15,
+      firstTimePassRate: 100,
+      complianceScore: 100,
+      violations: [],
+      totalDiffLines: 150,
+      filesChanged: 3,
+      linesAdded: 120,
+      linesDeleted: 30,
+      protocol: { totalInjectedTokens: 2200 },
+      realUsage: {
+        totalTokens: 90000,
+        inputTokens: 75000,
+        outputTokens: 15000,
+        cachedTokens: 25000,
+        docpathEfficacy: {
+          preventedLoopsCount: 3,
+          deadlockTokensSaved: 10500,
+          contextCompressionRatio: 92.5,
+          subagentTokensSaved: 30000,
+          gateInterceptionCount: 2,
+          firstTimePassRate: 100,
+          summary: 'DocPath 架构通过契约门禁与轻量路由拦截了 3 次潜在死循环，节省约 10,500 Tokens，上下文压缩比达 92.5%',
+        },
+        docpathCliFriction: {
+          redundantCallsCount: 3,
+          redundantTokensWasted: 1500,
+          serialChains: [
+            { chain: 'go -> next', count: 2, tokensWasted: 1000, recommendation: '建议升级为复合原子命令消除串行交互' },
+            { chain: 'check -> done', count: 1, tokensWasted: 500, recommendation: 'docpath done 自动执行 check' },
+          ],
+          heavyOutputCommands: [
+            { subcommand: 'review', avgOutputTokens: 1420, maxOutputTokens: 1500, count: 1, optimizationHint: '建议默认启用 --compact' },
+          ],
+          actionableOptimizations: ['💡 建议升级为原子复合命令消除串行交互', '建议默认启用 --compact'],
+        },
+      },
+    };
+
+    const cwd = mkWorkspaceWithTasks([task1]);
+    try {
+      // 1. Human view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}"`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /DocPath 效能与必要性实证 \(DocPath Efficacy Evidence\)/);
+      assert.match(stdoutHuman, /上下文治理与压缩率:\s*⚡ ~92\.5% 上下文压缩率/);
+      assert.match(stdoutHuman, /死循环与翻转拦截:\s*🛡️ 已拦截 3 次死循环，挽救 ~10,500 \(~10\.5K\) Tokens/);
+      assert.match(stdoutHuman, /子代理分治隔离收益:\s*👥 子代理分治隔离主会话 ~30,000 \(~30K\) Tokens/);
+      assert.match(stdoutHuman, /质量门禁拦截兜底:\s*🎯 2 次质量门禁拦截兜底 \| 100% 门禁首次通过率/);
+
+      assert.match(stdoutHuman, /DocPath 自身摩擦与优化实证 \(DocPath CLI Friction & Optimization\)/);
+      assert.match(stdoutHuman, /重复\/空转调用:\s*⚠️ 重复\/空转调用: 3 次 \(浪费 ~1,500 \(~1\.5K\) Tokens\)/);
+      assert.match(stdoutHuman, /低效串行命令链 \(Serial Command Chaining\)/);
+      assert.match(stdoutHuman, /go -> next: 发生 2 次/);
+      assert.match(stdoutHuman, /check -> done: 发生 1 次/);
+      assert.match(stdoutHuman, /大体积输出命令 \(Heavy Output Commands\)/);
+      assert.match(stdoutHuman, /review: 均输出 ~1,420 \(~1\.4K\) Tokens/);
+      assert.match(stdoutHuman, /消除命令摩擦优化建议 \(Actionable Optimizations\)/);
+
+      // 2. YAML agent view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /docpath_efficacy:/);
+      assert.match(stdoutAgent, /prevented_loops_count:\s*3/);
+      assert.match(stdoutAgent, /context_compression_ratio:\s*['"]?92\.5%['"]?/);
+      assert.match(stdoutAgent, /subagent_tokens_saved:\s*30000/);
+      assert.match(stdoutAgent, /docpath_cli_friction:/);
+      assert.match(stdoutAgent, /redundant_calls_count:\s*3/);
+      assert.match(stdoutAgent, /chain:\s*go -> next/);
+      assert.match(stdoutAgent, /chain:\s*check -> done/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.ok(data.globalDocPathEfficacy);
+      assert.equal(data.globalDocPathEfficacy.preventedLoopsCount, 3);
+      assert.equal(data.globalDocPathEfficacy.deadlockTokensSaved, 10500);
+      assert.equal(data.globalDocPathEfficacy.subagentTokensSaved, 30000);
+      assert.equal(data.globalDocPathEfficacy.gateInterceptionCount, 2);
+
+      assert.ok(data.globalDocPathCliFriction);
+      assert.equal(data.globalDocPathCliFriction.redundantCallsCount, 3);
+      assert.equal(data.globalDocPathCliFriction.serialChains.length, 2);
+      assert.equal(data.globalDocPathCliFriction.heavyOutputCommands.length, 1);
+      assert.ok(data.globalDocPathCliFriction.actionableOptimizations.length >= 2);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+});
+
 
 
 

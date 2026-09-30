@@ -19,6 +19,8 @@ import {
   probeRealAgentTelemetry,
   probeActiveTaskMetrics,
   extractStepTelemetrySlices,
+  calculateDocPathEfficacy,
+  aggregateDocPathCliFriction,
 } from '../dist/utils/task-metrics.js';
 
 describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', () => {
@@ -1402,6 +1404,380 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
       } finally {
         rmSync(tempDir, { recursive: true, force: true });
       }
+    });
+  });
+
+  describe('DocPath Efficacy Evidence & CLI Friction Engine (FR-1 / AC-1)', () => {
+    it('detects consecutive redundant commands and serial chains in transcript', () => {
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath next --agent' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          content: '{"next_action":"run step S1","recommended_command":"docpath go --step S1"}',
+        }),
+        JSON.stringify({
+          step_index: 3,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath next --agent' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 4,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          content: '{"next_action":"run step S1","recommended_command":"docpath go --step S1"}',
+        }),
+        JSON.stringify({
+          step_index: 5,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath go --step S1' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 6,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          content: 'Step S1 started',
+        }),
+        JSON.stringify({
+          step_index: 7,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath next --agent' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 8,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          content: '{"current_step":"S1"}',
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+
+      assert.ok(result.docpathCliFriction);
+      const friction = result.docpathCliFriction;
+      assert.ok(friction.redundantCallsCount >= 1);
+      assert.ok(friction.redundantTokensWasted > 0);
+
+      // Check serial chains
+      const nextNextChain = friction.serialChains.find((c) => c.chain === 'next -> next');
+      assert.ok(nextNextChain, 'Should detect next -> next chain');
+      assert.equal(nextNextChain.count, 1);
+
+      const goNextChain = friction.serialChains.find((c) => c.chain === 'go -> next');
+      assert.ok(goNextChain, 'Should detect go -> next chain');
+      assert.equal(goNextChain.count, 1);
+      assert.ok(goNextChain.recommendation.includes('docpath go'));
+
+      assert.ok(friction.actionableOptimizations.length > 0);
+    });
+
+    it('does not flag commands as consecutive friction when code edit or subagent tools intervene', () => {
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath go --step S1' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          content: 'Step S1 started',
+        }),
+        JSON.stringify({
+          step_index: 3,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [
+            {
+              name: 'replace_file_content',
+              args: { TargetFile: '/src/main.ts', ReplacementContent: 'export const a = 1;' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 4,
+          source: 'MODEL',
+          type: 'REPLACE_FILE_CONTENT',
+          status: 'DONE',
+          content: 'File updated',
+        }),
+        JSON.stringify({
+          step_index: 5,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath next --agent' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 6,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          content: '{"next_action":"step S1 ready to pass"}',
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+      assert.ok(result.docpathCliFriction);
+      const goNextChain = result.docpathCliFriction.serialChains.find((c) => c.chain === 'go -> next');
+      assert.equal(goNextChain, undefined, 'Intervening code edits should break serial friction chain');
+    });
+
+    it('detects heavy output commands exceeding 600 tokens', () => {
+      // Create a command output with > 600 estimated tokens (~2500 characters)
+      const heavyOutput = 'Heavy log line with detailed information. '.repeat(100);
+
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [
+            {
+              name: 'run_command',
+              args: { CommandLine: 'docpath context' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          content: heavyOutput,
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+      assert.ok(result.docpathCliFriction);
+      assert.equal(result.docpathCliFriction.heavyOutputCommands.length, 1);
+      const heavy = result.docpathCliFriction.heavyOutputCommands[0];
+      assert.equal(heavy.subcommand, 'context');
+      assert.ok(heavy.avgOutputTokens > 600);
+      assert.ok(heavy.maxOutputTokens > 600);
+      assert.equal(heavy.count, 1);
+      assert.ok(heavy.optimizationHint.includes('--agent'));
+    });
+
+    it('calculates DocPath efficacy evidence from transcript metrics', () => {
+      const transcriptContent = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          tool_calls: [
+            {
+              name: 'invoke_subagent',
+              args: { Subagents: [{ TypeName: 'worker', Role: 'Worker', Prompt: 'Do step S1' }] },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'INVOKE_SUBAGENT',
+          status: 'DONE',
+          content: 'Worker completed successfully',
+        }),
+      ].join('\n');
+
+      const result = AntigravityTelemetryAdapter.parseTranscript(transcriptContent);
+      assert.ok(result.docpathEfficacy);
+      const efficacy = result.docpathEfficacy;
+      assert.ok(efficacy.contextCompressionRatio > 0);
+      assert.ok(efficacy.subagentTokensSaved >= 15000);
+      assert.equal(efficacy.firstTimePassRate, 100);
+      assert.ok(efficacy.summary.length > 0);
+    });
+
+    it('calculates and aggregates DocPath efficacy across multiple tasks', () => {
+      const mockTasks = [
+        {
+          taskId: 'T-001',
+          docpathEfficacy: {
+            preventedLoopsCount: 2,
+            deadlockTokensSaved: 16000,
+            contextCompressionRatio: 90.0,
+            subagentTokensSaved: 30000,
+            gateInterceptionCount: 1,
+            firstTimePassRate: 100,
+            summary: 'Task 1 efficacy',
+          },
+        },
+        {
+          taskId: 'T-002',
+          docpathEfficacy: {
+            preventedLoopsCount: 1,
+            deadlockTokensSaved: 8000,
+            contextCompressionRatio: 94.0,
+            subagentTokensSaved: 0,
+            gateInterceptionCount: 0,
+            firstTimePassRate: 100,
+            summary: 'Task 2 efficacy',
+          },
+        },
+      ];
+
+      const agg = calculateDocPathEfficacy(mockTasks);
+      assert.equal(agg.preventedLoopsCount, 3);
+      assert.equal(agg.deadlockTokensSaved, 24000);
+      assert.equal(agg.contextCompressionRatio, 92.0);
+      assert.equal(agg.subagentTokensSaved, 30000);
+      assert.equal(agg.gateInterceptionCount, 1);
+      assert.equal(agg.firstTimePassRate, 100);
+      assert.ok(agg.summary.includes('3') && agg.summary.includes('死循环'));
+
+      // Empty tasks test
+      const emptyAgg = calculateDocPathEfficacy([]);
+      assert.equal(emptyAgg.preventedLoopsCount, 0);
+      assert.equal(emptyAgg.contextCompressionRatio, 92.5);
+    });
+
+    it('aggregates DocPath CLI friction across multiple tasks', () => {
+      const mockTasks = [
+        {
+          taskId: 'T-001',
+          docpathCliFriction: {
+            redundantCallsCount: 3,
+            redundantTokensWasted: 1500,
+            serialChains: [
+              {
+                chain: 'go -> next',
+                count: 2,
+                tokensWasted: 1000,
+                recommendation: 'Run go directly',
+              },
+            ],
+            heavyOutputCommands: [
+              {
+                subcommand: 'context',
+                avgOutputTokens: 800,
+                maxOutputTokens: 800,
+                count: 1,
+                optimizationHint: 'Use --smart',
+              },
+            ],
+            actionableOptimizations: ['Avoid go -> next'],
+          },
+        },
+        {
+          taskId: 'T-002',
+          docpathCliFriction: {
+            redundantCallsCount: 2,
+            redundantTokensWasted: 1000,
+            serialChains: [
+              {
+                chain: 'go -> next',
+                count: 1,
+                tokensWasted: 500,
+                recommendation: 'Run go directly',
+              },
+              {
+                chain: 'check -> done',
+                count: 1,
+                tokensWasted: 500,
+                recommendation: 'Run done --commit directly',
+              },
+            ],
+            heavyOutputCommands: [
+              {
+                subcommand: 'context',
+                avgOutputTokens: 1000,
+                maxOutputTokens: 1000,
+                count: 1,
+                optimizationHint: 'Use --smart',
+              },
+            ],
+            actionableOptimizations: ['Avoid check -> done', 'Avoid go -> next'],
+          },
+        },
+      ];
+
+      const friction = aggregateDocPathCliFriction(mockTasks);
+      assert.equal(friction.redundantCallsCount, 5);
+      assert.equal(friction.redundantTokensWasted, 2500);
+
+      // Verify merged serial chains
+      assert.equal(friction.serialChains.length, 2);
+      const goNext = friction.serialChains.find((c) => c.chain === 'go -> next');
+      assert.ok(goNext);
+      assert.equal(goNext.count, 3);
+      assert.equal(goNext.tokensWasted, 1500);
+
+      const checkDone = friction.serialChains.find((c) => c.chain === 'check -> done');
+      assert.ok(checkDone);
+      assert.equal(checkDone.count, 1);
+      assert.equal(checkDone.tokensWasted, 500);
+
+      // Verify merged heavy output commands
+      assert.equal(friction.heavyOutputCommands.length, 1);
+      const contextCmd = friction.heavyOutputCommands[0];
+      assert.equal(contextCmd.subcommand, 'context');
+      assert.equal(contextCmd.count, 2);
+      assert.equal(contextCmd.avgOutputTokens, 900);
+      assert.equal(contextCmd.maxOutputTokens, 1000);
+
+      // Verify deduplicated actionable optimizations
+      assert.equal(friction.actionableOptimizations.length, 4);
+
+      // Empty tasks test
+      const emptyFriction = aggregateDocPathCliFriction([]);
+      assert.equal(emptyFriction.redundantCallsCount, 0);
+      assert.equal(emptyFriction.serialChains.length, 0);
     });
   });
 });
