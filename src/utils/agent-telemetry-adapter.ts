@@ -34,6 +34,25 @@ export interface DocPathCommandStat {
   avgTokens: number;
 }
 
+export interface DocPathCommandInvocation {
+  id: string;
+  timestamp: string;
+  turnIndex?: number;
+  stepId?: string;
+  subcommand: string;
+  rawCommandLine: string;
+  directInputTokens: number;   // 命令行参数体积
+  directOutputTokens: number;  // 命令执行返回结果体积 (stdout/stderr)
+  directTotalTokens: number;   // directInput + directOutput
+  turnBilledTokens?: number;   // 当轮大模型 API 真实计费总输入输出 (包含全量历史重放)
+  isRedundant: boolean;        // 是否属于无干预空转 (如连续相同命令且未改动代码)
+  isSerialChain: boolean;      // 是否属于多余串行调用 (如 go 紧跟 next)
+  chainKey?: string;           // e.g. "go -> next"
+  wastedTokens: number;        // 浪费的 Token
+  durationMs?: number;
+  status: 'success' | 'error';
+}
+
 export interface DocPathCliOverhead {
   totalCalls: number;
   errorCalls: number;
@@ -201,6 +220,7 @@ export interface SessionTelemetryRecord {
   docpathCliOverhead?: DocPathCliOverhead;
   docpathEfficacy?: DocPathEfficacyEvidence;
   docpathCliFriction?: DocPathCliFrictionEvidence;
+  commandInvocations?: DocPathCommandInvocation[];
   turnsCount: number;
   errorCount: number;
   heavyReadsCount?: number;
@@ -633,6 +653,7 @@ export class AntigravityTelemetryAdapter {
     docpathCliOverhead?: DocPathCliOverhead;
     docpathEfficacy?: DocPathEfficacyEvidence;
     docpathCliFriction?: DocPathCliFrictionEvidence;
+    commandInvocations?: DocPathCommandInvocation[];
     turnsCount: number;
     errorCount: number;
     heavyReadsCount: number;
@@ -646,8 +667,17 @@ export class AntigravityTelemetryAdapter {
     const byName: Record<string, number> = {};
     const toolStatsMap = new Map<string, { count: number; inputTokens: number; outputTokens: number; errorCount: number }>();
     const docpathStatsMap = new Map<string, { count: number; errorCount: number; inputTokens: number; outputTokens: number }>();
-    const pendingToolCalls: Array<{ name: string; args?: Record<string, any>; inputTokens: number; docpathSubcommand?: string | null; historyIdx?: number }> = [];
+    const pendingToolCalls: Array<{
+      name: string;
+      args?: Record<string, any>;
+      inputTokens: number;
+      docpathSubcommand?: string | null;
+      historyIdx?: number;
+      invocationIdx?: number;
+      callTime?: number;
+    }> = [];
     const docpathCallHistory: DocPathCommandEvent[] = [];
+    const commandInvocations: DocPathCommandInvocation[] = [];
     let subagentDispatchesCount = 0;
     let hasInterveningCodeChange = false;
     const fileReadStats = new Map<string, { count: number; totalTokens: number; readTokens: number[] }>();
@@ -743,7 +773,20 @@ export class AntigravityTelemetryAdapter {
           detectedModel = entry.model;
         }
 
+        // 工具执行结果与失败检测
+        const isErrorStatus = entry.status === 'ERROR' || entry.status === 'FAILED';
+        const hasErrorContent =
+          typeof entry.content === 'string' &&
+          (entry.content.includes('Command failed with exit code') ||
+            entry.content.includes('The command exited with code 1') ||
+            entry.content.includes('The command exited with code 2') ||
+            entry.content.includes('Error:') ||
+            entry.content.includes('UnhandledPromiseRejection'));
+
+        const isToolError = isErrorStatus || hasErrorContent;
+
         // 真实 Token 消耗与多轮累计 (FR-1 / AC-1)
+        let currentTurnBilledTokens: number | undefined;
         const usage = entry.usage || entry.response?.usage || entry.tokens;
         if (usage && typeof usage === 'object') {
           hasExplicitUsage = true;
@@ -758,6 +801,7 @@ export class AntigravityTelemetryAdapter {
             0
           );
           const totTok = Number(usage.total_tokens ?? usage.totalTokens ?? usage.total ?? (inTok + outTok));
+          currentTurnBilledTokens = totTok > 0 ? totTok : (inTok + outTok > 0 ? inTok + outTok : undefined);
 
           explicitInputTokens += inTok;
           explicitOutputTokens += outTok;
@@ -776,6 +820,7 @@ export class AntigravityTelemetryAdapter {
           const outTok = Number(entry.output_tokens ?? entry.outputTokens ?? 0);
           const cacheTok = Number(entry.cached_tokens ?? entry.cachedTokens ?? 0);
           const totTok = Number(entry.total_tokens ?? entry.totalTokens ?? (inTok + outTok));
+          currentTurnBilledTokens = totTok > 0 ? totTok : (inTok + outTok > 0 ? inTok + outTok : undefined);
 
           explicitInputTokens += inTok;
           explicitOutputTokens += outTok;
@@ -812,6 +857,7 @@ export class AntigravityTelemetryAdapter {
             let argsTokens = 0;
             let docpathSubcommand: string | null = null;
             let historyIdx: number | undefined;
+            let invocationIdx: number | undefined;
 
             if (tc.args) {
               argsTokens = estimateTokens(JSON.stringify(tc.args));
@@ -841,6 +887,53 @@ export class AntigravityTelemetryAdapter {
                   isError: false,
                   hadInterveningChange,
                 });
+
+                let isRedundant = false;
+                let isSerialChain = false;
+                let chainKey: string | undefined;
+
+                if (commandInvocations.length > 0 && !hadInterveningChange) {
+                  const prev = commandInvocations[commandInvocations.length - 1];
+                  chainKey = `${prev.subcommand} -> ${docpathSubcommand}`;
+                  if (prev.subcommand === docpathSubcommand) {
+                    isRedundant = true;
+                  }
+                  if (
+                    chainKey === 'go -> next' ||
+                    chainKey === 'status -> next' ||
+                    chainKey === 'check -> done' ||
+                    chainKey === 'next -> next' ||
+                    prev.subcommand === docpathSubcommand
+                  ) {
+                    isSerialChain = true;
+                  }
+                }
+
+                const rawCommandLine = typeof cmdLine === 'string' ? cmdLine : JSON.stringify(tc.args);
+                const stepMatch = typeof cmdLine === 'string'
+                  ? (cmdLine.match(/--step\s+([A-Za-z0-9_-]+)/i) || cmdLine.match(/-s\s+([A-Za-z0-9_-]+)/i))
+                  : null;
+                const stepId = (stepMatch && stepMatch[1]) ? stepMatch[1] : (tc.args && (tc.args.step || tc.args.stepId)) || undefined;
+                const directInputTokens = estimateTokens(rawCommandLine);
+
+                invocationIdx = commandInvocations.length;
+                commandInvocations.push({
+                  id: tc.id || entry.id || `inv-${invocationIdx + 1}`,
+                  timestamp: entry.created_at || (entryTime ? new Date(entryTime).toISOString() : new Date().toISOString()),
+                  turnIndex: stepIndex,
+                  stepId,
+                  subcommand: docpathSubcommand,
+                  rawCommandLine,
+                  directInputTokens,
+                  directOutputTokens: 0,
+                  directTotalTokens: directInputTokens,
+                  turnBilledTokens: currentTurnBilledTokens || (explicitTotalTokens > 0 ? explicitTotalTokens : undefined),
+                  isRedundant,
+                  isSerialChain,
+                  chainKey,
+                  wastedTokens: 0,
+                  status: 'success',
+                });
               }
 
               // 检测大文件泛读与重复文件读取统计
@@ -862,25 +955,29 @@ export class AntigravityTelemetryAdapter {
               }
             }
             toolStatsMap.set(name, stat);
-            pendingToolCalls.push({ name, args: tc.args, inputTokens: argsTokens, docpathSubcommand, historyIdx });
+            pendingToolCalls.push({
+              name,
+              args: tc.args,
+              inputTokens: argsTokens,
+              docpathSubcommand,
+              historyIdx,
+              invocationIdx,
+              callTime: entryTime,
+            });
           }
         }
 
-        // 工具执行结果与失败检测
-        const isErrorStatus = entry.status === 'ERROR' || entry.status === 'FAILED';
-        const hasErrorContent =
-          typeof entry.content === 'string' &&
-          (entry.content.includes('Command failed with exit code') ||
-            entry.content.includes('The command exited with code 1') ||
-            entry.content.includes('The command exited with code 2') ||
-            entry.content.includes('Error:') ||
-            entry.content.includes('UnhandledPromiseRejection'));
-
-        const isToolError = isErrorStatus || hasErrorContent;
-
         // 工具执行响应 Token 归因
         if (entry.type !== 'USER_INPUT' && entry.type !== 'PLANNER_RESPONSE') {
-          let matchedItem: { name: string; args?: Record<string, any>; inputTokens: number; docpathSubcommand?: string | null; historyIdx?: number } | undefined;
+          let matchedItem: {
+            name: string;
+            args?: Record<string, any>;
+            inputTokens: number;
+            docpathSubcommand?: string | null;
+            historyIdx?: number;
+            invocationIdx?: number;
+            callTime?: number;
+          } | undefined;
           const normalizedType = typeof entry.type === 'string' ? entry.type.toLowerCase().replace(/[\s_-]+/g, '') : '';
 
           if (pendingToolCalls.length > 0) {
@@ -923,6 +1020,22 @@ export class AntigravityTelemetryAdapter {
             if (matchedItem?.historyIdx !== undefined && docpathCallHistory[matchedItem.historyIdx]) {
               docpathCallHistory[matchedItem.historyIdx].outputTokens = outTokens;
               docpathCallHistory[matchedItem.historyIdx].isError = isToolError;
+            }
+
+            if (matchedItem?.invocationIdx !== undefined && commandInvocations[matchedItem.invocationIdx]) {
+              const inv = commandInvocations[matchedItem.invocationIdx];
+              inv.directOutputTokens = outTokens;
+              inv.directTotalTokens = inv.directInputTokens + outTokens;
+              inv.status = isToolError ? 'error' : 'success';
+              if (inv.isRedundant || inv.isSerialChain) {
+                inv.wastedTokens = inv.directTotalTokens;
+              }
+              if (entryTime && matchedItem.callTime) {
+                inv.durationMs = Math.max(0, entryTime - matchedItem.callTime);
+              }
+              if (inv.turnBilledTokens === undefined && currentTurnBilledTokens !== undefined) {
+                inv.turnBilledTokens = currentTurnBilledTokens;
+              }
             }
 
             // 1. 重复读取文件 Token 归因
@@ -1144,6 +1257,7 @@ export class AntigravityTelemetryAdapter {
       docpathCliOverhead,
       docpathEfficacy,
       docpathCliFriction,
+      commandInvocations: commandInvocations.length > 0 ? commandInvocations : undefined,
       turnsCount: Math.max(1, turnsCount),
       errorCount,
       heavyReadsCount,
@@ -1238,6 +1352,7 @@ export class AntigravityTelemetryAdapter {
         docpathCliOverhead: parsed.docpathCliOverhead,
         docpathEfficacy: parsed.docpathEfficacy,
         docpathCliFriction: parsed.docpathCliFriction,
+        commandInvocations: parsed.commandInvocations,
         turnsCount: parsed.turnsCount,
         errorCount: parsed.errorCount,
         heavyReadsCount: parsed.heavyReadsCount,
@@ -1355,6 +1470,7 @@ export class FallbackBreadcrumbAdapter {
       let hasInterveningCodeChange = false;
       const docStatsMap = new Map<string, { count: number; errorCount: number; inputTokens: number; outputTokens: number }>();
       const docpathCallHistory: DocPathCommandEvent[] = [];
+      const commandInvocations: DocPathCommandInvocation[] = [];
 
       for (const line of lines) {
         try {
@@ -1456,6 +1572,59 @@ export class FallbackBreadcrumbAdapter {
               isError,
               hadInterveningChange,
             });
+
+            let isRedundant = false;
+            let isSerialChain = false;
+            let chainKey: string | undefined;
+
+            if (commandInvocations.length > 0 && !hadInterveningChange) {
+              const prev = commandInvocations[commandInvocations.length - 1];
+              chainKey = `${prev.subcommand} -> ${subcmd}`;
+              if (prev.subcommand === subcmd) {
+                isRedundant = true;
+              }
+              if (
+                chainKey === 'go -> next' ||
+                chainKey === 'status -> next' ||
+                chainKey === 'check -> done' ||
+                chainKey === 'next -> next' ||
+                prev.subcommand === subcmd
+              ) {
+                isSerialChain = true;
+              }
+            }
+
+            const rawCmd = entry.command || entry.commandLine || entry.cmd || `docpath ${subcmd}`;
+            const stepMatch = typeof rawCmd === 'string'
+              ? (rawCmd.match(/--step\s+([A-Za-z0-9_-]+)/i) || rawCmd.match(/-s\s+([A-Za-z0-9_-]+)/i))
+              : null;
+            const stepId = (stepMatch && stepMatch[1])
+              ? stepMatch[1]
+              : (entry.step || entry.stepId || (entry.step_id ? String(entry.step_id) : undefined));
+
+            const directInputTokens = inTok;
+            const directOutputTokens = outTok;
+            const directTotalTokens = inTok + outTok;
+            const wastedTokens = (isRedundant || isSerialChain) ? directTotalTokens : 0;
+
+            commandInvocations.push({
+              id: entry.id || entry.eventId || `bc-${commandInvocations.length + 1}`,
+              timestamp: entry.timestamp || entry.created_at || new Date().toISOString(),
+              turnIndex: typeof entry.turn_index === 'number' ? entry.turn_index : (typeof entry.step_index === 'number' ? entry.step_index : undefined),
+              stepId,
+              subcommand: subcmd,
+              rawCommandLine: rawCmd,
+              directInputTokens,
+              directOutputTokens,
+              directTotalTokens,
+              turnBilledTokens: entry.usage?.total_tokens ?? entry.usage?.prompt_tokens ?? undefined,
+              isRedundant,
+              isSerialChain,
+              chainKey,
+              wastedTokens,
+              durationMs: typeof entry.durationMs === 'number' ? entry.durationMs : undefined,
+              status: isError ? 'error' : 'success',
+            });
           }
         } catch {
           // ignore
@@ -1551,6 +1720,7 @@ export class FallbackBreadcrumbAdapter {
         docpathCliOverhead,
         docpathCliFriction,
         docpathEfficacy,
+        commandInvocations: commandInvocations.length > 0 ? commandInvocations : undefined,
         turnsCount,
         errorCount,
         violations: audit.violations,
@@ -2298,12 +2468,13 @@ export async function resolveAgentTelemetry(
   // 1. 显式环境变量优先
   const envRecord = await EnvTelemetryAdapter.probe(options);
   if (envRecord) {
-    if (!envRecord.docpathCliOverhead || !envRecord.docpathCliFriction || !envRecord.docpathEfficacy) {
+    if (!envRecord.docpathCliOverhead || !envRecord.docpathCliFriction || !envRecord.docpathEfficacy || !envRecord.commandInvocations) {
       const bc = await FallbackBreadcrumbAdapter.probe(options);
       if (bc) {
         envRecord.docpathCliOverhead = envRecord.docpathCliOverhead || bc.docpathCliOverhead;
         envRecord.docpathCliFriction = envRecord.docpathCliFriction || bc.docpathCliFriction;
         envRecord.docpathEfficacy = envRecord.docpathEfficacy || bc.docpathEfficacy;
+        envRecord.commandInvocations = envRecord.commandInvocations || bc.commandInvocations;
       }
     }
     return envRecord;
@@ -2326,13 +2497,17 @@ export async function resolveAgentTelemetry(
       if (!antigravityRecord.docpathEfficacy && zcodeRecord.docpathEfficacy) {
         antigravityRecord.docpathEfficacy = zcodeRecord.docpathEfficacy;
       }
+      if (!antigravityRecord.commandInvocations && zcodeRecord.commandInvocations) {
+        antigravityRecord.commandInvocations = zcodeRecord.commandInvocations;
+      }
     }
-    if (!antigravityRecord.docpathCliOverhead || !antigravityRecord.docpathCliFriction) {
+    if (!antigravityRecord.docpathCliOverhead || !antigravityRecord.docpathCliFriction || !antigravityRecord.commandInvocations) {
       const bc = await FallbackBreadcrumbAdapter.probe(options);
       if (bc) {
         antigravityRecord.docpathCliOverhead = antigravityRecord.docpathCliOverhead || bc.docpathCliOverhead;
         antigravityRecord.docpathCliFriction = antigravityRecord.docpathCliFriction || bc.docpathCliFriction;
         antigravityRecord.docpathEfficacy = antigravityRecord.docpathEfficacy || bc.docpathEfficacy;
+        antigravityRecord.commandInvocations = antigravityRecord.commandInvocations || bc.commandInvocations;
       }
     }
     return antigravityRecord;
@@ -2340,17 +2515,19 @@ export async function resolveAgentTelemetry(
 
   if (zcodeRecord && (zcodeRecord.tokens.totalTokens > 0 || zcodeRecord.turnsCount > 0)) {
     // ZCode 记录存在。如果缺失 docpathCliOverhead / docpathCliFriction，从 antigravity 或 breadcrumb 融合水合
-    if (!zcodeRecord.docpathCliOverhead || !zcodeRecord.docpathCliFriction) {
+    if (!zcodeRecord.docpathCliOverhead || !zcodeRecord.docpathCliFriction || !zcodeRecord.commandInvocations) {
       if (antigravityRecord?.docpathCliOverhead) {
         zcodeRecord.docpathCliOverhead = antigravityRecord.docpathCliOverhead;
         zcodeRecord.docpathCliFriction = antigravityRecord.docpathCliFriction;
         zcodeRecord.docpathEfficacy = antigravityRecord.docpathEfficacy || zcodeRecord.docpathEfficacy;
+        zcodeRecord.commandInvocations = antigravityRecord.commandInvocations;
       } else {
         const bc = await FallbackBreadcrumbAdapter.probe(options);
         if (bc) {
           zcodeRecord.docpathCliOverhead = bc.docpathCliOverhead;
           zcodeRecord.docpathCliFriction = bc.docpathCliFriction;
           zcodeRecord.docpathEfficacy = zcodeRecord.docpathEfficacy || bc.docpathEfficacy;
+          zcodeRecord.commandInvocations = bc.commandInvocations;
         }
       }
       if (zcodeRecord.docpathCliOverhead && zcodeRecord.tokens.totalTokens > 0) {
@@ -2363,12 +2540,13 @@ export async function resolveAgentTelemetry(
   }
 
   if (antigravityRecord) {
-    if (!antigravityRecord.docpathCliOverhead || !antigravityRecord.docpathCliFriction) {
+    if (!antigravityRecord.docpathCliOverhead || !antigravityRecord.docpathCliFriction || !antigravityRecord.commandInvocations) {
       const bc = await FallbackBreadcrumbAdapter.probe(options);
       if (bc) {
         antigravityRecord.docpathCliOverhead = antigravityRecord.docpathCliOverhead || bc.docpathCliOverhead;
         antigravityRecord.docpathCliFriction = antigravityRecord.docpathCliFriction || bc.docpathCliFriction;
         antigravityRecord.docpathEfficacy = antigravityRecord.docpathEfficacy || bc.docpathEfficacy;
+        antigravityRecord.commandInvocations = antigravityRecord.commandInvocations || bc.commandInvocations;
       }
     }
     return antigravityRecord;

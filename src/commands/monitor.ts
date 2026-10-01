@@ -12,6 +12,8 @@ import {
   type DocPathCliOverhead,
   type DocPathEfficacyEvidence,
   type DocPathCliFrictionEvidence,
+  type StepPassFrictionAnalysis,
+  type DocPathCommandInvocation,
 } from '../utils/task-metrics.js';
 
 /**
@@ -158,6 +160,78 @@ function renderDocPathCliFrictionPanel(friction?: DocPathCliFrictionEvidence | n
 }
 
 /**
+ * 渲染 step-pass 空转与隐性轮次重放损耗面板 (Human UI)
+ */
+function renderStepPassFrictionPanel(analysis?: StepPassFrictionAnalysis | null): void {
+  console.log('┌ 🔍 step-pass 空转与隐性轮次重放损耗 (Invisible Turn Replay Cost) ┐');
+  if (!analysis || analysis.totalStepPassCalls === 0) {
+    console.log(`│  调用频次统计:      🟢 0 次 step-pass 调用 (0 次有效 | 0 次空转)`.padEnd(58) + '│');
+    console.log(`│  直接开销 vs 隐性:  CLI 直接: 0 Tokens | 模型隐性重放: 0 Tokens`.padEnd(58) + '│');
+    console.log(`│  纯空转隐性重放浪费: 🟢 0 Tokens (无空转重放损耗)`.padEnd(58) + '│');
+    console.log(`│  摩擦轮次占比:      ⚡ 0% (纯框架交互轮次)`.padEnd(58) + '│');
+    console.log('└───────────────────────────────────────────────────────────┘\n');
+    return;
+  }
+
+  const callIcon = analysis.redundantCalls > 0 ? '⚠️' : '🟢';
+  console.log(`│  调用频次统计:      ${callIcon} ${analysis.totalStepPassCalls} 次 step-pass 调用 (${analysis.productiveCalls} 次有效 | ${analysis.redundantCalls} 次空转)`.padEnd(58) + '│');
+  console.log(`│  直接开销 vs 隐性:  CLI 直接: ~${formatTokens(analysis.directTokens)} | 模型隐性重放: ~${formatTokens(analysis.invisibleTurnReplayTokens)}`.padEnd(58) + '│');
+
+  if (analysis.redundantTurnReplayTokens > 0) {
+    console.log(`│  纯空转隐性重放浪费: 🔴 纯空转隐性重放浪费: ~${formatTokens(analysis.redundantTurnReplayTokens)} Tokens`.padEnd(58) + '│');
+  } else {
+    console.log(`│  纯空转隐性重放浪费: 🟢 0 Tokens (无空转重放损耗)`.padEnd(58) + '│');
+  }
+
+  const ratioIcon = analysis.frictionTurnRatio > 20 ? '⚠️' : '⚡';
+  console.log(`│  摩擦轮次占比:      ${ratioIcon} 摩擦轮次占比: ${analysis.frictionTurnRatio}% (纯框架交互轮次)`.padEnd(58) + '│');
+
+  if (analysis.redundantCalls > 0) {
+    console.log('│  💡 治理优化建议:    使用原子复合命令 (如 docpath step-pass --commit) 减少中间空转轮次，杜绝全量历史上下文重放'.padEnd(58) + '│');
+  } else {
+    console.log('│  💡 治理优化建议:    当前 step-pass 调用推进顺畅，无多余空转损耗'.padEnd(58) + '│');
+  }
+
+  console.log('└───────────────────────────────────────────────────────────┘\n');
+}
+
+/**
+ * 渲染单次命令真实 Token 消耗明细面板 (Human UI)
+ */
+function renderCommandInvocationsPanel(invocations?: DocPathCommandInvocation[] | null): void {
+  console.log('┌ ⚡ 单次命令真实 Token 消耗明细 (Per-Invocation Token Telemetry) ────┐');
+  if (!invocations || invocations.length === 0) {
+    console.log(`│  暂无命令调用记录`.padEnd(58) + '│');
+    console.log('└───────────────────────────────────────────────────────────┘\n');
+    return;
+  }
+
+  console.log('│  ' + '时间/步骤'.padEnd(12) + '命令'.padEnd(20) + '直接消耗(入/出)'.padEnd(18) + '模型上下文'.padEnd(14) + '状态/损耗' + '│');
+  console.log('│  ' + '─'.repeat(58) + '│');
+
+  for (const inv of invocations.slice(0, 8)) {
+    const timeOrStep = inv.stepId || (inv.timestamp ? inv.timestamp.slice(11, 19) : '-');
+    const timeStr = timeOrStep.padEnd(12);
+    const cmdStr = (inv.rawCommandLine || `docpath ${inv.subcommand}`).slice(0, 18).padEnd(20);
+    const directStr = `~${inv.directTotalTokens} (~${inv.directInputTokens}/${inv.directOutputTokens})`.padEnd(18);
+    const billedStr = inv.turnBilledTokens && inv.turnBilledTokens > 0
+      ? `~${formatTokens(inv.turnBilledTokens)}`.padEnd(14)
+      : '-'.padEnd(14);
+    let statusStr = '🟢 有效';
+    if (inv.isRedundant) {
+      statusStr = `🔴 空转(~${formatTokens(inv.wastedTokens || inv.turnBilledTokens || inv.directTotalTokens)})`;
+    } else if (inv.isSerialChain) {
+      statusStr = `🟠 串行(~${formatTokens(inv.wastedTokens || inv.directTotalTokens)})`;
+    } else if (inv.status === 'error') {
+      statusStr = '🔴 错误';
+    }
+    console.log(`│  ${timeStr}${cmdStr}${directStr}${billedStr}${statusStr}`.padEnd(58) + '│');
+  }
+
+  console.log('└───────────────────────────────────────────────────────────┘\n');
+}
+
+/**
  * 转换 DocPath CLI 开销对象为 Agent YAML 结构
  */
 function formatDocPathCliOverheadForAgent(overhead?: DocPathCliOverhead | null) {
@@ -255,6 +329,57 @@ function formatDocPathCliFrictionForAgent(friction?: DocPathCliFrictionEvidence 
   };
 }
 
+/**
+ * 转换 step-pass 空转与隐性轮次重放损耗对象为 Agent YAML 结构
+ */
+function formatStepPassFrictionForAgent(analysis?: StepPassFrictionAnalysis | null) {
+  if (!analysis) {
+    return {
+      total_step_pass_calls: 0,
+      productive_calls: 0,
+      redundant_calls: 0,
+      direct_tokens: 0,
+      invisible_turn_replay_tokens: 0,
+      redundant_turn_replay_tokens: 0,
+      friction_turn_ratio: '0%',
+      summary: '未检测到 step-pass 调用与隐性重放损耗',
+    };
+  }
+  return {
+    total_step_pass_calls: analysis.totalStepPassCalls,
+    productive_calls: analysis.productiveCalls,
+    redundant_calls: analysis.redundantCalls,
+    direct_tokens: analysis.directTokens,
+    invisible_turn_replay_tokens: analysis.invisibleTurnReplayTokens,
+    redundant_turn_replay_tokens: analysis.redundantTurnReplayTokens,
+    friction_turn_ratio: `${analysis.frictionTurnRatio}%`,
+    summary: analysis.summary,
+  };
+}
+
+/**
+ * 转换 Command Invocations 列表为 Agent YAML 结构
+ */
+function formatCommandInvocationsForAgent(invocations?: DocPathCommandInvocation[] | null) {
+  if (!Array.isArray(invocations) || invocations.length === 0) {
+    return [];
+  }
+  return invocations.map((inv) => ({
+    id: inv.id,
+    timestamp: inv.timestamp,
+    step_id: inv.stepId || null,
+    subcommand: inv.subcommand,
+    command: inv.rawCommandLine,
+    direct_tokens: inv.directTotalTokens,
+    turn_billed_tokens: inv.turnBilledTokens ?? null,
+    is_redundant: inv.isRedundant,
+    is_serial_chain: inv.isSerialChain,
+    chain_key: inv.chainKey || null,
+    wasted_tokens: inv.wastedTokens,
+    status: inv.status,
+  }));
+}
+
 export async function monitorCommand(options: MonitorOptions): Promise<void> {
   const {
     cwd,
@@ -293,6 +418,8 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
             docpathEfficacy: activeEfficacy,
             docpathCliFriction: activeFriction,
             workflowFrictions: activeTask.frictionFindings || [],
+            stepPassAnalysis: activeTask.stepPassAnalysis || null,
+            commandInvocations: activeTask.commandInvocations || activeTask.realUsage?.commandInvocations || [],
           },
         }, null, 2));
       }
@@ -395,6 +522,8 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
               docpath_cli_overhead: formatDocPathCliOverheadForAgent(activeTask.docpathCliOverhead || activeTask.realUsage?.docpathCliOverhead || activeTask.sessionRecord?.docpathCliOverhead),
               docpath_efficacy: formatDocPathEfficacyForAgent(activeTask.docpathEfficacy || activeTask.realUsage?.docpathEfficacy || activeTask.sessionRecord?.docpathEfficacy),
               docpath_cli_friction: formatDocPathCliFrictionForAgent(activeTask.docpathCliFriction || activeTask.realUsage?.docpathCliFriction || activeTask.sessionRecord?.docpathCliFriction),
+              step_pass_friction: formatStepPassFrictionForAgent(activeTask.stepPassAnalysis),
+              command_invocations: formatCommandInvocationsForAgent(activeTask.commandInvocations || activeTask.realUsage?.commandInvocations),
               tool_attributions: (activeTask.toolAttributions || activeTask.realUsage?.toolAttributions || []).map((t) => ({
                 name: t.name,
                 count: t.count,
@@ -490,6 +619,8 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
     renderDocPathCliOverheadPanel(activeTask.docpathCliOverhead || activeTask.realUsage?.docpathCliOverhead || activeTask.sessionRecord?.docpathCliOverhead);
     renderDocPathEfficacyPanel(activeTask.docpathEfficacy || activeTask.realUsage?.docpathEfficacy || activeTask.sessionRecord?.docpathEfficacy);
     renderDocPathCliFrictionPanel(activeTask.docpathCliFriction || activeTask.realUsage?.docpathCliFriction || activeTask.sessionRecord?.docpathCliFriction);
+    renderStepPassFrictionPanel(activeTask.stepPassAnalysis);
+    renderCommandInvocationsPanel(activeTask.commandInvocations || activeTask.realUsage?.commandInvocations);
 
     if (activeTask.stepSlices && activeTask.stepSlices.length > 0) {
       console.log('┌ 🪜  步骤级 Token 成本与耗时分解 (Step-Level Telemetry Breakdown) ───┐');
@@ -576,6 +707,8 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
           docpathEfficacy: summary.activeTask.docpathEfficacy || summary.activeTask.realUsage?.docpathEfficacy || summary.activeTask.sessionRecord?.docpathEfficacy || null,
           docpathCliFriction: summary.activeTask.docpathCliFriction || summary.activeTask.realUsage?.docpathCliFriction || summary.activeTask.sessionRecord?.docpathCliFriction || null,
           workflowFrictions: summary.activeTask.frictionFindings || [],
+          stepPassAnalysis: summary.activeTask.stepPassAnalysis || null,
+          commandInvocations: summary.activeTask.commandInvocations || summary.activeTask.realUsage?.commandInvocations || [],
         }
       : null;
     console.log(JSON.stringify({
@@ -586,6 +719,9 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
       docpathEfficacy: globalEfficacy,
       globalDocPathCliFriction: globalFriction,
       docpathCliFriction: globalFriction,
+      stepPassAnalysis: summary.stepPassAnalysis || null,
+      commandInvocations: summary.recentCommandInvocations || summary.commandInvocations || [],
+      recentCommandInvocations: summary.recentCommandInvocations || summary.commandInvocations || [],
       activeTask: activeTaskData,
       workflowFrictions: summary.globalFrictionFindings || summary.frictionFindings || [],
       gatePassed: isGatePassed,
@@ -636,6 +772,8 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
               docpath_cli_overhead: formatDocPathCliOverheadForAgent(summary.activeTask.docpathCliOverhead || summary.activeTask.realUsage?.docpathCliOverhead || summary.activeTask.sessionRecord?.docpathCliOverhead),
               docpath_efficacy: formatDocPathEfficacyForAgent(summary.activeTask.docpathEfficacy || summary.activeTask.realUsage?.docpathEfficacy || summary.activeTask.sessionRecord?.docpathEfficacy),
               docpath_cli_friction: formatDocPathCliFrictionForAgent(summary.activeTask.docpathCliFriction || summary.activeTask.realUsage?.docpathCliFriction || summary.activeTask.sessionRecord?.docpathCliFriction),
+              step_pass_friction: formatStepPassFrictionForAgent(summary.activeTask.stepPassAnalysis),
+              command_invocations: formatCommandInvocationsForAgent(summary.activeTask.commandInvocations || summary.activeTask.realUsage?.commandInvocations),
             }
           : null,
         compliance: {
@@ -674,6 +812,8 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
         docpath_cli_overhead: formatDocPathCliOverheadForAgent(summary.globalDocPathCliOverhead || summary.docpathCliOverhead),
         docpath_efficacy: formatDocPathEfficacyForAgent(summary.globalDocPathEfficacy || summary.docpathEfficacy),
         docpath_cli_friction: formatDocPathCliFrictionForAgent(summary.globalDocPathCliFriction || summary.docpathCliFriction),
+        step_pass_friction: formatStepPassFrictionForAgent(summary.stepPassAnalysis),
+        command_invocations: formatCommandInvocationsForAgent(summary.recentCommandInvocations || summary.commandInvocations),
         tool_attributions: (summary.globalToolAttributions || []).map((t) => ({
           name: t.name,
           count: t.count,
@@ -876,6 +1016,8 @@ export async function monitorCommand(options: MonitorOptions): Promise<void> {
   renderDocPathCliOverheadPanel(summary.globalDocPathCliOverhead || summary.docpathCliOverhead);
   renderDocPathEfficacyPanel(summary.globalDocPathEfficacy || summary.docpathEfficacy);
   renderDocPathCliFrictionPanel(summary.globalDocPathCliFriction || summary.docpathCliFriction);
+  renderStepPassFrictionPanel(summary.stepPassAnalysis);
+  renderCommandInvocationsPanel(summary.recentCommandInvocations || summary.commandInvocations);
 
   const globalAttrs = summary.globalToolAttributions || [];
   if (globalAttrs.length > 0) {

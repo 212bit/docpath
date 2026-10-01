@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-01T04:13:38.773Z",
+    "updated_at": "2026-10-01T04:13:38.773Z",
+    "content_sha256": "94ac04839c049e6b899348d7a72524beedfbcba67a8af5029a268b1b2075f4e4"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-01T04:13:38.773Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 单次命令真实 Token 消耗",
+      "description": "落地 FR-1: 单次命令真实 Token 消耗，并完成模块定向自验。",
+      "acceptance": "AC-1: 单次命令真实 Token 消耗 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 step-pass 空转隐性重放开销监控引擎",
+      "description": "落地 FR-2: step-pass 空转隐性重放开销监控引擎，并完成模块定向自验。",
+      "acceptance": "AC-2: step-pass 空转隐性重放开销监控引擎 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-459 与任务 T-20261001-token-step-pass 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

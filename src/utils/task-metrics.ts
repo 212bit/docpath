@@ -28,6 +28,7 @@ import {
   type WorkflowFrictionFinding,
   type WorkflowFrictionContext,
   type DocPathCommandStat,
+  type DocPathCommandInvocation,
   type DocPathCliOverhead,
   type DocPathEfficacyEvidence,
   type DocPathCliFrictionEvidence,
@@ -44,6 +45,7 @@ export type {
   WorkflowFrictionFinding,
   WorkflowFrictionContext,
   DocPathCommandStat,
+  DocPathCommandInvocation,
   DocPathCliOverhead,
   DocPathEfficacyEvidence,
   DocPathCliFrictionEvidence,
@@ -66,6 +68,7 @@ export interface RealAgentUsage {
   docpathCliOverhead?: DocPathCliOverhead;
   docpathEfficacy?: DocPathEfficacyEvidence;
   docpathCliFriction?: DocPathCliFrictionEvidence;
+  commandInvocations?: DocPathCommandInvocation[];
   frictionFindings?: WorkflowFrictionFinding[];
   model?: string;
   complianceScore?: number;
@@ -100,6 +103,17 @@ export interface DocPathValueRoi {
   summaryText: string;
 }
 
+export interface StepPassFrictionAnalysis {
+  totalStepPassCalls: number;
+  productiveCalls: number;
+  redundantCalls: number;
+  directTokens: number;
+  invisibleTurnReplayTokens: number;
+  redundantTurnReplayTokens: number;
+  frictionTurnRatio: number; // percentage
+  summary: string;
+}
+
 export interface TaskMetrics {
   taskId: string;
   taskTitle: string;
@@ -125,7 +139,9 @@ export interface TaskMetrics {
   docpathCliOverhead?: DocPathCliOverhead;
   docpathEfficacy?: DocPathEfficacyEvidence;
   docpathCliFriction?: DocPathCliFrictionEvidence;
+  commandInvocations?: DocPathCommandInvocation[];
   frictionFindings?: WorkflowFrictionFinding[];
+  stepPassAnalysis?: StepPassFrictionAnalysis;
   lifecycleAnchor?: LifecycleAnchor;
   stepSlices?: StepTelemetrySlice[];
   docpathValueRoi?: DocPathValueRoi;
@@ -207,7 +223,9 @@ export interface ActiveTaskMetrics {
   docpathCliOverhead?: DocPathCliOverhead;
   docpathEfficacy?: DocPathEfficacyEvidence;
   docpathCliFriction?: DocPathCliFrictionEvidence;
+  commandInvocations?: DocPathCommandInvocation[];
   frictionFindings?: WorkflowFrictionFinding[];
+  stepPassAnalysis?: StepPassFrictionAnalysis;
   lifecycleAnchor?: LifecycleAnchor;
   stepSlices?: StepTelemetrySlice[];
   docpathValueRoi?: DocPathValueRoi;
@@ -264,6 +282,9 @@ export interface MonitorSummary {
   docpathEfficacy?: DocPathEfficacyEvidence;
   globalDocPathCliFriction?: DocPathCliFrictionEvidence;
   docpathCliFriction?: DocPathCliFrictionEvidence;
+  stepPassAnalysis?: StepPassFrictionAnalysis;
+  commandInvocations?: DocPathCommandInvocation[];
+  recentCommandInvocations?: DocPathCommandInvocation[];
   activeTask?: ActiveTaskMetrics | null;
   recentTasks: TaskMetrics[];
   docpathValueRoi?: DocPathValueRoi;
@@ -829,8 +850,9 @@ export async function collectTaskMetrics(
   let docpathCliOverhead = sessionRecord?.docpathCliOverhead;
   let docpathCliFriction = sessionRecord?.docpathCliFriction;
   let docpathEfficacy = sessionRecord?.docpathEfficacy;
+  let commandInvocations = sessionRecord?.commandInvocations;
 
-  if (!docpathCliOverhead || !docpathCliFriction || !docpathEfficacy) {
+  if (!docpathCliOverhead || !docpathCliFriction || !docpathEfficacy || !commandInvocations) {
     try {
       const bcRecord = await FallbackBreadcrumbAdapter.probe({
         cwd,
@@ -847,6 +869,7 @@ export async function collectTaskMetrics(
         docpathCliOverhead = docpathCliOverhead || bcRecord.docpathCliOverhead;
         docpathCliFriction = docpathCliFriction || bcRecord.docpathCliFriction;
         docpathEfficacy = docpathEfficacy || bcRecord.docpathEfficacy;
+        commandInvocations = commandInvocations || bcRecord.commandInvocations;
       }
     } catch {
       // ignore
@@ -871,6 +894,7 @@ export async function collectTaskMetrics(
           violations: sessionRecord.violations,
           docpathEfficacy: sessionRecord.docpathEfficacy || docpathEfficacy,
           docpathCliFriction: sessionRecord.docpathCliFriction || docpathCliFriction,
+          commandInvocations: sessionRecord.commandInvocations || commandInvocations,
         }
       : null;
 
@@ -941,7 +965,9 @@ export async function collectTaskMetrics(
     docpathCliOverhead: docpathCliOverhead || sessionRecord?.docpathCliOverhead || realUsage?.docpathCliOverhead,
     docpathEfficacy: docpathEfficacy || sessionRecord?.docpathEfficacy || realUsage?.docpathEfficacy,
     docpathCliFriction: docpathCliFriction || sessionRecord?.docpathCliFriction || realUsage?.docpathCliFriction,
+    commandInvocations: commandInvocations || sessionRecord?.commandInvocations || realUsage?.commandInvocations,
     frictionFindings: frictionFindings.length > 0 ? frictionFindings : undefined,
+    stepPassAnalysis: analyzeStepPassFriction(commandInvocations || sessionRecord?.commandInvocations || realUsage?.commandInvocations || [], turnCount),
     lifecycleAnchor,
     stepSlices: stepSlices.length > 0 ? stepSlices : undefined,
     docpathValueRoi,
@@ -1468,6 +1494,7 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
     let fileDocpathCliOverhead: DocPathCliOverhead | undefined;
     let fileDocpathEfficacy: DocPathEfficacyEvidence | undefined;
     let fileDocpathCliFriction: DocPathCliFrictionEvidence | undefined;
+    let fileCommandInvocations: DocPathCommandInvocation[] | undefined;
     if (existsSync(metricsJsonPath)) {
       try {
         const parsedMetrics = JSON.parse(await readFile(metricsJsonPath, 'utf-8'));
@@ -1486,12 +1513,15 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
         if (parsedMetrics.docpathCliFriction || parsedMetrics.realUsage?.docpathCliFriction) {
           fileDocpathCliFriction = parsedMetrics.docpathCliFriction || parsedMetrics.realUsage?.docpathCliFriction;
         }
+        if (parsedMetrics.commandInvocations || parsedMetrics.realUsage?.commandInvocations) {
+          fileCommandInvocations = parsedMetrics.commandInvocations || parsedMetrics.realUsage?.commandInvocations;
+        }
       } catch {
         // 容错
       }
     }
 
-    if (!fileDocpathCliOverhead || !fileDocpathCliFriction || !fileDocpathEfficacy) {
+    if (!fileDocpathCliOverhead || !fileDocpathCliFriction || !fileDocpathEfficacy || !fileCommandInvocations) {
       try {
         const bcRecord = await FallbackBreadcrumbAdapter.probe({
           cwd,
@@ -1508,6 +1538,7 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
           fileDocpathCliOverhead = fileDocpathCliOverhead || bcRecord.docpathCliOverhead;
           fileDocpathCliFriction = fileDocpathCliFriction || bcRecord.docpathCliFriction;
           fileDocpathEfficacy = fileDocpathEfficacy || bcRecord.docpathEfficacy;
+          fileCommandInvocations = fileCommandInvocations || bcRecord.commandInvocations;
         }
       } catch {
         // ignore
@@ -1532,6 +1563,7 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
             violations: sessionRecord.violations,
             docpathEfficacy: sessionRecord.docpathEfficacy || fileDocpathEfficacy,
             docpathCliFriction: sessionRecord.docpathCliFriction || fileDocpathCliFriction,
+            commandInvocations: sessionRecord.commandInvocations || fileCommandInvocations,
           }
         : null
     );
@@ -1540,6 +1572,7 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       realUsage.docpathCliOverhead = realUsage.docpathCliOverhead || fileDocpathCliOverhead;
       realUsage.docpathEfficacy = realUsage.docpathEfficacy || fileDocpathEfficacy;
       realUsage.docpathCliFriction = realUsage.docpathCliFriction || fileDocpathCliFriction;
+      realUsage.commandInvocations = realUsage.commandInvocations || fileCommandInvocations;
     }
 
     const complianceScore = sessionRecord ? sessionRecord.complianceScore : 100;
@@ -1618,7 +1651,9 @@ export async function probeActiveTaskMetrics(cwd: string): Promise<ActiveTaskMet
       docpathCliOverhead: fileDocpathCliOverhead || sessionRecord?.docpathCliOverhead || realUsage?.docpathCliOverhead,
       docpathEfficacy: fileDocpathEfficacy || sessionRecord?.docpathEfficacy || realUsage?.docpathEfficacy,
       docpathCliFriction: fileDocpathCliFriction || sessionRecord?.docpathCliFriction || realUsage?.docpathCliFriction,
+      commandInvocations: fileCommandInvocations || sessionRecord?.commandInvocations || realUsage?.commandInvocations,
       frictionFindings: frictionFindings.length > 0 ? frictionFindings : undefined,
+      stepPassAnalysis: analyzeStepPassFriction(fileCommandInvocations || sessionRecord?.commandInvocations || realUsage?.commandInvocations || [], sessionRecord?.turnsCount || parsedBreadcrumbs.length),
       lifecycleAnchor,
       stepSlices: stepSlices.length > 0 ? stepSlices : undefined,
       docpathValueRoi,
@@ -1991,6 +2026,94 @@ export function aggregateDocPathCliFriction(tasks: TaskMetrics[]): DocPathCliFri
 }
 
 /**
+ * 分析 step-pass 调用与隐性轮次重放损耗 (Step-Pass Friction & Invisible Turn Replay Analysis)
+ */
+export function analyzeStepPassFriction(
+  invocations: DocPathCommandInvocation[],
+  totalTurns?: number
+): StepPassFrictionAnalysis {
+  if (!Array.isArray(invocations) || invocations.length === 0) {
+    return {
+      totalStepPassCalls: 0,
+      productiveCalls: 0,
+      redundantCalls: 0,
+      directTokens: 0,
+      invisibleTurnReplayTokens: 0,
+      redundantTurnReplayTokens: 0,
+      frictionTurnRatio: 0,
+      summary: '未检测到 step-pass 调用与隐性重放损耗',
+    };
+  }
+
+  const stepPassInvocations = invocations.filter(
+    (inv) => inv.subcommand === 'step-pass' || inv.rawCommandLine?.includes('step-pass')
+  );
+
+  const totalStepPassCalls = stepPassInvocations.length;
+  if (totalStepPassCalls === 0) {
+    return {
+      totalStepPassCalls: 0,
+      productiveCalls: 0,
+      redundantCalls: 0,
+      directTokens: 0,
+      invisibleTurnReplayTokens: 0,
+      redundantTurnReplayTokens: 0,
+      frictionTurnRatio: 0,
+      summary: '未检测到 step-pass 调用与隐性重放损耗',
+    };
+  }
+
+  let redundantCalls = 0;
+  let directTokens = 0;
+  let invisibleTurnReplayTokens = 0;
+  let redundantTurnReplayTokens = 0;
+
+  for (const inv of stepPassInvocations) {
+    const direct = inv.directTotalTokens || (inv.directInputTokens + inv.directOutputTokens) || 0;
+    directTokens += direct;
+
+    const turnReplay = inv.turnBilledTokens && inv.turnBilledTokens > 0
+      ? inv.turnBilledTokens
+      : direct;
+    invisibleTurnReplayTokens += turnReplay;
+
+    const isRedundant = inv.isRedundant || inv.isSerialChain || inv.wastedTokens > 0;
+    if (isRedundant) {
+      redundantCalls++;
+      redundantTurnReplayTokens += (inv.turnBilledTokens && inv.turnBilledTokens > 0 ? inv.turnBilledTokens : (inv.wastedTokens || direct));
+    }
+  }
+
+  const productiveCalls = Math.max(0, totalStepPassCalls - redundantCalls);
+
+  // 计算摩擦轮次占比
+  const denominator = typeof totalTurns === 'number' && totalTurns > 0
+    ? totalTurns
+    : invocations.length;
+  const frictionTurnRatio = denominator > 0
+    ? parseFloat(((totalStepPassCalls / denominator) * 100).toFixed(1))
+    : 0;
+
+  let summary = '';
+  if (redundantCalls === 0) {
+    summary = `${totalStepPassCalls} 次 step-pass 调用均为有效推进，无空转重放损耗`;
+  } else {
+    summary = `检测到 ${totalStepPassCalls} 次 step-pass 调用 (含 ${redundantCalls} 次空转)，模型隐性重放开销 ~${formatTokens(invisibleTurnReplayTokens)} (浪费 ~${formatTokens(redundantTurnReplayTokens)})`;
+  }
+
+  return {
+    totalStepPassCalls,
+    productiveCalls,
+    redundantCalls,
+    directTokens,
+    invisibleTurnReplayTokens,
+    redundantTurnReplayTokens,
+    frictionTurnRatio,
+    summary,
+  };
+}
+
+/**
  * 生成流程合规与 Token 消耗治理的自愈与改进建议 (Actionable Remediation Engine)
  */
 export function generateRemediations(summary: {
@@ -2004,6 +2127,7 @@ export function generateRemediations(summary: {
   activeTask?: ActiveTaskMetrics | null;
   toolInefficiencies?: ToolInefficiencyFinding[];
   frictionFindings?: WorkflowFrictionFinding[];
+  stepPassAnalysis?: StepPassFrictionAnalysis;
 }): RemediationRecommendation[] {
   const remediations: RemediationRecommendation[] = [];
 
@@ -2223,6 +2347,19 @@ export function generateRemediations(summary: {
     });
   }
 
+  // 9.5 REM-STEP-PASS-FRICTION: step-pass 冗余轮次与隐性重放浪费
+  const stepPassFriction = summary.stepPassAnalysis || summary.activeTask?.stepPassAnalysis;
+  if (stepPassFriction && stepPassFriction.redundantCalls > 0) {
+    remediations.push({
+      id: 'REM-STEP-PASS-FRICTION',
+      severity: stepPassFriction.redundantCalls >= 2 ? 'high' : 'medium',
+      title: 'Adopt compound step-pass to eliminate invisible turn replay waste',
+      reason: `Detected ${stepPassFriction.redundantCalls} redundant step-pass call(s) wasting ~${formatTokens(stepPassFriction.redundantTurnReplayTokens)} Tokens through full session history replay.`,
+      recommendedCommand: 'docpath step-pass --commit',
+      actionable: true,
+    });
+  }
+
   return remediations;
 }
 
@@ -2248,6 +2385,18 @@ export async function aggregateMonitorMetrics(
   const globalDocPathCliOverhead = aggregateDocPathCliOverhead(tasksForEvidence);
   const globalDocPathEfficacy = calculateDocPathEfficacy(tasksForEvidence);
   const globalDocPathCliFriction = aggregateDocPathCliFriction(tasksForEvidence);
+
+  const allInvocations: DocPathCommandInvocation[] = [];
+  if (activeTask?.commandInvocations) {
+    allInvocations.push(...activeTask.commandInvocations);
+  } else if (activeTask?.realUsage?.commandInvocations) {
+    allInvocations.push(...activeTask.realUsage.commandInvocations);
+  }
+  for (const task of recentTasks) {
+    const invs = task.commandInvocations || task.realUsage?.commandInvocations || task.sessionRecord?.commandInvocations || [];
+    allInvocations.push(...invs);
+  }
+  const recentCommandInvocations = allInvocations.slice(0, 20);
 
   let realUsageSummary: MonitorSummary['realUsageSummary'] = null;
   if (baseSummary.realUsageSummary) {
@@ -2280,6 +2429,13 @@ export async function aggregateMonitorMetrics(
     });
   }
 
+  const stepPassAnalysis = analyzeStepPassFriction(
+    allInvocations,
+    allTasks.length > 0
+      ? allTasks.reduce((sum, t) => sum + (t.engineering?.turnCount || 1), 0)
+      : (activeTask?.sessionRecord?.turnsCount || undefined)
+  );
+
   const partialSummary = {
     totalTasks: baseSummary.totalTasks,
     healthIndex: compliance.avgComplianceScore,
@@ -2299,6 +2455,9 @@ export async function aggregateMonitorMetrics(
     docpathEfficacy: globalDocPathEfficacy,
     globalDocPathCliFriction,
     docpathCliFriction: globalDocPathCliFriction,
+    stepPassAnalysis,
+    commandInvocations: recentCommandInvocations,
+    recentCommandInvocations,
     activeTask,
     recentTasks,
     docpathValueRoi,

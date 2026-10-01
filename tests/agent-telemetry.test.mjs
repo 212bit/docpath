@@ -23,6 +23,7 @@ import {
   extractStepTelemetrySlices,
   calculateDocPathEfficacy,
   aggregateDocPathCliFriction,
+  aggregateMonitorMetrics,
 } from '../dist/utils/task-metrics.js';
 
 describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', () => {
@@ -2194,6 +2195,187 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
         // Verify realUsage is also enriched
         assert.ok(task.realUsage?.docpathCliOverhead, 'realUsage.docpathCliOverhead should be hydrated');
         assert.equal(task.realUsage?.docpathCliOverhead.totalCalls, 4);
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    });
+
+    it('extracts commandInvocations with exact token accounting, redundancy and serial chain tracking (Antigravity)', () => {
+      const transcript = [
+        JSON.stringify({
+          step_index: 1,
+          source: 'USER_EXPLICIT',
+          type: 'USER_INPUT',
+          status: 'DONE',
+          created_at: '2026-10-01T10:00:00.000Z',
+          content: 'Start step S1 and implement',
+        }),
+        JSON.stringify({
+          step_index: 2,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          created_at: '2026-10-01T10:00:05.000Z',
+          usage: { prompt_tokens: 1500, completion_tokens: 200, total_tokens: 1700 },
+          tool_calls: [
+            {
+              id: 'call-1',
+              name: 'run_command',
+              args: { CommandLine: 'docpath go --step S1' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 3,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          created_at: '2026-10-01T10:00:07.000Z',
+          content: 'Claimed step S1 successfully.',
+        }),
+        JSON.stringify({
+          step_index: 4,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          created_at: '2026-10-01T10:00:10.000Z',
+          usage: { prompt_tokens: 2200, completion_tokens: 150, total_tokens: 2350 },
+          tool_calls: [
+            {
+              id: 'call-2',
+              name: 'run_command',
+              args: { CommandLine: 'docpath next --agent' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 5,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          created_at: '2026-10-01T10:00:11.000Z',
+          content: '{"next_action":"implement"}',
+        }),
+        JSON.stringify({
+          step_index: 6,
+          source: 'MODEL',
+          type: 'PLANNER_RESPONSE',
+          status: 'DONE',
+          created_at: '2026-10-01T10:00:15.000Z',
+          usage: { prompt_tokens: 2800, completion_tokens: 100, total_tokens: 2900 },
+          tool_calls: [
+            {
+              id: 'call-3',
+              name: 'run_command',
+              args: { CommandLine: 'docpath next --agent' },
+            },
+          ],
+        }),
+        JSON.stringify({
+          step_index: 7,
+          source: 'MODEL',
+          type: 'RUN_COMMAND',
+          status: 'DONE',
+          created_at: '2026-10-01T10:00:16.000Z',
+          content: '{"next_action":"implement"}',
+        }),
+      ].join('\n');
+
+      const parsed = AntigravityTelemetryAdapter.parseTranscript(transcript);
+      assert.ok(parsed.commandInvocations, 'commandInvocations should be populated');
+      assert.equal(parsed.commandInvocations.length, 3);
+
+      const [inv1, inv2, inv3] = parsed.commandInvocations;
+
+      // Inv 1: docpath go --step S1
+      assert.equal(inv1.subcommand, 'go');
+      assert.equal(inv1.stepId, 'S1');
+      assert.equal(inv1.rawCommandLine, 'docpath go --step S1');
+      assert.ok(inv1.directInputTokens > 0);
+      assert.ok(inv1.directOutputTokens > 0);
+      assert.equal(inv1.directTotalTokens, inv1.directInputTokens + inv1.directOutputTokens);
+      assert.equal(inv1.turnBilledTokens, 1700);
+      assert.equal(inv1.isRedundant, false);
+      assert.equal(inv1.isSerialChain, false);
+      assert.equal(inv1.wastedTokens, 0);
+      assert.equal(inv1.status, 'success');
+      assert.ok(typeof inv1.durationMs === 'number' && inv1.durationMs >= 0);
+
+      // Inv 2: docpath next --agent (serial chain go -> next)
+      assert.equal(inv2.subcommand, 'next');
+      assert.equal(inv2.isSerialChain, true);
+      assert.equal(inv2.chainKey, 'go -> next');
+      assert.ok(inv2.wastedTokens > 0);
+      assert.equal(inv2.wastedTokens, inv2.directTotalTokens);
+      assert.equal(inv2.turnBilledTokens, 2350);
+
+      // Inv 3: docpath next --agent (redundant next -> next)
+      assert.equal(inv3.subcommand, 'next');
+      assert.equal(inv3.isRedundant, true);
+      assert.equal(inv3.isSerialChain, true);
+      assert.equal(inv3.chainKey, 'next -> next');
+      assert.ok(inv3.wastedTokens > 0);
+      assert.equal(inv3.wastedTokens, inv3.directTotalTokens);
+      assert.equal(inv3.turnBilledTokens, 2900);
+    });
+
+    it('extracts commandInvocations from FallbackBreadcrumbAdapter and propagates to MonitorSummary', async () => {
+      const cwd = mkdtempSync(join(tmpdir(), 'docpath-inv-test-'));
+      const dp = join(cwd, '.docpath');
+      mkdirSync(join(dp, 'workspace'), { recursive: true });
+      mkdirSync(join(dp, 'tasks', 'T-INV-01'), { recursive: true });
+
+      const state = {
+        task_id: 'T-INV-01',
+        task_title: 'Per-invocation telemetry test',
+        workflow_profile: 'standard',
+        level: 2,
+        phase: 'execution',
+        started_at: '2026-10-01T10:00:00.000Z',
+      };
+      writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify(state, null, 2));
+
+      const breadcrumbs = [
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-INV-01',
+          step: 'S1',
+          status: 'in_progress',
+          action: 'go',
+          command: 'docpath go --step S1',
+          output: 'Step S1 started',
+          timestamp: '2026-10-01T10:00:05.000Z',
+        }),
+        JSON.stringify({
+          schema_version: 1,
+          kind: 'breadcrumb',
+          taskId: 'T-INV-01',
+          step: 'S1',
+          status: 'done',
+          action: 'step-pass',
+          command: 'docpath step-pass --step S1',
+          output: 'Step S1 passed',
+          timestamp: '2026-10-01T10:05:00.000Z',
+        }),
+      ].join('\n');
+
+      writeFileSync(join(dp, 'tasks', 'T-INV-01', 'breadcrumb.jsonl'), breadcrumbs);
+
+      try {
+        const active = await probeActiveTaskMetrics(cwd);
+        assert.ok(active, 'activeTask should be probed');
+        assert.ok(active.commandInvocations, 'activeTask.commandInvocations should exist');
+        assert.equal(active.commandInvocations.length, 2);
+        assert.equal(active.commandInvocations[0].subcommand, 'go');
+        assert.equal(active.commandInvocations[0].stepId, 'S1');
+        assert.equal(active.commandInvocations[1].subcommand, 'step-pass');
+
+        const monitor = await aggregateMonitorMetrics(cwd);
+        assert.ok(monitor, 'monitor should be generated');
+        assert.ok(monitor.recentCommandInvocations, 'monitor.recentCommandInvocations should exist');
+        assert.ok(monitor.recentCommandInvocations.length >= 2);
+        assert.equal(monitor.recentCommandInvocations[0].subcommand, 'go');
       } finally {
         rmSync(cwd, { recursive: true, force: true });
       }

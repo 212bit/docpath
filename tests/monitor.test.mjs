@@ -24,6 +24,7 @@ import {
   aggregateDocPathCliOverhead,
   calculateDocPathEfficacy,
   aggregateDocPathCliFriction,
+  analyzeStepPassFriction,
 } from '../dist/utils/task-metrics.js';
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
@@ -2823,6 +2824,304 @@ describe('DocPath Efficacy & Friction Evidence Dashboard (FR-2 / AC-2, AC-3, AC-
       assert.equal(data.globalDocPathCliFriction.serialChains.length, 2);
       assert.equal(data.globalDocPathCliFriction.heavyOutputCommands.length, 1);
       assert.ok(data.globalDocPathCliFriction.actionableOptimizations.length >= 2);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('Step-Pass Friction & Invisible Turn Replay Cost in Monitor (FR-2 / AC-2, AC-3, AC-4)', () => {
+  it('analyzeStepPassFriction accurately computes productive calls, redundant calls, invisible replay tokens, and ratio', () => {
+    // 1. 空调用列表
+    const emptyAnalysis = analyzeStepPassFriction([]);
+    assert.equal(emptyAnalysis.totalStepPassCalls, 0);
+    assert.equal(emptyAnalysis.productiveCalls, 0);
+    assert.equal(emptyAnalysis.redundantCalls, 0);
+    assert.equal(emptyAnalysis.invisibleTurnReplayTokens, 0);
+    assert.equal(emptyAnalysis.frictionTurnRatio, 0);
+
+    // 2. 有 step-pass 调用的模拟遥测
+    const sampleInvocations = [
+      {
+        id: 'inv-1',
+        timestamp: '2026-10-01T10:00:00.000Z',
+        subcommand: 'go',
+        rawCommandLine: 'docpath go --step S1',
+        directInputTokens: 30,
+        directOutputTokens: 50,
+        directTotalTokens: 80,
+        turnBilledTokens: 25000,
+        isRedundant: false,
+        isSerialChain: false,
+        wastedTokens: 0,
+        status: 'success',
+      },
+      {
+        id: 'inv-2',
+        timestamp: '2026-10-01T10:05:00.000Z',
+        subcommand: 'step-pass',
+        rawCommandLine: 'docpath step-pass --step S1',
+        directInputTokens: 40,
+        directOutputTokens: 60,
+        directTotalTokens: 100,
+        turnBilledTokens: 65000,
+        isRedundant: false,
+        isSerialChain: false,
+        wastedTokens: 0,
+        status: 'success',
+      },
+      {
+        id: 'inv-3',
+        timestamp: '2026-10-01T10:06:00.000Z',
+        subcommand: 'step-pass',
+        rawCommandLine: 'docpath step-pass --step S1',
+        directInputTokens: 40,
+        directOutputTokens: 60,
+        directTotalTokens: 100,
+        turnBilledTokens: 115000,
+        isRedundant: true,
+        isSerialChain: false,
+        wastedTokens: 100,
+        status: 'success',
+      },
+      {
+        id: 'inv-4',
+        timestamp: '2026-10-01T10:10:00.000Z',
+        subcommand: 'done',
+        rawCommandLine: 'docpath done --commit',
+        directInputTokens: 50,
+        directOutputTokens: 70,
+        directTotalTokens: 120,
+        turnBilledTokens: 130000,
+        isRedundant: false,
+        isSerialChain: false,
+        wastedTokens: 0,
+        status: 'success',
+      },
+    ];
+
+    const analysis = analyzeStepPassFriction(sampleInvocations, 10);
+    assert.equal(analysis.totalStepPassCalls, 2);
+    assert.equal(analysis.productiveCalls, 1);
+    assert.equal(analysis.redundantCalls, 1);
+    assert.equal(analysis.directTokens, 200); // 100 + 100
+    assert.equal(analysis.invisibleTurnReplayTokens, 180000); // 65000 + 115000
+    assert.equal(analysis.redundantTurnReplayTokens, 115000); // 115000 for redundant turn
+    assert.equal(analysis.frictionTurnRatio, 20); // 2 step-pass calls / 10 turns = 20%
+    assert.match(analysis.summary, /2 次 step-pass 调用 \(含 1 次空转\)/);
+  });
+
+  it('docpath monitor --current renders step-pass friction & per-invocation telemetry across Human, YAML, and JSON views', () => {
+    const cwd = mkWorkspaceWithActiveTask({
+      taskId: 'T-20261001-active-telemetry',
+      taskTitle: 'Test Step Pass Telemetry',
+    });
+    const dp = join(cwd, '.docpath');
+
+    const sampleInvocations = [
+      {
+        id: 'inv-1',
+        timestamp: '2026-10-01T10:00:00.000Z',
+        stepId: 'S1',
+        subcommand: 'go',
+        rawCommandLine: 'docpath go --step S1',
+        directInputTokens: 30,
+        directOutputTokens: 50,
+        directTotalTokens: 80,
+        turnBilledTokens: 25000,
+        isRedundant: false,
+        isSerialChain: false,
+        wastedTokens: 0,
+        status: 'success',
+      },
+      {
+        id: 'inv-2',
+        timestamp: '2026-10-01T10:05:00.000Z',
+        stepId: 'S1',
+        subcommand: 'step-pass',
+        rawCommandLine: 'docpath step-pass --step S1',
+        directInputTokens: 40,
+        directOutputTokens: 60,
+        directTotalTokens: 100,
+        turnBilledTokens: 115000,
+        isRedundant: true,
+        isSerialChain: false,
+        wastedTokens: 100,
+        status: 'success',
+      },
+    ];
+
+    writeFileSync(
+      join(dp, 'tasks', 'current', 'metrics.json'),
+      JSON.stringify({
+        realUsage: {
+          source: 'antigravity',
+          totalTokens: 140000,
+          inputTokens: 100000,
+          outputTokens: 40000,
+          cachedTokens: 50000,
+          costUsd: 0.45,
+          commandInvocations: sampleInvocations,
+        },
+        commandInvocations: sampleInvocations,
+      }, null, 2)
+    );
+
+    try {
+      // 1. Human view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --current --cwd "${cwd}"`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /单次命令真实 Token 消耗明细 \(Per-Invocation Token Telemetry\)/);
+      assert.match(stdoutHuman, /step-pass 空转与隐性轮次重放损耗 \(Invisible Turn Replay Cost\)/);
+      assert.match(stdoutHuman, /调用频次统计:\s*⚠️ 1 次 step-pass 调用 \(0 次有效 \| 1 次空转\)/);
+      assert.match(stdoutHuman, /直接开销 vs 隐性:\s*CLI 直接: ~100 \| 模型隐性重放: ~115,000 \(~115K\)/);
+      assert.match(stdoutHuman, /纯空转隐性重放浪费:\s*🔴 纯空转隐性重放浪费: ~115,000 \(~115K\) Tokens/);
+      assert.match(stdoutHuman, /摩擦轮次占比:\s*[⚠️⚡]\s*摩擦轮次占比:\s*[\d.]+% \(纯框架交互轮次\)/);
+      assert.match(stdoutHuman, /治理优化建议:\s*使用原子复合命令/);
+
+      // 2. YAML agent view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --current --cwd "${cwd}" --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /step_pass_friction:/);
+      assert.match(stdoutAgent, /total_step_pass_calls:\s*1/);
+      assert.match(stdoutAgent, /redundant_calls:\s*1/);
+      assert.match(stdoutAgent, /invisible_turn_replay_tokens:\s*115000/);
+      assert.match(stdoutAgent, /redundant_turn_replay_tokens:\s*115000/);
+      assert.match(stdoutAgent, /friction_turn_ratio:\s*['"]?[\d.]+%['"]?/);
+      assert.match(stdoutAgent, /command_invocations:/);
+      assert.match(stdoutAgent, /subcommand:\s*step-pass/);
+      assert.match(stdoutAgent, /turn_billed_tokens:\s*115000/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --current --cwd "${cwd}" --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.ok(data.active);
+      assert.ok(data.activeTask);
+      assert.ok(data.activeTask.stepPassAnalysis);
+      assert.equal(data.activeTask.stepPassAnalysis.totalStepPassCalls, 1);
+      assert.equal(data.activeTask.stepPassAnalysis.redundantCalls, 1);
+      assert.equal(data.activeTask.stepPassAnalysis.invisibleTurnReplayTokens, 115000);
+      assert.equal(data.activeTask.stepPassAnalysis.redundantTurnReplayTokens, 115000);
+      assert.ok(Array.isArray(data.activeTask.commandInvocations));
+      assert.equal(data.activeTask.commandInvocations.length, 2);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('global docpath monitor renders step-pass friction & per-invocation telemetry across Human, YAML, and JSON views', () => {
+    const sampleInvocations = [
+      {
+        id: 'inv-1',
+        timestamp: '2026-10-01T10:00:00.000Z',
+        stepId: 'S1',
+        subcommand: 'step-pass',
+        rawCommandLine: 'docpath step-pass --step S1',
+        directInputTokens: 35,
+        directOutputTokens: 65,
+        directTotalTokens: 100,
+        turnBilledTokens: 80000,
+        isRedundant: false,
+        isSerialChain: false,
+        wastedTokens: 0,
+        status: 'success',
+      },
+      {
+        id: 'inv-2',
+        timestamp: '2026-10-01T10:05:00.000Z',
+        stepId: 'S2',
+        subcommand: 'step-pass',
+        rawCommandLine: 'docpath step-pass --step S2',
+        directInputTokens: 40,
+        directOutputTokens: 60,
+        directTotalTokens: 100,
+        turnBilledTokens: 120000,
+        isRedundant: true,
+        isSerialChain: false,
+        wastedTokens: 100,
+        status: 'success',
+      },
+    ];
+
+    const task = {
+      taskId: 'T-20261001-done-1',
+      taskTitle: 'Done Task with Step Pass Telemetry',
+      profile: 'standard',
+      level: 2,
+      startedAt: '2026-10-01T10:00:00.000Z',
+      completedAt: '2026-10-01T10:10:00.000Z',
+      durationMinutes: 10,
+      firstTimePassRate: 100,
+      complianceScore: 100,
+      totalDiffLines: 80,
+      filesChanged: 3,
+      linesAdded: 60,
+      linesDeleted: 20,
+      protocol: { totalInjectedTokens: 1800, specTokens: 500, planTokens: 300, rulesTokens: 1000 },
+      engineering: {
+        turnCount: 5,
+        retryCount: 0,
+        firstTimePassRate: 100,
+        cycleTimeMinutes: 10,
+        filesChanged: 3,
+        linesAdded: 60,
+        linesDeleted: 20,
+        totalDiffLines: 80,
+        speedLinesPerMinute: 8,
+      },
+      commandInvocations: sampleInvocations,
+      realUsage: {
+        source: 'antigravity',
+        totalTokens: 200000,
+        inputTokens: 150000,
+        outputTokens: 50000,
+        cachedTokens: 80000,
+        costUsd: 0.60,
+        commandInvocations: sampleInvocations,
+      },
+    };
+
+    const cwd = mkWorkspaceWithTasks([task]);
+
+    try {
+      // 1. Human view
+      const stdoutHuman = execSync(`node "${BIN}" monitor --cwd "${cwd}"`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutHuman, /单次命令真实 Token 消耗明细 \(Per-Invocation Token Telemetry\)/);
+      assert.match(stdoutHuman, /step-pass 空转与隐性轮次重放损耗 \(Invisible Turn Replay Cost\)/);
+      assert.match(stdoutHuman, /调用频次统计:\s*⚠️ 2 次 step-pass 调用 \(1 次有效 \| 1 次空转\)/);
+      assert.match(stdoutHuman, /直接开销 vs 隐性:\s*CLI 直接: ~200 \| 模型隐性重放: ~200,000 \(~200K\)/);
+      assert.match(stdoutHuman, /纯空转隐性重放浪费:\s*🔴 纯空转隐性重放浪费: ~120,000 \(~120K\) Tokens/);
+
+      // 2. YAML agent view
+      const stdoutAgent = execSync(`node "${BIN}" monitor --cwd "${cwd}" --agent`, {
+        encoding: 'utf-8',
+      });
+      assert.match(stdoutAgent, /step_pass_friction:/);
+      assert.match(stdoutAgent, /total_step_pass_calls:\s*2/);
+      assert.match(stdoutAgent, /productive_calls:\s*1/);
+      assert.match(stdoutAgent, /redundant_calls:\s*1/);
+      assert.match(stdoutAgent, /invisible_turn_replay_tokens:\s*200000/);
+      assert.match(stdoutAgent, /redundant_turn_replay_tokens:\s*120000/);
+      assert.match(stdoutAgent, /command_invocations:/);
+
+      // 3. JSON view
+      const stdoutJson = execSync(`node "${BIN}" monitor --cwd "${cwd}" --json`, {
+        encoding: 'utf-8',
+      });
+      const data = JSON.parse(stdoutJson);
+      assert.ok(data.stepPassAnalysis);
+      assert.equal(data.stepPassAnalysis.totalStepPassCalls, 2);
+      assert.equal(data.stepPassAnalysis.productiveCalls, 1);
+      assert.equal(data.stepPassAnalysis.redundantCalls, 1);
+      assert.equal(data.stepPassAnalysis.invisibleTurnReplayTokens, 200000);
+      assert.equal(data.stepPassAnalysis.redundantTurnReplayTokens, 120000);
+      assert.ok(Array.isArray(data.recentCommandInvocations) || Array.isArray(data.commandInvocations));
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
