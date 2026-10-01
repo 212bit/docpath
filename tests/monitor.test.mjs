@@ -2977,7 +2977,9 @@ describe('Step-Pass Friction & Invisible Turn Replay Cost in Monitor (FR-2 / AC-
       assert.match(stdoutHuman, /调用频次统计:\s*⚠️ 1 次 step-pass 调用 \(0 次有效 \| 1 次空转\)/);
       assert.match(stdoutHuman, /直接开销 vs 隐性:\s*CLI 直接: ~100 \| 模型隐性重放: ~115,000 \(~115K\)/);
       assert.match(stdoutHuman, /纯空转隐性重放浪费:\s*🔴 纯空转隐性重放浪费: ~115,000 \(~115K\) Tokens/);
-      assert.match(stdoutHuman, /摩擦轮次占比:\s*[⚠️⚡]\s*摩擦轮次占比:\s*[\d.]+% \(纯框架交互轮次\)/);
+      // 注意「⚠️」是 U+26A0 + U+FE0F 两个码点；字符类 [⚠️⚡] 会因含变体选择符而无法匹配，
+      // 必须用 ⚠\uFE0F?（⚠ + 可选变体符）显式匹配 emoji。见 R-460 收口实测回归。
+      assert.match(stdoutHuman, /摩擦轮次占比:\s*(?:⚠\uFE0F?|⚡)\s*摩擦轮次占比:\s*[\d.]+% \(纯框架交互轮次\)/);
       assert.match(stdoutHuman, /治理优化建议:\s*使用原子复合命令/);
 
       // 2. YAML agent view
