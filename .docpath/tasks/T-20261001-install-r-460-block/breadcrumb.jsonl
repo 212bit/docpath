@@ -1,0 +1,6 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-r-460-block","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 install 正文协议漂移检测门禁（补 R-460 类非 block 漂移）","timestamp":"2026-10-01T06:40:17.909Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-r-460-block","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 install 正文协议漂移检测门禁（补 R-460 类非 block 漂移）","timestamp":"2026-10-01T06:40:22.808Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-r-460-block","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-10-01T07:25:18.907Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-r-460-block","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-01T07:25:38.248Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-r-460-block","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 0 提示","timestamp":"2026-10-01T07:25:40.489Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-r-460-block","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-10-01T07:25:42.372Z"}

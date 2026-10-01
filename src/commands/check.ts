@@ -7,7 +7,8 @@
  * 新增：--harness 检查 harness.md 中的 pre-flight/boundary/pattern 规则
  */
 
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { emitNextHint } from '../engine/next-hint.js';
@@ -18,6 +19,7 @@ import { logger } from '../utils/logger.js';
 import { healStructuredMarkdownDrift } from '../utils/structured-heal.js';
 import { syncProtocolBlocks } from '../utils/protocol-blocks.js';
 import { resolveTemplate } from '../utils/install-core.js';
+import { detectRepoProtocolDrift } from '../utils/protocol-drift.js';
 import { recordEnvExemption } from '../engine/policy.js';
 import {
   performRiskReassessment,
@@ -61,6 +63,49 @@ async function assertProtocolBlocksInSync(): Promise<void> {
   logger.error(`❌  协议共享契约注入区与块源不一致: ${detail}`);
   logger.log('    修复: docpath render --view protocols（重渲染注入区后提交 canonical）');
   throw new Error('docpath check failed: protocol blocks drift');
+}
+
+/**
+ * 入口阶段 2.3（R-462）：仓库根协议文件 ↔ 模板母版 正文一致性。
+ *
+ * 只做 block 注入区之外普通正文的 diff：模板独有的正文行（仓根缺）→ failed；
+ * 仓根独有的正文行（模板缺）→ 视为可能的有意定制，仅提示。参照块注入区治理的
+ * 「fail-loud 不自动写盘」，本门禁同样不写盘，仅指向手动同步 / 重装。
+ */
+async function assertRepoProtocolsInSync(cwd: string, docpathDir: string): Promise<void> {
+  const projectName = detectProjectName(cwd);
+  const report = await detectRepoProtocolDrift(cwd, projectName);
+
+  const drifted = report.files.filter((f) => f.drift);
+  if (drifted.length === 0) {
+    // 仅存在「仓根多行」的提示
+    for (const f of report.files) {
+      if (f.exempt) continue;
+      if (f.extraInRepo.length > 0) {
+        logger.log(
+          `  ℹ  协议正文仓根含模板缺失行（${f.file}，可能为有意定制）: ${f.extraInRepo.slice(0, 3).map((l) => `"${l}"`).join(', ')}`,
+        );
+      }
+    }
+    return;
+  }
+
+  for (const f of drifted) {
+    logger.error(`❌  协议正文漂移: ${f.file} 缺模板行正文 ${f.missingFromRepo.length} 行:`);
+    for (const line of f.missingFromRepo.slice(0, 8)) {
+      logger.error(`    · ${line}`);
+    }
+  }
+  logger.log('  修复: 将缺失正文同步回仓库根协议文件，或运行 docpath install --target universal --force 重装后核对 diff');
+  throw new Error('docpath check failed: repo protocol text drift');
+}
+
+/** 从仓库根 AGENTS.md 的 Linked to 行探测项目名，用于替换模板 {{PROJECT_NAME}} 占位。 */
+function detectProjectName(cwd: string): string | null {
+  const p = join(cwd, 'AGENTS.md');
+  if (!existsSync(p)) return null;
+  const m = readFileSync(p, 'utf-8').match(/Linked to:\s*\*\*([^*]+)\*\*/);
+  return m ? m[1].trim() : null;
 }
 
 /**
@@ -116,6 +161,7 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   // 早退性由 CLI 级契约测试固化（blocks 漂移输出不得含编译检查段落）。
   await healActiveTaskDrift(docpathDir, current?.task_id);
   await assertProtocolBlocksInSync();
+  await assertRepoProtocolsInSync(cwd, docpathDir);
   await assertTaskIdentityFatal(cwd, docpathDir, options);
 
   // ── R-338 S4: check 期风险复评（所有 profile，只升不降）──

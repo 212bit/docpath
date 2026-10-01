@@ -25,7 +25,7 @@ context-index.ts, context.ts, document-index.ts, topic-synonyms.ts, milestone.ts
 agent-output.ts, agent-output/formatters.ts, agent-output/context-injection.ts, agent-prompt.ts, next-hint.ts, output-formatter.ts, contextual-help.ts, error-messages.ts, error-helpers.ts, logger.ts, closeout-route.ts, command-metadata.ts
 
 ### install — 安装/模板/协议分发
-install-core.ts, protocol-blocks.ts, detect.ts, package-info.ts, scan-existing-arch.ts, scan-existing-claude.ts, scan-existing-commands.ts, scan-existing-tree.ts
+install-core.ts, protocol-blocks.ts, protocol-drift.ts, detect.ts, package-info.ts, scan-existing-arch.ts, scan-existing-claude.ts, scan-existing-commands.ts, scan-existing-tree.ts
 
 ### observability — 追踪与清理
 trace.ts, trace-analyzer.ts, trace-matrix.ts, workspace-cleanup.ts, ceremony.ts, version-drift.ts, git-run.ts, breadcrumb.ts, task-metrics.ts, agent-telemetry-adapter.ts

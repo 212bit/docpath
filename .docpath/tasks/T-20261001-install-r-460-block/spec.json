@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-01T06:40:16.834Z",
+    "updated_at": "2026-10-01T06:40:16.834Z",
+    "content_sha256": "46673c5b3523b3f2fd540651db198ed3d0710414f41258346943e1abfcf8b78f"
+  },
+  "task_id": "T-20261001-install-r-460-block",
+  "backlog_id": "R-462",
+  "title": "T-20261001-install-r-460-block - install 正文协议漂移检测门禁（补 R-460 类非 block 漂移）",
+  "generated_at": "2026-10-01T06:40:16.834Z",
+  "scope": {
+    "included": [
+      "install 正文协议漂移检测门禁（补 R-460 类非 block 漂移）"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 协议单一源已确立为 `templates/protocols/`。但现有 `syncProtocolBlocks` 只检测 `<!-- docpath:block -->` 注入区是否漂移，**不检测 block 之外的正文协议文本**（如 R-460 的 next_hint 条款、Start/Resume 段落等）。R-460 曾发生「根目录 AGENTS.md 已含、模板母版缺失」的正文漂移，未被任何门禁拦截，直到手动 diff 才暴露。\n- 目标: install 正文协议漂移检测门禁（补 R-460 类非 block 漂移）\n- 背景: 来自 backlog R-462\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "install 正文协议漂移检测门禁（补 R-460 类非 block 漂移）",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "新增模板正文漂移检测逻辑，能识别「模板母版新增了正文条款（如 R-460 句式）而仓库协议文件未同步」为漂移；无漂移时不误报。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "漂移检测产生机器可读报告，并给出修复动作（如 `docpath install --force` 或 `docpath update --reset-protocols`）。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "有回归测试钉住：故意让仓库 AGENTS.md 缺模板新增的某正文句 → 检测命中标为 drift；仓库协议含非 {{PROJECT_NAME}} 的有意定制 → 不误报或按配置豁免。",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-462 与任务 T-20261001-install-r-460-block 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "协议单一源已确立为 `templates/protocols/`。但现有 `syncProtocolBlocks` 只检测 `<!-- docpath:block -->` 注入区是否漂移，**不检测 block 之外的正文协议文本**（如 R-460 的 next_hint 条款、Start/Resume 段落等）。R-460 曾发生「根目录 AGENTS.md 已含、模板母版缺失」的正文漂移，未被任何门禁拦截，直到手动 diff 才暴露。",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}
