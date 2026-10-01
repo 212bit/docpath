@@ -1126,6 +1126,30 @@ describe('install agent adapters', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('install --force auto-heals non-block body text drift while preserving project binding (R-465)', () => {
+    const cwd = mkWorkspace();
+    // 1. Initial clean install
+    run(`install --cwd ${cwd} --target universal`, cwd);
+
+    // 2. Simulate downstream project missing a new body paragraph from template
+    const agentsPath = join(cwd, 'AGENTS.md');
+    let content = readFileSync(agentsPath, 'utf-8');
+    content = content.replace(/Linked to:\s*\*\*[^*]+\*\*/, 'Linked to: **my-custom-project**');
+    // Remove one non-block body sentence
+    content = content.replace(/Consume DocPath through CLI summaries\./, '');
+    writeFileSync(agentsPath, content);
+
+    // 3. Run install --force to auto-heal
+    const out = run(`install --cwd ${cwd} --target universal --force`, cwd);
+    assert.match(out, /AGENTS\.md 协议正文已自动同步/);
+
+    const after = readFileSync(agentsPath, 'utf-8');
+    assert.match(after, /Linked to: \*\*my-custom-project\*\*/);
+    assert.match(after, /Consume DocPath through CLI summaries\./);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
 
 describe('install real-world fixes (R-311/R-312, SynapBuddy 实测)', () => {

@@ -96,7 +96,7 @@ async function assertRepoProtocolsInSync(cwd: string, docpathDir: string): Promi
       logger.error(`    · ${line}`);
     }
   }
-  logger.log('  修复: 将缺失正文同步回仓库根协议文件，或运行 docpath install --target universal --force 重装后核对 diff');
+  logger.log('  修复: 运行 docpath update --reset-protocols 自动同步最新正文（保留项目绑定），或运行 docpath install --target universal --force');
   throw new Error('docpath check failed: repo protocol text drift');
 }
 

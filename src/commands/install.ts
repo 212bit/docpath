@@ -17,6 +17,7 @@ import { readFile, readdir, mkdir, copyFile, chmod, stat } from 'node:fs/promise
 import { exists, writeFileSafe } from '../utils/file.js';
 import { getDocpathPackageVersion } from '../utils/package-info.js';
 import { readProtocolBlocks, renderProtocolBlocks } from '../utils/protocol-blocks.js';
+import { protocolBodyLines } from '../utils/protocol-drift.js';
 import {
   type Target,
   type HookMode,
@@ -800,7 +801,7 @@ async function installProtocolFile(
       }
     }
 
-    // ── 智能无损更新（Smart Block Update）──
+    // ── 智能无损更新（Smart Block & Body Drift Update）──
     // 若本地文件包含协议注入块标记，优先以无损方式合并最新共享契约块，保留本地项目绑定与定制
     if (existing.includes('<!-- docpath:block ')) {
       try {
@@ -814,6 +815,32 @@ async function installProtocolFile(
             console.log(`✅  ${filename} 智能无损更新: 已同步 ${result.updated.length} 个协议块 (${result.updated.join(', ')})，保留项目绑定与本地定制`);
             return;
           } else if (result.present.length > 0) {
+            // 检查是否有模板正文漂移（R-465）
+            const projectMatch = existing.match(/Linked to:\s*\*\*([^*]+)\*\*/);
+            const effectiveProjectName = projectMatch && projectMatch[1] ? projectMatch[1].trim() : projectName;
+            const repoLines = new Set(protocolBodyLines(existing, effectiveProjectName));
+            const tplLines = new Set(protocolBodyLines(content, effectiveProjectName));
+            const missing = [...tplLines].filter((l) => !repoLines.has(l));
+
+            if (force && missing.length > 0) {
+              let upgraded = content;
+              if (projectMatch && projectMatch[1]) {
+                upgraded = upgraded.replace(new RegExp(`Linked to:\\s*\\*\\*${projectName}\\*\\*`, 'g'), `Linked to: **${projectMatch[1]}**`);
+              }
+              const configMatch = existing.match(/Config:\s*`?([^\n`]+)`?/);
+              if (configMatch && configMatch[1] && !configMatch[1].includes('{{PROJECT_NAME}}')) {
+                upgraded = upgraded.replace(/Config:\s*`?\.docpath\/config\.yaml`?/, `Config: \`${configMatch[1].trim()}\``);
+              }
+              const customSections = extractCustomProtocolSections(existing);
+              if (customSections.length > 0) {
+                upgraded = upgraded.trimEnd() + '\n\n' + customSections.join('\n\n') + '\n';
+              }
+              upgraded = renderProtocolBlocks(upgraded, blocks).content;
+              await writeFileSafe(filePath, upgraded);
+              console.log(`✅  ${filename} 协议正文已自动同步（补充 ${missing.length} 行缺失正文，保留项目绑定与本地定制）`);
+              return;
+            }
+
             console.log(`✓  ${filename} 已是最新（协议注入块已对齐，保留本地定制）`);
             return;
           }

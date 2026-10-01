@@ -1,0 +1,9 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-force","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 协议正文漂移自动修复与 install","timestamp":"2026-10-01T11:33:55.494Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-force","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-01T11:38:01.241Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-force","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 force 非交互重置打通","timestamp":"2026-10-01T11:38:01.565Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-force","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-01T11:38:40.788Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-force","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）, Living docs integrity gate","timestamp":"2026-10-01T11:40:44.748Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-force","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）, Living docs integrity gate","timestamp":"2026-10-01T11:44:00.781Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-force","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-01T11:49:30.160Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-force","step":"review","status":"done","context":"代码审查: 0 错误, 3 警告, 0 提示","timestamp":"2026-10-01T11:49:31.286Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-install-force","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-01T11:49:32.832Z"}

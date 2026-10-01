@@ -41,7 +41,12 @@ const DRIFT_EXEMPT_MARK = 'docpath:drift-exempt';
 
 /** 归一化正文行集：替换 PROJECT_NAME 占位、剔除 block 注入区与空行。 */
 export function protocolBodyLines(content: string, projectName: string | null): string[] {
-  const normalized = projectName ? content.replace(/\{\{PROJECT_NAME\}\}/g, projectName) : content;
+  let normalized = content;
+  if (projectName) {
+    normalized = normalized
+      .replace(/Linked to:\s*\*\*[^*]+\*\*/g, `Linked to: **${projectName}**`)
+      .replace(/\{\{PROJECT_NAME\}\}/g, projectName);
+  }
   const lines = normalized.split('\n');
   const out: string[] = [];
   let inBlock = false;
@@ -91,8 +96,11 @@ export async function detectRepoProtocolDrift(
       continue;
     }
 
-    const repoLines = new Set(protocolBodyLines(repoContent, projectName));
-    const tplLines = new Set(protocolBodyLines(tplContent, projectName));
+    const projectMatch = repoContent.match(/Linked to:\s*\*\*([^*]+)\*\*/);
+    const effectiveProjectName = projectMatch && projectMatch[1] ? projectMatch[1].trim() : projectName;
+
+    const repoLines = new Set(protocolBodyLines(repoContent, effectiveProjectName));
+    const tplLines = new Set(protocolBodyLines(tplContent, effectiveProjectName));
 
     const missing = [...tplLines].filter((l) => !repoLines.has(l));
     const extra = [...repoLines].filter((l) => !tplLines.has(l));
