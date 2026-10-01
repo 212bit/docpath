@@ -11,11 +11,11 @@ import { resolveDocpathDir } from '../utils/file.js';
 import { nextCommand, runPostWriteSteps } from './runtime.js';
 import { validateSpecContent } from '../utils/doc-parser.js';
 import { writeActiveTaskFile } from '../utils/task-files.js';
-import { readCurrentState } from '../utils/workspace.js';
+import { mutateCurrentState, readCurrentState } from '../utils/workspace.js';
 import { canonicalTaskDir, currentTaskDir } from '../utils/task-files.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 import { readStdin } from '../utils/stdin.js';
-import { taskIdFromMarkdown } from '../utils/structured-docs.js';
+import { backlogIdFromMarkdown, taskIdFromMarkdown } from '../utils/structured-docs.js';
 
 /**
  * write-spec 的硬性结构契约（与 doc-parser.validateSpecContent 一一对应）。
@@ -70,6 +70,7 @@ interface WriteSpecOptions {
 interface SpecTaskIdentity {
   taskId: string;
   taskTitle: string;
+  backlogId?: string;
 }
 
 async function assertDocpathWorkspace(cwd: string): Promise<string> {
@@ -135,7 +136,10 @@ function printSpecContractHint(): void {
 }
 
 function titleFromSpecHeading(specContent: string): string {
-  return specContent.match(/^#\s+T-\S+\s+-\s+(.+)$/m)?.[1]?.trim() || '';
+  const matchWithId = specContent.match(/^#\s+(?:(?:T|R)-[\w-]+\s*[-—:]\s*)(.+)$/m);
+  if (matchWithId) return matchWithId[1].trim();
+  const matchPlain = specContent.match(/^#\s+(.+)$/m);
+  return matchPlain ? matchPlain[1].trim() : '';
 }
 
 function resolveSpecTaskIdentity(
@@ -152,9 +156,13 @@ function resolveSpecTaskIdentity(
     process.exit(1);
   }
 
+  const rawBacklogId = backlogIdFromMarkdown(specContent);
+  const backlogId = rawBacklogId || current?.backlog_id || undefined;
+
   return {
     taskId,
     taskTitle: activeStateTaskId ? current?.task_title?.trim() || titleFromSpecHeading(specContent) : titleFromSpecHeading(specContent),
+    backlogId,
   };
 }
 
@@ -168,7 +176,8 @@ function isSameActiveTaskSpecResync(
 ): boolean {
   if (!current || ['idle', 'completed'].includes(current.phase)) return false;
   const declaredTaskId = taskIdFromMarkdown(specContent);
-  return !!declaredTaskId && declaredTaskId === current.task_id?.trim();
+  if (declaredTaskId && declaredTaskId === current.task_id?.trim()) return true;
+  return !declaredTaskId;
 }
 
 export async function writeSpecCommand(options: WriteSpecOptions): Promise<void> {
@@ -178,7 +187,7 @@ export async function writeSpecCommand(options: WriteSpecOptions): Promise<void>
   await validateSpecOrExit(cwd, docpathDir, specContent);
 
   const current = await readCurrentState(cwd);
-  const { taskId, taskTitle } = resolveSpecTaskIdentity(current, specContent);
+  const { taskId, taskTitle, backlogId } = resolveSpecTaskIdentity(current, specContent);
 
   if (shouldRequireCleanWorktreeForSpecWrite(current)) {
     assertCleanWorktreeForNewTask(cwd, 'docpath write-spec');
@@ -188,6 +197,12 @@ export async function writeSpecCommand(options: WriteSpecOptions): Promise<void>
   console.log(`✅  spec.md 已写入: ${canonicalPath}`);
 
   if (isSameActiveTaskSpecResync(current, specContent)) {
+    if (backlogId && current && current.backlog_id !== backlogId) {
+      await mutateCurrentState(cwd, (prev) => {
+        const base = prev ?? current;
+        return { ...base, backlog_id: backlogId };
+      });
+    }
     await nextCommand({ cwd });
     return;
   }
@@ -197,6 +212,7 @@ export async function writeSpecCommand(options: WriteSpecOptions): Promise<void>
   await runPostWriteSteps(cwd, 'task.created', {
     taskId,
     taskTitle,
+    backlogId,
     currentStep: 'spec 已写入，下一步: docpath plan',
   });
 }

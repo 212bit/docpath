@@ -114,11 +114,14 @@ function firstHeading(content: string): string {
 }
 
 export function taskIdFromMarkdown(content: string): string | null {
-  return content.match(/^#\s+((?:T|R)-[\w-]+)/m)?.[1]?.trim() || null;
+  return content.match(/^#\s+(T-[\w-]+)/m)?.[1]?.trim() || null;
 }
 
-function backlogIdFromMarkdown(content: string): string | null {
-  return content.match(/^>\s*backlog_id:\s*([^\s]+)/m)?.[1]?.trim() || null;
+export function backlogIdFromMarkdown(content: string): string | null {
+  const fromMeta = content.match(/^>\s*backlog_id:\s*([^\s]+)/m)?.[1]?.trim();
+  if (fromMeta) return fromMeta;
+  const fromHeading = content.match(/^#\s+(R-\d+)(?:\s*[-—:]|\s+)/m)?.[1]?.trim();
+  return fromHeading || null;
 }
 
 function extractSection(content: string, headingPattern: RegExp): string {

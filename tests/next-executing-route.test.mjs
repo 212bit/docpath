@@ -115,4 +115,25 @@ describe('R-364: executing 期 next 路由', () => {
       `plan 全完成时不应给执行期提示，实际:\n${out}`,
     );
   });
+
+  it('步骤处于 in_progress 时推荐 docpath step-pass，不重推 docpath go（去自环）', () => {
+    const cwd = mkRepo({ plan: '# Plan\n\n- [ ] S1: todo\n- [ ] S2: todo\n' });
+    writeFileSync(
+      join(cwd, '.docpath', 'workspace', 'breadcrumb.md'),
+      ['# Breadcrumb', '', '### ⏳ S1 [T-R364] — 2026-09-23T00:00:00.000Z', '', '---', 'taskId: T-R364', 'step: S1', 'status: in_progress', 'timestamp: 2026-09-23T00:00:00.000Z', '---', '', '- **状态**: in_progress', '- **上下文**: 开始执行 S1', ''].join('\n'),
+    );
+
+    const out = run('next --agent', cwd);
+
+    assert.match(
+      out,
+      /recommended_command:\s*"?docpath step-pass --step S1/,
+      `进行中步骤应推荐 step-pass，实际:\n${out}`,
+    );
+    assert.doesNotMatch(
+      out,
+      /recommended_command:\s*"?docpath go --step S1/,
+      `进行中步骤不应重推 go --step S1 造成自环，实际:\n${out}`,
+    );
+  });
 });

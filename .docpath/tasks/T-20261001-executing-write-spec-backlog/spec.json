@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-01T17:45:23.491Z",
+    "updated_at": "2026-10-01T17:45:23.491Z",
+    "content_sha256": "7a971501df346ab5c4c5bcaf9fb87f15de3e37a4dd58c3ab7e4219aaaa2ac737"
+  },
+  "task_id": "T-20261001-executing-write-spec-backlog",
+  "backlog_id": "R-468",
+  "title": "T-20261001-executing-write-spec-backlog - 修复 executing 路由去自环与 write-spec 支持 Backlog 标题自愈",
+  "generated_at": "2026-10-01T17:45:23.491Z",
+  "scope": {
+    "included": [
+      "`src/engine/agent-output/formatters.ts` 中的 `inferRouteFromContext` 逻辑修复",
+      "`src/utils/structured-docs.ts`、`src/utils/task-files.ts` 和 `src/commands/write-spec.ts` 中的 Task ID / Backlog ID 识别与自愈",
+      "新增针对 executing in_progress 路由和 write-spec `# R-xxx` 标题自愈的测试用例"
+    ],
+    "excluded": [
+      "不修改底层 Backlog 与 Task 的分离存储模型"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "已确认",
+    "decision_brief_markdown": "- 当前问题: executing 路由自环与 write-spec 对 `# R-xxx` 标题误报漂移\n- 目标: 修复 executing in-progress 路由指引，并支持 write-spec 标题自动识别 Backlog ID 与自愈\n- 推荐方案: 修复 `inferRouteFromContext` 对 `activeStep` 的保留，并将 `taskIdFromMarkdown` 与 `write-spec` 对 `# R-xxx` 进行 backlog 映射处理\n- 决策理由: 彻底消除 Agent 开发过程中的自环卡顿与 spec 写入摩擦\n- 用户确认: 已确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "修复 executing 路由去自环 —— 当处于 `executing` 阶段且存在进行中的活跃步骤（`context.bc.inProgress > 0` 或 `activeStep` 存在）时，`inferRouteFromContext` 继承 `inferred` 路由推荐 `docpath step-pass --step <step>`，不再盲目重推 `docpath go`。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "`write-spec` 支持 Backlog 标题自愈 —— `taskIdFromMarkdown` 仅匹配真实的 `T-` Task ID；当 Markdown 一级标题为 `# R-xxx - 标题` 且当前存在活跃任务时，自动将其解析为 `backlog_id: R-xxx` 并对齐到当前活跃任务 `T-xxx`，杜绝 `task identity mismatch` 假阳性拦截。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容，所有既有单测与新增用例全部通过。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "当工作区处于 `executing` 阶段且步骤已进入 `in_progress` 时，`docpath next --agent` 和 `emitNextHint` 输出推荐 `docpath step-pass --step <step>`，不再输出 `docpath go --step <step>`。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "在活跃任务 `T-xxx` 下，通过 `write-spec --stdin` 传入 `# R-xxx - 标题` 或 `# 标题` 的 spec 内容能够成功落盘，自动记录 `backlog_id: R-xxx` 且不报 `task identity mismatch`。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "全量测试套件通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "executing 路由自环与 write-spec 对 `# R-xxx` 标题误报漂移",
+    "options": [
+      "修复 `inferRouteFromContext` 对 `activeStep` 的保留，并将 `taskIdFromMarkdown` 与 `write-spec` 对 `# R-xxx` 进行 backlog 映射处理"
+    ],
+    "chosen": "修复 `inferRouteFromContext` 对 `activeStep` 的保留，并将 `taskIdFromMarkdown` 与 `write-spec` 对 `# R-xxx` 进行 backlog 映射处理",
+    "rationale": "彻底消除 Agent 开发过程中的自环卡顿与 spec 写入摩擦"
+  }
+}

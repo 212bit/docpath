@@ -1065,6 +1065,10 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
   }
 
   if (!pendingDone && state?.phase === 'executing' && state.task_id && !isQuickProfile(state.workflow_profile) && !isTroubleshooting) {
+    const activeStep = [...context.bc.entries].reverse().find((e) => e.status === 'in_progress');
+    if (activeStep) {
+      return inferred;
+    }
     const required = ['.docpath/workspace/current.md', '.docpath/tasks/current/plan.md'];
     // R-364：executing 期真正推进任务是 `go --step <id>`，不是会话入口 agent enter。
     // 原实现推荐 agent enter（一次性会话初始化）作为「下一步」，与自身 exit_criteria

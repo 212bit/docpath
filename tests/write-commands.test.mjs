@@ -238,6 +238,53 @@ describe('write commands', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
+  it('write-spec accepts # R-xxx heading and associates backlog_id with active task without task identity mismatch', () => {
+    const cwd = mkWorkspace({ phase: 'executing', gate: 'none', taskId: 'T-ACTIVE', taskTitle: 'Active Task' });
+    const spec = [
+      '# R-167 - Readonly FS Fallback',
+      '',
+      '## 1. 背景与动机',
+      '',
+      '只读文件系统回退支持。',
+      '',
+      '## 2. 需求清单',
+      '',
+      '### 功能需求',
+      '- [ ] FR-1: 候选位置级联',
+      '',
+      '### 非功能需求',
+      '- [ ] NFR-1: fail closed',
+      '',
+      '## 4.1 重大变更门禁',
+      '',
+      '### Decision Brief',
+      '- 当前问题: 只读文件系统无法写入会话缓存',
+      '- 推荐方案: 级联到 tmp 目录',
+      '- 决策理由: 保证恢复能力',
+      '- 用户确认: 已确认',
+      '',
+      '## 5. 验收标准',
+      '',
+      '- [ ] AC-1: 只读目录时回退 tmp 成功',
+      '',
+    ].join('\n');
+
+    const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, spec);
+
+    assert.equal(result.code, 0, `write-spec 应成功落盘，实际输出:\n${result.out}`);
+    assert.match(result.out, /spec\.md 已写入/);
+    const writtenSpec = readFileSync(join(cwd, '.docpath', 'tasks', 'T-ACTIVE', 'spec.md'), 'utf-8');
+    assert.match(writtenSpec, /FR-1: 候选位置级联/);
+    const specJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'tasks', 'T-ACTIVE', 'spec.json'), 'utf-8'));
+    assert.equal(specJson.task_id, 'T-ACTIVE');
+    assert.equal(specJson.backlog_id, 'R-167');
+    const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+    assert.equal(state.task_id, 'T-ACTIVE');
+    assert.equal(state.backlog_id, 'R-167');
+    assert.equal(state.phase, 'executing');
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
   it('write-spec binds a new task id from the spec heading when state has no task id', () => {
     const cwd = mkWorkspace({ phase: 'idle', gate: 'none', taskId: '', taskTitle: '' });
     const spec = [
