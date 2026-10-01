@@ -203,12 +203,12 @@ node -e "import('./dist/engine/breadcrumb.js').then(m =>
 
 ## 相关文件
 
-- `src/engine/breadcrumb.ts` - 核心实现
-- `src/commands/migrate-breadcrumb.ts` - 迁移命令
-- `src/commands/register/runtime-tools.ts` - CLI 注册
+- `src/engine/breadcrumb.ts` - 核心导出
+- `src/utils/breadcrumb.ts` - 底层存储与事件实现
+- `src/commands/register.ts` - CLI 注册
 
 ## 参考
 
-- 原始双写实现: `src/engine/breadcrumb.ts:418` (已移除)
-- 聚合实现: `src/engine/breadcrumb.ts:344-374`
+- 存储与聚合实现: `src/utils/breadcrumb.ts`
 - 迁移日期: 2026-06-24
+

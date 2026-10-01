@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath-2","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 优化 DocPath 活文档管理","timestamp":"2026-10-01T11:51:26.712Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath-2","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-01T11:52:52.779Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath-2","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 智能代码漂移体检","timestamp":"2026-10-01T11:52:53.108Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath-2","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-01T11:54:31.852Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath-2","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-01T11:56:22.265Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath-2","step":"review","status":"done","context":"代码审查: 0 错误, 5 警告, 0 提示","timestamp":"2026-10-01T11:56:23.206Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath-2","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-01T11:56:24.646Z"}

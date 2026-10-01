@@ -119,4 +119,36 @@ Sample body
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('detects code drift in active docs but exempts design/drafts or annotated docs', () => {
+    const cwd = mkWorkspace();
+    const docs = join(cwd, 'docs');
+    const designDir = join(docs, 'design');
+    mkdirSync(designDir, { recursive: true });
+    try {
+      // 1. Active doc with non-existent code file -> should trigger code-drift
+      writeFileSync(join(docs, 'guide.md'), '# Guide\n\nRefer to `src/nonexistent/code.ts`.\n');
+
+      // 2. Design doc with non-existent planned code file -> should be exempt
+      writeFileSync(join(designDir, 'rfc-feature.md'), '# RFC Feature\n\nProposed `src/planned/future.ts`.\n');
+
+      // 3. Draft doc with frontmatter -> should be exempt
+      writeFileSync(join(docs, 'draft.md'), '---\nstatus: draft\n---\n# Draft Doc\n\nRefer to `src/draft/code.ts`.\n');
+
+      // 4. Annotated doc -> should be exempt
+      writeFileSync(join(docs, 'annotated.md'), '# Annotated Doc <!-- docpath:drift-exempt -->\n\nRefer to `src/annotated/code.ts`.\n');
+
+      run('docs scan', cwd);
+      const doctorOut = run('docs doctor --agent', cwd);
+      assert.match(doctorOut, /codeDrift: 1/);
+      assert.match(doctorOut, /file: docs\/guide\.md\s+type: code-drift/);
+      const issuesSection = doctorOut.split('issues:')[1] || '';
+      assert.doesNotMatch(issuesSection, /rfc-feature\.md/);
+      assert.doesNotMatch(issuesSection, /draft\.md/);
+      assert.doesNotMatch(issuesSection, /annotated\.md/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
+

@@ -319,6 +319,8 @@ export function parseFrontmatterMetadata(content: string): DocFrontmatterMetadat
       const s = rec.status.trim().toLowerCase();
       if (s === 'active' || s === 'wip' || s === 'deprecated') {
         status = s;
+      } else if (s === 'draft' || s === 'proposal') {
+        status = 'wip';
       }
     }
 

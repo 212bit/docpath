@@ -319,35 +319,45 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
       }
 
       // 源码与代码引用漂移检查 (Code Drift Check)
-      const codeRefRegex = /`((?:src|tests|lib|cmd|pkg|internal|core)\/[a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)`/g;
-      let codeMatch: RegExpExecArray | null;
-      while ((codeMatch = codeRefRegex.exec(content)) !== null) {
-        const codeRef = codeMatch[1].trim();
-        if (codeRef.includes('*') || codeRef.includes('{')) continue;
+      // 设计草案/提案/归档文档、WIP/Draft 状态文档或显式声明豁免的文档，不作为已上线代码引用强制校验
+      const isDesignOrDraft = rel.startsWith('docs/design/')
+        || rel.startsWith('docs/archive/')
+        || rel.startsWith('docs/proposals/')
+        || ['wip', 'draft', 'proposal', 'deprecated'].includes(selfMeta.status || '')
+        || content.includes('docpath:drift-exempt')
+        || content.includes('docpath:no-code-drift');
 
-        const absCodePath = resolve(projectRoot, codeRef);
-        if (!existsSync(absCodePath)) {
-          const codeBase = basename(codeRef).toLowerCase();
-          const candidateCodeAbs = allSourceFilesBaseMap.get(codeBase);
-          let suggestedCodeTarget: string | undefined;
+      if (!isDesignOrDraft) {
+        const codeRefRegex = /`((?:src|tests|lib|cmd|pkg|internal|core)\/[a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)`/g;
+        let codeMatch: RegExpExecArray | null;
+        while ((codeMatch = codeRefRegex.exec(content)) !== null) {
+          const codeRef = codeMatch[1].trim();
+          if (codeRef.includes('*') || codeRef.includes('{')) continue;
 
-          if (candidateCodeAbs && existsSync(candidateCodeAbs)) {
-            suggestedCodeTarget = normalizeDocPath(relative(projectRoot, candidateCodeAbs));
+          const absCodePath = resolve(projectRoot, codeRef);
+          if (!existsSync(absCodePath)) {
+            const codeBase = basename(codeRef).toLowerCase();
+            const candidateCodeAbs = allSourceFilesBaseMap.get(codeBase);
+            let suggestedCodeTarget: string | undefined;
+
+            if (candidateCodeAbs && existsSync(candidateCodeAbs)) {
+              suggestedCodeTarget = normalizeDocPath(relative(projectRoot, candidateCodeAbs));
+            }
+
+            issues.push({
+              file: rel,
+              absPath: abs,
+              type: 'code-drift',
+              message: `代码引用漂移: \`${codeRef}\` 在源码目录中不存在`,
+              autoFixable: !!suggestedCodeTarget,
+              fixDetail: suggestedCodeTarget ? `更新代码引用为: \`${suggestedCodeTarget}\`` : '源码文件已删除或已重构',
+              linkData: {
+                originalText: codeRef,
+                originalTarget: codeRef,
+                suggestedTarget: suggestedCodeTarget,
+              },
+            });
           }
-
-          issues.push({
-            file: rel,
-            absPath: abs,
-            type: 'code-drift',
-            message: `代码引用漂移: \`${codeRef}\` 在源码目录中不存在`,
-            autoFixable: !!suggestedCodeTarget,
-            fixDetail: suggestedCodeTarget ? `更新代码引用为: \`${suggestedCodeTarget}\`` : '源码文件已删除或已重构',
-            linkData: {
-              originalText: codeRef,
-              originalTarget: codeRef,
-              suggestedTarget: suggestedCodeTarget,
-            },
-          });
         }
       }
 

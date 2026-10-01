@@ -1,0 +1,930 @@
+{
+  "taskId": "T-20261001-docpath-2",
+  "taskTitle": "T-20261001-docpath-2 - 优化 DocPath 活文档管理与智能代码漂移体检",
+  "backlogId": "R-466",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-10-01T11:51:26.712Z",
+  "completedAt": "2026-10-01T11:56:24.659Z",
+  "durationMinutes": 5,
+  "firstTimePassRate": 100,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 40, 消耗: 31382 Tokens, 时长: 321 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 40,
+        "totalTokens": 31382,
+        "durationMinutes": 321
+      }
+    }
+  ],
+  "totalDiffLines": 1300,
+  "filesChanged": 14,
+  "linesAdded": 1292,
+  "linesDeleted": 8,
+  "engineering": {
+    "turnCount": 7,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 5,
+    "filesChanged": 14,
+    "linesAdded": 1292,
+    "linesDeleted": 8,
+    "totalDiffLines": 1300,
+    "speedLinesPerMinute": 260
+  },
+  "protocol": {
+    "specTokens": 860,
+    "planTokens": 338,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 2998
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 21967,
+    "outputTokens": 9415,
+    "totalTokens": 31382,
+    "costUsd": 0.2071,
+    "toolCallsCount": 38,
+    "toolAttributions": [
+      {
+        "name": "run_command",
+        "count": 16,
+        "inputTokens": 949,
+        "outputTokens": 10680,
+        "totalTokens": 11629,
+        "percentage": 37.1,
+        "errorCount": 2
+      },
+      {
+        "name": "view_file",
+        "count": 16,
+        "inputTokens": 885,
+        "outputTokens": 9181,
+        "totalTokens": 10066,
+        "percentage": 32.1,
+        "errorCount": 0
+      },
+      {
+        "name": "replace_file_content",
+        "count": 6,
+        "inputTokens": 2950,
+        "outputTokens": 3044,
+        "totalTokens": 5994,
+        "percentage": 19.1,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"docs-doctor.ts\"\" 被重复读取了 8 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 4855,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/utils/docs-doctor.ts\"",
+          "readCount": 8,
+          "wastedTokens": 4855
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"docs-lint-command.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 2047,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/docs-lint-command.test.mjs\"",
+          "readCount": 4,
+          "wastedTokens": 2047
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 6,
+      "errorCalls": 0,
+      "totalTokens": 2739,
+      "inputTokens": 358,
+      "outputTokens": 2381,
+      "percentageOfSessionTokens": 8.7,
+      "commands": [
+        {
+          "subcommand": "docs",
+          "count": 2,
+          "errorCount": 0,
+          "inputTokens": 107,
+          "outputTokens": 836,
+          "totalTokens": 943,
+          "avgTokens": 472
+        },
+        {
+          "subcommand": "step-pass",
+          "count": 2,
+          "errorCount": 0,
+          "inputTokens": 114,
+          "outputTokens": 294,
+          "totalTokens": 408,
+          "avgTokens": 204
+        },
+        {
+          "subcommand": "start",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 83,
+          "outputTokens": 635,
+          "totalTokens": 718,
+          "avgTokens": 718
+        },
+        {
+          "subcommand": "status",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 54,
+          "outputTokens": 616,
+          "totalTokens": 670,
+          "avgTokens": 670
+        }
+      ]
+    },
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 40, 消耗: 31382 Tokens, 时长: 321 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 40,
+          "totalTokens": 31382,
+          "durationMinutes": 321
+        }
+      }
+    ],
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 95,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 0,
+      "redundantTokensWasted": 0,
+      "redundantPatterns": [],
+      "serialChains": [
+        {
+          "chain": "docs -> step-pass",
+          "count": 2,
+          "tokensWasted": 408,
+          "recommendation": "Avoid serial chaining of \"docs -> step-pass\" without intervening actions."
+        }
+      ],
+      "heavyOutputCommands": [
+        {
+          "subcommand": "start",
+          "avgOutputTokens": 635,
+          "maxOutputTokens": 635,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+        },
+        {
+          "subcommand": "status",
+          "avgOutputTokens": 616,
+          "maxOutputTokens": 616,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"status\" to reduce output payload (< 300 tokens)."
+        }
+      ],
+      "actionableOptimizations": [
+        "Avoid serial chaining of \"docs -> step-pass\" without intervening actions.",
+        "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens).",
+        "Use --agent flag or scoped parameters with \"status\" to reduce output payload (< 300 tokens)."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-01T11:51:19Z",
+        "turnIndex": 362,
+        "subcommand": "start",
+        "rawCommandLine": "\"./bin/docpath.js start \\\"优化 DocPath 活文档管理与智能代码漂移体检\\\" --draft\"",
+        "directInputTokens": 36,
+        "directOutputTokens": 635,
+        "directTotalTokens": 671,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 12000
+      },
+      {
+        "id": "inv-2",
+        "timestamp": "2026-10-01T11:52:00Z",
+        "turnIndex": 375,
+        "subcommand": "status",
+        "rawCommandLine": "\"./bin/docpath.js status --agent\"",
+        "directInputTokens": 9,
+        "directOutputTokens": 616,
+        "directTotalTokens": 625,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 2000
+      },
+      {
+        "id": "inv-3",
+        "timestamp": "2026-10-01T11:52:27Z",
+        "turnIndex": 389,
+        "subcommand": "docs",
+        "rawCommandLine": "\"./bin/docpath.js docs lint\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 418,
+        "directTotalTokens": 425,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-4",
+        "timestamp": "2026-10-01T11:52:31Z",
+        "turnIndex": 391,
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"./bin/docpath.js step-pass\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 146,
+        "directTotalTokens": 153,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "docs -> step-pass",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-5",
+        "timestamp": "2026-10-01T11:54:07Z",
+        "turnIndex": 433,
+        "subcommand": "docs",
+        "rawCommandLine": "\"./bin/docpath.js docs lint\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 418,
+        "directTotalTokens": 425,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 6000
+      },
+      {
+        "id": "inv-6",
+        "timestamp": "2026-10-01T11:54:13Z",
+        "turnIndex": 435,
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"./bin/docpath.js step-pass --commit\"",
+        "directInputTokens": 10,
+        "directOutputTokens": 148,
+        "directTotalTokens": 158,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "docs -> step-pass",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 21967,
+      "outputTokens": 9415,
+      "totalTokens": 31382,
+      "costUsd": 0.2071
+    },
+    "toolCalls": {
+      "total": 38,
+      "byName": {
+        "view_file": 16,
+        "run_command": 16,
+        "replace_file_content": 6
+      },
+      "errorCount": 2
+    },
+    "toolAttributions": [
+      {
+        "name": "run_command",
+        "count": 16,
+        "inputTokens": 949,
+        "outputTokens": 10680,
+        "totalTokens": 11629,
+        "percentage": 37.1,
+        "errorCount": 2
+      },
+      {
+        "name": "view_file",
+        "count": 16,
+        "inputTokens": 885,
+        "outputTokens": 9181,
+        "totalTokens": 10066,
+        "percentage": 32.1,
+        "errorCount": 0
+      },
+      {
+        "name": "replace_file_content",
+        "count": 6,
+        "inputTokens": 2950,
+        "outputTokens": 3044,
+        "totalTokens": 5994,
+        "percentage": 19.1,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"docs-doctor.ts\"\" 被重复读取了 8 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 4855,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/utils/docs-doctor.ts\"",
+          "readCount": 8,
+          "wastedTokens": 4855
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"docs-lint-command.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 2047,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/docs-lint-command.test.mjs\"",
+          "readCount": 4,
+          "wastedTokens": 2047
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 6,
+      "errorCalls": 0,
+      "totalTokens": 2739,
+      "inputTokens": 358,
+      "outputTokens": 2381,
+      "percentageOfSessionTokens": 8.7,
+      "commands": [
+        {
+          "subcommand": "docs",
+          "count": 2,
+          "errorCount": 0,
+          "inputTokens": 107,
+          "outputTokens": 836,
+          "totalTokens": 943,
+          "avgTokens": 472
+        },
+        {
+          "subcommand": "step-pass",
+          "count": 2,
+          "errorCount": 0,
+          "inputTokens": 114,
+          "outputTokens": 294,
+          "totalTokens": 408,
+          "avgTokens": 204
+        },
+        {
+          "subcommand": "start",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 83,
+          "outputTokens": 635,
+          "totalTokens": 718,
+          "avgTokens": 718
+        },
+        {
+          "subcommand": "status",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 54,
+          "outputTokens": 616,
+          "totalTokens": 670,
+          "avgTokens": 670
+        }
+      ]
+    },
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 95,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 0,
+      "redundantTokensWasted": 0,
+      "redundantPatterns": [],
+      "serialChains": [
+        {
+          "chain": "docs -> step-pass",
+          "count": 2,
+          "tokensWasted": 408,
+          "recommendation": "Avoid serial chaining of \"docs -> step-pass\" without intervening actions."
+        }
+      ],
+      "heavyOutputCommands": [
+        {
+          "subcommand": "start",
+          "avgOutputTokens": 635,
+          "maxOutputTokens": 635,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+        },
+        {
+          "subcommand": "status",
+          "avgOutputTokens": 616,
+          "maxOutputTokens": 616,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"status\" to reduce output payload (< 300 tokens)."
+        }
+      ],
+      "actionableOptimizations": [
+        "Avoid serial chaining of \"docs -> step-pass\" without intervening actions.",
+        "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens).",
+        "Use --agent flag or scoped parameters with \"status\" to reduce output payload (< 300 tokens)."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-01T11:51:19Z",
+        "turnIndex": 362,
+        "subcommand": "start",
+        "rawCommandLine": "\"./bin/docpath.js start \\\"优化 DocPath 活文档管理与智能代码漂移体检\\\" --draft\"",
+        "directInputTokens": 36,
+        "directOutputTokens": 635,
+        "directTotalTokens": 671,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 12000
+      },
+      {
+        "id": "inv-2",
+        "timestamp": "2026-10-01T11:52:00Z",
+        "turnIndex": 375,
+        "subcommand": "status",
+        "rawCommandLine": "\"./bin/docpath.js status --agent\"",
+        "directInputTokens": 9,
+        "directOutputTokens": 616,
+        "directTotalTokens": 625,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 2000
+      },
+      {
+        "id": "inv-3",
+        "timestamp": "2026-10-01T11:52:27Z",
+        "turnIndex": 389,
+        "subcommand": "docs",
+        "rawCommandLine": "\"./bin/docpath.js docs lint\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 418,
+        "directTotalTokens": 425,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-4",
+        "timestamp": "2026-10-01T11:52:31Z",
+        "turnIndex": 391,
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"./bin/docpath.js step-pass\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 146,
+        "directTotalTokens": 153,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "docs -> step-pass",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-5",
+        "timestamp": "2026-10-01T11:54:07Z",
+        "turnIndex": 433,
+        "subcommand": "docs",
+        "rawCommandLine": "\"./bin/docpath.js docs lint\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 418,
+        "directTotalTokens": 425,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 6000
+      },
+      {
+        "id": "inv-6",
+        "timestamp": "2026-10-01T11:54:13Z",
+        "turnIndex": 435,
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"./bin/docpath.js step-pass --commit\"",
+        "directInputTokens": 10,
+        "directOutputTokens": 148,
+        "directTotalTokens": 158,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "docs -> step-pass",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      }
+    ],
+    "turnsCount": 40,
+    "errorCount": 2,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 40, 消耗: 31382 Tokens, 时长: 321 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 40,
+          "totalTokens": 31382,
+          "durationMinutes": 321
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 19234000
+  },
+  "toolAttributions": [
+    {
+      "name": "run_command",
+      "count": 16,
+      "inputTokens": 949,
+      "outputTokens": 10680,
+      "totalTokens": 11629,
+      "percentage": 37.1,
+      "errorCount": 2
+    },
+    {
+      "name": "view_file",
+      "count": 16,
+      "inputTokens": 885,
+      "outputTokens": 9181,
+      "totalTokens": 10066,
+      "percentage": 32.1,
+      "errorCount": 0
+    },
+    {
+      "name": "replace_file_content",
+      "count": 6,
+      "inputTokens": 2950,
+      "outputTokens": 3044,
+      "totalTokens": 5994,
+      "percentage": 19.1,
+      "errorCount": 0
+    }
+  ],
+  "toolInefficiencies": [
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"docs-doctor.ts\"\" 被重复读取了 8 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 4855,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/utils/docs-doctor.ts\"",
+        "readCount": 8,
+        "wastedTokens": 4855
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"docs-lint-command.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 2047,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/tests/docs-lint-command.test.mjs\"",
+        "readCount": 4,
+        "wastedTokens": 2047
+      }
+    }
+  ],
+  "docpathCliOverhead": {
+    "totalCalls": 6,
+    "errorCalls": 0,
+    "totalTokens": 2739,
+    "inputTokens": 358,
+    "outputTokens": 2381,
+    "percentageOfSessionTokens": 8.7,
+    "commands": [
+      {
+        "subcommand": "docs",
+        "count": 2,
+        "errorCount": 0,
+        "inputTokens": 107,
+        "outputTokens": 836,
+        "totalTokens": 943,
+        "avgTokens": 472
+      },
+      {
+        "subcommand": "step-pass",
+        "count": 2,
+        "errorCount": 0,
+        "inputTokens": 114,
+        "outputTokens": 294,
+        "totalTokens": 408,
+        "avgTokens": 204
+      },
+      {
+        "subcommand": "start",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 83,
+        "outputTokens": 635,
+        "totalTokens": 718,
+        "avgTokens": 718
+      },
+      {
+        "subcommand": "status",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 54,
+        "outputTokens": 616,
+        "totalTokens": 670,
+        "avgTokens": 670
+      }
+    ]
+  },
+  "docpathEfficacy": {
+    "preventedLoopsCount": 0,
+    "deadlockTokensSaved": 0,
+    "contextCompressionRatio": 92.5,
+    "subagentTokensSaved": 0,
+    "gateInterceptionCount": 0,
+    "firstTimePassRate": 95,
+    "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+  },
+  "docpathCliFriction": {
+    "redundantCallsCount": 0,
+    "redundantTokensWasted": 0,
+    "redundantPatterns": [],
+    "serialChains": [
+      {
+        "chain": "docs -> step-pass",
+        "count": 2,
+        "tokensWasted": 408,
+        "recommendation": "Avoid serial chaining of \"docs -> step-pass\" without intervening actions."
+      }
+    ],
+    "heavyOutputCommands": [
+      {
+        "subcommand": "start",
+        "avgOutputTokens": 635,
+        "maxOutputTokens": 635,
+        "count": 1,
+        "optimizationHint": "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+      },
+      {
+        "subcommand": "status",
+        "avgOutputTokens": 616,
+        "maxOutputTokens": 616,
+        "count": 1,
+        "optimizationHint": "Use --agent flag or scoped parameters with \"status\" to reduce output payload (< 300 tokens)."
+      }
+    ],
+    "actionableOptimizations": [
+      "Avoid serial chaining of \"docs -> step-pass\" without intervening actions.",
+      "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens).",
+      "Use --agent flag or scoped parameters with \"status\" to reduce output payload (< 300 tokens)."
+    ]
+  },
+  "commandInvocations": [
+    {
+      "id": "inv-1",
+      "timestamp": "2026-10-01T11:51:19Z",
+      "turnIndex": 362,
+      "subcommand": "start",
+      "rawCommandLine": "\"./bin/docpath.js start \\\"优化 DocPath 活文档管理与智能代码漂移体检\\\" --draft\"",
+      "directInputTokens": 36,
+      "directOutputTokens": 635,
+      "directTotalTokens": 671,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 12000
+    },
+    {
+      "id": "inv-2",
+      "timestamp": "2026-10-01T11:52:00Z",
+      "turnIndex": 375,
+      "subcommand": "status",
+      "rawCommandLine": "\"./bin/docpath.js status --agent\"",
+      "directInputTokens": 9,
+      "directOutputTokens": 616,
+      "directTotalTokens": 625,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 2000
+    },
+    {
+      "id": "inv-3",
+      "timestamp": "2026-10-01T11:52:27Z",
+      "turnIndex": 389,
+      "subcommand": "docs",
+      "rawCommandLine": "\"./bin/docpath.js docs lint\"",
+      "directInputTokens": 7,
+      "directOutputTokens": 418,
+      "directTotalTokens": 425,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-4",
+      "timestamp": "2026-10-01T11:52:31Z",
+      "turnIndex": 391,
+      "subcommand": "step-pass",
+      "rawCommandLine": "\"./bin/docpath.js step-pass\"",
+      "directInputTokens": 7,
+      "directOutputTokens": 146,
+      "directTotalTokens": 153,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "docs -> step-pass",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 3000
+    },
+    {
+      "id": "inv-5",
+      "timestamp": "2026-10-01T11:54:07Z",
+      "turnIndex": 433,
+      "subcommand": "docs",
+      "rawCommandLine": "\"./bin/docpath.js docs lint\"",
+      "directInputTokens": 7,
+      "directOutputTokens": 418,
+      "directTotalTokens": 425,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 6000
+    },
+    {
+      "id": "inv-6",
+      "timestamp": "2026-10-01T11:54:13Z",
+      "turnIndex": 435,
+      "subcommand": "step-pass",
+      "rawCommandLine": "\"./bin/docpath.js step-pass --commit\"",
+      "directInputTokens": 10,
+      "directOutputTokens": 148,
+      "directTotalTokens": 158,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "docs -> step-pass",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 3000
+    }
+  ],
+  "frictionFindings": [
+    {
+      "id": "FRIC-TOOL-WASTE",
+      "category": "tool_waste",
+      "severity": "high",
+      "title": "工具调用低效与上下文浪费 (Tool Waste & Context Bloat)",
+      "description": "检测到 2 处工具低效行为 (重复读大文件、超长命令输出或编辑失真)，造成上下文浪费",
+      "count": 2,
+      "tokensWasted": 6902,
+      "optimizationHint": "精准指定目标行范围切片读写，善用子代理进行大文件调研与探查"
+    },
+    {
+      "id": "FRIC-CMD-ERR",
+      "category": "command_error",
+      "severity": "medium",
+      "title": "CLI 命令调用异常与参数拦截 (Command Execution Errors)",
+      "description": "检测到 2 次命令调用失败或参数报错，可能由于命令语法错误或环境不匹配导致",
+      "count": 2,
+      "tokensWasted": 400,
+      "optimizationHint": "查阅 docpath --help 或 AGENTS.md 规范，确保 CLI 命令与参数格式准确"
+    }
+  ],
+  "stepPassAnalysis": {
+    "totalStepPassCalls": 2,
+    "productiveCalls": 2,
+    "redundantCalls": 0,
+    "directTokens": 311,
+    "invisibleTurnReplayTokens": 311,
+    "redundantTurnReplayTokens": 0,
+    "frictionTurnRatio": 28.6,
+    "summary": "2 次 step-pass 调用均为有效推进，无空转重放损耗"
+  },
+  "lifecycleAnchor": {
+    "sessionId": "08ce7d38-c476-4349-a4d0-8553eb78c337",
+    "baseCommit": "e9b47c65a40ea024a6eeaba3fb860e0c8ef26d16",
+    "headCommit": "e9b47c65a40ea024a6eeaba3fb860e0c8ef26d16",
+    "startedAt": "2026-10-01T11:51:26.712Z",
+    "completedAt": "2026-10-01T11:56:24.659Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 FR-1 优化 DocPath 活文档管理",
+      "startedAt": "2026-10-01T11:51:26.712Z",
+      "completedAt": "2026-10-01T11:52:52.779Z",
+      "durationMinutes": 1.4,
+      "totalTokens": 21724,
+      "inputTokens": 15207,
+      "outputTokens": 6517,
+      "costUsd": 0.1434,
+      "toolCallsCount": 24,
+      "topTools": [
+        {
+          "name": "run_command",
+          "count": 11,
+          "tokens": 8506
+        },
+        {
+          "name": "view_file",
+          "count": 10,
+          "tokens": 5500
+        },
+        {
+          "name": "replace_file_content",
+          "count": 3,
+          "tokens": 4220
+        }
+      ]
+    },
+    {
+      "stepId": "S2",
+      "stepTitle": "实现并验证 FR-2 智能代码漂移体检",
+      "startedAt": "2026-10-01T11:52:53.108Z",
+      "completedAt": "2026-10-01T11:54:31.852Z",
+      "durationMinutes": 1.6,
+      "totalTokens": 16940,
+      "inputTokens": 11858,
+      "outputTokens": 5082,
+      "costUsd": 0.1118,
+      "toolCallsCount": 23,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 11,
+          "tokens": 7752
+        },
+        {
+          "name": "run_command",
+          "count": 8,
+          "tokens": 5002
+        },
+        {
+          "name": "replace_file_content",
+          "count": 4,
+          "tokens": 2947
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 2998,
+    "realModelTokens": 31382,
+    "overheadRatio": 9.55,
+    "complianceScore": 85,
+    "firstTimePassRate": 100,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}
