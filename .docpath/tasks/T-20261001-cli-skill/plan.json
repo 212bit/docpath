@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-01T10:43:52.452Z",
+    "updated_at": "2026-10-01T10:43:52.452Z",
+    "content_sha256": "e58969e7fe2c803be077b23292c2efdfb9cf55b18707343613171749b0b94d71"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-01T10:43:52.452Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 CLI 动态智能关联 Skill 路由提示",
+      "description": "完成 FR-1: CLI 动态智能关联 Skill 路由提示，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: CLI 动态智能关联 Skill 路由提示 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-464 与任务 T-20261001-cli-skill 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

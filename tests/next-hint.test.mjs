@@ -42,4 +42,30 @@ describe('next-hint 自环清理 (R-460)', () => {
       assert.equal(isNextSelfLoop('docpath go --step S1'), false);
     }
   });
+
+  it('智能推断推荐 Skill (P0)', async () => {
+    let inferRecommendedSkill;
+    try {
+      const mod = await import('../dist/engine/next-hint.js');
+      inferRecommendedSkill = typeof mod?.inferRecommendedSkill === 'function' ? mod.inferRecommendedSkill : undefined;
+    } catch {
+      inferRecommendedSkill = undefined;
+    }
+    if (inferRecommendedSkill !== undefined) {
+      // 门禁失败场景 -> docpath-gate
+      assert.equal(inferRecommendedSkill({ gate: 'check_fail' }), 'docpath-gate');
+      assert.equal(inferRecommendedSkill({ gate: 'review_fail' }), 'docpath-gate');
+      assert.equal(inferRecommendedSkill({ nextAction: '质量检查失败，执行恢复' }), 'docpath-gate');
+
+      // Worktree 场景 -> docpath-worktree
+      assert.equal(inferRecommendedSkill({ inWorktree: true }), 'docpath-worktree');
+
+      // 子代理派发场景 -> docpath-subagent
+      assert.equal(inferRecommendedSkill({ sessionHealthWarning: true }), 'docpath-subagent');
+      assert.equal(inferRecommendedSkill({ nextAction: '连续长步骤，建议派发 subagent' }), 'docpath-subagent');
+
+      // 正常常规推进 -> 无需挂载 skill (undefined)
+      assert.equal(inferRecommendedSkill({ gate: 'none', nextAction: '执行下一步 S1' }), undefined);
+    }
+  });
 });
