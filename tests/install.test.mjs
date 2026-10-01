@@ -184,15 +184,14 @@ describe('install agent adapters', () => {
     assert.equal(existsSync(join(cwd, '.opencode', 'commands')), true);
     assert.equal(existsSync(join(cwd, '.opencode', 'docpath.json')), true);
 
+    // R-462: OPENCODE.md 是瘦代理（委托给 AGENTS.md），但内联 worktree-isolation block
     const agents = readFileSync(join(cwd, 'OPENCODE.md'), 'utf-8');
-    assert.match(agents, /docpath status --agent/);
+    assert.match(agents, /@AGENTS\.md/);
+    assert.match(agents, /docpath:block worktree-isolation/);
     assert.match(agents, /docpath next --agent/);
-    assert.match(agents, /read-only and advisory/);
-    assert.match(agents, /atomic step control/);
-    assert.match(agents, /docpath agent done --step/);
-    assert.match(agents, /Clarify ambiguous product\/UI requests/);
-    assert.match(agents, /major architecture, data, workflow/);
-    assert.match(agents, /Do not default-read `current.md`, `breadcrumb.md`, `plan.md`/);
+    assert.match(agents, /docpath go --step <id>/);
+    assert.match(agents, /docpath step-pass --commit/);
+    assert.match(agents, /R-460/);
     assert.doesNotMatch(agents, /agent enter --step/);
     assert.doesNotMatch(agents, /--auto-next/);
 
@@ -761,7 +760,8 @@ describe('install agent adapters', () => {
     run(`install --cwd ${cwd} --target opencode --force`, cwd);
     const overwritten = readFileSync(join(cwd, 'OPENCODE.md'), 'utf-8');
     assert.match(overwritten, /docpath next --agent/);
-    assert.match(overwritten, /docpath agent done --step/);
+    assert.match(overwritten, /docpath step-pass --commit/);
+    assert.match(overwritten, /@AGENTS\.md/);
     assert.doesNotMatch(overwritten, /agent enter --step/);
     assert.doesNotMatch(overwritten, /Do not overwrite/);
     rmSync(cwd, { recursive: true, force: true });

@@ -5,7 +5,7 @@
 
 ## First Steps & Access Model
 
-1. **Start/Resume**: `docpath next --agent` is the read-only advisory router. Inspect `next_action`, `recommended_command`, required context, and exit criteria.
+1. **Start/Resume**: `docpath next --agent` is the read-only advisory router. Inspect `next_action`, `recommended_command`, required context, and exit criteria. **Do not re-run `next --agent` after every command (R-460)**: most lifecycle commands already emit a trailing `next_hint` (`next_action` / `recommended_command` / `exit_criteria`) — trust it and act directly, which collapses the per-step loop from 2 round-trips to 1. Only re-run `next --agent` on branch/ambiguity/resume, when the trailing `next_hint` is missing or untrustworthy, or when it points at a repair/investigation path needing re-route.
 2. **Access Model**:
    - Runtime state: `.docpath/workspace/state.json` (Read via `next --agent` or `status --agent`)
    - Task spec/plan: `.docpath/tasks/current/spec.json`, `plan.json` (Read via `next`, `go`, `reveal`)
@@ -49,6 +49,7 @@ docpath gc                         # workspace aging & historical task archive s
    - **Failure handling**: Stop after 2 environment/harness failures and report.
 
 3. **Strict Context Budget & Anti-bloat (严格控制上下文消耗)**:
+   - **Trust the trailing `next_hint` (R-460)**: `go` / `step-pass` / `check` / `done` / `plan` / `review` / `journal` end with a concrete `recommended_command`. Execute it directly instead of re-running `docpath next --agent`. The engine also guards against self-loop fallbacks (any recommendation that would re-invoke `next` itself is replaced with the read-only diagnostic `docpath status --agent`).
    - Always consume compact machine routes (`docpath next --agent`, `docpath status --agent`).
    - Retrieve topics via token-budgeted commands (`docpath reveal --topic <kw> --level 1`, `docpath context --smart --max-tokens 2000`).
    - Prune context bloat with `docpath budget --agent` / `docpath budget --prune`.

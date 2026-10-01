@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-01T06:32:26.822Z",
+    "updated_at": "2026-10-01T06:32:26.822Z",
+    "content_sha256": "2e87417f0b70a30fa99188d811477c9074575d59864510baf88012ee0f0a3969"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-01T06:32:26.822Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 协议单一源对齐：OPENCODE.md 收敛为 AGENTS.md thin proxy 并统一 CLAUDE/CODEX/OPENCODE 入口形态",
+      "description": "完成 FR-1: 协议单一源对齐：OPENCODE.md 收敛为 AGENTS.md thin proxy 并统一 CLAUDE/CODEX/OPENCODE 入口形态，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 协议单一源对齐：OPENCODE.md 收敛为 AGENTS.md thin proxy 并统一 CLAUDE/CODEX/OPENCODE 入口形态 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-461 与任务 T-20261001-opencode-md-agents-md-thin-proxy-claude- 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
