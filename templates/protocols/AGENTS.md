@@ -101,6 +101,14 @@ rules, and completed tasks reconcile at merge. `docpath worktree doctor`
 reports each resource against its expected model (merge-mediated / isolated)
 and fails a symlinked backlog over tracked files (repair with
 `docpath worktree repair`).
+
+**Dependencies are NOT isolated** (R-467): `worktree create` symlinks
+`node_modules` to the main checkout, so an install inside a worktree writes
+through to main; when the worktree is removed, main's `test` breaks with
+`ERR_MODULE_NOT_FOUND` *after* an apparently successful merge. `node_modules`
+is gitignored, so drift is invisible to merge status — run
+`docpath worktree doctor` (dependency isolation / drift checks) before
+merging, and always commit `package.json` + lockfile changes on the branch.
 <!-- /docpath:block -->
 
 ## Linked Project

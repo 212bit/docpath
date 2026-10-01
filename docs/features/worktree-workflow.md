@@ -263,7 +263,7 @@ docpath worktree broadcast "Auth 模块已升级至 v2"
 - `tasks/current` isolated（untracked；tracked 降级为 warning）
 - isolated `workspace` / `journal`
 - runtime state/current/breadcrumb 文件
-- `node_modules` 是否已安装（仅 warning，不自动安装）
+- `node_modules` 是否已安装，以及依赖隔离漂移（共享软链接写穿 / 声明未装 / 装了未声明）—— 仅 warning，不自动安装（R-467）
 - `DOCPATH_SESSION` 是否已设置
 
 **示例**：
@@ -355,6 +355,49 @@ DocPath worktree 采用**混合策略（R-238 Option B，R-273 复核确认）**
 **实现**：主仓 gitignored；worktree 内独立目录，互不干扰。
 
 **好处**：完全物理隔离、零冲突风险、各自状态独立。
+
+### ⚠️ `node_modules`：共享软链接的写穿副作用（R-467）
+
+`node_modules` **不在上述任一模型内**——它既不是 merge-mediated，也不是 isolated：
+
+```bash
+# worktree create 5.1（src/commands/worktree/create.ts）
+node_modules -> <主仓库>/node_modules    # 软链接复用依赖与构建缓存
+```
+
+对**只读构建**这是优化；对**会改依赖的开发**，它是隔离模型里一个真实漏洞：worktree 隔离了工作区文件，但**没有隔离依赖树**。
+
+#### 两个 git 无法观测的副作用
+
+`node_modules` 是 gitignored 的，所以**「合并成功」在结构上不可能反映依赖漂移**。后果分两类：
+
+| 类型 | 触发路径 | 暴露时机 |
+|------|----------|----------|
+| **消失型** | worktree 内 `pnpm add -D vitest` 实际写进主仓库；worktree 被 `remove`/`prune` 时链接指向物一并清理 | 合并**之后**主干 `test:ui` 报 `ERR_MODULE_NOT_FOUND` |
+| **幽灵型** | worktree 内装了包但没写进 `package.json` | 本地全绿；干净安装 / CI 挂（更难查，因为它不在删除路径上） |
+
+> 消失型的正确理解：vitest 并不是"随 worktree 一起消失"，而是**它从来就只存在于主仓库那一份**，worktree 删除只是让这份写穿失去了掩护。在主仓库重跑 `pnpm install` 即可恢复。
+
+#### 检测：`docpath worktree doctor`
+
+`doctor` 现在会把漂移作为**可读事实**报出（只读观测，不自动安装依赖）：
+
+```
+⚠️ dependency isolation: node_modules 是指向主仓库的软链接（/path/to/main/node_modules）：
+   此 checkout 内任何依赖安装都会写穿主仓库；worktree 删除时该链接与其中安装的包一并消失，
+   合并后的主干才会暴露（R-467）
+⚠️ dependency drift (missing): 1 个声明依赖未安装（如 vitest）：此 checkout 上的 build/test 会 MODULE_NOT_FOUND
+⚠️ dependency drift (phantom): 1 个包已安装但未在 package.json 声明（如 tinybench）：干净安装/CI 会失败（幽灵依赖）
+```
+
+两种形态都会被捕获：`node_modules` 本身缺失，或 `node_modules` 存在但声明与实装不一致。
+
+#### 规避动作
+
+- 在 worktree 内**新增或升级依赖**后，立刻把 `package.json` / lockfile 的改动提交到该分支——这是唯一会被合并带走的部分；
+- 合并/删除 worktree **前**跑一次 `docpath worktree doctor`，确认 `dependencies` / `dependency isolation` 两项；
+- 主干报 `ERR_MODULE_NOT_FOUND` 时，先按 R-467 排查依赖漂移，再怀疑代码：`pnpm install --frozen-lockfile`；
+- 需要彻底隔离依赖时，删除 worktree 内的 `node_modules` 软链接后独立安装（放弃缓存复用换隔离）。
 
 
 ---

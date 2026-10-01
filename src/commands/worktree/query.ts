@@ -8,6 +8,7 @@ const execFileAsync = promisify(execFile);
 import { readCurrentState } from '../../utils/workspace.js';
 import { gitAsync } from '../../utils/git-run.js';
 import { isGitRepo, getGitTopLevel, isInWorktree, listWorktrees } from '../../utils/worktree.js';
+import { inspectDependencyIsolation } from '../../utils/worktree-dependency-drift.js';
 import { detectBinaryDrift, renderBinaryDriftWarning } from '../../utils/version-drift.js';
 import {
   assertInside,
@@ -270,6 +271,30 @@ export async function getWorktreeDoctorStatus(cwd: string, name?: string): Promi
         ? { status: 'pass', label: 'dependencies', detail: 'node_modules present' }
         : { status: 'warn', label: 'dependencies', detail: 'node_modules missing; run pnpm install before build/test' },
     );
+
+    // R-467: node_modules 是 gitignored 的，合并成功在结构上不可能反映依赖漂移。
+    // 把「共享软链接 / 写穿主仓库 / 声明-安装不一致」变成 doctor 可观测的事实。
+    const isMainCheckout = samePath(mainRepoRoot, worktreePath);
+    const dependencyReport = inspectDependencyIsolation(worktreePath, mainRepoRoot);
+    const { drift } = dependencyReport;
+    const shared = drift.find((item) => item.kind === 'shared-symlink');
+    if (shared) {
+      checks.push({ status: 'warn', label: 'dependency isolation', detail: shared.detail });
+    }
+    const missing = drift.find((item) => item.kind === 'missing');
+    if (missing) {
+      checks.push({
+        status: 'warn',
+        label: 'dependency drift (missing)',
+        detail: isMainCheckout
+          ? missing.detail
+          : `${missing.detail}；worktree 删除后此失败会以「合并成功但主干挂」的形式暴露（R-467）`,
+      });
+    }
+    const phantom = drift.find((item) => item.kind === 'phantom');
+    if (phantom) {
+      checks.push({ status: 'warn', label: 'dependency drift (phantom)', detail: phantom.detail });
+    }
   }
 
   checks.push(

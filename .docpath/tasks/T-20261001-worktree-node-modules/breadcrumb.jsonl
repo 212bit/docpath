@@ -1,0 +1,8 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-worktree-node-modules","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 worktree node_modules 共享软链接的依赖安装写穿副作用（合并后才暴露）","timestamp":"2026-10-01T11:59:57.582Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-worktree-node-modules","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 worktree node_modules 共享软链接的依赖安装写穿副作用（合并后才暴露）","timestamp":"2026-10-01T12:00:11.844Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-worktree-node-modules","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-01T12:12:51.179Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-worktree-node-modules","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-10-01T12:15:00.292Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-worktree-node-modules","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-10-01T12:19:33.556Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-worktree-node-modules","step":"check","status":"done","context":"质量检查通过 (4 项)","timestamp":"2026-10-01T12:23:52.503Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-worktree-node-modules","step":"review","status":"done","context":"代码审查: 0 错误, 2 警告, 0 提示","timestamp":"2026-10-01T12:23:53.747Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-worktree-node-modules","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-10-01T12:23:55.470Z"}

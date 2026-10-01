@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-01T12:12:51.185Z",
+    "updated_at": "2026-10-01T12:12:51.185Z",
+    "content_sha256": "4cc2bdf5c8a9f5c84a7fc385f641d45fc43bbbb4bb683a84c1d2de51d9a83903"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-01T12:12:51.185Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 worktree node_modules 共享软链接的依赖安装写穿副作用（合并后才暴露）",
+      "description": "完成 FR-1: worktree node_modules 共享软链接的依赖安装写穿副作用（合并后才暴露），随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: 明确 worktree 内 `node_modules` 共享软链接下的依赖安装语义（写穿主仓库 vs 隔离），并给出可执行结论；AC-2: 在 worktree 删除/合并收口路径上给出可检测信号（doctor / finish / prune），使\"合并后主干测试失败\"可在合并前被预见或至少被明确定位；AC-3: 文档化该副作用到 `docs/features/worktree-workflow.md`，避免后续 agent 再次踩坑；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-467 与任务 T-20261001-worktree-node-modules 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
