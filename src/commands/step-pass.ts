@@ -135,10 +135,15 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
       await emitNextHint(cwd);
       return;
     }
-    throw new Error(
-      `docpath step-pass: current_step "${step}" 不是 plan 中的有效步骤（可能被状态污染）。\n` +
-      `    待完成步骤: ${pending.join(', ')}。请先用 \`docpath go --step ${pending[0]}\` 领取，或显式传入 \`--step <id>\`。`,
-    );
+    if (pending.length === 1 && current?.phase === 'executing') {
+      step = pending[0];
+      console.log(`🩹  step-pass: 检测到 current_step 异常 ("${currentStep}")，自动自愈对齐唯一待完成步骤 -> ${step}`);
+    } else {
+      throw new Error(
+        `docpath step-pass: current_step "${step}" 不是 plan 中的有效步骤（可能被状态污染）。\n` +
+        `    待完成步骤: ${pending.join(', ')}。请先用 \`docpath go --step ${pending[0]}\` 领取，或显式传入 \`--step <id>\`。`,
+      );
+    }
   }
   if (!step) {
     const pending = planSteps ? planSteps.filter((t) => !t.done).map((t) => t.id) : [];

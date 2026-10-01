@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 DocPath 协议瘦身","timestamp":"2026-10-01T07:28:33.055Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-01T07:34:57.334Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 极简收口改造","timestamp":"2026-10-01T07:34:57.654Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-01T07:35:41.011Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath","step":"check","status":"done","context":"质量检查通过 (15 项)","timestamp":"2026-10-01T07:37:31.698Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath","step":"review","status":"done","context":"代码审查: 0 错误, 2 警告, 0 提示","timestamp":"2026-10-01T07:37:32.397Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261001-docpath","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-01T07:37:33.895Z"}
