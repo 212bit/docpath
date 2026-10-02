@@ -25,6 +25,8 @@ const KNOWN_DOCS_ACTIONS = new Set([
   'archive',
   'status',
   'add',
+  'guard',
+  'hook',
 ]);
 
 function registerDocsCommandHelper(cli: CAC, commandName: string, description: string): void {
@@ -35,7 +37,10 @@ function registerDocsCommandHelper(cli: CAC, commandName: string, description: s
     .option('--list', '列出所有注册文档')
     .option('--lint', '巡检文档健康度（检查断链、空文件等）')
     .option('--doctor', '全景体检文档生态健康度')
-    .option('--fix', '一键自愈修复死链、缺失标题与未索引文档；graph: 半自动修复关联图谱')
+    .option('--guard', '活文档 Git 防腐守卫拦截')
+    .option('--staged', 'guard: 仅检查 git 暂存区发生变更的活文档')
+    .option('--install', 'guard: 自动安装/配置 Git pre-commit 防腐钩子')
+    .option('--fix', '一键自愈修复死链、缺失标题与未索引文档；graph: 半自动修复关联图谱；guard: 自愈并重新暂存')
     .option('--mermaid', 'graph: 输出 mermaid 全景关联图')
     .option('--dry-run', '预览自愈修复操作，不修改文件')
     .option('--search <query>', '根据关键词检索文档')
@@ -56,6 +61,9 @@ function registerDocsCommandHelper(cli: CAC, commandName: string, description: s
       list?: boolean;
       lint?: boolean;
       doctor?: boolean;
+      guard?: boolean;
+      staged?: boolean;
+      install?: boolean;
       fix?: boolean;
       mermaid?: boolean;
       'dry-run'?: boolean;
@@ -76,7 +84,8 @@ function registerDocsCommandHelper(cli: CAC, commandName: string, description: s
       let queryArgs: string[] = query && query.length > 0 ? [...query] : [];
 
       if (!sub) {
-        if (options.sync) sub = 'sync';
+        if (options.guard || options.install) sub = 'guard';
+        else if (options.sync) sub = 'sync';
         else if (options.fix) sub = 'fix';
         else if (options.doctor) sub = 'doctor';
         else if (options.scan) sub = 'scan';
@@ -112,6 +121,9 @@ function registerDocsCommandHelper(cli: CAC, commandName: string, description: s
         json: !!options.json,
         graphFix: sub === 'graph' && !!options.fix,
         mermaid: !!options.mermaid,
+        staged: options.staged !== undefined ? !!options.staged : undefined,
+        fix: !!options.fix,
+        install: !!options.install,
       });
     });
 }

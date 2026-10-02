@@ -44,8 +44,11 @@ import {
   diagnoseDocumentHealth,
   fixDocumentHealth,
   renderDocHealthTable,
+  runDocGuard,
+  installDocGuardHook,
   type DocHealthReport,
   type DocFixResult,
+  type DocGuardResult,
 } from '../utils/docs-doctor.js';
 
 export interface DocsFilterOptions {
@@ -57,7 +60,7 @@ export interface DocsFilterOptions {
 
 export interface DocsOptions extends DocsFilterOptions {
   cwd: string;
-  /** 子命令：scan | list | add | lint | search | doctor | fix | graph | archive | status */
+  /** 子命令：scan | list | add | lint | search | doctor | fix | graph | arch | guard | archive | status */
   action?: string;
   /** add/search/archive/status 命令的参数 */
   args?: string[];
@@ -79,6 +82,12 @@ export interface DocsOptions extends DocsFilterOptions {
   graphFix?: boolean;
   /** graph: 输出 mermaid 全景关联图 */
   mermaid?: boolean;
+  /** guard: 仅检查 git 暂存区增量文件 */
+  staged?: boolean;
+  /** guard/fix: 自动自愈修复并重新暂存 */
+  fix?: boolean;
+  /** guard: 一键安装/配置 Git pre-commit 防腐钩子 */
+  install?: boolean;
 }
 
 /** 从 markdown 中提取标题 */
@@ -1383,6 +1392,20 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
     case 'core':
       await docsArch(cwd, { agent, json });
       break;
+    case 'guard':
+    case 'hook': {
+      const guardRes = await runDocGuard(cwd, {
+        staged: options.staged ?? true,
+        fix: options.fix,
+        install: options.install,
+        agent,
+        json,
+      });
+      if (!guardRes.passed) {
+        process.exitCode = 1;
+      }
+      break;
+    }
     case 'search':
     case 'find':
     case 'query':

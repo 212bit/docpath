@@ -231,31 +231,90 @@ async function collectSourceFiles(dir: string): Promise<string[]> {
   return results;
 }
 
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execAsync = promisify(exec);
+
+export async function getStagedFiles(cwd: string): Promise<string[]> {
+  try {
+    const { stdout } = await execAsync('git diff --cached --name-only', { cwd });
+    return stdout
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * 诊断活文档全景健康度
  */
-export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthReport> {
+export async function diagnoseDocumentHealth(
+  cwd: string,
+  options: { stagedOnly?: boolean; targetFiles?: string[] } = {},
+): Promise<DocHealthReport> {
+  const { stagedOnly = false, targetFiles } = options;
   const docpathDir = await resolveDocpathDir(cwd);
   const projectRoot = dirname(resolve(docpathDir));
 
   const issues: DocIssue[] = [];
   const scannedFiles: Array<{ abs: string; rel: string }> = [];
 
-  // 1. 扫描 docs/, .docpath/rules/, 根目录 README.md 以及 config 声明路径
-  const scanDirs = [
-    join(projectRoot, 'docs'),
-    join(docpathDir, 'rules'),
-  ];
-
   const allMarkdownAbsPaths = new Set<string>();
-  for (const dir of scanDirs) {
-    const files = await collectMarkdownFiles(dir);
-    for (const f of files) allMarkdownAbsPaths.add(f);
-  }
 
-  const rootReadme = join(projectRoot, 'README.md');
-  if (existsSync(rootReadme)) {
-    allMarkdownAbsPaths.add(rootReadme);
+  if (stagedOnly) {
+    const rawStaged = targetFiles || (await getStagedFiles(projectRoot));
+    for (const relPath of rawStaged) {
+      if (relPath.endsWith('.md')) {
+        const abs = resolve(projectRoot, relPath);
+        if (existsSync(abs)) {
+          allMarkdownAbsPaths.add(abs);
+        }
+      }
+    }
+
+    // 暂存区无 markdown 文件时，极速放行 (< 20ms)
+    if (allMarkdownAbsPaths.size === 0) {
+      return {
+        scannedCount: 0,
+        indexedCount: 0,
+        healthy: true,
+        issues: [],
+        stats: {
+          brokenLinks: 0,
+          deprecatedReferences: 0,
+          codeDrift: 0,
+          symbolDrift: 0,
+          commandDrift: 0,
+          staleUnreviewed: 0,
+          archiveCandidates: 0,
+          unindexed: 0,
+          missingHeadings: 0,
+          emptyDocs: 0,
+          staleIndex: 0,
+          backlogIssues: 0,
+          lifecycle: { active: 0, wip: 0, deprecated: 0 },
+        },
+      };
+    }
+  } else {
+    // 1. 扫描 docs/, .docpath/rules/, 根目录 README.md 以及 config 声明路径
+    const scanDirs = [
+      join(projectRoot, 'docs'),
+      join(docpathDir, 'rules'),
+    ];
+
+    for (const dir of scanDirs) {
+      const files = await collectMarkdownFiles(dir);
+      for (const f of files) allMarkdownAbsPaths.add(f);
+    }
+
+    const rootReadme = join(projectRoot, 'README.md');
+    if (existsSync(rootReadme)) {
+      allMarkdownAbsPaths.add(rootReadme);
+    }
   }
 
   // 收集源码文件全集用于代码引用漂移检测
@@ -895,15 +954,19 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
 /**
  * 自动修复活文档中的可自愈问题
  */
-export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean } = {}): Promise<DocFixResult> {
-  const { dryRun = false } = options;
+export async function fixDocumentHealth(
+  cwd: string,
+  options: { dryRun?: boolean; stagedOnly?: boolean; reStage?: boolean } = {},
+): Promise<DocFixResult> {
+  const { dryRun = false, stagedOnly = false, reStage = false } = options;
   const docpathDir = await resolveDocpathDir(cwd);
   const projectRoot = dirname(resolve(docpathDir));
-  const report = await diagnoseDocumentHealth(cwd);
+  const report = await diagnoseDocumentHealth(cwd, { stagedOnly });
 
   const healedHeadings: string[] = [];
   const repairedLinks: Array<{ file: string; from: string; to: string }> = [];
   const cleanedEmptyDocs: string[] = [];
+  const modifiedAbsFiles = new Set<string>();
   let refreshedIndex = false;
 
   let fixedCount = 0;
@@ -917,6 +980,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
       const scaffold = `# ${inferredTitle}\n\n> 本文档自动初始化。\n\n## 概述\n\n`;
       if (!dryRun) {
         await writeFile(issue.absPath, scaffold, 'utf-8');
+        modifiedAbsFiles.add(issue.absPath);
       }
       cleanedEmptyDocs.push(issue.file);
       fixedCount++;
@@ -929,6 +993,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
         const newContent = `# ${inferredTitle}\n\n${content.trimStart()}`;
         if (!dryRun) {
           await writeFile(issue.absPath, newContent, 'utf-8');
+          modifiedAbsFiles.add(issue.absPath);
         }
         healedHeadings.push(issue.file);
         fixedCount++;
@@ -954,6 +1019,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
       if (updatedContent !== content) {
         if (!dryRun) {
           await writeFile(issue.absPath, updatedContent, 'utf-8');
+          modifiedAbsFiles.add(issue.absPath);
         }
         repairedLinks.push({
           file: issue.file,
@@ -978,6 +1044,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
         const updated = content.replaceAll(oldCodeRef, newCodeRef);
         if (!dryRun) {
           await writeFile(issue.absPath, updated, 'utf-8');
+          modifiedAbsFiles.add(issue.absPath);
         }
         repairedLinks.push({
           file: issue.file,
@@ -1012,6 +1079,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
       if (updatedContent !== content) {
         if (!dryRun) {
           await writeFile(issue.absPath, updatedContent, 'utf-8');
+          modifiedAbsFiles.add(issue.absPath);
         }
         repairedLinks.push({
           file: issue.file,
@@ -1036,6 +1104,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
         const updated = content.replaceAll(oldCmd, newCmd);
         if (!dryRun) {
           await writeFile(issue.absPath, updated, 'utf-8');
+          modifiedAbsFiles.add(issue.absPath);
         }
         repairedLinks.push({
           file: issue.file,
@@ -1057,6 +1126,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
         if (!dryRun) {
           await mkdir(dirname(dest), { recursive: true });
           await rename(issue.absPath, dest);
+          modifiedAbsFiles.add(dest);
         }
         repairedLinks.push({
           file: issue.file,
@@ -1079,6 +1149,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
             const newContent = `---\n${stringifyYaml(fm).trim()}\n---\n${match[2] || ''}`;
             if (!dryRun) {
               await writeFile(issue.absPath, newContent, 'utf-8');
+              modifiedAbsFiles.add(issue.absPath);
             }
             repairedLinks.push({
               file: issue.file,
@@ -1104,8 +1175,18 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     fixedCount += report.stats.unindexed + report.stats.staleIndex;
   }
 
+  // 若启用了 reStage 且发生了自愈修改，自动将修复后的文件重新加入 Git 暂存区
+  if (reStage && !dryRun && modifiedAbsFiles.size > 0) {
+    try {
+      const relPaths = Array.from(modifiedAbsFiles).map((abs) => `"${relative(projectRoot, abs)}"`);
+      await execAsync(`git add ${relPaths.join(' ')}`, { cwd: projectRoot });
+    } catch {
+      // 容错
+    }
+  }
+
   // 8. 重新诊断剩余未自愈问题
-  const afterReport = dryRun ? report : await diagnoseDocumentHealth(cwd);
+  const afterReport = dryRun ? report : await diagnoseDocumentHealth(cwd, { stagedOnly });
 
   return {
     fixedCount,
@@ -1115,6 +1196,192 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     cleanedEmptyDocs,
     remainingIssues: afterReport.issues,
   };
+}
+
+/**
+ * 安装或更新 Git pre-commit 防腐守卫钩子
+ */
+export async function installDocGuardHook(cwd: string): Promise<{ success: boolean; hookPath: string; message: string }> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const projectRoot = dirname(resolve(docpathDir));
+  const gitHooksDir = join(projectRoot, '.git', 'hooks');
+
+  if (!existsSync(join(projectRoot, '.git'))) {
+    return { success: false, hookPath: '', message: '当前目录不是有效的 Git 仓库 (.git 目录不存在)' };
+  }
+
+  await mkdir(gitHooksDir, { recursive: true });
+  const precommitPath = join(gitHooksDir, 'pre-commit');
+
+  const hookScript = `#!/usr/bin/env sh
+# DocPath Living Docs Pre-Commit Guard (Auto-installed)
+# Intercepts broken links, symbol drift, and command drift before git commit
+
+if command -v docpath >/dev/null 2>&1; then
+  docpath doc guard --staged || exit 1
+elif [ -f "./dist/index.js" ]; then
+  node "./dist/index.js" doc guard --staged || exit 1
+elif [ -f "./node_modules/.bin/docpath" ]; then
+  ./node_modules/.bin/docpath doc guard --staged || exit 1
+fi
+`;
+
+  if (existsSync(precommitPath)) {
+    const existing = await readFile(precommitPath, 'utf-8');
+    if (!existing.includes('docpath doc guard')) {
+      const appended = `${existing.trimEnd()}\n\n# DocPath Living Docs Guard\nif command -v docpath >/dev/null 2>&1; then\n  docpath doc guard --staged || exit 1\nfi\n`;
+      await writeFile(precommitPath, appended, 'utf-8');
+      const { chmod } = await import('node:fs/promises');
+      await chmod(precommitPath, 0o755);
+      return { success: true, hookPath: precommitPath, message: '已向现有的 .git/hooks/pre-commit 追加 DocPath 防腐钩子' };
+    }
+    return { success: true, hookPath: precommitPath, message: '.git/hooks/pre-commit 中已存在 DocPath 防腐钩子' };
+  }
+
+  await writeFile(precommitPath, hookScript, 'utf-8');
+  const { chmod } = await import('node:fs/promises');
+  await chmod(precommitPath, 0o755);
+  return { success: true, hookPath: precommitPath, message: '已成功创建并配置 .git/hooks/pre-commit 防腐钩子' };
+}
+
+export interface DocGuardResult {
+  passed: boolean;
+  staged: boolean;
+  scannedCount: number;
+  blockingCount: number;
+  warningCount: number;
+  blockingIssues: DocIssue[];
+  warningIssues: DocIssue[];
+  repairedCount?: number;
+}
+
+/**
+ * 运行活文档防腐守卫 (Doc Guard)
+ */
+export async function runDocGuard(
+  cwd: string,
+  options: {
+    staged?: boolean;
+    fix?: boolean;
+    install?: boolean;
+    agent?: boolean;
+    json?: boolean;
+  } = {},
+): Promise<DocGuardResult> {
+  const { staged = true, fix = false, install = false, agent = false, json = false } = options;
+
+  if (install) {
+    const instRes = await installDocGuardHook(cwd);
+    if (json) {
+      console.log(JSON.stringify(instRes, null, 2));
+    } else if (agent) {
+      const { stringify } = await import('yaml');
+      console.log(stringify({ agent_view: 'doc_guard_install', ...instRes }));
+    } else {
+      console.log(`\n🪝  ${instRes.message}`);
+      console.log(`    钩子位置: ${instRes.hookPath}\n`);
+    }
+    return {
+      passed: instRes.success,
+      staged,
+      scannedCount: 0,
+      blockingCount: 0,
+      warningCount: 0,
+      blockingIssues: [],
+      warningIssues: [],
+    };
+  }
+
+  let repairedCount = 0;
+  if (fix) {
+    const fixRes = await fixDocumentHealth(cwd, { stagedOnly: staged, reStage: staged });
+    repairedCount = fixRes.fixedCount;
+  }
+
+  const report = await diagnoseDocumentHealth(cwd, { stagedOnly: staged });
+
+  const BLOCKING_TYPES: Set<DocIssueType> = new Set([
+    'broken-link',
+    'symbol-drift',
+    'command-drift',
+    'empty-doc',
+  ]);
+
+  const blockingIssues = report.issues.filter((i) => BLOCKING_TYPES.has(i.type));
+  const warningIssues = report.issues.filter((i) => !BLOCKING_TYPES.has(i.type));
+  const passed = blockingIssues.length === 0;
+
+  if (json) {
+    console.log(
+      JSON.stringify(
+        {
+          passed,
+          staged,
+          scannedCount: report.scannedCount,
+          blockingCount: blockingIssues.length,
+          warningCount: warningIssues.length,
+          repairedCount,
+          blockingIssues,
+          warningIssues,
+        },
+        null,
+        2,
+      ),
+    );
+    return { passed, staged, scannedCount: report.scannedCount, blockingCount: blockingIssues.length, warningCount: warningIssues.length, blockingIssues, warningIssues, repairedCount };
+  }
+
+  if (agent) {
+    const { stringify } = await import('yaml');
+    console.log(
+      stringify({
+        agent_view: 'doc_guard',
+        passed,
+        staged,
+        scanned_count: report.scannedCount,
+        blocking_count: blockingIssues.length,
+        warning_count: warningIssues.length,
+        repaired_count: repairedCount,
+        blocking_issues: blockingIssues.map((i) => ({ file: i.file, type: i.type, message: i.message, fix: i.fixDetail })),
+        warning_issues: warningIssues.map((i) => ({ file: i.file, type: i.type, message: i.message })),
+      }),
+    );
+    return { passed, staged, scannedCount: report.scannedCount, blockingCount: blockingIssues.length, warningCount: warningIssues.length, blockingIssues, warningIssues, repairedCount };
+  }
+
+  const targetDesc = staged ? '暂存区增量' : '全量工作区';
+  if (report.scannedCount === 0 && staged) {
+    return { passed: true, staged, scannedCount: 0, blockingCount: 0, warningCount: 0, blockingIssues: [], warningIssues: [] };
+  }
+
+  console.log(`\n🛡️   DocPath 活文档防腐守卫 (Doc Guard) [${targetDesc}]`);
+  if (repairedCount > 0) {
+    console.log(`    ✨ 已自动自愈修复 ${repairedCount} 处问题并重新暂存入 Git！`);
+  }
+
+  if (blockingIssues.length > 0) {
+    console.log(`\n❌  拦截到 ${blockingIssues.length} 处致命文档腐化问题，拒绝提交 (Git Commit Blocked):`);
+    for (const issue of blockingIssues) {
+      console.log(`    - [${issue.type}] ${issue.file}: ${issue.message}`);
+      if (issue.fixDetail) {
+        console.log(`      💡 建议方案: ${issue.fixDetail}`);
+      }
+    }
+    console.log('\n💡  解决方案:');
+    console.log('    1. 运行 `docpath doc guard --staged --fix` 自动自愈并重新暂存');
+    console.log('    2. 或运行 `docpath doc fix` 进行全局修复后再提交\n');
+    return { passed: false, staged, scannedCount: report.scannedCount, blockingCount: blockingIssues.length, warningCount: warningIssues.length, blockingIssues, warningIssues, repairedCount };
+  }
+
+  if (warningIssues.length > 0) {
+    console.log(`\n⚠️   发现 ${warningIssues.length} 项次要建议 (已放行提交):`);
+    for (const issue of warningIssues) {
+      console.log(`    - [${issue.type}] ${issue.file}: ${issue.message}`);
+    }
+  }
+
+  console.log('✅  暂存区活文档检查通过，允许提交！\n');
+  return { passed: true, staged, scannedCount: report.scannedCount, blockingCount: 0, warningCount: warningIssues.length, blockingIssues: [], warningIssues, repairedCount };
 }
 
 /**
