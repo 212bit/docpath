@@ -19,6 +19,9 @@ import {
   normalizeDocPath,
   refreshProjectDocumentIndex,
   parseFrontmatterMetadata,
+  inferDocumentTier,
+  buildDocGraph,
+  isDocsGraphNodePath,
   type DocLifecycleStatus,
   type ProjectDocumentIndexEntry,
 } from './document-index.js';
@@ -286,7 +289,7 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
   const allKnownMarkdown = new Set([...allMarkdownAbsPaths, ...taskDoneFiles]);
 
   const allFilesBaseMap = new Map<string, string>(); // basename -> absPath
-  const allFilesMetaMap = new Map<string, { status: DocLifecycleStatus; deprecatedBy?: string }>();
+  const allFilesMetaMap = new Map<string, { status: DocLifecycleStatus; deprecatedBy?: string; tier?: string; is_core?: boolean; level?: string }>();
 
   for (const abs of allKnownMarkdown) {
     const bName = basename(abs).toLowerCase();
@@ -297,7 +300,13 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
         const meta = parseFrontmatterMetadata(content);
         const isArchive = abs.includes('/tasks/done/') || abs.includes('/archive/');
         const status: DocLifecycleStatus = meta.status || (isArchive ? 'deprecated' : 'active');
-        allFilesMetaMap.set(abs, { status, deprecatedBy: meta.deprecated_by });
+        allFilesMetaMap.set(abs, {
+          status,
+          deprecatedBy: meta.deprecated_by,
+          tier: meta.tier,
+          is_core: meta.is_core,
+          level: meta.level,
+        });
       }
     } catch {
       // 容错
@@ -614,19 +623,44 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
         }
       }
 
-      // 活文档长期未复核检查 (Stale Unreviewed Check - 超过 180 天未更新)
+      // 核心与常规活文档长期未复核检查 (Stale Unreviewed Check - 核心架构文档标准为 90 天，常规文档为 180 天)
+      const tierInfo = inferDocumentTier(rel, selfMeta.tier, selfMeta.is_core, selfMeta.level);
+      const isCoreDoc = tierInfo.is_core || tierInfo.tier === 'core' || tierInfo.tier === 'architecture';
+
       if (rel.startsWith('docs/') && !rel.startsWith('docs/archive/') && selfMeta.status !== 'deprecated') {
         const fileStat = await stat(abs);
         const daysSinceModified = Math.floor((Date.now() - fileStat.mtimeMs) / (1000 * 60 * 60 * 24));
-        if (daysSinceModified > 180) {
+        const staleThreshold = isCoreDoc ? 90 : 180;
+        if (daysSinceModified > staleThreshold) {
           issues.push({
             file: rel,
             absPath: abs,
             type: 'stale-unreviewed',
-            message: `文档长期未复核 (距今已 ${daysSinceModified} 天未校准)`,
+            message: isCoreDoc
+              ? `核心架构文档长期未校准 (距今已 ${daysSinceModified} 天未复核，核心文档治理标准为 90 天)`
+              : `文档长期未复核 (距今已 ${daysSinceModified} 天未校准)`,
             autoFixable: false,
-            fixDetail: `建议人工复核其有效性，或使用 docpath docs touch ${rel} 确认有效`,
+            fixDetail: `建议架构负责人复核其有效性，或使用 docpath docs touch ${rel} 确认有效`,
           });
+        }
+
+        // 核心架构文档必须具备非空段落概述
+        if (isCoreDoc) {
+          const rawWithoutFm = content.replace(/^---[\s\S]*?---\s*\n?/, '').trim();
+          const meaningfulLines = rawWithoutFm
+            .split('\n')
+            .map((l) => l.trim())
+            .filter((l) => l && !l.startsWith('#') && !l.startsWith('|') && !l.startsWith('>') && !l.startsWith('<!--'));
+          if (meaningfulLines.length === 0) {
+            issues.push({
+              file: rel,
+              absPath: abs,
+              type: 'missing-heading',
+              message: '核心架构文档缺失段落概述 (Summary)，建议补充核心设计意图',
+              autoFixable: false,
+              fixDetail: '在文档顶部标题下方补充简要设计概述段落',
+            });
+          }
         }
       }
     } catch {
@@ -1097,15 +1131,21 @@ export function renderDocHealthTable(report: DocHealthReport): string {
   lines.push(`    生命周期: 🟢 Active: ${report.stats.lifecycle?.active ?? 0} | 🟡 WIP: ${report.stats.lifecycle?.wip ?? 0} | 🔴 Deprecated: ${report.stats.lifecycle?.deprecated ?? 0}`);
   lines.push('');
 
+  const coreIssues = report.issues.filter((i) => {
+    const tier = inferDocumentTier(i.file);
+    return tier.is_core || tier.tier === 'core' || tier.tier === 'architecture';
+  });
+
   lines.push('─'.repeat(72));
   lines.push('📊 巡检指标概览:');
   lines.push('');
+  lines.push(`  - 核心架构治理 (Core & Arch Health)   : ${coreIssues.length === 0 ? '✅ 核心文档治理完备' : `⚠️  ${coreIssues.length} 处核心架构待治理`}`);
   lines.push(`  - 死链检查 (Broken Links)             : ${report.stats.brokenLinks === 0 ? '✅ 0 处断链' : `❌ ${report.stats.brokenLinks} 处断链`}`);
   lines.push(`  - 废弃引用 (Deprecated Reference)     : ${report.stats.deprecatedReferences === 0 ? '✅ 无过期引用' : `⚠️  ${report.stats.deprecatedReferences} 处引用已废弃文档`}`);
   lines.push(`  - 代码引用漂移 (Code Drift)           : ${report.stats.codeDrift === 0 ? '✅ 路径完全对齐' : `⚠️  ${report.stats.codeDrift} 处源码引用失效`}`);
   lines.push(`  - 代码符号漂移 (Symbol Drift)         : ${report.stats.symbolDrift === 0 ? '✅ 符号完全对齐' : `⚠️  ${report.stats.symbolDrift} 处导出符号不一致`}`);
   lines.push(`  - 命令调用漂移 (Command Drift)        : ${report.stats.commandDrift === 0 ? '✅ 语法完全有效' : `⚠️  ${report.stats.commandDrift} 处命令用法已变更`}`);
-  lines.push(`  - 长期未复核 (Stale Unreviewed)       : ${report.stats.staleUnreviewed === 0 ? '✅ 时效完备' : `⚠️  ${report.stats.staleUnreviewed} 个文档超过 180 天未更新`}`);
+  lines.push(`  - 长期未复核 (Stale Unreviewed)       : ${report.stats.staleUnreviewed === 0 ? '✅ 时效完备' : `⚠️  ${report.stats.staleUnreviewed} 个文档未及时校准`}`);
   lines.push(`  - 归档治理建议 (Archive Candidates)   : ${report.stats.archiveCandidates === 0 ? '✅ 目录结构清晰' : `💡 ${report.stats.archiveCandidates} 个废弃文档待归档`}`);
   lines.push(`  - 未索引文档 (Unindexed)              : ${report.stats.unindexed === 0 ? '✅ 全部同步' : `⚠️  ${report.stats.unindexed} 个文档未入索引`}`);
   lines.push(`  - 缺失一级标题 (Missing H1)           : ${report.stats.missingHeadings === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.missingHeadings} 个文档缺少 H1`}`);

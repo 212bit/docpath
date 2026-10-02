@@ -743,6 +743,10 @@ async function docsSearch(
 
     if (score > 0) {
       if (entry.default_read) score += 5;
+      if (entry.is_core || entry.tier === 'core' || entry.tier === 'architecture') {
+        score += 25;
+        reasons.push('⭐核心/架构');
+      }
       const docStatus = entry.status || (entry.archive ? 'deprecated' : 'active');
       if (docStatus === 'active') score += 5;
       else if (docStatus === 'deprecated') score -= 15;
@@ -775,6 +779,8 @@ async function docsSearch(
             type: r.entry.type,
             scope: r.entry.scope,
             level: r.entry.level,
+            tier: r.entry.tier,
+            is_core: r.entry.is_core,
             token_estimate: r.entry.token_estimate,
             status: r.entry.status || (r.entry.archive ? 'deprecated' : 'active'),
             default_read: r.entry.default_read,
@@ -806,6 +812,8 @@ async function docsSearch(
           type: r.entry.type,
           scope: r.entry.scope,
           level: r.entry.level,
+          tier: r.entry.tier,
+          is_core: r.entry.is_core,
           token_estimate: r.entry.token_estimate,
           status: r.entry.status || (r.entry.archive ? 'deprecated' : 'active'),
           default_read: r.entry.default_read,
@@ -835,7 +843,12 @@ async function docsSearch(
   for (const { entry, score, matchedReasons, matchedTerms } of scoredResults.slice(0, 10)) {
     const statusTag = entry.status || (entry.archive ? 'deprecated' : 'active');
     const statusEmoji = statusTag === 'active' ? '🟢' : statusTag === 'wip' ? '🟡' : '🔴';
+    const coreBadge = entry.is_core
+      ? (entry.tier === 'architecture' ? '🏛️ ARCH' : '⭐ CORE')
+      : '';
+
     const flags = [
+      coreBadge,
       `${statusEmoji} ${statusTag.toUpperCase()}`,
       entry.default_read ? 'default' : '',
       entry.archive ? 'archive' : '',
@@ -852,6 +865,124 @@ async function docsSearch(
     console.log(`  📄 ${highlightedPath} [${flags}] (相关度: ${pc.yellow(score.toString())})${reasonsStr}`);
     console.log(`     ${highlightedTitle} — ${highlightedSummary} (~${entry.token_estimate} tokens)\n`);
   }
+}
+
+/**
+ * docs arch / docpath doc arch — 核心架构与重要协议文档全景索引大盘
+ */
+async function docsArch(
+  cwd: string,
+  options: { agent?: boolean; json?: boolean } = {},
+): Promise<void> {
+  const { agent = false, json = false } = options;
+  const docpathDir = await resolveDocpathDir(cwd);
+
+  let index = await readProjectDocumentIndex(docpathDir);
+  if (!index) {
+    await refreshProjectDocumentIndex(docpathDir, cwd);
+    index = await readProjectDocumentIndex(docpathDir);
+  }
+
+  const allEntries = index?.entries || [];
+  const coreEntries = allEntries.filter(
+    (e) => !e.archive && (e.is_core || e.tier === 'core' || e.tier === 'architecture'),
+  );
+
+  const architectureDocs = coreEntries.filter(
+    (e) => e.tier === 'architecture' || e.path.includes('arch') || e.path.includes('design'),
+  );
+  const rulesAndProtocols = coreEntries.filter(
+    (e) => e.path.startsWith('rules/') || e.path.startsWith('.docpath/rules/') || e.path === 'AGENTS.md',
+  );
+  const decisionsAndSpecs = coreEntries.filter(
+    (e) => e.path.includes('decisions.md') || e.path.startsWith('spec/'),
+  );
+  const entrancesAndOverview = coreEntries.filter(
+    (e) => e.path === 'README.md' || e.path === 'docs/README.md',
+  );
+
+  const categorizedPaths = new Set([
+    ...architectureDocs.map((e) => e.path),
+    ...rulesAndProtocols.map((e) => e.path),
+    ...decisionsAndSpecs.map((e) => e.path),
+    ...entrancesAndOverview.map((e) => e.path),
+  ]);
+  const otherCore = coreEntries.filter((e) => !categorizedPaths.has(e.path));
+
+  if (json) {
+    console.log(
+      JSON.stringify(
+        {
+          total_core_count: coreEntries.length,
+          categories: {
+            architecture: architectureDocs,
+            rules_and_protocols: rulesAndProtocols,
+            decisions_and_specs: decisionsAndSpecs,
+            entrances: entrancesAndOverview,
+            other: otherCore,
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  if (agent) {
+    const { stringify } = await import('yaml');
+    console.log(
+      stringify({
+        agent_view: 'docs_arch_matrix',
+        total_core_count: coreEntries.length,
+        architecture_docs: architectureDocs.map((e) => ({
+          path: e.path,
+          title: e.title,
+          summary: e.summary,
+          token_estimate: e.token_estimate,
+          status: e.status,
+          updated_at: e.updated_at,
+        })),
+        rules_and_protocols: rulesAndProtocols.map((e) => ({
+          path: e.path,
+          title: e.title,
+          summary: e.summary,
+          token_estimate: e.token_estimate,
+        })),
+        decisions_and_specs: decisionsAndSpecs.map((e) => ({
+          path: e.path,
+          title: e.title,
+          summary: e.summary,
+        })),
+        entrances: entrancesAndOverview.map((e) => ({
+          path: e.path,
+          title: e.title,
+        })),
+      }),
+    );
+    return;
+  }
+
+  console.log('\n🏛️   DocPath 核心架构与重要文档全景大盘 (Architecture & Core Matrix)');
+  console.log(`    核心文档收录: ${coreEntries.length} 篇 | 自动分级索引\n`);
+
+  const printSection = (title: string, items: typeof coreEntries) => {
+    if (items.length === 0) return;
+    console.log(`  ${title} (${items.length} 篇):`);
+    for (const doc of items) {
+      const statusTag = doc.status === 'active' ? '🟢' : doc.status === 'wip' ? '🟡' : '🔴';
+      const tierBadge = doc.tier === 'architecture' ? pc.magenta('[ARCH]') : pc.cyan('[CORE]');
+      console.log(`    📄 ${pc.bold(doc.path)} ${tierBadge} ${statusTag} (~${doc.token_estimate} tokens)`);
+      console.log(`       ${pc.dim(doc.title)} — ${doc.summary || '无摘要'}`);
+    }
+    console.log('');
+  };
+
+  printSection('🏛️  系统与模块架构设计', architectureDocs);
+  printSection('📜  核心规则与 Agent 协议', rulesAndProtocols);
+  printSection('⚖️  架构决策 (ADR) 与设计规范', decisionsAndSpecs);
+  printSection('🧭  系统入口与全局概览', entrancesAndOverview);
+  printSection('⭐  其他核心资产', otherCore);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1246,6 +1377,11 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
       break;
     case 'graph':
       await docsGraph(cwd, { graphFix, mermaid });
+      break;
+    case 'arch':
+    case 'architecture':
+    case 'core':
+      await docsArch(cwd, { agent, json });
       break;
     case 'search':
     case 'find':

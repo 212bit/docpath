@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-02T15:13:21.480Z",
+    "updated_at": "2026-10-02T15:13:21.480Z",
+    "content_sha256": "4e0bb5b87064f7c18db385b21ee50139c7ccac135a2231c336585393631aec52"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-02T15:13:21.480Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 实现核心架构文档分级识别",
+      "description": "落地 FR-1: 实现核心架构文档分级识别，并完成模块定向自验。",
+      "acceptance": "AC-1: 实现核心架构文档分级识别 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 全景索引大盘",
+      "description": "落地 FR-2: 全景索引大盘，并完成模块定向自验。",
+      "acceptance": "AC-2: 全景索引大盘 满足功能要求并通过测试",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现并验证 FR-3 严格健康巡检",
+      "description": "落地 FR-3: 严格健康巡检，并完成模块定向自验。",
+      "acceptance": "AC-3: 严格健康巡检 满足功能要求并通过测试；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-472 与任务 T-20261002-task-2 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

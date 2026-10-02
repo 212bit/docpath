@@ -1,0 +1,10 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task-2","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 实现核心架构文档分级识别","timestamp":"2026-10-02T15:07:24.394Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task-2","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-02T15:09:49.316Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task-2","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 全景索引大盘","timestamp":"2026-10-02T15:09:49.624Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task-2","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-02T15:11:24.297Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task-2","step":"S3","status":"in_progress","context":"开始执行: 实现并验证 FR-3 严格健康巡检","timestamp":"2026-10-02T15:11:25.058Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task-2","step":"S3","status":"done","context":"step-pass: S3","timestamp":"2026-10-02T15:13:21.475Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task-2","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译","timestamp":"2026-10-02T15:15:22.245Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task-2","step":"check","status":"done","context":"质量检查通过 (13 项)","timestamp":"2026-10-02T15:17:58.224Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task-2","step":"review","status":"done","context":"代码审查: 0 错误, 18 警告, 0 提示","timestamp":"2026-10-02T15:17:59.634Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task-2","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-10-02T15:18:01.304Z"}

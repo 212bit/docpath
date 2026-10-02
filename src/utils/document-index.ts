@@ -26,6 +26,7 @@ export const PROJECT_DOCS_SCAN_EXCLUDED_DIRS = [
 ];
 
 export type DocLifecycleStatus = 'active' | 'wip' | 'deprecated';
+export type DocTier = 'core' | 'architecture' | 'standard' | 'archive';
 
 export interface ProjectDocumentIndexEntry {
   path: string;
@@ -41,6 +42,8 @@ export interface ProjectDocumentIndexEntry {
   token_estimate: number;
   default_read: boolean;
   archive: boolean;
+  is_core?: boolean;
+  tier?: DocTier;
   generated_view?: boolean;
   index_only?: boolean;
   stale?: boolean;
@@ -173,6 +176,7 @@ export function isArchiveDocPath(filePath: string): boolean {
   const normalized = normalizeDocPath(filePath);
   return normalized.startsWith('tasks/done/')
     || normalized.startsWith('archive/')
+    || normalized.startsWith('docs/archive/')
     || normalized.startsWith('workspace/journal/')
     || normalized.startsWith('backlog/archived/')
     || normalized.startsWith('backlog/analysis/')
@@ -236,6 +240,75 @@ export function inferDocumentLevel(filePath: string): string {
   return '2';
 }
 
+/**
+ * 核心架构文档分级推导 (Tier & is_core 推导)
+ */
+export function inferDocumentTier(
+  filePath: string,
+  frontmatterTier?: string,
+  frontmatterIsCore?: boolean,
+  frontmatterLevel?: string,
+): { is_core: boolean; tier: DocTier } {
+  const normalized = normalizeDocPath(filePath);
+
+  // 1. 归档路径一律为 archive
+  if (isArchiveDocPath(normalized)) {
+    return { is_core: false, tier: 'archive' };
+  }
+
+  // 2. Frontmatter 显式标记优先
+  if (frontmatterTier) {
+    const fmt = frontmatterTier.trim().toLowerCase();
+    if (fmt === 'core') return { is_core: true, tier: 'core' };
+    if (fmt === 'architecture' || fmt === 'arch') return { is_core: true, tier: 'architecture' };
+    if (fmt === 'standard') return { is_core: false, tier: 'standard' };
+    if (fmt === 'archive') return { is_core: false, tier: 'archive' };
+  }
+  if (frontmatterIsCore === true) {
+    return { is_core: true, tier: 'core' };
+  }
+  if (frontmatterLevel === '0' || frontmatterLevel === '1') {
+    if (
+      normalized.includes('arch') ||
+      normalized.includes('rule') ||
+      normalized.includes('design') ||
+      normalized === 'AGENTS.md' ||
+      normalized === 'README.md'
+    ) {
+      return { is_core: true, tier: 'core' };
+    }
+  }
+
+  // 3. 路径与命名惯例推导 (Heuristics)
+  // 系统与模块架构、设计文档
+  if (
+    normalized.startsWith('docs/architecture/') ||
+    normalized.startsWith('docs/arch/') ||
+    normalized.startsWith('docs/design/') ||
+    normalized.startsWith('spec/architecture.md') ||
+    normalized.endsWith('/architecture.md') ||
+    normalized.endsWith('/arch.md') ||
+    normalized === 'docs/architecture.md'
+  ) {
+    return { is_core: true, tier: 'architecture' };
+  }
+
+  // 规则、协议、系统入口与架构决策 ADR
+  if (
+    normalized.startsWith('rules/') ||
+    normalized.startsWith('.docpath/rules/') ||
+    normalized === 'AGENTS.md' ||
+    normalized === 'README.md' ||
+    normalized === 'docs/README.md' ||
+    normalized === 'decisions.md' ||
+    normalized === 'workspace/decisions.md'
+  ) {
+    return { is_core: true, tier: 'core' };
+  }
+
+  return { is_core: false, tier: 'standard' };
+}
+
 export function extractTaskIdFromDocPath(filePath: string, currentTaskId?: string): string | undefined {
   const normalized = normalizeDocPath(filePath);
   if (normalized.startsWith('tasks/current/')) return currentTaskId;
@@ -295,6 +368,8 @@ export interface DocFrontmatterMetadata {
   kind?: string;
   scope?: string;
   level?: string;
+  tier?: string;
+  is_core?: boolean;
   title?: string;
   topic_tags?: string[];
 }
@@ -342,6 +417,8 @@ export function parseFrontmatterMetadata(content: string): DocFrontmatterMetadat
     const kind = typeof rec.kind === 'string' && rec.kind.trim() ? rec.kind.trim().toLowerCase() : undefined;
     const scope = typeof rec.scope === 'string' && rec.scope.trim() ? rec.scope.trim().toLowerCase() : undefined;
     const level = typeof rec.level === 'string' || typeof rec.level === 'number' ? String(rec.level).trim() : undefined;
+    const tier = typeof rec.tier === 'string' && rec.tier.trim() ? rec.tier.trim().toLowerCase() : undefined;
+    const is_core = typeof rec.is_core === 'boolean' ? rec.is_core : undefined;
     const title = typeof rec.title === 'string' && rec.title.trim() ? rec.title.trim() : undefined;
 
     let topic_tags: string[] | undefined;
@@ -352,7 +429,7 @@ export function parseFrontmatterMetadata(content: string): DocFrontmatterMetadat
       topic_tags = rawTags.filter((t): t is string => typeof t === 'string' && t.trim().length > 0).map((t) => t.trim());
     }
 
-    return { related, status, deprecated_by, status_reason, type, kind, scope, level, title, topic_tags };
+    return { related, status, deprecated_by, status_reason, type, kind, scope, level, tier, is_core, title, topic_tags };
   } catch {
     return { related: [] };
   }
@@ -626,18 +703,24 @@ function compactFirstLine(value: string, fallback: string): string {
   return (line || fallback).replace(/\s+/g, ' ').slice(0, 180);
 }
 
+function extractHeadingTitle(content: string): string | undefined {
+  const match = content.match(/^#\s+(.+)/m);
+  return match ? match[1].trim() : undefined;
+}
+
 export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): ProjectDocumentIndexEntry {
   const normalizedPath = normalizeDocPath(input.path);
   const metadata = parseFrontmatterMetadata(input.content);
   const kind = metadata.type || metadata.kind || inferDocumentKind(normalizedPath);
   const scope = metadata.scope || inferDocumentScope(normalizedPath);
   const taskId = extractTaskIdFromDocPath(normalizedPath, input.currentTaskId);
-  const title = metadata.title || input.title || basename(normalizedPath, extname(normalizedPath));
+  const title = metadata.title || input.title || extractHeadingTitle(input.content) || basename(normalizedPath, extname(normalizedPath));
   const summary = input.summary || compactFirstLine(input.content, title);
   const archive = isArchiveDocPath(normalizedPath);
   const generatedView = isGeneratedViewDocPath(normalizedPath);
   const inferredTags = inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId });
   const topic_tags = Array.from(new Set([...(metadata.topic_tags || []), ...inferredTags]));
+  const tierInfo = inferDocumentTier(normalizedPath, metadata.tier, metadata.is_core, metadata.level);
 
   return {
     path: normalizedPath,
@@ -645,6 +728,8 @@ export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): Proje
     kind,
     scope,
     level: metadata.level || inferDocumentLevel(normalizedPath),
+    tier: tierInfo.tier,
+    is_core: tierInfo.is_core,
     title,
     summary,
     updated_at: input.mtime.toISOString(),
@@ -686,6 +771,9 @@ export function normalizeProjectDocumentEntry(
     ? raw.token_estimate
     : estimateTokens(summary || '') + estimateTokensFromBytes(size);
   const archive = typeof raw.archive === 'boolean' ? raw.archive : isArchiveDocPath(normalizedPath);
+  const tierInfo = raw.tier && typeof raw.is_core === 'boolean'
+    ? { tier: raw.tier, is_core: raw.is_core }
+    : inferDocumentTier(normalizedPath, raw.tier, raw.is_core, raw.level);
 
   return {
     path: normalizedPath,
@@ -693,6 +781,8 @@ export function normalizeProjectDocumentEntry(
     kind,
     scope,
     level: raw.level || inferDocumentLevel(normalizedPath),
+    tier: tierInfo.tier,
+    is_core: tierInfo.is_core,
     title,
     summary,
     updated_at: raw.updated_at || '',
