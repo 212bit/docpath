@@ -6,8 +6,26 @@ import { revealCommand } from '../reveal.js';
 import { unlinkCommand } from '../unlink.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
-export function registerDocsInstallCommands(cli: CAC): void {
-  cli.command('docs [action] [...query]', '文档资产管理与自愈 (scan | sync | list | lint | doctor | fix | search | graph | archive | status)')
+const KNOWN_DOCS_ACTIONS = new Set([
+  'scan',
+  'sync',
+  'list',
+  'lint',
+  'doctor',
+  'check',
+  'fix',
+  'repair',
+  'search',
+  'find',
+  'query',
+  'graph',
+  'archive',
+  'status',
+  'add',
+]);
+
+function registerDocsCommandHelper(cli: CAC, commandName: string, description: string): void {
+  cli.command(`${commandName} [action] [...query]`, description)
     .option('--cwd <path>', '项目目录')
     .option('--scan', '扫描文档生成索引')
     .option('--sync', '全量同步与自愈（诊断修复断链/未索引并重建索引）')
@@ -19,20 +37,70 @@ export function registerDocsInstallCommands(cli: CAC): void {
     .option('--dry-run', '预览自愈修复操作，不修改文件')
     .option('--search <query>', '根据关键词检索文档')
     .option('--status <status>', '按状态过滤列表 (active | wip | deprecated)')
+    .option('--type <type>', '按文档类型过滤 (reference | runbook | template | index | log)')
+    .option('--scope <scope>', '按作用域过滤 (project | task | backend | frontend | infra | shared)')
+    .option('--tag <tag>', '按标签过滤 (topic_tags)')
     .option('--by <target>', '归档或废弃文档时的替代文档路径')
     .option('--reason <msg>', '状态变更或归档原因')
     .option('--full', 'list: 输出完整表格')
     .option('--add <path>', '添加文档到索引')
     .option('--agent', 'Agent 模式输出结构化 YAML')
     .option('--json', '输出 JSON 格式')
-    .action(async (action: string | undefined, query: string[] | undefined, options: { cwd?: string; scan?: boolean; sync?: boolean; list?: boolean; lint?: boolean; doctor?: boolean; fix?: boolean; mermaid?: boolean; 'dry-run'?: boolean; dryRun?: boolean; json?: boolean; full?: boolean; add?: string; search?: string; status?: string; by?: string; reason?: string; agent?: boolean }) => {
-      const sub = action || (options.sync ? 'sync' : options.fix ? 'fix' : options.doctor ? 'doctor' : options.scan ? 'scan' : options.lint ? 'lint' : options.search ? 'search' : options.add ? 'add' : 'list');
-      const queryArgs = query && query.length > 0 ? query : options.search ? [options.search] : options.add ? [options.add] : [];
+    .action(async (action: string | undefined, query: string[] | undefined, options: {
+      cwd?: string;
+      scan?: boolean;
+      sync?: boolean;
+      list?: boolean;
+      lint?: boolean;
+      doctor?: boolean;
+      fix?: boolean;
+      mermaid?: boolean;
+      'dry-run'?: boolean;
+      dryRun?: boolean;
+      json?: boolean;
+      full?: boolean;
+      add?: string;
+      search?: string;
+      status?: string;
+      type?: string;
+      scope?: string;
+      tag?: string;
+      by?: string;
+      reason?: string;
+      agent?: boolean;
+    }) => {
+      let sub = action;
+      let queryArgs: string[] = query && query.length > 0 ? [...query] : [];
+
+      if (!sub) {
+        if (options.sync) sub = 'sync';
+        else if (options.fix) sub = 'fix';
+        else if (options.doctor) sub = 'doctor';
+        else if (options.scan) sub = 'scan';
+        else if (options.lint) sub = 'lint';
+        else if (options.search) {
+          sub = 'search';
+          if (typeof options.search === 'string') queryArgs = [options.search];
+        } else if (options.add) {
+          sub = 'add';
+          if (typeof options.add === 'string') queryArgs = [options.add];
+        } else {
+          sub = 'list';
+        }
+      } else if (!KNOWN_DOCS_ACTIONS.has(sub.toLowerCase())) {
+        // 智能自适应路由：非已知子命令的参数直接作为 search 检索关键词
+        queryArgs = [sub, ...queryArgs];
+        sub = 'search';
+      }
+
       await docsCommand({
         cwd: options.cwd || process.cwd(),
         action: sub,
         args: queryArgs,
         status: options.status,
+        type: options.type,
+        scope: options.scope,
+        tag: options.tag,
         by: options.by,
         reason: options.reason,
         full: !!options.full,
@@ -43,6 +111,11 @@ export function registerDocsInstallCommands(cli: CAC): void {
         mermaid: !!options.mermaid,
       });
     });
+}
+
+export function registerDocsInstallCommands(cli: CAC): void {
+  registerDocsCommandHelper(cli, 'docs', '文档资产管理与自愈 (scan | sync | list | lint | doctor | fix | search | graph | archive | status)');
+  registerDocsCommandHelper(cli, 'doc', '文档资产管理与自愈 (docs 命令别名，支持关键词直达检索)');
 
   cli.command('reveal', '渐进式上下文披露 — 按 level 0-3 输出上下文')
     .option('--cwd <path>', '项目目录')

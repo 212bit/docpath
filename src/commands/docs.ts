@@ -11,6 +11,7 @@ import { join, relative, extname, basename, dirname, resolve, sep, isAbsolute } 
 import { resolveDocpathDir } from '../utils/file.js';
 import { readDeclaredDocumentScanPaths } from '../utils/config.js';
 import { isExcludedForScan } from '../utils/scan-existing-tree.js';
+import pc from 'picocolors';
 import {
   ARCHIVE_RETENTION_DAYS,
   DOC_GRAPH_HIGH_CONFIDENCE_SCORE,
@@ -47,7 +48,14 @@ import {
   type DocFixResult,
 } from '../utils/docs-doctor.js';
 
-export interface DocsOptions {
+export interface DocsFilterOptions {
+  status?: string;
+  type?: string;
+  scope?: string;
+  tag?: string;
+}
+
+export interface DocsOptions extends DocsFilterOptions {
   cwd: string;
   /** 子命令：scan | list | add | lint | search | doctor | fix | graph | archive | status */
   action?: string;
@@ -57,8 +65,6 @@ export interface DocsOptions {
   by?: string;
   /** 状态变更或归档原因 */
   reason?: string;
-  /** 状态过滤 (active | wip | deprecated) */
-  status?: string;
   /** list: print the full generated docs.md table */
   full?: boolean;
   /** search/find 关键词 */
@@ -293,27 +299,58 @@ async function docsScan(cwd: string): Promise<void> {
   console.log('');
 }
 
-function renderCompactDocsList(entries: ProjectDocumentIndexEntry[], filterStatus?: string): string {
+/** 确保索引已就绪；若 docs-index.json 缺失或为空，自动执行一次静默自愈扫描 */
+async function ensureDocsIndexReady(cwd: string): Promise<{ docpathDir: string; entries: ProjectDocumentIndexEntry[] }> {
+  const docpathDir = await ensureDocpathDir(cwd);
+  let index = await readProjectDocumentIndex(docpathDir);
+  if (!index || !index.entries || index.entries.length === 0) {
+    await refreshProjectDocumentIndex(docpathDir, cwd);
+    index = await readProjectDocumentIndex(docpathDir);
+  }
+  return { docpathDir, entries: index?.entries || [] };
+}
+
+function renderCompactDocsList(entries: ProjectDocumentIndexEntry[], filters: DocsFilterOptions = {}): string {
   let filtered = entries;
-  if (filterStatus) {
-    const s = filterStatus.trim().toLowerCase();
-    filtered = entries.filter((e) => (e.status || (e.archive ? 'deprecated' : 'active')) === s);
+  const { status, type, scope, tag } = filters;
+  if (status) {
+    const s = status.trim().toLowerCase();
+    filtered = filtered.filter((e) => (e.status || (e.archive ? 'deprecated' : 'active')).toLowerCase() === s);
+  }
+  if (type) {
+    const t = type.trim().toLowerCase();
+    filtered = filtered.filter((e) => e.type?.toLowerCase() === t);
+  }
+  if (scope) {
+    const sc = scope.trim().toLowerCase();
+    filtered = filtered.filter((e) => e.scope?.toLowerCase() === sc);
+  }
+  if (tag) {
+    const tg = tag.trim().toLowerCase();
+    filtered = filtered.filter((e) => e.topic_tags?.some((x) => x.toLowerCase() === tg));
   }
 
   const stats = documentIndexStats(filtered);
   const indexOnlyCount = filtered.filter(isIndexOnlyDocument).length;
 
-  const activeCount = entries.filter((e) => (e.status || (e.archive ? 'deprecated' : 'active')) === 'active').length;
-  const wipCount = entries.filter((e) => e.status === 'wip').length;
-  const deprecatedCount = entries.filter((e) => (e.status === 'deprecated' || e.archive)).length;
+  const activeCount = filtered.filter((e) => (e.status || (e.archive ? 'deprecated' : 'active')) === 'active').length;
+  const wipCount = filtered.filter((e) => e.status === 'wip').length;
+  const deprecatedCount = filtered.filter((e) => (e.status === 'deprecated' || e.archive)).length;
 
   const highSignal = sortDocumentEntries(filtered)
     .filter((entry) => !isIndexOnlyDocument(entry))
     .slice(0, 15);
 
+  const filterTags: string[] = [];
+  if (status) filterTags.push(`状态: ${status}`);
+  if (type) filterTags.push(`类型: ${type}`);
+  if (scope) filterTags.push(`作用域: ${scope}`);
+  if (tag) filterTags.push(`标签: ${tag}`);
+  const filterDesc = status && filterTags.length === 1 ? ` [过滤状态: ${status}]` : filterTags.length > 0 ? ` [过滤条件: ${filterTags.join(', ')}]` : '';
+
   const lines: string[] = [
     '',
-    `📚  DocPath 文档索引摘要${filterStatus ? ` [过滤状态: ${filterStatus}]` : ''}`,
+    `📚  DocPath 文档索引摘要${filterDesc}`,
     '',
     `  total_docs: ${stats.total}`,
     `  lifecycle: 🟢 Active: ${activeCount} | 🟡 WIP: ${wipCount} | 🔴 Deprecated: ${deprecatedCount}`,
@@ -326,8 +363,9 @@ function renderCompactDocsList(entries: ProjectDocumentIndexEntry[], filterStatu
 
   for (const entry of highSignal) {
     const statusTag = entry.status || (entry.archive ? 'deprecated' : 'active');
+    const statusEmoji = statusTag === 'active' ? '🟢' : statusTag === 'wip' ? '🟡' : '🔴';
     const flags = [
-      statusTag,
+      `${statusEmoji} ${statusTag}`,
       entry.default_read ? 'default' : '',
       entry.archive ? 'archive' : '',
       entry.task_id ? `task:${entry.task_id}` : '',
@@ -343,23 +381,35 @@ function renderCompactDocsList(entries: ProjectDocumentIndexEntry[], filterStatu
 }
 
 /** docs list — 列出注册文档摘要，--full 输出完整 human table（R-336: 从索引渲染，docs.md 已下线） */
-async function docsList(cwd: string, full = false, status?: string): Promise<void> {
-  const docpathDir = await resolveDocpathDir(cwd);
-  const index = await readProjectDocumentIndex(docpathDir);
+async function docsList(cwd: string, full = false, filters: DocsFilterOptions = {}): Promise<void> {
+  const { entries: allEntries } = await ensureDocsIndexReady(cwd);
 
-  if (!index?.entries.length) {
-    console.error('❌  未找到 docs-index.json 或索引为空。请先运行 `docpath docs scan`');
-    process.exit(1);
+  if (!allEntries.length) {
+    console.log('📭  未找到任何已索引的文档');
+    return;
   }
 
-  let entries = index.entries;
+  let entries = allEntries;
+  const { status, type, scope, tag } = filters;
   if (status) {
     const s = status.trim().toLowerCase();
-    entries = entries.filter((e) => (e.status || (e.archive ? 'deprecated' : 'active')) === s);
+    entries = entries.filter((e) => (e.status || (e.archive ? 'deprecated' : 'active')).toLowerCase() === s);
+  }
+  if (type) {
+    const t = type.trim().toLowerCase();
+    entries = entries.filter((e) => e.type?.toLowerCase() === t);
+  }
+  if (scope) {
+    const sc = scope.trim().toLowerCase();
+    entries = entries.filter((e) => e.scope?.toLowerCase() === sc);
+  }
+  if (tag) {
+    const tg = tag.trim().toLowerCase();
+    entries = entries.filter((e) => e.topic_tags?.some((x) => x.toLowerCase() === tg));
   }
 
   if (!full) {
-    console.log(renderCompactDocsList(index.entries, status));
+    console.log(renderCompactDocsList(allEntries, filters));
     return;
   }
 
@@ -546,72 +596,261 @@ async function docsFix(
   }
 }
 
-/** docs search — 根据关键词或同义词快速检索文档条目 */
-async function docsSearch(cwd: string, query: string, agent = false): Promise<void> {
-  const { normalizeTopic } = await import('../utils/topic-synonyms.js');
-  const docpathDir = await resolveDocpathDir(cwd);
-  const index = await readProjectDocumentIndex(docpathDir);
+function highlightKeywords(text: string, keywords: string[]): string {
+  if (!text || keywords.length === 0) return text;
+  const validKeywords = keywords
+    .map((k) => k.trim())
+    .filter((k) => k.length > 0)
+    .sort((a, b) => b.length - a.length);
+  if (validKeywords.length === 0) return text;
+  const escaped = validKeywords.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  return text.replace(regex, (match) => pc.bold(pc.cyan(match)));
+}
 
-  if (!index?.entries.length) {
+interface ScoredDocSearchResult {
+  entry: ProjectDocumentIndexEntry;
+  score: number;
+  matchedReasons: string[];
+  matchedTerms: string[];
+}
+
+/** docs search — 根据关键词或同义词快速检索文档条目，支持加权排序、高亮展示与多维过滤 */
+async function docsSearch(
+  cwd: string,
+  query: string,
+  options: {
+    status?: string;
+    type?: string;
+    scope?: string;
+    tag?: string;
+    agent?: boolean;
+    json?: boolean;
+  } = {},
+): Promise<void> {
+  const { normalizeTopic } = await import('../utils/topic-synonyms.js');
+  const { entries } = await ensureDocsIndexReady(cwd);
+
+  const { status, type, scope, tag, agent = false, json = false } = options;
+  const trimmed = query.trim();
+
+  if (!entries.length) {
     if (agent) {
       const { stringify } = await import('yaml');
-      console.log(stringify({ agent_view: 'docs_search', query, results_count: 0, results: [] }));
+      console.log(stringify({ agent_view: 'docs_search', query: trimmed, results_count: 0, results: [] }));
+    } else if (json) {
+      console.log(JSON.stringify({ query: trimmed, results_count: 0, results: [] }, null, 2));
     } else {
-      console.error('❌  未找到 docs-index.json 或索引为空。请先运行 `docpath docs scan`');
+      console.log('📭  未找到任何已索引的文档');
     }
     return;
   }
 
-  const trimmed = query.trim();
-  if (!trimmed) {
-    console.log('ℹ️  请输入检索关键词: docpath docs search <keyword>');
-    return;
+  const queryTerms = trimmed.toLowerCase().split(/\s+/).filter(Boolean);
+  const synonyms = trimmed ? normalizeTopic(trimmed).map((s) => s.toLowerCase()) : [];
+  const allSearchTokens = Array.from(new Set([...queryTerms, ...synonyms]));
+
+  const scoredResults: ScoredDocSearchResult[] = [];
+
+  for (const entry of entries) {
+    if (status) {
+      const s = status.trim().toLowerCase();
+      const docStatus = (entry.status || (entry.archive ? 'deprecated' : 'active')).toLowerCase();
+      if (docStatus !== s) continue;
+    }
+    if (type && entry.type?.toLowerCase() !== type.trim().toLowerCase()) {
+      continue;
+    }
+    if (scope && entry.scope?.toLowerCase() !== scope.trim().toLowerCase()) {
+      continue;
+    }
+    if (tag) {
+      const tg = tag.trim().toLowerCase();
+      if (!entry.topic_tags?.some((t) => t.toLowerCase() === tg)) continue;
+    }
+
+    if (!trimmed) {
+      scoredResults.push({
+        entry,
+        score: 10,
+        matchedReasons: ['符合过滤条件'],
+        matchedTerms: [],
+      });
+      continue;
+    }
+
+    let score = 0;
+    const reasons: string[] = [];
+    const matchedTerms: string[] = [];
+
+    const titleLower = (entry.title || '').toLowerCase();
+    const pathLower = (entry.path || '').toLowerCase();
+    const summaryLower = (entry.summary || '').toLowerCase();
+    const tagsLower = (entry.topic_tags || []).map((t) => t.toLowerCase());
+    const termsLower = (entry.content_terms || []).map((t) => t.toLowerCase());
+
+    if (titleLower.includes(trimmed.toLowerCase())) {
+      score += 80;
+      reasons.push('标题完全包含');
+      matchedTerms.push(trimmed);
+    } else {
+      for (const term of queryTerms) {
+        if (titleLower.includes(term)) {
+          score += 40;
+          reasons.push('标题');
+          matchedTerms.push(term);
+          break;
+        }
+      }
+    }
+
+    for (const term of allSearchTokens) {
+      const matchedTag = (entry.topic_tags || []).find((t) => t.toLowerCase() === term || t.toLowerCase().includes(term));
+      if (matchedTag) {
+        score += 35;
+        reasons.push(`标签:${matchedTag}`);
+        matchedTerms.push(matchedTag);
+        break;
+      }
+    }
+
+    for (const term of queryTerms) {
+      if (pathLower.includes(term)) {
+        score += 25;
+        reasons.push('路径');
+        matchedTerms.push(term);
+        break;
+      }
+    }
+
+    for (const term of allSearchTokens) {
+      if (summaryLower.includes(term)) {
+        score += 15;
+        reasons.push('摘要');
+        matchedTerms.push(term);
+        break;
+      }
+    }
+
+    for (const term of allSearchTokens) {
+      if (termsLower.includes(term)) {
+        score += 10;
+        reasons.push('正文');
+        matchedTerms.push(term);
+        break;
+      }
+    }
+
+    if (score > 0) {
+      if (entry.default_read) score += 5;
+      const docStatus = entry.status || (entry.archive ? 'deprecated' : 'active');
+      if (docStatus === 'active') score += 5;
+      else if (docStatus === 'deprecated') score -= 15;
+
+      scoredResults.push({
+        entry,
+        score: Math.max(1, score),
+        matchedReasons: Array.from(new Set(reasons)),
+        matchedTerms: Array.from(new Set(matchedTerms)),
+      });
+    }
   }
 
-  const synonyms = normalizeTopic(trimmed);
-  const matched = index.entries.filter((entry) => {
-    const text = `${entry.path} ${entry.title} ${entry.summary} ${entry.topic_tags?.join(' ') || ''} ${(entry.content_terms || []).join(' ')}`.toLowerCase();
-    return synonyms.some((syn) => text.includes(syn));
-  });
+  scoredResults.sort((a, b) => b.score - a.score || a.entry.token_estimate - b.entry.token_estimate);
 
-  const sorted = sortDocumentEntries(matched as ProjectDocumentIndexEntry[]);
+  if (json) {
+    console.log(
+      JSON.stringify(
+        {
+          query: trimmed,
+          synonyms,
+          filters: { status, type, scope, tag },
+          results_count: scoredResults.length,
+          results: scoredResults.map((r) => ({
+            path: r.entry.path,
+            title: r.entry.title,
+            summary: r.entry.summary,
+            score: r.score,
+            matched_reasons: r.matchedReasons,
+            type: r.entry.type,
+            scope: r.entry.scope,
+            level: r.entry.level,
+            token_estimate: r.entry.token_estimate,
+            status: r.entry.status || (r.entry.archive ? 'deprecated' : 'active'),
+            default_read: r.entry.default_read,
+            archive: r.entry.archive,
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
 
   if (agent) {
     const { stringify } = await import('yaml');
-    console.log(stringify({
-      agent_view: 'docs_search',
-      query: trimmed,
-      synonyms,
-      results_count: sorted.length,
-      results: sorted.slice(0, 10).map((e) => ({
-        path: e.path,
-        title: e.title,
-        summary: e.summary,
-        type: e.type,
-        scope: e.scope,
-        level: e.level,
-        token_estimate: e.token_estimate,
-        default_read: e.default_read,
-        archive: e.archive,
-      })),
-    }));
+    console.log(
+      stringify({
+        agent_view: 'docs_search',
+        query: trimmed,
+        synonyms,
+        filters: { status, type, scope, tag },
+        results_count: scoredResults.length,
+        results: scoredResults.slice(0, 10).map((r) => ({
+          path: r.entry.path,
+          title: r.entry.title,
+          summary: r.entry.summary,
+          score: r.score,
+          matched_reasons: r.matchedReasons,
+          type: r.entry.type,
+          scope: r.entry.scope,
+          level: r.entry.level,
+          token_estimate: r.entry.token_estimate,
+          status: r.entry.status || (r.entry.archive ? 'deprecated' : 'active'),
+          default_read: r.entry.default_read,
+          archive: r.entry.archive,
+        })),
+      }),
+    );
     return;
   }
 
-  console.log(`\n🔍  文档检索: "${trimmed}" (匹配 ${sorted.length} 个文档)\n`);
-  if (sorted.length === 0) {
-    console.log('   未找到匹配的文档条目。可尝试更换关键词或运行 docpath docs scan 刷新索引。\n');
+  const filterSummary = [
+    status ? `状态:${status}` : '',
+    type ? `类型:${type}` : '',
+    scope ? `作用域:${scope}` : '',
+    tag ? `标签:${tag}` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const filterDesc = filterSummary ? ` [过滤: ${filterSummary}]` : '';
+
+  console.log(`\n🔍  文档检索: "${trimmed || '*'}"${filterDesc} (匹配 ${scoredResults.length} 个文档)\n`);
+  if (scoredResults.length === 0) {
+    console.log('   未找到匹配的文档条目。可尝试更换关键词或运行 docpath doc scan 刷新索引。\n');
     return;
   }
 
-  for (const entry of sorted.slice(0, 10)) {
+  for (const { entry, score, matchedReasons, matchedTerms } of scoredResults.slice(0, 10)) {
+    const statusTag = entry.status || (entry.archive ? 'deprecated' : 'active');
+    const statusEmoji = statusTag === 'active' ? '🟢' : statusTag === 'wip' ? '🟡' : '🔴';
     const flags = [
+      `${statusEmoji} ${statusTag.toUpperCase()}`,
       entry.default_read ? 'default' : '',
       entry.archive ? 'archive' : '',
       entry.task_id ? `task:${entry.task_id}` : '',
-    ].filter(Boolean).join(', ') || 'indexed';
-    console.log(`  📄 ${entry.path} [${flags}] (~${entry.token_estimate} tokens)`);
-    console.log(`     ${entry.title} — ${entry.summary || '无摘要'}\n`);
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+    const highlightedPath = highlightKeywords(entry.path, matchedTerms);
+    const highlightedTitle = highlightKeywords(entry.title, matchedTerms);
+    const highlightedSummary = highlightKeywords(entry.summary || '无摘要', matchedTerms);
+    const reasonsStr = matchedReasons.length > 0 ? pc.dim(` [命中: ${matchedReasons.join(', ')}]`) : '';
+
+    console.log(`  📄 ${highlightedPath} [${flags}] (相关度: ${pc.yellow(score.toString())})${reasonsStr}`);
+    console.log(`     ${highlightedTitle} — ${highlightedSummary} (~${entry.token_estimate} tokens)\n`);
   }
 }
 
@@ -956,7 +1195,26 @@ async function docsSync(cwd: string, agent: boolean, json: boolean): Promise<voi
 
 /** 主命令入口 */
 export async function docsCommand(options: DocsOptions): Promise<void> {
-  const { cwd, action, args = [], by, reason, status, full = false, query, agent = false, dryRun = false, json = false, graphFix = false, mermaid = false } = options;
+  const {
+    cwd,
+    action,
+    args = [],
+    by,
+    reason,
+    status,
+    type,
+    scope,
+    tag,
+    full = false,
+    query,
+    agent = false,
+    dryRun = false,
+    json = false,
+    graphFix = false,
+    mermaid = false,
+  } = options;
+
+  const filters: DocsFilterOptions = { status, type, scope, tag };
 
   switch (action) {
     case 'scan':
@@ -966,7 +1224,7 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
       await docsSync(cwd, agent, json);
       break;
     case 'list':
-      await docsList(cwd, full, status);
+      await docsList(cwd, full, filters);
       break;
     case 'add':
       await docsAdd(cwd, args);
@@ -992,10 +1250,17 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
     case 'search':
     case 'find':
     case 'query':
-      await docsSearch(cwd, args.join(' ') || query || '', agent);
+      await docsSearch(cwd, args.join(' ') || query || '', {
+        status,
+        type,
+        scope,
+        tag,
+        agent,
+        json,
+      });
       break;
     default:
-      // 默认执行 scan
-      await docsScan(cwd);
+      // 默认执行 list
+      await docsList(cwd, full, filters);
   }
 }

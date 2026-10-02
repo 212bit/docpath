@@ -42,6 +42,7 @@ export const COMMAND_METADATA: CommandMetadata[] = [
   { name: 'context', description: 'Build a budgeted agent context package', visibility: 'core' },
   { name: 'reveal', description: 'Progressively expand indexed context', visibility: 'core' },
   { name: 'docs', description: 'Scan, lint, and search document assets', visibility: 'core' },
+  { name: 'doc', description: 'Scan, search, and manage document assets (docs alias)', visibility: 'core' },
   { name: 'rule', description: 'Diagnose, deduplicate, and groom rules and ADRs (doctor | dedupe | fix)', visibility: 'core' },
   { name: 'task', description: 'Task lifecycle & context switching: abort | reset | reopen | drift | sync | stash | pop | switch | drop | list', visibility: 'advanced' },
   { name: 'doctor', description: 'Diagnose DocPath and Git workspace hygiene', visibility: 'advanced' },

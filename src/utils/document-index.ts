@@ -291,6 +291,12 @@ export interface DocFrontmatterMetadata {
   status?: DocLifecycleStatus;
   deprecated_by?: string;
   status_reason?: string;
+  type?: string;
+  kind?: string;
+  scope?: string;
+  level?: string;
+  title?: string;
+  topic_tags?: string[];
 }
 
 /**
@@ -332,7 +338,21 @@ export function parseFrontmatterMetadata(content: string): DocFrontmatterMetadat
       ? rec.status_reason.trim()
       : undefined;
 
-    return { related, status, deprecated_by, status_reason };
+    const type = typeof rec.type === 'string' && rec.type.trim() ? rec.type.trim().toLowerCase() : undefined;
+    const kind = typeof rec.kind === 'string' && rec.kind.trim() ? rec.kind.trim().toLowerCase() : undefined;
+    const scope = typeof rec.scope === 'string' && rec.scope.trim() ? rec.scope.trim().toLowerCase() : undefined;
+    const level = typeof rec.level === 'string' || typeof rec.level === 'number' ? String(rec.level).trim() : undefined;
+    const title = typeof rec.title === 'string' && rec.title.trim() ? rec.title.trim() : undefined;
+
+    let topic_tags: string[] | undefined;
+    const rawTags = rec.topic_tags || rec.tags;
+    if (typeof rawTags === 'string') {
+      topic_tags = [rawTags.trim()];
+    } else if (Array.isArray(rawTags)) {
+      topic_tags = rawTags.filter((t): t is string => typeof t === 'string' && t.trim().length > 0).map((t) => t.trim());
+    }
+
+    return { related, status, deprecated_by, status_reason, type, kind, scope, level, title, topic_tags };
   } catch {
     return { related: [] };
   }
@@ -608,21 +628,23 @@ function compactFirstLine(value: string, fallback: string): string {
 
 export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): ProjectDocumentIndexEntry {
   const normalizedPath = normalizeDocPath(input.path);
-  const kind = inferDocumentKind(normalizedPath);
-  const scope = inferDocumentScope(normalizedPath);
+  const metadata = parseFrontmatterMetadata(input.content);
+  const kind = metadata.type || metadata.kind || inferDocumentKind(normalizedPath);
+  const scope = metadata.scope || inferDocumentScope(normalizedPath);
   const taskId = extractTaskIdFromDocPath(normalizedPath, input.currentTaskId);
-  const title = input.title || basename(normalizedPath, extname(normalizedPath));
+  const title = metadata.title || input.title || basename(normalizedPath, extname(normalizedPath));
   const summary = input.summary || compactFirstLine(input.content, title);
   const archive = isArchiveDocPath(normalizedPath);
   const generatedView = isGeneratedViewDocPath(normalizedPath);
-  const metadata = parseFrontmatterMetadata(input.content);
+  const inferredTags = inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId });
+  const topic_tags = Array.from(new Set([...(metadata.topic_tags || []), ...inferredTags]));
 
   return {
     path: normalizedPath,
     type: kind,
     kind,
     scope,
-    level: inferDocumentLevel(normalizedPath),
+    level: metadata.level || inferDocumentLevel(normalizedPath),
     title,
     summary,
     updated_at: input.mtime.toISOString(),
@@ -636,7 +658,7 @@ export function buildProjectDocumentEntry(input: DocumentIndexBuildInput): Proje
     task_id: taskId,
     status: metadata.status || (archive ? 'deprecated' : 'active'),
     deprecated_by: metadata.deprecated_by,
-    topic_tags: inferTopicTags({ path: normalizedPath, title, summary, kind, scope, taskId }),
+    topic_tags,
     content_terms: archive ? [] : inferContentTerms(input.content),
     related: metadata.related,
   };

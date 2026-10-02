@@ -1,0 +1,9 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-docpath-doc","step":"S1","status":"in_progress","context":"go --accept-dirty: start --adopt: claim workspace edits","timestamp":"2026-10-02T03:51:46.513Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-docpath-doc","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 优化 docpath doc 命令","timestamp":"2026-10-02T03:51:46.519Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-docpath-doc","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-02T04:00:33.595Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-docpath-doc","step":"S2","status":"in_progress","context":"go --accept-dirty: verify FR-2 interactive search experience","timestamp":"2026-10-02T04:00:49.317Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-docpath-doc","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 检索交互体验","timestamp":"2026-10-02T04:00:49.324Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-docpath-doc","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-02T04:01:15.566Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-docpath-doc","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-02T04:03:20.027Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-docpath-doc","step":"review","status":"done","context":"代码审查: 0 错误, 13 警告, 0 提示","timestamp":"2026-10-02T04:03:21.402Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-docpath-doc","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-02T04:03:22.938Z"}
