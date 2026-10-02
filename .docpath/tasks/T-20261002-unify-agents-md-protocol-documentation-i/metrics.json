@@ -1,0 +1,829 @@
+{
+  "taskId": "T-20261002-unify-agents-md-protocol-documentation-i",
+  "taskTitle": "T-20261002-unify-agents-md-protocol-documentation-i - Unify AGENTS.md protocol documentation in English",
+  "backlogId": "R-470",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-10-02T06:03:27.538Z",
+  "completedAt": "2026-10-02T06:09:52.077Z",
+  "durationMinutes": 6.4,
+  "firstTimePassRate": 0,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 18, 消耗: 11369 Tokens, 时长: 148 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 18,
+        "totalTokens": 11369,
+        "durationMinutes": 148
+      }
+    }
+  ],
+  "totalDiffLines": 2638,
+  "filesChanged": 16,
+  "linesAdded": 2556,
+  "linesDeleted": 82,
+  "engineering": {
+    "turnCount": 7,
+    "retryCount": 1,
+    "firstTimePassRate": 0,
+    "cycleTimeMinutes": 6.4,
+    "filesChanged": 16,
+    "linesAdded": 2556,
+    "linesDeleted": 82,
+    "totalDiffLines": 2638,
+    "speedLinesPerMinute": 412.2
+  },
+  "protocol": {
+    "specTokens": 750,
+    "planTokens": 239,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 2789
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 7958,
+    "outputTokens": 3411,
+    "totalTokens": 11369,
+    "costUsd": 0.075,
+    "toolCallsCount": 14,
+    "toolAttributions": [
+      {
+        "name": "replace_file_content",
+        "count": 2,
+        "inputTokens": 2328,
+        "outputTokens": 1429,
+        "totalTokens": 3757,
+        "percentage": 33,
+        "errorCount": 0
+      },
+      {
+        "name": "view_file",
+        "count": 4,
+        "inputTokens": 222,
+        "outputTokens": 3030,
+        "totalTokens": 3252,
+        "percentage": 28.6,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 8,
+        "inputTokens": 609,
+        "outputTokens": 2412,
+        "totalTokens": 3021,
+        "percentage": 26.6,
+        "errorCount": 1
+      }
+    ],
+    "toolInefficiencies": [],
+    "docpathCliOverhead": {
+      "totalCalls": 5,
+      "errorCalls": 1,
+      "totalTokens": 2388,
+      "inputTokens": 395,
+      "outputTokens": 1993,
+      "percentageOfSessionTokens": 21,
+      "commands": [
+        {
+          "subcommand": "quick",
+          "count": 2,
+          "errorCount": 1,
+          "inputTokens": 157,
+          "outputTokens": 557,
+          "totalTokens": 714,
+          "avgTokens": 357
+        },
+        {
+          "subcommand": "start",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 91,
+          "outputTokens": 1137,
+          "totalTokens": 1228,
+          "avgTokens": 1228
+        },
+        {
+          "subcommand": "step-pass",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 79,
+          "outputTokens": 151,
+          "totalTokens": 230,
+          "avgTokens": 230
+        },
+        {
+          "subcommand": "done",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 68,
+          "outputTokens": 148,
+          "totalTokens": 216,
+          "avgTokens": 216
+        }
+      ]
+    },
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 18, 消耗: 11369 Tokens, 时长: 148 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 18,
+          "totalTokens": 11369,
+          "durationMinutes": 148
+        }
+      }
+    ],
+    "docpathEfficacy": {
+      "preventedLoopsCount": 1,
+      "deadlockTokensSaved": 6000,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 1,
+      "firstTimePassRate": 83,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 1 次潜在死循环，节省约 6,000 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 1,
+      "redundantTokensWasted": 398,
+      "redundantPatterns": [
+        {
+          "subcommand": "quick",
+          "count": 1,
+          "tokensWasted": 398,
+          "reason": "Consecutive `quick` polling without intermediate actions"
+        }
+      ],
+      "serialChains": [
+        {
+          "chain": "quick -> start",
+          "count": 1,
+          "tokensWasted": 1228,
+          "recommendation": "Avoid serial chaining of \"quick -> start\" without intervening actions."
+        },
+        {
+          "chain": "quick -> quick",
+          "count": 1,
+          "tokensWasted": 398,
+          "recommendation": "Avoid calling `docpath quick` consecutively without intermediate actions."
+        },
+        {
+          "chain": "start -> step-pass",
+          "count": 1,
+          "tokensWasted": 230,
+          "recommendation": "Avoid serial chaining of \"start -> step-pass\" without intervening actions."
+        }
+      ],
+      "heavyOutputCommands": [
+        {
+          "subcommand": "start",
+          "avgOutputTokens": 1137,
+          "maxOutputTokens": 1137,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+        }
+      ],
+      "actionableOptimizations": [
+        "Reduce 1 redundant CLI calls to save ~398 tokens.",
+        "Avoid serial chaining of \"quick -> start\" without intervening actions.",
+        "Avoid calling `docpath quick` consecutively without intermediate actions.",
+        "Avoid serial chaining of \"start -> step-pass\" without intervening actions.",
+        "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-02T06:03:12Z",
+        "turnIndex": 230,
+        "subcommand": "quick",
+        "rawCommandLine": "\"node bin/docpath.js quick --help\"",
+        "directInputTokens": 9,
+        "directOutputTokens": 249,
+        "directTotalTokens": 258,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-2",
+        "timestamp": "2026-10-02T06:03:17Z",
+        "turnIndex": 232,
+        "subcommand": "quick",
+        "rawCommandLine": "\"node bin/docpath.js quick \\\"Unify AGENTS.md protocol and block documentation in English\\\" --adopt --commit\"",
+        "directInputTokens": 27,
+        "directOutputTokens": 308,
+        "directTotalTokens": 335,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "quick -> quick",
+        "wastedTokens": 335,
+        "status": "error",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-3",
+        "timestamp": "2026-10-02T06:03:21Z",
+        "turnIndex": 234,
+        "subcommand": "start",
+        "rawCommandLine": "\"node bin/docpath.js start \\\"Unify AGENTS.md protocol documentation in English\\\" --draft --adopt\"",
+        "directInputTokens": 25,
+        "directOutputTokens": 1137,
+        "directTotalTokens": 1162,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "quick -> start",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-4",
+        "timestamp": "2026-10-02T06:03:27Z",
+        "turnIndex": 236,
+        "stepId": "S1",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"node bin/docpath.js step-pass --step S1 --commit\"",
+        "directInputTokens": 13,
+        "directOutputTokens": 151,
+        "directTotalTokens": 164,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "start -> step-pass",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-5",
+        "timestamp": "2026-10-02T06:07:32Z",
+        "turnIndex": 258,
+        "subcommand": "done",
+        "rawCommandLine": "\"node bin/docpath.js done --commit\"",
+        "directInputTokens": 9,
+        "directOutputTokens": 148,
+        "directTotalTokens": 157,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 5000
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 7958,
+      "outputTokens": 3411,
+      "totalTokens": 11369,
+      "costUsd": 0.075
+    },
+    "toolCalls": {
+      "total": 14,
+      "byName": {
+        "run_command": 8,
+        "view_file": 4,
+        "replace_file_content": 2
+      },
+      "errorCount": 3
+    },
+    "toolAttributions": [
+      {
+        "name": "replace_file_content",
+        "count": 2,
+        "inputTokens": 2328,
+        "outputTokens": 1429,
+        "totalTokens": 3757,
+        "percentage": 33,
+        "errorCount": 0
+      },
+      {
+        "name": "view_file",
+        "count": 4,
+        "inputTokens": 222,
+        "outputTokens": 3030,
+        "totalTokens": 3252,
+        "percentage": 28.6,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 8,
+        "inputTokens": 609,
+        "outputTokens": 2412,
+        "totalTokens": 3021,
+        "percentage": 26.6,
+        "errorCount": 1
+      }
+    ],
+    "toolInefficiencies": [],
+    "docpathCliOverhead": {
+      "totalCalls": 5,
+      "errorCalls": 1,
+      "totalTokens": 2388,
+      "inputTokens": 395,
+      "outputTokens": 1993,
+      "percentageOfSessionTokens": 21,
+      "commands": [
+        {
+          "subcommand": "quick",
+          "count": 2,
+          "errorCount": 1,
+          "inputTokens": 157,
+          "outputTokens": 557,
+          "totalTokens": 714,
+          "avgTokens": 357
+        },
+        {
+          "subcommand": "start",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 91,
+          "outputTokens": 1137,
+          "totalTokens": 1228,
+          "avgTokens": 1228
+        },
+        {
+          "subcommand": "step-pass",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 79,
+          "outputTokens": 151,
+          "totalTokens": 230,
+          "avgTokens": 230
+        },
+        {
+          "subcommand": "done",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 68,
+          "outputTokens": 148,
+          "totalTokens": 216,
+          "avgTokens": 216
+        }
+      ]
+    },
+    "docpathEfficacy": {
+      "preventedLoopsCount": 1,
+      "deadlockTokensSaved": 6000,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 1,
+      "firstTimePassRate": 83,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 1 次潜在死循环，节省约 6,000 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 1,
+      "redundantTokensWasted": 398,
+      "redundantPatterns": [
+        {
+          "subcommand": "quick",
+          "count": 1,
+          "tokensWasted": 398,
+          "reason": "Consecutive `quick` polling without intermediate actions"
+        }
+      ],
+      "serialChains": [
+        {
+          "chain": "quick -> start",
+          "count": 1,
+          "tokensWasted": 1228,
+          "recommendation": "Avoid serial chaining of \"quick -> start\" without intervening actions."
+        },
+        {
+          "chain": "quick -> quick",
+          "count": 1,
+          "tokensWasted": 398,
+          "recommendation": "Avoid calling `docpath quick` consecutively without intermediate actions."
+        },
+        {
+          "chain": "start -> step-pass",
+          "count": 1,
+          "tokensWasted": 230,
+          "recommendation": "Avoid serial chaining of \"start -> step-pass\" without intervening actions."
+        }
+      ],
+      "heavyOutputCommands": [
+        {
+          "subcommand": "start",
+          "avgOutputTokens": 1137,
+          "maxOutputTokens": 1137,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+        }
+      ],
+      "actionableOptimizations": [
+        "Reduce 1 redundant CLI calls to save ~398 tokens.",
+        "Avoid serial chaining of \"quick -> start\" without intervening actions.",
+        "Avoid calling `docpath quick` consecutively without intermediate actions.",
+        "Avoid serial chaining of \"start -> step-pass\" without intervening actions.",
+        "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-02T06:03:12Z",
+        "turnIndex": 230,
+        "subcommand": "quick",
+        "rawCommandLine": "\"node bin/docpath.js quick --help\"",
+        "directInputTokens": 9,
+        "directOutputTokens": 249,
+        "directTotalTokens": 258,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-2",
+        "timestamp": "2026-10-02T06:03:17Z",
+        "turnIndex": 232,
+        "subcommand": "quick",
+        "rawCommandLine": "\"node bin/docpath.js quick \\\"Unify AGENTS.md protocol and block documentation in English\\\" --adopt --commit\"",
+        "directInputTokens": 27,
+        "directOutputTokens": 308,
+        "directTotalTokens": 335,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "quick -> quick",
+        "wastedTokens": 335,
+        "status": "error",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-3",
+        "timestamp": "2026-10-02T06:03:21Z",
+        "turnIndex": 234,
+        "subcommand": "start",
+        "rawCommandLine": "\"node bin/docpath.js start \\\"Unify AGENTS.md protocol documentation in English\\\" --draft --adopt\"",
+        "directInputTokens": 25,
+        "directOutputTokens": 1137,
+        "directTotalTokens": 1162,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "quick -> start",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-4",
+        "timestamp": "2026-10-02T06:03:27Z",
+        "turnIndex": 236,
+        "stepId": "S1",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"node bin/docpath.js step-pass --step S1 --commit\"",
+        "directInputTokens": 13,
+        "directOutputTokens": 151,
+        "directTotalTokens": 164,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "start -> step-pass",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-5",
+        "timestamp": "2026-10-02T06:07:32Z",
+        "turnIndex": 258,
+        "subcommand": "done",
+        "rawCommandLine": "\"node bin/docpath.js done --commit\"",
+        "directInputTokens": 9,
+        "directOutputTokens": 148,
+        "directTotalTokens": 157,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 5000
+      }
+    ],
+    "turnsCount": 18,
+    "errorCount": 3,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 18, 消耗: 11369 Tokens, 时长: 148 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 18,
+          "totalTokens": 11369,
+          "durationMinutes": 148
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 8858000
+  },
+  "toolAttributions": [
+    {
+      "name": "replace_file_content",
+      "count": 2,
+      "inputTokens": 2328,
+      "outputTokens": 1429,
+      "totalTokens": 3757,
+      "percentage": 33,
+      "errorCount": 0
+    },
+    {
+      "name": "view_file",
+      "count": 4,
+      "inputTokens": 222,
+      "outputTokens": 3030,
+      "totalTokens": 3252,
+      "percentage": 28.6,
+      "errorCount": 0
+    },
+    {
+      "name": "run_command",
+      "count": 8,
+      "inputTokens": 609,
+      "outputTokens": 2412,
+      "totalTokens": 3021,
+      "percentage": 26.6,
+      "errorCount": 1
+    }
+  ],
+  "toolInefficiencies": [],
+  "docpathCliOverhead": {
+    "totalCalls": 5,
+    "errorCalls": 1,
+    "totalTokens": 2388,
+    "inputTokens": 395,
+    "outputTokens": 1993,
+    "percentageOfSessionTokens": 21,
+    "commands": [
+      {
+        "subcommand": "quick",
+        "count": 2,
+        "errorCount": 1,
+        "inputTokens": 157,
+        "outputTokens": 557,
+        "totalTokens": 714,
+        "avgTokens": 357
+      },
+      {
+        "subcommand": "start",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 91,
+        "outputTokens": 1137,
+        "totalTokens": 1228,
+        "avgTokens": 1228
+      },
+      {
+        "subcommand": "step-pass",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 79,
+        "outputTokens": 151,
+        "totalTokens": 230,
+        "avgTokens": 230
+      },
+      {
+        "subcommand": "done",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 68,
+        "outputTokens": 148,
+        "totalTokens": 216,
+        "avgTokens": 216
+      }
+    ]
+  },
+  "docpathEfficacy": {
+    "preventedLoopsCount": 1,
+    "deadlockTokensSaved": 6000,
+    "contextCompressionRatio": 92.5,
+    "subagentTokensSaved": 0,
+    "gateInterceptionCount": 1,
+    "firstTimePassRate": 83,
+    "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 1 次潜在死循环，节省约 6,000 Tokens，上下文压缩比达 92.5%"
+  },
+  "docpathCliFriction": {
+    "redundantCallsCount": 1,
+    "redundantTokensWasted": 398,
+    "redundantPatterns": [
+      {
+        "subcommand": "quick",
+        "count": 1,
+        "tokensWasted": 398,
+        "reason": "Consecutive `quick` polling without intermediate actions"
+      }
+    ],
+    "serialChains": [
+      {
+        "chain": "quick -> start",
+        "count": 1,
+        "tokensWasted": 1228,
+        "recommendation": "Avoid serial chaining of \"quick -> start\" without intervening actions."
+      },
+      {
+        "chain": "quick -> quick",
+        "count": 1,
+        "tokensWasted": 398,
+        "recommendation": "Avoid calling `docpath quick` consecutively without intermediate actions."
+      },
+      {
+        "chain": "start -> step-pass",
+        "count": 1,
+        "tokensWasted": 230,
+        "recommendation": "Avoid serial chaining of \"start -> step-pass\" without intervening actions."
+      }
+    ],
+    "heavyOutputCommands": [
+      {
+        "subcommand": "start",
+        "avgOutputTokens": 1137,
+        "maxOutputTokens": 1137,
+        "count": 1,
+        "optimizationHint": "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+      }
+    ],
+    "actionableOptimizations": [
+      "Reduce 1 redundant CLI calls to save ~398 tokens.",
+      "Avoid serial chaining of \"quick -> start\" without intervening actions.",
+      "Avoid calling `docpath quick` consecutively without intermediate actions.",
+      "Avoid serial chaining of \"start -> step-pass\" without intervening actions.",
+      "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+    ]
+  },
+  "commandInvocations": [
+    {
+      "id": "inv-1",
+      "timestamp": "2026-10-02T06:03:12Z",
+      "turnIndex": 230,
+      "subcommand": "quick",
+      "rawCommandLine": "\"node bin/docpath.js quick --help\"",
+      "directInputTokens": 9,
+      "directOutputTokens": 249,
+      "directTotalTokens": 258,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-2",
+      "timestamp": "2026-10-02T06:03:17Z",
+      "turnIndex": 232,
+      "subcommand": "quick",
+      "rawCommandLine": "\"node bin/docpath.js quick \\\"Unify AGENTS.md protocol and block documentation in English\\\" --adopt --commit\"",
+      "directInputTokens": 27,
+      "directOutputTokens": 308,
+      "directTotalTokens": 335,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "quick -> quick",
+      "wastedTokens": 335,
+      "status": "error",
+      "durationMs": 3000
+    },
+    {
+      "id": "inv-3",
+      "timestamp": "2026-10-02T06:03:21Z",
+      "turnIndex": 234,
+      "subcommand": "start",
+      "rawCommandLine": "\"node bin/docpath.js start \\\"Unify AGENTS.md protocol documentation in English\\\" --draft --adopt\"",
+      "directInputTokens": 25,
+      "directOutputTokens": 1137,
+      "directTotalTokens": 1162,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "quick -> start",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-4",
+      "timestamp": "2026-10-02T06:03:27Z",
+      "turnIndex": 236,
+      "stepId": "S1",
+      "subcommand": "step-pass",
+      "rawCommandLine": "\"node bin/docpath.js step-pass --step S1 --commit\"",
+      "directInputTokens": 13,
+      "directOutputTokens": 151,
+      "directTotalTokens": 164,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "start -> step-pass",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-5",
+      "timestamp": "2026-10-02T06:07:32Z",
+      "turnIndex": 258,
+      "subcommand": "done",
+      "rawCommandLine": "\"node bin/docpath.js done --commit\"",
+      "directInputTokens": 9,
+      "directOutputTokens": 148,
+      "directTotalTokens": 157,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 5000
+    }
+  ],
+  "frictionFindings": [
+    {
+      "id": "FRIC-CMD-ERR",
+      "category": "command_error",
+      "severity": "low",
+      "title": "CLI 命令调用异常与参数拦截 (Command Execution Errors)",
+      "description": "检测到 1 次命令调用失败或参数报错，可能由于命令语法错误或环境不匹配导致",
+      "count": 1,
+      "tokensWasted": 200,
+      "optimizationHint": "查阅 docpath --help 或 AGENTS.md 规范，确保 CLI 命令与参数格式准确"
+    },
+    {
+      "id": "FRIC-GATE-BLOCK",
+      "category": "gate_block",
+      "severity": "low",
+      "title": "质量门禁与构建拦截阻力 (Quality Gate Blockage)",
+      "description": "检测到 1 次质量门禁拦截或测试/构建失败，阻碍了任务顺利推进",
+      "count": 1,
+      "tokensWasted": 400,
+      "optimizationHint": "利用构建感知自愈机制运行定向单测 (node --test)，并在终步统一执行收口门禁"
+    },
+    {
+      "id": "FRIC-STEP-REWORK",
+      "category": "step_rework",
+      "severity": "low",
+      "title": "步骤返工与多次重试阻力 (Step Rework & Retries)",
+      "description": "检测到 1 次步骤受阻、重试或返工，增加了任务执行周期与上下文损耗",
+      "count": 1,
+      "tokensWasted": 500,
+      "optimizationHint": "执行 docpath go --step 原子认领；对复杂长步骤派发 Worker 子代理独立攻坚"
+    }
+  ],
+  "stepPassAnalysis": {
+    "totalStepPassCalls": 1,
+    "productiveCalls": 1,
+    "redundantCalls": 0,
+    "directTokens": 164,
+    "invisibleTurnReplayTokens": 164,
+    "redundantTurnReplayTokens": 0,
+    "frictionTurnRatio": 14.3,
+    "summary": "1 次 step-pass 调用均为有效推进，无空转重放损耗"
+  },
+  "lifecycleAnchor": {
+    "sessionId": "756a44fc-79f7-45d7-9c01-531b106b398e",
+    "baseCommit": "053e509355b286418f231675fd9d40438e49b1d7",
+    "headCommit": "053e509355b286418f231675fd9d40438e49b1d7",
+    "startedAt": "2026-10-02T06:03:27.538Z",
+    "completedAt": "2026-10-02T06:09:52.077Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 Unify AGENTS.md protocol documentation in English",
+      "startedAt": "2026-10-02T06:03:27.538Z",
+      "completedAt": "2026-10-02T06:03:49.922Z",
+      "durationMinutes": 0.4,
+      "totalTokens": 2434,
+      "inputTokens": 1704,
+      "outputTokens": 730,
+      "costUsd": 0.0161,
+      "toolCallsCount": 5,
+      "topTools": [
+        {
+          "name": "run_command",
+          "count": 5,
+          "tokens": 2355
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 2789,
+    "realModelTokens": 11369,
+    "overheadRatio": 24.53,
+    "complianceScore": 85,
+    "firstTimePassRate": 0,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}

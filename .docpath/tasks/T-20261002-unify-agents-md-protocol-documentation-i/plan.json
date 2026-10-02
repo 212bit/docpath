@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-02T06:03:49.928Z",
+    "updated_at": "2026-10-02T06:03:49.928Z",
+    "content_sha256": "feff7503056c488b5d19c7d2b9ed8f49e8b10ce3cfd9478dc936d4e8690f4259"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-02T06:03:49.928Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 Unify AGENTS.md protocol documentation in English",
+      "description": "完成 FR-1: Unify AGENTS.md protocol documentation in English，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: Unify AGENTS.md protocol documentation in English 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-470 与任务 T-20261002-unify-agents-md-protocol-documentation-i 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
