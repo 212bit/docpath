@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-02T06:25:56.201Z",
+    "updated_at": "2026-10-02T06:25:56.201Z",
+    "content_sha256": "cd6ad0843bff64dd6ed3e9e5079f5f2e6ade7685030e348728654b3e58caa1c9"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-02T06:25:56.201Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 实现活文档代码符号漂移检测",
+      "description": "落地 FR-1: 实现活文档代码符号漂移检测，并完成模块定向自验。",
+      "acceptance": "AC-1: 实现活文档代码符号漂移检测 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 死链模糊自愈",
+      "description": "落地 FR-2: 死链模糊自愈，并完成模块定向自验。",
+      "acceptance": "AC-2: 死链模糊自愈 满足功能要求并通过测试",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现并验证 FR-3 归档建议",
+      "description": "落地 FR-3: 归档建议，并完成模块定向自验。",
+      "acceptance": "AC-3: 归档建议 满足功能要求并通过测试；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-471 与任务 T-20261002-task 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 实现活文档代码符号漂移检测","timestamp":"2026-10-02T06:20:45.961Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-02T06:24:49.055Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 死链模糊自愈","timestamp":"2026-10-02T06:24:57.706Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-02T06:25:23.881Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task","step":"S3","status":"in_progress","context":"开始执行: 实现并验证 FR-3 归档建议","timestamp":"2026-10-02T06:25:24.157Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task","step":"S3","status":"done","context":"step-pass: S3","timestamp":"2026-10-02T06:25:56.195Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-02T06:27:48.057Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task","step":"review","status":"done","context":"代码审查: 0 错误, 3 警告, 0 提示","timestamp":"2026-10-02T06:27:48.871Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261002-task","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-10-02T06:27:50.341Z"}

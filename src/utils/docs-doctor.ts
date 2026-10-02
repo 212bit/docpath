@@ -29,8 +29,10 @@ export type DocIssueType =
   | 'broken-link'
   | 'deprecated-reference'
   | 'code-drift'
+  | 'symbol-drift'
   | 'command-drift'
   | 'stale-unreviewed'
+  | 'archive-candidate'
   | 'empty-doc'
   | 'missing-heading'
   | 'unindexed'
@@ -62,8 +64,10 @@ export interface DocHealthReport {
     brokenLinks: number;
     deprecatedReferences: number;
     codeDrift: number;
+    symbolDrift: number;
     commandDrift: number;
     staleUnreviewed: number;
+    archiveCandidates: number;
     unindexed: number;
     missingHeadings: number;
     emptyDocs: number;
@@ -75,6 +79,90 @@ export interface DocHealthReport {
       deprecated: number;
     };
   };
+}
+
+/** 计算两个字符串的 Levenshtein 相似度 (0 ~ 1) */
+export function computeSimilarity(a: string, b: string): number {
+  if (a === b) return 1;
+  const s1 = a.toLowerCase();
+  const s2 = b.toLowerCase();
+  if (s1 === s2) return 0.95;
+  const len1 = s1.length;
+  const len2 = s2.length;
+  if (len1 === 0 || len2 === 0) return 0;
+
+  const matrix: number[][] = [];
+  for (let i = 0; i <= len1; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= len2; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost,
+      );
+    }
+  }
+  const maxLen = Math.max(len1, len2);
+  const dist = matrix[len1][len2];
+  return 1 - dist / maxLen;
+}
+
+/** 从源码文件中提取 export 导出的符号集合 */
+export function extractExportedSymbols(code: string): Set<string> {
+  const symbols = new Set<string>();
+  const lines = code.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // export function foo / export async function foo
+    const fnMatch = trimmed.match(/^export\s+(?:async\s+)?function\s+([a-zA-Z0-9_$]+)/);
+    if (fnMatch) {
+      symbols.add(fnMatch[1]);
+      continue;
+    }
+    // export class Foo / export abstract class Foo / export default class Foo
+    const classMatch = trimmed.match(/^export\s+(?:default\s+)?(?:abstract\s+)?class\s+([a-zA-Z0-9_$]+)/);
+    if (classMatch) {
+      symbols.add(classMatch[1]);
+      continue;
+    }
+    // export interface Foo
+    const ifaceMatch = trimmed.match(/^export\s+interface\s+([a-zA-Z0-9_$]+)/);
+    if (ifaceMatch) {
+      symbols.add(ifaceMatch[1]);
+      continue;
+    }
+    // export type Foo
+    const typeMatch = trimmed.match(/^export\s+type\s+([a-zA-Z0-9_$]+)/);
+    if (typeMatch) {
+      symbols.add(typeMatch[1]);
+      continue;
+    }
+    // export const / let / var foo =
+    const varMatch = trimmed.match(/^export\s+(?:const|let|var)\s+([a-zA-Z0-9_$]+)/);
+    if (varMatch) {
+      symbols.add(varMatch[1]);
+      continue;
+    }
+    // export { a, b as c }
+    const blockMatch = trimmed.match(/^export\s+\{([^}]+)\}/);
+    if (blockMatch) {
+      const items = blockMatch[1].split(',');
+      for (const item of items) {
+        const parts = item.trim().split(/\s+as\s+/);
+        const exportedName = (parts[1] || parts[0]).trim();
+        if (exportedName && /^[a-zA-Z0-9_$]+$/.test(exportedName)) {
+          symbols.add(exportedName);
+        }
+      }
+    }
+  }
+  return symbols;
 }
 
 export interface DocFixResult {
@@ -176,8 +264,21 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
   }
 
   const allSourceFilesBaseMap = new Map<string, string>(); // basename -> absPath
+  const sourceFileExportsMap = new Map<string, Set<string>>(); // absPath -> Set<exportedSymbols>
+
   for (const sAbs of allSourceAbsPaths) {
     allSourceFilesBaseMap.set(basename(sAbs).toLowerCase(), sAbs);
+    try {
+      const code = await readFileSafe(sAbs);
+      if (code) {
+        const syms = extractExportedSymbols(code);
+        if (syms.size > 0) {
+          sourceFileExportsMap.set(sAbs, syms);
+        }
+      }
+    } catch {
+      // 容错
+    }
   }
 
   // 收集可用于死链重定向匹配的目标全集
@@ -249,7 +350,7 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
         });
       }
 
-      // Markdown 链接与死链检查
+      // Markdown 链接与死链/符号检查
       const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
       let match: RegExpExecArray | null;
       while ((match = linkRegex.exec(content)) !== null) {
@@ -289,12 +390,65 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
               fixDetail: targetMeta.deprecatedBy ? `建议更新引用为: ${targetMeta.deprecatedBy}` : '建议评估是否更新引用或明确废弃依赖',
             });
           }
-        } else if (targetFilePath && !existsSync(targetFilePath)) {
-          // 尝试根据文件名模糊寻找重命名或移动后的目标
-          const targetBase = basename(targetFilePath).toLowerCase();
-          const candidateAbs = allFilesBaseMap.get(targetBase);
-          let suggestedTarget: string | undefined;
 
+          // 代码符号漂移检查 (Symbol Drift for markdown links to source files)
+          const ext = extname(targetFilePath).toLowerCase();
+          const isSource = ['.ts', '.js', '.mjs', '.cjs', '.tsx', '.jsx', '.go', '.rs', '.py'].includes(ext);
+          if (isSource && sourceFileExportsMap.has(targetFilePath)) {
+            const exports = sourceFileExportsMap.get(targetFilePath)!;
+            const cleanRaw = originalText.replace(/[`()]/g, '').trim();
+            const symbolName = cleanRaw.split(/[.#]/)[0].trim();
+            if (symbolName && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(symbolName) && !exports.has(symbolName)) {
+              let closestSymbol: string | undefined;
+              let bestSim = 0;
+              for (const exp of exports) {
+                const sim = computeSimilarity(symbolName, exp);
+                if (sim > bestSim) {
+                  bestSim = sim;
+                  closestSymbol = exp;
+                }
+              }
+
+              const hasValidSuggestion = bestSim >= 0.7 && !!closestSymbol;
+              const targetRel = normalizeDocPath(relative(projectRoot, targetFilePath));
+              issues.push({
+                file: rel,
+                absPath: abs,
+                type: 'symbol-drift',
+                message: `代码符号漂移: 引用 \`${symbolName}\` 在源码 \`${targetRel}\` 中未导出${hasValidSuggestion ? ` (建议使用 \`${closestSymbol}\`)` : ''}`,
+                autoFixable: hasValidSuggestion,
+                fixDetail: hasValidSuggestion
+                  ? `更新符号引用为: \`${closestSymbol}\``
+                  : `源码文件 \`${targetRel}\` 中未找到同名导出符号`,
+                linkData: {
+                  originalText: originalText,
+                  originalTarget: symbolName,
+                  suggestedTarget: hasValidSuggestion ? closestSymbol : undefined,
+                },
+              });
+            }
+          }
+        } else if (targetFilePath && !existsSync(targetFilePath)) {
+          // 尝试根据文件名寻找重命名或移动后的目标（优先精确匹配，其次 Levenshtein 模糊相似度）
+          const targetBase = basename(targetFilePath).toLowerCase();
+          let candidateAbs = allFilesBaseMap.get(targetBase);
+
+          if (!candidateAbs) {
+            let bestSim = 0;
+            let bestCandidate: string | undefined;
+            for (const [knownBase, knownAbs] of allFilesBaseMap.entries()) {
+              const sim = computeSimilarity(targetBase, knownBase);
+              if (sim > bestSim && sim >= 0.75) {
+                bestSim = sim;
+                bestCandidate = knownAbs;
+              }
+            }
+            if (bestCandidate) {
+              candidateAbs = bestCandidate;
+            }
+          }
+
+          let suggestedTarget: string | undefined;
           if (candidateAbs && existsSync(candidateAbs)) {
             suggestedTarget = relative(dirname(abs), candidateAbs);
             if (!suggestedTarget.startsWith('.')) {
@@ -359,6 +513,45 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
             });
           }
         }
+
+        // 行内带符号代码引用漂移检查 (如 `src/utils/file.ts:readFileSafe`)
+        const inlineSymbolRegex = /`((?:src|tests|lib|cmd|pkg|internal|core)\/[a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)[:#]([a-zA-Z_$][a-zA-Z0-9_$]*)`/g;
+        let inlineSymMatch: RegExpExecArray | null;
+        while ((inlineSymMatch = inlineSymbolRegex.exec(content)) !== null) {
+          const fullMatchText = inlineSymMatch[0];
+          const filePart = inlineSymMatch[1];
+          const symPart = inlineSymMatch[2];
+          const absSrc = resolve(projectRoot, filePart);
+          if (existsSync(absSrc) && sourceFileExportsMap.has(absSrc)) {
+            const exports = sourceFileExportsMap.get(absSrc)!;
+            if (!exports.has(symPart)) {
+              let closestSymbol: string | undefined;
+              let bestSim = 0;
+              for (const exp of exports) {
+                const sim = computeSimilarity(symPart, exp);
+                if (sim > bestSim) {
+                  bestSim = sim;
+                  closestSymbol = exp;
+                }
+              }
+              const hasValidSuggestion = bestSim >= 0.7 && !!closestSymbol;
+              const suggestedTarget = hasValidSuggestion ? `\`${filePart}:${closestSymbol}\`` : undefined;
+              issues.push({
+                file: rel,
+                absPath: abs,
+                type: 'symbol-drift',
+                message: `代码符号漂移: 引用 \`${symPart}\` 在源码 \`${filePart}\` 中未导出${hasValidSuggestion ? ` (建议使用 \`${closestSymbol}\`)` : ''}`,
+                autoFixable: hasValidSuggestion,
+                fixDetail: hasValidSuggestion ? `更新符号引用为: ${suggestedTarget}` : `源码中未找到同名导出符号`,
+                linkData: {
+                  originalText: fullMatchText,
+                  originalTarget: symPart,
+                  suggestedTarget: suggestedTarget,
+                },
+              });
+            }
+          }
+        }
       }
 
       // DocPath CLI 命令漂移检查 (Command Drift Check)
@@ -390,6 +583,32 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
               originalText: fullCmd,
               originalTarget: `docpath ${sub}`,
               suggestedTarget: `docpath ${repl}`,
+            },
+          });
+        }
+      }
+
+      // 归档建议检查 (Archive Candidate Check)
+      if (rel.startsWith('docs/') && !rel.startsWith('docs/archive/')) {
+        const isDeprecated =
+          selfMeta.status === 'deprecated' ||
+          content.includes('status: deprecated') ||
+          content.includes('deprecated: true') ||
+          />\s*(?:⚠️\s*)?\*\*(?:Deprecated|已废弃)\*\*/i.test(content);
+
+        if (isDeprecated) {
+          const archiveRel = normalizeDocPath(join('docs/archive', relative(join(projectRoot, 'docs'), abs)));
+          issues.push({
+            file: rel,
+            absPath: abs,
+            type: 'archive-candidate',
+            message: `文档已标记为废弃但仍位于活跃目录，建议归档至 ${archiveRel}`,
+            autoFixable: false,
+            fixDetail: `建议移动文件至 \`${archiveRel}\`，或运行 docpath docs archive ${rel}`,
+            linkData: {
+              originalText: rel,
+              originalTarget: rel,
+              suggestedTarget: archiveRel,
             },
           });
         }
@@ -614,8 +833,10 @@ export async function diagnoseDocumentHealth(cwd: string): Promise<DocHealthRepo
     brokenLinks: issues.filter((i) => i.type === 'broken-link').length,
     deprecatedReferences: issues.filter((i) => i.type === 'deprecated-reference').length,
     codeDrift: issues.filter((i) => i.type === 'code-drift').length,
+    symbolDrift: issues.filter((i) => i.type === 'symbol-drift').length,
     commandDrift: issues.filter((i) => i.type === 'command-drift').length,
     staleUnreviewed: issues.filter((i) => i.type === 'stale-unreviewed').length,
+    archiveCandidates: issues.filter((i) => i.type === 'archive-candidate').length,
     unindexed: issues.filter((i) => i.type === 'unindexed').length,
     missingHeadings: issues.filter((i) => i.type === 'missing-heading').length,
     emptyDocs: issues.filter((i) => i.type === 'empty-doc').length,
@@ -736,7 +957,41 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     }
   }
 
-  // 4. 修复 DocPath 命令漂移 (Command Drift)
+  // 4. 修复代码符号漂移 (Symbol Drift)
+  const symbolDriftIssues = report.issues.filter((i) => i.type === 'symbol-drift' && i.autoFixable && i.linkData?.suggestedTarget);
+  for (const issue of symbolDriftIssues) {
+    try {
+      const content = (await readFileSafe(issue.absPath)) || '';
+      let updatedContent = content;
+      if (issue.linkData!.originalText.startsWith('`') && issue.linkData!.suggestedTarget!.startsWith('`')) {
+        // 行内符号引用如 `src/foo.ts:oldSym` -> `src/foo.ts:newSym`
+        updatedContent = updatedContent.replaceAll(issue.linkData!.originalText, issue.linkData!.suggestedTarget!);
+      } else {
+        // Markdown 链接文本中的符号 [`oldSym`](...) -> [`newSym`](...)
+        const rawText = issue.linkData!.originalText;
+        const oldSym = issue.linkData!.originalTarget;
+        const newSym = issue.linkData!.suggestedTarget!;
+        const replacedRaw = rawText.replaceAll(oldSym, newSym);
+        updatedContent = updatedContent.replaceAll(`[${rawText}]`, `[${replacedRaw}]`);
+      }
+
+      if (updatedContent !== content) {
+        if (!dryRun) {
+          await writeFile(issue.absPath, updatedContent, 'utf-8');
+        }
+        repairedLinks.push({
+          file: issue.file,
+          from: issue.linkData!.originalTarget,
+          to: issue.linkData!.suggestedTarget!,
+        });
+        fixedCount++;
+      }
+    } catch {
+      // 容错
+    }
+  }
+
+  // 5. 修复 DocPath 命令漂移 (Command Drift)
   const commandDriftIssues = report.issues.filter((i) => i.type === 'command-drift' && i.autoFixable && i.linkData?.suggestedTarget);
   for (const issue of commandDriftIssues) {
     try {
@@ -760,7 +1015,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     }
   }
 
-  // 5. 修复 Backlog 游离文件移动与证据死链自愈
+  // 6. 修复 Backlog 游离文件移动与证据死链自愈
   for (const issue of report.issues) {
     if (issue.type === 'backlog-misplaced' && issue.autoFixable && issue.linkData?.suggestedTarget) {
       try {
@@ -805,7 +1060,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     }
   }
 
-  // 6. 刷新活文档索引 (如果有未索引或幽灵索引条目)
+  // 7. 刷新活文档索引 (如果有未索引或幽灵索引条目)
   const needsIndexRefresh = report.stats.unindexed > 0 || report.stats.staleIndex > 0;
   if (needsIndexRefresh) {
     if (!dryRun) {
@@ -815,7 +1070,7 @@ export async function fixDocumentHealth(cwd: string, options: { dryRun?: boolean
     fixedCount += report.stats.unindexed + report.stats.staleIndex;
   }
 
-  // 7. 重新诊断剩余未自愈问题
+  // 8. 重新诊断剩余未自愈问题
   const afterReport = dryRun ? report : await diagnoseDocumentHealth(cwd);
 
   return {
@@ -848,8 +1103,10 @@ export function renderDocHealthTable(report: DocHealthReport): string {
   lines.push(`  - 死链检查 (Broken Links)             : ${report.stats.brokenLinks === 0 ? '✅ 0 处断链' : `❌ ${report.stats.brokenLinks} 处断链`}`);
   lines.push(`  - 废弃引用 (Deprecated Reference)     : ${report.stats.deprecatedReferences === 0 ? '✅ 无过期引用' : `⚠️  ${report.stats.deprecatedReferences} 处引用已废弃文档`}`);
   lines.push(`  - 代码引用漂移 (Code Drift)           : ${report.stats.codeDrift === 0 ? '✅ 路径完全对齐' : `⚠️  ${report.stats.codeDrift} 处源码引用失效`}`);
+  lines.push(`  - 代码符号漂移 (Symbol Drift)         : ${report.stats.symbolDrift === 0 ? '✅ 符号完全对齐' : `⚠️  ${report.stats.symbolDrift} 处导出符号不一致`}`);
   lines.push(`  - 命令调用漂移 (Command Drift)        : ${report.stats.commandDrift === 0 ? '✅ 语法完全有效' : `⚠️  ${report.stats.commandDrift} 处命令用法已变更`}`);
   lines.push(`  - 长期未复核 (Stale Unreviewed)       : ${report.stats.staleUnreviewed === 0 ? '✅ 时效完备' : `⚠️  ${report.stats.staleUnreviewed} 个文档超过 180 天未更新`}`);
+  lines.push(`  - 归档治理建议 (Archive Candidates)   : ${report.stats.archiveCandidates === 0 ? '✅ 目录结构清晰' : `💡 ${report.stats.archiveCandidates} 个废弃文档待归档`}`);
   lines.push(`  - 未索引文档 (Unindexed)              : ${report.stats.unindexed === 0 ? '✅ 全部同步' : `⚠️  ${report.stats.unindexed} 个文档未入索引`}`);
   lines.push(`  - 缺失一级标题 (Missing H1)           : ${report.stats.missingHeadings === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.missingHeadings} 个文档缺少 H1`}`);
   lines.push(`  - 空白占位文档 (Empty Docs)           : ${report.stats.emptyDocs === 0 ? '✅ 无空文档' : `⚠️  ${report.stats.emptyDocs} 个空文档`}`);
