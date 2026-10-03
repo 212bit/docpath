@@ -1,5 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { execSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import {
   touchesRiskyPath,
   selectTouchedTestFiles,
@@ -89,5 +93,22 @@ describe('test-scope touched selection and risky path isolation', () => {
     const rustFull = resolveRustTestCommand(process.cwd(), { testScope: 'full' });
     assert.equal(rustFull.command, 'cargo test 2>&1');
     assert.match(rustFull.name, /Rust 单元测试/);
+  });
+
+  it('infers targeted cargo test with `--` separator when Rust modules are touched (R-480)', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'rust-test-scope-'));
+    try {
+      execSync('git init -b main', { cwd: tmp, stdio: 'ignore' });
+      mkdirSync(join(tmp, 'src'), { recursive: true });
+      writeFileSync(join(tmp, 'src', 'state.rs'), '// state\n');
+      writeFileSync(join(tmp, 'src', 'shell.rs'), '// shell\n');
+      execSync('git add src/state.rs src/shell.rs', { cwd: tmp, stdio: 'ignore' });
+
+      const res = resolveRustTestCommand(tmp, { testScope: 'touched' });
+      assert.equal(res.command, 'cargo test -- shell state 2>&1');
+      assert.match(res.name, /Rust 单元测试（影响面 2 模块）/);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });

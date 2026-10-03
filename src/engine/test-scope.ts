@@ -378,7 +378,7 @@ export function resolveRustTestCommand(
   const modules = Array.from(new Set(rsFiles.map((f) => basename(f, '.rs')).filter((m) => m !== 'mod' && m !== 'lib' && m !== 'main'))).sort();
   if (modules.length > 0 && modules.length <= 3) {
     return {
-      command: `cargo test ${modules.join(' ')} 2>&1`,
+      command: `cargo test -- ${modules.join(' ')} 2>&1`,
       name: `Rust 单元测试（影响面 ${modules.length} 模块）`,
     };
   }

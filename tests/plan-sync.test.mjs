@@ -277,4 +277,19 @@ describe('plan command FSM precondition (R-291)', () => {
 
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('ignores phantom/orphaned steps in breadcrumb that are not in current plan (R-480)', () => {
+    const cwd = mkWorkspace({
+      plan: '## 执行计划\n\n### S1: Only Step\n- [ ] S1: Only Step\n',
+      breadcrumb: JSON.stringify({ taskId: 'T-SYNC', step: 'S3', status: 'done', context: 'historical done' }) + '\n' +
+        JSON.stringify({ taskId: 'T-SYNC', step: 'S4', status: 'skipped', context: 'historical skipped' }) + '\n',
+    });
+
+    const res = run(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+    assert.doesNotMatch(res.out, /S3 done in breadcrumb but plan\.md still unchecked/);
+    assert.doesNotMatch(res.out, /S4 done in breadcrumb but plan\.md still unchecked/);
+    assert.doesNotMatch(res.out, /Plan\/Breadcrumb 漂移检查/);
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
+

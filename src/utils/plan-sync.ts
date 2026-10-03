@@ -190,7 +190,7 @@ export async function detectPlanBreadcrumbDrift(cwd: string): Promise<PlanBreadc
       !isSystemWorkflowStep(entry.step) &&
       (() => {
         const task = planById.get(entry.step);
-        if (!task) return true;
+        if (!task) return false;
         if (task.done) return false;
         const step = planStepById.get(entry.step);
         return !!step?.lineText;
