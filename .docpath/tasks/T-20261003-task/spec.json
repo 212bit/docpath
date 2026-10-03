@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-03T15:26:49.890Z",
+    "updated_at": "2026-10-03T15:26:49.890Z",
+    "content_sha256": "08c8da9763cad5df0dc389b1a993a4e5018b4e80f6de71bca35e50ea0a377401"
+  },
+  "task_id": "T-20261003-task",
+  "backlog_id": "R-478",
+  "title": "T-20261003-task - 活文档代码符号与路径防漂移：检测重命名与移动并支持自愈修复",
+  "generated_at": "2026-10-03T15:26:49.890Z",
+  "scope": {
+    "included": [
+      "活文档代码符号与路径防漂移：检测重命名与移动并支持自愈修复"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 活文档代码符号与路径防漂移：检测重命名与移动并支持自愈修复\n- 目标: 活文档代码符号与路径防漂移：检测重命名与移动并支持自愈修复\n- 背景: 来自 backlog R-478\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "检测重命名",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "移动并支持自愈修复",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "检测重命名 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "移动并支持自愈修复 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "backlog 条目 R-478 与任务 T-20261003-task 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "活文档代码符号与路径防漂移：检测重命名与移动并支持自愈修复",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

@@ -51,6 +51,11 @@ docpath reveal --topic "<keyword>" --level 1
 ```
 配合 Token 预算机制（`--max-tokens 2000`），实现高密度信息的高效注入。
 
+### 2.4 代码路径与符号跨文件迁移防漂移 (Code & Symbol Migration Anti-Rot)
+在 `docpath docs doctor` 与 `docpath docs fix` 中，内置对代码路径与导出符号的自愈修复能力：
+1. **源码路径模糊相似度重定向**：当代码文件重命名或移动时，自动通过 Levenshtein 相似度匹配候选源码文件并建议/执行更新。
+2. **符号跨文件迁移追踪**：当函数/类型/类在重构中由文件 A 迁移至文件 B 时，自动全局扫描源码导出表并一键将文档中的链接指向新文件。
+
 ## 3. 验证与门禁 (Verification)
-- **单元与集成测试**: `tests/doc-command-enhanced.test.mjs`、`tests/docs-lint-command.test.mjs`、`tests/docs-sync.test.mjs`。
-- **文档健康自愈**: `docpath docs fix` 自动检测并修复 frontmatter、标题与死链。
+- **单元与集成测试**: `tests/doc-command-enhanced.test.mjs`、`tests/docs-lint-command.test.mjs`、`tests/docs-sync.test.mjs`、`tests/docs-fix-command.test.mjs`。
+- **文档健康自愈**: `docpath docs fix` 自动检测并修复 frontmatter、标题、死链、代码路径漂移与符号跨文件迁移。

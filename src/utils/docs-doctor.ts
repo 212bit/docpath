@@ -57,6 +57,7 @@ export interface DocIssue {
     originalText: string;
     originalTarget: string;
     suggestedTarget?: string;
+    migratedTargetFile?: string;
   };
 }
 
@@ -496,9 +497,15 @@ export async function diagnoseDocumentHealth(
         if (linkTarget.startsWith('file://')) {
           targetFilePath = linkTarget.replace(/^file:\/\//, '').split('#')[0];
         } else {
-          const cleanPath = linkTarget.split('#')[0];
+          const cleanPath = linkTarget.split('#')[0].replace(/^\//, '');
           if (!cleanPath) continue;
           targetFilePath = resolve(dirname(abs), cleanPath);
+          if (!existsSync(targetFilePath)) {
+            const fromProjectRoot = resolve(projectRoot, cleanPath);
+            if (existsSync(fromProjectRoot)) {
+              targetFilePath = fromProjectRoot;
+            }
+          }
         }
 
         if (targetFilePath && existsSync(targetFilePath)) {
@@ -524,33 +531,63 @@ export async function diagnoseDocumentHealth(
             const cleanRaw = originalText.replace(/[`()]/g, '').trim();
             const symbolName = cleanRaw.split(/[.#]/)[0].trim();
             if (symbolName && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(symbolName) && !exports.has(symbolName)) {
-              let closestSymbol: string | undefined;
-              let bestSim = 0;
-              for (const exp of exports) {
-                const sim = computeSimilarity(symbolName, exp);
-                if (sim > bestSim) {
-                  bestSim = sim;
-                  closestSymbol = exp;
+              // 优先检查符号是否迁移到了其他源码文件 (Cross-file symbol migration)
+              let migratedSourceFile: string | undefined;
+              for (const [sAbs, exportsSet] of sourceFileExportsMap.entries()) {
+                if (sAbs !== targetFilePath && exportsSet.has(symbolName)) {
+                  migratedSourceFile = sAbs;
+                  break;
                 }
               }
 
-              const hasValidSuggestion = bestSim >= 0.7 && !!closestSymbol;
               const targetRel = normalizeDocPath(relative(projectRoot, targetFilePath));
-              issues.push({
-                file: rel,
-                absPath: abs,
-                type: 'symbol-drift',
-                message: `代码符号漂移: 引用 \`${symbolName}\` 在源码 \`${targetRel}\` 中未导出${hasValidSuggestion ? ` (建议使用 \`${closestSymbol}\`)` : ''}`,
-                autoFixable: hasValidSuggestion,
-                fixDetail: hasValidSuggestion
-                  ? `更新符号引用为: \`${closestSymbol}\``
-                  : `源码文件 \`${targetRel}\` 中未找到同名导出符号`,
-                linkData: {
-                  originalText: originalText,
-                  originalTarget: symbolName,
-                  suggestedTarget: hasValidSuggestion ? closestSymbol : undefined,
-                },
-              });
+
+              if (migratedSourceFile) {
+                const newTargetRel = normalizeDocPath(relative(projectRoot, migratedSourceFile));
+                const isAbsoluteFileScheme = linkTarget.startsWith('file://');
+                const suggestedLinkTarget = isAbsoluteFileScheme ? `file://${migratedSourceFile}` : newTargetRel;
+                issues.push({
+                  file: rel,
+                  absPath: abs,
+                  type: 'symbol-drift',
+                  message: `代码符号迁移: 引用 \`${symbolName}\` 已从 \`${targetRel}\` 迁移至 \`${newTargetRel}\``,
+                  autoFixable: true,
+                  fixDetail: `更新代码链接目标为: [${originalText}](${suggestedLinkTarget})`,
+                  linkData: {
+                    originalText: originalText,
+                    originalTarget: linkTarget,
+                    suggestedTarget: symbolName,
+                    migratedTargetFile: suggestedLinkTarget,
+                  },
+                });
+              } else {
+                let closestSymbol: string | undefined;
+                let bestSim = 0;
+                for (const exp of exports) {
+                  const sim = computeSimilarity(symbolName, exp);
+                  if (sim > bestSim) {
+                    bestSim = sim;
+                    closestSymbol = exp;
+                  }
+                }
+
+                const hasValidSuggestion = bestSim >= 0.7 && !!closestSymbol;
+                issues.push({
+                  file: rel,
+                  absPath: abs,
+                  type: 'symbol-drift',
+                  message: `代码符号漂移: 引用 \`${symbolName}\` 在源码 \`${targetRel}\` 中未导出${hasValidSuggestion ? ` (建议使用 \`${closestSymbol}\`)` : ''}`,
+                  autoFixable: hasValidSuggestion,
+                  fixDetail: hasValidSuggestion
+                    ? `更新符号引用为: \`${closestSymbol}\``
+                    : `源码文件 \`${targetRel}\` 中未找到同名导出符号`,
+                  linkData: {
+                    originalText: originalText,
+                    originalTarget: symbolName,
+                    suggestedTarget: hasValidSuggestion ? closestSymbol : undefined,
+                  },
+                });
+              }
             }
           }
         } else if (targetFilePath && !existsSync(targetFilePath)) {
@@ -573,11 +610,38 @@ export async function diagnoseDocumentHealth(
             }
           }
 
+          // 如果在 Markdown 集合中未找到，且目标看起来是代码文件，尝试在源码文件集合中匹配
+          if (!candidateAbs) {
+            const ext = extname(targetFilePath).toLowerCase();
+            const isSourceExt = ['.ts', '.js', '.mjs', '.cjs', '.tsx', '.jsx', '.go', '.rs', '.py'].includes(ext);
+            if (isSourceExt || targetFilePath.includes('/src/') || targetFilePath.includes('/lib/')) {
+              candidateAbs = allSourceFilesBaseMap.get(targetBase);
+              if (!candidateAbs) {
+                let bestSim = 0;
+                let bestCandidate: string | undefined;
+                for (const [knownBase, knownAbs] of allSourceFilesBaseMap.entries()) {
+                  const sim = computeSimilarity(targetBase, knownBase);
+                  if (sim > bestSim && sim >= 0.75) {
+                    bestSim = sim;
+                    bestCandidate = knownAbs;
+                  }
+                }
+                if (bestCandidate) {
+                  candidateAbs = bestCandidate;
+                }
+              }
+            }
+          }
+
           let suggestedTarget: string | undefined;
           if (candidateAbs && existsSync(candidateAbs)) {
-            suggestedTarget = relative(dirname(abs), candidateAbs);
-            if (!suggestedTarget.startsWith('.')) {
-              suggestedTarget = `./${suggestedTarget}`;
+            if (linkTarget.startsWith('file://')) {
+              suggestedTarget = `file://${candidateAbs}`;
+            } else {
+              suggestedTarget = relative(dirname(abs), candidateAbs);
+              if (!suggestedTarget.startsWith('.')) {
+                suggestedTarget = `./${suggestedTarget}`;
+              }
             }
           }
 
@@ -616,9 +680,24 @@ export async function diagnoseDocumentHealth(
           const absCodePath = resolve(projectRoot, codeRef);
           if (!existsSync(absCodePath)) {
             const codeBase = basename(codeRef).toLowerCase();
-            const candidateCodeAbs = allSourceFilesBaseMap.get(codeBase);
-            let suggestedCodeTarget: string | undefined;
+            let candidateCodeAbs = allSourceFilesBaseMap.get(codeBase);
 
+            if (!candidateCodeAbs) {
+              let bestSim = 0;
+              let bestCandidate: string | undefined;
+              for (const [knownBase, knownAbs] of allSourceFilesBaseMap.entries()) {
+                const sim = computeSimilarity(codeBase, knownBase);
+                if (sim > bestSim && sim >= 0.75) {
+                  bestSim = sim;
+                  bestCandidate = knownAbs;
+                }
+              }
+              if (bestCandidate) {
+                candidateCodeAbs = bestCandidate;
+              }
+            }
+
+            let suggestedCodeTarget: string | undefined;
             if (candidateCodeAbs && existsSync(candidateCodeAbs)) {
               suggestedCodeTarget = normalizeDocPath(relative(projectRoot, candidateCodeAbs));
             }
@@ -650,30 +729,57 @@ export async function diagnoseDocumentHealth(
           if (existsSync(absSrc) && sourceFileExportsMap.has(absSrc)) {
             const exports = sourceFileExportsMap.get(absSrc)!;
             if (!exports.has(symPart)) {
-              let closestSymbol: string | undefined;
-              let bestSim = 0;
-              for (const exp of exports) {
-                const sim = computeSimilarity(symPart, exp);
-                if (sim > bestSim) {
-                  bestSim = sim;
-                  closestSymbol = exp;
+              // 检查符号是否迁移到了其他源码文件 (Cross-file inline symbol migration)
+              let migratedSrcAbs: string | undefined;
+              for (const [sAbs, expSet] of sourceFileExportsMap.entries()) {
+                if (sAbs !== absSrc && expSet.has(symPart)) {
+                  migratedSrcAbs = sAbs;
+                  break;
                 }
               }
-              const hasValidSuggestion = bestSim >= 0.7 && !!closestSymbol;
-              const suggestedTarget = hasValidSuggestion ? `\`${filePart}:${closestSymbol}\`` : undefined;
-              issues.push({
-                file: rel,
-                absPath: abs,
-                type: 'symbol-drift',
-                message: `代码符号漂移: 引用 \`${symPart}\` 在源码 \`${filePart}\` 中未导出${hasValidSuggestion ? ` (建议使用 \`${closestSymbol}\`)` : ''}`,
-                autoFixable: hasValidSuggestion,
-                fixDetail: hasValidSuggestion ? `更新符号引用为: ${suggestedTarget}` : `源码中未找到同名导出符号`,
-                linkData: {
-                  originalText: fullMatchText,
-                  originalTarget: symPart,
-                  suggestedTarget: suggestedTarget,
-                },
-              });
+
+              if (migratedSrcAbs) {
+                const newFileRel = normalizeDocPath(relative(projectRoot, migratedSrcAbs));
+                const suggestedTarget = `\`${newFileRel}:${symPart}\``;
+                issues.push({
+                  file: rel,
+                  absPath: abs,
+                  type: 'symbol-drift',
+                  message: `代码符号迁移: 引用 \`${symPart}\` 已从 \`${filePart}\` 迁移至 \`${newFileRel}\``,
+                  autoFixable: true,
+                  fixDetail: `更新代码引用为: ${suggestedTarget}`,
+                  linkData: {
+                    originalText: fullMatchText,
+                    originalTarget: symPart,
+                    suggestedTarget: suggestedTarget,
+                  },
+                });
+              } else {
+                let closestSymbol: string | undefined;
+                let bestSim = 0;
+                for (const exp of exports) {
+                  const sim = computeSimilarity(symPart, exp);
+                  if (sim > bestSim) {
+                    bestSim = sim;
+                    closestSymbol = exp;
+                  }
+                }
+                const hasValidSuggestion = bestSim >= 0.7 && !!closestSymbol;
+                const suggestedTarget = hasValidSuggestion ? `\`${filePart}:${closestSymbol}\`` : undefined;
+                issues.push({
+                  file: rel,
+                  absPath: abs,
+                  type: 'symbol-drift',
+                  message: `代码符号漂移: 引用 \`${symPart}\` 在源码 \`${filePart}\` 中未导出${hasValidSuggestion ? ` (建议使用 \`${closestSymbol}\`)` : ''}`,
+                  autoFixable: hasValidSuggestion,
+                  fixDetail: hasValidSuggestion ? `更新符号引用为: ${suggestedTarget}` : `源码中未找到同名导出符号`,
+                  linkData: {
+                    originalText: fullMatchText,
+                    originalTarget: symPart,
+                    suggestedTarget: suggestedTarget,
+                  },
+                });
+              }
             }
           }
         }
@@ -1146,14 +1252,21 @@ export async function fixDocumentHealth(
   }
 
   // 4. 修复代码符号漂移 (Symbol Drift)
-  const symbolDriftIssues = report.issues.filter((i) => i.type === 'symbol-drift' && i.autoFixable && i.linkData?.suggestedTarget);
+  const symbolDriftIssues = report.issues.filter((i) => i.type === 'symbol-drift' && i.autoFixable && (i.linkData?.suggestedTarget || i.linkData?.migratedTargetFile));
   for (const issue of symbolDriftIssues) {
     try {
       const content = (await readFileSafe(issue.absPath)) || '';
       let updatedContent = content;
       if (issue.linkData!.originalText.startsWith('`') && issue.linkData!.suggestedTarget!.startsWith('`')) {
-        // 行内符号引用如 `src/foo.ts:oldSym` -> `src/foo.ts:newSym`
+        // 行内符号引用如 `src/foo.ts:oldSym` -> `src/foo.ts:newSym` 或 `src/old.ts:sym` -> `src/new.ts:sym`
         updatedContent = updatedContent.replaceAll(issue.linkData!.originalText, issue.linkData!.suggestedTarget!);
+      } else if (issue.linkData?.migratedTargetFile) {
+        // 符号迁移至新文件: 替换链接目标 [Symbol](oldPath) -> [Symbol](newPath)
+        const originalTarget = issue.linkData.originalTarget;
+        const migratedTarget = issue.linkData.migratedTargetFile;
+        const escapedOriginal = originalTarget.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const targetRegex = new RegExp(`\\]\\(${escapedOriginal}\\)`, 'g');
+        updatedContent = updatedContent.replace(targetRegex, `](${migratedTarget})`);
       } else {
         // Markdown 链接文本中的符号 [`oldSym`](...) -> [`newSym`](...)
         const rawText = issue.linkData!.originalText;
@@ -1171,7 +1284,7 @@ export async function fixDocumentHealth(
         repairedLinks.push({
           file: issue.file,
           from: issue.linkData!.originalTarget,
-          to: issue.linkData!.suggestedTarget!,
+          to: issue.linkData!.migratedTargetFile || issue.linkData!.suggestedTarget!,
         });
         fixedCount++;
       }

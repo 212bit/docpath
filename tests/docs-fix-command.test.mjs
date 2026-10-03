@@ -122,4 +122,36 @@ describe('docpath docs doctor & fix commands', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('detects and heals code path drift and cross-file symbol migration', () => {
+    const cwd = mkWorkspace();
+    try {
+      // 1. Create source files
+      mkdirSync(join(cwd, 'src', 'engine'), { recursive: true });
+      writeFileSync(join(cwd, 'src', 'engine', 'auth-service.ts'), 'export function loginUser() { return true; }\n');
+      writeFileSync(join(cwd, 'src', 'engine', 'token-manager.ts'), 'export function verifyToken() { return true; }\n');
+
+      // 2. Create doc referencing old renamed path and migrated symbol
+      writeFileSync(
+        join(cwd, 'docs', 'features', 'auth-guide.md'),
+        '# Auth Guide\n\nSee `src/engine/auth-service-old.ts` for details.\nAlso check [verifyToken](src/engine/auth-service.ts) for token logic.\n',
+      );
+
+      // Verify doctor detects the code-drift and symbol migration
+      const doctorOut = run('docs doctor', cwd);
+      assert.match(doctorOut, /代码引用漂移/);
+      assert.match(doctorOut, /代码符号迁移/);
+
+      // Run fix
+      const fixOut = run('docs fix', cwd);
+      assert.match(fixOut, /活文档自愈修复完成/);
+
+      // Verify auth-guide.md content was healed
+      const healedDoc = readFileSync(join(cwd, 'docs', 'features', 'auth-guide.md'), 'utf-8');
+      assert.match(healedDoc, /`src\/engine\/auth-service\.ts`/);
+      assert.match(healedDoc, /\[verifyToken\]\(src\/engine\/token-manager\.ts\)/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
