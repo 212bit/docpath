@@ -1,0 +1,9 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-doc","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 前置元数据规范自愈","timestamp":"2026-10-03T12:49:24.581Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-doc","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-03T12:55:40.257Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-doc","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 全场景门禁兜底","timestamp":"2026-10-03T12:55:40.533Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-doc","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-03T12:57:10.711Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-doc","step":"S3","status":"in_progress","context":"开始执行: 实现并验证 FR-3 零陈旧检索","timestamp":"2026-10-03T12:57:10.973Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-doc","step":"S3","status":"done","context":"step-pass: S3","timestamp":"2026-10-03T12:59:13.097Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-doc","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-03T13:01:23.408Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-doc","step":"review","status":"done","context":"代码审查: 0 错误, 40 警告, 0 提示","timestamp":"2026-10-03T13:01:24.520Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-doc","step":"journal","status":"done","context":"知识归档完成 (3/3 步)","timestamp":"2026-10-03T13:01:26.047Z"}

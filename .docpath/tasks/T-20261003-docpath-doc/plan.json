@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-03T12:59:13.109Z",
+    "updated_at": "2026-10-03T12:59:13.109Z",
+    "content_sha256": "94456349e193109e3b3e4424d7237b4363e1dd251f92e773cb702d6646378175"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-03T12:59:13.109Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 前置元数据规范自愈",
+      "description": "落地 FR-1: 前置元数据规范自愈，并完成模块定向自验。",
+      "acceptance": "AC-1: 前置元数据规范自愈 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 全场景门禁兜底",
+      "description": "落地 FR-2: 全场景门禁兜底，并完成模块定向自验。",
+      "acceptance": "AC-2: 全场景门禁兜底 满足功能要求并通过测试",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现并验证 FR-3 零陈旧检索",
+      "description": "落地 FR-3: 零陈旧检索，并完成模块定向自验。",
+      "acceptance": "AC-3: 零陈旧检索 满足功能要求并通过测试；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-476 与任务 T-20261003-docpath-doc 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

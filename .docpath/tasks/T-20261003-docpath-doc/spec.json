@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-03T12:49:23.578Z",
+    "updated_at": "2026-10-03T12:49:23.578Z",
+    "content_sha256": "0f63e0c9863b9d4064308faf9562b0f94416f1ff9f489d991b420555cd2c8e05"
+  },
+  "task_id": "T-20261003-docpath-doc",
+  "backlog_id": "R-476",
+  "title": "T-20261003-docpath-doc - 优化 docpath doc 活文档防腐化体系：前置元数据规范自愈、全场景门禁兜底与零陈旧检索",
+  "generated_at": "2026-10-03T12:49:23.578Z",
+  "scope": {
+    "included": [
+      "优化 docpath doc 活文档防腐化体系：前置元数据规范自愈、全场景门禁兜底与零陈旧检索"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 优化 docpath doc 活文档防腐化体系：前置元数据规范自愈、全场景门禁兜底与零陈旧检索\n- 目标: 优化 docpath doc 活文档防腐化体系：前置元数据规范自愈、全场景门禁兜底与零陈旧检索\n- 背景: 来自 backlog R-476\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "前置元数据规范自愈",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "全场景门禁兜底",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "零陈旧检索",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "前置元数据规范自愈 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "全场景门禁兜底 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "零陈旧检索 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "backlog 条目 R-476 与任务 T-20261003-docpath-doc 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "优化 docpath doc 活文档防腐化体系：前置元数据规范自愈、全场景门禁兜底与零陈旧检索",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

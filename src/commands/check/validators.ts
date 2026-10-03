@@ -896,24 +896,34 @@ const LIVING_DOC_CHECK_MAPPINGS: Array<{ pattern: RegExp; doc: string; title: st
 
 export async function checkLivingDocsHealth(cwd: string, docpathDir: string): Promise<CheckResult[]> {
   const projectRoot = dirname(resolve(docpathDir));
-  const docsReadmePath = join(projectRoot, 'docs', 'README.md');
-  if (!existsSync(docsReadmePath)) return [];
+  const hasDocsDir = existsSync(join(projectRoot, 'docs'));
+  const hasDocsIndex = existsSync(join(docpathDir, 'docs-index.json'));
+  if (!hasDocsDir && !hasDocsIndex) return [];
 
   const results: CheckResult[] = [];
 
   try {
     const report = await diagnoseDocumentHealth(cwd);
     if (!report.healthy) {
+      const BLOCKING_TYPES: Set<string> = new Set([
+        'broken-link',
+        'symbol-drift',
+        'command-drift',
+        'empty-doc',
+        'code-drift',
+      ]);
+      const blockingIssues = report.issues.filter((i) => BLOCKING_TYPES.has(i.type));
       const topIssues = report.issues
         .slice(0, 5)
         .map((i) => `  - [${i.type}] ${i.file}: ${i.message}`)
         .join('\n');
+      const isBlocking = blockingIssues.length > 0;
       results.push({
         name: 'Living docs integrity gate',
-        passed: false,
-        output: `活文档体检发现 ${report.issues.length} 处待治理项（断链/未索引/Backlog异常）:\n${topIssues}\n请运行 docpath docs lint 查看完整明细，或 docpath docs fix 一键自愈。`,
+        passed: !isBlocking,
+        output: `活文档体检发现 ${report.issues.length} 处待治理项（${blockingIssues.length} 处阻断项）:\n${topIssues}\n请运行 docpath docs lint 查看完整明细，或运行 docpath docs fix 一键自愈。`,
         category: 'context',
-        severity: 'warning',
+        severity: isBlocking ? 'warning' : 'warning',
       });
     } else {
       results.push({

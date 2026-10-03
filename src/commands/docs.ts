@@ -23,6 +23,7 @@ import {
   findOrphanDocPaths,
   isArchiveDocumentExpired,
   isIndexOnlyDocument,
+  isProjectDocumentIndexStale,
   isProjectDocumentScanExcludedPath,
   normalizeDocPath,
   readProjectDocumentIndex,
@@ -308,11 +309,11 @@ async function docsScan(cwd: string): Promise<void> {
   console.log('');
 }
 
-/** 确保索引已就绪；若 docs-index.json 缺失或为空，自动执行一次静默自愈扫描 */
+/** 确保索引已就绪；若 docs-index.json 缺失、为空或已陈旧，自动执行一次静默自愈扫描 */
 async function ensureDocsIndexReady(cwd: string): Promise<{ docpathDir: string; entries: ProjectDocumentIndexEntry[] }> {
   const docpathDir = await ensureDocpathDir(cwd);
   let index = await readProjectDocumentIndex(docpathDir);
-  if (!index || !index.entries || index.entries.length === 0) {
+  if (!index || !index.entries || index.entries.length === 0 || (await isProjectDocumentIndexStale(docpathDir, index.entries))) {
     await refreshProjectDocumentIndex(docpathDir, cwd);
     index = await readProjectDocumentIndex(docpathDir);
   }
@@ -571,6 +572,7 @@ async function docsFix(
         dry_run: dryRun,
         fixed_count: fixResult.fixedCount,
         healed_headings: fixResult.healedHeadings,
+        healed_frontmatters: fixResult.healedFrontmatters,
         repaired_links: fixResult.repairedLinks,
         refreshed_index: fixResult.refreshedIndex,
         cleaned_empty_docs: fixResult.cleanedEmptyDocs,
@@ -584,6 +586,8 @@ async function docsFix(
     console.log('\n🧹  [dry-run] 活文档自愈修复预览:');
     console.log(`    - 拟修复一级标题 (# H1): ${fixResult.healedHeadings.length} 个文件`);
     for (const h of fixResult.healedHeadings) console.log(`      + ${h}`);
+    console.log(`    - 拟补齐 Frontmatter 元数据: ${fixResult.healedFrontmatters.length} 个文件`);
+    for (const f of fixResult.healedFrontmatters) console.log(`      + ${f}`);
     console.log(`    - 拟修复死链重定向: ${fixResult.repairedLinks.length} 处`);
     for (const r of fixResult.repairedLinks) console.log(`      + ${r.file}: [${r.from}] -> [${r.to}]`);
     console.log(`    - 拟初始化空白文档: ${fixResult.cleanedEmptyDocs.length} 个`);
@@ -595,6 +599,7 @@ async function docsFix(
 
   console.log('\n✨  活文档自愈修复完成！');
   console.log(`    - 修复/补齐 H1 标题: ${fixResult.healedHeadings.length} 个文档`);
+  console.log(`    - 修复/补齐 Frontmatter 元数据: ${fixResult.healedFrontmatters.length} 个文档`);
   console.log(`    - 修复/重定向死链: ${fixResult.repairedLinks.length} 处`);
   console.log(`    - 补充空白文档脚手架: ${fixResult.cleanedEmptyDocs.length} 个`);
   console.log(`    - 活文档索引 (docs-index.json): ${fixResult.refreshedIndex ? '已全量同步' : '已是最新'}`);
@@ -918,11 +923,20 @@ async function docsArch(
   ]);
   const otherCore = coreEntries.filter((e) => !categorizedPaths.has(e.path));
 
+  const report = await diagnoseDocumentHealth(cwd);
+  const coreDrifts = report.issues.filter((i) => coreEntries.some((e) => e.path === i.file));
+  const isHealthy = coreDrifts.length === 0;
+
   if (json) {
     console.log(
       JSON.stringify(
         {
           total_core_count: coreEntries.length,
+          health: {
+            is_healthy: isHealthy,
+            drift_count: coreDrifts.length,
+            issues: coreDrifts,
+          },
           categories: {
             architecture: architectureDocs,
             rules_and_protocols: rulesAndProtocols,
@@ -944,6 +958,8 @@ async function docsArch(
       stringify({
         agent_view: 'docs_arch_matrix',
         total_core_count: coreEntries.length,
+        anti_decay_health: isHealthy ? 'healthy' : 'drift_detected',
+        drift_count: coreDrifts.length,
         architecture_docs: architectureDocs.map((e) => ({
           path: e.path,
           title: e.title,
@@ -973,7 +989,7 @@ async function docsArch(
   }
 
   console.log('\n🏛️   DocPath 核心架构与重要文档全景大盘 (Architecture & Core Matrix)');
-  console.log(`    核心文档收录: ${coreEntries.length} 篇 | 自动分级索引\n`);
+  console.log(`    核心文档收录: ${coreEntries.length} 篇 | 防腐状态: ${isHealthy ? '🟢 核心文档 100% 对齐代码' : `⚠️  ${coreDrifts.length} 处引用待修复`}\n`);
 
   const printSection = (title: string, items: typeof coreEntries) => {
     if (items.length === 0) return;

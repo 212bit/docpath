@@ -38,6 +38,8 @@ export type DocIssueType =
   | 'archive-candidate'
   | 'empty-doc'
   | 'missing-heading'
+  | 'missing-frontmatter'
+  | 'invalid-frontmatter'
   | 'unindexed'
   | 'stale-index'
   | 'stale-archive'
@@ -76,6 +78,7 @@ export interface DocHealthReport {
     emptyDocs: number;
     staleIndex: number;
     backlogIssues: number;
+    frontmatterIssues: number;
     lifecycle: {
       active: number;
       wip: number;
@@ -171,6 +174,7 @@ export function extractExportedSymbols(code: string): Set<string> {
 export interface DocFixResult {
   fixedCount: number;
   healedHeadings: string[];
+  healedFrontmatters: string[];
   repairedLinks: Array<{ file: string; from: string; to: string }>;
   refreshedIndex: boolean;
   cleanedEmptyDocs: string[];
@@ -295,6 +299,7 @@ export async function diagnoseDocumentHealth(
           emptyDocs: 0,
           staleIndex: 0,
           backlogIssues: 0,
+          frontmatterIssues: 0,
           lifecycle: { active: 0, wip: 0, deprecated: 0 },
         },
       };
@@ -416,6 +421,58 @@ export async function diagnoseDocumentHealth(
           autoFixable: true,
           fixDetail: `添加 H1 标题: "# ${inferredTitle}"`,
         });
+      }
+
+      // Frontmatter 元数据规范检查 (Frontmatter & Metadata Check)
+      if (
+        rel.startsWith('docs/architecture/') &&
+        !rel.startsWith('docs/archive/') &&
+        trimmed.length > 0
+      ) {
+        const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+        if (!fmMatch) {
+          const inferredKind = 'architecture';
+          const inferredScope = rel.split('/')[1] || 'project';
+          const inferredLevel = 2;
+          issues.push({
+            file: rel,
+            absPath: abs,
+            type: 'missing-frontmatter',
+            message: '核心架构文档缺失 YAML 元数据 Frontmatter (缺少 kind, scope, level, status 规范头)',
+            autoFixable: true,
+            fixDetail: `自动注入标准 Frontmatter (kind: ${inferredKind}, scope: ${inferredScope}, level: ${inferredLevel}, status: active)`,
+          });
+        }
+      }
+
+      if (rel.startsWith('docs/') && !rel.startsWith('docs/archive/') && trimmed.length > 0) {
+        const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+        if (fmMatch) {
+          try {
+            const parsedFm = (parseYaml(fmMatch[1]) || {}) as Record<string, unknown>;
+            if (typeof parsedFm === 'object' && parsedFm !== null) {
+              if (parsedFm.status && !['active', 'wip', 'deprecated', 'draft'].includes(String(parsedFm.status).toLowerCase())) {
+                issues.push({
+                  file: rel,
+                  absPath: abs,
+                  type: 'invalid-frontmatter',
+                  message: `Frontmatter status 字段取值无效: "${parsedFm.status}" (有效值: active | wip | deprecated | draft)`,
+                  autoFixable: true,
+                  fixDetail: '修正 status 为 active',
+                });
+              }
+            }
+          } catch {
+            issues.push({
+              file: rel,
+              absPath: abs,
+              type: 'invalid-frontmatter',
+              message: 'Frontmatter YAML 格式解析异常',
+              autoFixable: false,
+              fixDetail: '请检查并修正 YAML 语法',
+            });
+          }
+        }
       }
 
       // Markdown 链接与死链/符号检查
@@ -935,6 +992,7 @@ export async function diagnoseDocumentHealth(
     emptyDocs: issues.filter((i) => i.type === 'empty-doc').length,
     staleIndex: issues.filter((i) => i.type === 'stale-index').length,
     backlogIssues: issues.filter((i) => i.type === 'backlog-misplaced' || i.type === 'broken-evidence').length,
+    frontmatterIssues: issues.filter((i) => i.type === 'missing-frontmatter' || i.type === 'invalid-frontmatter').length,
     lifecycle: {
       active: activeDocsCount,
       wip: wipDocsCount,
@@ -964,6 +1022,7 @@ export async function fixDocumentHealth(
   const report = await diagnoseDocumentHealth(cwd, { stagedOnly });
 
   const healedHeadings: string[] = [];
+  const healedFrontmatters: string[] = [];
   const repairedLinks: Array<{ file: string; from: string; to: string }> = [];
   const cleanedEmptyDocs: string[] = [];
   const modifiedAbsFiles = new Set<string>();
@@ -971,7 +1030,7 @@ export async function fixDocumentHealth(
 
   let fixedCount = 0;
 
-  // 1. 修复空文档与缺失的一级标题
+  // 1. 修复空文档与缺失的一级标题/Frontmatter
   for (const issue of report.issues) {
     if (issue.type === 'empty-doc' && issue.autoFixable) {
       const inferredTitle = basename(issue.absPath, extname(issue.absPath))
@@ -996,6 +1055,34 @@ export async function fixDocumentHealth(
           modifiedAbsFiles.add(issue.absPath);
         }
         healedHeadings.push(issue.file);
+        fixedCount++;
+      } catch {
+        // 容错
+      }
+    } else if (issue.type === 'missing-frontmatter' && issue.autoFixable) {
+      try {
+        const content = (await readFileSafe(issue.absPath)) || '';
+        const rel = issue.file;
+        const inferredKind = rel.includes('architecture') || rel.includes('arch')
+          ? 'architecture'
+          : rel.includes('design')
+            ? 'design'
+            : rel.includes('feature')
+              ? 'feature'
+              : rel.includes('guide') || rel.includes('tutorial')
+                ? 'guide'
+                : rel.includes('adr') || rel.includes('decision')
+                  ? 'decision'
+                  : 'reference';
+        const inferredScope = rel.split('/')[1] || 'project';
+        const inferredLevel = inferredKind === 'guide' ? 1 : 2;
+        const fmHeader = `---\nkind: ${inferredKind}\nscope: ${inferredScope}\nlevel: ${inferredLevel}\nstatus: active\n---\n\n`;
+        const updatedContent = `${fmHeader}${content.trimStart()}`;
+        if (!dryRun) {
+          await writeFile(issue.absPath, updatedContent, 'utf-8');
+          modifiedAbsFiles.add(issue.absPath);
+        }
+        healedFrontmatters.push(issue.file);
         fixedCount++;
       } catch {
         // 容错
@@ -1191,6 +1278,7 @@ export async function fixDocumentHealth(
   return {
     fixedCount,
     healedHeadings,
+    healedFrontmatters,
     repairedLinks,
     refreshedIndex,
     cleanedEmptyDocs,
@@ -1416,6 +1504,7 @@ export function renderDocHealthTable(report: DocHealthReport): string {
   lines.push(`  - 归档治理建议 (Archive Candidates)   : ${report.stats.archiveCandidates === 0 ? '✅ 目录结构清晰' : `💡 ${report.stats.archiveCandidates} 个废弃文档待归档`}`);
   lines.push(`  - 未索引文档 (Unindexed)              : ${report.stats.unindexed === 0 ? '✅ 全部同步' : `⚠️  ${report.stats.unindexed} 个文档未入索引`}`);
   lines.push(`  - 缺失一级标题 (Missing H1)           : ${report.stats.missingHeadings === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.missingHeadings} 个文档缺少 H1`}`);
+  lines.push(`  - 文档元数据规范 (Frontmatter Health) : ${report.stats.frontmatterIssues === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.frontmatterIssues} 个文档缺少或元数据不规范`}`);
   lines.push(`  - 空白占位文档 (Empty Docs)           : ${report.stats.emptyDocs === 0 ? '✅ 无空文档' : `⚠️  ${report.stats.emptyDocs} 个空文档`}`);
   lines.push(`  - 幽灵过期索引 (Stale Index)          : ${report.stats.staleIndex === 0 ? '✅ 索引纯净' : `⚠️  ${report.stats.staleIndex} 个幽灵条目`}`);
   lines.push(`  - Backlog 规范与证据 (Backlog Health) : ${report.stats.backlogIssues === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.backlogIssues} 个 Backlog 待治理项`}`);

@@ -121,3 +121,42 @@ status: deprecated
   // Clean up
   await rm(tempDir, { recursive: true, force: true });
 });
+
+test('diagnoseDocumentHealth and fixDocumentHealth detects and auto-heals frontmatter', async () => {
+  const tempDir = join(tmpdir(), `docpath-fm-test-${Date.now()}`);
+  await mkdir(join(tempDir, '.docpath', 'workspace'), { recursive: true });
+  await mkdir(join(tempDir, 'docs', 'architecture'), { recursive: true });
+  await mkdir(join(tempDir, 'docs', 'features'), { recursive: true });
+
+  // 1. Architecture doc without frontmatter
+  await writeFile(
+    join(tempDir, 'docs', 'architecture', 'system-core.md'),
+    `# System Core Architecture\n\nCore architecture design description.\n`,
+    'utf-8',
+  );
+
+  // 2. Feature doc with invalid status frontmatter
+  await writeFile(
+    join(tempDir, 'docs', 'features', 'export.md'),
+    `---\nstatus: invalid_status_val\n---\n# Data Export Feature\n\nExport data.\n`,
+    'utf-8',
+  );
+
+  const report = await diagnoseDocumentHealth(tempDir);
+  assert.equal(report.stats.frontmatterIssues, 2);
+  assert.ok(report.issues.some((i) => i.type === 'missing-frontmatter' && i.file.includes('system-core.md')));
+  assert.ok(report.issues.some((i) => i.type === 'invalid-frontmatter' && i.file.includes('export.md')));
+
+  const fixRes = await fixDocumentHealth(tempDir);
+  assert.ok(fixRes.fixedCount >= 2);
+  assert.ok(fixRes.healedFrontmatters.length >= 1);
+
+  const healedArch = await (await import('node:fs/promises')).readFile(
+    join(tempDir, 'docs', 'architecture', 'system-core.md'),
+    'utf-8',
+  );
+  assert.match(healedArch, /^---\nkind: architecture/);
+  assert.match(healedArch, /status: active/);
+
+  await rm(tempDir, { recursive: true, force: true });
+});
