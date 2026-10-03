@@ -344,7 +344,8 @@ export async function writeBreadcrumb(
 
     const ts = entry.timestamp || new Date().toISOString();
 
-    if (entry.status === 'done') {
+    const isPlanStep = /^S\d+(?:\.\d+)?/.test(entry.step);
+    if (entry.status === 'done' && isPlanStep) {
       const taskEntries = entry.taskId ? await seedTaskBreadcrumbJsonl(projectRoot, entry.taskId) : null;
       if (taskEntries) {
         const summary = summarizeBreadcrumb(taskEntries);

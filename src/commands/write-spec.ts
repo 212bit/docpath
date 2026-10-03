@@ -10,12 +10,13 @@ import { join } from 'path';
 import { resolveDocpathDir } from '../utils/file.js';
 import { nextCommand, runPostWriteSteps } from './runtime.js';
 import { validateSpecContent } from '../utils/doc-parser.js';
-import { writeActiveTaskFile } from '../utils/task-files.js';
+import { readActiveTaskFile, writeActiveTaskFile } from '../utils/task-files.js';
 import { mutateCurrentState, readCurrentState } from '../utils/workspace.js';
 import { canonicalTaskDir, currentTaskDir } from '../utils/task-files.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 import { readStdin } from '../utils/stdin.js';
 import { backlogIdFromMarkdown, taskIdFromMarkdown } from '../utils/structured-docs.js';
+import { writeBreadcrumb } from '../utils/breadcrumb.js';
 
 /**
  * write-spec 的硬性结构契约（与 doc-parser.validateSpecContent 一一对应）。
@@ -65,6 +66,8 @@ interface WriteSpecOptions {
   content?: string;
   /** 从 stdin 读取 */
   stdin?: boolean;
+  /** 强制覆盖执行中任务的 spec */
+  force?: boolean;
 }
 
 interface SpecTaskIdentity {
@@ -192,9 +195,96 @@ export async function writeSpecCommand(options: WriteSpecOptions): Promise<void>
   if (shouldRequireCleanWorktreeForSpecWrite(current)) {
     assertCleanWorktreeForNewTask(cwd, 'docpath write-spec');
   }
+
+  let prevSpecContent: string | null = null;
+  try {
+    prevSpecContent = await readActiveTaskFile(docpathDir, taskId, 'spec.md');
+  } catch {
+    try {
+      prevSpecContent = await readActiveTaskFile(docpathDir, undefined, 'spec.md');
+    } catch {
+      prevSpecContent = null;
+    }
+  }
+
+  const isRealSpec = (content: string) => {
+    const frCount = (content.match(/^\s*-\s*\[[ xX]\]\s*FR-\d+\s*:/gm) || []).length;
+    const acCount = (content.match(/^\s*-\s*\[[ xX]\]\s*AC-\d+\s*:/gm) || []).length;
+    return frCount > 0 || acCount > 0 || content.trim().split('\n').length > 5;
+  };
+
+  const hasPlan = Boolean(
+    existsSync(join(canonicalTaskDir(docpathDir, taskId), 'plan.md')) ||
+    existsSync(join(currentTaskDir(docpathDir), 'plan.md'))
+  );
+
+  const isExecutingWithPlan = Boolean(
+    current &&
+    current.phase === 'executing' &&
+    current.workflow_profile !== 'quick' &&
+    hasPlan
+  );
+
+  const isOverwriteDiff = Boolean(
+    prevSpecContent &&
+    isRealSpec(prevSpecContent) &&
+    prevSpecContent.trim() !== specContent.trim()
+  );
+
+  let prevLines = 0;
+  let newLines = 0;
+  let lineDelta = 0;
+  let prevFR = 0;
+  let newFR = 0;
+  let prevAC = 0;
+  let newAC = 0;
+
+  if (isOverwriteDiff && prevSpecContent) {
+    prevLines = prevSpecContent.trim().split('\n').length;
+    newLines = specContent.trim().split('\n').length;
+    lineDelta = newLines - prevLines;
+    prevFR = (prevSpecContent.match(/^\s*-\s*\[[ xX]\]\s*FR-\d+\s*:/gm) || []).length;
+    newFR = (specContent.match(/^\s*-\s*\[[ xX]\]\s*FR-\d+\s*:/gm) || []).length;
+    prevAC = (prevSpecContent.match(/^\s*-\s*\[[ xX]\]\s*AC-\d+\s*:/gm) || []).length;
+    newAC = (specContent.match(/^\s*-\s*\[[ xX]\]\s*AC-\d+\s*:/gm) || []).length;
+
+    if (isExecutingWithPlan && !options.force) {
+      console.error('❌  spec.md 覆盖写入被拦截：当前任务已处于 executing 阶段。');
+      console.error('   覆盖写入可能导致已有 plan.md 执行计划与 spec 脱节产生隐式漂移。');
+      console.error('   若确认更新，请追加 --force 参数: docpath write-spec --stdin --force');
+      console.error('');
+      console.error('   变更概览:');
+      console.error(`   · 行数: ${prevLines} -> ${newLines} (${lineDelta >= 0 ? '+' : ''}${lineDelta} 行)`);
+      console.error(`   · FR 功能需求: ${prevFR} -> ${newFR} 项`);
+      console.error(`   · AC 验收标准: ${prevAC} -> ${newAC} 项`);
+      process.exit(1);
+    }
+  }
+
   const { canonicalPath } = await writeActiveTaskFile(docpathDir, taskId, 'spec.md', specContent);
 
   console.log(`✅  spec.md 已写入: ${canonicalPath}`);
+
+  if (isOverwriteDiff) {
+    if (isExecutingWithPlan && options.force) {
+      console.log('⚠️  spec.md 覆盖写入（强制模式 --force）: 任务处于 executing 阶段，请检查 plan.md 是否需要通过 docpath plan 重新生成或对齐。');
+    }
+    console.log('ℹ️  spec.md 覆盖变更概览:');
+    console.log(`   · 行数变动: ${prevLines} -> ${newLines} (${lineDelta >= 0 ? '+' : ''}${lineDelta} 行)`);
+    console.log(`   · FR 功能需求: ${prevFR} -> ${newFR} 项`);
+    console.log(`   · AC 验收标准: ${prevAC} -> ${newAC} 项`);
+
+    try {
+      await writeBreadcrumb(cwd, {
+        taskId,
+        step: 'spec.updated',
+        status: 'done',
+        context: `write-spec 覆盖更新: 行数 ${lineDelta >= 0 ? '+' : ''}${lineDelta}, FR ${prevFR}->${newFR}, AC ${prevAC}->${newAC}`,
+      });
+    } catch {
+      // ignore breadcrumb write failure
+    }
+  }
 
   if (isSameActiveTaskSpecResync(current, specContent)) {
     if (backlogId && current && current.backlog_id !== backlogId) {

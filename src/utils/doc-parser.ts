@@ -98,6 +98,43 @@ export function validateSpecContent(content: string): ValidationResult {
     });
   }
 
+  // 检测非规范决策简报位置（R-449）
+  const lines = content.split('\n');
+  let currentH2: { title: string; line: number } | null = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const h2Match = line.match(/^##\s+(.+)$/);
+    if (h2Match) {
+      const title = h2Match[1].trim();
+      currentH2 = { title, line: i + 1 };
+      if (/^(?:\d+(?:\.\d+)*\s*[-.:、]?\s*)?(?:决策简报|Decision\s*Brief|decision_brief|决策记录)/i.test(title)) {
+        issues.push({
+          message: '非规范决策简报位置：决策简报必须置于 `## 4.1 重大变更门禁` 下的 `### Decision Brief`（否则机器真源 spec.json 无法解析，自愈重建时将被整节丢弃）',
+          line: i + 1,
+          section: line.trim(),
+          field: 'Decision Brief',
+        });
+      }
+      continue;
+    }
+
+    const h3Match = line.match(/^###\s+(.+)$/);
+    if (h3Match) {
+      const title = h3Match[1].trim();
+      if (/^(?:Decision\s*Brief|决策简报|decision_brief|决策记录)/i.test(title)) {
+        const isUnderMajorGate = currentH2 && /^4\.1\s+重大(?:决策|变更)门禁/i.test(currentH2.title);
+        if (!isUnderMajorGate) {
+          issues.push({
+            message: `非规范决策简报位置：\`### Decision Brief\` 必须置于 \`## 4.1 重大变更门禁\` 章节内（当前处于 \`## ${currentH2?.title || '未分节'}\`）`,
+            line: i + 1,
+            section: currentH2 ? `## ${currentH2.title}` : 'root',
+            field: 'Decision Brief',
+          });
+        }
+      }
+    }
+  }
+
   return validationResult(issues);
 }
 

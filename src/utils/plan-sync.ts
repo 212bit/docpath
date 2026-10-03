@@ -144,10 +144,14 @@ export function isSystemWorkflowStep(step: string): boolean {
     'init',
     'install',
     'update',
+    'spec',
+    'write-spec',
   ]);
   if (SYSTEM_EXACT_STEPS.has(normalized)) return true;
   if (
     normalized.startsWith('task.') ||
+    normalized.startsWith('spec.') ||
+    normalized.startsWith('plan.') ||
     normalized.startsWith('worktree.') ||
     normalized.startsWith('session.') ||
     normalized.startsWith('arch.') ||

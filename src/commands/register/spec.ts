@@ -101,11 +101,13 @@ function registerWriteSpecCommand(cli: CAC): void {
     .option('--cwd <path>', '项目目录')
     .option('--content <content>', 'spec 内容（YAML/Markdown）')
     .option('--stdin', '从 stdin 读取内容')
-    .action(async (options: { cwd?: string; content?: string; stdin?: boolean }) => {
+    .option('-f, --force', '强制覆盖已存在或 executing 执行中的 spec.md')
+    .action(async (options: { cwd?: string; content?: string; stdin?: boolean; force?: boolean }) => {
       await writeSpecCommand({
         cwd: options.cwd || process.cwd(),
         content: options.content,
         stdin: options.stdin,
+        force: options.force,
       });
     });
 

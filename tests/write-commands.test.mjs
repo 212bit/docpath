@@ -12,6 +12,9 @@ function mkWorkspace({ phase = 'drafting', gate = 'none', taskId = 'T-WRITE', ta
   const dp = join(cwd, '.docpath');
   mkdirSync(join(dp, 'workspace'), { recursive: true });
   mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
+  if (taskId) {
+    mkdirSync(join(dp, 'tasks', taskId), { recursive: true });
+  }
   writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: write-test\n');
   writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
     level: 2,
@@ -1168,6 +1171,175 @@ describe('write commands', () => {
       assert.equal(result.code, 0);
       assert.doesNotMatch(result.out, /结构契约（缺任一即校验失败）/);
       assert.doesNotMatch(result.out, /最小可过校验骨架/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+  });
+
+  describe('R-449: write-spec 覆盖写告警与非规范 Decision Brief 位置检测', () => {
+    it('rejects misplaced Decision Brief under custom ## 6. 决策简报 heading', () => {
+      const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+      const spec = [
+        '# T-WRITE - 决策简报错位测试',
+        '',
+        '## 1. 背景与动机',
+        '背景内容',
+        '',
+        '## 2. 需求清单',
+        '### 功能需求',
+        '- [ ] FR-1: 功能需求',
+        '',
+        '## 5. 验收标准',
+        '- [ ] AC-1: 验收标准',
+        '',
+        '## 6. 决策简报',
+        '- 当前问题: 自定义章节',
+        '- 推荐方案: 方案 A',
+      ].join('\n');
+
+      const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, spec);
+      assert.equal(result.code, 1);
+      assert.match(result.out, /非规范决策简报位置/);
+      assert.match(result.out, /## 4\.1 重大变更门禁/);
+      assert.match(result.out, /### Decision Brief/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+
+    it('rejects misplaced ### Decision Brief outside ## 4.1 section', () => {
+      const cwd = mkWorkspace({ phase: 'drafting', gate: 'none' });
+      const spec = [
+        '# T-WRITE - 决策简报错位测试 2',
+        '',
+        '## 1. 背景与动机',
+        '背景内容',
+        '',
+        '## 2. 需求清单',
+        '### 功能需求',
+        '- [ ] FR-1: 功能需求',
+        '',
+        '## 4. 关键决策',
+        '### Decision Brief',
+        '- 当前问题: 放在了 4 节而不是 4.1 节',
+        '',
+        '## 5. 验收标准',
+        '- [ ] AC-1: 验收标准',
+      ].join('\n');
+
+      const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, spec);
+      assert.equal(result.code, 1);
+      assert.match(result.out, /非规范决策简报位置/);
+      assert.match(result.out, /## 4\. 关键决策/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+
+    it('prints diff summary and writes breadcrumb when overwriting spec in drafting phase', () => {
+      const cwd = mkWorkspace({ phase: 'drafting', gate: 'none', taskId: 'T-WRITE', taskTitle: 'Write Commands' });
+      const initialSpec = validSpec('T-WRITE', 'Initial Title');
+      runWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, initialSpec);
+
+      const modifiedSpec = [
+        '# T-WRITE - Updated Title',
+        '',
+        '## 1. 背景与动机',
+        '背景内容变动行 1',
+        '背景内容变动行 2',
+        '',
+        '## 2. 需求清单',
+        '### 功能需求',
+        '- [ ] FR-1: 功能需求 1',
+        '- [ ] FR-2: 功能需求 2',
+        '',
+        '## 4.1 重大变更门禁',
+        '### Decision Brief',
+        '- 用户确认: 无',
+        '',
+        '## 5. 验收标准',
+        '- [ ] AC-1: 验收 1',
+        '- [ ] AC-2: 验收 2',
+      ].join('\n');
+
+      const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, modifiedSpec);
+      assert.equal(result.code, 0);
+      assert.match(result.out, /spec\.md 覆盖变更概览:/);
+      assert.match(result.out, /FR 功能需求: 1 -> 2 项/);
+      assert.match(result.out, /AC 验收标准: 1 -> 2 项/);
+
+      const breadcrumbContent = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'breadcrumb.jsonl'), 'utf-8');
+      assert.match(breadcrumbContent, /spec\.updated/);
+      assert.match(breadcrumbContent, /FR 1->2/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+
+    it('blocks spec overwrite in executing phase without --force', () => {
+      const cwd = mkWorkspace({ phase: 'executing', gate: 'none', taskId: 'T-WRITE', taskTitle: 'Write Commands' });
+      const initialSpec = validSpec('T-WRITE', 'Initial Title');
+      writeFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.md'), initialSpec);
+      writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), initialSpec);
+      writeFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.md'), '## 执行计划\n\n### S1: test\n- **描述**: test\n- **验收条件**: test\n- **依赖**: 无\n');
+      writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), '## 执行计划\n\n### S1: test\n- **描述**: test\n- **验收条件**: test\n- **依赖**: 无\n');
+
+      const modifiedSpec = [
+        '# T-WRITE - Updated Title In Executing',
+        '',
+        '## 1. 背景与动机',
+        '变更新增背景',
+        '',
+        '## 2. 需求清单',
+        '### 功能需求',
+        '- [ ] FR-1: 功能需求 1',
+        '- [ ] FR-2: 新增需求',
+        '',
+        '## 4.1 重大变更门禁',
+        '### Decision Brief',
+        '- 用户确认: 无',
+        '',
+        '## 5. 验收标准',
+        '- [ ] AC-1: 验收 1',
+      ].join('\n');
+
+      const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin`, cwd, modifiedSpec);
+      assert.equal(result.code, 1);
+      assert.match(result.out, /spec\.md 覆盖写入被拦截：当前任务已处于 executing 阶段/);
+      assert.match(result.out, /--force/);
+      assert.match(result.out, /FR 功能需求: 1 -> 2 项/);
+      rmSync(cwd, { recursive: true, force: true });
+    });
+
+    it('allows spec overwrite in executing phase with --force and outputs plan drift warning', () => {
+      const cwd = mkWorkspace({ phase: 'executing', gate: 'none', taskId: 'T-WRITE', taskTitle: 'Write Commands' });
+      const initialSpec = validSpec('T-WRITE', 'Initial Title');
+      writeFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.md'), initialSpec);
+      writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'spec.md'), initialSpec);
+      writeFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'plan.md'), '## 执行计划\n\n### S1: test\n- **描述**: test\n- **验收条件**: test\n- **依赖**: 无\n');
+      writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), '## 执行计划\n\n### S1: test\n- **描述**: test\n- **验收条件**: test\n- **依赖**: 无\n');
+
+      const modifiedSpec = [
+        '# T-WRITE - Updated Title In Executing',
+        '',
+        '## 1. 背景与动机',
+        '变更新增背景',
+        '',
+        '## 2. 需求清单',
+        '### 功能需求',
+        '- [ ] FR-1: 功能需求 1',
+        '- [ ] FR-2: 新增需求',
+        '',
+        '## 4.1 重大变更门禁',
+        '### Decision Brief',
+        '- 用户确认: 无',
+        '',
+        '## 5. 验收标准',
+        '- [ ] AC-1: 验收 1',
+      ].join('\n');
+
+      const result = runResultWithInput(`write-spec --cwd ${cwd} --stdin --force`, cwd, modifiedSpec);
+      assert.equal(result.code, 0);
+      assert.match(result.out, /spec\.md 已写入/);
+      assert.match(result.out, /强制模式 --force/);
+      assert.match(result.out, /请检查 plan\.md 是否需要通过 docpath plan 重新生成或对齐/);
+      assert.match(result.out, /FR 功能需求: 1 -> 2 项/);
+
+      const writtenSpec = readFileSync(join(cwd, '.docpath', 'tasks', 'T-WRITE', 'spec.md'), 'utf-8');
+      assert.match(writtenSpec, /FR-2: 新增需求/);
       rmSync(cwd, { recursive: true, force: true });
     });
   });
