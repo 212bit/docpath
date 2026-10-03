@@ -148,5 +148,59 @@ describe('docpath start: 一键冷启动任务', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('start 智能识别标题中内嵌的（R-xxx）/ [R-xxx]，复用既有 Backlog 而不产生身份漂移与重复创建', () => {
+    const cwd = mkRepo();
+    try {
+      // 1. 预先创建 R-180 backlog 条目
+      run(['backlog', 'add', '--title', 'dead-drop 机密性信封：候选区加密', '--priority', 'P2', '--level', '2', '--background', '加密载荷背景', '--acceptance', 'AC-1: 密文不可读'], cwd);
+
+      const backlogFilesBefore = readdirSync(join(cwd, '.docpath', 'backlog')).filter(f => f.startsWith('R-') && f.endsWith('.md'));
+      assert.equal(backlogFilesBefore.length, 1);
+      const originalId = backlogFilesBefore[0].replace('.md', '').split('-').slice(0, 2).join('-');
+
+      // 2. 使用含中文全角括号的标题执行 start
+      const out = run(['start', `dead-drop 机密性信封：候选区加密（${originalId}）`, '--draft'], cwd);
+      assert.match(out, /从标题中识别到既有 Backlog 条目:/);
+      assert.match(out, new RegExp(`一键拉起任务并启动执行 \\(${originalId}\\)`));
+      assert.match(out, /已拉起并启动步骤 S1/);
+
+      // 3. 验证没有创建重复的 R-(N+1) 条目
+      const backlogFilesAfter = readdirSync(join(cwd, '.docpath', 'backlog')).filter(f => f.startsWith('R-') && f.endsWith('.md'));
+      assert.equal(backlogFilesAfter.length, 1, '不应创建多余的 Backlog 条目');
+
+      // 4. 验证状态机绑定的是既有 ID
+      const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+      assert.equal(state.backlog_id, originalId);
+      assert.equal(state.phase, 'executing');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('start 智能匹配既有活跃 Backlog 标题，避免重复创建条目', () => {
+    const cwd = mkRepo();
+    try {
+      // 1. 预先创建 backlog 条目
+      run(['backlog', 'add', '--title', '优化生命周期调度器', '--priority', 'P1', '--level', '1', '--background', '调度优化', '--acceptance', 'AC-1: 调度正常'], cwd);
+
+      const backlogFilesBefore = readdirSync(join(cwd, '.docpath', 'backlog')).filter(f => f.startsWith('R-') && f.endsWith('.md'));
+      const originalId = backlogFilesBefore[0].replace('.md', '').split('-').slice(0, 2).join('-');
+
+      // 2. 传入同名标题（不带 ID）
+      const out = run(['start', '优化生命周期调度器', '--draft'], cwd);
+      assert.match(out, /匹配到既有活跃 Backlog 条目:/);
+      assert.match(out, new RegExp(`一键拉起任务并启动执行 \\(${originalId}\\)`));
+
+      // 3. 验证未创建重复条目
+      const backlogFilesAfter = readdirSync(join(cwd, '.docpath', 'backlog')).filter(f => f.startsWith('R-') && f.endsWith('.md'));
+      assert.equal(backlogFilesAfter.length, 1);
+
+      const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+      assert.equal(state.backlog_id, originalId);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
 

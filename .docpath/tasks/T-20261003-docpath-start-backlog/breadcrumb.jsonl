@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-start-backlog","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 docpath start 智能关联既有 Backlog 防止重复创建","timestamp":"2026-10-03T10:25:02.536Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-start-backlog","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-03T10:27:15.322Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-start-backlog","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 身份漂移","timestamp":"2026-10-03T10:27:15.631Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-start-backlog","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-03T10:27:46.312Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-start-backlog","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-03T10:30:18.353Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-start-backlog","step":"review","status":"done","context":"代码审查: 0 错误, 2 警告, 0 提示","timestamp":"2026-10-03T10:30:19.305Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-docpath-start-backlog","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-03T10:30:21.112Z"}

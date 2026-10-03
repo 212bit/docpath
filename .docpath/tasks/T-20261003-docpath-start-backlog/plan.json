@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-03T10:27:46.320Z",
+    "updated_at": "2026-10-03T10:27:46.320Z",
+    "content_sha256": "a304273e22f1cc62a7c965d5f152180a221aff08a166ec597eb49489d7142e80"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-03T10:27:46.320Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 docpath start 智能关联既有 Backlog 防止重复创建",
+      "description": "落地 FR-1: docpath start 智能关联既有 Backlog 防止重复创建，并完成模块定向自验。",
+      "acceptance": "AC-1: docpath start 智能关联既有 Backlog 防止重复创建 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 身份漂移",
+      "description": "落地 FR-2: 身份漂移，并完成模块定向自验。",
+      "acceptance": "AC-2: 身份漂移 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-474 与任务 T-20261003-docpath-start-backlog 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

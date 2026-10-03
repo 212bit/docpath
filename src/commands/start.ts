@@ -13,7 +13,8 @@ import { backlogCommand } from './backlog.js';
 import { planCommand } from './plan.js';
 import { goCommand } from './go.js';
 import { readCurrentState } from '../utils/workspace.js';
-import { createBacklogItem, refreshBacklogIndex } from '../engine/backlog.js';
+import { createBacklogItem, listBacklogItems, readBacklogItem, refreshBacklogIndex } from '../engine/backlog.js';
+import { cleanBacklogTitle } from '../utils/backlog-registry.js';
 import { assertCleanWorktreeForNewTask } from '../utils/git-dirty-guard.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
@@ -28,10 +29,66 @@ export interface StartOptions {
   adopt?: boolean;
 }
 
+async function resolveBacklogIdForStart(
+  cwd: string,
+  rawInput: string,
+): Promise<{ targetId: string; isNewTitle: boolean }> {
+  const input = rawInput.trim();
+
+  // 1. 纯 Backlog ID（如 R-180 / r-180）
+  if (/^R-\d+$/i.test(input)) {
+    return { targetId: input.toUpperCase(), isNewTitle: false };
+  }
+
+  // 2. 标题中包含内嵌 Backlog ID（如 "dead-drop 机密性信封：候选区加密（R-180）" / "[R-180] ..." / "R-180: ..."）
+  const embeddedIdMatch = input.match(/(?:[（(【\[]|\b)(R-\d+)(?:[）)】\]]|\b)/i);
+  if (embeddedIdMatch) {
+    const embeddedId = embeddedIdMatch[1].toUpperCase();
+    const existingItem = await readBacklogItem(cwd, embeddedId);
+    if (existingItem && existingItem.status !== 'done' && existingItem.status !== 'dropped') {
+      console.log(`💡  从标题中识别到既有 Backlog 条目: ${existingItem.id} ("${existingItem.title}")，直接拉起...\n`);
+      return { targetId: existingItem.id, isNewTitle: false };
+    }
+  }
+
+  // 3. 匹配既有活跃 Backlog 标题（同名或归一化匹配）
+  const normalizeForMatch = (t: string) => cleanBacklogTitle(t).toLowerCase().replace(/[\s\-_:：,.，。()（）[\]【】]/g, '');
+  const inputNormalized = normalizeForMatch(input);
+  if (inputNormalized) {
+    const activeItems = await listBacklogItems(cwd);
+    const matchedItem = activeItems.find((item) => {
+      if (item.status === 'done' || item.status === 'dropped') return false;
+      return normalizeForMatch(item.title) === inputNormalized;
+    });
+
+    if (matchedItem) {
+      console.log(`💡  匹配到既有活跃 Backlog 条目: ${matchedItem.id} ("${matchedItem.title}")，直接拉起...\n`);
+      return { targetId: matchedItem.id, isNewTitle: false };
+    }
+  }
+
+  // 4. 确属新标题，自动创建 Backlog 并拉起
+  console.log(`💡  检测到任务标题 "${input}"，自动创建 Backlog 并一键拉起...\n`);
+  const item = await createBacklogItem(cwd, {
+    title: input,
+    status: 'proposed',
+    priority: 'P2',
+    level: 2,
+    source: 'docpath start',
+    readiness: 'raw',
+    evidence: { brainstorm: null, analysis: null, spec: null, decision_brief: null, user_confirmed: null },
+    links: { task: null, spec: null },
+    created_at: new Date().toISOString().slice(0, 10),
+    body: `## 背景\n\n- ${input}\n\n## 验收\n\n- 满足需求并通过门禁`,
+  });
+  await refreshBacklogIndex(cwd);
+  return { targetId: item.id, isNewTitle: true };
+}
+
 export async function startCommand(options: StartOptions): Promise<void> {
   const { cwd } = options;
-  let targetId = options.id?.trim();
-  if (!targetId) {
+  const rawTarget = options.id?.trim();
+  if (!rawTarget) {
     throw new Error('docpath start 需要提供 Backlog 条目 ID 或任务标题，例如: docpath start R-101 或 docpath start "优化生命周期"');
   }
 
@@ -50,27 +107,8 @@ export async function startCommand(options: StartOptions): Promise<void> {
     assertCleanWorktreeForNewTask(cwd, 'docpath start');
   }
 
-  let isTitle = false;
-  // 如果传入的不是 R-xxx 格式，则判定为按标题一键拉起新任务（自动捕获 Backlog）
-  if (!/^R-\d+$/i.test(targetId)) {
-    isTitle = true;
-    const title = targetId;
-    console.log(`💡  检测到任务标题 "${title}"，自动创建 Backlog 并一键拉起...\n`);
-    const item = await createBacklogItem(cwd, {
-      title,
-      status: 'proposed',
-      priority: 'P2',
-      level: 2,
-      source: 'docpath start',
-      readiness: 'raw',
-      evidence: { brainstorm: null, analysis: null, spec: null, decision_brief: null, user_confirmed: null },
-      links: { task: null, spec: null },
-      created_at: new Date().toISOString().slice(0, 10),
-      body: `## 背景\n\n- ${title}\n\n## 验收\n\n- 满足需求并通过门禁`,
-    });
-    await refreshBacklogIndex(cwd);
-    targetId = item.id;
-  }
+  // 3. 智能解析 Backlog ID（ID / 内嵌 ID 提取 / 既有同名匹配 / 全新创建）
+  const { targetId, isNewTitle } = await resolveBacklogIdForStart(cwd, rawTarget);
 
   console.log(`🚀  docpath start: 一键拉起任务并启动执行 (${targetId})\n`);
 
@@ -79,7 +117,7 @@ export async function startCommand(options: StartOptions): Promise<void> {
     cwd,
     action: 'promote' as const,
     id: targetId,
-    draft: options.draft ?? (isTitle ? true : undefined),
+    draft: options.draft ?? (isNewTitle ? true : undefined),
     agent: options.agent,
     adopt: options.adopt,
   };
