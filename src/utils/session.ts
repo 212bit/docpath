@@ -198,3 +198,36 @@ export async function listActiveSessions(
   return active;
 }
 
+/**
+ * 校验当前任务未被其他活体会话（Live Session）持有。
+ * 若任务被其他正在运行的进程（Live PID + 未超期心跳）持有，则抛错拦截，防止并发踩踏。
+ */
+export async function assertTaskNotLeasedByOtherLiveSession(
+  cwd: string,
+  taskId: string,
+  options: {
+    command: string;
+    force?: boolean;
+    selfSessionId?: string;
+  }
+): Promise<void> {
+  if (options.force) return;
+  if (!taskId) return;
+
+  const currentPid = process.pid;
+  const activeSessions = await listActiveSessions(cwd);
+
+  const conflictingSession = activeSessions.find(
+    (s) => s.task_id === taskId && s.pid !== currentPid && isProcessAlive(s.pid)
+  );
+
+  if (conflictingSession) {
+    throw new Error(
+      `${options.command}: 当前活跃任务 ${taskId} 正在由活跃会话 '${conflictingSession.session_id}' (PID: ${conflictingSession.pid}, 命令: ${conflictingSession.command}) 执行中，禁止跨会话强行挂起/覆盖！\n` +
+      `   💡 解决方案:\n` +
+      `   - 多 Agent 并行开发请使用隔离工作区: docpath worktree create <name>\n` +
+      `   - 若原会话进程已意外终止但心跳残留，可使用 --force 强制执行`
+    );
+  }
+}
+

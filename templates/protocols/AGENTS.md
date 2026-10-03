@@ -95,7 +95,8 @@ docpath gc                         # Workspace historical task cleanup
 
 Use `docpath worktree create <name>` only for parallel multi-agent development.
 - **Workflow**: `docpath worktree create <name>` → `cd .worktrees/<name>` → `docpath start "<title>" --draft` → `docpath step-pass --commit` → `cd ../.. && docpath worktree finish <name>`.
-- **Adoption & Stash**: When existing uncommitted code exists, use `--adopt` (`docpath start "<title>" --draft --adopt`) or `docpath task stash "WIP msg"`.
+- **Adoption & Stash**: When existing uncommitted code exists in single-agent serial development, use `--adopt` (`docpath start "<title>" --draft --adopt`) or `docpath task stash "WIP msg"`.
+- **Live Lease & Multi-Agent Preemption Redline**: Never run `task stash` / `abort` / `reset` to preempt or overwrite another running agent's task in a shared worktree (enforced by active session lease guard; `--force` is strictly reserved for orphaned process cleanup). For any concurrent multi-agent development, **MUST** create a dedicated worktree (`docpath worktree create <name>`).
 - **Safety Snapshots**: `docpath worktree remove` automatically creates emergency snapshots under `refs/docpath-backups/` if uncommitted changes exist.
 - **Collaboration**: `docpath worktree matrix` (live progress across agents), `docpath worktree broadcast "<msg>"` (broadcast breaking updates).
 - Details & isolation model: see `docs/features/worktree-workflow.md`.

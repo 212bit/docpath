@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-03T16:22:07.491Z",
+    "updated_at": "2026-10-03T16:22:07.491Z",
+    "content_sha256": "6024dfce862ab2a62c11577275b21bb98490895c04380c4847a4a3f3eb7752a3"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-03T16:22:07.491Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 防跨会话意外挂起",
+      "description": "落地 FR-1: 防跨会话意外挂起，并完成模块定向自验。",
+      "acceptance": "AC-1: 防跨会话意外挂起 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 覆盖",
+      "description": "落地 FR-2: 覆盖，并完成模块定向自验。",
+      "acceptance": "AC-2: 覆盖 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-479 与任务 T-20261003-task-stash-start 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

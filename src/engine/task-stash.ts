@@ -135,17 +135,25 @@ export function findMatchingStash(stashes: TaskStashMetadata[], query?: string):
   return partial ?? null;
 }
 
+import { assertTaskNotLeasedByOtherLiveSession } from '../utils/session.js';
+
 /**
  * 暂存当前活跃任务
  */
 export async function stashTask(
   cwd: string,
-  options: { message?: string; withGit?: boolean } = {},
+  options: { message?: string; withGit?: boolean; force?: boolean } = {},
 ): Promise<TaskStashResult> {
   const current = await readCurrentState(cwd);
   if (!current?.task_id || current.phase === 'idle' || current.phase === 'completed') {
     throw new Error(`docpath task stash: 当前没有可暂存的活跃任务（当前 phase=${current?.phase || 'idle'}）`);
   }
+
+  // 1. 活体租约互斥校验：防止跨会话并发强行挂起另一个正在活跃执行的 Agent 任务
+  await assertTaskNotLeasedByOtherLiveSession(cwd, current.task_id, {
+    command: 'docpath task stash',
+    force: options.force,
+  });
 
   const docpathDir = await resolveDocpathDir(cwd);
   const taskId = current.task_id;

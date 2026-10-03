@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-task-stash-start","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 防跨会话意外挂起","timestamp":"2026-10-03T16:18:49.419Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-task-stash-start","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-03T16:21:38.822Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-task-stash-start","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 覆盖","timestamp":"2026-10-03T16:21:45.406Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-task-stash-start","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-03T16:22:07.484Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-task-stash-start","step":"check","status":"done","context":"质量检查通过 (16 项)","timestamp":"2026-10-03T16:24:22.593Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-task-stash-start","step":"review","status":"done","context":"代码审查: 0 错误, 10 警告, 1 提示","timestamp":"2026-10-03T16:24:24.109Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261003-task-stash-start","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-03T16:24:25.816Z"}

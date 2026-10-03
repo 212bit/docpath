@@ -102,6 +102,15 @@ export async function startCommand(options: StartOptions): Promise<void> {
     );
   }
 
+  // 1.1 活体租约互斥拦截：防止跨会话强行抢占或覆盖正在执行的任务
+  if (current?.task_id) {
+    const { assertTaskNotLeasedByOtherLiveSession } = await import('../utils/session.js');
+    await assertTaskNotLeasedByOtherLiveSession(cwd, current.task_id, {
+      command: 'docpath start',
+      force: options.adopt,
+    });
+  }
+
   // 2. 脏工作区前置拦截：未显式指定 --adopt 时严格禁止在 dirty worktree 上启动新任务
   if (!options.adopt) {
     assertCleanWorktreeForNewTask(cwd, 'docpath start');

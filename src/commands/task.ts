@@ -31,6 +31,8 @@ import {
   syncActiveTaskFiles,
 } from '../utils/task-files.js';
 
+import { assertTaskNotLeasedByOtherLiveSession } from '../utils/session.js';
+
 export interface TaskCommandOptions {
   cwd: string;
   action?: string;
@@ -45,6 +47,7 @@ export interface TaskCommandOptions {
   dryRun?: boolean;
   from?: 'canonical' | 'current' | 'auto';
   auto?: boolean;
+  force?: boolean;
 }
 
 function nowIso(): string {
@@ -97,6 +100,11 @@ async function dropLinkedBacklog(cwd: string, taskId: string): Promise<string | 
 
 async function taskAbort(options: TaskCommandOptions): Promise<void> {
   const current = assertActiveTask(await readCurrentState(options.cwd), 'abort');
+  await assertTaskNotLeasedByOtherLiveSession(options.cwd, current.task_id, {
+    command: 'docpath task abort',
+    force: options.force,
+  });
+
   const docpathDir = await resolveDocpathDir(options.cwd);
   const taskId = current.task_id;
 
@@ -126,6 +134,11 @@ async function taskAbort(options: TaskCommandOptions): Promise<void> {
 
 async function taskReset(options: TaskCommandOptions): Promise<void> {
   const current = assertActiveTask(await readCurrentState(options.cwd), 'reset');
+  await assertTaskNotLeasedByOtherLiveSession(options.cwd, current.task_id, {
+    command: 'docpath task reset',
+    force: options.force,
+  });
+
   const docpathDir = await resolveDocpathDir(options.cwd);
   const taskId = current.task_id;
 
@@ -310,6 +323,7 @@ async function taskStashCommand(options: TaskCommandOptions, message?: string): 
   const result = await stashTask(options.cwd, {
     message: message || options.message,
     withGit,
+    force: options.force,
   });
 
   if (options.json) {

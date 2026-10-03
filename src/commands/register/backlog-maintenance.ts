@@ -138,10 +138,11 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .option('--dry-run', 'repair/sync: 仅预览修复动作，不修改文件')
     .option('-m, --message <text>', 'stash/switch 备注说明')
     .option('--no-git', '跳过 Git 变更暂存/恢复')
+    .option('-f, --force', '强制执行操作，忽略跨会话活跃租约冲突')
     .option('--all', 'drop: 丢弃所有暂存')
     .option('--agent', '输出 Agent 机器视图')
     .option('--json', '输出 JSON 格式')
-    .action(async (action: string | undefined, target: string | undefined, extra: string | undefined, options: { cwd?: string; from?: 'canonical' | 'current' | 'auto'; auto?: boolean; 'dry-run'?: boolean; dryRun?: boolean; message?: string; 'no-git'?: boolean; noGit?: boolean; all?: boolean; agent?: boolean; json?: boolean }) => {
+    .action(async (action: string | undefined, target: string | undefined, extra: string | undefined, options: { cwd?: string; from?: 'canonical' | 'current' | 'auto'; auto?: boolean; 'dry-run'?: boolean; dryRun?: boolean; message?: string; 'no-git'?: boolean; noGit?: boolean; all?: boolean; force?: boolean; agent?: boolean; json?: boolean }) => {
       const normalized = action?.trim().toLowerCase();
       if (normalized === 'drift' || normalized === 'sync' || normalized === 'repair') {
         await taskFileSyncCommand({
@@ -163,6 +164,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         message: options.message,
         noGit: options['no-git'] ?? options.noGit,
         all: options.all,
+        force: options.force,
         agent: options.agent,
         json: options.json,
         dryRun: options.dryRun || options['dry-run'],
