@@ -3,12 +3,12 @@
   "kind": "plan",
   "source": {
     "kind": "markdown",
-    "created_at": "2026-10-02T15:42:55.893Z",
-    "updated_at": "2026-10-02T15:42:55.893Z",
-    "content_sha256": "2e94b79e21e58cb2c52c419723753712e4c00a4cef8b004e29acf3e72c46e1e5"
+    "created_at": "2026-10-02T15:43:19.375Z",
+    "updated_at": "2026-10-02T15:43:19.375Z",
+    "content_sha256": "36670c3ebda9948f474c4dd0078c2643587433ce19f73d717261156287846c31"
   },
   "title": "执行计划",
-  "generated_at": "2026-10-02T15:42:55.893Z",
+  "generated_at": "2026-10-02T15:43:19.375Z",
   "steps": [
     {
       "id": "S1",
@@ -24,7 +24,7 @@
       "description": "落地 FR-2: 暂存区自愈守卫，并完成模块定向自验。",
       "acceptance": "AC-2: 暂存区自愈守卫 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-473 与任务 T-20261002-git 建立双向关联",
       "dependencies": "S1",
-      "status": "pending"
+      "status": "done"
     }
   ]
 }
