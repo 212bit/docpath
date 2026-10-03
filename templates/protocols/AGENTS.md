@@ -53,8 +53,7 @@ docpath gc                         # Workspace historical task cleanup
    - Retrieve topics via token-budgeted commands (`docpath reveal --topic <kw> --level 1`, `docpath context --smart --max-tokens 2000`).
    - Prune context bloat with `docpath budget --agent` / `docpath budget --prune`.
 
-4. **Master-Worker Subagents & Session Rotation**:
-   - **Strictly Prohibit Continuous Long Sessions Across Tasks**: After completing a task's `done --commit` archiving, **MUST terminate the current session**. Start the next task in a brand new session (`docpath start` / `docpath next --agent`) to completely eliminate $O(N^2)$ quadratic token explosion.
+4. **Master-Worker Subagents & Delegation**:
    - **Master-Worker Step Dispatching**: The master agent keeps a minimal context (only inspecting `docpath next`, dispatching tasks, and verifying outcomes). Avoid reading large files or engaging in multi-turn deep editing in the master session. For complex steps (S1..Sn), dispatch dedicated worker subagents via `invoke_subagent`. Workers only read `wip-note.md`, perform the step, exit via `step-pass`, keeping the master context clean.
    - **Bounded Research Scope**: Never issue unconstrained research commands like "thoroughly scan the whole codebase". Research subagent tasks must explicitly specify target paths (≤ 3 files) and a single concrete question, destroying the subagent immediately upon completion.
 
@@ -68,6 +67,29 @@ docpath gc                         # Workspace historical task cleanup
    - Prefer `docpath step-pass --commit` / `docpath done --commit` / `docpath quick-done --commit` (which invoke `docpath agent done`).
    - Stage all modified tracked files (`git add .`) including tracked `.docpath/` assets (backlog, rules, AGENTS.md).
    - Local commits only; do not push without explicit user request.
+
+## Living Documentation & Document Standards
+
+1. **Discovery & Inspection (`docpath doc` / `docs`)**:
+   - Fast Lookup: Use `docpath doc <keyword>` (or `docpath docs search <keyword>`) to retrieve indexed architecture and feature documentation without brute-force filesystem scans.
+   - Architecture Overview: Use `docpath doc arch` to view the bird's-eye matrix of core architecture, protocol designs, and ADRs.
+   - Token-Budgeted Context: Use `docpath reveal --topic <kw> --level 1` or `docpath context --smart --max-tokens 2000` for compact context injection.
+
+2. **Strict Document Writing Conventions (文档编写规范)**:
+   - **Mandatory Synchronization**: When implementing architectural changes, new features, protocol adjustments, or public contracts, **MUST** update or create corresponding documentation under `docs/` in the same change.
+   - **Structured Hierarchy**: Follow standard document structure:
+     - Clear Title & Metadata (YAML frontmatter with `kind: architecture|design|feature|reference`, `scope`, `level: 1|2|3`, `status: active|wip|deprecated`).
+     - Problem Context & Motivation (Why this design exists).
+     - Architecture & Technical Decisions (Core design, invariants, and trade-offs).
+     - Interfaces, Data Contracts & Boundaries (Explicit contracts, schemas, error semantics).
+     - Verification & Evidence (How the design is validated).
+   - **Authentic Code & Symbol References**: Never invent APIs, file paths, or CLI flags. All file links (`file:///...` or repo-relative `docs/...`, `src/...`) and symbol references (`functionName`, `ClassName`) must strictly exist in the codebase.
+   - **No Orphan or Dead Docs**: Maintain bi-directional coherence; avoid creating disconnected documents that drift out of sync with code reality.
+
+3. **Governance, Health Checks & Auto-Healing**:
+   - **Index Sync**: Run `docpath docs scan` or `docpath docs sync` after adding or updating documentation to refresh `.docpath/docs-index.json`.
+   - **Doc Health Checks**: Run `docpath docs doctor` (or `docpath docs lint`) to verify document graph consistency, validate link targets, check for missing frontmatter, and detect orphan documents.
+   - **Auto-Fix**: Use `docpath docs fix` (or `docpath doc guard --staged`) to automatically heal fixable lint issues (e.g. frontmatter auto-fill, link normalizations) before closing the task.
 
 ## Worktree Concurrent Development
 

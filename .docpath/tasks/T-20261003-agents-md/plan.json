@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-03T10:37:05.739Z",
+    "updated_at": "2026-10-03T10:37:05.739Z",
+    "content_sha256": "7de1cb01319adc388367db5120bd8a25c0f37ddb3d75b48ddd928a377fe698cc"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-03T10:37:05.739Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 更新 AGENTS.md 协议：删除跨任务会话终止限制并补充活文档编写规范",
+      "description": "完成 FR-1: 更新 AGENTS.md 协议：删除跨任务会话终止限制并补充活文档编写规范，随做随验（agent_flow 压缩计划，R-334）。",
+      "acceptance": "AC-1: 更新 AGENTS.md 协议：删除跨任务会话终止限制并补充活文档编写规范 满足需求并通过门禁；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-475 与任务 T-20261003-agents-md 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}
