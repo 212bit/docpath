@@ -320,3 +320,61 @@ export function selectCurrentFocus(
 
   return null;
 }
+
+/**
+ * 根据任务标题/需求关键词在 docs-index.json 中智能匹配最相关的活文档（最多 2 篇）。
+ */
+export async function matchRelevantLivingDocs(
+  docpathDir: string,
+  keywords: string[],
+  maxCount = 2,
+): Promise<Array<{ path: string; title: string; recommended_reveal: string }>> {
+  try {
+    const indexPath = join(docpathDir, 'docs-index.json');
+    if (!existsSync(indexPath)) return [];
+    const raw = JSON.parse(await readFile(indexPath, 'utf-8')) as {
+      entries?: Array<{ path: string; title: string; archive?: boolean; is_core?: boolean; tier?: string; topic_tags?: string[] }>;
+    };
+    const entries = raw.entries || [];
+    if (entries.length === 0) return [];
+
+    const activeDocs = entries.filter((e) => !e.archive && (e.path.startsWith('docs/') || e.path.startsWith('rules/') || e.is_core));
+    const scored: Array<{ doc: { path: string; title: string; recommended_reveal: string }; score: number }> = [];
+
+    const cleanKeywords = keywords
+      .map((k) => k.toLowerCase().trim())
+      .filter((k) => k.length >= 2 && !['实现', '验证', '优化', '修复', '更新', '完成', '步骤', 'task', 'docpath'].includes(k));
+
+    if (cleanKeywords.length === 0) return [];
+
+    for (const doc of activeDocs) {
+      let score = 0;
+      const pathLower = doc.path.toLowerCase();
+      const titleLower = (doc.title || '').toLowerCase();
+      const tags = (doc.topic_tags || []).map((t) => t.toLowerCase());
+
+      for (const kw of cleanKeywords) {
+        if (titleLower.includes(kw)) score += 5;
+        if (pathLower.includes(kw)) score += 3;
+        if (tags.some((t) => t.includes(kw))) score += 4;
+      }
+
+      if (score > 0) {
+        const topicSlug = doc.path.split('/').pop()?.replace(/\.md$/, '') || doc.title;
+        scored.push({
+          doc: {
+            path: doc.path,
+            title: doc.title || doc.path,
+            recommended_reveal: `docpath reveal --topic ${topicSlug} --level 1`,
+          },
+          score,
+        });
+      }
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, maxCount).map((s) => s.doc);
+  } catch {
+    return [];
+  }
+}

@@ -23,12 +23,13 @@ import { classifyCandidateBlocks, lessonCandidateKey, parseCandidateBlocks } fro
 
 import {
   loadRecentDecisions,
+  matchRelevantLivingDocs,
   extractSpecSummary,
   selectCurrentFocus,
   type DecisionEntry,
   type SpecSummary,
 } from './context-injection.js';
-export { loadRecentDecisions, extractSpecSummary, selectCurrentFocus } from './context-injection.js';
+export { loadRecentDecisions, matchRelevantLivingDocs, extractSpecSummary, selectCurrentFocus } from './context-injection.js';
 export type { DecisionEntry, SpecSummary } from './context-injection.js';
 
 const SPEC_TRUTH_SYNC_ROUTE_HINT =
@@ -114,6 +115,9 @@ export interface AgentOutput {
   generated_at: string;
 }
 
+import type { RelevantLivingDoc } from '../../types/agent-output.js';
+export type { RelevantLivingDoc } from '../../types/agent-output.js';
+
 export type AgentOutputContext = {
   docpathDir: string;
   state: Awaited<ReturnType<typeof readCurrentState>>;
@@ -140,6 +144,7 @@ export type AgentOutputContext = {
   contextIndexLeaves: HybridContextIndexEntry[] | null;
   specSummary: SpecSummary | null;
   recentDecisions: DecisionEntry[];
+  relevantLivingDocs?: RelevantLivingDoc[];
 };
 
 
@@ -905,13 +910,14 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
     keywords.push(...state.current_step.split(/[\s_\-–—,，。：:（）\(\)\[\]]+/u).filter((t) => t.length > 1));
   }
   const taskFiles: string[] = Array.isArray(dirtyWorktree?.files) ? dirtyWorktree.files : [];
-  const [recentDecisions] = await Promise.all([
+  const [recentDecisions, relevantLivingDocs] = await Promise.all([
     loadRecentDecisions(docpathDir, {
       count: 2,
       queryKeywords: Array.from(new Set(keywords)),
       files: taskFiles,
       strictRelevance: true,
     }),
+    matchRelevantLivingDocs(docpathDir, Array.from(new Set(keywords)), 2),
   ]);
 
   return {
@@ -940,6 +946,7 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
     contextIndexLeaves,
     specSummary,
     recentDecisions,
+    relevantLivingDocs,
   };
 }
 

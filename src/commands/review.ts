@@ -214,6 +214,22 @@ async function analyzeChangedFiles(cwd: string, changedFiles: string[]): Promise
     // 容错处理
   }
 
+  // 文档防腐与代码同步检查 (Docs Sync Guard)
+  const hasDocsDir = existsSync(join(cwd, 'docs'));
+  if (hasDocsDir) {
+    const normFiles = changedFiles.map((f) => f.replace(/\\/g, '/'));
+    const hasCoreCode = normFiles.some((f) => /^(?:src|lib)\//.test(f));
+    const hasDocChanges = normFiles.some((f) => /^docs\//.test(f));
+    if (hasCoreCode && !hasDocChanges) {
+      findings.push({
+        file: 'docs/',
+        severity: 'info',
+        finding_scope: 'current_diff',
+        message: '[docs-sync] 检测到核心代码修改但未变动 docs/，请确认是否需同步更新相关活文档 (AGENTS.md 规范)',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -283,6 +299,9 @@ function classifyFindings(
   rangesByFile: Map<string, Array<{ start: number; end: number }>>,
 ): ReviewFinding[] {
   return findings.map((finding) => {
+    if (finding.finding_scope) {
+      return finding;
+    }
     const ranges = rangesByFile.get(finding.file) || [];
     const onCurrentDiff = typeof finding.line === 'number' &&
       ranges.some((range) => finding.line! >= range.start && finding.line! <= range.end);

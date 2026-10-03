@@ -27,6 +27,12 @@ export interface PlanTaskItem {
   inProgress?: boolean;
 }
 
+export interface RelevantLivingDoc {
+  path: string;
+  title: string;
+  recommended_reveal: string;
+}
+
 export interface AgentOutputContext {
   cwd: string;
   state: Record<string, unknown> | null;
@@ -35,6 +41,7 @@ export interface AgentOutputContext {
   planTasks: PlanTaskItem[];
   breadcrumbSummary: BreadcrumbSummary;
   recentDecisions: DecisionEntry[];
+  relevantLivingDocs?: RelevantLivingDoc[];
   lastCheckContent: string | null;
   lessonSummary: {
     pendingCount: number;

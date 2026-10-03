@@ -145,6 +145,9 @@ export async function generateAgentOutput(
     context_injection: {
       spec_summary: context.specSummary,
       active_guardrails: formatActiveGuardrails(context.recentDecisions),
+      ...(context.relevantLivingDocs && context.relevantLivingDocs.length > 0 ? {
+        relevant_docs: context.relevantLivingDocs,
+      } : {}),
     },
     task_id: context.state?.task_id || '',
     task_title: context.state?.task_title || '',

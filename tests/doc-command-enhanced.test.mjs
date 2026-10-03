@@ -126,7 +126,36 @@ describe('docpath doc alias and enhanced search experience', () => {
       const out = run('doc "JWT Authentication"', cwd);
       assert.match(out, /文档检索: "JWT Authentication"/);
       assert.match(out, /jwt-guide\.md/);
+      assert.match(out, /上下文直达: 运行 `docpath reveal --topic "JWT Authentication" --level 1`/);
       assert.equal(existsSync(indexPath), true);
+
+      const agentOut = run('doc "JWT Authentication" --agent', cwd);
+      assert.match(agentOut, /recommended_reveal:\s*docpath reveal --topic "JWT Authentication" --level 1/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('docpath review outputs docs-sync hint when core code changes without docs', () => {
+    const cwd = mkWorkspace();
+    try {
+      execSync('git init', { cwd, encoding: 'utf-8' });
+      execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
+      execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
+      mkdirSync(join(cwd, 'src'), { recursive: true });
+      writeFileSync(join(cwd, 'src', 'index.ts'), 'export const a = 1;\n');
+      writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
+      writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+        task_id: 'T-test',
+        title: 'Test',
+        status: 'reviewing',
+        phase: 'reviewing',
+        gate: 'check_pass',
+        step: 'S1',
+      }, null, 2));
+
+      const out = run('review --dry-run', cwd);
+      assert.match(out, /\[docs-sync\] 检测到核心代码修改但未变动 docs/);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

@@ -817,12 +817,14 @@ async function docsSearch(
         synonyms,
         filters: { status, type, scope, tag },
         results_count: scoredResults.length,
+        recommended_reveal: trimmed ? `docpath reveal --topic "${trimmed}" --level 1` : undefined,
         results: scoredResults.slice(0, 10).map((r) => ({
           path: r.entry.path,
           title: r.entry.title,
           summary: r.entry.summary,
           score: r.score,
           matched_reasons: r.matchedReasons,
+          recommended_reveal: `docpath reveal --topic "${r.entry.path}" --level 1`,
           type: r.entry.type,
           scope: r.entry.scope,
           level: r.entry.level,
@@ -878,6 +880,10 @@ async function docsSearch(
 
     console.log(`  📄 ${highlightedPath} [${flags}] (相关度: ${pc.yellow(score.toString())})${reasonsStr}`);
     console.log(`     ${highlightedTitle} — ${highlightedSummary} (~${entry.token_estimate} tokens)\n`);
+  }
+
+  if (trimmed) {
+    console.log(`💡 上下文直达: 运行 \`docpath reveal --topic "${trimmed}" --level 1\` 获取紧凑上下文 (AGENTS.md 规范)\n`);
   }
 }
 
