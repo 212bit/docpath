@@ -88,4 +88,35 @@ describe('backlog dashboard and pick/next intelligent routing', () => {
     assert.equal(agentParsed.recommendations[0].id, 'R-002');
     assert.match(agentParsed.recommended_command, /docpath start R-002/);
   });
+
+  it('filters ready items by milestone via backlog pick --milestone', () => {
+    const cwd = mkWorkspace();
+
+    // 1. Add items, some bound to M-001, some to M-002
+    run('backlog add --title "Milestone 1 基础模块" --priority P1 --level 1 --background "M1基础" --acceptance "通过" --readiness confirmed --milestone M-001', cwd); // R-001
+    run('backlog add --title "Milestone 2 独立模块" --priority P0 --level 1 --background "M2独立" --acceptance "通过" --readiness confirmed --milestone M-002', cwd); // R-002
+    run('backlog add --title "Milestone 1 进阶模块" --priority P2 --level 1 --background "M1进阶" --acceptance "通过" --readiness confirmed --milestone M-001 --depends-on R-001', cwd); // R-003
+
+    // 2. Pick within M-001
+    const textOutput = run('backlog pick --milestone M-001', cwd);
+    assert.match(textOutput, /\[里程碑: M-001\]/);
+    assert.match(textOutput, /R-001: Milestone 1 基础模块/);
+    assert.doesNotMatch(textOutput, /R-002/);
+
+    // 3. Pick within M-001 with --agent
+    const yamlOutput = run('backlog pick --milestone M-001 --agent', cwd);
+    const agentParsed = parse(yamlOutput);
+    assert.equal(agentParsed.agent_view, 'backlog_pick');
+    assert.equal(agentParsed.milestone, 'M-001');
+    assert.equal(agentParsed.ready_count, 1);
+    assert.equal(agentParsed.recommendations[0].id, 'R-001');
+    assert.match(agentParsed.recommended_command, /docpath start R-001/);
+
+    // 4. Pick within M-002
+    const m2Output = run('backlog pick --milestone M-002 --json', cwd);
+    const m2Parsed = JSON.parse(m2Output);
+    assert.equal(m2Parsed.milestone, 'M-002');
+    assert.equal(m2Parsed.readyCount, 1);
+    assert.equal(m2Parsed.rankedReadyItems[0].id, 'R-002');
+  });
 });

@@ -60,3 +60,32 @@ DocPath 里程碑将“前置宏观规划”与“后置发布收敛”打通为
 | `docpath milestone release <id>` | 正式发布 | 生成结构化发布简报 `docs/releases/` 并追加 `CHANGELOG.md` |
 | `docpath milestone list` | 概览 | 展示当前规划中里程碑与历史发布简报 |
 | `docpath milestone timeline` | 时间线 | 生成全局 Mermaid 系统架构与版本演进大盘 |
+| `docpath backlog pick --milestone <id>` | 敏捷选单 | 仅在指定里程碑范围内按收益分值智能挑选最高优先就绪需求 |
+| `docpath next --agent` | 智能路由 | 在关联需求 100% 达成后自动感知并推荐 `docpath milestone verify M-###` 验收闭环 |
+
+---
+
+## 3. Agent 协同与选单联动
+
+### 3.1 里程碑范围化选单 (`docpath backlog pick --milestone M-###`)
+通过 `--milestone M-###` 约束选单与拉起范围，帮助 Agent 与开发者专注完成特定阶段性目标：
+```bash
+# 查看 M-001 里程碑下的关键路径与智能选单
+docpath backlog pick --milestone M-001
+
+# Agent 机器视图
+docpath backlog pick --milestone M-001 --agent
+
+# 自动从 M-001 里程碑中选中最高收益需求并直接拉起任务
+docpath backlog pick --milestone M-001 --start
+```
+
+### 3.2 智能路由里程碑验收联动 (`docpath next --agent`)
+当某个进行中的里程碑其所有关联需求均已达到 `done` 状态时，`docpath next --agent` 和 `docpath status --agent` 会在任务完成后主动推断并输出验收提示：
+```yaml
+agent_view: next
+next_action: 里程碑 M-001 (基础底座升级) 的所有关联需求已全部闭环，建议执行里程碑集成验收
+recommended_command: docpath milestone verify M-001
+exit_criteria: 里程碑 M-001 验收通过并可执行发布闭环
+```
+无需人工手动核对需求清单，即可实现大目标从规划拆解到验收发布的自动化闭环。

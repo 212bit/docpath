@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-04T04:54:09.134Z",
+    "updated_at": "2026-10-04T04:54:09.134Z",
+    "content_sha256": "db6f905bb46747771e41970472db2ab0fbf10ab184fefe3f6128c282410f6527"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-04T04:54:09.134Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 实现Backlog按里程碑选取",
+      "description": "落地 FR-1: 实现Backlog按里程碑选取，并完成模块定向自验。",
+      "acceptance": "AC-1: 实现Backlog按里程碑选取 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 Agent路由里程碑验收联动",
+      "description": "落地 FR-2: Agent路由里程碑验收联动，并完成模块定向自验。",
+      "acceptance": "AC-2: Agent路由里程碑验收联动 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-482 与任务 T-20261004-backlog-agent 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

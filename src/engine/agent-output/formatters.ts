@@ -7,6 +7,7 @@ import { detectPlanBreadcrumbDrift, resolveEffectivePlanTasks, type PlanBreadcru
 import { canonicalTaskDir, currentTaskDir, detectActiveTaskIdentityDrift, readActiveStructuredSpecDocument, readActiveTaskFile, type TaskIdentityDrift } from '../../utils/task-files.js';
 import { detectStructuredMarkdownHashDrift, formatStructuredMarkdownHashDrift, readStructuredDriftNag, writeStructuredDriftNag, type StructuredMarkdownHashDrift, type StructuredTaskMarkdownFile } from '../../utils/structured-docs.js';
 import { listBacklogItems, type BacklogItem } from '../backlog.js';
+import { listMilestoneItems, getMilestoneProgress } from '../milestone.js';
 import { handleStalePendingDoneWarning, readPendingDone } from '../../utils/pending-done.js';
 import { readRuleFile, ruleDisplayPaths } from '../../utils/rules.js';
 import { buildInstallDoctorReport, isInstallTarget, type InstallDoctorReport } from '../../utils/install-core.js';
@@ -145,6 +146,7 @@ export type AgentOutputContext = {
   specSummary: SpecSummary | null;
   recentDecisions: DecisionEntry[];
   relevantLivingDocs?: RelevantLivingDoc[];
+  readyMilestones?: Array<{ id: string; title: string }>;
 };
 
 
@@ -395,6 +397,7 @@ export function inferNextAction(
   dirtyWorktree: DirtyWorktreeReport,
   hasHealthWarning: boolean = false,
   promotedBacklogId: string | null = null,
+  readyMilestone: { id: string; title: string } | null = null,
 ): {
   next_action: string;
   recommended_command: string;
@@ -627,6 +630,16 @@ export function inferNextAction(
         exit_criteria: 'docpath changes --agent 已确认提交范围、canonical ignored evidence 与门禁证据',
       }, phase, gate);
     }
+    if (readyMilestone) {
+      return withWorkflowConstraint({
+        next_action: `里程碑 ${readyMilestone.id} (${readyMilestone.title}) 的所有关联需求已全部闭环，建议执行里程碑集成验收`,
+        recommended_command: `docpath milestone verify ${readyMilestone.id}`,
+        required_context: ['.docpath/workspace/current.md', `.docpath/milestones/${readyMilestone.id}.md`],
+        required_files: ['.docpath/workspace/current.md'],
+        must_update: [],
+        exit_criteria: `里程碑 ${readyMilestone.id} 验收通过并可执行发布闭环`,
+      }, phase, gate);
+    }
     if (acceptedBacklog) {
       return withWorkflowConstraint({
         next_action: `从 backlog 一键拉起并启动任务: ${acceptedBacklog.id} ${acceptedBacklog.title}`,
@@ -689,7 +702,12 @@ export function inferNextAction(
 
   switch (currentState) {
     case 'idle':
-      if (acceptedBacklog) {
+      if (readyMilestone) {
+        next_action = `里程碑 ${readyMilestone.id} (${readyMilestone.title}) 的所有关联需求已全部闭环，建议执行里程碑集成验收`;
+        recommended_command = `docpath milestone verify ${readyMilestone.id}`;
+        required_context = ['.docpath/workspace/current.md', `.docpath/milestones/${readyMilestone.id}.md`];
+        exit_criteria = `里程碑 ${readyMilestone.id} 验收通过并可执行发布闭环`;
+      } else if (acceptedBacklog) {
         next_action = `从 backlog 一键拉起并启动任务: ${acceptedBacklog.id} ${acceptedBacklog.title}`;
         recommended_command = `docpath start ${acceptedBacklog.id} --draft`;
         required_context = ['.docpath/workspace/current.md', '.docpath/backlog/backlog.md'];
@@ -920,6 +938,25 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
     matchRelevantLivingDocs(docpathDir, Array.from(new Set(keywords)), 2),
   ]);
 
+  let readyMilestones: Array<{ id: string; title: string }> = [];
+  try {
+    const milestones = await listMilestoneItems(cwd);
+    for (const ms of milestones) {
+      if (ms.status === 'active' || ms.status === 'planned') {
+        const progress = await getMilestoneProgress(cwd, ms.id);
+        const validTotal = progress.backlog_summary.total - progress.backlog_summary.dropped;
+        if (validTotal > 0 && progress.backlog_summary.done === validTotal) {
+          readyMilestones.push({
+            id: ms.id,
+            title: ms.title,
+          });
+        }
+      }
+    }
+  } catch {
+    readyMilestones = [];
+  }
+
   return {
     docpathDir,
     state,
@@ -947,6 +984,7 @@ export async function loadAgentOutputContext(cwd: string, docpathDir: string): P
     specSummary,
     recentDecisions,
     relevantLivingDocs,
+    readyMilestones,
   };
 }
 
@@ -1037,6 +1075,7 @@ export function inferRouteFromContext(context: AgentOutputContext): RouteSummary
     context.dirtyWorktree,
     hasHealthRegressionWarning(context.installHealth),
     context.structuredSpec?.backlog_id || null,
+    context.readyMilestones?.[0] || null,
   );
 
   const hasDrift = context.drift.planDoneWithoutBreadcrumb.length > 0 || context.drift.breadcrumbDoneWithoutPlan.length > 0;

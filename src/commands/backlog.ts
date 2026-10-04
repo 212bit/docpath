@@ -1642,10 +1642,12 @@ function renderListTable(items: BacklogItem[]): string {
 async function backlogList(options: BacklogCommandOptions): Promise<void> {
   const status = normalizeStatusFilter(options.status);
   const priority = options.priority ? normalizePriority(options.priority) : undefined;
+  const milestone = options.milestone?.trim().toLowerCase();
   const filtered = sortBacklogItems(
     (await listBacklogItems(options.cwd)).filter((item) => {
       if (status && item.status !== status) return false;
       if (priority && item.priority !== priority) return false;
+      if (milestone && item.links.milestone?.toLowerCase() !== milestone) return false;
       return true;
     })
   );
@@ -1660,6 +1662,7 @@ async function backlogList(options: BacklogCommandOptions): Promise<void> {
         priority: item.priority,
         level: item.level,
         readiness: item.readiness,
+        milestone: item.links.milestone || null,
         task: item.links.task,
       })),
     }));
@@ -1723,6 +1726,7 @@ async function backlogSearch(options: BacklogCommandOptions): Promise<void> {
     query,
     status: options.status,
     priority: options.priority,
+    milestone: options.milestone,
     parent: options.parent,
     dependsOn: options.dependsOn,
     readyOnly: options.readyOnly || options.unblocked,
@@ -2084,13 +2088,19 @@ async function backlogDashboard(options: BacklogCommandOptions): Promise<void> {
 }
 
 async function backlogPick(options: BacklogCommandOptions): Promise<void> {
-  const allItems = await listBacklogItems(options.cwd);
+  let allItems = await listBacklogItems(options.cwd);
+  if (options.milestone) {
+    const targetMilestone = options.milestone.trim().toLowerCase();
+    allItems = allItems.filter((item) => item.links.milestone?.toLowerCase() === targetMilestone);
+  }
   const rankResult = rankBacklogByImpact(allItems);
 
   if (options.start || options.promote || options.adopt) {
     const targetId = options.id || rankResult.rankedReadyItems[0]?.id;
     if (!targetId) {
-      throw new Error('docpath backlog pick: 当前没有可启动的就绪条目');
+      throw new Error(options.milestone
+        ? `docpath backlog pick: 里程碑 ${options.milestone} 下当前没有可启动的就绪条目`
+        : 'docpath backlog pick: 当前没有可启动的就绪条目');
     }
     if (options.promote && !options.start) {
       await backlogPromote({
@@ -2120,13 +2130,17 @@ async function backlogPick(options: BacklogCommandOptions): Promise<void> {
   }
 
   if (options.json) {
-    console.log(JSON.stringify(rankResult, null, 2));
+    console.log(JSON.stringify({
+      milestone: options.milestone || undefined,
+      ...rankResult,
+    }, null, 2));
     return;
   }
 
   if (options.agent) {
     console.log(stringify({
       agent_view: 'backlog_pick',
+      milestone: options.milestone || undefined,
       ready_count: rankResult.readyCount,
       critical_path: rankResult.criticalPath,
       recommendations: rankResult.rankedReadyItems.map((r) => ({
@@ -2144,13 +2158,16 @@ async function backlogPick(options: BacklogCommandOptions): Promise<void> {
     return;
   }
 
-  console.log('\n🎯  Backlog 关键路径与智能选单 (Top Actionable Queue)\n');
+  const milestoneHeader = options.milestone ? ` [里程碑: ${options.milestone}]` : '';
+  console.log(`\n🎯  Backlog 关键路径与智能选单 (Top Actionable Queue)${milestoneHeader}\n`);
   if (rankResult.criticalPath.length > 0) {
     console.log(`🔗  关键依赖链 (Critical Path): ${rankResult.criticalPath.join(' ➔ ')}\n`);
   }
 
   if (rankResult.rankedReadyItems.length === 0) {
-    console.log('   (当前没有就绪可开发的条目)\n');
+    console.log(options.milestone
+      ? `   (里程碑 ${options.milestone} 下当前没有就绪可开发的条目)\n`
+      : '   (当前没有就绪可开发的条目)\n');
     return;
   }
 

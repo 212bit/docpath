@@ -212,4 +212,34 @@ describe('docpath milestone command', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('routes agent to milestone verify when all linked backlogs are done', () => {
+    const cwd = mkWorkspace();
+    try {
+      // 1. Create Milestone M-001
+      run('milestone add "数据引擎升级" --ver v2.0.0 --agent', cwd);
+
+      // 2. Bind existing completed R-101 to M-001
+      run('milestone bind M-001 R-101 --agent', cwd);
+
+      // 3. Set workspace state to completed / idle (no active running task)
+      writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
+        state: 'completed',
+        phase: 'completed',
+        gate: 'none',
+        task_id: null,
+      }, null, 2));
+
+      // 4. Run `docpath next --agent`
+      const nextOut = run('next --agent', cwd);
+      assert.match(nextOut, /里程碑 M-001.*已全部闭环.*建议执行里程碑集成验收/);
+      assert.match(nextOut, /recommended_command:\s*docpath milestone verify M-001/);
+
+      // 5. Run `docpath status --agent`
+      const statusOut = run('status --agent', cwd);
+      assert.match(statusOut, /recommended_command:\s*docpath milestone verify M-001/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });

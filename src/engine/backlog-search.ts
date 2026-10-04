@@ -18,6 +18,7 @@ export interface BacklogSearchOptions {
   query?: string;
   status?: string;
   priority?: string;
+  milestone?: string;
   parent?: string;
   dependsOn?: string;
   readyOnly?: boolean;
@@ -72,6 +73,7 @@ export async function searchBacklogItems(
   const query = options.query?.trim().toLowerCase() || '';
   const keywords = query ? query.split(/[\s,，]+/).filter(Boolean) : [];
   const priorityFilter = options.priority?.trim().toUpperCase();
+  const milestoneFilter = options.milestone?.trim().toLowerCase();
   const parentFilter = options.parent?.trim();
   const dependsOnFilter = options.dependsOn?.trim();
   const readyOnly = options.readyOnly === true;
@@ -99,22 +101,27 @@ export async function searchBacklogItems(
       continue;
     }
 
-    // 3. 父需求过滤
+    // 3. 里程碑过滤
+    if (milestoneFilter && item.links.milestone?.toLowerCase() !== milestoneFilter) {
+      continue;
+    }
+
+    // 4. 父需求过滤
     if (parentFilter && item.links.parent !== parentFilter) {
       continue;
     }
 
-    // 4. 依赖过滤
+    // 5. 依赖过滤
     if (dependsOnFilter && !item.links.depends_on?.includes(dependsOnFilter)) {
       continue;
     }
 
-    // 5. 就绪过滤 (已就绪可推进，未被前置未完成依赖阻塞)
+    // 6. 就绪过滤 (已就绪可推进，未被前置未完成依赖阻塞)
     if (readyOnly && (node.isBlocked || item.status === 'done' || item.status === 'dropped')) {
       continue;
     }
 
-    // 6. 关键字打分与匹配字段统计
+    // 7. 关键字打分与匹配字段统计
     let score = 0;
     const matchedFields: string[] = [];
 
