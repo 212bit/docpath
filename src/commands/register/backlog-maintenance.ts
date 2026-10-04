@@ -28,6 +28,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .option('--evidence-decision <ref>', 'add/edit: Decision Brief 证据引用')
     .option('--user-confirmed <text>', 'add/edit: 用户确认依据')
     .option('--status <status>', 'list/search/export: 状态过滤')
+    .option('--milestone <id>', 'add/edit/search/export: 关联的里程碑 ID (例如 M-001)')
     .option('--parent <id>', 'add/edit/shape/search: 父需求 ID')
     .option('--depends-on <ids>', 'add/edit/shape/search: 依赖的前置需求 ID（逗号分隔）')
     .option('--blocks <ids>', 'add/edit: 阻塞的后置需求 ID（逗号分隔）')
@@ -49,6 +50,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
       kind?: string;
       priority?: string;
       level?: string;
+      milestone?: string;
       background?: string;
       acceptance?: string;
       fr?: string;
@@ -111,6 +113,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         evidenceDecision: options.evidenceDecision,
         userConfirmed: options.userConfirmed,
         status: options.status,
+        milestone: options.milestone,
         parent: options.parent,
         dependsOn: options['depends-on'] || options.dependsOn,
         blocks: options.blocks,

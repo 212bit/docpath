@@ -82,7 +82,7 @@ try {
   const parsed = cli.parse(process.argv, { run: false });
 
   // --help / --version 已在 parse() 内输出，直接结束。
-  if (cli.options.help || cli.options.version) {
+  if (!cli.matchedCommand && (cli.options.help || cli.options.version)) {
     process.exit(0);
   }
 

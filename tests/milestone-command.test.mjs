@@ -160,4 +160,56 @@ describe('docpath milestone command', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('executes full milestone planning, decomposition, tracking, and acceptance lifecycle', () => {
+    const cwd = mkWorkspace();
+    try {
+      // 1. Planning: create a new Milestone M-001
+      const addOut = run('milestone add "权限与鉴权体系重构" --ver v1.2.0 --priority P0 --agent', cwd);
+      assert.match(addOut, /agent_view:\s*milestone_created/);
+      assert.match(addOut, /id:\s*M-001/);
+      assert.match(addOut, /title:\s*权限与鉴权体系重构/);
+
+      // Verify file written to .docpath/milestones/M-001-*.md
+      const dpMilestones = join(cwd, '.docpath', 'milestones');
+      assert.equal(existsSync(dpMilestones), true);
+
+      // 2. Decomposition: break down M-001 into sub backlogs
+      const decompOut = run('milestone decompose M-001 --items \'[{"title":"设计RBAC表结构","kind":"feature"},{"title":"实现鉴权中间件","kind":"feature"}]\' --agent', cwd);
+      assert.match(decompOut, /agent_view:\s*milestone_decomposed/);
+      assert.match(decompOut, /created_backlogs:/);
+      assert.match(decompOut, /设计RBAC表结构/);
+
+      // 3. Binding: bind existing R-101 to M-001
+      const bindOut = run('milestone bind M-001 R-101 --agent', cwd);
+      assert.match(bindOut, /agent_view:\s*milestone_bound/);
+      assert.match(bindOut, /bound_ids:\s*\n\s*-\s*R-101/);
+
+      // 4. Status / Board tracking
+      const statusOut = run('milestone status M-001 --agent', cwd);
+      assert.match(statusOut, /agent_view:\s*milestone_status/);
+      assert.match(statusOut, /overall_percent:/);
+      assert.match(statusOut, /is_ready_for_acceptance:\s*false/);
+
+      // 5. Verification fails when sub backlogs are not done
+      const verifyOut = run('milestone verify M-001 --agent', cwd);
+      assert.match(verifyOut, /agent_view:\s*milestone_verify/);
+      assert.match(verifyOut, /passed:\s*false/);
+
+      // 6. Accept milestone with --force or after completion
+      const acceptOut = run('milestone accept M-001 --force --agent', cwd);
+      assert.match(acceptOut, /agent_view:\s*milestone_accepted/);
+      assert.match(acceptOut, /status:\s*accepted/);
+
+      // 7. Release milestone and publish release notes + changelog
+      const releaseOut = run('milestone release M-001 --agent', cwd);
+      assert.match(releaseOut, /agent_view:\s*milestone_released/);
+      assert.match(releaseOut, /status:\s*released/);
+
+      assert.equal(existsSync(join(cwd, 'docs', 'releases', 'v1.2.0.md')), true);
+      assert.equal(existsSync(join(cwd, 'CHANGELOG.md')), true);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });

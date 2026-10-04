@@ -83,6 +83,7 @@ export interface BacklogCommandOptions {
   userConfirmed?: string;
   status?: string;
   task?: string;
+  milestone?: string;
   parent?: string;
   dependsOn?: string;
   blocks?: string;
@@ -264,6 +265,7 @@ function hasEditFields(options: BacklogCommandOptions): boolean {
     || hasInlineBodyOptions(options)
     || options.readiness
     || hasEvidenceOptions(options)
+    || options.milestone !== undefined
     || options.parent !== undefined
     || options.dependsOn !== undefined
     || options.blocks !== undefined
@@ -1182,6 +1184,7 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
   const dependsOn = options.dependsOn ? options.dependsOn.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined;
   const blocks = options.blocks ? options.blocks.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined;
   const parent = options.parent?.trim() || null;
+  const milestone = options.milestone?.trim() || null;
 
   const item = await createBacklogItem(options.cwd, {
     title,
@@ -1195,6 +1198,7 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
     links: {
       task: null,
       spec: null,
+      milestone,
       parent,
       ...(dependsOn && dependsOn.length > 0 ? { depends_on: dependsOn } : {}),
       ...(blocks && blocks.length > 0 ? { blocks } : {}),
@@ -1209,6 +1213,7 @@ async function backlogAdd(options: BacklogCommandOptions): Promise<void> {
   console.log(`   priority: ${item.priority}`);
   console.log(`   level: ${item.level}`);
   console.log(`   readiness: ${item.readiness}`);
+  if (item.links.milestone) console.log(`   milestone: ${item.links.milestone}`);
   if (item.links.parent) console.log(`   parent: ${item.links.parent}`);
   if (item.links.depends_on && item.links.depends_on.length > 0) console.log(`   depends_on: ${item.links.depends_on.join(', ')}`);
   if (item.links.blocks && item.links.blocks.length > 0) console.log(`   blocks: ${item.links.blocks.join(', ')}`);
@@ -1231,6 +1236,7 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
   const dependsOn = options.dependsOn ? options.dependsOn.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined;
   const blocks = options.blocks ? options.blocks.split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean) : undefined;
   const parent = options.parent?.trim() || null;
+  const milestone = options.milestone?.trim() || null;
 
   const item = await createBacklogItem(options.cwd, {
     title,
@@ -1244,6 +1250,7 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
     links: {
       task: null,
       spec: null,
+      milestone,
       parent,
       ...(dependsOn && dependsOn.length > 0 ? { depends_on: dependsOn } : {}),
       ...(blocks && blocks.length > 0 ? { blocks } : {}),
@@ -1256,6 +1263,7 @@ async function backlogCapture(options: BacklogCommandOptions): Promise<void> {
   console.log(`   title: ${item.title}`);
   console.log(`   kind: ${item.kind || 'feature'}`);
   console.log(`   priority: ${item.priority}`);
+  if (item.links.milestone) console.log(`   milestone: ${item.links.milestone}`);
   console.log(`   level: ${item.level}`);
   console.log('   readiness: raw');
   if (item.links.parent) console.log(`   parent: ${item.links.parent}`);
@@ -1315,6 +1323,9 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
     if (hasEvidenceOptions(options)) {
       updated.evidence = buildEvidence(options, updated.evidence);
     }
+    if (options.milestone !== undefined) {
+      updated.links.milestone = options.milestone ? options.milestone.trim() : null;
+    }
     if (options.parent !== undefined) {
       updated.links.parent = options.parent ? options.parent.trim() : null;
     }
@@ -1334,6 +1345,7 @@ async function backlogEdit(options: BacklogCommandOptions): Promise<void> {
     console.log(`   kind: ${updated.kind || 'feature'}`);
     console.log(`   priority: ${updated.priority}`);
     console.log(`   level: ${updated.level}`);
+    if (updated.links.milestone) console.log(`   milestone: ${updated.links.milestone}`);
     if (updated.links.parent) console.log(`   parent: ${updated.links.parent}`);
     if (updated.links.depends_on && updated.links.depends_on.length > 0) console.log(`   depends_on: ${updated.links.depends_on.join(', ')}`);
     if (updated.links.blocks && updated.links.blocks.length > 0) console.log(`   blocks: ${updated.links.blocks.join(', ')}`);

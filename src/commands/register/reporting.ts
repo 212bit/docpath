@@ -44,41 +44,118 @@ function registerChangelogCommand(cli: CAC): void {
 }
 
 function registerMilestoneCommand(cli: CAC): void {
-  cli.command('milestone [action] [version]', '版本/阶段性里程碑总结：聚合已归档任务与架构决策并生成发布简报')
+  cli.command('milestone [action] [target] [...extra]', '里程碑全生命周期管理：大目标规划、Backlog拆解、跟踪看板、验收门禁与发布')
     .option('--cwd <path>', '项目目录')
-    .option('--title <title>', '里程碑标题描述')
+    .option('--title <title>', '里程碑标题/目标描述')
+    .option('--release-version <version>', '目标版本号 (例如 v1.2.0)')
+    .option('--target-version <version>', '目标版本号 (例如 v1.2.0)')
+    .option('--ver <version>', '目标版本号简写 (例如 v1.2.0)')
+    .option('--priority <priority>', '里程碑优先级 (P0|P1|P2|P3)')
+    .option('--target-date <date>', '目标交付日期 (YYYY-MM-DD)')
+    .option('--owner <owner>', '负责人或团队')
+    .option('--objective <text>', '核心目标长描述')
+    .option('--criteria <criteria>', '阶段验收标准 (多个以逗号分隔)')
+    .option('--non-goals <text>', '非目标/边界约束')
+    .option('--items <items>', 'decompose: 批量拆解子需求 (JSON 或多行文本)')
     .option('--since <ref>', '按 git ref/tag 汇总差异')
-    .option('--dry-run', '预览发布简报，不写盘')
+    .option('--force', '强制执行 (如跳过未完成项强制验收)')
+    .option('--dry-run', '预览发布简报或执行操作，不写盘')
     .option('--agent', '输出 Agent 可读 YAML 状态')
     .option('--json', '输出 JSON')
-    .action(async (actionOrVersion: string | undefined, versionArg: string | undefined, options: { cwd?: string; title?: string; since?: string; dryRun?: boolean; agent?: boolean; json?: boolean }) => {
-      let action: 'create' | 'draft' | 'publish' | 'list' | 'show' | 'timeline' = 'create';
-      let version = versionArg;
+    .action(async (...rawArgs: any[]) => {
+      const options = (typeof rawArgs[rawArgs.length - 1] === 'object' && rawArgs[rawArgs.length - 1] !== null
+        ? rawArgs.pop()
+        : {}) as {
+          cwd?: string;
+          title?: string;
+          version?: string;
+          releaseVersion?: string;
+          'release-version'?: string;
+          targetVersion?: string;
+          'target-version'?: string;
+          ver?: string;
+          priority?: string;
+          targetDate?: string;
+          'target-date'?: string;
+          owner?: string;
+          objective?: string;
+          criteria?: string | string[];
+          nonGoals?: string;
+          'non-goals'?: string;
+          items?: string;
+          since?: string;
+          force?: boolean;
+          dryRun?: boolean;
+          agent?: boolean;
+          json?: boolean;
+        };
 
-      if (actionOrVersion === 'list') {
+      const [actionOrTarget, targetArg, ...extraArgs] = rawArgs;
+
+      const knownActions = new Set([
+        'add', 'plan', 'create', 'decompose', 'split', 'bind', 'link', 'unbind',
+        'status', 'board', 'track', 'verify', 'check', 'accept', 'release', 'publish',
+        'draft', 'list', 'show', 'timeline',
+      ]);
+
+      let action: any = 'list';
+      let version = targetArg;
+      const backlogIds: string[] = [];
+
+      const explicitVersion = options.releaseVersion || options['release-version'] || options.targetVersion || options['target-version'] || options.ver || options.version;
+
+      if (!actionOrTarget) {
         action = 'list';
-      } else if (actionOrVersion === 'show') {
+      } else if (knownActions.has(actionOrTarget)) {
+        action = actionOrTarget;
+        if (action === 'add' || action === 'plan') {
+          options.title = options.title || targetArg;
+          version = explicitVersion;
+        } else {
+          version = targetArg || explicitVersion;
+        }
+        if (Array.isArray(extraArgs)) {
+          for (const item of extraArgs) {
+            if (Array.isArray(item)) {
+              backlogIds.push(...item);
+            } else if (item) {
+              backlogIds.push(item);
+            }
+          }
+        }
+      } else if (/^v\d+/i.test(actionOrTarget) || /^M-\d+/i.test(actionOrTarget)) {
+        // e.g. docpath milestone v0.2.0 or docpath milestone M-001
         action = 'show';
-      } else if (actionOrVersion === 'timeline') {
-        action = 'timeline';
-      } else if (actionOrVersion === 'draft') {
-        action = 'draft';
-      } else if (actionOrVersion === 'publish') {
-        action = 'publish';
-      } else if (actionOrVersion === 'create') {
-        action = 'create';
-      } else if (actionOrVersion) {
-        // e.g. docpath milestone v0.2.0
-        action = 'create';
-        version = actionOrVersion;
+        version = actionOrTarget;
+      } else {
+        // default treat as milestone add "<title>"
+        action = 'add';
+        options.title = options.title || actionOrTarget;
+        version = explicitVersion;
+      }
+
+      let parsedCriteria: string[] | undefined;
+      if (options.criteria) {
+        parsedCriteria = Array.isArray(options.criteria)
+          ? options.criteria
+          : options.criteria.split(/[,，\n]+/).map((s) => s.trim()).filter(Boolean);
       }
 
       await milestoneCommand({
         cwd: options.cwd || process.cwd(),
         action,
-        version,
+        version: explicitVersion || version,
         title: options.title,
         since: options.since,
+        priority: options.priority,
+        targetDate: options.targetDate || options['target-date'],
+        owner: options.owner,
+        objective: options.objective,
+        criteria: parsedCriteria,
+        nonGoals: options.nonGoals || options['non-goals'],
+        items: options.items,
+        backlogIds,
+        force: !!options.force,
         dryRun: !!options.dryRun,
         agent: !!options.agent,
         json: !!options.json,

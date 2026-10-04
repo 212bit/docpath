@@ -42,6 +42,8 @@ export interface BacklogLinks {
   task: string | null;
   /** 关联 spec 路径；未 promote 时为 null */
   spec: string | null;
+  /** 关联里程碑 ID（例如 M-001 或 v1.0.0） */
+  milestone?: string | null;
   /** 父级需求 ID（例如 R-100） */
   parent?: string | null;
   /** 依赖的前置需求列表（例如 ['R-101', 'R-102']） */
@@ -304,6 +306,7 @@ function parseItem(content: string): BacklogItem {
   const parsedLinks: BacklogLinks = {
     task: links.task != null ? String(links.task) : null,
     spec: links.spec != null ? String(links.spec) : null,
+    milestone: links.milestone != null ? String(links.milestone) : (fm.milestone != null ? String(fm.milestone) : null),
     parent: links.parent != null ? String(links.parent) : null,
     ...(parsedDependsOn && parsedDependsOn.length > 0 ? { depends_on: parsedDependsOn } : {}),
     ...(parsedBlocks && parsedBlocks.length > 0 ? { blocks: parsedBlocks } : {}),
@@ -365,6 +368,7 @@ function serializeItem(item: BacklogItem): string {
     task: item.links.task,
     spec: item.links.spec,
   };
+  if (item.links.milestone) linksMap.milestone = item.links.milestone;
   if (item.links.parent) linksMap.parent = item.links.parent;
   if (item.links.depends_on && item.links.depends_on.length > 0) linksMap.depends_on = item.links.depends_on;
   if (item.links.blocks && item.links.blocks.length > 0) linksMap.blocks = item.links.blocks;

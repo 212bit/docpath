@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-04T02:17:35.077Z",
+    "updated_at": "2026-10-04T02:17:35.077Z",
+    "content_sha256": "81bc581ca48721dcf71c5b082319024e16a489cd997ce9eba725bcf1b81eb290"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-04T02:17:35.077Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 实现里程碑目标规划",
+      "description": "落地 FR-1: 实现里程碑目标规划，并完成模块定向自验。",
+      "acceptance": "AC-1: 实现里程碑目标规划 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 Backlog拆解",
+      "description": "落地 FR-2: Backlog拆解，并完成模块定向自验。",
+      "acceptance": "AC-2: Backlog拆解 满足功能要求并通过测试",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现并验证 FR-3 跟踪",
+      "description": "落地 FR-3: 跟踪，并完成模块定向自验。",
+      "acceptance": "AC-3: 跟踪 满足功能要求并通过测试",
+      "dependencies": "S2",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "name": "实现并验证 FR-4 验收闭环引擎",
+      "description": "落地 FR-4: 验收闭环引擎，并完成模块定向自验。",
+      "acceptance": "AC-4: 验收闭环引擎 满足功能要求并通过测试；AC-5: 生成的 spec 可直接进入 `docpath plan`；AC-6: backlog 条目 R-481 与任务 T-20261004-backlog 建立双向关联",
+      "dependencies": "S3",
+      "status": "done"
+    }
+  ]
+}
