@@ -151,7 +151,10 @@ export async function generateAgentOutput(
     },
     task_id: context.state?.task_id || '',
     task_title: context.state?.task_title || '',
-    ...(context.state?.backlog_id !== undefined ? { backlog_id: context.state.backlog_id } : {}),
+    ...(() => {
+      const backlogId = context.state?.backlog_id ?? context.structuredSpec?.backlog_id;
+      return backlogId ? { backlog_id: backlogId } : {};
+    })(),
     phase: context.state?.phase || '',
     gate: context.state?.gate || 'none',
     next_action: routeFields.next_action,

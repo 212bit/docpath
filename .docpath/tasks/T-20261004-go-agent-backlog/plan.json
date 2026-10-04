@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-04T15:11:23.879Z",
+    "updated_at": "2026-10-04T15:11:23.879Z",
+    "content_sha256": "ef86b75234562eb65d40c83eb0d02dbfc841b9c78e721242d6d6c259e08ac254"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-04T15:11:23.879Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 优化 go",
+      "description": "落地 FR-1: 优化 go，并完成模块定向自验。",
+      "acceptance": "AC-1: 优化 go 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 Agent 路由中的 Backlog 自动关联",
+      "description": "落地 FR-2: Agent 路由中的 Backlog 自动关联，并完成模块定向自验。",
+      "acceptance": "AC-2: Agent 路由中的 Backlog 自动关联 满足功能要求并通过测试",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现并验证 FR-3 标题容错",
+      "description": "落地 FR-3: 标题容错，并完成模块定向自验。",
+      "acceptance": "AC-3: 标题容错 满足功能要求并通过测试；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-483 与任务 T-20261004-go-agent-backlog 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

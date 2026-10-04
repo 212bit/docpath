@@ -73,13 +73,18 @@ async function readSpecFields(specPath: string): Promise<Record<string, string>>
   if (!existsSync(specPath)) return extraFields;
 
   const specContent = await readFile(specPath, 'utf-8');
-  const idMatch = specContent.match(/^#\s+(T-\S+)/m);
+  const idMatch = specContent.match(/^#\s+(T-[\w-]+)/m);
   if (idMatch) {
     extraFields.task_id = idMatch[1];
   }
-  const titleMatch = specContent.match(/^#\s+T-\S+\s*[-—:]\s*(.+)/m);
-  if (titleMatch) {
-    extraFields.task_title = titleMatch[1].trim();
+  const matchWithId = specContent.match(/^#\s+(?:(?:T|R)-[\w-]+\s*[-—:]\s*)(.+)$/m);
+  if (matchWithId) {
+    extraFields.task_title = matchWithId[1].trim();
+  } else {
+    const matchPlain = specContent.match(/^#\s+(.+)$/m);
+    if (matchPlain) {
+      extraFields.task_title = matchPlain[1].trim();
+    }
   }
   return extraFields;
 }
@@ -245,8 +250,8 @@ async function startStep(
   // 更新 current.md：phase 表示工作流阶段，current_step 表示正在执行的子任务
   await transitionWorkflow(cwd, 'step.started', {
     currentStep: target.id,
-    taskId: extraFields.task_id,
-    taskTitle: extraFields.task_title,
+    taskId: extraFields.task_id || taskId,
+    taskTitle: extraFields.task_title || undefined,
   });
 
   console.log('─── Claude Code 指令 ───');

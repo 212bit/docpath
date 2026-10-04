@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-04T15:03:00.514Z",
+    "updated_at": "2026-10-04T15:03:00.514Z",
+    "content_sha256": "7ba6834bfe2898925343f3a3bd12d001ea8506bd1d1f103058cf8fd1b15e94c7"
+  },
+  "task_id": "T-20261004-go-agent-backlog",
+  "backlog_id": "R-483",
+  "title": "T-20261004-go-agent-backlog - 优化 go 与 Agent 路由中的 Backlog 自动关联及标题容错",
+  "generated_at": "2026-10-04T15:03:00.514Z",
+  "scope": {
+    "included": [],
+    "excluded": []
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "已确认",
+    "decision_brief_markdown": "- 当前问题: `go` 步骤执行中标题提取对 `# R-xxx` 标题容错不足，且 Agent 路由对 spec 中的 backlog_id 缺少回退反射\n- 目标: 增强 `go` 与 `agent-output` 对 Backlog 标题与 ID 的自动关联和容错能力\n- 推荐方案: 统一使用通用标题提取正则，并在状态生成层加入 `backlog_id` 回退\n- 决策理由: 彻底闭环消除 Backlog 与 Task 协同中的边界漏洞\n- 用户确认: 已确认"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "优化 `docpath go` 的 `readSpecFields`，支持从 `# T-xxx - 标题`、`# R-xxx - 标题` 及普通 `# 标题` 中提取标题，且在 `startStep` 中确保 `taskId` 完整传递。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "优化 `generateAgentOutput` 中的 `backlog_id` 解析，当 `state.json` 缺少 `backlog_id` 时自动从 `structuredSpec` 回退获取。",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "完善单测覆盖，验证 `go` 在各类 H1 格式下标题提取与状态更新的正确性。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容，全量门禁与测试套件通过。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "当 `spec.md` 首行为 `# R-xxx - 标题` 时，`docpath go` 能够正确提取 `task_title` 并在 `current.md` / `state.json` 中保留标题。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`agent-output` 能够在 `state.json` 缺失 `backlog_id` 但 `spec.json` 存在时正确反射 `backlog_id`。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "全量测试套件通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "`go` 步骤执行中标题提取对 `# R-xxx` 标题容错不足，且 Agent 路由对 spec 中的 backlog_id 缺少回退反射",
+    "options": [
+      "统一使用通用标题提取正则，并在状态生成层加入 `backlog_id` 回退"
+    ],
+    "chosen": "统一使用通用标题提取正则，并在状态生成层加入 `backlog_id` 回退",
+    "rationale": "彻底闭环消除 Backlog 与 Task 协同中的边界漏洞"
+  }
+}

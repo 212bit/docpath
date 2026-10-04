@@ -216,4 +216,45 @@ describe('go --auto-next', () => {
     assert.doesNotMatch(out, /无法解析 task_id/, 'dry-run should not hit the gate');
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('go correctly extracts task_title when spec.md starts with # R-xxx - <title>', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'docpath-go-r-heading-'));
+    const { tasks, workspace } = mkExecWorkspace(cwd);
+    writeFileSync(join(tasks, 'spec.md'), [
+      '# R-167 - Readonly FS Fallback',
+      '',
+      '> backlog_id: R-167',
+      '',
+      '## 1. 背景与动机',
+      '- 只读文件系统回退',
+      '',
+      '## 2. 需求清单',
+      '### 功能需求',
+      '- [ ] FR-1: 候选位置级联',
+      '',
+      '## 5. 验收标准',
+      '- [ ] AC-1: 只读目录时回退 tmp 成功',
+      '',
+    ].join('\n'));
+    writeFileSync(join(tasks, 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: Implement cascade',
+      '- **描述**: 实现候选位置级联',
+      '- **验收条件**: pass',
+      '- **依赖**: 无',
+      '',
+      '## Checklist',
+      '- [ ] S1',
+      '',
+    ].join('\n'));
+
+    const out = run('go --step S1', cwd);
+    assert.match(out, /执行子任务|S1/);
+    const state = JSON.parse(readFileSync(join(workspace, 'state.json'), 'utf-8'));
+    assert.equal(state.task_title, 'Readonly FS Fallback');
+    assert.equal(state.task_id, 'T-AGENT');
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });
+
