@@ -5,6 +5,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { normalizeTopic } from './topic-synonyms.js';
 import { readDeclaredDocumentScanPaths } from './config.js';
 import { isExcludedForScan } from './scan-existing-tree.js';
+import { DEFAULT_DOCUMENT_SCAN_PATHS } from '../types/config.js';
 
 export const PROJECT_DOCS_INDEX_VERSION = 2;
 /** docs graph 高置信度阈值：唯一候选且 score ≥ 该值才允许 --fix 自动写入 frontmatter（工程自定值，可调） */
@@ -1233,16 +1234,15 @@ export async function refreshProjectDocumentIndex(
 ): Promise<{ entries: ProjectDocumentIndexEntry[]; docsIndexPath: string; externalCount: number; declaredExternal: boolean }> {
   const mdFiles = await scanDirectory(docpathDir, docpathDir);
   const declaredPaths = await readDeclaredDocumentScanPaths(cwd);
-  const externalFiles = declaredPaths
-    ? await collectExternalDocFiles(docpathDir, declaredPaths, new Set(mdFiles))
-    : [];
+  const scanPaths = declaredPaths ?? DEFAULT_DOCUMENT_SCAN_PATHS;
+  const externalFiles = await collectExternalDocFiles(docpathDir, scanPaths, new Set(mdFiles));
 
   if (mdFiles.length === 0 && externalFiles.length === 0) {
     return {
       entries: [],
       docsIndexPath: join(docpathDir, 'docs-index.json'),
       externalCount: 0,
-      declaredExternal: !!declaredPaths,
+      declaredExternal: declaredPaths !== null || externalFiles.length > 0,
     };
   }
 
@@ -1252,7 +1252,7 @@ export async function refreshProjectDocumentIndex(
     entries,
     docsIndexPath,
     externalCount: externalFiles.length,
-    declaredExternal: !!declaredPaths,
+    declaredExternal: declaredPaths !== null || externalFiles.length > 0,
   };
 }
 

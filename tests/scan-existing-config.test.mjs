@@ -63,14 +63,14 @@ describe('init generateConfig scan-existing fields (S5 E2E)', () => {
     } finally { rmSync(cwd, { recursive: true, force: true }); }
   });
 
-  it('config.yaml does NOT contain scan fields when no --scan-existing (逐字节回归)', () => {
+  it('config.yaml contains document_scan_paths by default when no --scan-existing (R-484)', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'dp-cfg-'));
     try {
       execFileSync('git', ['init', '-q'], { cwd, stdio: 'ignore' });
       writeFileSync(join(cwd, 'package.json'), JSON.stringify({ name: 'demo', scripts: { test: 'jest' } }));
       execFileSync(process.execPath, [new URL('../bin/docpath.js', import.meta.url).pathname, 'init', '--cwd', cwd, '--level', '1'], { stdio: 'ignore' });
       const cfg = readFileSync(join(cwd, '.docpath', 'config.yaml'), 'utf-8');
-      assert.ok(!/document_scan_paths:/.test(cfg), 'no scan paths without flag');
+      assert.match(cfg, /document_scan_paths:/, 'document_scan_paths is included by default');
       assert.ok(!/project_commands:/.test(cfg), 'no project_commands without flag');
     } finally { rmSync(cwd, { recursive: true, force: true }); }
   });

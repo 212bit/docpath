@@ -440,24 +440,21 @@ function printInitSummary(level: ComplexityLevel, levelSource: LevelSource, proj
   if (detected) console.log(`  🔍 检测到: ${detected}`);
 }
 
-function generateConfig(level: ComplexityLevel, projectInfo?: ProjectInfo, scanOptions?: { scanExisting?: boolean }): string {
+function generateConfig(level: ComplexityLevel, projectInfo?: ProjectInfo, _scanOptions?: { scanExisting?: boolean }): string {
   const now = new Date().toISOString().split('T')[0];
   const name = projectInfo?.name || '';
   const desc = projectInfo?.description || '';
   const type = projectInfo?.type || 'unknown';
   const lang = projectInfo?.language || 'Unknown';
   const fw = projectInfo?.framework || '';
-  // §4.d/FR-4：scan-existing 时显式声明 document_scan_paths（默认三路径 + 用户可改）。
-  const scanPathsSection = scanOptions?.scanExisting
-    ? `
-# 文档扫描路径（由 init --scan-existing 声明，FR-4/FR-5）
-# docpath docs scan 逐路径扫描合并索引；noise 按 §4.d（.gitignore + 硬黑名单）排除。
+  // §4.d/FR-4：默认显式声明 document_scan_paths（包含 .docpath/, README.md, docs/）。
+  const scanPathsSection = `
+# 文档扫描路径（docpath docs scan 逐路径扫描合并索引）
 document_scan_paths:
   - ".docpath/"
   - "README.md"
   - "docs/"
-`
-    : '';
+`;
   // R-336 FR-3: default_level / workflow.auto_* / paths / project_commands 不再写入 ——
   // 四者经 grep 实证零消费方（level 实际来自 state.json；路径引擎硬编码；
   // project_commands 从未被读取且会被下次 scan 语义冲掉）。用户 config 残留无行为影响。

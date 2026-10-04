@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-04T16:16:16.852Z",
+    "updated_at": "2026-10-04T16:16:16.852Z",
+    "content_sha256": "bd0d02082155afc6bb066dd84d5cb9e04d240b080d2c062eea23faa8497fef84"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-04T16:16:16.852Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 文档扫描引擎默认探测项目根目录 docs",
+      "description": "落地 FR-1: 文档扫描引擎默认探测项目根目录 docs，并完成模块定向自验。",
+      "acceptance": "AC-1: 文档扫描引擎默认探测项目根目录 docs 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 README 索引",
+      "description": "落地 FR-2: README 索引，并完成模块定向自验。",
+      "acceptance": "AC-2: README 索引 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-484 与任务 T-20261004-docs-readme 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

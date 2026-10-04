@@ -1,0 +1,9 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261004-docs-readme","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 文档扫描引擎默认探测项目根目录 docs","timestamp":"2026-10-04T16:06:11.561Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261004-docs-readme","step":"spec.updated","status":"done","context":"write-spec 覆盖更新: 行数 -30, FR 2->2, AC 4->3","timestamp":"2026-10-04T16:07:13.367Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261004-docs-readme","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-04T16:15:24.595Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261004-docs-readme","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 README 索引","timestamp":"2026-10-04T16:15:25.011Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261004-docs-readme","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-04T16:16:16.844Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261004-docs-readme","step":"check","status":"blocked","context":"质量检查失败: 测试（受控并发）","timestamp":"2026-10-04T16:19:28.784Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261004-docs-readme","step":"check","status":"done","context":"质量检查通过 (13 项)","timestamp":"2026-10-04T16:26:36.649Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261004-docs-readme","step":"review","status":"done","context":"代码审查: 0 错误, 6 警告, 1 提示","timestamp":"2026-10-04T16:26:38.381Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261004-docs-readme","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-04T16:26:40.911Z"}

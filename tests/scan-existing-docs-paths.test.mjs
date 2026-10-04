@@ -63,7 +63,7 @@ describe('readDeclaredDocumentScanPaths (S7 unit / FR-5 原始语义)', () => {
 });
 
 describe('docs scan document_scan_paths (S7 / FR-5 / AC-5)', () => {
-  it('no field → scans only .docpath/, external README/docs stay out (NFR-1)', () => {
+  it('no field → defaults to scanning DEFAULT_DOCUMENT_SCAN_PATHS (.docpath/, README.md, docs/)', () => {
     const cwd = mkWorkspace();
     try {
       writeFileSync(join(cwd, 'README.md'), '# Demo\n\nRoot readme.\n');
@@ -72,10 +72,10 @@ describe('docs scan document_scan_paths (S7 / FR-5 / AC-5)', () => {
 
       const out = run('docs scan', cwd);
       const paths = readIndexPaths(cwd);
-      assert.ok(paths.includes('rules/style.md'));
-      assert.ok(!paths.includes('README.md'), 'external README must stay out without the field');
-      assert.ok(!paths.some((p) => p.startsWith('docs/')), 'external docs/ must stay out without the field');
-      assert.ok(!out.includes('外部文档'), 'no external-scan output line without the field');
+      assert.ok(paths.includes('rules/style.md'), 'internal docs indexed');
+      assert.ok(paths.includes('README.md'), 'external README enters index by default');
+      assert.ok(paths.some((p) => p.startsWith('docs/')), 'external docs/ enters index by default');
+      assert.match(out, /外部文档: 2 个/);
     } finally { rmSync(cwd, { recursive: true, force: true }); }
   });
 

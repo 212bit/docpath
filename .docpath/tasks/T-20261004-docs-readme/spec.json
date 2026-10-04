@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-04T16:07:13.361Z",
+    "updated_at": "2026-10-04T16:07:13.361Z",
+    "content_sha256": "8d8aef0a7aea05bad7c8df0ca7a780438951c755e427e2344b9836959f6483a9"
+  },
+  "task_id": "T-20261004-docs-readme",
+  "backlog_id": "R-484",
+  "title": "T-20261004-docs-readme - 文档扫描引擎默认探测项目根目录 docs 与 README 索引",
+  "generated_at": "2026-10-04T16:07:13.361Z",
+  "scope": {
+    "included": [],
+    "excluded": []
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "已确认",
+    "decision_brief_markdown": "- 当前问题: docs scan 默认不扫项目根目录 docs/，导致未显式配置的项目全部业务文档漏索引\n- 目标: 实现 docs scan 智能默认探测 docs/ 与 README.md，并对齐 init 默认模板\n- 推荐方案: 缺省配置时采用 DEFAULT_DOCUMENT_SCAN_PATHS，并更新 init 生成逻辑\n- 决策理由: 符合常识与直觉，开箱即用，彻底解决文档索引漏扫问题\n- 用户确认: 已确认"
+  },
+  "ui_gate": {
+    "state": "unknown"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "文档扫描引擎智能默认探测 —— 当 `config.yaml` 未显式声明 `document_scan_paths` 时，自动使用 `DEFAULT_DOCUMENT_SCAN_PATHS`（默认包含 `.docpath/`, `README.md`, `docs/`），自动扫描并索引项目根目录下的 `docs/` 及 `README.md`。",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "`docpath init` 配置模板对齐 —— `docpath init` 生成的 `config.yaml` 默认预填 `document_scan_paths`（包含 `.docpath/`, `README.md`, `docs/`），开箱即用。",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容，全量测试套件通过。",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "在未配置 `document_scan_paths` 的项目中，`docs scan` 自动将项目根目录 `docs/` 下的 Markdown 文档索引进 `docs-index.json`。",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`docpath init` 生成的 `config.yaml` 默认包含 `document_scan_paths` 配置。",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "全量测试套件通过。",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "docs scan 默认不扫项目根目录 docs/，导致未显式配置的项目全部业务文档漏索引",
+    "options": [
+      "缺省配置时采用 DEFAULT_DOCUMENT_SCAN_PATHS，并更新 init 生成逻辑"
+    ],
+    "chosen": "缺省配置时采用 DEFAULT_DOCUMENT_SCAN_PATHS，并更新 init 生成逻辑",
+    "rationale": "符合常识与直觉，开箱即用，彻底解决文档索引漏扫问题"
+  }
+}
