@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-05T05:52:21.003Z",
+    "updated_at": "2026-10-05T05:52:21.003Z",
+    "content_sha256": "0afc60b63ee36ca2c75afcaf99fd383bf480c87af4868cb1d198f7c0460b2e0c"
+  },
+  "task_id": "T-20261005-backlog",
+  "backlog_id": "R-485",
+  "title": "T-20261005-backlog - 增强Backlog归档条目查看与多维列表检索能力",
+  "generated_at": "2026-10-05T05:52:21.003Z",
+  "scope": {
+    "included": [
+      "增强Backlog归档条目查看与多维列表检索能力"
+    ],
+    "excluded": [
+      "待在后续规划中补充"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "待确认",
+    "decision_brief_markdown": "- 当前问题: 增强Backlog归档条目查看与多维列表检索能力\n- 目标: 增强Backlog归档条目查看与多维列表检索能力\n- 背景: 来自 backlog R-485\n- 可选方案:\n  - 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程\n  - 方案 B: 补充分析，扩展本任务范围\n- 推荐方案: 方案 A\n- 决策理由: 方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险\n- 不做什么: 不扩大到 backlog 未声明的产品/UI/架构范围\n- 成本: 中等，按 plan 拆分后逐步验证\n- 风险: 门禁推断可能不完整，执行前仍需 check/review 捕获漂移\n- 回滚方案: 回滚本任务提交，或将 backlog 条目退回 proposed\n- 用户确认: 待确认"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "增强Backlog归档条目查看",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "多维列表检索能力",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath 工作流兼容",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "增强Backlog归档条目查看 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "多维列表检索能力 满足功能要求并通过测试",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "生成的 spec 可直接进入 `docpath plan`",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "backlog 条目 R-485 与任务 T-20261005-backlog 建立双向关联",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "增强Backlog归档条目查看与多维列表检索能力",
+    "options": [
+      "- 方案 A: 保持 backlog 范围，进入 spec -> plan -> go 标准流程"
+    ],
+    "chosen": "方案 A",
+    "rationale": "方案 A 满足 backlog 声明的全部验收条件，且无额外依赖风险"
+  }
+}

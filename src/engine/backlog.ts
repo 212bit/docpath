@@ -80,6 +80,10 @@ export interface BacklogItem {
   created_at: string;
   /** frontmatter 之后的 markdown 正文 */
   body: string;
+  /** 是否归档条目 */
+  is_archived?: boolean;
+  /** 文件相对路径（如 backlog/R-001.md 或 backlog/archived/R-001.md） */
+  file_path?: string;
 }
 
 /**
@@ -476,7 +480,10 @@ export async function listBacklogItems(cwd: string): Promise<BacklogItem[]> {
     if (!/^R-\d+/i.test(file)) continue;
     const content = await readFileOrSkip(join(dir, file));
     if (content === null) continue;
-    items.push(parseItem(content));
+    const item = parseItem(content);
+    item.is_archived = false;
+    item.file_path = `backlog/${file}`;
+    items.push(item);
   }
   return items.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 }
@@ -494,7 +501,10 @@ export async function listArchivedBacklogItems(cwd: string): Promise<BacklogItem
     if (!/^R-\d+/i.test(file)) continue;
     const content = await readFileOrSkip(join(dir, file));
     if (content === null) continue;
-    items.push(parseItem(content));
+    const item = parseItem(content);
+    item.is_archived = true;
+    item.file_path = `backlog/archived/${file}`;
+    items.push(item);
   }
   return items.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 }
@@ -529,9 +539,15 @@ export async function readBacklogItem(
     const archivedDir = archivedBacklogDir(await resolveDocpathDir(cwd));
     const archivedFile = await findItemFile(archivedDir, id);
     if (!archivedFile) return null;
-    return parseItem(await readFile(join(archivedDir, archivedFile), 'utf-8'));
+    const item = parseItem(await readFile(join(archivedDir, archivedFile), 'utf-8'));
+    item.is_archived = true;
+    item.file_path = `backlog/archived/${archivedFile}`;
+    return item;
   }
-  return parseItem(await readFile(join(dir, file), 'utf-8'));
+  const item = parseItem(await readFile(join(dir, file), 'utf-8'));
+  item.is_archived = false;
+  item.file_path = `backlog/${file}`;
+  return item;
 }
 
 /**

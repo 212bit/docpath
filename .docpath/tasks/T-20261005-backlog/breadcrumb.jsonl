@@ -1,0 +1,7 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261005-backlog","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 增强Backlog归档条目查看","timestamp":"2026-10-05T05:52:22.108Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261005-backlog","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-05T05:56:29.615Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261005-backlog","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 多维列表检索能力","timestamp":"2026-10-05T05:56:29.916Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261005-backlog","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-05T05:57:25.166Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261005-backlog","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-05T05:59:12.504Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261005-backlog","step":"review","status":"done","context":"代码审查: 0 错误, 20 警告, 1 提示","timestamp":"2026-10-05T05:59:13.594Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261005-backlog","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-05T05:59:14.996Z"}

@@ -137,12 +137,27 @@ docpath backlog edit R-426 --priority P0 --level 2
 docpath backlog edit R-425,R-426 --status planned
 ```
 
-### 4.3 检索、详情与统计 (Search, Show & Stats)
+### 4.3 列表、检索与详情 (List, Search & Show)
 ```bash
-# 详情展示（支持活跃与已归档）
+# 活跃需求列表
+docpath backlog list
+
+# 仅查看已归档历史需求 (done / dropped)
+docpath backlog list --archived
+
+# 全量查看（活跃 + 已归档）
+docpath backlog list --all
+
+# 状态过滤（查询 done / dropped 终态时自动穿透已归档库）
+docpath backlog list --status done
+
+# 详情展示（无论活跃或已归档均支持无缝读取，标明存储区与物理路径）
 docpath backlog show R-425
 
-# 全生命周期多维检索
+# 归档库定向检索
+docpath backlog search "索引自愈" --archived
+
+# 全生命周期多维检索（活跃 + 归档）
 docpath backlog search "索引自愈" --include-archived --status done
 
 # 全景度量与健康统计

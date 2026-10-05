@@ -1607,4 +1607,78 @@ Delta
     assert.throws(() => run('backlog archive R-008', cwd), /只接受终态条目/);
     rmSync(cwd, { recursive: true, force: true });
   });
+
+  it('supports viewing and listing archived backlog items via list --archived / --all / --status done', () => {
+    const cwd = mkWorkspace();
+    mkdirSync(join(cwd, '.docpath', 'backlog', 'archived'), { recursive: true });
+
+    // Active item R-001
+    run('backlog add --title "活跃需求" --priority P1 --level 1 --background "活跃" --acceptance "通过" --readiness confirmed', cwd);
+
+    // Archived item R-002 (done)
+    writeFileSync(join(cwd, '.docpath', 'backlog', 'archived', 'R-002-archived.md'), `---
+id: R-002
+title: 已完成历史需求
+status: done
+priority: P0
+level: 2
+source: test
+links:
+  task: T-20260531-test
+  spec: null
+created_at: 2026-05-31
+---
+
+已归档正文
+`);
+
+    // 1. Default list: only active R-001
+    const defaultList = run('backlog list', cwd);
+    assert.match(defaultList, /R-001/);
+    assert.doesNotMatch(defaultList, /R-002/);
+
+    // 2. list --archived: only archived R-002
+    const archivedList = run('backlog list --archived', cwd);
+    assert.match(archivedList, /R-002/);
+    assert.match(archivedList, /done \[已归档\]/);
+    assert.doesNotMatch(archivedList, /R-001/);
+
+    // 3. list --all: both R-001 and R-002
+    const allList = run('backlog list --all', cwd);
+    assert.match(allList, /R-001/);
+    assert.match(allList, /R-002/);
+    assert.match(allList, /done \[已归档\]/);
+
+    // 4. list --status done: auto-scans archived and returns R-002
+    const doneList = run('backlog list --status done', cwd);
+    assert.match(doneList, /R-002/);
+    assert.doesNotMatch(doneList, /R-001/);
+
+    // 5. list --agent with --all
+    const agentList = run('backlog list --all --agent', cwd);
+    const parsedAgent = parse(agentList);
+    assert.equal(parsedAgent.count, 2);
+    assert.equal(parsedAgent.archived_count, 1);
+    assert.equal(parsedAgent.items.find((it) => it.id === 'R-002').is_archived, true);
+    assert.equal(parsedAgent.items.find((it) => it.id === 'R-001').is_archived, false);
+
+    // 6. backlog show for archived item R-002
+    const showText = run('backlog show R-002', cwd);
+    assert.match(showText, /done \[已归档 \/ backlog\/archived\/R-002-archived\.md\]/);
+    assert.match(showText, /file:\s+backlog\/archived\/R-002-archived\.md/);
+
+    const showAgent = run('backlog show R-002 --agent', cwd);
+    const parsedShow = parse(showAgent);
+    assert.equal(parsedShow.id, 'R-002');
+    assert.equal(parsedShow.is_archived, true);
+    assert.equal(parsedShow.file_path, 'backlog/archived/R-002-archived.md');
+
+    // 7. backlog search with --archived
+    const searchArchived = run('backlog search --archived', cwd);
+    assert.match(searchArchived, /R-002/);
+    assert.match(searchArchived, /\[已归档\]/);
+    assert.doesNotMatch(searchArchived, /R-001/);
+
+    rmSync(cwd, { recursive: true, force: true });
+  });
 });

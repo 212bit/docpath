@@ -23,7 +23,9 @@ export interface BacklogSearchOptions {
   dependsOn?: string;
   readyOnly?: boolean;
   limit?: number;
+  all?: boolean;
   includeArchived?: boolean;
+  archived?: boolean;
   archivedOnly?: boolean;
 }
 
@@ -45,8 +47,10 @@ export async function searchBacklogItems(
   options: BacklogSearchOptions = {},
 ): Promise<BacklogSearchResultItem[]> {
   const statusFilter = options.status?.trim().toLowerCase();
-  const shouldIncludeArchived = options.includeArchived === true ||
-    options.archivedOnly === true ||
+  const isArchivedOnly = (options.archivedOnly === true || options.archived === true) && options.all !== true;
+  const shouldIncludeArchived = isArchivedOnly ||
+    options.includeArchived === true ||
+    options.all === true ||
     statusFilter === 'done' ||
     statusFilter === 'dropped' ||
     statusFilter === 'all';
@@ -54,7 +58,7 @@ export async function searchBacklogItems(
   let allItems: BacklogItem[];
   let archivedSet = new Set<string>();
 
-  if (options.archivedOnly) {
+  if (isArchivedOnly) {
     allItems = await listArchivedBacklogItems(cwd);
     archivedSet = new Set(allItems.map((it) => it.id));
   } else if (shouldIncludeArchived) {

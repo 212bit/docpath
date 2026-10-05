@@ -25,6 +25,8 @@ import {
   isBacklogStatus,
   generateBacklogItemBody,
   listBacklogItems,
+  listArchivedBacklogItems,
+  listAllBacklogItems,
   readBacklogItem,
   refreshBacklogIndex,
   setBacklogStatus,
@@ -100,6 +102,8 @@ export interface BacklogCommandOptions {
   fix?: boolean;
   all?: boolean;
   includeArchived?: boolean;
+  archived?: boolean;
+  archivedOnly?: boolean;
   agent?: boolean;
   draft?: boolean;
   adopt?: boolean;
@@ -1617,17 +1621,19 @@ async function backlogUpdateTerminalStatus(
 }
 
 function renderListTable(items: BacklogItem[]): string {
+  const hasAnyArchived = items.some((item) => item.is_archived);
   const lines = [
     '',
-    '📚  Backlog 条目',
+    `📚  Backlog 条目 (共 ${items.length} 项)${hasAnyArchived ? ' [包含已归档条目]' : ''}`,
     '',
     '| id | priority | status | level | title | task |',
     '|----|----------|--------|-------|-------|------|',
   ];
 
   for (const item of items) {
+    const statusLabel = item.is_archived ? `${item.status} [已归档]` : item.status;
     lines.push(
-      `| ${item.id} | ${item.priority} | ${item.status} | ${item.level} | ${item.title} | ${item.links.task ?? ''} |`
+      `| ${item.id} | ${item.priority} | ${statusLabel} | ${item.level} | ${item.title} | ${item.links.task ?? ''} |`
     );
   }
 
@@ -1643,8 +1649,18 @@ async function backlogList(options: BacklogCommandOptions): Promise<void> {
   const status = normalizeStatusFilter(options.status);
   const priority = options.priority ? normalizePriority(options.priority) : undefined;
   const milestone = options.milestone?.trim().toLowerCase();
+
+  let allItems: BacklogItem[];
+  if (options.archivedOnly || (options.archived && !options.all)) {
+    allItems = await listArchivedBacklogItems(options.cwd);
+  } else if (options.all || options.includeArchived || status === 'done' || status === 'dropped') {
+    allItems = await listAllBacklogItems(options.cwd);
+  } else {
+    allItems = await listBacklogItems(options.cwd);
+  }
+
   const filtered = sortBacklogItems(
-    (await listBacklogItems(options.cwd)).filter((item) => {
+    allItems.filter((item) => {
       if (status && item.status !== status) return false;
       if (priority && item.priority !== priority) return false;
       if (milestone && item.links.milestone?.toLowerCase() !== milestone) return false;
@@ -1655,6 +1671,7 @@ async function backlogList(options: BacklogCommandOptions): Promise<void> {
   if (options.agent) {
     console.log(stringify({
       count: filtered.length,
+      archived_count: filtered.filter((item) => item.is_archived).length,
       items: filtered.map((item) => ({
         id: item.id,
         title: item.title,
@@ -1662,6 +1679,8 @@ async function backlogList(options: BacklogCommandOptions): Promise<void> {
         priority: item.priority,
         level: item.level,
         readiness: item.readiness,
+        is_archived: item.is_archived ?? false,
+        file_path: item.file_path || null,
         milestone: item.links.milestone || null,
         task: item.links.task,
       })),
@@ -1731,6 +1750,9 @@ async function backlogSearch(options: BacklogCommandOptions): Promise<void> {
     dependsOn: options.dependsOn,
     readyOnly: options.readyOnly || options.unblocked,
     limit: options.limit,
+    all: options.all,
+    archived: options.archived,
+    archivedOnly: options.archivedOnly,
     includeArchived: options.includeArchived || options.all,
   });
 
@@ -1946,11 +1968,14 @@ async function backlogShow(options: BacklogCommandOptions): Promise<void> {
       level: item.level,
       status: item.status,
       readiness: item.readiness,
+      is_archived: item.is_archived ?? false,
+      file_path: item.file_path || null,
       created_at: item.created_at || null,
       links: {
         parent: item.links.parent || null,
         depends_on: item.links.depends_on || [],
         blocks: item.links.blocks || [],
+        milestone: item.links.milestone || null,
         task: item.links.task || null,
       },
       evidence: item.evidence || {},
@@ -1961,13 +1986,18 @@ async function backlogShow(options: BacklogCommandOptions): Promise<void> {
 
   console.log(`\n📋  Backlog 条目详情: ${item.id}`);
   console.log(`   title:     ${item.title}`);
-  console.log(`   status:    ${item.status}`);
+  const statusBadge = item.is_archived
+    ? `${item.status} [已归档 / ${item.file_path || 'backlog/archived/'}]`
+    : item.status;
+  console.log(`   status:    ${statusBadge}`);
   console.log(`   readiness: ${item.readiness}`);
   console.log(`   kind:      ${item.kind || 'feature'}`);
   console.log(`   priority:  ${item.priority}`);
   console.log(`   level:     Level ${item.level}`);
+  if (item.file_path) console.log(`   file:      ${item.file_path}`);
   if (item.created_at) console.log(`   created:   ${item.created_at}`);
   if (item.links.parent) console.log(`   parent:    ${item.links.parent}`);
+  if (item.links.milestone) console.log(`   milestone: ${item.links.milestone}`);
   if (item.links.depends_on && item.links.depends_on.length > 0) {
     console.log(`   depends:   ${item.links.depends_on.join(', ')}`);
   }
