@@ -1,0 +1,4 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-quick-git-co-authored-by-config","step":"S1","status":"done","context":"quick 升级 standard 自动闭环执行计划","timestamp":"2026-10-06T17:42:05.251Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-quick-git-co-authored-by-config","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-06T17:44:22.754Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-quick-git-co-authored-by-config","step":"review","status":"done","context":"代码审查: 0 错误, 1 警告, 1 提示","timestamp":"2026-10-06T17:44:23.579Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-quick-git-co-authored-by-config","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-10-06T17:44:25.188Z"}

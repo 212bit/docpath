@@ -116,15 +116,16 @@ DocPath 面向多 Agent 生态（Antigravity、Claude Code、Codex、OpenCode）
 
 1. **运行时动态感知**：
    - 自动检测环境变量与会话上下文，精准适配当前运行平台，动态生成对应 Agent 提示（如 `─── Antigravity 指令 ───`、`─── Codex 指令 ───`）。
-2. **Git 提交署名 (Co-Authored-By) 泛化与解耦**：
-   - 支持在 `.docpath/config.yaml` 中灵活配置：
+2. **Git 提交署名 (Co-Authored-By) 纯净模式与解耦**：
+   - 默认模式为**纯净模式**（缺省时不追加任何 `Co-Authored-By` 署名）。
+   - 支持在 `.docpath/config.yaml` 中由用户自主配置：
      ```yaml
      git:
-       co_author: false # 允许完全关闭自动署名
-       # 或显式自定义:
+       co_author: true # 开启署名，默认使用 DocPath <docpath@users.noreply.github.com>
+       # 或自定义任意署名字符串:
        # co_author: "Pair Programmer <pair@example.com>"
      ```
-   - 缺省状态下根据当前 Agent 运行时动态生成对应 Git Trailer，拒绝写死特定厂商。
+   - 拒绝任何第三方厂商硬编码，把控提交记录的纯净度与中立性。
 
 ---
 

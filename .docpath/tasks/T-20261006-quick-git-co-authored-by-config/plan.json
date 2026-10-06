@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-06T17:42:05.257Z",
+    "updated_at": "2026-10-06T17:42:05.257Z",
+    "content_sha256": "8eb5227d689b14e85a06559ed4365140ecf4b6f0b7c0be5e05f7dd6a27ed96ff"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-06T17:42:05.257Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 T-20261006-quick-git-co-authored-by-config - Git 提交署名默认纯净模式无 Co-Authored-By 仅在 config 显式配置时生效",
+      "description": "完成 T-20261006-quick-git-co-authored-by-config - Git 提交署名默认纯净模式无 Co-Authored-By 仅在 config 显式配置时生效（quick 升级 standard 压缩计划）。",
+      "acceptance": "代码实现就绪并通过质量门禁与审查",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

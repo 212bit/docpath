@@ -1,0 +1,482 @@
+{
+  "taskId": "T-20261006-quick-git-co-authored-by-config",
+  "taskTitle": "T-20261006-quick-git-co-authored-by-config - T-20261006-quick-git-co-authored-by-config - Git 提交署名默认纯净模式无 Co-Authored-By 仅在 config 显式配置时生效",
+  "backlogId": "R-490",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-10-06T17:42:05.251Z",
+  "completedAt": "2026-10-06T17:44:25.196Z",
+  "durationMinutes": 2.3,
+  "firstTimePassRate": 100,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 16, 消耗: 7949 Tokens, 时长: 4373 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 16,
+        "totalTokens": 7949,
+        "durationMinutes": 4373
+      }
+    }
+  ],
+  "totalDiffLines": 2273,
+  "filesChanged": 20,
+  "linesAdded": 2254,
+  "linesDeleted": 19,
+  "engineering": {
+    "turnCount": 4,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 2.3,
+    "filesChanged": 20,
+    "linesAdded": 2254,
+    "linesDeleted": 19,
+    "totalDiffLines": 2273,
+    "speedLinesPerMinute": 988.3
+  },
+  "protocol": {
+    "specTokens": 419,
+    "planTokens": 248,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 2467
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 5564,
+    "outputTokens": 2385,
+    "totalTokens": 7949,
+    "costUsd": 0.0525,
+    "toolCallsCount": 12,
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 2,
+        "inputTokens": 123,
+        "outputTokens": 1570,
+        "totalTokens": 1693,
+        "percentage": 21.3,
+        "errorCount": 0
+      },
+      {
+        "name": "manage_task",
+        "count": 3,
+        "inputTokens": 126,
+        "outputTokens": 1242,
+        "totalTokens": 1368,
+        "percentage": 17.2,
+        "errorCount": 0
+      },
+      {
+        "name": "replace_file_content",
+        "count": 1,
+        "inputTokens": 792,
+        "outputTokens": 564,
+        "totalTokens": 1356,
+        "percentage": 17.1,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 2,
+        "inputTokens": 151,
+        "outputTokens": 1175,
+        "totalTokens": 1326,
+        "percentage": 16.7,
+        "errorCount": 0
+      },
+      {
+        "name": "schedule",
+        "count": 4,
+        "inputTokens": 232,
+        "outputTokens": 603,
+        "totalTokens": 835,
+        "percentage": 10.5,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [],
+    "docpathCliOverhead": {
+      "totalCalls": 1,
+      "errorCalls": 0,
+      "totalTokens": 230,
+      "inputTokens": 74,
+      "outputTokens": 156,
+      "percentageOfSessionTokens": 2.9,
+      "commands": [
+        {
+          "subcommand": "done",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 74,
+          "outputTokens": 156,
+          "totalTokens": 230,
+          "avgTokens": 230
+        }
+      ]
+    },
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 16, 消耗: 7949 Tokens, 时长: 4373 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 16,
+          "totalTokens": 7949,
+          "durationMinutes": 4373
+        }
+      }
+    ],
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 100,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 0,
+      "redundantTokensWasted": 0,
+      "redundantPatterns": [],
+      "serialChains": [],
+      "heavyOutputCommands": [],
+      "actionableOptimizations": []
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-06T17:42:01Z",
+        "turnIndex": 1527,
+        "subcommand": "done",
+        "rawCommandLine": "\"npm run build && git add . && node bin/docpath.js done --commit\"",
+        "directInputTokens": 17,
+        "directOutputTokens": 156,
+        "directTotalTokens": 173,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 2000
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 5564,
+      "outputTokens": 2385,
+      "totalTokens": 7949,
+      "costUsd": 0.0525
+    },
+    "toolCalls": {
+      "total": 12,
+      "byName": {
+        "run_command": 2,
+        "view_file": 2,
+        "replace_file_content": 1,
+        "schedule": 4,
+        "manage_task": 3
+      },
+      "errorCount": 0
+    },
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 2,
+        "inputTokens": 123,
+        "outputTokens": 1570,
+        "totalTokens": 1693,
+        "percentage": 21.3,
+        "errorCount": 0
+      },
+      {
+        "name": "manage_task",
+        "count": 3,
+        "inputTokens": 126,
+        "outputTokens": 1242,
+        "totalTokens": 1368,
+        "percentage": 17.2,
+        "errorCount": 0
+      },
+      {
+        "name": "replace_file_content",
+        "count": 1,
+        "inputTokens": 792,
+        "outputTokens": 564,
+        "totalTokens": 1356,
+        "percentage": 17.1,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 2,
+        "inputTokens": 151,
+        "outputTokens": 1175,
+        "totalTokens": 1326,
+        "percentage": 16.7,
+        "errorCount": 0
+      },
+      {
+        "name": "schedule",
+        "count": 4,
+        "inputTokens": 232,
+        "outputTokens": 603,
+        "totalTokens": 835,
+        "percentage": 10.5,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [],
+    "docpathCliOverhead": {
+      "totalCalls": 1,
+      "errorCalls": 0,
+      "totalTokens": 230,
+      "inputTokens": 74,
+      "outputTokens": 156,
+      "percentageOfSessionTokens": 2.9,
+      "commands": [
+        {
+          "subcommand": "done",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 74,
+          "outputTokens": 156,
+          "totalTokens": 230,
+          "avgTokens": 230
+        }
+      ]
+    },
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 100,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 0,
+      "redundantTokensWasted": 0,
+      "redundantPatterns": [],
+      "serialChains": [],
+      "heavyOutputCommands": [],
+      "actionableOptimizations": []
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-06T17:42:01Z",
+        "turnIndex": 1527,
+        "subcommand": "done",
+        "rawCommandLine": "\"npm run build && git add . && node bin/docpath.js done --commit\"",
+        "directInputTokens": 17,
+        "directOutputTokens": 156,
+        "directTotalTokens": 173,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 2000
+      }
+    ],
+    "turnsCount": 16,
+    "errorCount": 0,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 16, 消耗: 7949 Tokens, 时长: 4373 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 16,
+          "totalTokens": 7949,
+          "durationMinutes": 4373
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 262371000
+  },
+  "toolAttributions": [
+    {
+      "name": "view_file",
+      "count": 2,
+      "inputTokens": 123,
+      "outputTokens": 1570,
+      "totalTokens": 1693,
+      "percentage": 21.3,
+      "errorCount": 0
+    },
+    {
+      "name": "manage_task",
+      "count": 3,
+      "inputTokens": 126,
+      "outputTokens": 1242,
+      "totalTokens": 1368,
+      "percentage": 17.2,
+      "errorCount": 0
+    },
+    {
+      "name": "replace_file_content",
+      "count": 1,
+      "inputTokens": 792,
+      "outputTokens": 564,
+      "totalTokens": 1356,
+      "percentage": 17.1,
+      "errorCount": 0
+    },
+    {
+      "name": "run_command",
+      "count": 2,
+      "inputTokens": 151,
+      "outputTokens": 1175,
+      "totalTokens": 1326,
+      "percentage": 16.7,
+      "errorCount": 0
+    },
+    {
+      "name": "schedule",
+      "count": 4,
+      "inputTokens": 232,
+      "outputTokens": 603,
+      "totalTokens": 835,
+      "percentage": 10.5,
+      "errorCount": 0
+    }
+  ],
+  "toolInefficiencies": [],
+  "docpathCliOverhead": {
+    "totalCalls": 1,
+    "errorCalls": 0,
+    "totalTokens": 230,
+    "inputTokens": 74,
+    "outputTokens": 156,
+    "percentageOfSessionTokens": 2.9,
+    "commands": [
+      {
+        "subcommand": "done",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 74,
+        "outputTokens": 156,
+        "totalTokens": 230,
+        "avgTokens": 230
+      }
+    ]
+  },
+  "docpathEfficacy": {
+    "preventedLoopsCount": 0,
+    "deadlockTokensSaved": 0,
+    "contextCompressionRatio": 92.5,
+    "subagentTokensSaved": 0,
+    "gateInterceptionCount": 0,
+    "firstTimePassRate": 100,
+    "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+  },
+  "docpathCliFriction": {
+    "redundantCallsCount": 0,
+    "redundantTokensWasted": 0,
+    "redundantPatterns": [],
+    "serialChains": [],
+    "heavyOutputCommands": [],
+    "actionableOptimizations": []
+  },
+  "commandInvocations": [
+    {
+      "id": "inv-1",
+      "timestamp": "2026-10-06T17:42:01Z",
+      "turnIndex": 1527,
+      "subcommand": "done",
+      "rawCommandLine": "\"npm run build && git add . && node bin/docpath.js done --commit\"",
+      "directInputTokens": 17,
+      "directOutputTokens": 156,
+      "directTotalTokens": 173,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 2000
+    }
+  ],
+  "frictionFindings": [
+    {
+      "id": "FRIC-SPEC-FRICTION",
+      "category": "spec_friction",
+      "severity": "medium",
+      "title": "需求决策与规格不确定性摩擦 (Spec Ambiguity & Churn)",
+      "description": "检测到 1 处规格决策未固化或架构变更未提前记录 Decision Brief",
+      "count": 1,
+      "tokensWasted": 300,
+      "optimizationHint": "在进入编码前运行 docpath spec refine --brief 固化架构与契约决策并取得确认"
+    }
+  ],
+  "stepPassAnalysis": {
+    "totalStepPassCalls": 0,
+    "productiveCalls": 0,
+    "redundantCalls": 0,
+    "directTokens": 0,
+    "invisibleTurnReplayTokens": 0,
+    "redundantTurnReplayTokens": 0,
+    "frictionTurnRatio": 0,
+    "summary": "未检测到 step-pass 调用与隐性重放损耗"
+  },
+  "lifecycleAnchor": {
+    "sessionId": "9eae9665-73b9-4b13-832f-ab8ffce3bd9b",
+    "baseCommit": "614a22ac04ad8ff66208789d37dbb30d61497ded",
+    "headCommit": "614a22ac04ad8ff66208789d37dbb30d61497ded",
+    "startedAt": "2026-10-06T17:42:05.251Z",
+    "completedAt": "2026-10-06T17:44:25.196Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 T-20261006-quick-git-co-authored-by-config - Git 提交署名默认纯净模式无 Co-Authored-By 仅在 config 显式配置时生效",
+      "startedAt": "2026-10-06T17:42:05.251Z",
+      "completedAt": "2026-10-06T17:42:05.251Z",
+      "durationMinutes": 0,
+      "totalTokens": 5637,
+      "inputTokens": 3946,
+      "outputTokens": 1691,
+      "costUsd": 0.0372,
+      "toolCallsCount": 6,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 2,
+          "tokens": 1693
+        },
+        {
+          "name": "replace_file_content",
+          "count": 1,
+          "tokens": 1356
+        },
+        {
+          "name": "run_command",
+          "count": 2,
+          "tokens": 1326
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 2467,
+    "realModelTokens": 7949,
+    "overheadRatio": 31.04,
+    "complianceScore": 85,
+    "firstTimePassRate": 100,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}
