@@ -30,6 +30,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .option('--status <status>', 'list/search/export: 状态过滤')
     .option('--milestone <id>', 'add/edit/search/export: 关联的里程碑 ID (例如 M-001)')
     .option('--parent <id>', 'add/edit/shape/search: 父需求 ID')
+    .option('--target <id>', 'merge: 合并目标条目 ID (保留并更新)')
     .option('--depends-on <ids>', 'add/edit/shape/search: 依赖的前置需求 ID（逗号分隔）')
     .option('--blocks <ids>', 'add/edit: 阻塞的后置需求 ID（逗号分隔）')
     .option('--ready-only, --unblocked', 'search/export: 仅检索当前无未解依赖已就绪条目')
@@ -47,6 +48,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
     .action(async (action: string | undefined, id: string | undefined, options: {
       cwd?: string;
       title?: string;
+      target?: string;
       query?: string;
       kind?: string;
       priority?: string;
@@ -94,6 +96,7 @@ export function registerBacklogMaintenanceCommands(cli: CAC): void {
         cwd: options.cwd || process.cwd(),
         action,
         id,
+        target: options.target,
         title: options.title,
         query: options.query,
         kind: options.kind,

@@ -174,13 +174,16 @@ docpath backlog graph --mermaid
 # stats 与 graph 自动计算 Critical Path 与 Top Blockers
 ```
 
-### 4.5 深度治理与自动自愈 (Groom & Hygiene)
+### 4.5 深度治理、切片合并与自动自愈 (Groom, Merge & Hygiene)
 ```bash
-# 巡检需求池健康度（检查断链、循环依赖、模糊 AC、跨渠道漏洞）
+# 巡检需求池健康度（检查断链、循环依赖、模糊 AC、跨渠道漏洞、微型步骤碎片与水平技术分层异味）
 docpath backlog groom
 
 # 一键自动治理修复悬空依赖与一致性冗余副本
 docpath backlog groom --fix
+
+# 智能合并多条微型/技术分层 Backlog 为单个独立可交付特性
+docpath backlog merge R-006,R-007,R-008 --target R-006 --title "采购申请数据持久层与服务契约"
 ```
 
 ### 4.6 推进与提升 (Promote & Done)

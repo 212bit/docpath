@@ -215,6 +215,74 @@ export function auditBacklogHygiene(items: BacklogItem[]): {
         });
       }
     }
+
+    // 2.5 纯单技术步骤微型 Backlog 异味检测 (Single Technical Step Smell)
+    if (item.status !== 'done' && item.status !== 'dropped' && item.level <= 2) {
+      const isTechStep = /(?:^|\s)(?:配套\s*)?(?:mapper\s*接口|mybatis\s*(?:xml|映射)|建表\s*(?:sql|脚本)?|sofa\s*(?:provider|xml)\s*注册|spring\s*xml\s*配置)(?:\s|$)/i.test(item.title);
+      if (isTechStep) {
+        warnings.push({
+          id: item.id,
+          severity: 'warning',
+          field: 'granularity.technical_step',
+          message: `条目标题 '${item.title}' 疑似纯技术步骤而非独立可验证的业务交付物`,
+          suggestion: `建议遵循垂直业务切片原则，将技术步骤沉降为相关 Task 的 Step，或运行 docpath backlog merge 合并到父业务特性`,
+        });
+      }
+    }
+  }
+
+  // 3. 里程碑维度碎片化聚类分析 (Milestone Granularity & Horizontal Layer Smells)
+  const milestoneGroups = new Map<string, BacklogItem[]>();
+  for (const item of items) {
+    if (item.status === 'done' || item.status === 'dropped') continue;
+    const ms = item.links.milestone?.trim().toUpperCase();
+    if (ms) {
+      if (!milestoneGroups.has(ms)) milestoneGroups.set(ms, []);
+      milestoneGroups.get(ms)!.push(item);
+    }
+  }
+
+  const TECH_LAYER_RULES = [
+    { name: '数据持久与建表', pattern: /(?:建表|数据表|表结构|ddl|sql建表)/i },
+    { name: 'Mapper与XML映射', pattern: /(?:mapper|mybatis|dao|xml映射|配套mapper)/i },
+    { name: 'DTO与服务契约', pattern: /(?:dto|vo|facade\s*(?:svc\s*)?契约|接口契约|svc\s*契约)/i },
+    { name: '中间件与配置注册', pattern: /(?:sofa|spring|xml注册|配置注册|bean配置)/i },
+  ];
+
+  for (const [msId, msItems] of milestoneGroups.entries()) {
+    // 3.1 水平技术分层聚类检测 (例如同时出现建表、Mapper、DTO、SOFA)
+    const matchedItems: { layer: string; item: BacklogItem }[] = [];
+    for (const item of msItems) {
+      for (const rule of TECH_LAYER_RULES) {
+        if (rule.pattern.test(item.title)) {
+          matchedItems.push({ layer: rule.name, item });
+          break;
+        }
+      }
+    }
+
+    if (matchedItems.length >= 2) {
+      const uniqueIds = Array.from(new Set(matchedItems.map((m) => m.item.id)));
+      const titles = matchedItems.map((m) => `[${m.layer}] ${m.item.id}:${m.item.title}`);
+      warnings.push({
+        id: msId,
+        severity: 'warning',
+        field: 'granularity.layer_fragmentation',
+        message: `检测到里程碑 [${msId}] 下存在水平技术分层的微型 Backlog 聚类 (${uniqueIds.join(', ')})`,
+        suggestion: `建议遵循垂直业务切片 (Vertical Slice)，运行 docpath backlog merge ${uniqueIds.join(' ')} --target ${uniqueIds[0]} 合并为端到端交付特性`,
+      });
+    }
+
+    // 3.2 里程碑条目过多膨胀检测 (> 8 条活跃)
+    if (msItems.length > 8) {
+      warnings.push({
+        id: msId,
+        severity: 'warning',
+        field: 'milestone.backlog_bloat',
+        message: `里程碑 [${msId}] 下关联了 ${msItems.length} 个活跃 Backlog (推荐 3~6 个)`,
+        suggestion: `检查是否存在过度碎片化，建议使用 docpath backlog merge 合并相近的子流程或技术步骤`,
+      });
+    }
   }
 
   return { issues, warnings };

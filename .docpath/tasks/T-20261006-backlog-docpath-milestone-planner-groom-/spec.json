@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-06T12:36:51.067Z",
+    "updated_at": "2026-10-06T12:36:51.067Z",
+    "content_sha256": "5806fd4dae6a164fb047380cca195fed8c125c3cc9647a75eea0da60883c8c2e"
+  },
+  "task_id": "T-20261006-backlog-docpath-milestone-planner-groom-",
+  "backlog_id": "R-486",
+  "title": "T-20261006-backlog-docpath-milestone-planner-groom- - 里程碑与Backlog粒度治理增强：docpath-milestone-planner技能、groom碎片检测与backlog merge命令",
+  "generated_at": "2026-10-06T12:36:51.067Z",
+  "scope": {
+    "included": [
+      "`.docpath/skills/docpath-milestone-planner.md` 与安装模板分发",
+      "`src/engine/backlog.ts` / `src/commands/backlog.ts` 中 groom 碎片检测逻辑",
+      "`docpath backlog merge` CLI 注册与引擎实现",
+      "关联单元测试与活文档同步"
+    ],
+    "excluded": [
+      "不修改底层 ID 计数器分配机制"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "用户已在对话中明确同意方案",
+    "decision_brief_markdown": "- 当前问题: 拆解 Backlog 时容易过度碎片化，缺乏规范引导与一键合并工具\n- 推荐方案: 新增 milestone-planner 技能 + groom 碎片检测 + backlog merge 命令\n- 决策理由: 兼顾前置智能引导、后置巡检发现与便捷合并治理\n- 用户确认: 用户已在对话中明确同意方案"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "提供 `docpath-milestone-planner` Skill，规范里程碑与 Backlog 垂直切片与适度粒度原则",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "增强 `docpath backlog groom`，支持检测同一 Milestone 下的碎片化微型 Backlog 异味并给出合并建议",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "新增 `docpath backlog merge` 命令行与底层引擎，支持一键将多条微型 Backlog 合并到目标 Backlog 中并自动治理关联",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 DocPath Backlog & Milestone 状态机完全兼容",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "提供结构化 `--agent` 输出与完备单测覆盖",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`docpath-milestone-planner.md` 包含三层架构标准、自检清单与正反范例",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`docpath backlog groom` 能识别同 Milestone 下的数据层/微型技术步骤碎片并输出建议",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`docpath backlog merge R-A R-B --target R-A` 能正确合并内容、更新 AC、归档源条目并同步 Milestone",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "单元测试覆盖率达标且全部测试通过",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "活文档 `docs/features/backlog-lifecycle.md` 完成同步更新",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "拆解 Backlog 时容易过度碎片化，缺乏规范引导与一键合并工具",
+    "options": [
+      "新增 milestone-planner 技能 + groom 碎片检测 + backlog merge 命令"
+    ],
+    "chosen": "新增 milestone-planner 技能 + groom 碎片检测 + backlog merge 命令",
+    "rationale": "兼顾前置智能引导、后置巡检发现与便捷合并治理"
+  }
+}

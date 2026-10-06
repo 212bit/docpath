@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-06T13:40:39.540Z",
+    "updated_at": "2026-10-06T13:40:39.540Z",
+    "content_sha256": "76e6b72c124ab8c5ef2859b6525bdeb96e6090f6cc7c2ba978d234ed2dc7dd8a"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-06T13:40:39.540Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 提供 `docpath-milestone-planner` Skill，规范里程碑与 Backlog 垂直切片与适度粒度原则",
+      "description": "落地 FR-1: 提供 `docpath-milestone-planner` Skill，规范里程碑与 Backlog 垂直切片与适度粒度原则，并完成模块定向自验。",
+      "acceptance": "AC-1: `docpath-milestone-planner.md` 包含三层架构标准、自检清单与正反范例",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 增强 `docpath backlog groom`，支持检测同一 Milestone 下的碎片化微型 Backlog 异味并给出合并建议",
+      "description": "落地 FR-2: 增强 `docpath backlog groom`，支持检测同一 Milestone 下的碎片化微型 Backlog 异味并给出合并建议，并完成模块定向自验。",
+      "acceptance": "AC-2: `docpath backlog groom` 能识别同 Milestone 下的数据层/微型技术步骤碎片并输出建议",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现并验证 FR-3 新增 `docpath backlog merge` 命令行与底层引擎，支持一键将多条微型 Backlog 合并到目标 Backlog 中并自动治理关联",
+      "description": "落地 FR-3: 新增 `docpath backlog merge` 命令行与底层引擎，支持一键将多条微型 Backlog 合并到目标 Backlog 中并自动治理关联，并完成模块定向自验。",
+      "acceptance": "AC-3: `docpath backlog merge R-A R-B --target R-A` 能正确合并内容、更新 AC、归档源条目并同步 Milestone；AC-4: 单元测试覆盖率达标且全部测试通过；AC-5: 活文档 `docs/features/backlog-lifecycle.md` 完成同步更新",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

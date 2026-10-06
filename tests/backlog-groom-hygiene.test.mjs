@@ -138,4 +138,19 @@ describe('backlog kind, templates, hygiene groom, shape, and batch io', () => {
     assert.equal(exportedContent.items[0].kind, 'feature');
     assert.equal(exportedContent.items[1].kind, 'fix');
   });
+
+  it('detects granularity smells (horizontal technical layer clusters & single technical steps)', () => {
+    const cwd = mkWorkspace();
+
+    // 1. Add horizontal technical layer cluster under milestone M-002
+    run(['backlog', 'add', '--title', '采购申请业务建表', '--priority', 'P0', '--level', '1', '--background', '建表', '--acceptance', '建表完成', '--readiness', 'confirmed', '--milestone', 'M-002'], cwd);
+    run(['backlog', 'add', '--title', '配套 Mapper 接口与 mybatis XML 映射', '--priority', 'P0', '--level', '1', '--background', 'Mapper', '--acceptance', 'Mapper映射完成', '--readiness', 'confirmed', '--milestone', 'M-002'], cwd);
+    run(['backlog', 'add', '--title', 'facade 采购申请 SVC 契约与 DTO 定义', '--priority', 'P0', '--level', '1', '--background', 'DTO', '--acceptance', '契约定义完成', '--readiness', 'confirmed', '--milestone', 'M-002'], cwd);
+
+    const groomOut = run(['backlog', 'groom'], cwd);
+    assert.match(groomOut, /水平技术分层的微型 Backlog 聚类/);
+    assert.match(groomOut, /docpath backlog merge/);
+    assert.match(groomOut, /疑似纯技术步骤而非独立可验证的业务交付物/);
+  });
 });
+
