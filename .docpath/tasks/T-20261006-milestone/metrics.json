@@ -1,0 +1,1634 @@
+{
+  "taskId": "T-20261006-milestone",
+  "taskTitle": "T-20261006-milestone - Milestone里程碑全生命周期增强：智能正文拆解、风险燃尽分析、发布简报知识聚合与属性编辑巡检",
+  "backlogId": "R-487",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-10-06T16:01:22.762Z",
+  "completedAt": "2026-10-06T16:15:20.779Z",
+  "durationMinutes": 14,
+  "firstTimePassRate": 100,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 88, 消耗: 84082 Tokens, 时长: 4282 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 88,
+        "totalTokens": 84082,
+        "durationMinutes": 4282
+      }
+    }
+  ],
+  "totalDiffLines": 2820,
+  "filesChanged": 19,
+  "linesAdded": 2815,
+  "linesDeleted": 5,
+  "engineering": {
+    "turnCount": 12,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 14,
+    "filesChanged": 19,
+    "linesAdded": 2815,
+    "linesDeleted": 5,
+    "totalDiffLines": 2820,
+    "speedLinesPerMinute": 201.4
+  },
+  "protocol": {
+    "specTokens": 1183,
+    "planTokens": 848,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3831
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 58857,
+    "outputTokens": 25225,
+    "totalTokens": 84082,
+    "costUsd": 0.5549,
+    "toolCallsCount": 81,
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 43,
+        "inputTokens": 2353,
+        "outputTokens": 37724,
+        "totalTokens": 40077,
+        "percentage": 47.7,
+        "errorCount": 1
+      },
+      {
+        "name": "replace_file_content",
+        "count": 15,
+        "inputTokens": 13041,
+        "outputTokens": 9909,
+        "totalTokens": 22950,
+        "percentage": 27.3,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 22,
+        "inputTokens": 2314,
+        "outputTokens": 8587,
+        "totalTokens": 10901,
+        "percentage": 13,
+        "errorCount": 2
+      },
+      {
+        "name": "write_to_file",
+        "count": 1,
+        "inputTokens": 662,
+        "outputTokens": 75,
+        "totalTokens": 737,
+        "percentage": 0.9,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"milestone.ts\"\" 被重复读取了 21 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 18202,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/milestone.ts\"",
+          "readCount": 21,
+          "wastedTokens": 18202
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"milestone.ts\"\" 被重复读取了 10 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 7523,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/milestone.ts\"",
+          "readCount": 10,
+          "wastedTokens": 7523
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"reporting.ts\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 3554,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/register/reporting.ts\"",
+          "readCount": 4,
+          "wastedTokens": 3554
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 12,
+      "errorCalls": 0,
+      "totalTokens": 5860,
+      "inputTokens": 1568,
+      "outputTokens": 4292,
+      "percentageOfSessionTokens": 7,
+      "commands": [
+        {
+          "subcommand": "step-pass",
+          "count": 4,
+          "errorCount": 0,
+          "inputTokens": 235,
+          "outputTokens": 598,
+          "totalTokens": 833,
+          "avgTokens": 208
+        },
+        {
+          "subcommand": "backlog",
+          "count": 2,
+          "errorCount": 0,
+          "inputTokens": 185,
+          "outputTokens": 526,
+          "totalTokens": 711,
+          "avgTokens": 356
+        },
+        {
+          "subcommand": "go",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 53,
+          "outputTokens": 965,
+          "totalTokens": 1018,
+          "avgTokens": 1018
+        },
+        {
+          "subcommand": "write-spec",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 832,
+          "outputTokens": 165,
+          "totalTokens": 997,
+          "avgTokens": 997
+        },
+        {
+          "subcommand": "docs",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 79,
+          "outputTokens": 854,
+          "totalTokens": 933,
+          "avgTokens": 933
+        },
+        {
+          "subcommand": "next",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 54,
+          "outputTokens": 794,
+          "totalTokens": 848,
+          "avgTokens": 848
+        },
+        {
+          "subcommand": "plan",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 51,
+          "outputTokens": 239,
+          "totalTokens": 290,
+          "avgTokens": 290
+        },
+        {
+          "subcommand": "done",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 79,
+          "outputTokens": 151,
+          "totalTokens": 230,
+          "avgTokens": 230
+        }
+      ]
+    },
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 88, 消耗: 84082 Tokens, 时长: 4282 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 88,
+          "totalTokens": 84082,
+          "durationMinutes": 4282
+        }
+      }
+    ],
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 90.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 97,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 90.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 1,
+      "redundantTokensWasted": 372,
+      "redundantPatterns": [
+        {
+          "subcommand": "backlog",
+          "count": 1,
+          "tokensWasted": 372,
+          "reason": "Consecutive `backlog` polling without intermediate actions"
+        }
+      ],
+      "serialChains": [
+        {
+          "chain": "plan -> go",
+          "count": 1,
+          "tokensWasted": 1018,
+          "recommendation": "Avoid serial chaining of \"plan -> go\" without intervening actions."
+        },
+        {
+          "chain": "backlog -> write-spec",
+          "count": 1,
+          "tokensWasted": 997,
+          "recommendation": "Avoid serial chaining of \"backlog -> write-spec\" without intervening actions."
+        },
+        {
+          "chain": "backlog -> backlog",
+          "count": 1,
+          "tokensWasted": 372,
+          "recommendation": "Avoid calling `docpath backlog` consecutively without intermediate actions."
+        },
+        {
+          "chain": "next -> backlog",
+          "count": 1,
+          "tokensWasted": 339,
+          "recommendation": "Avoid serial chaining of \"next -> backlog\" without intervening actions."
+        },
+        {
+          "chain": "write-spec -> plan",
+          "count": 1,
+          "tokensWasted": 290,
+          "recommendation": "Avoid serial chaining of \"write-spec -> plan\" without intervening actions."
+        },
+        {
+          "chain": "step-pass -> done",
+          "count": 1,
+          "tokensWasted": 230,
+          "recommendation": "Avoid serial chaining of \"step-pass -> done\" without intervening actions."
+        },
+        {
+          "chain": "docs -> step-pass",
+          "count": 1,
+          "tokensWasted": 217,
+          "recommendation": "Avoid serial chaining of \"docs -> step-pass\" without intervening actions."
+        }
+      ],
+      "heavyOutputCommands": [
+        {
+          "subcommand": "go",
+          "avgOutputTokens": 965,
+          "maxOutputTokens": 965,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"go\" to reduce output payload (< 300 tokens)."
+        },
+        {
+          "subcommand": "docs",
+          "avgOutputTokens": 854,
+          "maxOutputTokens": 854,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"docs\" to reduce output payload (< 300 tokens)."
+        },
+        {
+          "subcommand": "next",
+          "avgOutputTokens": 794,
+          "maxOutputTokens": 794,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens)."
+        }
+      ],
+      "actionableOptimizations": [
+        "Reduce 1 redundant CLI calls to save ~372 tokens.",
+        "Avoid serial chaining of \"plan -> go\" without intervening actions.",
+        "Avoid serial chaining of \"backlog -> write-spec\" without intervening actions.",
+        "Avoid calling `docpath backlog` consecutively without intermediate actions.",
+        "Avoid serial chaining of \"next -> backlog\" without intervening actions.",
+        "Avoid serial chaining of \"write-spec -> plan\" without intervening actions.",
+        "Avoid serial chaining of \"step-pass -> done\" without intervening actions.",
+        "Avoid serial chaining of \"docs -> step-pass\" without intervening actions.",
+        "Use --agent flag or scoped parameters with \"go\" to reduce output payload (< 300 tokens).",
+        "Use --agent flag or scoped parameters with \"docs\" to reduce output payload (< 300 tokens).",
+        "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens)."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-06T16:01:02Z",
+        "turnIndex": 941,
+        "subcommand": "next",
+        "rawCommandLine": "\"node bin/docpath.js next --agent\"",
+        "directInputTokens": 9,
+        "directOutputTokens": 794,
+        "directTotalTokens": 803,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-2",
+        "timestamp": "2026-10-06T16:01:06Z",
+        "turnIndex": 943,
+        "subcommand": "backlog",
+        "rawCommandLine": "\"node bin/docpath.js backlog capture \\\"Milestone里程碑全生命周期增强：智能正文拆解、风险燃尽分析、发布简报知识聚合与属性编辑巡检\\\" --priority P1 --kind feature\"",
+        "directInputTokens": 77,
+        "directOutputTokens": 215,
+        "directTotalTokens": 292,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "next -> backlog",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-3",
+        "timestamp": "2026-10-06T16:01:10Z",
+        "turnIndex": 945,
+        "subcommand": "backlog",
+        "rawCommandLine": "\"node bin/docpath.js backlog promote R-487 --draft\"",
+        "directInputTokens": 13,
+        "directOutputTokens": 311,
+        "directTotalTokens": 324,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "backlog -> backlog",
+        "wastedTokens": 324,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-4",
+        "timestamp": "2026-10-06T16:01:15Z",
+        "turnIndex": 947,
+        "subcommand": "write-spec",
+        "rawCommandLine": "\"cat << 'EOF' | node bin/docpath.js write-spec --stdin\\n# T-20261006-milestone - Milestone里程碑全生命周期增强：智能正文拆解、风险燃尽分析、发布简报知识聚合与属性编辑巡检\\n\\n> backlog_id: R-487\\n> backlog_source: docpath backlog capture\\n\\n## 1. 背景与动机\\n\\nDocPath 里程碑是面向宏观目标治理的核心底座。目前里程碑已具备基础的增删查、关联与简单发布能力，但在宏观目标推进的实际闭环中，仍缺乏：\\n1. 从 Milestone 正文直接智能拆解 Backlog 的便捷路径；\\n2. 进度大盘中的截止期健康度预测（On Track/At Risk/Overdue）与里程碑专属关键阻碍链分析；\\n3. 发布简报对关联 Task 架构决策（ADR / Decision Brief）的自动归集与 Git Tag 联动；\\n4. 里程碑属性编辑（edit）与结构完整性巡检（doctor）工具。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: 增强 `docpath milestone decompose`，支持从正文或结构化输入中一键智能拆解并生成成形 Backlog\\n- [ ] FR-2: 增强 `docpath milestone status / track`，支持截止期健康度预测（On Track/At Risk/Overdue）与里程碑关键阻碍链分析\\n- [ ] FR-3: 增强 `docpath milestone release`，自动聚合关联 Task 的 Decision Brief / ADR 至发布简报，并提供 Git Tag 联动建议\\n- [ ] FR-4: 新增 `docpath milestone edit` 属性编辑与 `docpath milestone doctor` 完整性巡检治理能力\\n\\n### 非功能需求\\n- [ ] NFR-1: 保持与现有 Milestone FSM 状态机及 `--agent` 输出格式向下兼容\\n- [ ] NFR-2: 完备单元测试覆盖与活文档同步\\n\\n## 3. 范围界定\\n\\n### 包含\\n- `src/engine/milestone.ts` 引擎核心能力扩展（健康度算法、ADR 聚合、doctor 巡检、edit 编辑）\\n- `src/commands/milestone.ts` & `src/commands/register/` CLI 选项注册与终端渲染\\n- 关联单元测试与 `docs/features/milestone-lifecycle.md` 文档同步\\n\\n### 不包含\\n- 不引入外部大型依赖\\n\\n## 4. 关键决策\\n\\n| # | 决策 | 选\n<truncated 1593 bytes>",
+        "directInputTokens": 779,
+        "directOutputTokens": 165,
+        "directTotalTokens": 944,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "backlog -> write-spec",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 7000
+      },
+      {
+        "id": "inv-5",
+        "timestamp": "2026-10-06T16:01:23Z",
+        "turnIndex": 949,
+        "subcommand": "plan",
+        "rawCommandLine": "\"node bin/docpath.js plan\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 239,
+        "directTotalTokens": 246,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "write-spec -> plan",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-6",
+        "timestamp": "2026-10-06T16:01:29Z",
+        "turnIndex": 953,
+        "stepId": "S1",
+        "subcommand": "go",
+        "rawCommandLine": "\"node bin/docpath.js go --step S1\"",
+        "directInputTokens": 9,
+        "directOutputTokens": 965,
+        "directTotalTokens": 974,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "plan -> go",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-7",
+        "timestamp": "2026-10-06T16:05:34Z",
+        "turnIndex": 977,
+        "stepId": "S1",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"node bin/docpath.js step-pass --step S1\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 149,
+        "directTotalTokens": 160,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 8000
+      },
+      {
+        "id": "inv-8",
+        "timestamp": "2026-10-06T16:06:42Z",
+        "turnIndex": 997,
+        "stepId": "S2",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"node bin/docpath.js step-pass --step S2\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 149,
+        "directTotalTokens": 160,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 8000
+      },
+      {
+        "id": "inv-9",
+        "timestamp": "2026-10-06T16:08:09Z",
+        "turnIndex": 1015,
+        "stepId": "S3",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"node bin/docpath.js step-pass --step S3\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 150,
+        "directTotalTokens": 161,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-10",
+        "timestamp": "2026-10-06T16:12:28Z",
+        "turnIndex": 1107,
+        "subcommand": "docs",
+        "rawCommandLine": "\"node bin/docpath.js docs sync && node bin/docpath.js docs doctor\"",
+        "directInputTokens": 17,
+        "directOutputTokens": 854,
+        "directTotalTokens": 871,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-11",
+        "timestamp": "2026-10-06T16:12:38Z",
+        "turnIndex": 1111,
+        "stepId": "S4",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"node bin/docpath.js step-pass --step S4\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 150,
+        "directTotalTokens": 161,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "docs -> step-pass",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 2000
+      },
+      {
+        "id": "inv-12",
+        "timestamp": "2026-10-06T16:12:54Z",
+        "turnIndex": 1115,
+        "subcommand": "done",
+        "rawCommandLine": "\"git add . && node bin/docpath.js done --commit\"",
+        "directInputTokens": 12,
+        "directOutputTokens": 151,
+        "directTotalTokens": 163,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "step-pass -> done",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 58857,
+      "outputTokens": 25225,
+      "totalTokens": 84082,
+      "costUsd": 0.5549
+    },
+    "toolCalls": {
+      "total": 81,
+      "byName": {
+        "run_command": 22,
+        "view_file": 43,
+        "replace_file_content": 15,
+        "write_to_file": 1
+      },
+      "errorCount": 3
+    },
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 43,
+        "inputTokens": 2353,
+        "outputTokens": 37724,
+        "totalTokens": 40077,
+        "percentage": 47.7,
+        "errorCount": 1
+      },
+      {
+        "name": "replace_file_content",
+        "count": 15,
+        "inputTokens": 13041,
+        "outputTokens": 9909,
+        "totalTokens": 22950,
+        "percentage": 27.3,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 22,
+        "inputTokens": 2314,
+        "outputTokens": 8587,
+        "totalTokens": 10901,
+        "percentage": 13,
+        "errorCount": 2
+      },
+      {
+        "name": "write_to_file",
+        "count": 1,
+        "inputTokens": 662,
+        "outputTokens": 75,
+        "totalTokens": 737,
+        "percentage": 0.9,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"milestone.ts\"\" 被重复读取了 21 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 18202,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/milestone.ts\"",
+          "readCount": 21,
+          "wastedTokens": 18202
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"milestone.ts\"\" 被重复读取了 10 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 7523,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/milestone.ts\"",
+          "readCount": 10,
+          "wastedTokens": 7523
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"reporting.ts\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 3554,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/register/reporting.ts\"",
+          "readCount": 4,
+          "wastedTokens": 3554
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 12,
+      "errorCalls": 0,
+      "totalTokens": 5860,
+      "inputTokens": 1568,
+      "outputTokens": 4292,
+      "percentageOfSessionTokens": 7,
+      "commands": [
+        {
+          "subcommand": "step-pass",
+          "count": 4,
+          "errorCount": 0,
+          "inputTokens": 235,
+          "outputTokens": 598,
+          "totalTokens": 833,
+          "avgTokens": 208
+        },
+        {
+          "subcommand": "backlog",
+          "count": 2,
+          "errorCount": 0,
+          "inputTokens": 185,
+          "outputTokens": 526,
+          "totalTokens": 711,
+          "avgTokens": 356
+        },
+        {
+          "subcommand": "go",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 53,
+          "outputTokens": 965,
+          "totalTokens": 1018,
+          "avgTokens": 1018
+        },
+        {
+          "subcommand": "write-spec",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 832,
+          "outputTokens": 165,
+          "totalTokens": 997,
+          "avgTokens": 997
+        },
+        {
+          "subcommand": "docs",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 79,
+          "outputTokens": 854,
+          "totalTokens": 933,
+          "avgTokens": 933
+        },
+        {
+          "subcommand": "next",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 54,
+          "outputTokens": 794,
+          "totalTokens": 848,
+          "avgTokens": 848
+        },
+        {
+          "subcommand": "plan",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 51,
+          "outputTokens": 239,
+          "totalTokens": 290,
+          "avgTokens": 290
+        },
+        {
+          "subcommand": "done",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 79,
+          "outputTokens": 151,
+          "totalTokens": 230,
+          "avgTokens": 230
+        }
+      ]
+    },
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 90.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 97,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 90.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 1,
+      "redundantTokensWasted": 372,
+      "redundantPatterns": [
+        {
+          "subcommand": "backlog",
+          "count": 1,
+          "tokensWasted": 372,
+          "reason": "Consecutive `backlog` polling without intermediate actions"
+        }
+      ],
+      "serialChains": [
+        {
+          "chain": "plan -> go",
+          "count": 1,
+          "tokensWasted": 1018,
+          "recommendation": "Avoid serial chaining of \"plan -> go\" without intervening actions."
+        },
+        {
+          "chain": "backlog -> write-spec",
+          "count": 1,
+          "tokensWasted": 997,
+          "recommendation": "Avoid serial chaining of \"backlog -> write-spec\" without intervening actions."
+        },
+        {
+          "chain": "backlog -> backlog",
+          "count": 1,
+          "tokensWasted": 372,
+          "recommendation": "Avoid calling `docpath backlog` consecutively without intermediate actions."
+        },
+        {
+          "chain": "next -> backlog",
+          "count": 1,
+          "tokensWasted": 339,
+          "recommendation": "Avoid serial chaining of \"next -> backlog\" without intervening actions."
+        },
+        {
+          "chain": "write-spec -> plan",
+          "count": 1,
+          "tokensWasted": 290,
+          "recommendation": "Avoid serial chaining of \"write-spec -> plan\" without intervening actions."
+        },
+        {
+          "chain": "step-pass -> done",
+          "count": 1,
+          "tokensWasted": 230,
+          "recommendation": "Avoid serial chaining of \"step-pass -> done\" without intervening actions."
+        },
+        {
+          "chain": "docs -> step-pass",
+          "count": 1,
+          "tokensWasted": 217,
+          "recommendation": "Avoid serial chaining of \"docs -> step-pass\" without intervening actions."
+        }
+      ],
+      "heavyOutputCommands": [
+        {
+          "subcommand": "go",
+          "avgOutputTokens": 965,
+          "maxOutputTokens": 965,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"go\" to reduce output payload (< 300 tokens)."
+        },
+        {
+          "subcommand": "docs",
+          "avgOutputTokens": 854,
+          "maxOutputTokens": 854,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"docs\" to reduce output payload (< 300 tokens)."
+        },
+        {
+          "subcommand": "next",
+          "avgOutputTokens": 794,
+          "maxOutputTokens": 794,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens)."
+        }
+      ],
+      "actionableOptimizations": [
+        "Reduce 1 redundant CLI calls to save ~372 tokens.",
+        "Avoid serial chaining of \"plan -> go\" without intervening actions.",
+        "Avoid serial chaining of \"backlog -> write-spec\" without intervening actions.",
+        "Avoid calling `docpath backlog` consecutively without intermediate actions.",
+        "Avoid serial chaining of \"next -> backlog\" without intervening actions.",
+        "Avoid serial chaining of \"write-spec -> plan\" without intervening actions.",
+        "Avoid serial chaining of \"step-pass -> done\" without intervening actions.",
+        "Avoid serial chaining of \"docs -> step-pass\" without intervening actions.",
+        "Use --agent flag or scoped parameters with \"go\" to reduce output payload (< 300 tokens).",
+        "Use --agent flag or scoped parameters with \"docs\" to reduce output payload (< 300 tokens).",
+        "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens)."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-06T16:01:02Z",
+        "turnIndex": 941,
+        "subcommand": "next",
+        "rawCommandLine": "\"node bin/docpath.js next --agent\"",
+        "directInputTokens": 9,
+        "directOutputTokens": 794,
+        "directTotalTokens": 803,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-2",
+        "timestamp": "2026-10-06T16:01:06Z",
+        "turnIndex": 943,
+        "subcommand": "backlog",
+        "rawCommandLine": "\"node bin/docpath.js backlog capture \\\"Milestone里程碑全生命周期增强：智能正文拆解、风险燃尽分析、发布简报知识聚合与属性编辑巡检\\\" --priority P1 --kind feature\"",
+        "directInputTokens": 77,
+        "directOutputTokens": 215,
+        "directTotalTokens": 292,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "next -> backlog",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-3",
+        "timestamp": "2026-10-06T16:01:10Z",
+        "turnIndex": 945,
+        "subcommand": "backlog",
+        "rawCommandLine": "\"node bin/docpath.js backlog promote R-487 --draft\"",
+        "directInputTokens": 13,
+        "directOutputTokens": 311,
+        "directTotalTokens": 324,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "backlog -> backlog",
+        "wastedTokens": 324,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-4",
+        "timestamp": "2026-10-06T16:01:15Z",
+        "turnIndex": 947,
+        "subcommand": "write-spec",
+        "rawCommandLine": "\"cat << 'EOF' | node bin/docpath.js write-spec --stdin\\n# T-20261006-milestone - Milestone里程碑全生命周期增强：智能正文拆解、风险燃尽分析、发布简报知识聚合与属性编辑巡检\\n\\n> backlog_id: R-487\\n> backlog_source: docpath backlog capture\\n\\n## 1. 背景与动机\\n\\nDocPath 里程碑是面向宏观目标治理的核心底座。目前里程碑已具备基础的增删查、关联与简单发布能力，但在宏观目标推进的实际闭环中，仍缺乏：\\n1. 从 Milestone 正文直接智能拆解 Backlog 的便捷路径；\\n2. 进度大盘中的截止期健康度预测（On Track/At Risk/Overdue）与里程碑专属关键阻碍链分析；\\n3. 发布简报对关联 Task 架构决策（ADR / Decision Brief）的自动归集与 Git Tag 联动；\\n4. 里程碑属性编辑（edit）与结构完整性巡检（doctor）工具。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: 增强 `docpath milestone decompose`，支持从正文或结构化输入中一键智能拆解并生成成形 Backlog\\n- [ ] FR-2: 增强 `docpath milestone status / track`，支持截止期健康度预测（On Track/At Risk/Overdue）与里程碑关键阻碍链分析\\n- [ ] FR-3: 增强 `docpath milestone release`，自动聚合关联 Task 的 Decision Brief / ADR 至发布简报，并提供 Git Tag 联动建议\\n- [ ] FR-4: 新增 `docpath milestone edit` 属性编辑与 `docpath milestone doctor` 完整性巡检治理能力\\n\\n### 非功能需求\\n- [ ] NFR-1: 保持与现有 Milestone FSM 状态机及 `--agent` 输出格式向下兼容\\n- [ ] NFR-2: 完备单元测试覆盖与活文档同步\\n\\n## 3. 范围界定\\n\\n### 包含\\n- `src/engine/milestone.ts` 引擎核心能力扩展（健康度算法、ADR 聚合、doctor 巡检、edit 编辑）\\n- `src/commands/milestone.ts` & `src/commands/register/` CLI 选项注册与终端渲染\\n- 关联单元测试与 `docs/features/milestone-lifecycle.md` 文档同步\\n\\n### 不包含\\n- 不引入外部大型依赖\\n\\n## 4. 关键决策\\n\\n| # | 决策 | 选\n<truncated 1593 bytes>",
+        "directInputTokens": 779,
+        "directOutputTokens": 165,
+        "directTotalTokens": 944,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "backlog -> write-spec",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 7000
+      },
+      {
+        "id": "inv-5",
+        "timestamp": "2026-10-06T16:01:23Z",
+        "turnIndex": 949,
+        "subcommand": "plan",
+        "rawCommandLine": "\"node bin/docpath.js plan\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 239,
+        "directTotalTokens": 246,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "write-spec -> plan",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-6",
+        "timestamp": "2026-10-06T16:01:29Z",
+        "turnIndex": 953,
+        "stepId": "S1",
+        "subcommand": "go",
+        "rawCommandLine": "\"node bin/docpath.js go --step S1\"",
+        "directInputTokens": 9,
+        "directOutputTokens": 965,
+        "directTotalTokens": 974,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "plan -> go",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-7",
+        "timestamp": "2026-10-06T16:05:34Z",
+        "turnIndex": 977,
+        "stepId": "S1",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"node bin/docpath.js step-pass --step S1\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 149,
+        "directTotalTokens": 160,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 8000
+      },
+      {
+        "id": "inv-8",
+        "timestamp": "2026-10-06T16:06:42Z",
+        "turnIndex": 997,
+        "stepId": "S2",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"node bin/docpath.js step-pass --step S2\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 149,
+        "directTotalTokens": 160,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 8000
+      },
+      {
+        "id": "inv-9",
+        "timestamp": "2026-10-06T16:08:09Z",
+        "turnIndex": 1015,
+        "stepId": "S3",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"node bin/docpath.js step-pass --step S3\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 150,
+        "directTotalTokens": 161,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-10",
+        "timestamp": "2026-10-06T16:12:28Z",
+        "turnIndex": 1107,
+        "subcommand": "docs",
+        "rawCommandLine": "\"node bin/docpath.js docs sync && node bin/docpath.js docs doctor\"",
+        "directInputTokens": 17,
+        "directOutputTokens": 854,
+        "directTotalTokens": 871,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-11",
+        "timestamp": "2026-10-06T16:12:38Z",
+        "turnIndex": 1111,
+        "stepId": "S4",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"node bin/docpath.js step-pass --step S4\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 150,
+        "directTotalTokens": 161,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "docs -> step-pass",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 2000
+      },
+      {
+        "id": "inv-12",
+        "timestamp": "2026-10-06T16:12:54Z",
+        "turnIndex": 1115,
+        "subcommand": "done",
+        "rawCommandLine": "\"git add . && node bin/docpath.js done --commit\"",
+        "directInputTokens": 12,
+        "directOutputTokens": 151,
+        "directTotalTokens": 163,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "step-pass -> done",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      }
+    ],
+    "turnsCount": 88,
+    "errorCount": 3,
+    "heavyReadsCount": 1,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 88, 消耗: 84082 Tokens, 时长: 4282 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 88,
+          "totalTokens": 84082,
+          "durationMinutes": 4282
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 256905000
+  },
+  "toolAttributions": [
+    {
+      "name": "view_file",
+      "count": 43,
+      "inputTokens": 2353,
+      "outputTokens": 37724,
+      "totalTokens": 40077,
+      "percentage": 47.7,
+      "errorCount": 1
+    },
+    {
+      "name": "replace_file_content",
+      "count": 15,
+      "inputTokens": 13041,
+      "outputTokens": 9909,
+      "totalTokens": 22950,
+      "percentage": 27.3,
+      "errorCount": 0
+    },
+    {
+      "name": "run_command",
+      "count": 22,
+      "inputTokens": 2314,
+      "outputTokens": 8587,
+      "totalTokens": 10901,
+      "percentage": 13,
+      "errorCount": 2
+    },
+    {
+      "name": "write_to_file",
+      "count": 1,
+      "inputTokens": 662,
+      "outputTokens": 75,
+      "totalTokens": 737,
+      "percentage": 0.9,
+      "errorCount": 0
+    }
+  ],
+  "toolInefficiencies": [
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"milestone.ts\"\" 被重复读取了 21 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 18202,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/engine/milestone.ts\"",
+        "readCount": 21,
+        "wastedTokens": 18202
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"milestone.ts\"\" 被重复读取了 10 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 7523,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/commands/milestone.ts\"",
+        "readCount": 10,
+        "wastedTokens": 7523
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"reporting.ts\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 3554,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/commands/register/reporting.ts\"",
+        "readCount": 4,
+        "wastedTokens": 3554
+      }
+    }
+  ],
+  "docpathCliOverhead": {
+    "totalCalls": 12,
+    "errorCalls": 0,
+    "totalTokens": 5860,
+    "inputTokens": 1568,
+    "outputTokens": 4292,
+    "percentageOfSessionTokens": 7,
+    "commands": [
+      {
+        "subcommand": "step-pass",
+        "count": 4,
+        "errorCount": 0,
+        "inputTokens": 235,
+        "outputTokens": 598,
+        "totalTokens": 833,
+        "avgTokens": 208
+      },
+      {
+        "subcommand": "backlog",
+        "count": 2,
+        "errorCount": 0,
+        "inputTokens": 185,
+        "outputTokens": 526,
+        "totalTokens": 711,
+        "avgTokens": 356
+      },
+      {
+        "subcommand": "go",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 53,
+        "outputTokens": 965,
+        "totalTokens": 1018,
+        "avgTokens": 1018
+      },
+      {
+        "subcommand": "write-spec",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 832,
+        "outputTokens": 165,
+        "totalTokens": 997,
+        "avgTokens": 997
+      },
+      {
+        "subcommand": "docs",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 79,
+        "outputTokens": 854,
+        "totalTokens": 933,
+        "avgTokens": 933
+      },
+      {
+        "subcommand": "next",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 54,
+        "outputTokens": 794,
+        "totalTokens": 848,
+        "avgTokens": 848
+      },
+      {
+        "subcommand": "plan",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 51,
+        "outputTokens": 239,
+        "totalTokens": 290,
+        "avgTokens": 290
+      },
+      {
+        "subcommand": "done",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 79,
+        "outputTokens": 151,
+        "totalTokens": 230,
+        "avgTokens": 230
+      }
+    ]
+  },
+  "docpathEfficacy": {
+    "preventedLoopsCount": 0,
+    "deadlockTokensSaved": 0,
+    "contextCompressionRatio": 90.5,
+    "subagentTokensSaved": 0,
+    "gateInterceptionCount": 0,
+    "firstTimePassRate": 97,
+    "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 90.5%"
+  },
+  "docpathCliFriction": {
+    "redundantCallsCount": 1,
+    "redundantTokensWasted": 372,
+    "redundantPatterns": [
+      {
+        "subcommand": "backlog",
+        "count": 1,
+        "tokensWasted": 372,
+        "reason": "Consecutive `backlog` polling without intermediate actions"
+      }
+    ],
+    "serialChains": [
+      {
+        "chain": "plan -> go",
+        "count": 1,
+        "tokensWasted": 1018,
+        "recommendation": "Avoid serial chaining of \"plan -> go\" without intervening actions."
+      },
+      {
+        "chain": "backlog -> write-spec",
+        "count": 1,
+        "tokensWasted": 997,
+        "recommendation": "Avoid serial chaining of \"backlog -> write-spec\" without intervening actions."
+      },
+      {
+        "chain": "backlog -> backlog",
+        "count": 1,
+        "tokensWasted": 372,
+        "recommendation": "Avoid calling `docpath backlog` consecutively without intermediate actions."
+      },
+      {
+        "chain": "next -> backlog",
+        "count": 1,
+        "tokensWasted": 339,
+        "recommendation": "Avoid serial chaining of \"next -> backlog\" without intervening actions."
+      },
+      {
+        "chain": "write-spec -> plan",
+        "count": 1,
+        "tokensWasted": 290,
+        "recommendation": "Avoid serial chaining of \"write-spec -> plan\" without intervening actions."
+      },
+      {
+        "chain": "step-pass -> done",
+        "count": 1,
+        "tokensWasted": 230,
+        "recommendation": "Avoid serial chaining of \"step-pass -> done\" without intervening actions."
+      },
+      {
+        "chain": "docs -> step-pass",
+        "count": 1,
+        "tokensWasted": 217,
+        "recommendation": "Avoid serial chaining of \"docs -> step-pass\" without intervening actions."
+      }
+    ],
+    "heavyOutputCommands": [
+      {
+        "subcommand": "go",
+        "avgOutputTokens": 965,
+        "maxOutputTokens": 965,
+        "count": 1,
+        "optimizationHint": "Use --agent flag or scoped parameters with \"go\" to reduce output payload (< 300 tokens)."
+      },
+      {
+        "subcommand": "docs",
+        "avgOutputTokens": 854,
+        "maxOutputTokens": 854,
+        "count": 1,
+        "optimizationHint": "Use --agent flag or scoped parameters with \"docs\" to reduce output payload (< 300 tokens)."
+      },
+      {
+        "subcommand": "next",
+        "avgOutputTokens": 794,
+        "maxOutputTokens": 794,
+        "count": 1,
+        "optimizationHint": "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens)."
+      }
+    ],
+    "actionableOptimizations": [
+      "Reduce 1 redundant CLI calls to save ~372 tokens.",
+      "Avoid serial chaining of \"plan -> go\" without intervening actions.",
+      "Avoid serial chaining of \"backlog -> write-spec\" without intervening actions.",
+      "Avoid calling `docpath backlog` consecutively without intermediate actions.",
+      "Avoid serial chaining of \"next -> backlog\" without intervening actions.",
+      "Avoid serial chaining of \"write-spec -> plan\" without intervening actions.",
+      "Avoid serial chaining of \"step-pass -> done\" without intervening actions.",
+      "Avoid serial chaining of \"docs -> step-pass\" without intervening actions.",
+      "Use --agent flag or scoped parameters with \"go\" to reduce output payload (< 300 tokens).",
+      "Use --agent flag or scoped parameters with \"docs\" to reduce output payload (< 300 tokens).",
+      "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens)."
+    ]
+  },
+  "commandInvocations": [
+    {
+      "id": "inv-1",
+      "timestamp": "2026-10-06T16:01:02Z",
+      "turnIndex": 941,
+      "subcommand": "next",
+      "rawCommandLine": "\"node bin/docpath.js next --agent\"",
+      "directInputTokens": 9,
+      "directOutputTokens": 794,
+      "directTotalTokens": 803,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-2",
+      "timestamp": "2026-10-06T16:01:06Z",
+      "turnIndex": 943,
+      "subcommand": "backlog",
+      "rawCommandLine": "\"node bin/docpath.js backlog capture \\\"Milestone里程碑全生命周期增强：智能正文拆解、风险燃尽分析、发布简报知识聚合与属性编辑巡检\\\" --priority P1 --kind feature\"",
+      "directInputTokens": 77,
+      "directOutputTokens": 215,
+      "directTotalTokens": 292,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "next -> backlog",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 3000
+    },
+    {
+      "id": "inv-3",
+      "timestamp": "2026-10-06T16:01:10Z",
+      "turnIndex": 945,
+      "subcommand": "backlog",
+      "rawCommandLine": "\"node bin/docpath.js backlog promote R-487 --draft\"",
+      "directInputTokens": 13,
+      "directOutputTokens": 311,
+      "directTotalTokens": 324,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "backlog -> backlog",
+      "wastedTokens": 324,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-4",
+      "timestamp": "2026-10-06T16:01:15Z",
+      "turnIndex": 947,
+      "subcommand": "write-spec",
+      "rawCommandLine": "\"cat << 'EOF' | node bin/docpath.js write-spec --stdin\\n# T-20261006-milestone - Milestone里程碑全生命周期增强：智能正文拆解、风险燃尽分析、发布简报知识聚合与属性编辑巡检\\n\\n> backlog_id: R-487\\n> backlog_source: docpath backlog capture\\n\\n## 1. 背景与动机\\n\\nDocPath 里程碑是面向宏观目标治理的核心底座。目前里程碑已具备基础的增删查、关联与简单发布能力，但在宏观目标推进的实际闭环中，仍缺乏：\\n1. 从 Milestone 正文直接智能拆解 Backlog 的便捷路径；\\n2. 进度大盘中的截止期健康度预测（On Track/At Risk/Overdue）与里程碑专属关键阻碍链分析；\\n3. 发布简报对关联 Task 架构决策（ADR / Decision Brief）的自动归集与 Git Tag 联动；\\n4. 里程碑属性编辑（edit）与结构完整性巡检（doctor）工具。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: 增强 `docpath milestone decompose`，支持从正文或结构化输入中一键智能拆解并生成成形 Backlog\\n- [ ] FR-2: 增强 `docpath milestone status / track`，支持截止期健康度预测（On Track/At Risk/Overdue）与里程碑关键阻碍链分析\\n- [ ] FR-3: 增强 `docpath milestone release`，自动聚合关联 Task 的 Decision Brief / ADR 至发布简报，并提供 Git Tag 联动建议\\n- [ ] FR-4: 新增 `docpath milestone edit` 属性编辑与 `docpath milestone doctor` 完整性巡检治理能力\\n\\n### 非功能需求\\n- [ ] NFR-1: 保持与现有 Milestone FSM 状态机及 `--agent` 输出格式向下兼容\\n- [ ] NFR-2: 完备单元测试覆盖与活文档同步\\n\\n## 3. 范围界定\\n\\n### 包含\\n- `src/engine/milestone.ts` 引擎核心能力扩展（健康度算法、ADR 聚合、doctor 巡检、edit 编辑）\\n- `src/commands/milestone.ts` & `src/commands/register/` CLI 选项注册与终端渲染\\n- 关联单元测试与 `docs/features/milestone-lifecycle.md` 文档同步\\n\\n### 不包含\\n- 不引入外部大型依赖\\n\\n## 4. 关键决策\\n\\n| # | 决策 | 选\n<truncated 1593 bytes>",
+      "directInputTokens": 779,
+      "directOutputTokens": 165,
+      "directTotalTokens": 944,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "backlog -> write-spec",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 7000
+    },
+    {
+      "id": "inv-5",
+      "timestamp": "2026-10-06T16:01:23Z",
+      "turnIndex": 949,
+      "subcommand": "plan",
+      "rawCommandLine": "\"node bin/docpath.js plan\"",
+      "directInputTokens": 7,
+      "directOutputTokens": 239,
+      "directTotalTokens": 246,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "write-spec -> plan",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 3000
+    },
+    {
+      "id": "inv-6",
+      "timestamp": "2026-10-06T16:01:29Z",
+      "turnIndex": 953,
+      "stepId": "S1",
+      "subcommand": "go",
+      "rawCommandLine": "\"node bin/docpath.js go --step S1\"",
+      "directInputTokens": 9,
+      "directOutputTokens": 965,
+      "directTotalTokens": 974,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "plan -> go",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-7",
+      "timestamp": "2026-10-06T16:05:34Z",
+      "turnIndex": 977,
+      "stepId": "S1",
+      "subcommand": "step-pass",
+      "rawCommandLine": "\"node bin/docpath.js step-pass --step S1\"",
+      "directInputTokens": 11,
+      "directOutputTokens": 149,
+      "directTotalTokens": 160,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 8000
+    },
+    {
+      "id": "inv-8",
+      "timestamp": "2026-10-06T16:06:42Z",
+      "turnIndex": 997,
+      "stepId": "S2",
+      "subcommand": "step-pass",
+      "rawCommandLine": "\"node bin/docpath.js step-pass --step S2\"",
+      "directInputTokens": 11,
+      "directOutputTokens": 149,
+      "directTotalTokens": 160,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 8000
+    },
+    {
+      "id": "inv-9",
+      "timestamp": "2026-10-06T16:08:09Z",
+      "turnIndex": 1015,
+      "stepId": "S3",
+      "subcommand": "step-pass",
+      "rawCommandLine": "\"node bin/docpath.js step-pass --step S3\"",
+      "directInputTokens": 11,
+      "directOutputTokens": 150,
+      "directTotalTokens": 161,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 3000
+    },
+    {
+      "id": "inv-10",
+      "timestamp": "2026-10-06T16:12:28Z",
+      "turnIndex": 1107,
+      "subcommand": "docs",
+      "rawCommandLine": "\"node bin/docpath.js docs sync && node bin/docpath.js docs doctor\"",
+      "directInputTokens": 17,
+      "directOutputTokens": 854,
+      "directTotalTokens": 871,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-11",
+      "timestamp": "2026-10-06T16:12:38Z",
+      "turnIndex": 1111,
+      "stepId": "S4",
+      "subcommand": "step-pass",
+      "rawCommandLine": "\"node bin/docpath.js step-pass --step S4\"",
+      "directInputTokens": 11,
+      "directOutputTokens": 150,
+      "directTotalTokens": 161,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "docs -> step-pass",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 2000
+    },
+    {
+      "id": "inv-12",
+      "timestamp": "2026-10-06T16:12:54Z",
+      "turnIndex": 1115,
+      "subcommand": "done",
+      "rawCommandLine": "\"git add . && node bin/docpath.js done --commit\"",
+      "directInputTokens": 12,
+      "directOutputTokens": 151,
+      "directTotalTokens": 163,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "step-pass -> done",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 3000
+    }
+  ],
+  "frictionFindings": [
+    {
+      "id": "FRIC-CMD-ERR",
+      "category": "command_error",
+      "severity": "high",
+      "title": "CLI 命令调用异常与参数拦截 (Command Execution Errors)",
+      "description": "检测到 3 次命令调用失败或参数报错，可能由于命令语法错误或环境不匹配导致",
+      "count": 3,
+      "tokensWasted": 600,
+      "optimizationHint": "查阅 docpath --help 或 AGENTS.md 规范，确保 CLI 命令与参数格式准确"
+    },
+    {
+      "id": "FRIC-TOOL-WASTE",
+      "category": "tool_waste",
+      "severity": "high",
+      "title": "工具调用低效与上下文浪费 (Tool Waste & Context Bloat)",
+      "description": "检测到 3 处工具低效行为 (重复读大文件、超长命令输出或编辑失真)，造成上下文浪费",
+      "count": 3,
+      "tokensWasted": 29279,
+      "optimizationHint": "精准指定目标行范围切片读写，善用子代理进行大文件调研与探查"
+    }
+  ],
+  "stepPassAnalysis": {
+    "totalStepPassCalls": 4,
+    "productiveCalls": 4,
+    "redundantCalls": 0,
+    "directTokens": 642,
+    "invisibleTurnReplayTokens": 642,
+    "redundantTurnReplayTokens": 0,
+    "frictionTurnRatio": 33.3,
+    "summary": "4 次 step-pass 调用均为有效推进，无空转重放损耗"
+  },
+  "lifecycleAnchor": {
+    "sessionId": "9eae9665-73b9-4b13-832f-ab8ffce3bd9b",
+    "baseCommit": "977498c6fa62f16563ce95630f6899f8a022be38",
+    "headCommit": "977498c6fa62f16563ce95630f6899f8a022be38",
+    "startedAt": "2026-10-06T16:01:22.762Z",
+    "completedAt": "2026-10-06T16:15:20.779Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 FR-1 增强 `docpath milestone decompose`，支持从正文或结构化输入中一键智能拆解并生成成形 Backlog",
+      "startedAt": "2026-10-06T16:01:33.615Z",
+      "completedAt": "2026-10-06T16:06:03.368Z",
+      "durationMinutes": 4.5,
+      "totalTokens": 22188,
+      "inputTokens": 15532,
+      "outputTokens": 6656,
+      "costUsd": 0.1464,
+      "toolCallsCount": 23,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 11,
+          "tokens": 9743
+        },
+        {
+          "name": "replace_file_content",
+          "count": 5,
+          "tokens": 5492
+        },
+        {
+          "name": "run_command",
+          "count": 7,
+          "tokens": 3314
+        }
+      ]
+    },
+    {
+      "stepId": "S2",
+      "stepTitle": "实现并验证 FR-2 增强 `docpath milestone status / track`，支持截止期健康度预测（On Track/At Risk/Overdue）与里程碑关键阻碍链分析",
+      "startedAt": "2026-10-06T16:06:03.744Z",
+      "completedAt": "2026-10-06T16:07:11.887Z",
+      "durationMinutes": 1.1,
+      "totalTokens": 16364,
+      "inputTokens": 11455,
+      "outputTokens": 4909,
+      "costUsd": 0.108,
+      "toolCallsCount": 15,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 9,
+          "tokens": 7779
+        },
+        {
+          "name": "replace_file_content",
+          "count": 3,
+          "tokens": 4993
+        },
+        {
+          "name": "run_command",
+          "count": 3,
+          "tokens": 502
+        }
+      ]
+    },
+    {
+      "stepId": "S3",
+      "stepTitle": "实现并验证 FR-3 增强 `docpath milestone release`，自动聚合关联 Task 的 Decision Brief / ADR 至发布简报，并提供 Git Tag 联动建议",
+      "startedAt": "2026-10-06T16:07:12.288Z",
+      "completedAt": "2026-10-06T16:08:34.216Z",
+      "durationMinutes": 1.4,
+      "totalTokens": 15857,
+      "inputTokens": 11100,
+      "outputTokens": 4757,
+      "costUsd": 0.1047,
+      "toolCallsCount": 14,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 9,
+          "tokens": 8853
+        },
+        {
+          "name": "replace_file_content",
+          "count": 2,
+          "tokens": 3022
+        },
+        {
+          "name": "run_command",
+          "count": 3,
+          "tokens": 638
+        }
+      ]
+    },
+    {
+      "stepId": "S4",
+      "stepTitle": "实现并验证 FR-4 新增 `docpath milestone edit` 属性编辑与 `docpath milestone doctor` 完整性巡检治理能力",
+      "startedAt": "2026-10-06T16:08:34.566Z",
+      "completedAt": "2026-10-06T16:12:53.135Z",
+      "durationMinutes": 4.3,
+      "totalTokens": 51506,
+      "inputTokens": 36054,
+      "outputTokens": 15452,
+      "costUsd": 0.3399,
+      "toolCallsCount": 49,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 27,
+          "tokens": 25005
+        },
+        {
+          "name": "replace_file_content",
+          "count": 9,
+          "tokens": 14337
+        },
+        {
+          "name": "run_command",
+          "count": 12,
+          "tokens": 6442
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 3831,
+    "realModelTokens": 84082,
+    "overheadRatio": 4.56,
+    "complianceScore": 85,
+    "firstTimePassRate": 100,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}

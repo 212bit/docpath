@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-06T16:01:22.756Z",
+    "updated_at": "2026-10-06T16:01:22.756Z",
+    "content_sha256": "bb99d8e6f846e6fe78017f4bbaf14ce2433bf550ac9c41f821402b02692fc230"
+  },
+  "task_id": "T-20261006-milestone",
+  "backlog_id": "R-487",
+  "title": "T-20261006-milestone - Milestone里程碑全生命周期增强：智能正文拆解、风险燃尽分析、发布简报知识聚合与属性编辑巡检",
+  "generated_at": "2026-10-06T16:01:22.756Z",
+  "scope": {
+    "included": [
+      "`src/engine/milestone.ts` 引擎核心能力扩展（健康度算法、ADR 聚合、doctor 巡检、edit 编辑）",
+      "`src/commands/milestone.ts` & `src/commands/register/` CLI 选项注册与终端渲染",
+      "关联单元测试与 `docs/features/milestone-lifecycle.md` 文档同步"
+    ],
+    "excluded": [
+      "不引入外部大型依赖"
+    ]
+  },
+  "major_change_gate": {
+    "required": false,
+    "types": [],
+    "user_confirmed": "用户已在对话中明确选定全量完整增强方案",
+    "decision_brief_markdown": "- 当前问题: 里程碑全生命周期缺乏正文拆解、健康度预测、发布知识聚合与巡检治理工具\n- 推荐方案: 全量增强 decompose、status/track、release、edit 与 doctor 能力\n- 决策理由: 形成从宏观目标规划到发布复盘的完整工程闭环\n- 用户确认: 用户已在对话中明确选定全量完整增强方案"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "增强 `docpath milestone decompose`，支持从正文或结构化输入中一键智能拆解并生成成形 Backlog",
+      "done": false
+    },
+    {
+      "id": "FR-2",
+      "text": "增强 `docpath milestone status / track`，支持截止期健康度预测（On Track/At Risk/Overdue）与里程碑关键阻碍链分析",
+      "done": false
+    },
+    {
+      "id": "FR-3",
+      "text": "增强 `docpath milestone release`，自动聚合关联 Task 的 Decision Brief / ADR 至发布简报，并提供 Git Tag 联动建议",
+      "done": false
+    },
+    {
+      "id": "FR-4",
+      "text": "新增 `docpath milestone edit` 属性编辑与 `docpath milestone doctor` 完整性巡检治理能力",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "保持与现有 Milestone FSM 状态机及 `--agent` 输出格式向下兼容",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "完备单元测试覆盖与活文档同步",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "`docpath milestone decompose` 能从正文或参数智能生成规范化的 Backlog 并完成双向绑定",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`docpath milestone status / track` 能准确计算健康度（on_track/at_risk/overdue）并展示 Top Blockers",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`docpath milestone release` 能自动聚合 Decision Brief / ADR 并生成包含 Git Tag 建议的发布简报",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "`docpath milestone edit` 与 `docpath milestone doctor` 运行正常且能诊断断链或异常条目",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "单元测试覆盖率达标，活文档 `docs/features/milestone-lifecycle.md` 完成同步更新",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "里程碑全生命周期缺乏正文拆解、健康度预测、发布知识聚合与巡检治理工具",
+    "options": [
+      "全量增强 decompose、status/track、release、edit 与 doctor 能力"
+    ],
+    "chosen": "全量增强 decompose、status/track、release、edit 与 doctor 能力",
+    "rationale": "形成从宏观目标规划到发布复盘的完整工程闭环"
+  }
+}

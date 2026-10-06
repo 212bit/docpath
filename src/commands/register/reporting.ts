@@ -47,6 +47,7 @@ function registerMilestoneCommand(cli: CAC): void {
   cli.command('milestone [action] [target] [...extra]', '里程碑全生命周期管理：大目标规划、Backlog拆解、跟踪看板、验收门禁与发布')
     .option('--cwd <path>', '项目目录')
     .option('--title <title>', '里程碑标题/目标描述')
+    .option('--status <status>', '里程碑状态 (planned|active|accepted|released|archived)')
     .option('--release-version <version>', '目标版本号 (例如 v1.2.0)')
     .option('--target-version <version>', '目标版本号 (例如 v1.2.0)')
     .option('--ver <version>', '目标版本号简写 (例如 v1.2.0)')
@@ -68,6 +69,7 @@ function registerMilestoneCommand(cli: CAC): void {
         : {}) as {
           cwd?: string;
           title?: string;
+          status?: string;
           version?: string;
           releaseVersion?: string;
           'release-version'?: string;
@@ -95,7 +97,7 @@ function registerMilestoneCommand(cli: CAC): void {
       const knownActions = new Set([
         'add', 'plan', 'create', 'decompose', 'split', 'bind', 'link', 'unbind',
         'status', 'board', 'track', 'verify', 'check', 'accept', 'release', 'publish',
-        'draft', 'list', 'show', 'timeline',
+        'draft', 'list', 'show', 'timeline', 'edit', 'doctor', 'groom',
       ]);
 
       let action: any = 'list';
@@ -111,6 +113,8 @@ function registerMilestoneCommand(cli: CAC): void {
         if (action === 'add' || action === 'plan') {
           options.title = options.title || targetArg;
           version = explicitVersion;
+        } else if (action === 'edit' || action === 'doctor' || action === 'groom') {
+          version = targetArg || options.version;
         } else {
           version = targetArg || explicitVersion;
         }
@@ -144,8 +148,10 @@ function registerMilestoneCommand(cli: CAC): void {
       await milestoneCommand({
         cwd: options.cwd || process.cwd(),
         action,
-        version: explicitVersion || version,
+        version,
+        version_target: explicitVersion,
         title: options.title,
+        status: options.status,
         since: options.since,
         priority: options.priority,
         targetDate: options.targetDate || options['target-date'],

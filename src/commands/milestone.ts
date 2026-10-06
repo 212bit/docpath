@@ -28,6 +28,8 @@ import {
   verifyMilestone,
   acceptMilestone,
   releaseMilestone,
+  editMilestoneItem,
+  auditMilestonesHygiene,
   type MilestoneItem,
   type MilestonePriority,
   type DecomposeItemInput,
@@ -37,7 +39,11 @@ import type { BacklogKind, BacklogPriority } from '../engine/backlog.js';
 export interface MilestoneOptions {
   cwd: string;
   version?: string;
+  version_target?: string;
+  releaseVersion?: string;
+  ver?: string;
   title?: string;
+  status?: string;
   since?: string;
   action?:
     | 'create'
@@ -59,7 +65,10 @@ export interface MilestoneOptions {
     | 'verify'
     | 'check'
     | 'accept'
-    | 'release';
+    | 'release'
+    | 'edit'
+    | 'doctor'
+    | 'groom';
   dryRun?: boolean;
   agent?: boolean;
   json?: boolean;
@@ -80,7 +89,11 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
     cwd,
     action = 'create',
     version,
+    version_target,
+    releaseVersion,
+    ver,
     title,
+    status,
     since,
     dryRun = false,
     agent = false,
@@ -324,11 +337,6 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
       parsedItems = [{ title }];
     }
 
-    if (parsedItems.length === 0) {
-      console.error('❌  请提供拆解条目列表或指定标题。例如: `docpath milestone decompose M-001 --title "子需求1"`');
-      process.exit(1);
-    }
-
     const res = await decomposeMilestone(cwd, milestoneId, parsedItems);
 
     if (json) {
@@ -420,9 +428,11 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
           status: progress.milestone.status,
           priority: progress.milestone.priority,
           version_target: progress.milestone.version_target,
+          health: progress.health,
           overall_percent: progress.overall_percent,
           backlog_summary: progress.backlog_summary,
           criteria_summary: progress.criteria_summary,
+          top_blockers: progress.top_blockers,
           is_ready_for_acceptance: progress.is_ready_for_acceptance,
           blockers: progress.blockers,
         }),
@@ -433,6 +443,10 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
     const m = progress.milestone;
     console.log(`\n🎯  里程碑看板: [${m.id}] ${m.title}`);
     console.log(`   🏷️  状态: ${m.status.toUpperCase()} | 优先级: ${m.priority} | 目标版本: ${m.version_target || '未指定'}`);
+    console.log(`   🩺 健康状态: ${progress.health.label}`);
+    if (progress.health.risk_reasons.length > 0) {
+      progress.health.risk_reasons.forEach((r) => console.log(`      ⚠️  ${r}`));
+    }
     console.log(`   📊 综合完成度: ${renderProgressBar(progress.overall_percent)} ${progress.overall_percent}%\n`);
 
     console.log(`📋  关联需求进度 (${progress.backlog_summary.done}/${progress.backlog_summary.total} 完成 - ${progress.backlog_summary.percent}%):`);
@@ -440,9 +454,16 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
       console.log('   (暂无关联需求，使用 `docpath milestone decompose` 拆解或 `bind` 关联)');
     } else {
       for (const b of progress.backlog_summary.items) {
-        const badge = b.status === 'done' ? '✅' : b.status === 'active' ? '🔄' : '⬜';
+        const badge = b.status === 'done' ? '✅' : b.status === 'active' ? '🔄' : b.is_blocked ? '🔒' : '⬜';
         const taskTag = b.task ? ` (Task: ${b.task})` : '';
         console.log(`   ${badge} [${b.id}] [${b.status}] [${b.priority}]: ${b.title}${taskTag}`);
+      }
+    }
+
+    if (progress.top_blockers.length > 0) {
+      console.log(`\n🔒  关键阻碍链分析 (Top Blockers):`);
+      for (const tb of progress.top_blockers) {
+        console.log(`   - 🔴 [${tb.id}] ${tb.title} (${tb.status}): 阻塞了 ${tb.blocked_count} 个后续需求`);
       }
     }
 
@@ -636,7 +657,107 @@ export async function milestoneCommand(options: MilestoneOptions): Promise<void>
     return;
   }
 
-  // 11. Action: draft
+  // 11. Action: edit
+  if (action === 'edit') {
+    const milestoneId = version;
+    if (!milestoneId) {
+      console.error('❌  请指定要编辑的里程碑 ID，例如: `docpath milestone edit M-001 --priority P0`');
+      process.exit(1);
+    }
+
+    const updated = await editMilestoneItem(cwd, milestoneId, {
+      title,
+      status: status as any,
+      priority: priority as any,
+      target_date: targetDate,
+      version_target: version_target || releaseVersion || ver,
+      owner,
+      objective,
+      nonGoals,
+    });
+
+    if (json) {
+      console.log(JSON.stringify(updated, null, 2));
+      return;
+    }
+    if (agent) {
+      console.log(
+        stringify({
+          agent_view: 'milestone_edited',
+          id: updated.id,
+          title: updated.title,
+          status: updated.status,
+          priority: updated.priority,
+          target_date: updated.target_date,
+          version_target: updated.version_target,
+          owner: updated.owner,
+        }),
+      );
+      return;
+    }
+
+    console.log(`\n✅  成功更新里程碑: [${updated.id}] ${updated.title}`);
+    console.log(`   🏷️  状态: ${updated.status} | 优先级: ${updated.priority}`);
+    if (updated.version_target) console.log(`   🎯 目标版本: ${updated.version_target}`);
+    if (updated.target_date) console.log(`   📅 目标日期: ${updated.target_date}`);
+    if (updated.owner) console.log(`   👤 负责人: ${updated.owner}`);
+    console.log(`   📄 路径: .docpath/milestones/${updated.id}.md\n`);
+    return;
+  }
+
+  // 12. Action: doctor / groom
+  if (action === 'doctor' || action === 'groom') {
+    const report = await auditMilestonesHygiene(cwd);
+
+    if (json) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+    if (agent) {
+      console.log(
+        stringify({
+          agent_view: 'milestone_doctor',
+          passed: report.passed,
+          issue_count: report.issues.length,
+          warning_count: report.warnings.length,
+          issues: report.issues,
+          warnings: report.warnings,
+        }),
+      );
+      return;
+    }
+
+    console.log(`\n🩺  DocPath 里程碑与需求血缘健康度巡检 (Milestone Doctor):\n`);
+    if (report.passed && report.warnings.length === 0) {
+      console.log('   ✅ 所有里程碑与关联需求健康状态良好，无悬空引用与异常！\n');
+      return;
+    }
+
+    if (report.issues.length > 0) {
+      console.log(`❌  发现 ${report.issues.length} 个异常问题 (Error):`);
+      for (const issue of report.issues) {
+        console.log(`   🔴 [${issue.id}] [${issue.field}]: ${issue.message}`);
+        console.log(`      💡 修复建议: ${issue.suggestion}`);
+      }
+      console.log('');
+    }
+
+    if (report.warnings.length > 0) {
+      console.log(`⚠️  发现 ${report.warnings.length} 个关注告警 (Warning):`);
+      for (const warn of report.warnings) {
+        console.log(`   🟡 [${warn.id}] [${warn.field}]: ${warn.message}`);
+        console.log(`      💡 建议: ${warn.suggestion}`);
+      }
+      console.log('');
+    }
+
+    if (!report.passed) {
+      process.exit(1);
+    }
+    return;
+  }
+
+  // 13. Action: draft
   if (action === 'draft') {
     const targetVersion = version || 'Draft';
     const releaseData: ChangelogReleaseData = await buildChangelogData(cwd, {

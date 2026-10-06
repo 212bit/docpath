@@ -85,8 +85,16 @@ export interface MilestoneItem {
   filePath?: string;
 }
 
+export type MilestoneHealthStatus = 'on_track' | 'at_risk' | 'overdue';
+
 export interface MilestoneProgress {
   milestone: MilestoneItem;
+  health: {
+    status: MilestoneHealthStatus;
+    label: string;
+    days_remaining: number | null;
+    risk_reasons: string[];
+  };
   backlog_summary: {
     total: number;
     done: number;
@@ -100,7 +108,9 @@ export interface MilestoneProgress {
       title: string;
       status: string;
       priority: string;
+      level?: number;
       task?: string | null;
+      is_blocked?: boolean;
     }>;
   };
   criteria_summary: {
@@ -109,6 +119,12 @@ export interface MilestoneProgress {
     percent: number;
     items: MilestoneAcceptanceCriterion[];
   };
+  top_blockers: Array<{
+    id: string;
+    title: string;
+    status: string;
+    blocked_count: number;
+  }>;
   overall_percent: number;
   is_ready_for_acceptance: boolean;
   blockers: string[];
@@ -567,6 +583,74 @@ export interface DecomposeItemInput {
   acceptance?: string;
 }
 
+export function extractDecomposeItemsFromBody(body: string, milestoneTitle: string): DecomposeItemInput[] {
+  const lines = body.replace(/\r\n/g, '\n').split('\n');
+  const items: DecomposeItemInput[] = [];
+  let inScopeSection = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (/^##+\s+(?:\d+\.\s*)?.*(?:关联需求|拆解|scope|backlog|核心功能|功能要点|目标|objective)/i.test(trimmed)) {
+      inScopeSection = true;
+      continue;
+    } else if (/^##+\s+/.test(trimmed)) {
+      inScopeSection = false;
+    }
+
+    if (inScopeSection) {
+      if (
+        !trimmed ||
+        trimmed.startsWith('#') ||
+        trimmed.startsWith('<!--') ||
+        trimmed.includes('待补充') ||
+        trimmed.includes('自动关联') ||
+        trimmed.includes('Non-Goals')
+      ) continue;
+      const match = trimmed.match(/^[-*]\s+(?:\[[ xX]\]\s+)?(?:\d+[\.、]\s+)?(.+)$/) || trimmed.match(/^\d+[\.、]\s+(.+)$/);
+      if (match) {
+        let text = match[1].replace(/^(?:FR|fr|MAC|mac)-\d+\s*:\s*/, '').trim();
+        let itemKind: BacklogKind | undefined;
+        let itemPriority: BacklogPriority | undefined;
+
+        // Parse [feature|bug|infra|docs|refactor|perf|chore]
+        const kindMatch = text.match(/^\[(feature|feat|bug|infra|docs|refactor|perf|chore)\]\s*/i);
+        if (kindMatch) {
+          const rawKind = kindMatch[1].toLowerCase();
+          itemKind = rawKind === 'feat' ? 'feature' : (rawKind as BacklogKind);
+          text = text.slice(kindMatch[0].length).trim();
+        }
+
+        // Parse [P0|P1|P2|P3]
+        const prioMatch = text.match(/^\[(P[0-3])\]\s*/i);
+        if (prioMatch) {
+          itemPriority = prioMatch[1].toUpperCase() as BacklogPriority;
+          text = text.slice(prioMatch[0].length).trim();
+        }
+
+        // If kind came after priority, check again
+        if (!itemKind) {
+          const kindMatch2 = text.match(/^\[(feature|feat|bug|infra|docs|refactor|perf|chore)\]\s*/i);
+          if (kindMatch2) {
+            const rawKind = kindMatch2[1].toLowerCase();
+            itemKind = rawKind === 'feat' ? 'feature' : (rawKind as BacklogKind);
+            text = text.slice(kindMatch2[0].length).trim();
+          }
+        }
+
+        if (text && text.length >= 2 && !text.toLowerCase().startsWith('non-goals')) {
+          items.push({
+            title: text,
+            kind: itemKind,
+            priority: itemPriority,
+          });
+        }
+      }
+    }
+  }
+
+  return items;
+}
+
 export async function decomposeMilestone(
   cwd: string,
   milestoneId: string,
@@ -577,10 +661,21 @@ export async function decomposeMilestone(
     throw new Error(`[docpath] 未找到里程碑: ${milestoneId}`);
   }
 
+  let effectiveItems = items;
+  if (!effectiveItems || effectiveItems.length === 0) {
+    effectiveItems = extractDecomposeItemsFromBody(milestone.body, milestone.title);
+  }
+
+  if (effectiveItems.length === 0) {
+    throw new Error(
+      `[docpath] 里程碑 ${milestoneId} 缺少可拆解的条目。请在正文中添加列表项，或通过 --items / --title 传入待拆解需求。`,
+    );
+  }
+
   const createdBacklogs: BacklogItem[] = [];
   const newIds: string[] = [];
 
-  for (const input of items) {
+  for (const input of effectiveItems) {
     const kind: BacklogKind = input.kind || 'feature';
     const priority: BacklogPriority = input.priority || milestone.priority || 'P1';
     const level = input.level ?? 2;
@@ -678,8 +773,79 @@ export async function getMilestoneProgress(cwd: string, milestoneId: string): Pr
 
   const isReady = blockers.length === 0;
 
+  // 1. Health & Drift calculation
+  let healthStatus: MilestoneHealthStatus = 'on_track';
+  let daysRemaining: number | null = null;
+  const riskReasons: string[] = [];
+
+  if (milestone.status === 'released' || milestone.status === 'accepted' || isReady) {
+    healthStatus = 'on_track';
+  } else if (milestone.target_date) {
+    const targetTime = new Date(milestone.target_date).getTime();
+    if (!Number.isNaN(targetTime)) {
+      daysRemaining = Math.ceil((targetTime - Date.now()) / (1000 * 3600 * 24));
+      if (daysRemaining < 0) {
+        healthStatus = 'overdue';
+        riskReasons.push(`目标截止日期已逾期 ${Math.abs(daysRemaining)} 天`);
+      } else if (daysRemaining <= 7 && backlogPercent < 70) {
+        healthStatus = 'at_risk';
+        riskReasons.push(`距离截止日期仅剩 ${daysRemaining} 天，完成度仅 ${backlogPercent}%`);
+      } else if (daysRemaining <= 14 && backlogPercent < 40) {
+        healthStatus = 'at_risk';
+        riskReasons.push(`距离截止日期仅剩 ${daysRemaining} 天，完成度仅 ${backlogPercent}%`);
+      }
+    }
+  } else {
+    if (activeBacklogs === 0 && proposedBacklogs > 0 && validTargetBacklogs > 0) {
+      healthStatus = 'at_risk';
+      riskReasons.push('未规划明确截止日期，且当前无活跃进行中需求');
+    }
+  }
+
+  const healthLabels: Record<MilestoneHealthStatus, string> = {
+    on_track: '🟢 正常推进 (On Track)',
+    at_risk: '🟡 进度预警 (At Risk)',
+    overdue: '🔴 进度逾期 (Overdue)',
+  };
+
+  // 2. Top Blockers calculation
+  const uncompletedSet = new Set(
+    linkedBacklogs.filter((b) => b.status !== 'done' && b.status !== 'dropped').map((b) => b.id),
+  );
+  const blockCountMap = new Map<string, number>();
+
+  for (const b of linkedBacklogs) {
+    if (b.links.depends_on && b.links.depends_on.length > 0) {
+      for (const dep of b.links.depends_on) {
+        if (uncompletedSet.has(dep)) {
+          blockCountMap.set(dep, (blockCountMap.get(dep) || 0) + 1);
+        }
+      }
+    }
+  }
+
+  const topBlockers: Array<{ id: string; title: string; status: string; blocked_count: number }> = [];
+  for (const [bId, count] of blockCountMap.entries()) {
+    const item = linkedBacklogs.find((b) => b.id === bId);
+    if (item) {
+      topBlockers.push({
+        id: item.id,
+        title: item.title,
+        status: item.status,
+        blocked_count: count,
+      });
+    }
+  }
+  topBlockers.sort((a, b) => b.blocked_count - a.blocked_count);
+
   return {
     milestone,
+    health: {
+      status: healthStatus,
+      label: healthLabels[healthStatus],
+      days_remaining: daysRemaining,
+      risk_reasons: riskReasons,
+    },
     backlog_summary: {
       total: totalBacklogs,
       done: doneBacklogs,
@@ -693,7 +859,9 @@ export async function getMilestoneProgress(cwd: string, milestoneId: string): Pr
         title: b.title,
         status: b.status,
         priority: b.priority,
+        level: b.level,
         task: b.links.task,
+        is_blocked: b.links.depends_on ? b.links.depends_on.some((dep) => uncompletedSet.has(dep)) : false,
       })),
     },
     criteria_summary: {
@@ -702,6 +870,7 @@ export async function getMilestoneProgress(cwd: string, milestoneId: string): Pr
       percent: criteriaPercent,
       items: milestone.acceptance_criteria,
     },
+    top_blockers: topBlockers,
     overall_percent: overallPercent,
     is_ready_for_acceptance: isReady,
     blockers,
@@ -796,6 +965,34 @@ export async function collectMilestoneData(
   const nowStr = new Date().toISOString().slice(0, 10);
   const resolvedTitle = title?.trim() || `${version} Milestone Release`;
 
+  // 2. 收集已闭环的 Backlog 项与关联任务
+  const backlog: MilestoneBacklogSummary[] = [];
+  const linkedTaskIds = new Set<string>();
+  try {
+    const backlogItems = await listAllBacklogItems(cwd);
+    const targetItems = backlogItems.filter((item) => {
+      if (item.status !== 'done') return false;
+      if (/^M-\d+/i.test(version)) {
+        return item.links.milestone?.toUpperCase() === version.toUpperCase();
+      }
+      return true;
+    });
+
+    for (const item of targetItems) {
+      backlog.push({
+        id: item.id,
+        title: item.title,
+        priority: item.priority,
+        status: item.status,
+      });
+      if (item.links.task) {
+        linkedTaskIds.add(item.links.task);
+      }
+    }
+  } catch {
+    // 容错处理
+  }
+
   // 1. 收集已归档任务 (tasks/done/*)
   const tasks: MilestoneTaskSummary[] = [];
   const doneTasksDir = join(docpathDir, 'tasks', 'done');
@@ -805,6 +1002,9 @@ export async function collectMilestoneData(
       for (const entry of entries) {
         if (entry.isDirectory()) {
           const taskId = entry.name;
+          if (linkedTaskIds.size > 0 && !linkedTaskIds.has(taskId)) {
+            continue;
+          }
           const taskDir = join(doneTasksDir, taskId);
           const specPath = join(taskDir, 'spec.md');
           const planJsonPath = join(taskDir, 'plan.json');
@@ -851,24 +1051,6 @@ export async function collectMilestoneData(
     }
   }
 
-  // 2. 收集已闭环的 Backlog 项
-  const backlog: MilestoneBacklogSummary[] = [];
-  try {
-    const backlogItems = await listAllBacklogItems(cwd);
-    for (const item of backlogItems) {
-      if (item.status === 'done') {
-        backlog.push({
-          id: item.id,
-          title: item.title,
-          priority: item.priority,
-          status: item.status,
-        });
-      }
-    }
-  } catch {
-    // 容错处理
-  }
-
   // 3. 收集架构决策 (ADRs)
   const decisions: MilestoneDecisionSummary[] = [];
   try {
@@ -876,6 +1058,9 @@ export async function collectMilestoneData(
     const records = await readDecisionJsonl(workspaceDir);
     if (records && records.length > 0) {
       for (const r of records) {
+        if (linkedTaskIds.size > 0 && r.taskId && !linkedTaskIds.has(r.taskId)) {
+          continue;
+        }
         decisions.push({
           id: r.id,
           category: r.category,
@@ -902,13 +1087,15 @@ export async function collectMilestoneData(
           const createdAt = block.match(/^- created_at:\s*(.+)$/m)?.[1]?.trim() || nowStr;
           const taskId = block.match(/^- task_id:\s*(.+)$/m)?.[1]?.trim();
           if (id && decision) {
-            decisions.push({
-              id,
-              category,
-              conclusion: decision,
-              createdAt,
-              taskId,
-            });
+            if (linkedTaskIds.size === 0 || !taskId || linkedTaskIds.has(taskId)) {
+              decisions.push({
+                id,
+                category,
+                conclusion: decision,
+                createdAt,
+                taskId,
+              });
+            }
           }
         }
       }
@@ -1012,7 +1199,14 @@ export function renderMilestoneMarkdown(data: MilestoneData): string {
     '- **门禁状态**: ✅ 全部质量门禁 (Check & Review) 100% 验证通过',
     `- **活文档索引**: ✅ 自动同步更新至 \`docs-index.json\``,
     '',
-    '## 5. 🗺️ 演进时间线 (Milestone Timeline)',
+    '## 5. 🏷️ 版本切签与发布建议 (Git Tag)',
+    '',
+    '```bash',
+    `git tag -a ${data.version} -m "${data.title}"`,
+    `git push origin ${data.version}`,
+    '```',
+    '',
+    '## 6. 🗺️ 演进时间线 (Milestone Timeline)',
     '',
     '```mermaid',
     'timeline',
@@ -1184,4 +1378,131 @@ export async function listMilestones(cwd: string): Promise<MilestoneMeta[]> {
   await scanDir(dir, '.docpath/milestones');
 
   return metaList.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export interface EditMilestoneOptions {
+  title?: string;
+  status?: MilestoneStatus;
+  priority?: MilestonePriority;
+  target_date?: string | null;
+  version_target?: string | null;
+  owner?: string | null;
+  objective?: string;
+  nonGoals?: string;
+}
+
+export async function editMilestoneItem(
+  cwd: string,
+  milestoneId: string,
+  options: EditMilestoneOptions,
+): Promise<MilestoneItem> {
+  const milestone = await readMilestoneItem(cwd, milestoneId);
+  if (!milestone) {
+    throw new Error(`[docpath] 未找到里程碑: ${milestoneId}`);
+  }
+  if (options.title?.trim()) milestone.title = options.title.trim();
+  if (options.status) milestone.status = transitionMilestone(milestone.status, options.status);
+  if (options.priority) milestone.priority = options.priority;
+  if (options.target_date !== undefined) milestone.target_date = options.target_date?.trim() || null;
+  if (options.version_target !== undefined) milestone.version_target = options.version_target?.trim() || null;
+  if (options.owner !== undefined) milestone.owner = options.owner?.trim() || null;
+  milestone.updated_at = new Date().toISOString().slice(0, 10);
+  await writeMilestoneItem(cwd, milestone);
+  return milestone;
+}
+
+export interface MilestoneDoctorIssue {
+  id: string;
+  severity: 'error' | 'warning';
+  field: string;
+  message: string;
+  suggestion: string;
+}
+
+export async function auditMilestonesHygiene(cwd: string): Promise<{
+  passed: boolean;
+  issues: MilestoneDoctorIssue[];
+  warnings: MilestoneDoctorIssue[];
+}> {
+  const milestones = await listMilestoneItems(cwd);
+  const allBacklogs = await listAllBacklogItems(cwd);
+  const backlogMap = new Map<string, BacklogItem>(allBacklogs.map((b) => [b.id, b]));
+  const milestoneSet = new Set<string>(milestones.map((m) => m.id));
+
+  const issues: MilestoneDoctorIssue[] = [];
+  const warnings: MilestoneDoctorIssue[] = [];
+
+  for (const m of milestones) {
+    // 1. Dangling backlog_ids
+    for (const bId of m.backlog_ids) {
+      if (!backlogMap.has(bId)) {
+        issues.push({
+          id: m.id,
+          severity: 'error',
+          field: 'backlog_ids',
+          message: `里程碑关联的需求不存在: ${bId}`,
+          suggestion: `从里程碑中解绑该需求: docpath milestone unbind ${m.id} ${bId}`,
+        });
+      }
+    }
+
+    // 2. Empty milestone
+    if (m.backlog_ids.length === 0 && m.status !== 'released' && m.status !== 'archived') {
+      warnings.push({
+        id: m.id,
+        severity: 'warning',
+        field: 'backlog_ids',
+        message: `里程碑未关联任何 Backlog 需求`,
+        suggestion: `运行 docpath milestone decompose ${m.id} 拆解需求或 docpath milestone bind ${m.id} R-xxx 关联已有需求`,
+      });
+    }
+
+    // 3. Overdue milestone
+    if (m.target_date && (m.status === 'active' || m.status === 'planned')) {
+      const targetTime = new Date(m.target_date).getTime();
+      if (!Number.isNaN(targetTime) && targetTime < Date.now()) {
+        const days = Math.ceil((Date.now() - targetTime) / (1000 * 3600 * 24));
+        warnings.push({
+          id: m.id,
+          severity: 'warning',
+          field: 'target_date',
+          message: `里程碑已逾期 ${days} 天 (目标截止期: ${m.target_date})`,
+          suggestion: `评估进展并运行 docpath milestone edit ${m.id} --target-date <YYYY-MM-DD> 更新截止期`,
+        });
+      }
+    }
+
+    // 4. Released milestone with uncompleted MACs
+    if (m.status === 'released') {
+      const unmetMac = m.acceptance_criteria.filter((c) => !c.done);
+      if (unmetMac.length > 0) {
+        warnings.push({
+          id: m.id,
+          severity: 'warning',
+          field: 'acceptance_criteria',
+          message: `已发布里程碑包含未勾选的验收标准: ${unmetMac.map((c) => c.id).join(', ')}`,
+          suggestion: `检查验收条件并补充勾选`,
+        });
+      }
+    }
+  }
+
+  // 5. Backlog referencing non-existent milestone
+  for (const b of allBacklogs) {
+    if (b.links.milestone && !milestoneSet.has(b.links.milestone)) {
+      issues.push({
+        id: b.id,
+        severity: 'error',
+        field: 'links.milestone',
+        message: `需求声明了不存在的里程碑: ${b.links.milestone}`,
+        suggestion: `修正需求关联: docpath backlog edit ${b.id} --milestone ""`,
+      });
+    }
+  }
+
+  return {
+    passed: issues.length === 0,
+    issues,
+    warnings,
+  };
 }
