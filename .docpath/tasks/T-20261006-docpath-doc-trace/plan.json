@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-06T17:00:01.933Z",
+    "updated_at": "2026-10-06T17:00:01.933Z",
+    "content_sha256": "5e1a1666791672bb10965bcc65d44f6ffa246c1d07fb06cfde78a5c297fe8e23"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-06T17:00:01.933Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 docpath doc trace",
+      "description": "落地 FR-1: docpath doc trace，并完成模块定向自验。",
+      "acceptance": "AC-1: docpath doc trace 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 变更感知推荐",
+      "description": "落地 FR-2: 变更感知推荐，并完成模块定向自验。",
+      "acceptance": "AC-2: 变更感知推荐 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-489 与任务 T-20261006-docpath-doc-trace 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

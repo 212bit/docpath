@@ -56,6 +56,36 @@ docpath reveal --topic "<keyword>" --level 1
 1. **源码路径模糊相似度重定向**：当代码文件重命名或移动时，自动通过 Levenshtein 相似度匹配候选源码文件并建议/执行更新。
 2. **符号跨文件迁移追踪**：当函数/类型/类在重构中由文件 A 迁移至文件 B 时，自动全局扫描源码导出表并一键将文档中的链接指向新文件。
 
+### 2.5 双向代码-文档架构透视 (`docpath doc trace <file|symbol|kw>`)
+DocPath 提供毫秒级代码与活文档、架构决策 (ADRs)、Backlog 及规则的双向透视能力：
+```bash
+# 透视特定源码文件的关联文档、历史 ADR 与需求血缘
+docpath doc trace src/engine/milestone.ts
+
+# 透视特定函数/符号在活文档中的声明与引用
+docpath doc trace getMilestoneProgress
+
+# Agent 机器视图
+docpath doc trace src/engine/milestone.ts --agent
+```
+输出包含：
+- **Living Docs**: 强关联活文档及匹配依据（正文直接引用、标题/路径匹配、标签关联）；
+- **ADRs**: 影响该文件或模块的历史架构决策；
+- **Backlog & Tasks**: 关联的历史交付需求与归档任务；
+- **Rules**: 适用的系统规范与工程红线。
+
+### 2.6 代码变更与活文档漂移感知 (`docpath doc drift`)
+在开发或代码审查阶段，DocPath 可自动探查已修改的源码文件，推断其对应的主要承载活文档，并检测未同步文档的漂移风险：
+```bash
+# 检测当前工作区变更的代码与文档漂移
+docpath doc drift
+
+# Agent 机器视图
+docpath doc drift --agent
+```
+- **风险等级评定**：核心调度引擎/状态机文件（`high`）、业务功能/命令文件（`medium`）、通用工具（`low`）。
+- **智能补齐建议**：输出推荐同步维护的文档路径及具体修改指导。
+
 ## 3. 验证与门禁 (Verification)
-- **单元与集成测试**: `tests/doc-command-enhanced.test.mjs`、`tests/docs-lint-command.test.mjs`、`tests/docs-sync.test.mjs`、`tests/docs-fix-command.test.mjs`。
+- **单元与集成测试**: `tests/doc-trace-drift.test.mjs`、`tests/doc-command-enhanced.test.mjs`、`tests/docs-lint-command.test.mjs`、`tests/docs-sync.test.mjs`、`tests/docs-fix-command.test.mjs`。
 - **文档健康自愈**: `docpath docs fix` 自动检测并修复 frontmatter、标题、死链、代码路径漂移与符号跨文件迁移。

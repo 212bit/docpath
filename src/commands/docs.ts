@@ -53,6 +53,8 @@ import {
   type DocFixResult,
   type DocGuardResult,
 } from '../utils/docs-doctor.js';
+import { traceDocAndCode, renderDocTraceReport } from '../engine/doc-trace.js';
+import { detectDocDrift, renderDocDriftReport } from '../engine/doc-drift.js';
 
 export interface DocsFilterOptions {
   status?: string;
@@ -1407,6 +1409,65 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
       if (!guardRes.passed) {
         process.exitCode = 1;
       }
+      break;
+    }
+    case 'trace': {
+      const target = args.join(' ') || query || '';
+      if (!target) {
+        console.error('❌  请指定要透视的代码文件路径、符号名或关键词，例如: `docpath doc trace src/engine/milestone.ts`');
+        process.exit(1);
+      }
+      const result = await traceDocAndCode(cwd, target);
+      if (json) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+      if (agent) {
+        const { stringify } = await import('yaml');
+        console.log(
+          stringify({
+            agent_view: 'doc_trace',
+            target: result.target,
+            target_type: result.target_type,
+            summary: result.summary,
+            living_docs: result.living_docs,
+            decisions: result.decisions,
+            backlog_lineage: result.backlog_lineage,
+            rules: result.rules,
+            agent_hint: result.agent_hint,
+          }),
+        );
+        return;
+      }
+      console.log(`\n${renderDocTraceReport(result)}`);
+      break;
+    }
+    case 'drift': {
+      const report = await detectDocDrift(cwd, {
+        files: args.length > 0 ? args : undefined,
+        staged: options.staged,
+      });
+      if (json) {
+        console.log(JSON.stringify(report, null, 2));
+        return;
+      }
+      if (agent) {
+        const { stringify } = await import('yaml');
+        console.log(
+          stringify({
+            agent_view: 'doc_drift',
+            passed: report.passed,
+            total_changed_code_files: report.total_changed_code_files,
+            total_changed_doc_files: report.total_changed_doc_files,
+            drifts_count: report.drifts.length,
+            summary: report.summary,
+            drifts: report.drifts,
+            agent_hint: report.agent_hint,
+          }),
+        );
+        return;
+      }
+      console.log(`\n${renderDocDriftReport(report)}`);
       break;
     }
     case 'search':

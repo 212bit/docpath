@@ -76,20 +76,21 @@ DocPath 严格区分 **4 层文档资产**，避免运行时噪音与知识腐�
 
 ## 文档关联图谱 (docs graph)
 
-> 全部 24 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。
+> 全部 27 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。
 
 ### docs/
 
 - [docs/BUILD.md](./BUILD.md) — Build Guide — 出 2 / 入 2
 - [docs/error-codes.md](./error-codes.md) — DocPath 错误码参考 — 出 2 / 入 2
-- [docs/getting-started.md](./getting-started.md) — DocPath Getting Started — 出 3 / 入 3
-- [docs/product-panorama.md](./product-panorama.md) — DocPath 产品全景文档 (Product Panorama) — 出 2 / 入 1
-- [docs/README.md](./README.md) — DocPath 架构与项目文档中心 — ⚠️ 孤立 / 出 0 / 入 0
+- [docs/getting-started.md](./getting-started.md) — DocPath Getting Started — 出 3 / 入 4
+- [docs/product-panorama.md](./product-panorama.md) — DocPath 产品全景文档 (Product Panorama) — 出 2 / 入 3
+- [docs/README.md](./README.md) — DocPath 架构与项目文档中心 — 出 2 / 入 0
+- [docs/roadmap.md](./roadmap.md) — DocPath — 进度与方向 — 出 4 / 入 0
 
 ### docs/architecture/
 
-- [docs/architecture/agent-context-injection-architecture.md](./architecture/agent-context-injection-architecture.md) — Agent 零点击上下文随路注入与智能路由体系架构 — 出 1 / 入 2
-- [docs/architecture/breadcrumb-task-level-architecture.md](./architecture/breadcrumb-task-level-architecture.md) — Breadcrumb 任务级优先架构 — 出 2 / 入 2
+- [docs/architecture/agent-context-injection-architecture.md](./architecture/agent-context-injection-architecture.md) — Agent 零点击上下文随路注入与智能路由体系架构 — 出 2 / 入 2
+- [docs/architecture/breadcrumb-task-level-architecture.md](./architecture/breadcrumb-task-level-architecture.md) — Breadcrumb 任务级优先架构 — 出 2 / 入 3
 - [docs/architecture/documentation-lifecycle-guide.md](./architecture/documentation-lifecycle-guide.md) — DocPath 文档全生命周期管理规范与演进体系 — 出 2 / 入 3
 - [docs/architecture/tool-evaluation-2026-06.md](./architecture/tool-evaluation-2026-06.md) — DocPath 工具评估报告 — 出 2 / 入 1
 
@@ -98,18 +99,20 @@ DocPath 严格区分 **4 层文档资产**，避免运行时噪音与知识腐�
 - [docs/design/agent-integration.md](./design/agent-integration.md) — DocPath 2.0 Design: Agent Integration — 出 2 / 入 2
 - [docs/design/command-boundaries.md](./design/command-boundaries.md) — DocPath Command Boundaries — 出 2 / 入 2
 - [docs/design/project-document-placement.md](./design/project-document-placement.md) — 项目文档放置决策 — 出 2 / 入 2
-- [docs/design/refactor-doc-management-plan.md](./design/refactor-doc-management-plan.md) — 重构方案：docpath 转型为「文档管理 + 沉淀 + 一致性校验」 — 出 2 / 入 2
+- [docs/design/refactor-doc-management-plan.md](./design/refactor-doc-management-plan.md) — 重构方案：docpath 转型为「文档管理 + 沉淀 + 一致性校验」 — 出 2 / 入 3
 - [docs/design/session-isolation-mvp.md](./design/session-isolation-mvp.md) — Session Isolation MVP — 出 2 / 入 2
 - [docs/design/state-machine-correctness-analysis.md](./design/state-machine-correctness-analysis.md) — 状态机正确性分析 (R-203) — 出 2 / 入 1
 
 ### docs/features/
 
 - [docs/features/architecture-guard.md](./features/architecture-guard.md) — 架构分层与依赖防腐守卫 (Architecture Layers & Guardrails) — 出 2 / 入 2
-- [docs/features/backlog-lifecycle.md](./features/backlog-lifecycle.md) — Backlog 需求工程与全生命周期管理 (Backlog Lifecycle & Engineering) — 出 2 / 入 3
-- [docs/features/knowledge-accumulation.md](./features/knowledge-accumulation.md) — 经验沉淀与持续学习机制 (Knowledge Accumulation) — 出 2 / 入 3
+- [docs/features/backlog-lifecycle.md](./features/backlog-lifecycle.md) — Backlog 需求工程与全生命周期管理 (Backlog Lifecycle & Engineering) — 出 2 / 入 4
+- [docs/features/knowledge-accumulation.md](./features/knowledge-accumulation.md) — 经验沉淀与持续学习机制 (Knowledge Accumulation) — 出 2 / 入 4
+- [docs/features/living-docs-workflow.md](./features/living-docs-workflow.md) — DocPath 活文档防腐与 Agent 协议联动系统 — 出 0 / 入 1
+- [docs/features/milestone-lifecycle.md](./features/milestone-lifecycle.md) — Milestone 里程碑目标规划与闭环管理 (Milestone Lifecycle & Management) — 出 2 / 入 0
 - [docs/features/task-stash.md](./features/task-stash.md) — 任务热暂存与上下文恢复 (Task Stash & Switch) — 出 2 / 入 2
 - [docs/features/test-impact-analysis.md](./features/test-impact-analysis.md) — 测试影响分析与智能门禁加速体系 (Test Impact Analysis & Smart Gates) — 出 2 / 入 2
-- [docs/features/worktree-workflow.md](./features/worktree-workflow.md) — Agent-neutral Git Worktree 并发开发 - 使用指南 — 出 2 / 入 2
+- [docs/features/worktree-workflow.md](./features/worktree-workflow.md) — Agent-neutral Git Worktree 并发开发 - 使用指南 — 出 2 / 入 3
 
 ### docs/guides/
 

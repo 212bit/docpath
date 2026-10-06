@@ -7,6 +7,8 @@ import { unlinkCommand } from '../unlink.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 const KNOWN_DOCS_ACTIONS = new Set([
+  'trace',
+  'drift',
   'scan',
   'sync',
   'list',

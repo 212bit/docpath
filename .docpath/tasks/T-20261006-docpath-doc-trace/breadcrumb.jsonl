@@ -1,0 +1,4 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-docpath-doc-trace","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 docpath doc trace","timestamp":"2026-10-06T16:56:24.044Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-docpath-doc-trace","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-06T16:59:23.057Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-docpath-doc-trace","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 变更感知推荐","timestamp":"2026-10-06T16:59:29.893Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-docpath-doc-trace","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-06T17:00:01.927Z","sessionId":"default"}
