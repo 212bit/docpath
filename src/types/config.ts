@@ -58,6 +58,20 @@ export interface DocPathConfig {
     auto_resolve_paths?: string[];
   };
 
+  /** Git 提交与署名配置 */
+  git?: {
+    /** 是否启用自动 Co-Authored-By 署名（支持布尔值开关或自定义署名字符串） */
+    co_author?: boolean | string;
+  };
+
+  /** Agent 运行时与协议适配配置 */
+  agent?: {
+    /** 覆盖当前 Agent 名称 */
+    name?: string;
+    /** 覆盖 Co-Author 签名 */
+    co_author?: boolean | string;
+  };
+
   // R-336 FR-3: project_commands 已删除（grep 零消费方，init 不再写入）
 }
 

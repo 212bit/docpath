@@ -31,6 +31,8 @@ export async function deriveCommitMessage(cwd: string): Promise<string> {
   return 'chore: complete task and update changes';
 }
 
+import { resolveCoAuthor } from '../utils/agent-coauthor.js';
+
 export interface CommitOptions {
   dryRun?: boolean;
   stage?: boolean;
@@ -39,8 +41,6 @@ export interface CommitOptions {
   includePatterns?: string[];
   cwd: string;
 }
-
-const CO_AUTHOR = 'Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>';
 
 /**
  * Main commit command implementation
@@ -67,6 +67,7 @@ export async function commitCommand(options: CommitOptions): Promise<void> {
 
   // Step 2: Determine operation mode
   const isDryRun = dryRun || (!stage && !message);
+  const coAuthorInfo = await resolveCoAuthor(cwd);
 
   if (isDryRun) {
     // Dry-run mode: preview only
@@ -83,7 +84,9 @@ export async function commitCommand(options: CommitOptions): Promise<void> {
     if (stageResult.stagedFiles.length > 0) {
       console.log('\n📝 Proposed commit message:');
       console.log('  (provide with -m "your message")\n');
-      console.log(`  ${CO_AUTHOR}`);
+      if (coAuthorInfo.enabled && coAuthorInfo.trailer) {
+        console.log(`  ${coAuthorInfo.trailer}`);
+      }
       console.log('\nNext steps:');
       console.log('  docpath commit --stage          # Stage files');
       console.log('  docpath commit -m "message"     # Stage and commit');
@@ -142,8 +145,11 @@ export async function commitCommand(options: CommitOptions): Promise<void> {
       process.exit(1);
     }
 
-    // Create commit with co-author trailer
-    const commitMessage = message.trim() + '\n\n' + CO_AUTHOR;
+    // Create commit with dynamic co-author trailer
+    const coAuthorInfo = await resolveCoAuthor(cwd);
+    const commitMessage = coAuthorInfo.enabled && coAuthorInfo.trailer
+      ? `${message.trim()}\n\n${coAuthorInfo.trailer}`
+      : message.trim();
 
     try {
       execFileSync('git', ['commit', '-m', commitMessage], {
@@ -161,7 +167,9 @@ export async function commitCommand(options: CommitOptions): Promise<void> {
       console.log('\n📝 Commit created successfully\n');
       console.log(`✅ Commit: ${commitHash}`);
       console.log(`   ${message}`);
-      console.log(`\n   ${CO_AUTHOR}`);
+      if (coAuthorInfo.enabled && coAuthorInfo.trailer) {
+        console.log(`\n   ${coAuthorInfo.trailer}`);
+      }
       console.log('\nNext steps:');
       console.log('  git log -1 --stat               # Review commit');
       console.log('  git push                        # Push to remote');

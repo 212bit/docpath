@@ -110,9 +110,25 @@ context_injection:
 2. **必须以随路 context_injection 为准**：在开始修改代码前，优先检查 `next` / `go` 返回中的 `recent_decisions` 与 `spec_summary`。
 3. **自愈优先使用智能切片**：当上下文丢失或需要排查规则冲突时，必须使用 `docpath context --smart` 或 `docpath reveal`，不得进行全仓扫描。
 
+## 六、 多 Agent 运行时自适应与 Git 提交署名解耦
+
+DocPath 面向多 Agent 生态（Antigravity、Claude Code、Codex、OpenCode），具备运行态环境自适应与解耦能力：
+
+1. **运行时动态感知**：
+   - 自动检测环境变量与会话上下文，精准适配当前运行平台，动态生成对应 Agent 提示（如 `─── Antigravity 指令 ───`、`─── Codex 指令 ───`）。
+2. **Git 提交署名 (Co-Authored-By) 泛化与解耦**：
+   - 支持在 `.docpath/config.yaml` 中灵活配置：
+     ```yaml
+     git:
+       co_author: false # 允许完全关闭自动署名
+       # 或显式自定义:
+       # co_author: "Pair Programmer <pair@example.com>"
+     ```
+   - 缺省状态下根据当前 Agent 运行时动态生成对应 Git Trailer，拒绝写死特定厂商。
+
 ---
 
-## 六、 演进与维护
+## 七、 演进与维护
 
 - **决策沉淀入口**：通过 `docpath journal` 记录的 ADR 决策，会自动同步至 `decisions.jsonl`，成为随路注入的数据源。
 - **规则提炼入口**：通过 `docpath learn` 提炼的 Gotcha 规则，会自动入库到 `.docpath/rules/`，供路径亲和性算法即时命中。

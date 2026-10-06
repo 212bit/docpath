@@ -46,13 +46,31 @@ export async function isTraceEnabled(cwd: string): Promise<boolean> {
  * 检测当前是由什么 Agent 发起的调用。
  */
 export function detectAgent(): string {
-  // 检查是否运行在特殊的 agent 环境变量下
-  if (process.env.CLAUDE_SESSION || process.env.CLAUDE_TRACE) return 'claude';
-  if (process.env.CODEX_SESSION || process.env.CODEX_TRACE) return 'codex';
-  if (process.env.OPENCODE_SESSION) return 'opencode';
+  if (process.env.DOCPATH_AGENT) return process.env.DOCPATH_AGENT.toLowerCase();
+  if (process.env.AGENT_NAME) return process.env.AGENT_NAME.toLowerCase();
 
-  // 检查进程树中的命令行参数或环境变量
+  // 1. 优先检查活跃会话环境变量
+  if (process.env.ANTIGRAVITY_AGENT || process.env.AGY_SESSION || process.env.GEMINI_CONVERSATION_ID) {
+    return 'antigravity';
+  }
+  if (process.env.CLAUDE_SESSION || process.env.CLAUDE_TRACE || process.env.CLAUDE_CODE) {
+    return 'claude';
+  }
+  if (process.env.CODEX_SESSION || process.env.CODEX_TRACE || process.env.CODEX_CLI) {
+    return 'codex';
+  }
+  if (process.env.OPENCODE_SESSION) {
+    return 'opencode';
+  }
+
+  // 2. 检查全局环境标志
+  if (process.env.GEMINI_CLI || process.env.GEMINI_CLI_APP_DATA_DIR) {
+    return 'antigravity';
+  }
+
+  // 3. 检查进程树中的命令行参数或环境变量
   const envKeys = Object.keys(process.env).join(',');
+  if (envKeys.includes('ANTIGRAVITY') || envKeys.includes('GEMINI')) return 'antigravity';
   if (envKeys.includes('CLAUDE')) return 'claude';
   if (envKeys.includes('CODEX')) return 'codex';
   if (envKeys.includes('OPENCODE')) return 'opencode';

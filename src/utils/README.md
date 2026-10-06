@@ -16,7 +16,7 @@ task-files.ts, structured-docs.ts, structured-heal.ts, plan-sync.ts, plan-topolo
 git-dirty-guard.ts, ui-gate.ts, major-change.ts, review-skill-router.ts, semantic-verify.ts, auto-format.ts
 
 ### git — Git 集成与收口
-git-closeout.ts, git-hygiene.ts, git-safety.ts, git-staging.ts, changes-report.ts, merge-driver.ts, worktree.ts, worktree-collaboration.ts, worktree-dependency-drift.ts, backlog-registry.ts
+git-closeout.ts, git-hygiene.ts, git-safety.ts, git-staging.ts, agent-coauthor.ts, changes-report.ts, merge-driver.ts, worktree.ts, worktree-collaboration.ts, worktree-dependency-drift.ts, backlog-registry.ts
 
 ### context — 上下文构建与索引
 context-index.ts, context.ts, document-index.ts, topic-synonyms.ts, milestone.ts, budget.ts, docs-doctor.ts, smart-context.ts, payload.ts, rules.ts, lesson-candidates.ts, deliverables.ts, roles.ts, decisions.ts

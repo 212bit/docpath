@@ -33,6 +33,7 @@ import { renderCloseoutRoute, resolveCloseoutRoute } from '../engine/closeout-ro
 import { assertWorktreeContract } from './worktree.js';
 import { resolveEffectiveWorkflowProfile } from '../engine/workflow-profile.js';
 import { assertNoDriftLock, refreshAgentSnapshot } from '../hooks/bridge.js';
+import { detectAgent } from '../utils/trace.js';
 
 interface GoOptions {
   cwd: string;
@@ -254,7 +255,19 @@ async function startStep(
     taskTitle: extraFields.task_title || undefined,
   });
 
-  console.log('─── Claude Code 指令 ───');
+  const agentType = detectAgent();
+  const agentLabel =
+    agentType === 'antigravity'
+      ? 'Antigravity 指令'
+      : agentType === 'claude'
+        ? 'Claude Code 指令'
+        : agentType === 'codex'
+          ? 'Codex 指令'
+          : agentType === 'opencode'
+            ? 'OpenCode 指令'
+            : 'Agent 指令';
+
+  console.log(`─── ${agentLabel} ───`);
   console.log('请执行子任务 ' + target.id + '，完成后运行 `docpath step-pass` 一步收尾并启动下一步（等价 agent step done + go），或 `docpath agent step --step ' + target.id + ' --status done` 后再 `docpath next --agent`。');
   console.log('💡 提示：开始执行任务。请在开发中随时在 spec.md 中补充 decision_brief，确保决策被即时固化。');
   await emitNextHint(cwd);

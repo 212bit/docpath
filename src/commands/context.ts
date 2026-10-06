@@ -382,7 +382,7 @@ export async function contextCommand(options: ContextOptions): Promise<void> {
     console.log(`${'─'.repeat(50)}\n`);
     console.log(fullContext);
     console.log(`\n${'─'.repeat(50)}`);
-    console.log(`💡  复制以上内容粘贴给 Claude Code 即可恢复完整上下文\n`);
+    console.log(`💡  复制以上内容粘贴给 Agent 即可恢复完整上下文\n`);
   }
 
   if (options.output) {
