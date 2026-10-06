@@ -7,3 +7,6 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-milestone","step":"S3","status":"done","context":"step-pass: S3","timestamp":"2026-10-06T16:08:34.216Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-milestone","step":"S4","status":"in_progress","context":"开始执行: 实现并验证 FR-4 新增 `docpath milestone edit` 属性编辑与 `docpath milestone doctor` 完整性巡检治理能力","timestamp":"2026-10-06T16:08:34.566Z","sessionId":"default"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-milestone","step":"S4","status":"done","context":"step-pass: S4","timestamp":"2026-10-06T16:12:53.135Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-milestone","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-06T16:15:17.979Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-milestone","step":"review","status":"done","context":"代码审查: 0 错误, 11 警告, 1 提示","timestamp":"2026-10-06T16:15:19.114Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261006-milestone","step":"journal","status":"done","context":"知识归档完成 (4/4 步)","timestamp":"2026-10-06T16:15:20.766Z"}
