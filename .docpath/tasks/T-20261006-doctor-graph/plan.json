@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-06T16:40:41.823Z",
+    "updated_at": "2026-10-06T16:40:41.823Z",
+    "content_sha256": "e5a365cf8b16db506601cfa6b3d49bee2839df1d931847ac8ebce92b178ae429"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-06T16:40:41.823Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 doctor/graph 孤立口径统一",
+      "description": "落地 FR-1: doctor/graph 孤立口径统一，并完成模块定向自验。",
+      "acceptance": "AC-1: doctor/graph 孤立口径统一 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 文档警告豁免机制",
+      "description": "落地 FR-2: 文档警告豁免机制，并完成模块定向自验。",
+      "acceptance": "AC-2: 文档警告豁免机制 满足功能要求并通过测试",
+      "dependencies": "S1",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "name": "实现并验证 FR-3 机器区块过期检测",
+      "description": "落地 FR-3: 机器区块过期检测，并完成模块定向自验。",
+      "acceptance": "AC-3: 机器区块过期检测 满足功能要求并通过测试；AC-4: 生成的 spec 可直接进入 `docpath plan`；AC-5: backlog 条目 R-488 与任务 T-20261006-doctor-graph 建立双向关联",
+      "dependencies": "S2",
+      "status": "done"
+    }
+  ]
+}

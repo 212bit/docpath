@@ -21,6 +21,7 @@ import {
   parseFrontmatterMetadata,
   inferDocumentTier,
   buildDocGraph,
+  renderDocsIndexBlock,
   isDocsGraphNodePath,
   type DocLifecycleStatus,
   type ProjectDocumentIndexEntry,
@@ -42,6 +43,7 @@ export type DocIssueType =
   | 'invalid-frontmatter'
   | 'unindexed'
   | 'stale-index'
+  | 'stale-graph-block'
   | 'stale-archive'
   | 'backlog-misplaced'
   | 'broken-evidence';
@@ -66,6 +68,10 @@ export interface DocHealthReport {
   indexedCount: number;
   healthy: boolean;
   issues: DocIssue[];
+  /** 经豁免清单（docs-doctor-ack.yaml）抑制的警告，保留原样输出以保证透明 */
+  suppressed: DoctorSuppressedIssue[];
+  /** 豁免清单自身的解析/校验问题（无效豁免条目不静默丢弃） */
+  ackProblems: string[];
   stats: {
     brokenLinks: number;
     deprecatedReferences: number;
@@ -78,6 +84,7 @@ export interface DocHealthReport {
     missingHeadings: number;
     emptyDocs: number;
     staleIndex: number;
+    staleGraphBlocks: number;
     backlogIssues: number;
     frontmatterIssues: number;
     lifecycle: {
@@ -86,6 +93,86 @@ export interface DocHealthReport {
       deprecated: number;
     };
   };
+}
+
+/** 豁免条目：声明「某类警告在本文档上是已知且可接受的」，必须携带 reason */
+export interface DoctorAck {
+  rule: DocIssueType;
+  /** 可选：限定产生警告的文档（仓库相对路径，如 docs/reference/X.md） */
+  file?: string;
+  /** 可选：限定警告涉及的目标（markdown 链接原始目标串，如 ../archive/epics/AUTOMATION.md） */
+  target?: string;
+  reason: string;
+  since?: string;
+}
+
+export interface DoctorSuppressedIssue {
+  type: DocIssueType;
+  file: string;
+  target?: string;
+  reason: string;
+}
+
+/** 豁免清单文件（位于 .docpath/ 下）；YAML 格式，每条豁免必须带 reason */
+export const DOCTOR_ACK_FILENAME = 'docs-doctor-ack.yaml';
+
+/**
+ * 加载豁免清单。无效条目不静默丢弃：返回 problems 由 doctor 输出，
+ * 否则一条写错的豁免会让它本要抑制的警告悄悄复活。
+ */
+export async function loadDoctorAcks(docpathDir: string): Promise<{
+  acks: DoctorAck[];
+  problems: string[];
+}> {
+  const ackPath = join(docpathDir, DOCTOR_ACK_FILENAME);
+  if (!existsSync(ackPath)) return { acks: [], problems: [] };
+  let raw: unknown;
+  try {
+    raw = parseYaml(await readFile(ackPath, 'utf-8'));
+  } catch (err) {
+    return { acks: [], problems: [`${DOCTOR_ACK_FILENAME} 解析失败: ${err instanceof Error ? err.message : err}`] };
+  }
+  const list = Array.isArray((raw as { acknowledgements?: unknown })?.acknowledgements)
+    ? ((raw as { acknowledgements: unknown[] }).acknowledgements)
+    : [];
+  const acks: DoctorAck[] = [];
+  const problems: string[] = [];
+  list.forEach((item, i) => {
+    const entry = item as Partial<DoctorAck> | null;
+    if (!entry || typeof entry !== 'object') {
+      problems.push(`acknowledgements[${i}]: 非对象条目`);
+      return;
+    }
+    if (typeof entry.rule !== 'string' || !entry.rule) {
+      problems.push(`acknowledgements[${i}]: 缺 rule（警告类型）`);
+      return;
+    }
+    if (typeof entry.reason !== 'string' || !entry.reason.trim()) {
+      problems.push(`acknowledgements[${i}]: 缺 reason —— 豁免必须说明理由，否则无法审计`);
+      return;
+    }
+    acks.push({
+      rule: entry.rule as DocIssueType,
+      file: typeof entry.file === 'string' && entry.file ? entry.file : undefined,
+      target: typeof entry.target === 'string' && entry.target ? entry.target : undefined,
+      reason: entry.reason,
+      since: typeof entry.since === 'string' ? entry.since : undefined,
+    });
+  });
+  return { acks, problems };
+}
+
+const normalizeAckPath = (p: string): string => p.replace(/^\.\//, '').replace(/\\/g, '/');
+
+/** 判定某条 issue 是否被某豁免条目覆盖：rule 必须相等，file/target 提供时须精确匹配 */
+export function matchDoctorAck(issue: DocIssue, ack: DoctorAck): boolean {
+  if (ack.rule !== issue.type) return false;
+  if (ack.file && normalizeAckPath(ack.file) !== normalizeAckPath(issue.file)) return false;
+  if (ack.target) {
+    const issueTarget = issue.linkData?.originalTarget;
+    if (!issueTarget || normalizeAckPath(issueTarget) !== normalizeAckPath(ack.target)) return false;
+  }
+  return true;
 }
 
 /** 计算两个字符串的 Levenshtein 相似度 (0 ~ 1) */
@@ -287,6 +374,8 @@ export async function diagnoseDocumentHealth(
         indexedCount: 0,
         healthy: true,
         issues: [],
+        suppressed: [],
+        ackProblems: [],
         stats: {
           brokenLinks: 0,
           deprecatedReferences: 0,
@@ -299,6 +388,7 @@ export async function diagnoseDocumentHealth(
           missingHeadings: 0,
           emptyDocs: 0,
           staleIndex: 0,
+          staleGraphBlocks: 0,
           backlogIssues: 0,
           frontmatterIssues: 0,
           lifecycle: { active: 0, wip: 0, deprecated: 0 },
@@ -520,6 +610,8 @@ export async function diagnoseDocumentHealth(
               message: `引用了已废弃/归档文档: [${originalText}](${linkTarget})${targetMeta.deprecatedBy ? ` (替代方案: ${targetMeta.deprecatedBy})` : ''}`,
               autoFixable: false,
               fixDetail: targetMeta.deprecatedBy ? `建议更新引用为: ${targetMeta.deprecatedBy}` : '建议评估是否更新引用或明确废弃依赖',
+              // 带上原始链接目标，供 docs-doctor-ack.yaml 按条豁免（有意引用归档稿的场景）
+              linkData: { originalText, originalTarget: linkTarget },
             });
           }
 
@@ -1085,20 +1177,65 @@ export async function diagnoseDocumentHealth(
     }
   }
 
+  // 豁免过滤：先于 stats，保证「healthy/issues/stats/豁免摘要」四处口径一致
+  const { acks, problems: ackProblems } = await loadDoctorAcks(docpathDir);
+  const suppressed: DoctorSuppressedIssue[] = [];
+  const keptIssues = issues.filter((issue) => {
+    const ack = acks.find((a) => matchDoctorAck(issue, a));
+    if (!ack) return true;
+    suppressed.push({
+      type: issue.type,
+      file: issue.file,
+      target: issue.linkData?.originalTarget,
+      reason: ack.reason,
+    });
+    return false;
+  });
+
+  // 机器区块过期检测（stale-graph-block）：docs/README.md 的 docpath:block docs-index
+  // 落后于当前图状态时提醒重生成；无区块视为未启用机器区，不告警。
+  const readmePath = join(projectRoot, 'docs', 'README.md');
+  if (index?.entries.length && existsSync(readmePath)) {
+    try {
+      const content = await readFile(readmePath, 'utf-8');
+      const blockStart = '<!-- docpath:block docs-index -->';
+      const blockEnd = '<!-- /docpath:block -->';
+      const start = content.indexOf(blockStart);
+      const end = start === -1 ? -1 : content.indexOf(blockEnd, start);
+      if (start !== -1 && end !== -1) {
+        const fresh = renderDocsIndexBlock(buildDocGraph(index.entries));
+        const current = content.slice(start, end + blockEnd.length);
+        if (current.trim() !== fresh.trim()) {
+          keptIssues.push({
+            file: 'docs/README.md',
+            absPath: readmePath,
+            type: 'stale-graph-block',
+            message: 'docpath:block docs-index 机器区块落后于当前文档图状态',
+            autoFixable: false,
+            fixDetail: '运行 docpath docs graph --fix 重生成（区块由机器维护，禁止手改）',
+          });
+        }
+      }
+    } catch {
+      // 容错：README 不可读时不阻塞其余巡检
+    }
+  }
+
   const stats = {
-    brokenLinks: issues.filter((i) => i.type === 'broken-link').length,
-    deprecatedReferences: issues.filter((i) => i.type === 'deprecated-reference').length,
-    codeDrift: issues.filter((i) => i.type === 'code-drift').length,
-    symbolDrift: issues.filter((i) => i.type === 'symbol-drift').length,
-    commandDrift: issues.filter((i) => i.type === 'command-drift').length,
-    staleUnreviewed: issues.filter((i) => i.type === 'stale-unreviewed').length,
-    archiveCandidates: issues.filter((i) => i.type === 'archive-candidate').length,
-    unindexed: issues.filter((i) => i.type === 'unindexed').length,
-    missingHeadings: issues.filter((i) => i.type === 'missing-heading').length,
-    emptyDocs: issues.filter((i) => i.type === 'empty-doc').length,
-    staleIndex: issues.filter((i) => i.type === 'stale-index').length,
-    backlogIssues: issues.filter((i) => i.type === 'backlog-misplaced' || i.type === 'broken-evidence').length,
-    frontmatterIssues: issues.filter((i) => i.type === 'missing-frontmatter' || i.type === 'invalid-frontmatter').length,
+    brokenLinks: keptIssues.filter((i) => i.type === 'broken-link').length,
+    deprecatedReferences: keptIssues.filter((i) => i.type === 'deprecated-reference').length,
+    codeDrift: keptIssues.filter((i) => i.type === 'code-drift').length,
+    symbolDrift: keptIssues.filter((i) => i.type === 'symbol-drift').length,
+    commandDrift: keptIssues.filter((i) => i.type === 'command-drift').length,
+    staleUnreviewed: keptIssues.filter((i) => i.type === 'stale-unreviewed').length,
+    archiveCandidates: keptIssues.filter((i) => i.type === 'archive-candidate').length,
+    unindexed: keptIssues.filter((i) => i.type === 'unindexed').length,
+    missingHeadings: keptIssues.filter((i) => i.type === 'missing-heading').length,
+    emptyDocs: keptIssues.filter((i) => i.type === 'empty-doc').length,
+    staleIndex: keptIssues.filter((i) => i.type === 'stale-index').length,
+    staleGraphBlocks: keptIssues.filter((i) => i.type === 'stale-graph-block').length,
+    backlogIssues: keptIssues.filter((i) => i.type === 'backlog-misplaced' || i.type === 'broken-evidence').length,
+    frontmatterIssues: keptIssues.filter((i) => i.type === 'missing-frontmatter' || i.type === 'invalid-frontmatter').length,
     lifecycle: {
       active: activeDocsCount,
       wip: wipDocsCount,
@@ -1109,8 +1246,10 @@ export async function diagnoseDocumentHealth(
   return {
     scannedCount: scannedFiles.length,
     indexedCount: index?.entries.length || 0,
-    healthy: issues.length === 0,
-    issues,
+    healthy: keptIssues.length === 0,
+    issues: keptIssues,
+    suppressed,
+    ackProblems,
     stats,
   };
 }
@@ -1614,6 +1753,7 @@ export function renderDocHealthTable(report: DocHealthReport): string {
   lines.push(`  - 代码符号漂移 (Symbol Drift)         : ${report.stats.symbolDrift === 0 ? '✅ 符号完全对齐' : `⚠️  ${report.stats.symbolDrift} 处导出符号不一致`}`);
   lines.push(`  - 命令调用漂移 (Command Drift)        : ${report.stats.commandDrift === 0 ? '✅ 语法完全有效' : `⚠️  ${report.stats.commandDrift} 处命令用法已变更`}`);
   lines.push(`  - 长期未复核 (Stale Unreviewed)       : ${report.stats.staleUnreviewed === 0 ? '✅ 时效完备' : `⚠️  ${report.stats.staleUnreviewed} 个文档未及时校准`}`);
+  lines.push(`  - 机器区块时效 (Graph Block)          : ${report.stats.staleGraphBlocks === 0 ? '✅ 与图状态同步' : `⚠️  ${report.stats.staleGraphBlocks} 处机器区块落后于图状态`}`);
   lines.push(`  - 归档治理建议 (Archive Candidates)   : ${report.stats.archiveCandidates === 0 ? '✅ 目录结构清晰' : `💡 ${report.stats.archiveCandidates} 个废弃文档待归档`}`);
   lines.push(`  - 未索引文档 (Unindexed)              : ${report.stats.unindexed === 0 ? '✅ 全部同步' : `⚠️  ${report.stats.unindexed} 个文档未入索引`}`);
   lines.push(`  - 缺失一级标题 (Missing H1)           : ${report.stats.missingHeadings === 0 ? '✅ 规范完备' : `⚠️  ${report.stats.missingHeadings} 个文档缺少 H1`}`);

@@ -29,6 +29,7 @@ import {
   readProjectDocumentIndex,
   recommendRelatedDocs,
   refreshProjectDocumentIndex,
+  renderDocsIndexBlock,
   sortDocumentEntries,
   toDocsRelatedDeclaredValue,
   upsertFrontmatterRelated,
@@ -47,6 +48,7 @@ import {
   renderDocHealthTable,
   runDocGuard,
   installDocGuardHook,
+  DOCTOR_ACK_FILENAME,
   type DocHealthReport,
   type DocFixResult,
   type DocGuardResult,
@@ -527,6 +529,8 @@ async function docsDoctor(cwd: string, agent = false, json = false): Promise<voi
         indexed_count: report.indexedCount,
         orphan_count: orphanPaths.length,
         orphan_docs: orphanPaths,
+        suppressed_count: report.suppressed.length,
+        ack_problems: report.ackProblems,
         stats: report.stats,
         issues: report.issues.map((i) => ({
           file: i.file,
@@ -542,12 +546,30 @@ async function docsDoctor(cwd: string, agent = false, json = false): Promise<voi
 
   console.log(renderDocHealthTable(report));
 
+  // 孤立判定与 docs graph 同源（findOrphanDocPaths 内部即 buildDocGraph）。
+  // 计数行始终输出：静默区段曾让「无孤立」与「未检测」难以区分，误导排查方向。
+  console.log(`🕸️  孤立文档检测: ${orphanPaths.length} 篇（规则与 docs graph 同源：无出链且无入链）`);
   if (orphanPaths.length > 0) {
-    console.log('🕸️  孤立文档检测 (docs graph 规则: 孤立 = 无出链且无入链):');
     for (const path of orphanPaths) {
       console.log(`    ⚠️  孤立文档: ${path}`);
     }
     console.log('    💡 运行 `docpath docs graph` 查看推荐关联，`docpath docs graph --fix` 半自动修复。\n');
+  }
+
+  // 豁免透明化：被抑制的警告不消失，逐条列出理由供审计
+  if (report.ackProblems.length > 0) {
+    console.log(`⚠️  豁免清单问题 (.docpath/${DOCTOR_ACK_FILENAME}):`);
+    for (const problem of report.ackProblems) {
+      console.log(`    ⚠️  ${problem}`);
+    }
+    console.log('');
+  }
+  if (report.suppressed.length > 0) {
+    console.log(`🤐  已豁免 ${report.suppressed.length} 条警告（清单: .docpath/${DOCTOR_ACK_FILENAME}）:`);
+    for (const item of report.suppressed) {
+      console.log(`    - [${item.type}] ${item.file}${item.target ? ` → ${item.target}` : ''}: ${item.reason}`);
+    }
+    console.log('');
   }
 }
 
@@ -1041,47 +1063,6 @@ export function renderGraphMermaid(graph: DocGraph): string {
       lines.push(`  ${ids.get(node.path)} --> ${targetId}`);
     }
   }
-  return lines.join('\n');
-}
-
-/** 按目录分类渲染 docs-index 机器区（docs/README.md 的 docpath:block，块外手工内容不动） */
-export function renderDocsIndexBlock(graph: DocGraph): string {
-  const groups = new Map<string, DocGraphNode[]>();
-  for (const node of graph.nodes) {
-    const dir = node.path === 'docs/README.md' || !node.path.slice('docs/'.length).includes('/')
-      ? 'docs/'
-      : `docs/${node.path.slice('docs/'.length).split('/')[0]}/`;
-    const bucket = groups.get(dir) || [];
-    bucket.push(node);
-    groups.set(dir, bucket);
-  }
-
-  const lines: string[] = [
-    '<!-- docpath:block docs-index -->',
-    '<!-- 由 `docpath docs graph --fix` 自动生成；块外内容手工维护，请勿编辑本机器区 -->',
-    '',
-    '## 文档关联图谱 (docs graph)',
-    '',
-    `> 全部 ${graph.nodes.length} 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。`,
-    '',
-  ];
-
-  for (const dir of Array.from(groups.keys()).sort((a, b) => a.localeCompare(b))) {
-    lines.push(`### ${dir}`);
-    lines.push('');
-    for (const node of groups.get(dir)!) {
-      const flags = [
-        node.orphan ? '⚠️ 孤立' : '',
-        `出 ${node.related.length}`,
-        `入 ${node.backlinks.length}`,
-      ].filter(Boolean).join(' / ');
-      const relLink = `./${node.path.replace(/^docs\//, '')}`;
-      lines.push(`- [${node.path}](${relLink}) — ${node.title} — ${flags}`);
-    }
-    lines.push('');
-  }
-
-  lines.push('<!-- /docpath:block -->');
   return lines.join('\n');
 }
 

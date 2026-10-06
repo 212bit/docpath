@@ -560,6 +560,47 @@ export function findOrphanDocPaths(entries: ProjectDocumentIndexEntry[]): string
   return buildDocGraph(entries).nodes.filter((node) => node.orphan).map((node) => node.path);
 }
 
+/** 按目录分类渲染 docs-index 机器区（docs/README.md 的 docpath:block，块外手工内容不动） */
+export function renderDocsIndexBlock(graph: DocGraph): string {
+  const groups = new Map<string, DocGraphNode[]>();
+  for (const node of graph.nodes) {
+    const dir = node.path === 'docs/README.md' || !node.path.slice('docs/'.length).includes('/')
+      ? 'docs/'
+      : `docs/${node.path.slice('docs/'.length).split('/')[0]}/`;
+    const bucket = groups.get(dir) || [];
+    bucket.push(node);
+    groups.set(dir, bucket);
+  }
+
+  const lines: string[] = [
+    '<!-- docpath:block docs-index -->',
+    '<!-- 由 `docpath docs graph --fix` 自动生成；块外内容手工维护，请勿编辑本机器区 -->',
+    '',
+    '## 文档关联图谱 (docs graph)',
+    '',
+    `> 全部 ${graph.nodes.length} 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。`,
+    '',
+  ];
+
+  for (const dir of Array.from(groups.keys()).sort((a, b) => a.localeCompare(b))) {
+    lines.push(`### ${dir}`);
+    lines.push('');
+    for (const node of groups.get(dir)!) {
+      const flags = [
+        node.orphan ? '⚠️ 孤立' : '',
+        `出 ${node.related.length}`,
+        `入 ${node.backlinks.length}`,
+      ].filter(Boolean).join(' / ');
+      const relLink = `./${node.path.replace(/^docs\//, '')}`;
+      lines.push(`- [${node.path}](${relLink}) — ${node.title} — ${flags}`);
+    }
+    lines.push('');
+  }
+
+  lines.push('<!-- /docpath:block -->');
+  return lines.join('\n');
+}
+
 /**
  * 推荐相似度（纯本地、零 LLM）：
  * score = min(1, content_terms 交集 Jaccard + 0.5 × 标题词重叠)
