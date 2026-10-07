@@ -20,6 +20,8 @@ test('inferDocumentTier identifies core and architecture docs by heuristics', ()
   // Standard docs
   assert.deepEqual(inferDocumentTier('docs/features/login.md'), { is_core: false, tier: 'standard' });
   assert.deepEqual(inferDocumentTier('docs/guides/getting-started.md'), { is_core: false, tier: 'standard' });
+  assert.deepEqual(inferDocumentTier('tasks/T-20261001-arch-fix/spec.md'), { is_core: false, tier: 'standard' });
+  assert.deepEqual(inferDocumentTier('backlog/R-100-arch.md'), { is_core: false, tier: 'standard' });
 
   // Archive docs
   assert.deepEqual(inferDocumentTier('tasks/done/T-1/spec.md'), { is_core: false, tier: 'archive' });

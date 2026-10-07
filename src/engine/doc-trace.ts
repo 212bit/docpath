@@ -104,17 +104,24 @@ export async function traceDocAndCode(
 
   // 2. 匹配活文档 (Living Docs)
   const livingDocs: DocTraceMatch[] = [];
+  const GENERIC_TOKENS = new Set([
+    'index', 'doc', 'docs', 'ts', 'js', 'mjs', 'json', 'md', 'src', 'utils', 'util',
+    'lib', 'app', 'pkg', 'core', 'dist', 'bin', 'types', 'type', 'commands', 'engine', 'in', 'to', 'for'
+  ]);
+  const splitTokens = targetStem
+    .split(/[-_]/)
+    .map((k) => k.toLowerCase().trim())
+    .filter((k) => k.length >= 3 && !GENERIC_TOKENS.has(k));
+
   const searchKeywords = Array.from(
     new Set(
       [
-        normalizedTarget,
-        targetBaseName,
-        targetStem,
-        targetStem.replace(/[-_]/g, ' '),
-        ...targetStem.split(/[-_]/),
-      ]
-        .map((k) => k.toLowerCase().trim())
-        .filter((k) => k.length >= 2),
+        normalizedTarget.toLowerCase(),
+        targetBaseName.toLowerCase(),
+        targetStem.toLowerCase(),
+        targetStem.replace(/[-_]/g, ' ').toLowerCase(),
+        ...splitTokens,
+      ].filter((k) => k.length >= 2),
     ),
   );
 
@@ -168,11 +175,15 @@ export async function traceDocAndCode(
           }
         }
 
-        // (c) 检查 topic_tags
-        if (Array.isArray(entry.topic_tags)) {
-          const matchedTags = entry.topic_tags.filter((tag) =>
-            searchKeywords.some((kw) => tag.toLowerCase().includes(kw) || kw.includes(tag.toLowerCase())),
-          );
+        // (c) 检查 topic_tags（精准匹配与长词包含，过滤通用停用词）
+        if (Array.isArray(entry.topic_tags) && entry.topic_tags.length > 0) {
+          const matchedTags = entry.topic_tags.filter((tag) => {
+            const tLower = tag.toLowerCase();
+            return searchKeywords.some((kw) => {
+              if (GENERIC_TOKENS.has(kw)) return false;
+              return tLower === kw || (kw.length >= 4 && tLower.includes(kw));
+            });
+          });
           if (matchedTags.length > 0) {
             score += 0.4;
             reasons.push(`标签关联: [${matchedTags.join(', ')}]`);
@@ -329,10 +340,14 @@ export function renderDocTraceReport(result: DocTraceResult): string {
   if (result.living_docs.length === 0) {
     lines.push('   (暂无强关联活文档)');
   } else {
-    for (const d of result.living_docs) {
+    const displayedDocs = result.living_docs.slice(0, 6);
+    for (const d of displayedDocs) {
       const scoreBadge = d.score >= 0.8 ? '🟢' : d.score >= 0.5 ? '🟡' : '⚪';
       lines.push(`   ${scoreBadge} \`${d.path}\` — ${d.title} [${d.type}]`);
       lines.push(`      依据: ${d.match_reason}`);
+    }
+    if (result.living_docs.length > displayedDocs.length) {
+      lines.push(`   ... 还有 ${result.living_docs.length - displayedDocs.length} 篇相关文档 (运行 \`docpath doc search "${result.target}"\` 检索全部)`);
     }
   }
 

@@ -56,13 +56,17 @@ function run(args, cwd) {
 }
 
 describe('docpath doc alias and enhanced search experience', () => {
-  it('supports doc alias for docs list by default', () => {
+  it('supports doc hub dashboard by default and doc list for compact list', () => {
     const cwd = mkWorkspace();
     try {
       const out = run('doc', cwd);
-      assert.match(out, /DocPath 文档索引摘要/);
+      assert.match(out, /DocPath 项目活文档中心/);
       assert.match(out, /jwt-guide\.md/);
       assert.match(out, /getting-started\.md/);
+
+      const listOut = run('doc list', cwd);
+      assert.match(listOut, /DocPath 文档索引摘要/);
+      assert.match(listOut, /jwt-guide\.md/);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
@@ -136,26 +140,16 @@ describe('docpath doc alias and enhanced search experience', () => {
     }
   });
 
-  it('docpath review outputs docs-sync hint when core code changes without docs', () => {
+  it('supports doc trace with precise matching and agent view', () => {
     const cwd = mkWorkspace();
     try {
-      execSync('git init', { cwd, encoding: 'utf-8' });
-      execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
-      execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
-      mkdirSync(join(cwd, 'src'), { recursive: true });
-      writeFileSync(join(cwd, 'src', 'index.ts'), 'export const a = 1;\n');
-      writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
-      writeFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), JSON.stringify({
-        task_id: 'T-test',
-        title: 'Test',
-        status: 'reviewing',
-        phase: 'reviewing',
-        gate: 'check_pass',
-        step: 'S1',
-      }, null, 2));
+      const out = run('doc trace jwt-guide.md', cwd);
+      assert.match(out, /代码-文档双向架构透视/);
+      assert.match(out, /jwt-guide\.md/);
 
-      const out = run('review --dry-run', cwd);
-      assert.match(out, /\[docs-sync\] 检测到核心代码修改但未变动 docs/);
+      const agentOut = run('doc trace jwt-guide.md --agent', cwd);
+      assert.match(agentOut, /agent_view:\s*doc_trace/);
+      assert.match(agentOut, /target:\s*jwt-guide\.md/);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

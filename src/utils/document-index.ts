@@ -257,6 +257,11 @@ export function inferDocumentTier(
     return { is_core: false, tier: 'archive' };
   }
 
+  // 任务历史与临时文档 (tasks/*, backlog/*) 默认一律不作为 core / architecture
+  if (normalized.startsWith('tasks/') || normalized.startsWith('backlog/')) {
+    return { is_core: false, tier: 'standard' };
+  }
+
   // 2. Frontmatter 显式标记优先
   if (frontmatterTier) {
     const fmt = frontmatterTier.trim().toLowerCase();
@@ -270,9 +275,9 @@ export function inferDocumentTier(
   }
   if (frontmatterLevel === '0' || frontmatterLevel === '1') {
     if (
-      normalized.includes('arch') ||
-      normalized.includes('rule') ||
-      normalized.includes('design') ||
+      normalized.startsWith('docs/arch') ||
+      normalized.startsWith('docs/design') ||
+      normalized.startsWith('rules/') ||
       normalized === 'AGENTS.md' ||
       normalized === 'README.md'
     ) {

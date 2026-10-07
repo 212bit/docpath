@@ -1,0 +1,887 @@
+{
+  "taskId": "T-20261007-docpath-doc",
+  "taskTitle": "T-20261007-docpath-doc - 优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验",
+  "backlogId": "R-491",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-10-07T03:55:10.436Z",
+  "completedAt": "2026-10-07T04:04:24.180Z",
+  "durationMinutes": 9.2,
+  "firstTimePassRate": 100,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 73, 消耗: 70660 Tokens, 时长: 7866 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 73,
+        "totalTokens": 70660,
+        "durationMinutes": 7866
+      }
+    }
+  ],
+  "totalDiffLines": 847,
+  "filesChanged": 13,
+  "linesAdded": 758,
+  "linesDeleted": 89,
+  "engineering": {
+    "turnCount": 14,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 9.2,
+    "filesChanged": 13,
+    "linesAdded": 758,
+    "linesDeleted": 89,
+    "totalDiffLines": 847,
+    "speedLinesPerMinute": 92.1
+  },
+  "protocol": {
+    "specTokens": 1322,
+    "planTokens": 1181,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 4303
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 49462,
+    "outputTokens": 21198,
+    "totalTokens": 70660,
+    "costUsd": 0.4664,
+    "toolCallsCount": 69,
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 31,
+        "inputTokens": 1803,
+        "outputTokens": 26234,
+        "totalTokens": 28037,
+        "percentage": 39.7,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 27,
+        "inputTokens": 3397,
+        "outputTokens": 17879,
+        "totalTokens": 21276,
+        "percentage": 30.1,
+        "errorCount": 3
+      },
+      {
+        "name": "replace_file_content",
+        "count": 11,
+        "inputTokens": 7866,
+        "outputTokens": 6080,
+        "totalTokens": 13946,
+        "percentage": 19.7,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"doc-trace.ts\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 3220,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/doc-trace.ts\"",
+          "readCount": 4,
+          "wastedTokens": 3220
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"docs.ts\"\" 被重复读取了 17 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 14262,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/docs.ts\"",
+          "readCount": 17,
+          "wastedTokens": 14262
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"doc-command-enhanced.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1353,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/doc-command-enhanced.test.mjs\"",
+          "readCount": 4,
+          "wastedTokens": 1353
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"doc-tier-arch.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1653,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/doc-tier-arch.test.mjs\"",
+          "readCount": 3,
+          "wastedTokens": 1653
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 4,
+      "errorCalls": 2,
+      "totalTokens": 3758,
+      "inputTokens": 1911,
+      "outputTokens": 1847,
+      "percentageOfSessionTokens": 5.3,
+      "commands": [
+        {
+          "subcommand": "doc",
+          "count": 4,
+          "errorCount": 2,
+          "inputTokens": 1911,
+          "outputTokens": 1847,
+          "totalTokens": 3758,
+          "avgTokens": 940
+        }
+      ]
+    },
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 73, 消耗: 70660 Tokens, 时长: 7866 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 73,
+          "totalTokens": 70660,
+          "durationMinutes": 7866
+        }
+      }
+    ],
+    "docpathEfficacy": {
+      "preventedLoopsCount": 1,
+      "deadlockTokensSaved": 8500,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 2,
+      "firstTimePassRate": 96,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 1 次潜在死循环，节省约 8,500 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 3,
+      "redundantTokensWasted": 3473,
+      "redundantPatterns": [
+        {
+          "subcommand": "doc",
+          "count": 3,
+          "tokensWasted": 3473,
+          "reason": "Consecutive `doc` polling without intermediate actions"
+        }
+      ],
+      "serialChains": [
+        {
+          "chain": "doc -> doc",
+          "count": 3,
+          "tokensWasted": 3473,
+          "recommendation": "Avoid calling `docpath doc` consecutively without intermediate actions."
+        }
+      ],
+      "heavyOutputCommands": [
+        {
+          "subcommand": "doc",
+          "avgOutputTokens": 1283,
+          "maxOutputTokens": 1283,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"doc\" to reduce output payload (< 300 tokens)."
+        }
+      ],
+      "actionableOptimizations": [
+        "Reduce 3 redundant CLI calls to save ~3,473 tokens.",
+        "Avoid calling `docpath doc` consecutively without intermediate actions.",
+        "Use --agent flag or scoped parameters with \"doc\" to reduce output payload (< 300 tokens)."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-07T03:55:02Z",
+        "turnIndex": 490,
+        "subcommand": "doc",
+        "rawCommandLine": "\"docpath start \\\"优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\\" --draft\"",
+        "directInputTokens": 41,
+        "directOutputTokens": 192,
+        "directTotalTokens": 233,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "error",
+        "durationMs": 2000
+      },
+      {
+        "id": "inv-2",
+        "timestamp": "2026-10-07T03:55:05Z",
+        "turnIndex": 492,
+        "subcommand": "doc",
+        "rawCommandLine": "\"docpath start \\\"优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\\" --draft --adopt\"",
+        "directInputTokens": 43,
+        "directOutputTokens": 1283,
+        "directTotalTokens": 1326,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "doc -> doc",
+        "wastedTokens": 1326,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-3",
+        "timestamp": "2026-10-07T03:55:10Z",
+        "turnIndex": 494,
+        "subcommand": "doc",
+        "rawCommandLine": "\"docpath write-spec --stdin <<'EOF'\\n# T-20261007-docpath-doc - 优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\n\\n> backlog_id: R-491\\n> backlog_source: docpath start\\n\\n## 1. 背景与动机\\n\\n`docpath doc`（及其全称 `docpath docs`）是 DocPath 面向 AI Agent 与人类开发者的活文档资产管理与瞬时索引中心。\\n在日常高频开发与 Agent 零点击上下文中，存在以下交互与精准度痛点：\\n\\n1. **默认无参看板信号弱**：直接运行 `docpath doc` 时默认调用 `docsList`，仅输出总量与 10 篇主要来自 `tasks/T-*` 的历史任务，缺乏项目架构、分类文档库、体检状态与操作引导的全局视野；\\n2. **`docpath doc arch` 架构大盘存在噪声与重复**：`inferDocumentTier` 将标题或目录含 \\\"arch\\\"/\\\"design\\\"/\\\"rule\\\" 的历史任务误判为 core/arch 文档，且分类过滤条件重叠导致同一文档（如 `rules/architecture.md`）在多个板块重复出现；\\n3. **`docpath doc trace` 泛化标签误命中**：代码-文档双向透视引擎在提取文件名关键词（如 \\\"index\\\"、\\\"doc\\\"）后，与全部包含该通用标签的文档产生低置信度弱关联，导致一次性输出数十篇无关文档刷屏；\\n4. **`docpath doc <kw>` 检索排序需优化**：搜索结果中历史任务 specs 占比过高，缺乏对系统核心架构文档（`docs/*`、`rules/*`、`AGENTS.md`）的优先加权。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: `docpath doc` 默认导航大盘优化 —— 运行无参数 `docpath doc` 时呈现高信号活文档中心看板（核心架构、活文档分类概览、健康体检状态、常用命令直达），支持 `--agent` 与 `--json`；保留 `docpath doc list` / `--list` 的平铺列表能力。\\n- [ ] FR-2: `docpath doc arch` 架构大盘精准去噪 —— 修正 `inferDocumentTier` 与 `docsArch` 分类逻辑，彻底排除 `tasks/` 与 `backlog/` 临时任务文档误判为 core/arch，并消除板块间重复项。\\n- [ ] FR-3: \n<truncated 1651 bytes>",
+        "directInputTokens": 796,
+        "directOutputTokens": 171,
+        "directTotalTokens": 967,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "doc -> doc",
+        "wastedTokens": 967,
+        "status": "error",
+        "durationMs": 10000
+      },
+      {
+        "id": "inv-4",
+        "timestamp": "2026-10-07T03:55:20Z",
+        "turnIndex": 496,
+        "subcommand": "doc",
+        "rawCommandLine": "\"docpath write-spec --stdin --force <<'EOF'\\n# T-20261007-docpath-doc - 优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\n\\n> backlog_id: R-491\\n> backlog_source: docpath start\\n\\n## 1. 背景与动机\\n\\n`docpath doc`（及其全称 `docpath docs`）是 DocPath 面向 AI Agent 与人类开发者的活文档资产管理与瞬时索引中心。\\n在日常高频开发与 Agent 零点击上下文中，存在以下交互与精准度痛点：\\n\\n1. **默认无参看板信号弱**：直接运行 `docpath doc` 时默认调用 `docsList`，仅输出总量与 10 篇主要来自 `tasks/T-*` 的历史任务，缺乏项目架构、分类文档库、体检状态与操作引导的全局视野；\\n2. **`docpath doc arch` 架构大盘存在噪声与重复**：`inferDocumentTier` 将标题或目录含 \\\"arch\\\"/\\\"design\\\"/\\\"rule\\\" 的历史任务误判为 core/arch 文档，且分类过滤条件重叠导致同一文档（如 `rules/architecture.md`）在多个板块重复出现；\\n3. **`docpath doc trace` 泛化标签误命中**：代码-文档双向透视引擎在提取文件名关键词（如 \\\"index\\\"、\\\"doc\\\"）后，与全部包含该通用标签的文档产生低置信度弱关联，导致一次性输出数十篇无关文档刷屏；\\n4. **`docpath doc <kw>` 检索排序需优化**：搜索结果中历史任务 specs 占比过高，缺乏对系统核心架构文档（`docs/*`、`rules/*`、`AGENTS.md`）的优先加权。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: `docpath doc` 默认导航大盘优化 —— 运行无参数 `docpath doc` 时呈现高信号活文档中心看板（核心架构、活文档分类概览、健康体检状态、常用命令直达），支持 `--agent` 与 `--json`；保留 `docpath doc list` / `--list` 的平铺列表能力。\\n- [ ] FR-2: `docpath doc arch` 架构大盘精准去噪 —— 修正 `inferDocumentTier` 与 `docsArch` 分类逻辑，彻底排除 `tasks/` 与 `backlog/` 临时任务文档误判为 core/arch，并消除板块间重复项。\\n- [ \n<truncated 1659 bytes>",
+        "directInputTokens": 796,
+        "directOutputTokens": 201,
+        "directTotalTokens": 997,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "doc -> doc",
+        "wastedTokens": 997,
+        "status": "success",
+        "durationMs": 4000
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 49462,
+      "outputTokens": 21198,
+      "totalTokens": 70660,
+      "costUsd": 0.4664
+    },
+    "toolCalls": {
+      "total": 69,
+      "byName": {
+        "view_file": 31,
+        "run_command": 27,
+        "replace_file_content": 11
+      },
+      "errorCount": 3
+    },
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 31,
+        "inputTokens": 1803,
+        "outputTokens": 26234,
+        "totalTokens": 28037,
+        "percentage": 39.7,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 27,
+        "inputTokens": 3397,
+        "outputTokens": 17879,
+        "totalTokens": 21276,
+        "percentage": 30.1,
+        "errorCount": 3
+      },
+      {
+        "name": "replace_file_content",
+        "count": 11,
+        "inputTokens": 7866,
+        "outputTokens": 6080,
+        "totalTokens": 13946,
+        "percentage": 19.7,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"doc-trace.ts\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 3220,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/doc-trace.ts\"",
+          "readCount": 4,
+          "wastedTokens": 3220
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"docs.ts\"\" 被重复读取了 17 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 14262,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/docs.ts\"",
+          "readCount": 17,
+          "wastedTokens": 14262
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"doc-command-enhanced.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1353,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/doc-command-enhanced.test.mjs\"",
+          "readCount": 4,
+          "wastedTokens": 1353
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"doc-tier-arch.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1653,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/doc-tier-arch.test.mjs\"",
+          "readCount": 3,
+          "wastedTokens": 1653
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 4,
+      "errorCalls": 2,
+      "totalTokens": 3758,
+      "inputTokens": 1911,
+      "outputTokens": 1847,
+      "percentageOfSessionTokens": 5.3,
+      "commands": [
+        {
+          "subcommand": "doc",
+          "count": 4,
+          "errorCount": 2,
+          "inputTokens": 1911,
+          "outputTokens": 1847,
+          "totalTokens": 3758,
+          "avgTokens": 940
+        }
+      ]
+    },
+    "docpathEfficacy": {
+      "preventedLoopsCount": 1,
+      "deadlockTokensSaved": 8500,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 2,
+      "firstTimePassRate": 96,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 1 次潜在死循环，节省约 8,500 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 3,
+      "redundantTokensWasted": 3473,
+      "redundantPatterns": [
+        {
+          "subcommand": "doc",
+          "count": 3,
+          "tokensWasted": 3473,
+          "reason": "Consecutive `doc` polling without intermediate actions"
+        }
+      ],
+      "serialChains": [
+        {
+          "chain": "doc -> doc",
+          "count": 3,
+          "tokensWasted": 3473,
+          "recommendation": "Avoid calling `docpath doc` consecutively without intermediate actions."
+        }
+      ],
+      "heavyOutputCommands": [
+        {
+          "subcommand": "doc",
+          "avgOutputTokens": 1283,
+          "maxOutputTokens": 1283,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"doc\" to reduce output payload (< 300 tokens)."
+        }
+      ],
+      "actionableOptimizations": [
+        "Reduce 3 redundant CLI calls to save ~3,473 tokens.",
+        "Avoid calling `docpath doc` consecutively without intermediate actions.",
+        "Use --agent flag or scoped parameters with \"doc\" to reduce output payload (< 300 tokens)."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-07T03:55:02Z",
+        "turnIndex": 490,
+        "subcommand": "doc",
+        "rawCommandLine": "\"docpath start \\\"优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\\" --draft\"",
+        "directInputTokens": 41,
+        "directOutputTokens": 192,
+        "directTotalTokens": 233,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "error",
+        "durationMs": 2000
+      },
+      {
+        "id": "inv-2",
+        "timestamp": "2026-10-07T03:55:05Z",
+        "turnIndex": 492,
+        "subcommand": "doc",
+        "rawCommandLine": "\"docpath start \\\"优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\\" --draft --adopt\"",
+        "directInputTokens": 43,
+        "directOutputTokens": 1283,
+        "directTotalTokens": 1326,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "doc -> doc",
+        "wastedTokens": 1326,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-3",
+        "timestamp": "2026-10-07T03:55:10Z",
+        "turnIndex": 494,
+        "subcommand": "doc",
+        "rawCommandLine": "\"docpath write-spec --stdin <<'EOF'\\n# T-20261007-docpath-doc - 优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\n\\n> backlog_id: R-491\\n> backlog_source: docpath start\\n\\n## 1. 背景与动机\\n\\n`docpath doc`（及其全称 `docpath docs`）是 DocPath 面向 AI Agent 与人类开发者的活文档资产管理与瞬时索引中心。\\n在日常高频开发与 Agent 零点击上下文中，存在以下交互与精准度痛点：\\n\\n1. **默认无参看板信号弱**：直接运行 `docpath doc` 时默认调用 `docsList`，仅输出总量与 10 篇主要来自 `tasks/T-*` 的历史任务，缺乏项目架构、分类文档库、体检状态与操作引导的全局视野；\\n2. **`docpath doc arch` 架构大盘存在噪声与重复**：`inferDocumentTier` 将标题或目录含 \\\"arch\\\"/\\\"design\\\"/\\\"rule\\\" 的历史任务误判为 core/arch 文档，且分类过滤条件重叠导致同一文档（如 `rules/architecture.md`）在多个板块重复出现；\\n3. **`docpath doc trace` 泛化标签误命中**：代码-文档双向透视引擎在提取文件名关键词（如 \\\"index\\\"、\\\"doc\\\"）后，与全部包含该通用标签的文档产生低置信度弱关联，导致一次性输出数十篇无关文档刷屏；\\n4. **`docpath doc <kw>` 检索排序需优化**：搜索结果中历史任务 specs 占比过高，缺乏对系统核心架构文档（`docs/*`、`rules/*`、`AGENTS.md`）的优先加权。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: `docpath doc` 默认导航大盘优化 —— 运行无参数 `docpath doc` 时呈现高信号活文档中心看板（核心架构、活文档分类概览、健康体检状态、常用命令直达），支持 `--agent` 与 `--json`；保留 `docpath doc list` / `--list` 的平铺列表能力。\\n- [ ] FR-2: `docpath doc arch` 架构大盘精准去噪 —— 修正 `inferDocumentTier` 与 `docsArch` 分类逻辑，彻底排除 `tasks/` 与 `backlog/` 临时任务文档误判为 core/arch，并消除板块间重复项。\\n- [ ] FR-3: \n<truncated 1651 bytes>",
+        "directInputTokens": 796,
+        "directOutputTokens": 171,
+        "directTotalTokens": 967,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "doc -> doc",
+        "wastedTokens": 967,
+        "status": "error",
+        "durationMs": 10000
+      },
+      {
+        "id": "inv-4",
+        "timestamp": "2026-10-07T03:55:20Z",
+        "turnIndex": 496,
+        "subcommand": "doc",
+        "rawCommandLine": "\"docpath write-spec --stdin --force <<'EOF'\\n# T-20261007-docpath-doc - 优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\n\\n> backlog_id: R-491\\n> backlog_source: docpath start\\n\\n## 1. 背景与动机\\n\\n`docpath doc`（及其全称 `docpath docs`）是 DocPath 面向 AI Agent 与人类开发者的活文档资产管理与瞬时索引中心。\\n在日常高频开发与 Agent 零点击上下文中，存在以下交互与精准度痛点：\\n\\n1. **默认无参看板信号弱**：直接运行 `docpath doc` 时默认调用 `docsList`，仅输出总量与 10 篇主要来自 `tasks/T-*` 的历史任务，缺乏项目架构、分类文档库、体检状态与操作引导的全局视野；\\n2. **`docpath doc arch` 架构大盘存在噪声与重复**：`inferDocumentTier` 将标题或目录含 \\\"arch\\\"/\\\"design\\\"/\\\"rule\\\" 的历史任务误判为 core/arch 文档，且分类过滤条件重叠导致同一文档（如 `rules/architecture.md`）在多个板块重复出现；\\n3. **`docpath doc trace` 泛化标签误命中**：代码-文档双向透视引擎在提取文件名关键词（如 \\\"index\\\"、\\\"doc\\\"）后，与全部包含该通用标签的文档产生低置信度弱关联，导致一次性输出数十篇无关文档刷屏；\\n4. **`docpath doc <kw>` 检索排序需优化**：搜索结果中历史任务 specs 占比过高，缺乏对系统核心架构文档（`docs/*`、`rules/*`、`AGENTS.md`）的优先加权。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: `docpath doc` 默认导航大盘优化 —— 运行无参数 `docpath doc` 时呈现高信号活文档中心看板（核心架构、活文档分类概览、健康体检状态、常用命令直达），支持 `--agent` 与 `--json`；保留 `docpath doc list` / `--list` 的平铺列表能力。\\n- [ ] FR-2: `docpath doc arch` 架构大盘精准去噪 —— 修正 `inferDocumentTier` 与 `docsArch` 分类逻辑，彻底排除 `tasks/` 与 `backlog/` 临时任务文档误判为 core/arch，并消除板块间重复项。\\n- [ \n<truncated 1659 bytes>",
+        "directInputTokens": 796,
+        "directOutputTokens": 201,
+        "directTotalTokens": 997,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "doc -> doc",
+        "wastedTokens": 997,
+        "status": "success",
+        "durationMs": 4000
+      }
+    ],
+    "turnsCount": 73,
+    "errorCount": 3,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 73, 消耗: 70660 Tokens, 时长: 7866 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 73,
+          "totalTokens": 70660,
+          "durationMinutes": 7866
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 471968000
+  },
+  "toolAttributions": [
+    {
+      "name": "view_file",
+      "count": 31,
+      "inputTokens": 1803,
+      "outputTokens": 26234,
+      "totalTokens": 28037,
+      "percentage": 39.7,
+      "errorCount": 0
+    },
+    {
+      "name": "run_command",
+      "count": 27,
+      "inputTokens": 3397,
+      "outputTokens": 17879,
+      "totalTokens": 21276,
+      "percentage": 30.1,
+      "errorCount": 3
+    },
+    {
+      "name": "replace_file_content",
+      "count": 11,
+      "inputTokens": 7866,
+      "outputTokens": 6080,
+      "totalTokens": 13946,
+      "percentage": 19.7,
+      "errorCount": 0
+    }
+  ],
+  "toolInefficiencies": [
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"doc-trace.ts\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 3220,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/engine/doc-trace.ts\"",
+        "readCount": 4,
+        "wastedTokens": 3220
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"docs.ts\"\" 被重复读取了 17 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 14262,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/commands/docs.ts\"",
+        "readCount": 17,
+        "wastedTokens": 14262
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"doc-command-enhanced.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 1353,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/tests/doc-command-enhanced.test.mjs\"",
+        "readCount": 4,
+        "wastedTokens": 1353
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"doc-tier-arch.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 1653,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/tests/doc-tier-arch.test.mjs\"",
+        "readCount": 3,
+        "wastedTokens": 1653
+      }
+    }
+  ],
+  "docpathCliOverhead": {
+    "totalCalls": 4,
+    "errorCalls": 2,
+    "totalTokens": 3758,
+    "inputTokens": 1911,
+    "outputTokens": 1847,
+    "percentageOfSessionTokens": 5.3,
+    "commands": [
+      {
+        "subcommand": "doc",
+        "count": 4,
+        "errorCount": 2,
+        "inputTokens": 1911,
+        "outputTokens": 1847,
+        "totalTokens": 3758,
+        "avgTokens": 940
+      }
+    ]
+  },
+  "docpathEfficacy": {
+    "preventedLoopsCount": 1,
+    "deadlockTokensSaved": 8500,
+    "contextCompressionRatio": 92.5,
+    "subagentTokensSaved": 0,
+    "gateInterceptionCount": 2,
+    "firstTimePassRate": 96,
+    "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 1 次潜在死循环，节省约 8,500 Tokens，上下文压缩比达 92.5%"
+  },
+  "docpathCliFriction": {
+    "redundantCallsCount": 3,
+    "redundantTokensWasted": 3473,
+    "redundantPatterns": [
+      {
+        "subcommand": "doc",
+        "count": 3,
+        "tokensWasted": 3473,
+        "reason": "Consecutive `doc` polling without intermediate actions"
+      }
+    ],
+    "serialChains": [
+      {
+        "chain": "doc -> doc",
+        "count": 3,
+        "tokensWasted": 3473,
+        "recommendation": "Avoid calling `docpath doc` consecutively without intermediate actions."
+      }
+    ],
+    "heavyOutputCommands": [
+      {
+        "subcommand": "doc",
+        "avgOutputTokens": 1283,
+        "maxOutputTokens": 1283,
+        "count": 1,
+        "optimizationHint": "Use --agent flag or scoped parameters with \"doc\" to reduce output payload (< 300 tokens)."
+      }
+    ],
+    "actionableOptimizations": [
+      "Reduce 3 redundant CLI calls to save ~3,473 tokens.",
+      "Avoid calling `docpath doc` consecutively without intermediate actions.",
+      "Use --agent flag or scoped parameters with \"doc\" to reduce output payload (< 300 tokens)."
+    ]
+  },
+  "commandInvocations": [
+    {
+      "id": "inv-1",
+      "timestamp": "2026-10-07T03:55:02Z",
+      "turnIndex": 490,
+      "subcommand": "doc",
+      "rawCommandLine": "\"docpath start \\\"优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\\" --draft\"",
+      "directInputTokens": 41,
+      "directOutputTokens": 192,
+      "directTotalTokens": 233,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "error",
+      "durationMs": 2000
+    },
+    {
+      "id": "inv-2",
+      "timestamp": "2026-10-07T03:55:05Z",
+      "turnIndex": 492,
+      "subcommand": "doc",
+      "rawCommandLine": "\"docpath start \\\"优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\\" --draft --adopt\"",
+      "directInputTokens": 43,
+      "directOutputTokens": 1283,
+      "directTotalTokens": 1326,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "doc -> doc",
+      "wastedTokens": 1326,
+      "status": "success",
+      "durationMs": 3000
+    },
+    {
+      "id": "inv-3",
+      "timestamp": "2026-10-07T03:55:10Z",
+      "turnIndex": 494,
+      "subcommand": "doc",
+      "rawCommandLine": "\"docpath write-spec --stdin <<'EOF'\\n# T-20261007-docpath-doc - 优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\n\\n> backlog_id: R-491\\n> backlog_source: docpath start\\n\\n## 1. 背景与动机\\n\\n`docpath doc`（及其全称 `docpath docs`）是 DocPath 面向 AI Agent 与人类开发者的活文档资产管理与瞬时索引中心。\\n在日常高频开发与 Agent 零点击上下文中，存在以下交互与精准度痛点：\\n\\n1. **默认无参看板信号弱**：直接运行 `docpath doc` 时默认调用 `docsList`，仅输出总量与 10 篇主要来自 `tasks/T-*` 的历史任务，缺乏项目架构、分类文档库、体检状态与操作引导的全局视野；\\n2. **`docpath doc arch` 架构大盘存在噪声与重复**：`inferDocumentTier` 将标题或目录含 \\\"arch\\\"/\\\"design\\\"/\\\"rule\\\" 的历史任务误判为 core/arch 文档，且分类过滤条件重叠导致同一文档（如 `rules/architecture.md`）在多个板块重复出现；\\n3. **`docpath doc trace` 泛化标签误命中**：代码-文档双向透视引擎在提取文件名关键词（如 \\\"index\\\"、\\\"doc\\\"）后，与全部包含该通用标签的文档产生低置信度弱关联，导致一次性输出数十篇无关文档刷屏；\\n4. **`docpath doc <kw>` 检索排序需优化**：搜索结果中历史任务 specs 占比过高，缺乏对系统核心架构文档（`docs/*`、`rules/*`、`AGENTS.md`）的优先加权。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: `docpath doc` 默认导航大盘优化 —— 运行无参数 `docpath doc` 时呈现高信号活文档中心看板（核心架构、活文档分类概览、健康体检状态、常用命令直达），支持 `--agent` 与 `--json`；保留 `docpath doc list` / `--list` 的平铺列表能力。\\n- [ ] FR-2: `docpath doc arch` 架构大盘精准去噪 —— 修正 `inferDocumentTier` 与 `docsArch` 分类逻辑，彻底排除 `tasks/` 与 `backlog/` 临时任务文档误判为 core/arch，并消除板块间重复项。\\n- [ ] FR-3: \n<truncated 1651 bytes>",
+      "directInputTokens": 796,
+      "directOutputTokens": 171,
+      "directTotalTokens": 967,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "doc -> doc",
+      "wastedTokens": 967,
+      "status": "error",
+      "durationMs": 10000
+    },
+    {
+      "id": "inv-4",
+      "timestamp": "2026-10-07T03:55:20Z",
+      "turnIndex": 496,
+      "subcommand": "doc",
+      "rawCommandLine": "\"docpath write-spec --stdin --force <<'EOF'\\n# T-20261007-docpath-doc - 优化 docpath doc 活文档中心与检索/透视/架构大盘交互体验\\n\\n> backlog_id: R-491\\n> backlog_source: docpath start\\n\\n## 1. 背景与动机\\n\\n`docpath doc`（及其全称 `docpath docs`）是 DocPath 面向 AI Agent 与人类开发者的活文档资产管理与瞬时索引中心。\\n在日常高频开发与 Agent 零点击上下文中，存在以下交互与精准度痛点：\\n\\n1. **默认无参看板信号弱**：直接运行 `docpath doc` 时默认调用 `docsList`，仅输出总量与 10 篇主要来自 `tasks/T-*` 的历史任务，缺乏项目架构、分类文档库、体检状态与操作引导的全局视野；\\n2. **`docpath doc arch` 架构大盘存在噪声与重复**：`inferDocumentTier` 将标题或目录含 \\\"arch\\\"/\\\"design\\\"/\\\"rule\\\" 的历史任务误判为 core/arch 文档，且分类过滤条件重叠导致同一文档（如 `rules/architecture.md`）在多个板块重复出现；\\n3. **`docpath doc trace` 泛化标签误命中**：代码-文档双向透视引擎在提取文件名关键词（如 \\\"index\\\"、\\\"doc\\\"）后，与全部包含该通用标签的文档产生低置信度弱关联，导致一次性输出数十篇无关文档刷屏；\\n4. **`docpath doc <kw>` 检索排序需优化**：搜索结果中历史任务 specs 占比过高，缺乏对系统核心架构文档（`docs/*`、`rules/*`、`AGENTS.md`）的优先加权。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: `docpath doc` 默认导航大盘优化 —— 运行无参数 `docpath doc` 时呈现高信号活文档中心看板（核心架构、活文档分类概览、健康体检状态、常用命令直达），支持 `--agent` 与 `--json`；保留 `docpath doc list` / `--list` 的平铺列表能力。\\n- [ ] FR-2: `docpath doc arch` 架构大盘精准去噪 —— 修正 `inferDocumentTier` 与 `docsArch` 分类逻辑，彻底排除 `tasks/` 与 `backlog/` 临时任务文档误判为 core/arch，并消除板块间重复项。\\n- [ \n<truncated 1659 bytes>",
+      "directInputTokens": 796,
+      "directOutputTokens": 201,
+      "directTotalTokens": 997,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "doc -> doc",
+      "wastedTokens": 997,
+      "status": "success",
+      "durationMs": 4000
+    }
+  ],
+  "frictionFindings": [
+    {
+      "id": "FRIC-TOOL-WASTE",
+      "category": "tool_waste",
+      "severity": "high",
+      "title": "工具调用低效与上下文浪费 (Tool Waste & Context Bloat)",
+      "description": "检测到 4 处工具低效行为 (重复读大文件、超长命令输出或编辑失真)，造成上下文浪费",
+      "count": 4,
+      "tokensWasted": 20488,
+      "optimizationHint": "精准指定目标行范围切片读写，善用子代理进行大文件调研与探查"
+    },
+    {
+      "id": "FRIC-CMD-ERR",
+      "category": "command_error",
+      "severity": "high",
+      "title": "CLI 命令调用异常与参数拦截 (Command Execution Errors)",
+      "description": "检测到 3 次命令调用失败或参数报错，可能由于命令语法错误或环境不匹配导致",
+      "count": 3,
+      "tokensWasted": 600,
+      "optimizationHint": "查阅 docpath --help 或 AGENTS.md 规范，确保 CLI 命令与参数格式准确"
+    }
+  ],
+  "stepPassAnalysis": {
+    "totalStepPassCalls": 0,
+    "productiveCalls": 0,
+    "redundantCalls": 0,
+    "directTokens": 0,
+    "invisibleTurnReplayTokens": 0,
+    "redundantTurnReplayTokens": 0,
+    "frictionTurnRatio": 0,
+    "summary": "未检测到 step-pass 调用与隐性重放损耗"
+  },
+  "lifecycleAnchor": {
+    "sessionId": "19fa2775-8097-44ef-9d99-8c1f62514170",
+    "baseCommit": "3c3fc53b9e2d80d5acaac028085561b39f47cdb1",
+    "headCommit": "3c3fc53b9e2d80d5acaac028085561b39f47cdb1",
+    "startedAt": "2026-10-07T03:55:10.436Z",
+    "completedAt": "2026-10-07T04:04:24.180Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 FR-1 `docpath doc` 默认导航大盘优化 —— 运行无参数 `docpath doc` 时呈现高信号活文档中心看板（核心架构、活文档分类概览、健康体检状态、常用命令直达），支持 `--agent` 与 `--json`；保留 `docpath doc list` / `--list` 的平铺列表能力。",
+      "startedAt": "2026-10-07T03:55:10.436Z",
+      "completedAt": "2026-10-07T03:59:15.163Z",
+      "durationMinutes": 4.1,
+      "totalTokens": 62367,
+      "inputTokens": 43657,
+      "outputTokens": 18710,
+      "costUsd": 0.4116,
+      "toolCallsCount": 60,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 27,
+          "tokens": 24926
+        },
+        {
+          "name": "run_command",
+          "count": 22,
+          "tokens": 17638
+        },
+        {
+          "name": "replace_file_content",
+          "count": 11,
+          "tokens": 13946
+        }
+      ]
+    },
+    {
+      "stepId": "S2",
+      "stepTitle": "实现并验证 FR-2 `docpath doc arch` 架构大盘精准去噪 —— 修正 `inferDocumentTier` 与 `docsArch` 分类逻辑，彻底排除 `tasks/` 与 `backlog/` 临时任务文档误判为 core/arch，并消除板块间重复项。",
+      "startedAt": "2026-10-07T03:59:15.520Z",
+      "completedAt": "2026-10-07T03:59:59.610Z",
+      "durationMinutes": 0.7,
+      "totalTokens": 12481,
+      "inputTokens": 8737,
+      "outputTokens": 3744,
+      "costUsd": 0.0824,
+      "toolCallsCount": 14,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 6,
+          "tokens": 4032
+        },
+        {
+          "name": "run_command",
+          "count": 7,
+          "tokens": 3582
+        },
+        {
+          "name": "replace_file_content",
+          "count": 1,
+          "tokens": 1577
+        }
+      ]
+    },
+    {
+      "stepId": "S3",
+      "stepTitle": "实现并验证 FR-3 `docpath doc trace` 关联精度与噪声治理 —— 过滤通用停用词标签匹配，按相关度排序并限制高置信度推荐展示（前 6~8 篇），超量折叠并提示精准检索。",
+      "startedAt": "2026-10-07T04:00:00.026Z",
+      "completedAt": "2026-10-07T04:00:51.570Z",
+      "durationMinutes": 0.9,
+      "totalTokens": 11314,
+      "inputTokens": 7920,
+      "outputTokens": 3394,
+      "costUsd": 0.0747,
+      "toolCallsCount": 12,
+      "topTools": [
+        {
+          "name": "run_command",
+          "count": 7,
+          "tokens": 3399
+        },
+        {
+          "name": "view_file",
+          "count": 4,
+          "tokens": 3111
+        },
+        {
+          "name": "replace_file_content",
+          "count": 1,
+          "tokens": 1126
+        }
+      ]
+    },
+    {
+      "stepId": "S4",
+      "stepTitle": "实现并验证 FR-4 `docpath doc <kw>` 搜索排序增强 —— 搜索与推荐优先展示 `docs/`、`rules/`、`AGENTS.md`、`README.md` 与当前活跃任务，降低已完成历史任务权重。",
+      "startedAt": "2026-10-07T04:00:51.976Z",
+      "completedAt": "2026-10-07T04:01:15.568Z",
+      "durationMinutes": 0.4,
+      "totalTokens": 5813,
+      "inputTokens": 4069,
+      "outputTokens": 1744,
+      "costUsd": 0.0384,
+      "toolCallsCount": 7,
+      "topTools": [
+        {
+          "name": "run_command",
+          "count": 5,
+          "tokens": 2100
+        },
+        {
+          "name": "view_file",
+          "count": 2,
+          "tokens": 1467
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 4303,
+    "realModelTokens": 70660,
+    "overheadRatio": 6.09,
+    "complianceScore": 85,
+    "firstTimePassRate": 100,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}

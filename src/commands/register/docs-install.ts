@@ -7,6 +7,9 @@ import { unlinkCommand } from '../unlink.js';
 import { normalizeEnumOption, parseIntegerOption } from './shared.js';
 
 const KNOWN_DOCS_ACTIONS = new Set([
+  'hub',
+  'overview',
+  'dashboard',
   'trace',
   'drift',
   'scan',
@@ -92,14 +95,17 @@ function registerDocsCommandHelper(cli: CAC, commandName: string, description: s
         else if (options.doctor) sub = 'doctor';
         else if (options.scan) sub = 'scan';
         else if (options.lint) sub = 'lint';
+        else if (options.list) sub = 'list';
         else if (options.search) {
           sub = 'search';
           if (typeof options.search === 'string') queryArgs = [options.search];
         } else if (options.add) {
           sub = 'add';
           if (typeof options.add === 'string') queryArgs = [options.add];
-        } else {
+        } else if (options.status || options.type || options.scope || options.tag || options.full) {
           sub = 'list';
+        } else {
+          sub = 'hub';
         }
       } else if (!KNOWN_DOCS_ACTIONS.has(sub.toLowerCase())) {
         // 智能自适应路由：非已知子命令的参数直接作为 search 检索关键词

@@ -394,6 +394,186 @@ function renderCompactDocsList(entries: ProjectDocumentIndexEntry[], filters: Do
   return lines.join('\n');
 }
 
+/** docs hub / overview — 项目活文档中心看板 */
+async function docsHub(
+  cwd: string,
+  options: { agent?: boolean; json?: boolean } = {},
+): Promise<void> {
+  const { agent = false, json = false } = options;
+  const { entries: allEntries } = await ensureDocsIndexReady(cwd);
+
+  if (!allEntries.length) {
+    console.log('📭  未找到任何已索引的文档。运行 `docpath doc scan` 进行扫描。');
+    return;
+  }
+
+  const nonArchiveEntries = allEntries.filter((e) => !e.archive);
+  const activeCount = nonArchiveEntries.filter((e) => (e.status || 'active') === 'active').length;
+  const wipCount = nonArchiveEntries.filter((e) => e.status === 'wip').length;
+  const deprecatedCount = allEntries.filter((e) => e.status === 'deprecated' || e.archive).length;
+
+  // 1. 核心架构与协议文档
+  const coreEntries = nonArchiveEntries.filter(
+    (e) => (e.is_core || e.tier === 'core' || e.tier === 'architecture') && !e.path.startsWith('tasks/') && !e.path.startsWith('backlog/'),
+  );
+
+  // 2. 按分类组织活文档 (docs/ 体系与 rules/)
+  const categories: Record<string, { label: string; docs: ProjectDocumentIndexEntry[] }> = {
+    architecture: {
+      label: '🏛️  系统架构与设计 (Architecture & Design)',
+      docs: nonArchiveEntries.filter(
+        (e) => e.path.startsWith('docs/architecture/') || e.path.startsWith('docs/arch/') || e.path.startsWith('docs/design/') || e.path === 'spec/architecture.md',
+      ),
+    },
+    features: {
+      label: '✨  核心功能与特性 (Features & Capabilities)',
+      docs: nonArchiveEntries.filter((e) => e.path.startsWith('docs/features/')),
+    },
+    guides: {
+      label: '📖  工程指南与适配 (Guides & Integrations)',
+      docs: nonArchiveEntries.filter((e) => e.path.startsWith('docs/guides/') || e.path.startsWith('docs/integrations/')),
+    },
+    workflows: {
+      label: '📜  协议、规则与工作流 (Rules & Workflows)',
+      docs: nonArchiveEntries.filter(
+        (e) => e.path.startsWith('rules/') || e.path.startsWith('.docpath/rules/') || e.path.startsWith('docs/workflows/') || e.path === 'AGENTS.md' || e.path === 'CLAUDE.md' || e.path === 'CODEX.md' || e.path === 'OPENCODE.md',
+      ),
+    },
+  };
+
+  const categorizedPaths = new Set(Object.values(categories).flatMap((c) => c.docs.map((d) => d.path)));
+  const generalDocs = nonArchiveEntries.filter(
+    (e) => !categorizedPaths.has(e.path) && !e.path.startsWith('tasks/') && !e.path.startsWith('backlog/') && !e.path.startsWith('workspace/'),
+  );
+  if (generalDocs.length > 0) {
+    categories.general = {
+      label: '🧭  全局入口与其他文档 (General & Entrances)',
+      docs: generalDocs,
+    };
+  }
+
+  // 3. 诊断生态健康度
+  const healthReport = await diagnoseDocumentHealth(cwd);
+  const isHealthy = healthReport.issues.length === 0;
+
+  if (json) {
+    console.log(
+      JSON.stringify(
+        {
+          total_docs: allEntries.length,
+          living_docs_count: nonArchiveEntries.length,
+          lifecycle: { active: activeCount, wip: wipCount, deprecated: deprecatedCount },
+          health: {
+            is_healthy: isHealthy,
+            issues_count: healthReport.issues.length,
+            issues: healthReport.issues,
+          },
+          core_docs: coreEntries.map((e) => ({
+            path: e.path,
+            title: e.title,
+            tier: e.tier,
+            token_estimate: e.token_estimate,
+            status: e.status || 'active',
+          })),
+          categories: Object.fromEntries(
+            Object.entries(categories).map(([k, v]) => [
+              k,
+              {
+                label: v.label,
+                count: v.docs.length,
+                docs: v.docs.map((d) => ({ path: d.path, title: d.title, token_estimate: d.token_estimate })),
+              },
+            ]),
+          ),
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  if (agent) {
+    const { stringify } = await import('yaml');
+    console.log(
+      stringify({
+        agent_view: 'docs_hub',
+        total_docs: allEntries.length,
+        living_docs_count: nonArchiveEntries.length,
+        health_status: isHealthy ? 'healthy' : `${healthReport.issues.length}_issues_found`,
+        core_docs: coreEntries.slice(0, 8).map((e) => ({
+          path: e.path,
+          title: e.title,
+          tier: e.tier,
+          token_estimate: e.token_estimate,
+          recommended_reveal: `docpath reveal --topic "${e.path}" --level 1`,
+        })),
+        categories: Object.fromEntries(
+          Object.entries(categories).map(([k, v]) => [
+            k,
+            {
+              count: v.docs.length,
+              sample_docs: v.docs.slice(0, 3).map((d) => ({ path: d.path, title: d.title })),
+            },
+          ]),
+        ),
+        quick_commands: {
+          search: 'docpath doc <keyword>',
+          arch: 'docpath doc arch',
+          trace: 'docpath doc trace <file|symbol>',
+          doctor: 'docpath doc doctor',
+          fix: 'docpath doc fix',
+          list_all: 'docpath doc list --full',
+        },
+      }),
+    );
+    return;
+  }
+
+  console.log('\n📚  DocPath 项目活文档中心 (Living Documentation Hub)');
+  const healthBadge = isHealthy
+    ? '🟢 生态健康 (0 处异常)'
+    : `⚠️  ${healthReport.issues.length} 处待治理 (运行 \`docpath doc fix\` 自愈)`;
+  console.log(`    收录活文档: ${nonArchiveEntries.length} 篇 | 核心架构: ${coreEntries.length} 篇 | 生态体检: ${healthBadge}\n`);
+
+  // 渲染核心架构与基石协议
+  if (coreEntries.length > 0) {
+    console.log('  🏛️  核心架构与基石协议 (Core Architecture & Protocols):');
+    for (const doc of coreEntries.slice(0, 6)) {
+      const statusTag = doc.status === 'active' ? '🟢' : doc.status === 'wip' ? '🟡' : '🔴';
+      const tierBadge = doc.tier === 'architecture' ? pc.magenta('[ARCH]') : pc.cyan('[CORE]');
+      console.log(`    📄 ${pc.bold(doc.path)} ${tierBadge} ${statusTag} (~${doc.token_estimate} tokens)`);
+      console.log(`       ${pc.dim(doc.title)}`);
+    }
+    if (coreEntries.length > 6) {
+      console.log(`    ${pc.dim(`... 还有 ${coreEntries.length - 6} 篇核心文档，运行 \`docpath doc arch\` 查看全景`)}`);
+    }
+    console.log('');
+  }
+
+  // 渲染活文档分类库
+  console.log('  📂  活文档分类全景 (Living Docs by Category):');
+  for (const [_, cat] of Object.entries(categories)) {
+    if (cat.docs.length === 0) continue;
+    console.log(`    ${cat.label} (${cat.docs.length} 篇):`);
+    for (const doc of cat.docs.slice(0, 3)) {
+      console.log(`       • ${doc.path} — ${pc.dim(doc.title)} (~${doc.token_estimate} tokens)`);
+    }
+    if (cat.docs.length > 3) {
+      console.log(`       ${pc.dim(`... 还有 ${cat.docs.length - 3} 篇`)}`);
+    }
+  }
+  console.log('');
+
+  // 快捷指令
+  console.log('  💡  快捷指令指引:');
+  console.log('    🔍  检索文档: docpath doc <keyword> (或 docpath docs search <kw>)');
+  console.log('    🏛️  架构大盘: docpath doc arch');
+  console.log('    🔎  双向透视: docpath doc trace <file|symbol>');
+  console.log('    🩺  生态体检: docpath doc doctor (一键自愈: docpath doc fix)');
+  console.log('    📋  全量列表: docpath doc list --full\n');
+}
+
 /** docs list — 列出注册文档摘要，--full 输出完整 human table（R-336: 从索引渲染，docs.md 已下线） */
 async function docsList(cwd: string, full = false, filters: DocsFilterOptions = {}): Promise<void> {
   const { entries: allEntries } = await ensureDocsIndexReady(cwd);
@@ -782,12 +962,26 @@ async function docsSearch(
     if (score > 0) {
       if (entry.default_read) score += 5;
       if (entry.is_core || entry.tier === 'core' || entry.tier === 'architecture') {
-        score += 25;
+        score += 35;
         reasons.push('⭐核心/架构');
+      }
+      if (entry.path.startsWith('docs/') || entry.path.startsWith('rules/') || entry.path === 'AGENTS.md' || entry.path === 'README.md') {
+        score += 25;
+        reasons.push('📘活文档库');
+      }
+      if (entry.path.startsWith('tasks/current/')) {
+        score += 20;
+        reasons.push('⚡当前任务');
+      }
+      if (entry.path.startsWith('tasks/done/') || entry.path.startsWith('tasks/T-')) {
+        score -= 25;
+      }
+      if (entry.path.startsWith('backlog/')) {
+        score -= 10;
       }
       const docStatus = entry.status || (entry.archive ? 'deprecated' : 'active');
       if (docStatus === 'active') score += 5;
-      else if (docStatus === 'deprecated') score -= 15;
+      else if (docStatus === 'deprecated') score -= 20;
 
       scoredResults.push({
         entry,
@@ -929,29 +1123,32 @@ async function docsArch(
 
   const allEntries = index?.entries || [];
   const coreEntries = allEntries.filter(
-    (e) => !e.archive && (e.is_core || e.tier === 'core' || e.tier === 'architecture'),
+    (e) => !e.archive && (e.is_core || e.tier === 'core' || e.tier === 'architecture') && !e.path.startsWith('tasks/') && !e.path.startsWith('backlog/'),
   );
+
+  const rulesAndProtocols = coreEntries.filter(
+    (e) => e.path.startsWith('rules/') || e.path.startsWith('.docpath/rules/') || e.path === 'AGENTS.md' || e.path === 'CLAUDE.md' || e.path === 'CODEX.md' || e.path === 'OPENCODE.md',
+  );
+  const rulesSet = new Set(rulesAndProtocols.map((e) => e.path));
 
   const architectureDocs = coreEntries.filter(
-    (e) => e.tier === 'architecture' || e.path.includes('arch') || e.path.includes('design'),
+    (e) => !rulesSet.has(e.path) && (e.tier === 'architecture' || e.path.startsWith('docs/architecture/') || e.path.startsWith('docs/arch/') || e.path.startsWith('docs/design/')),
   );
-  const rulesAndProtocols = coreEntries.filter(
-    (e) => e.path.startsWith('rules/') || e.path.startsWith('.docpath/rules/') || e.path === 'AGENTS.md',
-  );
-  const decisionsAndSpecs = coreEntries.filter(
-    (e) => e.path.includes('decisions.md') || e.path.startsWith('spec/'),
-  );
-  const entrancesAndOverview = coreEntries.filter(
-    (e) => e.path === 'README.md' || e.path === 'docs/README.md',
-  );
+  const archSet = new Set(architectureDocs.map((e) => e.path));
 
-  const categorizedPaths = new Set([
-    ...architectureDocs.map((e) => e.path),
-    ...rulesAndProtocols.map((e) => e.path),
-    ...decisionsAndSpecs.map((e) => e.path),
-    ...entrancesAndOverview.map((e) => e.path),
-  ]);
-  const otherCore = coreEntries.filter((e) => !categorizedPaths.has(e.path));
+  const decisionsAndSpecs = coreEntries.filter(
+    (e) => !rulesSet.has(e.path) && !archSet.has(e.path) && (e.path.includes('decisions.md') || e.path.startsWith('spec/')),
+  );
+  const decSet = new Set(decisionsAndSpecs.map((e) => e.path));
+
+  const entrancesAndOverview = coreEntries.filter(
+    (e) => !rulesSet.has(e.path) && !archSet.has(e.path) && !decSet.has(e.path) && (e.path === 'README.md' || e.path === 'docs/README.md' || e.path === 'docs/product-panorama.md'),
+  );
+  const entranceSet = new Set(entrancesAndOverview.map((e) => e.path));
+
+  const otherCore = coreEntries.filter(
+    (e) => !rulesSet.has(e.path) && !archSet.has(e.path) && !decSet.has(e.path) && !entranceSet.has(e.path),
+  );
 
   const report = await diagnoseDocumentHealth(cwd);
   const coreDrifts = report.issues.filter((i) => coreEntries.some((e) => e.path === i.file));
@@ -1470,6 +1667,11 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
       console.log(`\n${renderDocDriftReport(report)}`);
       break;
     }
+    case 'hub':
+    case 'overview':
+    case 'dashboard':
+      await docsHub(cwd, { agent, json });
+      break;
     case 'search':
     case 'find':
     case 'query':
@@ -1483,7 +1685,6 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
       });
       break;
     default:
-      // 默认执行 list
-      await docsList(cwd, full, filters);
+      await docsHub(cwd, { agent, json });
   }
 }
