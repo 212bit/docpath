@@ -2,7 +2,7 @@
 
 ## 实现归属
 
-R-362 的功能实现已随提交 **dfd1287**（`feat(check): --test-scope 测试减载与 quick-guard 路径 bugfix`，作者 fu.yf）合入 main，并已通过 check 全量门禁与 review（提交信息记载 `check 全量门禁(+review pass_with_skips)已通过`）。该提交未走 backlog 条目级 `promote → done` 闭环，故 `links.task` 长期为空，本次为补验收 + 生命周期收口。
+R-362 的功能实现已随提交 **dfd1287**（`feat(check): --test-scope 测试减载与 quick-guard 路径 bugfix`，作者 212bit）合入 main，并已通过 check 全量门禁与 review（提交信息记载 `check 全量门禁(+review pass_with_skips)已通过`）。该提交未走 backlog 条目级 `promote → done` 闭环，故 `links.task` 长期为空，本次为补验收 + 生命周期收口。
 
 ## 已实现能力（对应验收）
 
