@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const CLI = '/Users/mac/project/docpath/dist/index.js';
+const CLI = new URL('../dist/index.js', import.meta.url).pathname;
 const run = (args, cwd) => {
   try {
     return execSync(`node ${CLI} ${args}`, { cwd, encoding: 'utf-8', timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'] });

@@ -222,9 +222,9 @@ docpath worktree create bugfix-123
 **输出**：
 ```
 🌳  Worktrees:
-  • /Users/mac/project/docpath
+  • /path/to/project
     branch: refs/heads/main
-  • /Users/mac/project/docpath/.worktrees/feature-a
+  • /path/to/project/.worktrees/feature-a
     branch: refs/heads/feature-a
 ```
 

@@ -103,8 +103,8 @@ docpath learn
 为了防止代码不断演进但活文档失修腐化，系统在任务收口（`journal`）阶段执行智能匹配检测：
 
 - **核心模块映射**：
-  - `worktree` 模块改动 → 推荐检查 [`docs/features/worktree-workflow.md`](file:///Users/mac/project/docpath/docs/features/worktree-workflow.md)
-  - `agent/context` 模块改动 → 推荐检查 [`docs/design/agent-integration.md`](file:///Users/mac/project/docpath/docs/design/agent-integration.md)
-  - `session` 模块改动 → 推荐检查 [`docs/design/session-isolation-mvp.md`](file:///Users/mac/project/docpath/docs/design/session-isolation-mvp.md)
-  - `error-codes` 模块改动 → 推荐检查 [`docs/error-codes.md`](file:///Users/mac/project/docpath/docs/error-codes.md)
+  - `worktree` 模块改动 → 推荐检查 [`docs/features/worktree-workflow.md`](./worktree-workflow.md)
+  - `agent/context` 模块改动 → 推荐检查 [`docs/design/agent-integration.md`](../design/agent-integration.md)
+  - `session` 模块改动 → 推荐检查 [`docs/design/session-isolation-mvp.md`](../design/session-isolation-mvp.md)
+  - `error-codes` 模块改动 → 推荐检查 [`docs/error-codes.md`](../error-codes.md)
 - **增量同步提示**：若检测到核心代码变更且未修改 `docs/`，输出精准关联文档提示，引导开发者或 Agent 完成知识沉淀。

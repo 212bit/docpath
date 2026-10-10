@@ -19,8 +19,10 @@
 /.opencode/node_modules/
 /.dsh-vision-router/
 
-# Local agent/tool scratch (站点文档抓取物, 3.1M)
+# Local agent/tool scratch
 /.cowork-temp/
+/.workbuddy/
+/.playwright-mcp/
 
 # DocPath worktrees
 /.worktrees/

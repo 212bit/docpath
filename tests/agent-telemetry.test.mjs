@@ -682,7 +682,7 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
           source: 'MODEL',
           type: 'PLANNER_RESPONSE',
           status: 'DONE',
-          tool_calls: [{ name: 'view_file', args: { AbsolutePath: '/Users/mac/project/src/index.ts', StartLine: 1, EndLine: 50 } }],
+          tool_calls: [{ name: 'view_file', args: { AbsolutePath: '/workspace/project/src/index.ts', StartLine: 1, EndLine: 50 } }],
         }),
         JSON.stringify({
           step_index: 2,
@@ -696,7 +696,7 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
           source: 'MODEL',
           type: 'PLANNER_RESPONSE',
           status: 'DONE',
-          tool_calls: [{ name: 'view_file', args: { AbsolutePath: '/Users/mac/project/src/index.ts', StartLine: 1, EndLine: 50 } }],
+          tool_calls: [{ name: 'view_file', args: { AbsolutePath: '/workspace/project/src/index.ts', StartLine: 1, EndLine: 50 } }],
         }),
         JSON.stringify({
           step_index: 4,
@@ -710,7 +710,7 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
           source: 'MODEL',
           type: 'PLANNER_RESPONSE',
           status: 'DONE',
-          tool_calls: [{ name: 'view_file', args: { AbsolutePath: '/Users/mac/project/src/index.ts', StartLine: 1, EndLine: 50 } }],
+          tool_calls: [{ name: 'view_file', args: { AbsolutePath: '/workspace/project/src/index.ts', StartLine: 1, EndLine: 50 } }],
         }),
         JSON.stringify({
           step_index: 6,
@@ -731,7 +731,7 @@ describe('Agent Telemetry Adapter & Compliance Auditor (FR-1 / AC-1 & AC-2)', ()
       assert.match(dup.description, /3 次/);
       assert.ok(dup.tokensWasted > 0);
       assert.equal(dup.evidence?.readCount, 3);
-      assert.equal(dup.evidence?.path, '/Users/mac/project/src/index.ts');
+      assert.equal(dup.evidence?.path, '/workspace/project/src/index.ts');
     });
 
     it('detects oversized command outputs exceeding token threshold (>2000 tokens)', () => {

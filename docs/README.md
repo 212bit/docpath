@@ -31,33 +31,33 @@ docs/
 
 ### 1. 系统架构 (Architecture)
 * [Agent 零点击上下文随路注入与智能路由体系架构](./architecture/agent-context-injection-architecture.md) — 零点击随路下发、路径亲和性路由、Token 预算熔断与防破坏架构不变量。
-* [文档全生命周期管理与演进体系](file:///Users/mac/project/docpath/docs/architecture/documentation-lifecycle-guide.md) — 架构文档、ADR 决策、活文档防腐与全景时间线还原规范。
-* [Breadcrumb 任务级优先架构](file:///Users/mac/project/docpath/docs/architecture/breadcrumb-task-level-architecture.md) — 单一真源与任务级上下文生命周期。
-* [状态机正确性分析](file:///Users/mac/project/docpath/docs/design/state-machine-correctness-analysis.md) — 状态转移与不可变门禁设计。
-* [命令边界模型](file:///Users/mac/project/docpath/docs/design/command-boundaries.md) — CLI 命令的输入输出与副作用边界。
+* [文档全生命周期管理与演进体系](./architecture/documentation-lifecycle-guide.md) — 架构文档、ADR 决策、活文档防腐与全景时间线还原规范。
+* [Breadcrumb 任务级优先架构](./architecture/breadcrumb-task-level-architecture.md) — 单一真源与任务级上下文生命周期。
+* [状态机正确性分析](./design/state-machine-correctness-analysis.md) — 状态转移与不可变门禁设计。
+* [命令边界模型](./design/command-boundaries.md) — CLI 命令的输入输出与副作用边界。
 
 ### 2. 功能与特性 (Features)
-* [Backlog 需求工程与全生命周期管理](file:///Users/mac/project/docpath/docs/features/backlog-lifecycle.md) — 声明式需求卡片、四段式规整、依赖拓扑分析、全周期检索与自动治理。
-* [测试影响分析与智能门禁加速体系](file:///Users/mac/project/docpath/docs/features/test-impact-analysis.md) — 调试期单用例定向测试、构建感知自愈与单次全量原子收口。
-* [架构分层与依赖防腐守卫](file:///Users/mac/project/docpath/docs/features/architecture-guard.md) — 6 层单向依赖规则模型、AST 循环依赖扫描与 `arch check` 体检。
-* [Git Worktree 并发工作流](file:///Users/mac/project/docpath/docs/features/worktree-workflow.md) — 多 Agent 并发开发与资源隔离模型。
-* [任务热暂存与无缝恢复 (Task Stash)](file:///Users/mac/project/docpath/docs/features/task-stash.md) — 工作区即时热暂存、弹出与原子切换。
-* [会话隔离设计 (Session Isolation)](file:///Users/mac/project/docpath/docs/design/session-isolation-mvp.md) — 多会话并发执行与状态隔离。
-* [经验沉淀与持续学习机制](file:///Users/mac/project/docpath/docs/features/knowledge-accumulation.md) — 经验捕获、候选清洗、规则固化与智能消费闭环。
+* [Backlog 需求工程与全生命周期管理](./features/backlog-lifecycle.md) — 声明式需求卡片、四段式规整、依赖拓扑分析、全周期检索与自动治理。
+* [测试影响分析与智能门禁加速体系](./features/test-impact-analysis.md) — 调试期单用例定向测试、构建感知自愈与单次全量原子收口。
+* [架构分层与依赖防腐守卫](./features/architecture-guard.md) — 6 层单向依赖规则模型、AST 循环依赖扫描与 `arch check` 体检。
+* [Git Worktree 并发工作流](./features/worktree-workflow.md) — 多 Agent 并发开发与资源隔离模型。
+* [任务热暂存与无缝恢复 (Task Stash)](./features/task-stash.md) — 工作区即时热暂存、弹出与原子切换。
+* [会话隔离设计 (Session Isolation)](./design/session-isolation-mvp.md) — 多会话并发执行与状态隔离。
+* [经验沉淀与持续学习机制](./features/knowledge-accumulation.md) — 经验捕获、候选清洗、规则固化与智能消费闭环。
 
 ### 3. 工作流与工件策略 (Workflows & Policies)
-* [工件策略与阶段门禁](file:///Users/mac/project/docpath/docs/workflows/artifact-policy.md) — Spec/Plan/Evidence 工件生命周期与存储规范。
+* [工件策略与阶段门禁](./workflows/artifact-policy.md) — Spec/Plan/Evidence 工件生命周期与存储规范。
 * [项目文档放置决策](./design/project-document-placement.md) — 人类真源 (`docs/`) 与 Agent 工作流真源 (`.docpath/`) 的边界。
 
 ### 4. 接入与协议 (Integrations)
-* [Codex / Claude / OpenCode 适配](file:///Users/mac/project/docpath/docs/integrations/codex-skill-adapter.md) — 多平台 Agent 协议与 Skill 适配。
-* [Agent 集成总览](file:///Users/mac/project/docpath/docs/design/agent-integration.md) — Agent 生命周期与上下文分发机制。
+* [Codex / Claude / OpenCode 适配](./integrations/codex-skill-adapter.md) — 多平台 Agent 协议与 Skill 适配。
+* [Agent 集成总览](./design/agent-integration.md) — Agent 生命周期与上下文分发机制。
 
 ### 5. 开发者与上手指南 (Guides)
-* [快速上手 (Getting Started)](file:///Users/mac/project/docpath/docs/getting-started.md) — 从安装到首次任务开发。
-* [构建与测试 (Build & Test)](file:///Users/mac/project/docpath/docs/BUILD.md) — 本地构建、单测、端到端测试流程。
+* [快速上手 (Getting Started)](./getting-started.md) — 从安装到首次任务开发。
+* [构建与测试 (Build & Test)](./BUILD.md) — 本地构建、单测、端到端测试流程。
 * [多技术栈定向测试与门禁效能最佳实践](./guides/multi-stack-testing-efficiency.md) — 跨技术栈（Node/Go/Rust/Python/Java）调试期定向测试与收口门禁去重规范。
-* [错误码与排错 (Error Codes)](file:///Users/mac/project/docpath/docs/error-codes.md) — 常见报错原因与恢复指引。
+* [错误码与排错 (Error Codes)](./error-codes.md) — 常见报错原因与恢复指引。
 
 ---
 
@@ -76,13 +76,13 @@ DocPath 严格区分 **4 层文档资产**，避免运行时噪音与知识腐�
 
 ## 文档关联图谱 (docs graph)
 
-> 全部 27 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。
+> 全部 28 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。
 
 ### docs/
 
 - [docs/BUILD.md](./BUILD.md) — Build Guide — 出 2 / 入 2
 - [docs/error-codes.md](./error-codes.md) — DocPath 错误码参考 — 出 2 / 入 2
-- [docs/getting-started.md](./getting-started.md) — DocPath Getting Started — 出 3 / 入 4
+- [docs/getting-started.md](./getting-started.md) — DocPath Getting Started — 出 3 / 入 5
 - [docs/product-panorama.md](./product-panorama.md) — DocPath 产品全景文档 (Product Panorama) — 出 2 / 入 3
 - [docs/README.md](./README.md) — DocPath 架构与项目文档中心 — 出 2 / 入 0
 - [docs/roadmap.md](./roadmap.md) — DocPath — 进度与方向 — 出 4 / 入 0
@@ -117,6 +117,7 @@ DocPath 严格区分 **4 层文档资产**，避免运行时噪音与知识腐�
 ### docs/guides/
 
 - [docs/guides/multi-stack-testing-efficiency.md](./guides/multi-stack-testing-efficiency.md) — 多技术栈定向测试与门禁效能最佳实践 — 出 2 / 入 2
+- [docs/guides/project-init-prompt.md](./guides/project-init-prompt.md) — 新建项目 DocPath 初始化 Prompt（复制即用） — 出 1 / 入 0
 
 ### docs/integrations/
 
