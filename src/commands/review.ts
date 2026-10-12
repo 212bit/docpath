@@ -95,8 +95,12 @@ function parsePorcelainPaths(output: string): string[] {
 }
 
 function isReviewableFile(file: string): boolean {
-  if (/^\.docpath\/workspace\//.test(file)) return false;
-  return /\.(ts|tsx|js|jsx|mjs|cjs|json)$/.test(file);
+  const norm = file.replace(/\\/g, '/');
+  // 排除整个 .docpath 簿记与归档目录（含 tasks/current, tasks/done, workspace, backlog, journal 等）
+  if (/^\.docpath\//.test(norm)) return false;
+  // 排除第三方依赖与构建输出
+  if (/^(?:node_modules|dist)\//.test(norm)) return false;
+  return /\.(ts|tsx|js|jsx|mjs|cjs|json)$/.test(norm);
 }
 
 function runGit(cwd: string, args: string[]): string {
@@ -151,6 +155,9 @@ function collectChangedFiles(cwd: string, scope: ReviewScope = 'all', taskStarte
 }
 
 async function analyzeChangedFile(cwd: string, file: string): Promise<ReviewFinding[]> {
+  const norm = file.replace(/\\/g, '/');
+  if (/^\.docpath\//.test(norm) || /^(?:node_modules|dist)\//.test(norm)) return [];
+
   const fullPath = join(cwd, file);
   if (!existsSync(fullPath)) return [];
 

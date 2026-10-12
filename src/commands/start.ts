@@ -104,10 +104,12 @@ export async function startCommand(options: StartOptions): Promise<void> {
 
   // 1.1 活体租约互斥拦截：防止跨会话强行抢占或覆盖正在执行的任务
   if (current?.task_id) {
-    const { assertTaskNotLeasedByOtherLiveSession } = await import('../utils/session.js');
+    const { assertTaskNotLeasedByOtherLiveSession, resolveSessionContext } = await import('../utils/session.js');
+    const session = resolveSessionContext((options as any).session);
     await assertTaskNotLeasedByOtherLiveSession(cwd, current.task_id, {
       command: 'docpath start',
       force: options.adopt,
+      selfSessionId: session.sessionId,
     });
   }
 

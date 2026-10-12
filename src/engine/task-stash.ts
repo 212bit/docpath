@@ -142,7 +142,7 @@ import { assertTaskNotLeasedByOtherLiveSession } from '../utils/session.js';
  */
 export async function stashTask(
   cwd: string,
-  options: { message?: string; withGit?: boolean; force?: boolean } = {},
+  options: { message?: string; withGit?: boolean; force?: boolean; session?: string } = {},
 ): Promise<TaskStashResult> {
   const current = await readCurrentState(cwd);
   if (!current?.task_id || current.phase === 'idle' || current.phase === 'completed') {
@@ -153,6 +153,7 @@ export async function stashTask(
   await assertTaskNotLeasedByOtherLiveSession(cwd, current.task_id, {
     command: 'docpath task stash',
     force: options.force,
+    selfSessionId: options.session,
   });
 
   const docpathDir = await resolveDocpathDir(cwd);

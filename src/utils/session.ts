@@ -15,6 +15,7 @@ export interface SessionRecord {
   kind: 'session';
   session_id: string;
   pid: number;
+  ppid?: number;
   cwd: string;
   command: string;
   task_id?: string;
@@ -25,7 +26,7 @@ export interface SessionRecord {
 
 export interface SessionContext {
   sessionId: string;
-  source: 'option' | 'env' | 'default';
+  source: 'option' | 'env' | 'default' | 'auto';
 }
 
 export interface LeaseClaim {
@@ -39,12 +40,49 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-export function resolveSessionContext(explicit?: any): SessionContext {
+/**
+ * 启发式感知 Agent 运行环境，避免不同 Agent 并发时均退化共用 default.json
+ */
+export function inferAgentSessionId(): string | undefined {
+  if (process.env.DOCPATH_SESSION) return undefined;
+  if (process.env.ANTIGRAVITY_CONVERSATION_ID) {
+    const cid = process.env.ANTIGRAVITY_CONVERSATION_ID.trim().replace(/[^A-Za-z0-9._:-]/g, '_');
+    return `agy-${cid.slice(0, 16)}`;
+  }
+  if (process.env.CLAUDE_CONVERSATION_ID) {
+    const cid = process.env.CLAUDE_CONVERSATION_ID.trim().replace(/[^A-Za-z0-9._:-]/g, '_');
+    return `claude-${cid.slice(0, 16)}`;
+  }
+  if (process.env.OPENCODE_SESSION_ID) {
+    const cid = process.env.OPENCODE_SESSION_ID.trim().replace(/[^A-Za-z0-9._:-]/g, '_');
+    return `opencode-${cid.slice(0, 16)}`;
+  }
+  if (process.env.CODEX_SESSION_ID) {
+    const cid = process.env.CODEX_SESSION_ID.trim().replace(/[^A-Za-z0-9._:-]/g, '_');
+    return `codex-${cid.slice(0, 16)}`;
+  }
+  return undefined;
+}
+
+export function resolveSessionContext(
+  explicit?: any,
+  options: { autoInfer?: boolean } = {}
+): SessionContext {
   const optionValue = typeof explicit === 'string' ? explicit.trim() : undefined;
   const envValue = typeof process.env.DOCPATH_SESSION === 'string' ? process.env.DOCPATH_SESSION.trim() : undefined;
-  const raw = optionValue || envValue || DEFAULT_SESSION_ID;
-  const source = optionValue ? 'option' : envValue ? 'env' : 'default';
-  return { sessionId: normalizeSessionId(raw), source };
+  if (optionValue) {
+    return { sessionId: normalizeSessionId(optionValue), source: 'option' };
+  }
+  if (envValue) {
+    return { sessionId: normalizeSessionId(envValue), source: 'env' };
+  }
+  if (options.autoInfer) {
+    const autoSession = inferAgentSessionId();
+    if (autoSession) {
+      return { sessionId: normalizeSessionId(autoSession), source: 'auto' as any };
+    }
+  }
+  return { sessionId: normalizeSessionId(DEFAULT_SESSION_ID), source: 'default' };
 }
 
 export function normalizeSessionId(value: string): string {
@@ -94,6 +132,7 @@ export async function touchSession(cwd: string, claim: LeaseClaim): Promise<Sess
     kind: 'session',
     session_id: claim.sessionId,
     pid: process.pid,
+    ppid: process.ppid,
     cwd,
     command: claim.command,
     task_id: claim.taskId,
@@ -187,8 +226,9 @@ export async function listActiveSessions(
       continue;
     }
 
-    // Check PID survival
-    if (!isProcessAlive(record.pid)) {
+    // Check PID or PPID survival: CLI 命令退出后，若其持久 Shell/Agent 父进程仍存活，视为活跃
+    const alive = (record.ppid ? isProcessAlive(record.ppid) : false) || isProcessAlive(record.pid);
+    if (!alive) {
       continue;
     }
 
@@ -200,7 +240,7 @@ export async function listActiveSessions(
 
 /**
  * 校验当前任务未被其他活体会话（Live Session）持有。
- * 若任务被其他正在运行的进程（Live PID + 未超期心跳）持有，则抛错拦截，防止并发踩踏。
+ * 若任务被其他正在运行的进程（Live PID/PPID + 未超期心跳）持有，则抛错拦截，防止并发踩踏。
  */
 export async function assertTaskNotLeasedByOtherLiveSession(
   cwd: string,
@@ -215,15 +255,24 @@ export async function assertTaskNotLeasedByOtherLiveSession(
   if (!taskId) return;
 
   const currentPid = process.pid;
+  const currentPpid = process.ppid;
+  const selfId = options.selfSessionId || resolveSessionContext().sessionId;
   const activeSessions = await listActiveSessions(cwd);
 
-  const conflictingSession = activeSessions.find(
-    (s) => s.task_id === taskId && s.pid !== currentPid && isProcessAlive(s.pid)
-  );
+  const conflictingSession = activeSessions.find((s) => {
+    if (s.task_id !== taskId) return false;
+    // 自身会话直接放行
+    if (options.selfSessionId && s.session_id === selfId) return false;
+    // 自身进程或同一终端父进程直接放行
+    if (s.pid === currentPid || (s.ppid && currentPpid && s.ppid === currentPpid)) return false;
+    // 跨进程/跨会话冲突，校验对方是否活跃
+    const isAlive = (s.ppid ? isProcessAlive(s.ppid) : false) || isProcessAlive(s.pid);
+    return isAlive;
+  });
 
   if (conflictingSession) {
     throw new Error(
-      `${options.command}: 当前活跃任务 ${taskId} 正在由活跃会话 '${conflictingSession.session_id}' (PID: ${conflictingSession.pid}, 命令: ${conflictingSession.command}) 执行中，禁止跨会话强行挂起/覆盖！\n` +
+      `${options.command}: 当前活跃任务 ${taskId} 正在由活跃会话 '${conflictingSession.session_id}' (PID: ${conflictingSession.ppid || conflictingSession.pid}, 命令: ${conflictingSession.command}) 执行中，禁止跨会话强行挂起/覆盖！\n` +
       `   💡 解决方案:\n` +
       `   - 多 Agent 并行开发请使用隔离工作区: docpath worktree create <name>\n` +
       `   - 若原会话进程已意外终止但心跳残留，可使用 --force 强制执行`

@@ -1,0 +1,8 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261012-review","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 优化Review门禁自产路径过滤","timestamp":"2026-10-12T13:47:36.110Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261012-review","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-12T13:50:51.685Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261012-review","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 跨会话租约互斥保护","timestamp":"2026-10-12T13:50:51.995Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261012-review","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-12T13:57:38.050Z","sessionId":"agy-c06e4deb-cb24-4a"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261012-review","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译","timestamp":"2026-10-12T13:59:46.136Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261012-review","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-12T14:02:31.911Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261012-review","step":"review","status":"done","context":"代码审查: 0 错误, 12 警告, 1 提示","timestamp":"2026-10-12T14:02:33.410Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261012-review","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-12T14:02:35.099Z"}

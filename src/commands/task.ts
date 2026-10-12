@@ -48,6 +48,7 @@ export interface TaskCommandOptions {
   from?: 'canonical' | 'current' | 'auto';
   auto?: boolean;
   force?: boolean;
+  session?: string;
 }
 
 function nowIso(): string {
@@ -103,6 +104,7 @@ async function taskAbort(options: TaskCommandOptions): Promise<void> {
   await assertTaskNotLeasedByOtherLiveSession(options.cwd, current.task_id, {
     command: 'docpath task abort',
     force: options.force,
+    selfSessionId: options.session,
   });
 
   const docpathDir = await resolveDocpathDir(options.cwd);
@@ -137,6 +139,7 @@ async function taskReset(options: TaskCommandOptions): Promise<void> {
   await assertTaskNotLeasedByOtherLiveSession(options.cwd, current.task_id, {
     command: 'docpath task reset',
     force: options.force,
+    selfSessionId: options.session,
   });
 
   const docpathDir = await resolveDocpathDir(options.cwd);
@@ -324,6 +327,7 @@ async function taskStashCommand(options: TaskCommandOptions, message?: string): 
     message: message || options.message,
     withGit,
     force: options.force,
+    session: options.session,
   });
 
   if (options.json) {
@@ -474,6 +478,8 @@ async function taskSwitchCommand(options: TaskCommandOptions, target?: string): 
     const stashRes = await stashTask(options.cwd, {
       message: options.message || `Auto-stashed before switching to ${targetId}`,
       withGit,
+      force: options.force,
+      session: options.session,
     });
     console.log(`📦  已自动暂存前序任务: ${stashRes.stash.taskId} (${stashRes.stash.id})`);
   }

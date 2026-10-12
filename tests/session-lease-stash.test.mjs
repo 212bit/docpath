@@ -79,4 +79,32 @@ describe('Active Session Lease & Task Stash Protection', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('blocks task stash via PPID survival even when CLI PID itself is dead', () => {
+    const cwd = mkWorkspace();
+    const dp = join(cwd, '.docpath');
+    // Overwrite session record with a dead PID (e.g. 99999999) but valid alive parent PPID
+    writeFileSync(join(dp, 'workspace', 'sessions', 'worker-1.json'), JSON.stringify({
+      schema_version: 1,
+      kind: 'session',
+      session_id: 'worker-1',
+      pid: 99999999,
+      ppid: process.ppid || process.pid,
+      cwd,
+      command: 'docpath go --step S1',
+      task_id: 'T-active',
+      step: 'S1',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, null, 2));
+
+    try {
+      assert.throws(() => {
+        run('task stash "attempt preempt dead-pid live-ppid"', cwd);
+      }, /正在由活跃会话 'worker-1' .* 执行中，禁止跨会话强行挂起/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
+

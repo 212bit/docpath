@@ -46,14 +46,26 @@ DOCPATH_SESSION=codex-a docpath go --step S1
 DOCPATH_SESSION=codex-a docpath agent step --step S1
 ```
 
-When no session is provided, DocPath uses the compatibility session `default`.
-This keeps existing single-session workflows working without new flags.
+When no explicit session or `DOCPATH_SESSION` is provided, DocPath auto-detects
+supported agent environments (`ANTIGRAVITY_CONVERSATION_ID`, `CLAUDE_CONVERSATION_ID`,
+`OPENCODE_SESSION_ID`, `CODEX_SESSION_ID`) to assign unique session names (e.g., `agy-...`),
+falling back to the compatibility session `default`.
 
 Session metadata is recorded as JSON truth under:
 
 ```text
 .docpath/workspace/sessions/<sessionId>.json
 ```
+
+It records both `pid` (the ephemeral CLI invocation) and `ppid` (the persistent
+parent Agent / IDE / Shell process) so that liveness checks survive short CLI process exit.
+
+## Preemption & Lease Guard
+
+Destructive commands (`docpath task stash`, `task abort`, `task reset`, and `start` over active tasks)
+strictly enforce live session ownership. If an active task is leased by another live session
+(verified by persistent parent PPID survival and unexpired TTL), the operation is blocked:
+`--force` is strictly required to override.
 
 ## Lease Model
 

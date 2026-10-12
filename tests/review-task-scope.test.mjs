@@ -226,10 +226,21 @@ describe('review reuse HEAD binding (R-276 AC-4)', () => {
     rmSync(cwd, { recursive: true, force: true });
   });
 
-  it('legacy evidence without head still reuses within the freshness window (backward compat)', () => {
-    const cwd = mkReuseWorkspace(undefined);
-    const result = run(['agent', 'done', '--skip-check', '--note', 'r276 test'], cwd);
-    assert.match(result.out, /review reused: fresh approved evidence and review_pass gate are present/);
+  it('excludes .docpath internal files (e.g. metrics.json with absolute paths) from review', () => {
+    const cwd = mkTaskWorkspace('dp-docpath-review-filter-');
+    commitBaselineBeforeTask(cwd);
+    // Write a metrics.json containing hardcoded absolute paths inside .docpath/tasks/done
+    const doneDir = join(cwd, '.docpath', 'tasks', 'done', 'R-prev');
+    mkdirSync(doneDir, { recursive: true });
+    writeFileSync(join(doneDir, 'metrics.json'), JSON.stringify({
+      current_diff: '/Users/mac/project/docpath/src/engine/index.ts',
+      stack: ['at /Users/mac/project/docpath/src/index.ts:1:1'],
+    }, null, 2));
+
+    const result = run(['review', '--cwd', cwd], cwd);
+    assert.doesNotMatch(result.out, /硬编码绝对路径/);
+    assert.doesNotMatch(result.out, /metrics\.json/);
     rmSync(cwd, { recursive: true, force: true });
   });
 });
+

@@ -116,7 +116,10 @@ try {
       const cwd = (parsed.options.cwd as string) || process.cwd();
       traceCwd = cwd;
       const sessionOption = parsed.options.session as string | undefined;
-      const { sessionId } = resolveSessionContext(sessionOption);
+      const { sessionId, source } = resolveSessionContext(sessionOption, { autoInfer: true });
+      if (source === 'auto' && !process.env.DOCPATH_SESSION) {
+        process.env.DOCPATH_SESSION = sessionId;
+      }
       await verifySessionCwd(cwd, sessionId);
     }
   }
