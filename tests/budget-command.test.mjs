@@ -139,4 +139,29 @@ describe('docpath budget command', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('decouples rendered views from machine truth to prevent double counting in budget', () => {
+    const cwd = mkWorkspace();
+    const dp = join(cwd, '.docpath');
+    try {
+      // Create both breadcrumb.jsonl and breadcrumb.md
+      writeFileSync(join(dp, 'workspace', 'breadcrumb.md'), '# Breadcrumb\n\n' + '## Event 1\n- detail\n'.repeat(50));
+      // Create decisions.jsonl alongside existing decisions.md
+      writeFileSync(join(dp, 'workspace', 'decisions.jsonl'), JSON.stringify({ id: 'ADR-001', decision: 'test' }) + '\n');
+
+      const out = run('budget --json', cwd);
+      const parsed = JSON.parse(out);
+
+      const eventsItems = parsed.categories.events.items;
+      const mdEvent = eventsItems.find((i) => i.name.endsWith('breadcrumb.md'));
+      assert.ok(mdEvent, 'breadcrumb.md should be listed in items');
+      assert.equal(mdEvent.isRenderedView, true, 'breadcrumb.md should be flagged as rendered view');
+
+      // The category totalTokens should NOT double count breadcrumb.md
+      const jsonlEvent = eventsItems.find((i) => i.name.endsWith('breadcrumb.jsonl'));
+      assert.equal(parsed.categories.events.totalTokens, jsonlEvent.tokens, 'category totalTokens should match machine truth jsonl only');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });

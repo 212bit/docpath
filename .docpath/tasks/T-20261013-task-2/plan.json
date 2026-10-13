@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-13T13:50:01.430Z",
+    "updated_at": "2026-10-13T13:50:01.430Z",
+    "content_sha256": "4dbc806a075a97ed999e7a9a9fc45c1852efe3717795e5f3938f4f281e9b9779"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-13T13:50:01.430Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 优化上下文预算双计解耦",
+      "description": "落地 FR-1: 优化上下文预算双计解耦，并完成模块定向自验。",
+      "acceptance": "AC-1: 优化上下文预算双计解耦 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 真实阈值自愈",
+      "description": "落地 FR-2: 真实阈值自愈，并完成模块定向自验。",
+      "acceptance": "AC-2: 真实阈值自愈 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-497 与任务 T-20261013-task-2 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

@@ -26,6 +26,7 @@ export interface BudgetItem {
   thresholdTokens: number;
   thresholdLines?: number;
   suggestion?: string;
+  isRenderedView?: boolean;
 }
 
 export interface BudgetCategorySummary {
@@ -70,20 +71,20 @@ export interface BudgetReport {
 export const BUDGET_THRESHOLDS = {
   rules: {
     fileLines: RULE_FILE_LINE_BUDGET, // 200 lines
-    fileTokens: 1500,
-    categoryTokens: 4000,
+    fileTokens: 8000,
+    categoryTokens: 16000,
   },
   active_task: {
     fileTokens: 3000,
     categoryTokens: 6000,
   },
   governance: {
-    fileTokens: 2500,
-    categoryTokens: 5000,
+    fileTokens: 8000,
+    categoryTokens: 12000,
   },
   events: {
-    fileTokens: 2000,
-    categoryTokens: 3500,
+    fileTokens: 15000,
+    categoryTokens: 18000,
   },
   views: {
     fileTokens: 2000,
@@ -116,241 +117,248 @@ function determineCategoryStatus(items: BudgetItem[], totalTokens: number, categ
   return 'healthy';
 }
 
-/**
- * 收集与分析工作区所有上下文源的 Token 消耗与健康度
- */
-export async function collectContextBudget(cwd: string): Promise<BudgetReport> {
-  const docpathDir = await resolveDocpathDir(cwd);
-  const state = await readCurrentState(cwd);
-  const activeTaskId = state?.task_id || null;
-
-  const suggestions: BudgetSuggestion[] = [];
-
-  // 1. 扫描 Rules 规则体系
-  const ruleItems: BudgetItem[] = [];
+async function collectRulesBudget(docpathDir: string, suggestions: BudgetSuggestion[]): Promise<BudgetItem[]> {
+  const items: BudgetItem[] = [];
   try {
     const rulePaths = resolveRulePaths(docpathDir);
     for (const r of rulePaths.allRules) {
-      if (r.exists) {
-        const content = (await readFileSafe(r.path)) || '';
-        const lines = content.split('\n').length;
-        const tokens = estimateTokens(content);
-        const bytes = Buffer.byteLength(content, 'utf-8');
-        const status = determineStatus(tokens, BUDGET_THRESHOLDS.rules.fileTokens, lines, BUDGET_THRESHOLDS.rules.fileLines);
+      if (!r.exists) continue;
+      const content = (await readFileSafe(r.path)) || '';
+      const lines = content.split('\n').length;
+      const tokens = estimateTokens(content);
+      const bytes = Buffer.byteLength(content, 'utf-8');
+      const status = determineStatus(tokens, BUDGET_THRESHOLDS.rules.fileTokens, lines, BUDGET_THRESHOLDS.rules.fileLines);
 
-        let suggestion: string | undefined;
-        if (status !== 'healthy') {
-          suggestion = `规则文件超过预算限制 (${lines} 行 / ${tokens} tokens)，建议精简或拆分到特定领域规则。`;
-          suggestions.push({
-            severity: status === 'critical' ? 'high' : 'medium',
-            category: 'rules',
-            target: r.displayPath,
-            message: suggestion,
-            actionCommand: `docpath learn --topic ${r.name}`,
-          });
-        }
-
-        ruleItems.push({
-          name: r.name,
+      let suggestion: string | undefined;
+      if (status !== 'healthy') {
+        suggestion = `规则文件超过预算限制 (${lines} 行 / ${tokens} tokens)，建议精简或拆分到特定领域规则。`;
+        suggestions.push({
+          severity: status === 'critical' ? 'high' : 'medium',
           category: 'rules',
-          path: r.path,
-          displayPath: r.displayPath,
-          tokens,
-          lines,
-          bytes,
-          status,
-          thresholdTokens: BUDGET_THRESHOLDS.rules.fileTokens,
-          thresholdLines: BUDGET_THRESHOLDS.rules.fileLines,
-          suggestion,
+          target: r.displayPath,
+          message: suggestion,
+          actionCommand: `docpath learn --topic ${r.name}`,
         });
       }
+
+      items.push({
+        name: r.name,
+        category: 'rules',
+        path: r.path,
+        displayPath: r.displayPath,
+        tokens,
+        lines,
+        bytes,
+        status,
+        thresholdTokens: BUDGET_THRESHOLDS.rules.fileTokens,
+        thresholdLines: BUDGET_THRESHOLDS.rules.fileLines,
+        suggestion,
+      });
     }
   } catch {
     // 容错
   }
+  return items;
+}
 
-  // 2. 扫描 Active Task 当前任务产物
-  const activeTaskItems: BudgetItem[] = [];
+async function collectActiveTaskBudget(docpathDir: string, suggestions: BudgetSuggestion[]): Promise<BudgetItem[]> {
+  const items: BudgetItem[] = [];
   const currentTaskDir = join(docpathDir, 'tasks', 'current');
-  if (existsSync(currentTaskDir)) {
-    try {
-      const scanFilesRecursive = async (dir: string, baseDisplay: string) => {
-        const entries = readdirSync(dir, { withFileTypes: true });
-        for (const entry of entries) {
-          const fullPath = join(dir, entry.name);
-          const display = `${baseDisplay}/${entry.name}`;
-          if (entry.isFile() && !entry.name.startsWith('.')) {
-            const content = (await readFileSafe(fullPath)) || '';
-            const lines = content.split('\n').length;
-            const tokens = estimateTokens(content);
-            const bytes = Buffer.byteLength(content, 'utf-8');
-            const status = determineStatus(tokens, BUDGET_THRESHOLDS.active_task.fileTokens);
+  if (!existsSync(currentTaskDir)) return items;
 
-            let suggestion: string | undefined;
-            if (status !== 'healthy') {
-              suggestion = `当前任务文件较大 (${tokens} tokens)，如果已完成请尽快通过 docpath quick-done 或 agent done 归档。`;
-              suggestions.push({
-                severity: status === 'critical' ? 'high' : 'medium',
-                category: 'active_task',
-                target: display,
-                message: suggestion,
-                actionCommand: 'docpath quick-done',
-              });
-            }
+  try {
+    const scanFilesRecursive = async (dir: string, baseDisplay: string) => {
+      const entries = readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = join(dir, entry.name);
+        const display = `${baseDisplay}/${entry.name}`;
+        if (entry.isFile() && !entry.name.startsWith('.')) {
+          const content = (await readFileSafe(fullPath)) || '';
+          const lines = content.split('\n').length;
+          const tokens = estimateTokens(content);
+          const bytes = Buffer.byteLength(content, 'utf-8');
+          const status = determineStatus(tokens, BUDGET_THRESHOLDS.active_task.fileTokens);
 
-            activeTaskItems.push({
-              name: entry.name,
+          let suggestion: string | undefined;
+          if (status !== 'healthy') {
+            suggestion = `当前任务文件较大 (${tokens} tokens)，如果已完成请尽快通过 docpath quick-done 或 agent done 归档。`;
+            suggestions.push({
+              severity: status === 'critical' ? 'high' : 'medium',
               category: 'active_task',
-              path: fullPath,
-              displayPath: display,
-              tokens,
-              lines,
-              bytes,
-              status,
-              thresholdTokens: BUDGET_THRESHOLDS.active_task.fileTokens,
-              suggestion,
+              target: display,
+              message: suggestion,
+              actionCommand: 'docpath quick-done',
             });
-          } else if (entry.isDirectory() && entry.name !== 'node_modules') {
-            await scanFilesRecursive(fullPath, display);
           }
-        }
-      };
-      await scanFilesRecursive(currentTaskDir, '.docpath/tasks/current');
-    } catch {
-      // 容错
-    }
-  }
 
-  // 3. 扫描 Governance (ADRs 架构决策)
-  const governanceItems: BudgetItem[] = [];
+          items.push({
+            name: entry.name,
+            category: 'active_task',
+            path: fullPath,
+            displayPath: display,
+            tokens,
+            lines,
+            bytes,
+            status,
+            thresholdTokens: BUDGET_THRESHOLDS.active_task.fileTokens,
+            suggestion,
+          });
+        } else if (entry.isDirectory() && entry.name !== 'node_modules') {
+          await scanFilesRecursive(fullPath, display);
+        }
+      }
+    };
+    await scanFilesRecursive(currentTaskDir, '.docpath/tasks/current');
+  } catch {
+    // 容错
+  }
+  return items;
+}
+
+async function collectGovernanceBudget(docpathDir: string, suggestions: BudgetSuggestion[]): Promise<BudgetItem[]> {
+  const items: BudgetItem[] = [];
   const workspaceDir = join(docpathDir, 'workspace');
   const decisionsJsonlPath = join(workspaceDir, 'decisions.jsonl');
   const decisionsMdPath = join(workspaceDir, 'decisions.md');
+  const hasJsonl = existsSync(decisionsJsonlPath);
 
   for (const p of [decisionsJsonlPath, decisionsMdPath]) {
-    if (existsSync(p)) {
-      const content = (await readFileSafe(p)) || '';
-      const lines = content.split('\n').length;
-      const tokens = estimateTokens(content);
-      const bytes = Buffer.byteLength(content, 'utf-8');
-      const filename = relative(docpathDir, p);
-      const status = determineStatus(tokens, BUDGET_THRESHOLDS.governance.fileTokens);
+    if (!existsSync(p)) continue;
+    const content = (await readFileSafe(p)) || '';
+    const lines = content.split('\n').length;
+    const tokens = estimateTokens(content);
+    const bytes = Buffer.byteLength(content, 'utf-8');
+    const filename = relative(docpathDir, p);
+    const isRenderedView = p === decisionsMdPath && hasJsonl;
+    const status = isRenderedView
+      ? 'healthy'
+      : determineStatus(tokens, BUDGET_THRESHOLDS.governance.fileTokens);
 
-      let suggestion: string | undefined;
-      if (status !== 'healthy') {
-        suggestion = `活跃决策日志已累积较多历史条目 (${tokens} tokens)，建议执行老化归档。`;
-        suggestions.push({
-          severity: status === 'critical' ? 'high' : 'medium',
-          category: 'governance',
-          target: `.docpath/${filename}`,
-          message: suggestion,
-          actionCommand: 'docpath gc',
-        });
-      }
-
-      governanceItems.push({
-        name: filename,
+    let suggestion: string | undefined;
+    if (status !== 'healthy' && !isRenderedView) {
+      suggestion = `活跃决策日志已累积较多历史条目 (${tokens} tokens)，建议执行老化归档。`;
+      suggestions.push({
+        severity: status === 'critical' ? 'high' : 'medium',
         category: 'governance',
-        path: p,
-        displayPath: `.docpath/${filename}`,
-        tokens,
-        lines,
-        bytes,
-        status,
-        thresholdTokens: BUDGET_THRESHOLDS.governance.fileTokens,
-        suggestion,
+        target: `.docpath/${filename}`,
+        message: suggestion,
+        actionCommand: 'docpath gc',
       });
     }
-  }
 
-  // 4. 扫描 Events (Breadcrumb 轨迹事件)
-  const eventItems: BudgetItem[] = [];
+    items.push({
+      name: filename,
+      category: 'governance',
+      path: p,
+      displayPath: `.docpath/${filename}`,
+      tokens,
+      lines,
+      bytes,
+      status,
+      thresholdTokens: BUDGET_THRESHOLDS.governance.fileTokens,
+      suggestion,
+      isRenderedView,
+    });
+  }
+  return items;
+}
+
+async function collectEventsBudget(docpathDir: string, suggestions: BudgetSuggestion[]): Promise<BudgetItem[]> {
+  const items: BudgetItem[] = [];
+  const workspaceDir = join(docpathDir, 'workspace');
   const breadcrumbJsonlPath = join(workspaceDir, 'breadcrumb.jsonl');
   const breadcrumbMdPath = join(workspaceDir, 'breadcrumb.md');
+  const hasJsonl = existsSync(breadcrumbJsonlPath);
 
   for (const p of [breadcrumbJsonlPath, breadcrumbMdPath]) {
-    if (existsSync(p)) {
-      const content = (await readFileSafe(p)) || '';
-      const lines = content.split('\n').length;
-      const tokens = estimateTokens(content);
-      const bytes = Buffer.byteLength(content, 'utf-8');
-      const filename = relative(docpathDir, p);
-      const status = determineStatus(tokens, BUDGET_THRESHOLDS.events.fileTokens);
+    if (!existsSync(p)) continue;
+    const content = (await readFileSafe(p)) || '';
+    const lines = content.split('\n').length;
+    const tokens = estimateTokens(content);
+    const bytes = Buffer.byteLength(content, 'utf-8');
+    const filename = relative(docpathDir, p);
+    const isRenderedView = p === breadcrumbMdPath && hasJsonl;
+    const status = isRenderedView
+      ? 'healthy'
+      : determineStatus(tokens, BUDGET_THRESHOLDS.events.fileTokens);
 
-      let suggestion: string | undefined;
-      if (status !== 'healthy') {
-        suggestion = `执行事件轨迹日志过长 (${lines} 行 / ${tokens} tokens)，建议执行工作区 GC 清理。`;
-        suggestions.push({
-          severity: status === 'critical' ? 'high' : 'medium',
-          category: 'events',
-          target: `.docpath/${filename}`,
-          message: suggestion,
-          actionCommand: 'docpath gc',
-        });
-      }
-
-      eventItems.push({
-        name: filename,
+    let suggestion: string | undefined;
+    if (status !== 'healthy' && !isRenderedView) {
+      suggestion = `执行事件轨迹日志过长 (${lines} 行 / ${tokens} tokens)，建议执行工作区 GC 清理。`;
+      suggestions.push({
+        severity: status === 'critical' ? 'high' : 'medium',
         category: 'events',
-        path: p,
-        displayPath: `.docpath/${filename}`,
-        tokens,
-        lines,
-        bytes,
-        status,
-        thresholdTokens: BUDGET_THRESHOLDS.events.fileTokens,
-        suggestion,
+        target: `.docpath/${filename}`,
+        message: suggestion,
+        actionCommand: 'docpath gc',
       });
     }
-  }
 
-  // 5. 扫描 Views (渲染视图与索引)
-  const viewItems: BudgetItem[] = [];
-  const currentMdPath = join(workspaceDir, 'current.md');
+    items.push({
+      name: filename,
+      category: 'events',
+      path: p,
+      displayPath: `.docpath/${filename}`,
+      tokens,
+      lines,
+      bytes,
+      status,
+      thresholdTokens: BUDGET_THRESHOLDS.events.fileTokens,
+      suggestion,
+      isRenderedView,
+    });
+  }
+  return items;
+}
+
+async function collectViewsBudget(docpathDir: string, suggestions: BudgetSuggestion[]): Promise<BudgetItem[]> {
+  const items: BudgetItem[] = [];
+  const currentMdPath = join(docpathDir, 'workspace', 'current.md');
   const docsIndexPath = join(docpathDir, 'docs-index.json');
 
   for (const p of [currentMdPath, docsIndexPath]) {
-    if (existsSync(p)) {
-      const content = (await readFileSafe(p)) || '';
-      const lines = content.split('\n').length;
-      const tokens = estimateTokens(content);
-      const bytes = Buffer.byteLength(content, 'utf-8');
-      const filename = relative(docpathDir, p);
-      const isDocsIndex = basename(p) === 'docs-index.json';
-      const fileThreshold = isDocsIndex
-        ? BUDGET_THRESHOLDS.views.indexTokens
-        : BUDGET_THRESHOLDS.views.fileTokens;
-      const status = determineStatus(tokens, fileThreshold);
+    if (!existsSync(p)) continue;
+    const content = (await readFileSafe(p)) || '';
+    const lines = content.split('\n').length;
+    const tokens = estimateTokens(content);
+    const bytes = Buffer.byteLength(content, 'utf-8');
+    const filename = relative(docpathDir, p);
+    const isDocsIndex = basename(p) === 'docs-index.json';
+    const fileThreshold = isDocsIndex
+      ? BUDGET_THRESHOLDS.views.indexTokens
+      : BUDGET_THRESHOLDS.views.fileTokens;
+    const status = determineStatus(tokens, fileThreshold);
 
-      let suggestion: string | undefined;
-      if (status !== 'healthy' && isDocsIndex) {
-        suggestion = `活文档索引体积偏大 (${tokens} tokens)，建议执行文档索引刷新或归档清理。`;
-        suggestions.push({
-          severity: status === 'critical' ? 'high' : 'medium',
-          category: 'views',
-          target: `.docpath/${filename}`,
-          message: suggestion,
-          actionCommand: 'docpath docs scan',
-        });
-      }
-
-      viewItems.push({
-        name: filename,
+    let suggestion: string | undefined;
+    if (status !== 'healthy' && isDocsIndex) {
+      suggestion = `活文档索引体积偏大 (${tokens} tokens)，建议执行文档索引刷新或归档清理。`;
+      suggestions.push({
+        severity: status === 'critical' ? 'high' : 'medium',
         category: 'views',
-        path: p,
-        displayPath: `.docpath/${filename}`,
-        tokens,
-        lines,
-        bytes,
-        status,
-        thresholdTokens: fileThreshold,
-        suggestion,
+        target: `.docpath/${filename}`,
+        message: suggestion,
+        actionCommand: 'docpath docs scan',
       });
     }
-  }
 
-  // 6. 扫描 Docs 活文档库
-  const docItems: BudgetItem[] = [];
+    items.push({
+      name: filename,
+      category: 'views',
+      path: p,
+      displayPath: `.docpath/${filename}`,
+      tokens,
+      lines,
+      bytes,
+      status,
+      thresholdTokens: fileThreshold,
+      suggestion,
+    });
+  }
+  return items;
+}
+
+async function collectDocsBudget(cwd: string): Promise<BudgetItem[]> {
+  const items: BudgetItem[] = [];
   try {
     const docIndex = await readProjectDocumentIndex(cwd);
     if (docIndex && Array.isArray(docIndex.entries)) {
@@ -358,7 +366,7 @@ export async function collectContextBudget(cwd: string): Promise<BudgetReport> {
         if (!entry.path.startsWith('rules/') && !entry.path.startsWith('workspace/') && !entry.path.startsWith('tasks/current/')) {
           const tokens = entry.token_estimate || 0;
           const status = determineStatus(tokens, BUDGET_THRESHOLDS.docs.fileTokens);
-          docItems.push({
+          items.push({
             name: entry.path,
             category: 'docs',
             path: entry.path,
@@ -375,25 +383,48 @@ export async function collectContextBudget(cwd: string): Promise<BudgetReport> {
   } catch {
     // 容错
   }
+  return items;
+}
 
-  // 汇总各分类
+/**
+ * 收集与分析工作区所有上下文源的 Token 消耗与健康度
+ */
+export async function collectContextBudget(cwd: string): Promise<BudgetReport> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const state = await readCurrentState(cwd);
+  const activeTaskId = state?.task_id || null;
+  const suggestions: BudgetSuggestion[] = [];
+
+  const [ruleItems, activeTaskItems, governanceItems, eventItems, viewItems, docItems] = await Promise.all([
+    collectRulesBudget(docpathDir, suggestions),
+    collectActiveTaskBudget(docpathDir, suggestions),
+    collectGovernanceBudget(docpathDir, suggestions),
+    collectEventsBudget(docpathDir, suggestions),
+    collectViewsBudget(docpathDir, suggestions),
+    collectDocsBudget(cwd),
+  ]);
+
   const buildSummary = (
     category: string,
     label: string,
     items: BudgetItem[],
     threshold: number,
   ): BudgetCategorySummary => {
-    const totalTokens = items.reduce((acc, i) => acc + i.tokens, 0);
+    // 解耦人类渲染视图与机读真源的重复叠加：若有真源存在，过滤掉重复视图以得到真实 Agent 输入 tokens
+    const effectiveItems = items.some((i) => i.isRenderedView)
+      ? items.filter((i) => !i.isRenderedView)
+      : items;
+    const totalTokens = effectiveItems.reduce((acc, i) => acc + i.tokens, 0);
     const totalLines = items.reduce((acc, i) => acc + i.lines, 0);
     const totalBytes = items.reduce((acc, i) => acc + i.bytes, 0);
-    const status = determineCategoryStatus(items, totalTokens, threshold);
+    const status = determineCategoryStatus(effectiveItems, totalTokens, threshold);
     return {
       category,
       label,
       totalTokens,
       totalLines,
       totalBytes,
-      percentage: 0, // 计算总和后再更新
+      percentage: 0,
       itemCount: items.length,
       status,
       thresholdTokens: threshold,
@@ -414,14 +445,12 @@ export async function collectContextBudget(cwd: string): Promise<BudgetReport> {
   const totalLines = Object.values(categories).reduce((acc, c) => acc + c.totalLines, 0);
   const totalBytes = Object.values(categories).reduce((acc, c) => acc + c.totalBytes, 0);
 
-  // 计算百分比
   if (totalTokens > 0) {
     for (const c of Object.values(categories)) {
       c.percentage = Math.round((c.totalTokens / totalTokens) * 100);
     }
   }
 
-  // 评定全局状态
   const allCategoryStatuses = Object.values(categories).map((c) => c.status);
   let overallStatus: BudgetStatus = 'healthy';
   if (allCategoryStatuses.includes('critical')) {
@@ -430,7 +459,6 @@ export async function collectContextBudget(cwd: string): Promise<BudgetReport> {
     overallStatus = 'warning';
   }
 
-  // Top 消费者排行
   const allItems: BudgetItem[] = [
     ...ruleItems,
     ...activeTaskItems,
@@ -515,7 +543,8 @@ export function renderBudgetTable(report: BudgetReport): string {
     for (let i = 0; i < report.topConsumers.length; i++) {
       const item = report.topConsumers[i];
       const icon = item.status === 'healthy' ? '✓' : '⚠️';
-      lines.push(`  ${i + 1}. [${icon}] ${item.displayPath} — ${item.tokens.toLocaleString()} tokens (${item.lines} 行)`);
+      const viewNote = item.isRenderedView ? ' [渲染视图]' : '';
+      lines.push(`  ${i + 1}. [${icon}] ${item.displayPath} — ${item.tokens.toLocaleString()} tokens (${item.lines} 行)${viewNote}`);
     }
     lines.push('');
   }

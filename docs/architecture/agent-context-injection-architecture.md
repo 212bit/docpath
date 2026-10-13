@@ -2,6 +2,7 @@
 related:
   - design/agent-integration.md
   - features/living-docs-workflow.md
+  - features/context-budget-governance.md
 ---
 
 # Agent 零点击上下文随路注入与智能路由体系架构
