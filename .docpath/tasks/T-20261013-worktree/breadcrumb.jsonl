@@ -3,3 +3,6 @@
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"S2","status":"in_progress","context":"go --adopt: claimed working tree changes into S2","timestamp":"2026-10-13T07:34:01.139Z","sessionId":"agy-c06e4deb-cb24-4a"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 跨Worktree需求排他锁","timestamp":"2026-10-13T07:34:01.144Z","sessionId":"agy-c06e4deb-cb24-4a"}
 {"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-13T07:38:48.531Z","sessionId":"agy-c06e4deb-cb24-4a"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-13T07:41:16.881Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"review","status":"done","context":"代码审查: 0 错误, 11 警告, 1 提示","timestamp":"2026-10-13T07:41:18.238Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-13T07:41:19.689Z"}
