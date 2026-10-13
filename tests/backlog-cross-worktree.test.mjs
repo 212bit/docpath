@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, execFile } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -28,6 +28,20 @@ function run(args, cwd) {
     timeout: 30000,
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
+}
+
+function runAsync(args, cwd) {
+  return new Promise((resolve, reject) => {
+    execFile(
+      'node',
+      [BIN, ...args.match(/(?:[^\s"]+|"[^"]*")+/g).map((p) => p.replace(/^"|"$/g, ''))],
+      { cwd, encoding: 'utf-8', timeout: 30000 },
+      (err, stdout, stderr) => {
+        if (err) return reject(new Error(`${err.message}\n${stderr}\n${stdout}`));
+        resolve(stdout.trim());
+      },
+    );
+  });
 }
 
 /** 建一个真实 git 仓 + .docpath 骨架，返回 { repo, wt, gitDir }。 */
@@ -149,5 +163,21 @@ describe('R-356: backlog 跨 worktree 共享可见性', () => {
     assert.match(out, /已捕获 raw backlog 条目: R-\d+/);
     assert.ok(!existsSync(join(dp, 'docpath-backlog-registry.json')));
     assert.ok(resolve(cwd) === resolve(cwd));
+  });
+
+  it('FR-2: 跨 worktree 并发 capture 受全局排他锁保护，生成唯一递增 ID', async () => {
+    const { repo, wt } = mkRepoWithWorktree();
+
+    const [out1, out2] = await Promise.all([
+      runAsync('backlog capture --title "并发任务 A" --level 1', repo),
+      runAsync('backlog capture --title "并发任务 B" --level 1', wt),
+    ]);
+
+    const id1 = out1.match(/R-(\d+)/)?.[0];
+    const id2 = out2.match(/R-(\d+)/)?.[0];
+
+    assert.ok(id1, `进程 1 应成功分配 ID: ${out1}`);
+    assert.ok(id2, `进程 2 应成功分配 ID: ${out2}`);
+    assert.notEqual(id1, id2, `跨 worktree 并发 capture 绝不能撞号: id1=${id1}, id2=${id2}`);
   });
 });

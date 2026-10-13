@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 优化人机混合开发轻量认领语法","timestamp":"2026-10-13T07:29:35.516Z","sessionId":"agy-c06e4deb-cb24-4a"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-13T07:33:55.633Z","sessionId":"agy-c06e4deb-cb24-4a"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"S2","status":"in_progress","context":"go --adopt: claimed working tree changes into S2","timestamp":"2026-10-13T07:34:01.139Z","sessionId":"agy-c06e4deb-cb24-4a"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 跨Worktree需求排他锁","timestamp":"2026-10-13T07:34:01.144Z","sessionId":"agy-c06e4deb-cb24-4a"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-worktree","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-13T07:38:48.531Z","sessionId":"agy-c06e4deb-cb24-4a"}

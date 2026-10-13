@@ -22,6 +22,7 @@ import {
   readBacklogRegistry,
   registerBacklogEntry,
 } from '../utils/backlog-registry.js';
+import { withLock } from '../utils/lock.js';
 
 export { cleanBacklogTitle };
 
@@ -576,65 +577,6 @@ export async function writeBacklogItem(cwd: string, item: BacklogItem): Promise<
  * 1. `wx` 独占裸名 `${id}.md` 作为 per-id 原子锁——并发进程命中同一 id 必 EEXIST 后递增重试。
  *    不用带 slug 的名占号，否则「同 id 不同标题」会生成不同文件名而双双写成功，破坏 id 唯一性。
  * 2. 占号成功后复检是否已有同 id 的 slug 兄弟文件（极窄并发窗口下另一进程可能已占号并改名，
- *    或 worktree 号池 stale）；命中则释放裸锁、递增重试，杜绝撞号。
- * 3. 复检通过后把裸锁重命名为自描述 slug 名。
- */
-export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id'>): Promise<BacklogItem> {
-  const docpathDir = await resolveDocpathDir(cwd);
-  const dir = backlogDir(docpathDir);
-  const archivedDir = archivedBacklogDir(docpathDir);
-  await mkdir(dir, { recursive: true });
-
-  const cleanedTitle = cleanBacklogTitle(item.title);
-  const normalizedItem = { ...item, title: cleanedTitle };
-
-  let next = parseBacklogNumber(await nextBacklogId(cwd));
-  while (true) {
-    const id = formatBacklogId(next);
-    const candidate: BacklogItem = {
-      ...normalizedItem,
-      id,
-      title: cleanBacklogTitle(normalizedItem.title, id),
-    };
-    const reservedFileName = `${id}.md`;
-    try {
-      const reservedPath = join(dir, reservedFileName);
-      await writeFile(reservedPath, serializeItem(candidate), { encoding: 'utf-8', flag: 'wx' });
-      const entries = await readdir(dir);
-      const hasSluggedSibling = entries.some(
-        (f) => f !== reservedFileName && f.startsWith(`${id}-`) && f.endsWith('.md'),
-      );
-      if (hasSluggedSibling) {
-        await rm(reservedPath);
-        next += 1;
-        continue;
-      }
-      if (existsSync(archivedDir)) {
-        const archivedEntries = await readdir(archivedDir);
-        const hasArchivedSibling = archivedEntries.some(
-          (f) => (f === `${id}.md` || f.startsWith(`${id}-`)) && f.endsWith('.md'),
-        );
-        if (hasArchivedSibling) {
-          await rm(reservedPath);
-          next += 1;
-          continue;
-        }
-      }
-      const finalFileName = `${id}-${slugify(candidate.title)}.md`;
-      await rename(reservedPath, join(dir, finalFileName));
-      // 分配成功 → 推进权威计数器（O(1) 写），下次分配不再全目录扫描
-      await writeBacklogIdCounter(docpathDir, next);
-      // R-356：登记到跨 worktree 共享注册表，让兄弟 worktree 并行 capture 时可见
-      // （fail-open：写失败不阻断创建，兜底仍是实时扫兄弟 worktree）
-      await registerBacklogEntry(cwd, { id, title: candidate.title, worktree: cwd });
-      return candidate;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-      next += 1;
-    }
-  }
-}
-
 /**
  * worktree 内解析主 checkout 的 .docpath（R-273/FR-3 id 单池）。
  * 经 git rev-parse --git-common-dir 定位主 .git，不依赖 .worktrees/ 路径约定；
@@ -654,6 +596,91 @@ function resolveMainCheckoutDocpathDir(cwd: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * 跨 Worktree 全局需求分配锁路径（FR-2）：
+ * 定位到主 checkout 的 `.docpath/backlog/.id-allocation.lock`。
+ * 所有并发 Agent（跨 Worktree 或同仓库并发）均受此排他锁保护，
+ * 杜绝毫秒级撞号与计数器覆写竞争。
+ */
+function backlogAllocationLockPath(cwd: string, docpathDir: string): string {
+  const mainDocpathDir = resolveMainCheckoutDocpathDir(cwd);
+  const targetDir = mainDocpathDir || docpathDir;
+  return join(targetDir, 'backlog', '.id-allocation.lock');
+}
+
+/**
+ * 原子创建新条目，文件名带标题 slug（R-321/FR-1）：`R-###-<slug>.md`，ls 即可辨识。
+ *
+ * 分三步保证 id 唯一 + 自描述命名：
+ * 1. 跨 worktree 全局原子锁（withLock）：以主 checkout 的 .id-allocation.lock 作为全局互斥原语，
+ *    彻底阻断多 agent / 多 worktree 并发创建时的毫秒级同号冲突。
+ * 2. `wx` 独占裸名 `${id}.md` 作为本地目录原子占号。
+ * 3. 推进权威计数器（同步当前与主 checkout）并登记到跨 worktree 共享注册表。
+ */
+export async function createBacklogItem(cwd: string, item: Omit<BacklogItem, 'id'>): Promise<BacklogItem> {
+  const docpathDir = await resolveDocpathDir(cwd);
+  const mainDocpathDir = resolveMainCheckoutDocpathDir(cwd);
+  const lockPath = backlogAllocationLockPath(cwd, docpathDir);
+
+  return withLock(lockPath, async () => {
+    const dir = backlogDir(docpathDir);
+    const archivedDir = archivedBacklogDir(docpathDir);
+    await mkdir(dir, { recursive: true });
+
+    const cleanedTitle = cleanBacklogTitle(item.title);
+    const normalizedItem = { ...item, title: cleanedTitle };
+
+    let next = parseBacklogNumber(await nextBacklogId(cwd));
+    while (true) {
+      const id = formatBacklogId(next);
+      const candidate: BacklogItem = {
+        ...normalizedItem,
+        id,
+        title: cleanBacklogTitle(normalizedItem.title, id),
+      };
+      const reservedFileName = `${id}.md`;
+      try {
+        const reservedPath = join(dir, reservedFileName);
+        await writeFile(reservedPath, serializeItem(candidate), { encoding: 'utf-8', flag: 'wx' });
+        const entries = await readdir(dir);
+        const hasSluggedSibling = entries.some(
+          (f) => f !== reservedFileName && f.startsWith(`${id}-`) && f.endsWith('.md'),
+        );
+        if (hasSluggedSibling) {
+          await rm(reservedPath);
+          next += 1;
+          continue;
+        }
+        if (existsSync(archivedDir)) {
+          const archivedEntries = await readdir(archivedDir);
+          const hasArchivedSibling = archivedEntries.some(
+            (f) => (f === `${id}.md` || f.startsWith(`${id}-`)) && f.endsWith('.md'),
+          );
+          if (hasArchivedSibling) {
+            await rm(reservedPath);
+            next += 1;
+            continue;
+          }
+        }
+        const finalFileName = `${id}-${slugify(candidate.title)}.md`;
+        await rename(reservedPath, join(dir, finalFileName));
+        // 分配成功 → 推进权威计数器（O(1) 写），同步推进当前 checkout 与主 checkout
+        await writeBacklogIdCounter(docpathDir, next);
+        if (mainDocpathDir && resolve(mainDocpathDir) !== resolve(docpathDir)) {
+          await writeBacklogIdCounter(mainDocpathDir, next);
+        }
+        // R-356：登记到跨 worktree 共享注册表，让兄弟 worktree 并行 capture 时可见
+        // （fail-open：写失败不阻断创建，兜底仍是实时扫兄弟 worktree）
+        await registerBacklogEntry(cwd, { id, title: candidate.title, worktree: cwd });
+        return candidate;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+        next += 1;
+      }
+    }
+  });
 }
 
 /**
@@ -757,11 +784,17 @@ async function logArchiveCollision(docpathDir: string, id: string, sourceFile: s
  */
 export async function nextBacklogId(cwd: string): Promise<string> {
   const docpathDir = await resolveDocpathDir(cwd);
-  const current = await readBacklogIdCounter(docpathDir);
+  const mainDocpathDir = resolveMainCheckoutDocpathDir(cwd);
+  const currentLocal = await readBacklogIdCounter(docpathDir);
+  const currentMain = mainDocpathDir ? await readBacklogIdCounter(mainDocpathDir) : null;
+  const current = Math.max(currentLocal ?? 0, currentMain ?? 0);
   const seedMax = await scanBacklogMaxId(cwd);
-  const effectiveMax = Math.max(current ?? 0, seedMax);
-  if (current !== effectiveMax) {
+  const effectiveMax = Math.max(current, seedMax);
+  if (currentLocal !== effectiveMax) {
     await writeBacklogIdCounter(docpathDir, effectiveMax);
+  }
+  if (mainDocpathDir && resolve(mainDocpathDir) !== resolve(docpathDir) && currentMain !== effectiveMax) {
+    await writeBacklogIdCounter(mainDocpathDir, effectiveMax);
   }
   return formatBacklogId(effectiveMax + 1);
 }

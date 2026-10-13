@@ -1,6 +1,7 @@
 import type { CAC } from 'cac';
 import { agentCommand } from '../agent.js';
 import { goCommand } from '../go.js';
+import { adoptCommand } from '../adopt.js';
 import { runCommand } from '../runtime.js';
 import { stepPassCommand } from '../step-pass.js';
 import { stepSkipCommand } from '../step-skip.js';
@@ -16,7 +17,8 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--dry-run', '仅预览，不更新状态')
     .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
     .option('--accept-dirty <reason>', 'R-334: 记录 breadcrumb 证据后跳过 dirty worktree 拦截（当前任务恢复用）')
-    .action(async (options: { cwd?: string; step?: string; status?: 'done' | 'skipped' | 'blocked'; dryRun?: boolean; 'dry-run'?: boolean; session?: string; acceptDirty?: string; 'accept-dirty'?: string }) => {
+    .option('--adopt', '轻量认领当前工作区未提交代码变动至步骤执行')
+    .action(async (options: { cwd?: string; step?: string; status?: 'done' | 'skipped' | 'blocked'; dryRun?: boolean; 'dry-run'?: boolean; session?: string; acceptDirty?: string; 'accept-dirty'?: string; adopt?: boolean }) => {
       await goCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
@@ -24,6 +26,7 @@ export function registerExecutionCommands(cli: CAC): void {
         dryRun: options.dryRun ?? options['dry-run'],
         session: options.session,
         acceptDirty: options.acceptDirty ?? options['accept-dirty'],
+        adopt: !!options.adopt,
       });
     });
 
@@ -34,12 +37,13 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--note <note>', '收尾事件备注')
     .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
     .option('--accept-dirty <reason>', '透传给内部 go：记录证据后跳过 dirty worktree 拦截')
+    .option('--adopt', '透传给内部 go：轻量认领当前工作区未提交代码变动')
     .option('--test <path>', '指定靶向单测文件路径，随做随验')
     .option('--skip-verify', '跳过单步即时单测验证')
     .option('--strict-verify', '单步单测验证未通过时阻断收尾')
     .option('--done', '所有步骤完成后直接执行收口门禁序列')
     .option('--commit', '收口门禁通过后自动将改动提交至本地 Git')
-    .action(async (options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; test?: string; skipVerify?: boolean; 'skip-verify'?: boolean; strictVerify?: boolean; 'strict-verify'?: boolean; done?: boolean; commit?: boolean }) => {
+    .action(async (options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; adopt?: boolean; test?: string; skipVerify?: boolean; 'skip-verify'?: boolean; strictVerify?: boolean; 'strict-verify'?: boolean; done?: boolean; commit?: boolean }) => {
       await stepPassCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
@@ -47,6 +51,7 @@ export function registerExecutionCommands(cli: CAC): void {
         note: options.note,
         session: options.session,
         acceptDirty: options.acceptDirty ?? options['accept-dirty'],
+        adopt: !!options.adopt,
         test: options.test,
         skipVerify: options.skipVerify ?? options['skip-verify'],
         strictVerify: options.strictVerify ?? options['strict-verify'],
@@ -86,12 +91,13 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--note <note>', '收尾事件备注')
     .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
     .option('--accept-dirty <reason>', '透传给内部 go：记录证据后跳过 dirty worktree 拦截')
+    .option('--adopt', '透传给内部 go：轻量认领当前工作区未提交代码变动')
     .option('--test <path>', '指定靶向单测文件路径，随做随验')
     .option('--skip-verify', '跳过单步即时单测验证')
     .option('--strict-verify', '单步单测验证未通过时阻断收尾')
     .option('--done', '所有步骤完成后直接执行收口门禁序列')
     .option('--commit', '收口门禁通过后自动将改动提交至本地 Git')
-    .action(async (action: string | undefined, options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; test?: string; skipVerify?: boolean; 'skip-verify'?: boolean; strictVerify?: boolean; 'strict-verify'?: boolean; done?: boolean; commit?: boolean }) => {
+    .action(async (action: string | undefined, options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; adopt?: boolean; test?: string; skipVerify?: boolean; 'skip-verify'?: boolean; strictVerify?: boolean; 'strict-verify'?: boolean; done?: boolean; commit?: boolean }) => {
       await stepPassCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
@@ -99,11 +105,25 @@ export function registerExecutionCommands(cli: CAC): void {
         note: options.note || (action && action !== 'done' && action !== 'pass' ? action : undefined),
         session: options.session,
         acceptDirty: options.acceptDirty ?? options['accept-dirty'],
+        adopt: !!options.adopt,
         test: options.test,
         skipVerify: options.skipVerify ?? options['skip-verify'],
         strictVerify: options.strictVerify ?? options['strict-verify'],
         done: options.done,
         commit: options.commit,
+      });
+    });
+
+  cli.command('adopt [title]', '一键认领工作区现有代码变更至当前任务或新任务')
+    .option('--cwd <path>', '项目目录')
+    .option('--step <step>', '指定认领到的子任务编号 (e.g. S1)')
+    .option('--session <id>', 'agent/session 标识；也可用 DOCPATH_SESSION')
+    .action(async (title: string | undefined, options: { cwd?: string; step?: string; session?: string }) => {
+      await adoptCommand({
+        cwd: options.cwd || process.cwd(),
+        title,
+        step: options.step,
+        session: options.session,
       });
     });
 

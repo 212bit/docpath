@@ -657,7 +657,8 @@ project/
 
 ### 并发安全
 
-- **Backlog 写入**：使用 `withLock` 互斥锁
+- **Backlog 写入与分配**：使用 `withLock` 跨 Worktree 互斥锁（以主 checkout 的 `.docpath/backlog/.id-allocation.lock` 为全局排他锁原语，跨所有 Worktree 串行化分配唯一递增 ID，杜绝同号碰撞与覆写）
+- **代码认领机制**：单 Worktree 或主仓库支持 `docpath adopt [title]` 与 `docpath go --adopt`，未提交修改就地平滑认领并打点记入 `breadcrumb.jsonl`
 - **Workspace 隔离**：物理隔离，零冲突
 - **Git 分支**：Git 原生隔离
 

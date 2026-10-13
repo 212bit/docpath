@@ -27,6 +27,7 @@ export interface StartOptions {
   draft?: boolean;
   agent?: boolean;
   adopt?: boolean;
+  session?: string;
 }
 
 async function resolveBacklogIdForStart(

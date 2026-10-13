@@ -32,6 +32,8 @@ export interface StepPassOptions {
   all?: boolean;
   /** 透传给内部 go 的首等恢复旗标（同 `go --accept-dirty`） */
   acceptDirty?: string;
+  /** 透传给内部 go：轻量认领工作区代码变更并跳过 dirty 拦截 */
+  adopt?: boolean;
   /** 显式指定要随做随验的单测文件路径 */
   test?: string;
   /** 是否跳过单步即时测试验证 */
@@ -295,7 +297,7 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
   }
 
   console.log(`⏭️  自动推进下一步${remaining ? `（剩余 ${remaining.length} 步）` : ''}`);
-  await goCommand({ cwd, session: options.session, acceptDirty: options.acceptDirty });
+  await goCommand({ cwd, session: options.session, acceptDirty: options.acceptDirty, adopt: options.adopt });
 }
 
 async function loadPlanSteps(cwd: string, taskId: string) {

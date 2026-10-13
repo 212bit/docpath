@@ -132,9 +132,9 @@ function buildDirtyWorktreeError(
 
   if (mode === 'new-task') {
     if (command.includes('quick')) {
-      lines.push('   💡 解决方案: 认领: docpath quick "<title>" --adopt | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>');
+      lines.push('   💡 解决方案: 认领: docpath quick "<title>" --adopt (或 docpath adopt "<title>") | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>');
     } else {
-      lines.push('   💡 解决方案: 认领: docpath start <id> --draft --adopt | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>');
+      lines.push('   💡 解决方案: 认领: docpath start <id> --draft --adopt (或 docpath adopt "<title>") | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>');
     }
   } else {
     const step = options.step?.trim() || '<step>';
@@ -142,9 +142,9 @@ function buildDirtyWorktreeError(
     const blockedUntracked = files.filter((file) => untrackedSet.has(file));
     if (blockedUntracked.length > 0) {
       const gitAddList = blockedUntracked.slice(0, 3).map((f) => `git add ${f}`).join(' && ');
-      lines.push(`   💡 解决方案: 认领归属: ${gitAddList} (或 docpath go --step ${step} --accept-dirty "recover current-task edits before go") | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>`);
+      lines.push(`   💡 解决方案: 认领归属: docpath go --step ${step} --adopt (或 docpath adopt, 或 ${gitAddList}, 或 docpath go --step ${step} --accept-dirty "recover current-task edits before go") | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>`);
     } else {
-      lines.push(`   💡 解决方案: 认领: docpath go --step ${step} --accept-dirty "recover current-task edits before go" (或 docpath run start --step ${step} --note "recover current-task edits before go") | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>`);
+      lines.push(`   💡 解决方案: 认领: docpath go --step ${step} --adopt (或 docpath adopt, 或 docpath go --step ${step} --accept-dirty "recover current-task edits before go", 或 docpath run start --step ${step} --note "recover current-task edits before go") | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>`);
     }
   }
 

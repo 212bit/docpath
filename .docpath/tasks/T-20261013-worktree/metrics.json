@@ -1,0 +1,776 @@
+{
+  "taskId": "T-20261013-worktree",
+  "taskTitle": "T-20261013-worktree - 优化人机混合开发轻量认领语法与跨Worktree需求排他锁",
+  "backlogId": "R-495",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-10-13T07:29:35.516Z",
+  "completedAt": "2026-10-13T07:41:19.696Z",
+  "durationMinutes": 11.7,
+  "firstTimePassRate": 100,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 88, 消耗: 73218 Tokens, 时长: 13849 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 88,
+        "totalTokens": 73218,
+        "durationMinutes": 13849
+      }
+    }
+  ],
+  "totalDiffLines": 1095,
+  "filesChanged": 15,
+  "linesAdded": 1052,
+  "linesDeleted": 43,
+  "engineering": {
+    "turnCount": 8,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 11.7,
+    "filesChanged": 15,
+    "linesAdded": 1052,
+    "linesDeleted": 43,
+    "totalDiffLines": 1095,
+    "speedLinesPerMinute": 93.6
+  },
+  "protocol": {
+    "specTokens": 910,
+    "planTokens": 360,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3070
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 51253,
+    "outputTokens": 21965,
+    "totalTokens": 73218,
+    "costUsd": 0.4832,
+    "toolCallsCount": 86,
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 39,
+        "inputTokens": 2192,
+        "outputTokens": 28004,
+        "totalTokens": 30196,
+        "percentage": 41.2,
+        "errorCount": 0
+      },
+      {
+        "name": "replace_file_content",
+        "count": 17,
+        "inputTokens": 9699,
+        "outputTokens": 10342,
+        "totalTokens": 20041,
+        "percentage": 27.4,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 26,
+        "inputTokens": 1558,
+        "outputTokens": 13553,
+        "totalTokens": 15111,
+        "percentage": 20.6,
+        "errorCount": 2
+      },
+      {
+        "name": "write_to_file",
+        "count": 2,
+        "inputTokens": 1369,
+        "outputTokens": 159,
+        "totalTokens": 1528,
+        "percentage": 2.1,
+        "errorCount": 1
+      },
+      {
+        "name": "manage_task",
+        "count": 2,
+        "inputTokens": 91,
+        "outputTokens": 623,
+        "totalTokens": 714,
+        "percentage": 1,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"step-pass.ts\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 2165,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/step-pass.ts\"",
+          "readCount": 4,
+          "wastedTokens": 2165
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"dirty-worktree-guard.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1356,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/dirty-worktree-guard.test.mjs\"",
+          "readCount": 3,
+          "wastedTokens": 1356
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"execution.ts\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1870,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/register/execution.ts\"",
+          "readCount": 3,
+          "wastedTokens": 1870
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"backlog.ts\"\" 被重复读取了 8 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 4940,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/backlog.ts\"",
+          "readCount": 8,
+          "wastedTokens": 4940
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"backlog-cross-worktree.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1496,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/backlog-cross-worktree.test.mjs\"",
+          "readCount": 4,
+          "wastedTokens": 1496
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"worktree-workflow.md\"\" 被重复读取了 5 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 3309,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/docs/features/worktree-workflow.md\"",
+          "readCount": 5,
+          "wastedTokens": 3309
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"backlog-lifecycle.md\"\" 被重复读取了 5 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 2882,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/docs/features/backlog-lifecycle.md\"",
+          "readCount": 5,
+          "wastedTokens": 2882
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 1,
+      "errorCalls": 0,
+      "totalTokens": 204,
+      "inputTokens": 58,
+      "outputTokens": 146,
+      "percentageOfSessionTokens": 0.3,
+      "commands": [
+        {
+          "subcommand": "docs",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 58,
+          "outputTokens": 146,
+          "totalTokens": 204,
+          "avgTokens": 204
+        }
+      ]
+    },
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 88, 消耗: 73218 Tokens, 时长: 13849 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 88,
+          "totalTokens": 73218,
+          "durationMinutes": 13849
+        }
+      }
+    ],
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 97,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 0,
+      "redundantTokensWasted": 0,
+      "redundantPatterns": [],
+      "serialChains": [],
+      "heavyOutputCommands": [],
+      "actionableOptimizations": []
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-13T07:38:14Z",
+        "turnIndex": 710,
+        "subcommand": "docs",
+        "rawCommandLine": "\"docpath docs sync && docpath docs doctor\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 146,
+        "directTotalTokens": 157,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 15000
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 51253,
+      "outputTokens": 21965,
+      "totalTokens": 73218,
+      "costUsd": 0.4832
+    },
+    "toolCalls": {
+      "total": 86,
+      "byName": {
+        "view_file": 39,
+        "run_command": 26,
+        "write_to_file": 2,
+        "replace_file_content": 17,
+        "manage_task": 2
+      },
+      "errorCount": 3
+    },
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 39,
+        "inputTokens": 2192,
+        "outputTokens": 28004,
+        "totalTokens": 30196,
+        "percentage": 41.2,
+        "errorCount": 0
+      },
+      {
+        "name": "replace_file_content",
+        "count": 17,
+        "inputTokens": 9699,
+        "outputTokens": 10342,
+        "totalTokens": 20041,
+        "percentage": 27.4,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 26,
+        "inputTokens": 1558,
+        "outputTokens": 13553,
+        "totalTokens": 15111,
+        "percentage": 20.6,
+        "errorCount": 2
+      },
+      {
+        "name": "write_to_file",
+        "count": 2,
+        "inputTokens": 1369,
+        "outputTokens": 159,
+        "totalTokens": 1528,
+        "percentage": 2.1,
+        "errorCount": 1
+      },
+      {
+        "name": "manage_task",
+        "count": 2,
+        "inputTokens": 91,
+        "outputTokens": 623,
+        "totalTokens": 714,
+        "percentage": 1,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"step-pass.ts\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 2165,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/step-pass.ts\"",
+          "readCount": 4,
+          "wastedTokens": 2165
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"dirty-worktree-guard.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1356,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/dirty-worktree-guard.test.mjs\"",
+          "readCount": 3,
+          "wastedTokens": 1356
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"execution.ts\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1870,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/register/execution.ts\"",
+          "readCount": 3,
+          "wastedTokens": 1870
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"backlog.ts\"\" 被重复读取了 8 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 4940,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/backlog.ts\"",
+          "readCount": 8,
+          "wastedTokens": 4940
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"backlog-cross-worktree.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1496,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/backlog-cross-worktree.test.mjs\"",
+          "readCount": 4,
+          "wastedTokens": 1496
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"worktree-workflow.md\"\" 被重复读取了 5 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 3309,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/docs/features/worktree-workflow.md\"",
+          "readCount": 5,
+          "wastedTokens": 3309
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"backlog-lifecycle.md\"\" 被重复读取了 5 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 2882,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/docs/features/backlog-lifecycle.md\"",
+          "readCount": 5,
+          "wastedTokens": 2882
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 1,
+      "errorCalls": 0,
+      "totalTokens": 204,
+      "inputTokens": 58,
+      "outputTokens": 146,
+      "percentageOfSessionTokens": 0.3,
+      "commands": [
+        {
+          "subcommand": "docs",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 58,
+          "outputTokens": 146,
+          "totalTokens": 204,
+          "avgTokens": 204
+        }
+      ]
+    },
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 97,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 0,
+      "redundantTokensWasted": 0,
+      "redundantPatterns": [],
+      "serialChains": [],
+      "heavyOutputCommands": [],
+      "actionableOptimizations": []
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-13T07:38:14Z",
+        "turnIndex": 710,
+        "subcommand": "docs",
+        "rawCommandLine": "\"docpath docs sync && docpath docs doctor\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 146,
+        "directTotalTokens": 157,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 15000
+      }
+    ],
+    "turnsCount": 88,
+    "errorCount": 3,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 88, 消耗: 73218 Tokens, 时长: 13849 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 88,
+          "totalTokens": 73218,
+          "durationMinutes": 13849
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 830937000
+  },
+  "toolAttributions": [
+    {
+      "name": "view_file",
+      "count": 39,
+      "inputTokens": 2192,
+      "outputTokens": 28004,
+      "totalTokens": 30196,
+      "percentage": 41.2,
+      "errorCount": 0
+    },
+    {
+      "name": "replace_file_content",
+      "count": 17,
+      "inputTokens": 9699,
+      "outputTokens": 10342,
+      "totalTokens": 20041,
+      "percentage": 27.4,
+      "errorCount": 0
+    },
+    {
+      "name": "run_command",
+      "count": 26,
+      "inputTokens": 1558,
+      "outputTokens": 13553,
+      "totalTokens": 15111,
+      "percentage": 20.6,
+      "errorCount": 2
+    },
+    {
+      "name": "write_to_file",
+      "count": 2,
+      "inputTokens": 1369,
+      "outputTokens": 159,
+      "totalTokens": 1528,
+      "percentage": 2.1,
+      "errorCount": 1
+    },
+    {
+      "name": "manage_task",
+      "count": 2,
+      "inputTokens": 91,
+      "outputTokens": 623,
+      "totalTokens": 714,
+      "percentage": 1,
+      "errorCount": 0
+    }
+  ],
+  "toolInefficiencies": [
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"step-pass.ts\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 2165,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/commands/step-pass.ts\"",
+        "readCount": 4,
+        "wastedTokens": 2165
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"dirty-worktree-guard.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 1356,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/tests/dirty-worktree-guard.test.mjs\"",
+        "readCount": 3,
+        "wastedTokens": 1356
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"execution.ts\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 1870,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/commands/register/execution.ts\"",
+        "readCount": 3,
+        "wastedTokens": 1870
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"backlog.ts\"\" 被重复读取了 8 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 4940,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/engine/backlog.ts\"",
+        "readCount": 8,
+        "wastedTokens": 4940
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"backlog-cross-worktree.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 1496,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/tests/backlog-cross-worktree.test.mjs\"",
+        "readCount": 4,
+        "wastedTokens": 1496
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"worktree-workflow.md\"\" 被重复读取了 5 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 3309,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/docs/features/worktree-workflow.md\"",
+        "readCount": 5,
+        "wastedTokens": 3309
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"backlog-lifecycle.md\"\" 被重复读取了 5 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 2882,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/docs/features/backlog-lifecycle.md\"",
+        "readCount": 5,
+        "wastedTokens": 2882
+      }
+    }
+  ],
+  "docpathCliOverhead": {
+    "totalCalls": 1,
+    "errorCalls": 0,
+    "totalTokens": 204,
+    "inputTokens": 58,
+    "outputTokens": 146,
+    "percentageOfSessionTokens": 0.3,
+    "commands": [
+      {
+        "subcommand": "docs",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 58,
+        "outputTokens": 146,
+        "totalTokens": 204,
+        "avgTokens": 204
+      }
+    ]
+  },
+  "docpathEfficacy": {
+    "preventedLoopsCount": 0,
+    "deadlockTokensSaved": 0,
+    "contextCompressionRatio": 92.5,
+    "subagentTokensSaved": 0,
+    "gateInterceptionCount": 0,
+    "firstTimePassRate": 97,
+    "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+  },
+  "docpathCliFriction": {
+    "redundantCallsCount": 0,
+    "redundantTokensWasted": 0,
+    "redundantPatterns": [],
+    "serialChains": [],
+    "heavyOutputCommands": [],
+    "actionableOptimizations": []
+  },
+  "commandInvocations": [
+    {
+      "id": "inv-1",
+      "timestamp": "2026-10-13T07:38:14Z",
+      "turnIndex": 710,
+      "subcommand": "docs",
+      "rawCommandLine": "\"docpath docs sync && docpath docs doctor\"",
+      "directInputTokens": 11,
+      "directOutputTokens": 146,
+      "directTotalTokens": 157,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 15000
+    }
+  ],
+  "frictionFindings": [
+    {
+      "id": "FRIC-TOOL-WASTE",
+      "category": "tool_waste",
+      "severity": "high",
+      "title": "工具调用低效与上下文浪费 (Tool Waste & Context Bloat)",
+      "description": "检测到 7 处工具低效行为 (重复读大文件、超长命令输出或编辑失真)，造成上下文浪费",
+      "count": 7,
+      "tokensWasted": 18018,
+      "optimizationHint": "精准指定目标行范围切片读写，善用子代理进行大文件调研与探查"
+    },
+    {
+      "id": "FRIC-CMD-ERR",
+      "category": "command_error",
+      "severity": "high",
+      "title": "CLI 命令调用异常与参数拦截 (Command Execution Errors)",
+      "description": "检测到 3 次命令调用失败或参数报错，可能由于命令语法错误或环境不匹配导致",
+      "count": 3,
+      "tokensWasted": 600,
+      "optimizationHint": "查阅 docpath --help 或 AGENTS.md 规范，确保 CLI 命令与参数格式准确"
+    }
+  ],
+  "stepPassAnalysis": {
+    "totalStepPassCalls": 0,
+    "productiveCalls": 0,
+    "redundantCalls": 0,
+    "directTokens": 0,
+    "invisibleTurnReplayTokens": 0,
+    "redundantTurnReplayTokens": 0,
+    "frictionTurnRatio": 0,
+    "summary": "未检测到 step-pass 调用与隐性重放损耗"
+  },
+  "lifecycleAnchor": {
+    "sessionId": "agy-c06e4deb-cb24-4a",
+    "baseCommit": "38d8ceeb1a4819c801842ced43607988a4bfad42",
+    "headCommit": "38d8ceeb1a4819c801842ced43607988a4bfad42",
+    "startedAt": "2026-10-13T07:29:35.516Z",
+    "completedAt": "2026-10-13T07:41:19.696Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 FR-1 优化人机混合开发轻量认领语法",
+      "startedAt": "2026-10-13T07:29:35.516Z",
+      "completedAt": "2026-10-13T07:33:55.633Z",
+      "durationMinutes": 4.3,
+      "totalTokens": 36364,
+      "inputTokens": 25455,
+      "outputTokens": 10909,
+      "costUsd": 0.24,
+      "toolCallsCount": 39,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 17,
+          "tokens": 12883
+        },
+        {
+          "name": "replace_file_content",
+          "count": 8,
+          "tokens": 9476
+        },
+        {
+          "name": "run_command",
+          "count": 12,
+          "tokens": 7962
+        }
+      ]
+    },
+    {
+      "stepId": "S2",
+      "stepTitle": "实现并验证 FR-2 跨Worktree需求排他锁",
+      "startedAt": "2026-10-13T07:34:01.139Z",
+      "completedAt": "2026-10-13T07:38:48.531Z",
+      "durationMinutes": 4.8,
+      "totalTokens": 40380,
+      "inputTokens": 28266,
+      "outputTokens": 12114,
+      "costUsd": 0.2665,
+      "toolCallsCount": 50,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 24,
+          "tokens": 20718
+        },
+        {
+          "name": "replace_file_content",
+          "count": 9,
+          "tokens": 9272
+        },
+        {
+          "name": "run_command",
+          "count": 16,
+          "tokens": 7218
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 3070,
+    "realModelTokens": 73218,
+    "overheadRatio": 4.19,
+    "complianceScore": 85,
+    "firstTimePassRate": 100,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}

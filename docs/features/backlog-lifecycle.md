@@ -19,7 +19,7 @@ DocPath 采用 **“一条需求一文件，需求即代码资产”** 的设计
 - **Git 纳管与版本受控**：存放在 `.docpath/backlog/`，需求伴随代码分支同步演进与合并。
 - **纯文本与机器真源**：Frontmatter + Markdown 结构化正文，既对人类可读，又对 Agent 严格解析。
 - **双状态机解耦**：水平需求状态机（Backlog FSM）与垂直任务执行状态机（Task FSM）独立解耦，仅在 `promote` 与 `done` 边界原子衔接。
-- **高性能与零冲突**：单文件权威计数器实现 $O(1)$ ID 分配，跨 Worktree 共享注册表与撞号安全阀阻断并发冲突。
+- **高性能与零冲突**：单文件权威计数器实现 $O(1)$ ID 分配，跨 Worktree 全局文件排他锁（`.id-allocation.lock`）与共享注册表彻底杜绝毫秒级撞号与计数器覆写冲突。
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -209,3 +209,7 @@ docpath backlog drop R-420 --reason "方案已过时"
    - 当 `archived/` 存在同名同 ID 条目时，若内容一致则自动安全清理活跃区冗余副本；若内容不一致则记录留痕防覆盖。
 4. **`backlog.md` 毫秒级时间戳比对与自愈**：
    - `docpath check` 自动巡检 `backlog.md` 与实际文件修改时间，落后时自动秒级刷新，防止索引陈旧。
+5. **跨 Worktree 全局文件排他锁 (`.id-allocation.lock`)**：
+   - 定位主 checkout 的 `.docpath/backlog/.id-allocation.lock` 进行跨 Worktree 排他加锁，杜绝多 Agent 并发捕获时的毫秒级同号竞争。
+6. **人机协同轻量认领 (`docpath adopt` / `docpath go --adopt`)**：
+   - 开发者或 Agent 在工作区随手编辑代码后，可直接通过 `docpath adopt [title]` 或 `docpath go --adopt` 零阻断将工作区变更认领进执行流并记入事件流。
