@@ -24,6 +24,8 @@ export const PROJECT_DOCS_SCAN_EXCLUDED_DIRS = [
   'workspace/sessions',
   'tasks/promote-backups',
   'promote-backups',
+  'backlog/analysis',
+  'backlog/archived',
 ];
 
 export type DocLifecycleStatus = 'active' | 'wip' | 'deprecated';
@@ -130,7 +132,13 @@ export function normalizeDocPath(filePath: string): string {
 
 export function isProjectDocumentScanExcludedPath(filePath: string): boolean {
   const normalized = normalizeDocPath(filePath);
-  return PROJECT_DOCS_SCAN_EXCLUDED_DIRS.some((excluded) => normalized === excluded || normalized.startsWith(`${excluded}/`));
+  if (PROJECT_DOCS_SCAN_EXCLUDED_DIRS.some((excluded) => normalized === excluded || normalized.startsWith(`${excluded}/`))) {
+    return true;
+  }
+  if (/^tasks\/done\/[^/]+\/(?!spec\.md$|quick\.md$|notes\.md$).+/.test(normalized)) {
+    return true;
+  }
+  return false;
 }
 
 export function estimateTokens(text: string): number {
@@ -1216,8 +1224,8 @@ function compactIndexEntry(entry: ProjectDocumentIndexEntry): Record<string, unk
   const compact: Record<string, unknown> = {
     path: entry.path,
     type: entry.type,
-    scope: entry.scope,
-    level: entry.level,
+    ...(entry.scope && entry.scope !== 'project' ? { scope: entry.scope } : {}),
+    ...(entry.level && entry.level !== '2' ? { level: entry.level } : {}),
     title: entry.title,
     ...(isArchive ? {} : { summary: entry.summary.slice(0, 140) }),
     updated_at: entry.updated_at,

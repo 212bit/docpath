@@ -6,7 +6,7 @@
  */
 
 import { existsSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { basename, join, relative } from 'node:path';
 import { readFileSafe, resolveDocpathDir } from './file.js';
 import { resolveRulePaths, RULE_FILE_LINE_BUDGET } from './rules.js';
 import { readCurrentState } from './workspace.js';
@@ -87,7 +87,8 @@ export const BUDGET_THRESHOLDS = {
   },
   views: {
     fileTokens: 2000,
-    categoryTokens: 4000,
+    indexTokens: 100000,
+    categoryTokens: 110000,
   },
   docs: {
     fileTokens: 4000,
@@ -315,7 +316,23 @@ export async function collectContextBudget(cwd: string): Promise<BudgetReport> {
       const tokens = estimateTokens(content);
       const bytes = Buffer.byteLength(content, 'utf-8');
       const filename = relative(docpathDir, p);
-      const status = determineStatus(tokens, BUDGET_THRESHOLDS.views.fileTokens);
+      const isDocsIndex = basename(p) === 'docs-index.json';
+      const fileThreshold = isDocsIndex
+        ? BUDGET_THRESHOLDS.views.indexTokens
+        : BUDGET_THRESHOLDS.views.fileTokens;
+      const status = determineStatus(tokens, fileThreshold);
+
+      let suggestion: string | undefined;
+      if (status !== 'healthy' && isDocsIndex) {
+        suggestion = `活文档索引体积偏大 (${tokens} tokens)，建议执行文档索引刷新或归档清理。`;
+        suggestions.push({
+          severity: status === 'critical' ? 'high' : 'medium',
+          category: 'views',
+          target: `.docpath/${filename}`,
+          message: suggestion,
+          actionCommand: 'docpath docs scan',
+        });
+      }
 
       viewItems.push({
         name: filename,
@@ -326,7 +343,8 @@ export async function collectContextBudget(cwd: string): Promise<BudgetReport> {
         lines,
         bytes,
         status,
-        thresholdTokens: BUDGET_THRESHOLDS.views.fileTokens,
+        thresholdTokens: fileThreshold,
+        suggestion,
       });
     }
   }

@@ -1,0 +1,753 @@
+{
+  "taskId": "T-20261013-task",
+  "taskTitle": "T-20261013-task - 优化活文档索引轻量分层与规则医生健康度治理",
+  "backlogId": "R-496",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-10-13T12:51:03.282Z",
+  "completedAt": "2026-10-13T13:11:19.423Z",
+  "durationMinutes": 20.3,
+  "firstTimePassRate": 100,
+  "complianceScore": 65,
+  "violations": [
+    {
+      "ruleId": "CR-03",
+      "ruleName": "Flapping Tool / Harness Retry Loops",
+      "severity": "high",
+      "description": "检测到 0 次连续相同工具/命令重试死循环或 8 次工具执行错误",
+      "penalty": 20,
+      "evidence": {
+        "flappingCount": 0,
+        "errorCount": 8
+      }
+    },
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 141, 消耗: 96905 Tokens, 时长: 14179 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 141,
+        "totalTokens": 96905,
+        "durationMinutes": 14179
+      }
+    }
+  ],
+  "totalDiffLines": 10,
+  "filesChanged": 3,
+  "linesAdded": 6,
+  "linesDeleted": 4,
+  "engineering": {
+    "turnCount": 7,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 20.3,
+    "filesChanged": 3,
+    "linesAdded": 6,
+    "linesDeleted": 4,
+    "totalDiffLines": 10,
+    "speedLinesPerMinute": 0.5
+  },
+  "protocol": {
+    "specTokens": 893,
+    "planTokens": 353,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3046
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 67834,
+    "outputTokens": 29072,
+    "totalTokens": 96905,
+    "costUsd": 0.6396,
+    "toolCallsCount": 139,
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 61,
+        "inputTokens": 3274,
+        "outputTokens": 45628,
+        "totalTokens": 48902,
+        "percentage": 50.5,
+        "errorCount": 1
+      },
+      {
+        "name": "run_command",
+        "count": 64,
+        "inputTokens": 4635,
+        "outputTokens": 24012,
+        "totalTokens": 28647,
+        "percentage": 29.6,
+        "errorCount": 7
+      },
+      {
+        "name": "replace_file_content",
+        "count": 14,
+        "inputTokens": 3597,
+        "outputTokens": 3915,
+        "totalTokens": 7512,
+        "percentage": 7.8,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"budget.ts\"\" 被重复读取了 13 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 7952,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/utils/budget.ts\"",
+          "readCount": 13,
+          "wastedTokens": 7952
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"budget-command.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1741,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/budget-command.test.mjs\"",
+          "readCount": 3,
+          "wastedTokens": 1741
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"document-index.ts\"\" 被重复读取了 18 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 11712,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/utils/document-index.ts\"",
+          "readCount": 18,
+          "wastedTokens": 11712
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"docs-index.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 2218,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/docs-index.test.mjs\"",
+          "readCount": 3,
+          "wastedTokens": 2218
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"rule-doctor.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 3101,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/rule-doctor.test.mjs\"",
+          "readCount": 4,
+          "wastedTokens": 3101
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"rule-doctor.ts\"\" 被重复读取了 7 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 4959,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/rule-doctor.ts\"",
+          "readCount": 7,
+          "wastedTokens": 4959
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"done.ts\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1909,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/done.ts\"",
+          "readCount": 3,
+          "wastedTokens": 1909
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 1,
+      "errorCalls": 1,
+      "totalTokens": 99,
+      "inputTokens": 55,
+      "outputTokens": 44,
+      "percentageOfSessionTokens": 0.1,
+      "commands": [
+        {
+          "subcommand": "next",
+          "count": 1,
+          "errorCount": 1,
+          "inputTokens": 55,
+          "outputTokens": 44,
+          "totalTokens": 99,
+          "avgTokens": 99
+        }
+      ]
+    },
+    "complianceScore": 65,
+    "violations": [
+      {
+        "ruleId": "CR-03",
+        "ruleName": "Flapping Tool / Harness Retry Loops",
+        "severity": "high",
+        "description": "检测到 0 次连续相同工具/命令重试死循环或 8 次工具执行错误",
+        "penalty": 20,
+        "evidence": {
+          "flappingCount": 0,
+          "errorCount": 8
+        }
+      },
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 141, 消耗: 96905 Tokens, 时长: 14179 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 141,
+          "totalTokens": 96905,
+          "durationMinutes": 14179
+        }
+      }
+    ],
+    "docpathEfficacy": {
+      "preventedLoopsCount": 1,
+      "deadlockTokensSaved": 6000,
+      "contextCompressionRatio": 88.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 1,
+      "firstTimePassRate": 94,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 1 次潜在死循环，节省约 6,000 Tokens，上下文压缩比达 88.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 0,
+      "redundantTokensWasted": 0,
+      "redundantPatterns": [],
+      "serialChains": [],
+      "heavyOutputCommands": [],
+      "actionableOptimizations": []
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-13T12:55:25Z",
+        "turnIndex": 845,
+        "subcommand": "next",
+        "rawCommandLine": "\"./bin/docpath.mjs next --agent\"",
+        "directInputTokens": 8,
+        "directOutputTokens": 44,
+        "directTotalTokens": 52,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "error",
+        "durationMs": 3000
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 67834,
+      "outputTokens": 29072,
+      "totalTokens": 96905,
+      "costUsd": 0.6396
+    },
+    "toolCalls": {
+      "total": 139,
+      "byName": {
+        "run_command": 64,
+        "view_file": 61,
+        "replace_file_content": 14
+      },
+      "errorCount": 8
+    },
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 61,
+        "inputTokens": 3274,
+        "outputTokens": 45628,
+        "totalTokens": 48902,
+        "percentage": 50.5,
+        "errorCount": 1
+      },
+      {
+        "name": "run_command",
+        "count": 64,
+        "inputTokens": 4635,
+        "outputTokens": 24012,
+        "totalTokens": 28647,
+        "percentage": 29.6,
+        "errorCount": 7
+      },
+      {
+        "name": "replace_file_content",
+        "count": 14,
+        "inputTokens": 3597,
+        "outputTokens": 3915,
+        "totalTokens": 7512,
+        "percentage": 7.8,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"budget.ts\"\" 被重复读取了 13 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 7952,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/utils/budget.ts\"",
+          "readCount": 13,
+          "wastedTokens": 7952
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"budget-command.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1741,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/budget-command.test.mjs\"",
+          "readCount": 3,
+          "wastedTokens": 1741
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"document-index.ts\"\" 被重复读取了 18 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 11712,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/utils/document-index.ts\"",
+          "readCount": 18,
+          "wastedTokens": 11712
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"docs-index.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 2218,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/docs-index.test.mjs\"",
+          "readCount": 3,
+          "wastedTokens": 2218
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"rule-doctor.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 3101,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/rule-doctor.test.mjs\"",
+          "readCount": 4,
+          "wastedTokens": 3101
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"rule-doctor.ts\"\" 被重复读取了 7 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 4959,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/rule-doctor.ts\"",
+          "readCount": 7,
+          "wastedTokens": 4959
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"done.ts\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1909,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/commands/done.ts\"",
+          "readCount": 3,
+          "wastedTokens": 1909
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 1,
+      "errorCalls": 1,
+      "totalTokens": 99,
+      "inputTokens": 55,
+      "outputTokens": 44,
+      "percentageOfSessionTokens": 0.1,
+      "commands": [
+        {
+          "subcommand": "next",
+          "count": 1,
+          "errorCount": 1,
+          "inputTokens": 55,
+          "outputTokens": 44,
+          "totalTokens": 99,
+          "avgTokens": 99
+        }
+      ]
+    },
+    "docpathEfficacy": {
+      "preventedLoopsCount": 1,
+      "deadlockTokensSaved": 6000,
+      "contextCompressionRatio": 88.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 1,
+      "firstTimePassRate": 94,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 1 次潜在死循环，节省约 6,000 Tokens，上下文压缩比达 88.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 0,
+      "redundantTokensWasted": 0,
+      "redundantPatterns": [],
+      "serialChains": [],
+      "heavyOutputCommands": [],
+      "actionableOptimizations": []
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-13T12:55:25Z",
+        "turnIndex": 845,
+        "subcommand": "next",
+        "rawCommandLine": "\"./bin/docpath.mjs next --agent\"",
+        "directInputTokens": 8,
+        "directOutputTokens": 44,
+        "directTotalTokens": 52,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "error",
+        "durationMs": 3000
+      }
+    ],
+    "turnsCount": 141,
+    "errorCount": 8,
+    "heavyReadsCount": 2,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-03",
+        "ruleName": "Flapping Tool / Harness Retry Loops",
+        "severity": "high",
+        "description": "检测到 0 次连续相同工具/命令重试死循环或 8 次工具执行错误",
+        "penalty": 20,
+        "evidence": {
+          "flappingCount": 0,
+          "errorCount": 8
+        }
+      },
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 141, 消耗: 96905 Tokens, 时长: 14179 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 141,
+          "totalTokens": 96905,
+          "durationMinutes": 14179
+        }
+      }
+    ],
+    "complianceScore": 65,
+    "durationMs": 850739000
+  },
+  "toolAttributions": [
+    {
+      "name": "view_file",
+      "count": 61,
+      "inputTokens": 3274,
+      "outputTokens": 45628,
+      "totalTokens": 48902,
+      "percentage": 50.5,
+      "errorCount": 1
+    },
+    {
+      "name": "run_command",
+      "count": 64,
+      "inputTokens": 4635,
+      "outputTokens": 24012,
+      "totalTokens": 28647,
+      "percentage": 29.6,
+      "errorCount": 7
+    },
+    {
+      "name": "replace_file_content",
+      "count": 14,
+      "inputTokens": 3597,
+      "outputTokens": 3915,
+      "totalTokens": 7512,
+      "percentage": 7.8,
+      "errorCount": 0
+    }
+  ],
+  "toolInefficiencies": [
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"budget.ts\"\" 被重复读取了 13 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 7952,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/utils/budget.ts\"",
+        "readCount": 13,
+        "wastedTokens": 7952
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"budget-command.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 1741,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/tests/budget-command.test.mjs\"",
+        "readCount": 3,
+        "wastedTokens": 1741
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"document-index.ts\"\" 被重复读取了 18 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 11712,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/utils/document-index.ts\"",
+        "readCount": 18,
+        "wastedTokens": 11712
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"docs-index.test.mjs\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 2218,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/tests/docs-index.test.mjs\"",
+        "readCount": 3,
+        "wastedTokens": 2218
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"rule-doctor.test.mjs\"\" 被重复读取了 4 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 3101,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/tests/rule-doctor.test.mjs\"",
+        "readCount": 4,
+        "wastedTokens": 3101
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"rule-doctor.ts\"\" 被重复读取了 7 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 4959,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/engine/rule-doctor.ts\"",
+        "readCount": 7,
+        "wastedTokens": 4959
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"done.ts\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 1909,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/commands/done.ts\"",
+        "readCount": 3,
+        "wastedTokens": 1909
+      }
+    }
+  ],
+  "docpathCliOverhead": {
+    "totalCalls": 1,
+    "errorCalls": 1,
+    "totalTokens": 99,
+    "inputTokens": 55,
+    "outputTokens": 44,
+    "percentageOfSessionTokens": 0.1,
+    "commands": [
+      {
+        "subcommand": "next",
+        "count": 1,
+        "errorCount": 1,
+        "inputTokens": 55,
+        "outputTokens": 44,
+        "totalTokens": 99,
+        "avgTokens": 99
+      }
+    ]
+  },
+  "docpathEfficacy": {
+    "preventedLoopsCount": 1,
+    "deadlockTokensSaved": 6000,
+    "contextCompressionRatio": 88.5,
+    "subagentTokensSaved": 0,
+    "gateInterceptionCount": 1,
+    "firstTimePassRate": 94,
+    "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 1 次潜在死循环，节省约 6,000 Tokens，上下文压缩比达 88.5%"
+  },
+  "docpathCliFriction": {
+    "redundantCallsCount": 0,
+    "redundantTokensWasted": 0,
+    "redundantPatterns": [],
+    "serialChains": [],
+    "heavyOutputCommands": [],
+    "actionableOptimizations": []
+  },
+  "commandInvocations": [
+    {
+      "id": "inv-1",
+      "timestamp": "2026-10-13T12:55:25Z",
+      "turnIndex": 845,
+      "subcommand": "next",
+      "rawCommandLine": "\"./bin/docpath.mjs next --agent\"",
+      "directInputTokens": 8,
+      "directOutputTokens": 44,
+      "directTotalTokens": 52,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "error",
+      "durationMs": 3000
+    }
+  ],
+  "frictionFindings": [
+    {
+      "id": "FRIC-CMD-ERR",
+      "category": "command_error",
+      "severity": "high",
+      "title": "CLI 命令调用异常与参数拦截 (Command Execution Errors)",
+      "description": "检测到 8 次命令调用失败或参数报错，可能由于命令语法错误或环境不匹配导致",
+      "count": 8,
+      "tokensWasted": 1600,
+      "optimizationHint": "查阅 docpath --help 或 AGENTS.md 规范，确保 CLI 命令与参数格式准确"
+    },
+    {
+      "id": "FRIC-TOOL-WASTE",
+      "category": "tool_waste",
+      "severity": "high",
+      "title": "工具调用低效与上下文浪费 (Tool Waste & Context Bloat)",
+      "description": "检测到 7 处工具低效行为 (重复读大文件、超长命令输出或编辑失真)，造成上下文浪费",
+      "count": 7,
+      "tokensWasted": 33592,
+      "optimizationHint": "精准指定目标行范围切片读写，善用子代理进行大文件调研与探查"
+    }
+  ],
+  "stepPassAnalysis": {
+    "totalStepPassCalls": 0,
+    "productiveCalls": 0,
+    "redundantCalls": 0,
+    "directTokens": 0,
+    "invisibleTurnReplayTokens": 0,
+    "redundantTurnReplayTokens": 0,
+    "frictionTurnRatio": 0,
+    "summary": "未检测到 step-pass 调用与隐性重放损耗"
+  },
+  "lifecycleAnchor": {
+    "sessionId": "agy-c06e4deb-cb24-4a",
+    "baseCommit": "292265ffa8839e2ad25566b1ed5bdf99ab11e03d",
+    "headCommit": "292265ffa8839e2ad25566b1ed5bdf99ab11e03d",
+    "startedAt": "2026-10-13T12:51:03.282Z",
+    "completedAt": "2026-10-13T13:11:19.423Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 FR-1 优化活文档索引轻量分层",
+      "startedAt": "2026-10-13T12:51:03.282Z",
+      "completedAt": "2026-10-13T13:06:24.338Z",
+      "durationMinutes": 15.4,
+      "totalTokens": 84459,
+      "inputTokens": 59121,
+      "outputTokens": 25338,
+      "costUsd": 0.5574,
+      "toolCallsCount": 119,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 56,
+          "tokens": 44873
+        },
+        {
+          "name": "run_command",
+          "count": 53,
+          "tokens": 23009
+        },
+        {
+          "name": "replace_file_content",
+          "count": 10,
+          "tokens": 5378
+        }
+      ]
+    },
+    {
+      "stepId": "S2",
+      "stepTitle": "实现并验证 FR-2 规则医生健康度治理",
+      "startedAt": "2026-10-13T13:06:24.616Z",
+      "completedAt": "2026-10-13T13:08:56.244Z",
+      "durationMinutes": 2.5,
+      "totalTokens": 16654,
+      "inputTokens": 11658,
+      "outputTokens": 4996,
+      "costUsd": 0.1099,
+      "toolCallsCount": 25,
+      "topTools": [
+        {
+          "name": "run_command",
+          "count": 13,
+          "tokens": 7437
+        },
+        {
+          "name": "view_file",
+          "count": 7,
+          "tokens": 5108
+        },
+        {
+          "name": "replace_file_content",
+          "count": 5,
+          "tokens": 3205
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 3046,
+    "realModelTokens": 96905,
+    "overheadRatio": 3.14,
+    "complianceScore": 65,
+    "firstTimePassRate": 100,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}

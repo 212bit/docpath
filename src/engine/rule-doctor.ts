@@ -171,7 +171,7 @@ export function parseRuleEntitiesFromMarkdown(fileDisplayPath: string, fullPath:
     // 提取 Evidence 中的文件引用
     const evidenceList: string[] = [];
     const relatedFiles: string[] = [];
-    const evidenceBlock = raw.match(/### Evidence([\s\S]*?)(?=(?:^##|\n\n##|$))/m);
+    const evidenceBlock = raw.match(/###\s+Evidence\b([\s\S]*?)(?=\n###|\n##|$)/i);
     if (evidenceBlock) {
       const evLines = evidenceBlock[1].split('\n');
       for (const el of evLines) {
@@ -180,17 +180,14 @@ export function parseRuleEntitiesFromMarkdown(fileDisplayPath: string, fullPath:
           evidenceList.push(trimmed);
           const fileCandidates = trimmed.match(/(?:src|tests|test|docs|\.docpath)\/[^\s()#<>:`'",\\]+\.(?:ts|js|mjs|json|yaml|yml|md)\b/g);
           if (fileCandidates) {
-            relatedFiles.push(...fileCandidates);
+            for (const f of fileCandidates) {
+              if (f.startsWith('.docpath/workspace/') || f.startsWith('.docpath/tasks/current/')) continue;
+              if (!relatedFiles.includes(f)) {
+                relatedFiles.push(f);
+              }
+            }
           }
         }
-      }
-    }
-
-    // 全局扫描文本中提及的源码路径
-    const allFileCandidates = raw.match(/(?:src|tests|test|docs|\.docpath)\/[^\s()#<>:`'",\\]+\.(?:ts|js|mjs|json|yaml|yml|md)\b/g) || [];
-    for (const f of allFileCandidates) {
-      if (!relatedFiles.includes(f)) {
-        relatedFiles.push(f);
       }
     }
 
@@ -579,7 +576,9 @@ export async function fixRuleIssues(docpathDir: string, options?: { repoRoot?: s
           const matchPath = line.match(/(?:src|tests|test|docs|\.docpath)\/[^\s()#<>:`'",\\]+\.(?:ts|js|mjs|json|yaml|yml|md)\b/);
           if (matchPath) {
             const rel = matchPath[0];
-            if (!existsSync(resolve(repoRoot, rel))) {
+            if (rel.startsWith('.docpath/workspace/') || rel.startsWith('.docpath/tasks/current/')) {
+              // 运行时路径保留，不误当失效引用清理
+            } else if (!existsSync(resolve(repoRoot, rel))) {
               cleanedStaleRefs++;
               continue; // 跳过此失效引用行
             }

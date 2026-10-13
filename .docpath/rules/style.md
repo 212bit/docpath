@@ -40,7 +40,7 @@
 - rationale: 仅看 plan 全完成会在 check 已通过时仍推荐 plan/check，与正文 review 分叉
 触发: phase=checking gate=check_pass 且 plan 全完成。期望: recommended_command=docpath review（或 profile 等价）。边界: plan/breadcrumb drift 与 blocked 仍可优先。
 ### Evidence
-- src/utils/agent-output/formatters.ts
+- src/engine/agent-output.ts
 - tests/next.test.mjs
 
 ## gotcha: check 自动刷新的 docs-index/docs.md 应视为 execution-start 可放行路径
@@ -54,7 +54,7 @@
 触发: agent enter（in_progress+dirty）或 agent handoff。期望: 写 .docpath/workspace/wip-note.md。边界: 不改 plan checklist。
 ### Evidence
 - src/commands/agent.ts
-- tests/handoff.test.mjs
+- tests/automated-guards-r436.test.mjs
 
 ## common-mistake: 改动数据契约/共享模型前必须查最近一次用户确认的 ADR, 别信可能过时的 CLAUDE.md
 - rationale: R-271 依据 CLAUDE.md 仍写着的 live-shared/gitignored 描述做实现, 但该描述早在 R-238 (用户确认翻回 Option B tracked) 时就已失真; R-271 决策简报未引用 R-238, 于是做出与最近用户裁定相反的实现并引入 P0。

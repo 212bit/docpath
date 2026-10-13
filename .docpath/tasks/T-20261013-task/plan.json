@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-13T13:08:56.248Z",
+    "updated_at": "2026-10-13T13:08:56.248Z",
+    "content_sha256": "5caf118ffa5d127e2280385a8f05b6c34f0786b227479e028740919ffe2a4eb1"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-13T13:08:56.248Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 优化活文档索引轻量分层",
+      "description": "落地 FR-1: 优化活文档索引轻量分层，并完成模块定向自验。",
+      "acceptance": "AC-1: 优化活文档索引轻量分层 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 规则医生健康度治理",
+      "description": "落地 FR-2: 规则医生健康度治理，并完成模块定向自验。",
+      "acceptance": "AC-2: 规则医生健康度治理 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-496 与任务 T-20261013-task 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}
