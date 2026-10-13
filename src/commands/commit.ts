@@ -40,13 +40,14 @@ export interface CommitOptions {
   autoMessage?: boolean;
   includePatterns?: string[];
   cwd: string;
+  throwOnError?: boolean;
 }
 
 /**
  * Main commit command implementation
  */
 export async function commitCommand(options: CommitOptions): Promise<void> {
-  let { dryRun, stage, message, autoMessage, includePatterns, cwd } = options;
+  let { dryRun, stage, message, autoMessage, includePatterns, cwd, throwOnError } = options;
 
   if (!message && autoMessage) {
     message = await deriveCommitMessage(cwd);
@@ -59,6 +60,9 @@ export async function commitCommand(options: CommitOptions): Promise<void> {
 
   if (!safetyResult.safe) {
     console.error(formatSafetyResult(safetyResult));
+    if (throwOnError) {
+      throw new Error(`Git safety check failed:\n${safetyResult.errors.join('\n')}`);
+    }
     process.exit(1);
   }
 
@@ -137,11 +141,17 @@ export async function commitCommand(options: CommitOptions): Promise<void> {
     console.log(formatStageResult(stageResult, false));
 
     if (!stageResult.success) {
+      if (throwOnError) {
+        throw new Error('Staging files failed');
+      }
       process.exit(1);
     }
 
     if (stageResult.stagedFiles.length === 0) {
       console.error('\n❌ No files staged, cannot commit');
+      if (throwOnError) {
+        throw new Error('No files staged, cannot commit');
+      }
       process.exit(1);
     }
 
@@ -177,6 +187,9 @@ export async function commitCommand(options: CommitOptions): Promise<void> {
     } catch (error) {
       console.error('\n❌ Commit failed:');
       console.error(`   ${error instanceof Error ? error.message : String(error)}`);
+      if (throwOnError) {
+        throw error;
+      }
       process.exit(1);
     }
 

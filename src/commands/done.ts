@@ -55,6 +55,19 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
     exitWithError('NO_ACTIVE_TASK');
   }
 
+  // ── 前置 Git Safety Preflight 预检（当指定 --commit 时，在耗时门禁前阻断异常状态） ──
+  if (options.commit) {
+    const { checkGitSafety, formatSafetyResult } = await import('../utils/git-safety.js');
+    const safety = checkGitSafety(cwd);
+    if (!safety.safe) {
+      console.error(formatSafetyResult(safety));
+      throw new Error(
+        `docpath done --commit: Git 提交环境预检失败，禁止在不安全或受锁定的 Git 状态下执行收口提交！\n` +
+        `请先解决上述 Git 问题（如等待/清理 index.lock、配置 user.name/email 或解决冲突）后再运行 done --commit。`
+      );
+    }
+  }
+
   // ── 执行 pre-done 生命周期 Hook ──
   try {
     const { executeLifecycleHook } = await import('../engine/hook-runner.js');
@@ -136,10 +149,22 @@ export async function doneCommand(options: DoneOptions): Promise<void> {
 
   if (options.commit) {
     console.log('🚀  --commit 已启用，自动将任务改动提交至本地 Git...\n');
-    await commitCommand({
-      cwd,
-      stage: true,
-      autoMessage: true,
-    });
+    try {
+      await commitCommand({
+        cwd,
+        stage: true,
+        autoMessage: true,
+        throwOnError: true,
+      });
+    } catch (commitErr: any) {
+      console.error(`\n❌ Git 自动提交失败: ${commitErr?.message || commitErr}`);
+      console.error(
+        `   💡 故障自愈恢复指引:\n` +
+        `   - 任务核心生命周期已顺利通过门禁并归档 (${taskId})。\n` +
+        `   - 本地工作区变更仍完整保留（未丢失）。\n` +
+        `   - 排除 Git 提交拦截后，可直接运行 \`docpath commit --stage\` 补全提交并闭环。\n`
+      );
+      throw commitErr;
+    }
   }
 }

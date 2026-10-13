@@ -74,6 +74,7 @@ Examples:
 - `docpath check`
 - `docpath review`
 - `docpath changes --agent`
+- `docpath done --commit` (enforces Git safety preflight before running heavy gates and provides transactional recovery guidance on commit failure)
 
 ## User Entry Points
 

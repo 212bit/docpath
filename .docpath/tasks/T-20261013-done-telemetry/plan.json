@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-13T03:06:17.619Z",
+    "updated_at": "2026-10-13T03:06:17.619Z",
+    "content_sha256": "4428c92f4ef08a1128a76546aa71f88160ad338e5e6047e82b9410387513ed97"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-13T03:06:17.619Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 Done复合收口事务性提交保护",
+      "description": "落地 FR-1: Done复合收口事务性提交保护，并完成模块定向自验。",
+      "acceptance": "AC-1: Done复合收口事务性提交保护 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 Telemetry架构循环依赖解耦",
+      "description": "落地 FR-2: Telemetry架构循环依赖解耦，并完成模块定向自验。",
+      "acceptance": "AC-2: Telemetry架构循环依赖解耦 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-493 与任务 T-20261013-done-telemetry 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

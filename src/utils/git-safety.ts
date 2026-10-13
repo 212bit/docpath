@@ -58,6 +58,28 @@ export function checkGitSafety(cwd: string, stagingCandidates: readonly string[]
 
     // Check for merge in progress
     const gitDir = execSync('git rev-parse --git-dir', { cwd, stdio: 'pipe', encoding: 'utf-8' }).trim();
+    const indexLockPath = join(cwd, gitDir, 'index.lock');
+    if (existsSync(indexLockPath)) {
+      result.safe = false;
+      result.errors.push('Git index.lock exists - another git operation is in progress or lock is stale');
+    }
+
+    // Check author configuration
+    let hasUserEmail = false;
+    let hasUserName = false;
+    try {
+      hasUserEmail = !!execSync('git config user.email', { cwd, stdio: 'pipe', encoding: 'utf-8' }).trim();
+    } catch {}
+    try {
+      hasUserName = !!execSync('git config user.name', { cwd, stdio: 'pipe', encoding: 'utf-8' }).trim();
+    } catch {}
+    if (!hasUserEmail || !hasUserName) {
+      result.safe = false;
+      result.errors.push(
+        `Git author identity is missing (name: ${hasUserName ? 'ok' : 'missing'}, email: ${hasUserEmail ? 'ok' : 'missing'}). Please run: git config user.name "..." && git config user.email "..."`
+      );
+    }
+
     const mergeHeadPath = join(cwd, gitDir, 'MERGE_HEAD');
     if (existsSync(mergeHeadPath)) {
       result.isMergeInProgress = true;

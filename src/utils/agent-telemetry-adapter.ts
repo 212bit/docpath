@@ -2760,7 +2760,4 @@ export function detectWorkflowFrictions(
   return findings;
 }
 
-export type { ActiveTaskMetrics, ActiveTaskStepProgress } from './task-metrics.js';
-export { probeActiveTaskMetrics } from './task-metrics.js';
-
 

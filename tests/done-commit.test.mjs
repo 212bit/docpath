@@ -54,4 +54,26 @@ describe('docpath done --commit & quick --commit: 一键收口并提交', () => 
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('done --commit 在存在 index.lock 时预检拦截，防止门禁后提交失败悬空', () => {
+    const cwd = mkRepo();
+    try {
+      // 启动一个常规任务
+      run(['start', 'test preflight', '--draft'], cwd);
+      writeFileSync(join(cwd, 'test.txt'), 'content\n');
+      run(['go', '--step', 'S1', '--accept-dirty', 'work'], cwd);
+      run(['step-pass', '--step', 'S1'], cwd);
+
+      // 人工制造 index.lock 模拟后台进程占用或崩溃遗留锁
+      writeFileSync(join(cwd, '.git', 'index.lock'), '');
+
+      // 执行 done --commit 必须在门禁前被预检拦截
+      assert.throws(() => {
+        run(['done', '--commit'], cwd);
+      }, /Git 提交环境预检失败|index\.lock/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
+
