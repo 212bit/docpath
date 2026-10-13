@@ -122,4 +122,33 @@ describe('docpath step-pass targeted test immediate verification', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it('caps targeted tests to at most STEP_VERIFY_MAX_TESTS (3) files to avoid timeout', () => {
+    const cwd = mkGitRepo();
+    try {
+      // 创建 5 个相关测试文件并提交为基线
+      for (let i = 1; i <= 5; i++) {
+        writeFileSync(join(cwd, 'tests', `calc-${i}.test.mjs`), [
+          'import { test } from "node:test";',
+          'import assert from "node:assert/strict";',
+          `test("calc ${i}", () => { assert.ok(true); });`,
+        ].join('\n'));
+      }
+      execSync('git add tests && git commit -m "add extra tests"', { cwd });
+
+      run('start "Test Max Capped" --draft', cwd);
+      writeFileSync(join(cwd, 'src', 'calc.js'), 'export function add(a, b) { return a + b; }\n// touched\n');
+
+      const out = run('step-pass', cwd);
+      assert.match(out, /单步即时单测验证/);
+      assert.match(out, /通过/);
+      // 应该最多只执行 3 个测试
+      const matched = out.match(/calc-\d\.test\.mjs/g) || [];
+      const uniqueMatched = new Set(matched);
+      assert.ok(uniqueMatched.size <= 3);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
+

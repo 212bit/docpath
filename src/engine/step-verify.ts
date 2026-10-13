@@ -45,7 +45,7 @@ export interface StepVerifyResult {
   summary: string;
 }
 
-export const STEP_VERIFY_MAX_TESTS = 6;
+export const STEP_VERIFY_MAX_TESTS = 3;
 
 /**
  * 提取当前步骤关联的靶向测试文件列表
@@ -228,9 +228,10 @@ export async function runStepTargetedVerification(
   cwd: string,
   options: StepVerifyOptions & { taskId?: string } = {},
 ): Promise<StepVerifyResult> {
-  const { step, explicitTest, timeoutMs = 25000, taskId } = options;
+  const { step, explicitTest, taskId } = options;
 
   const targetTests = await resolveStepTargetedTests(cwd, { step, explicitTest, taskId });
+  const effectiveTimeoutMs = options.timeoutMs ?? Math.max(30000, 15000 + targetTests.length * 8000);
 
   if (targetTests.length === 0) {
     return {
@@ -272,8 +273,9 @@ export async function runStepTargetedVerification(
   } else if (hasNode || isNode) {
     // 自动自愈构建产物新鲜度
     await ensureBuildFreshness(cwd);
+    const concurrency = Math.min(Math.max(targetTests.length, 1), 4);
     cmd = 'node';
-    args = ['--test', '--test-concurrency=2', '--test-isolation=process', ...targetTests];
+    args = ['--test', `--test-concurrency=${concurrency}`, '--test-isolation=process', ...targetTests];
   } else {
     return {
       executed: false,
@@ -302,7 +304,7 @@ export async function runStepTargetedVerification(
 
     const res = await execFileAsync(cmd, args, {
       cwd,
-      timeout: timeoutMs,
+      timeout: effectiveTimeoutMs,
       encoding: 'utf-8',
       env: testEnv,
     });

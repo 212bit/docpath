@@ -143,8 +143,7 @@ export function assertQuickScope(cwd: string): void {
     `Policy: max_changed_files=${verdict.policy.maxChangedFiles}, allow_document_only=${verdict.policy.allowDocumentOnly}, allow_patterns=${verdict.policy.allowPatterns.length}`,
     ...verdict.reasons.map((reason) => `  - ${reason}`),
     'Upgrade path:',
-    '  - Stop using quick for this change.',
-    '  - Capture/promote a standard backlog task with spec and plan.',
-    '  - Then rerun check/review/done through the standard lifecycle.',
+    '  💡 解决方案: 运行 `docpath quick upgrade` 原地升级为 standard 标准任务流程（自动补齐 spec/plan，保留全部工作区改动并切换至标准门禁）。',
+    '  - 或手动将改动暂存: `docpath task stash "WIP"` 后通过 `docpath start "<title>" --draft` 重新拉起标准任务。',
   ].join('\n'));
 }

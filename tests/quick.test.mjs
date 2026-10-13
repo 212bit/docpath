@@ -241,6 +241,7 @@ describe('docpath quick', () => {
     assert.notEqual(result.code, 0);
     assert.match(result.out, /scope exceeds quick profile boundaries/);
     assert.match(result.out, /Upgrade path/);
+    assert.match(result.out, /docpath quick upgrade/);
     rmSync(cwd, { recursive: true, force: true });
   });
 
