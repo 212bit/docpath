@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-13T14:22:21.728Z",
+    "updated_at": "2026-10-13T14:22:21.728Z",
+    "content_sha256": "3d779614f91c00e5c158d0dfc816620e40220e0ce30fe0b7fbe8bea702b2ce68"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-13T14:22:21.728Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 FR-1 只读环境 SQLite 韧性防御",
+      "description": "落地 FR-1: 只读环境 SQLite 韧性防御，并完成模块定向自验。",
+      "acceptance": "AC-1: 只读环境 SQLite 韧性防御 满足功能要求并通过测试",
+      "dependencies": "无",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "name": "实现并验证 FR-2 环境失败分流",
+      "description": "落地 FR-2: 环境失败分流，并完成模块定向自验。",
+      "acceptance": "AC-2: 环境失败分流 满足功能要求并通过测试；AC-3: 生成的 spec 可直接进入 `docpath plan`；AC-4: backlog 条目 R-498 与任务 T-20261013-sqlite 建立双向关联",
+      "dependencies": "S1",
+      "status": "done"
+    }
+  ]
+}

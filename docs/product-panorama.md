@@ -138,7 +138,7 @@ flowchart TD
 | **`step.completed`**| `executing` / `checking` | `executing` | `none` | `docpath agent step --status done`：步骤完成 |
 | **`check.passed`** | `executing` / `checking` | `checking` | `check_pass` | `docpath check`：编译/测试/Lint 全部通过 |
 | **`check.failed`** | 任意 | `checking` | `check_fail` | `docpath check`：检测到编译或测试失败 |
-| **`check.env_exempt`** | `planning` / `executing` / `checking` | `checking` | `check_env_exempt` | `docpath check`（R-350）：全部失败项均为**确定性可证**的工具链不可用 → 环境豁免，可继续评审/归档；`--no-env-exempt` 可关闭 |
+| **`check.env_exempt`** | `planning` / `executing` / `checking` | `checking` | `check_env_exempt` | `docpath check`（R-350）：全部失败项均为**确定性可证**的工具链不可用或只读沙箱环境限制（如只读 $HOME / 只读 SQLite 库） → 环境豁免，可继续评审/归档；`--no-env-exempt` 可关闭 |
 | **`review.passed`** | `checking` / `reviewing` | `reviewing` | `review_pass` | `docpath review`：代码质量审查通过 |
 | **`review.skipped`**| `checking` / `reviewing` | `reviewing` | `review_skipped`| `docpath review`：微型任务符合免审策略 |
 | **`review.failed`** | 任意 | `reviewing` | `review_fail` | `docpath review`：审查发现问题，拦截归档 |

@@ -28,6 +28,7 @@ export type RegisteredProject = {
   gate: string;
   registered_at: string;
   last_seen_at: string;
+  persisted?: boolean;
 };
 
 type ProjectRegistryDb = {
@@ -43,6 +44,33 @@ type EmitWarning = typeof process.emitWarning;
 
 export function resolveProjectRegistryDbPath(): string {
   return process.env.DOCPATH_REGISTRY_DB || join(homedir(), '.docpath', 'projects.sqlite');
+}
+
+/**
+ * 判断错误是否为只读文件系统、只读数据库或写权限受阻。
+ */
+export function isRegistryWriteBlockedError(error: unknown): boolean {
+  if (!error) return false;
+  const msg = error instanceof Error ? error.message : String(error);
+  const code = (error as { code?: string })?.code;
+  return (
+    /attempt to write a readonly database/i.test(msg) ||
+    /SQLITE_READONLY/i.test(msg) ||
+    /read-only file system/i.test(msg) ||
+    code === 'EROFS' ||
+    code === 'EACCES' ||
+    code === 'EPERM'
+  );
+}
+
+/**
+ * 格式化注册库只读或写权限阻断时的可操作修复指引。
+ */
+export function formatRegistryWriteBlockedGuidance(dbPath = resolveProjectRegistryDbPath()): string {
+  return [
+    `  ⚠️  本地项目中心注册已跳过: 数据库处于只读或权限受限环境 (${dbPath})`,
+    '     指引: 在沙箱或只读环境中，可设置 DOCPATH_REGISTRY_DB=/writable/path/projects.sqlite 指定可写路径',
+  ].join('\n');
 }
 
 async function loadSqliteModule(): Promise<SqliteModule> {
@@ -63,28 +91,39 @@ async function loadSqliteModule(): Promise<SqliteModule> {
 
 async function openProjectRegistry(dbPath = resolveProjectRegistryDbPath(), create = true): Promise<ProjectRegistryDb | null> {
   if (!create && !existsSync(dbPath)) return null;
-  if (create) await mkdir(dirname(dbPath), { recursive: true });
-  const { DatabaseSync } = await loadSqliteModule();
-  const db = new DatabaseSync(dbPath);
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS projects (
-      root TEXT PRIMARY KEY,
-      docpath_dir TEXT NOT NULL,
-      name TEXT NOT NULL,
-      description TEXT NOT NULL,
-      type TEXT NOT NULL,
-      language TEXT NOT NULL,
-      framework TEXT NOT NULL,
-      task_id TEXT NOT NULL,
-      task_title TEXT NOT NULL,
-      phase TEXT NOT NULL,
-      gate TEXT NOT NULL,
-      registered_at TEXT NOT NULL,
-      last_seen_at TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_projects_last_seen ON projects(last_seen_at DESC);
-  `);
-  return db;
+  try {
+    if (create) await mkdir(dirname(dbPath), { recursive: true });
+    const { DatabaseSync } = await loadSqliteModule();
+    const db = (create
+      ? new DatabaseSync(dbPath)
+      : new (DatabaseSync as unknown as new (path: string, options?: { readOnly?: boolean }) => ProjectRegistryDb)(dbPath, { readOnly: true })) as ProjectRegistryDb;
+    if (create) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS projects (
+          root TEXT PRIMARY KEY,
+          docpath_dir TEXT NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT NOT NULL,
+          type TEXT NOT NULL,
+          language TEXT NOT NULL,
+          framework TEXT NOT NULL,
+          task_id TEXT NOT NULL,
+          task_title TEXT NOT NULL,
+          phase TEXT NOT NULL,
+          gate TEXT NOT NULL,
+          registered_at TEXT NOT NULL,
+          last_seen_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_projects_last_seen ON projects(last_seen_at DESC);
+      `);
+    }
+    return db;
+  } catch (error) {
+    if (isRegistryWriteBlockedError(error)) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 function readProjectField(config: unknown, key: string): string {
@@ -123,7 +162,11 @@ function normalizeRegisteredProject(row: Record<string, unknown>): RegisteredPro
 
 export async function registerProject(cwd: string): Promise<RegisteredProject> {
   const project = await buildRegisteredProject(cwd);
-  await upsertRegisteredProject(project);
+  const persisted = await upsertRegisteredProject(project);
+  project.persisted = persisted;
+  if (!persisted) {
+    console.warn(formatRegistryWriteBlockedGuidance());
+  }
   return project;
 }
 
@@ -149,9 +192,9 @@ async function buildRegisteredProject(cwd: string): Promise<RegisteredProject> {
   };
 }
 
-async function upsertRegisteredProject(project: RegisteredProject): Promise<void> {
+async function upsertRegisteredProject(project: RegisteredProject): Promise<boolean> {
   const db = await openProjectRegistry();
-  if (!db) throw new Error('project registry unavailable');
+  if (!db) return false;
   try {
     db.prepare(`
       INSERT INTO projects (
@@ -185,6 +228,12 @@ async function upsertRegisteredProject(project: RegisteredProject): Promise<void
       project.registered_at,
       project.last_seen_at,
     );
+    return true;
+  } catch (error) {
+    if (isRegistryWriteBlockedError(error)) {
+      return false;
+    }
+    throw error;
   } finally {
     db.close();
   }
@@ -197,6 +246,11 @@ export async function listRegisteredProjects(): Promise<RegisteredProject[]> {
     return db.prepare('SELECT * FROM projects ORDER BY last_seen_at DESC, name ASC')
       .all()
       .map((row) => normalizeRegisteredProject(row as Record<string, unknown>));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('no such table')) {
+      return [];
+    }
+    throw error;
   } finally {
     db.close();
   }

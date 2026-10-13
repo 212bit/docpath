@@ -117,7 +117,9 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   // ── 完成 ──
   printInitSummary(level, levelSource, projectInfo);
   const registered = await registerProject(cwd);
-  console.log(`  🗄️  已注册到本地项目中心: ${registered.name}`);
+  if (registered.persisted !== false) {
+    console.log(`  🗄️  已注册到本地项目中心: ${registered.name}`);
+  }
   printPostInitNextSteps();
 }
 
@@ -227,7 +229,9 @@ async function handleExistingDocpathInteractive(cwd: string): Promise<boolean> {
 
   if (action === 'register') {
     const registered = await registerProject(cwd);
-    console.log(`  🗄️  已注册到本地项目中心: ${registered.name}`);
+    if (registered.persisted !== false) {
+      console.log(`  🗄️  已注册到本地项目中心: ${registered.name}`);
+    }
     return false;
   }
 

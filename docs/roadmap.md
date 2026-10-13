@@ -58,7 +58,7 @@ DocPath 的核心工作流骨架已成型并经过实战：
 2. **`config.yaml` 与 `config.json` 是真源分裂**（`.docpath/rules/architecture.md` gotcha 条目）——`init` 只写 yaml；`src/utils/config.ts:15` 已声明 yaml 优先、json 回退的优先级，但两条读取路径并存仍有"写了读不到"的风险面。
 3. **上下文预算 critical**：`docpath budget --agent` 报 `status: critical`，总 206,916 tokens；其中 `views` 占 66%（136,664）、`events` 14%、`governance` 13%。
 4. **R-449 描述的两个静默隐患**：write-spec 全量覆盖无告警；Decision Brief 落错章节会丢机器真源。
-5. **环境依赖缺陷（本次实测发现，未记录在案）**：沙箱/只读 `$HOME` 下 `~/.docpath/projects.sqlite` 不可写，`docpath init` 失败并报 `attempt to write a readonly database`，连带 6 个测试失败（详 §2）。
+5. **环境依赖缺陷（已闭环治理，R-498）**：沙箱/只读 `$HOME` 下 `~/.docpath/projects.sqlite` 无法写入时，增加只读优雅降级与指引；`docpath check` 与探针支持只读环境失败精准分流为 `check_env_exempt`。
 
 ---
 
@@ -125,11 +125,11 @@ DocPath 的核心工作流骨架已成型并经过实战：
 
 **本轮（建议立即）**
 
-| 优先级 | 项 | 验收 |
-|--------|----|------|
-| P0 | N1 环境失败与代码回归分流 | 只读 `$HOME` 场景下 check 报 `check_env_exempt` 而非裸失败；`init` 给可操作指引；有回归测试 |
-| P1 | N3 收掉 R-449 | 覆盖写告警 + 非规范 ADR 章节检测 + 两条回归测试（backlog 已写明验收） |
-| P2 | N2 规则真源滞后治理 | `architecture.md:52` 过期断言清除；规则引用的代码/条目状态有自动校验 |
+| 优先级 | 项 | 验收 | 状态 |
+|--------|----|------|------|
+| P0 | N1 环境失败与代码回归分流 | 只读 `$HOME` 场景下 check 报 `check_env_exempt` 而非裸失败；`init` 给可操作指引；有回归测试 | ✅ 完成 (R-498) |
+| P1 | N3 收掉 R-449 | 覆盖写告警 + 非规范 ADR 章节检测 + 两条回归测试（backlog 已写明验收） | 待启动 |
+| P2 | N2 规则真源滞后治理 | `architecture.md:52` 过期断言清除；规则引用的代码/条目状态有自动校验 | 待启动 |
 
 **本阶段**
 

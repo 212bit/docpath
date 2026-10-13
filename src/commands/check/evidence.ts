@@ -95,9 +95,20 @@ function printDiagnosticsAndRemediation(results: CheckResult[], allPassed: boole
   if (envFailures.length > 0) {
     console.log('\n🔧  环境诊断（以下失败看起来是工具链/环境问题，不是代码问题）:');
     for (const r of envFailures) {
-      console.log(`  - ${r.name}: 命令缺失或依赖未安装`);
+      if (/readonly database|SQLITE_READONLY|read-only file system|EROFS/i.test(r.output)) {
+        console.log(`  - ${r.name}: 只读沙箱/数据库不可写 (如 projects.sqlite 或只读文件系统)`);
+      } else {
+        console.log(`  - ${r.name}: 命令缺失或依赖未安装`);
+      }
     }
-    console.log('    👉  先修复环境再重跑 check: 确认 pnpm/npm/yarn 已安装，node_modules 已安装 (pnpm install)');
+    const hasReadonlyFailure = envFailures.some((r) => /readonly database|SQLITE_READONLY|read-only file system|EROFS/i.test(r.output));
+    if (hasReadonlyFailure) {
+      console.log('    👉  只读沙箱修复: export DOCPATH_REGISTRY_DB=/tmp/projects.sqlite 或指定可写路径');
+    }
+    const hasToolchainFailure = envFailures.some((r) => !/readonly database|SQLITE_READONLY|read-only file system|EROFS/i.test(r.output));
+    if (hasToolchainFailure) {
+      console.log('    👉  先修复环境再重跑 check: 确认 pnpm/npm/yarn 已安装，node_modules 已安装 (pnpm install)');
+    }
     console.log('    这些失败与代码质量无关，用 token 诊断代码是浪费。\n');
   }
 
@@ -115,11 +126,11 @@ function printDiagnosticsAndRemediation(results: CheckResult[], allPassed: boole
   }
 
   if (envExempt) {
-    console.log('\n🛠️  环境豁免（check_env_exempt）: 本次全部失败项都是工具链不可用，非代码问题:');
+    console.log('\n🛠️  环境豁免（check_env_exempt）: 本次全部失败项都是工具链不可用或只读环境约束，非代码问题:');
     for (const r of results.filter((item) => !item.passed && item.severity !== 'warning')) {
       console.log(`  - ${r.name}`);
     }
-    console.log('    豁免依据: 探针证明 runner 不可用，或输出为命令不存在/无法派生进程/二进制不可执行。');
+    console.log('    豁免依据: 探针证明 runner 不可用，或输出为命令不存在/无法派生进程/二进制不可执行/只读数据库限制。');
     console.log('    审计: 已记入 workspace/decisions.md (policy.env_exempt)，gate=check_env_exempt。');
     console.log('    想按失败处理请重跑: docpath check --no-env-exempt\n');
   }

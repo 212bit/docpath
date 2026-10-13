@@ -49,6 +49,12 @@ export function looksLikeEnvironmentFailure(output: string): boolean {
     /npx: command not found/i,
     /Permission denied.*node_modules/,
     /EACCES.*node_modules/,
+    /attempt to write a readonly database/i,
+    /SQLITE_READONLY/i,
+    /read-only file system/i,
+    /EROFS/i,
+    /Permission denied.*projects\.sqlite/i,
+    /EACCES.*projects\.sqlite/i,
   ];
   return envPatterns.some((pattern) => pattern.test(output));
 }
@@ -60,14 +66,18 @@ export function looksLikeEnvironmentFailure(output: string): boolean {
  * `MODULE_NOT_FOUND` / `ENOENT.*node_modules` 也可能来自真实缺依赖或代码问题；若拿它
  * 直接放行整单 check，一个真实的缺依赖失败会被误判成环境问题而豁免通过。
  *
- * 这里只保留**语义上只可能是工具链不可用**的模式：命令不存在 / 无法派生进程 /
- * 二进制不可执行。其余一律不豁免（其恢复动作是 pnpm install 或修代码，不是豁免）。
+ * 这里只保留**语义上只可能是工具链不可用或只读沙箱环境限制**的模式：命令不存在 / 无法派生进程 /
+ * 二进制不可执行 / 只读数据库 / 只读文件系统。其余一律不豁免（其恢复动作是 pnpm install 或修代码，不是豁免）。
  */
 export function looksLikeToolchainUnavailable(output: string): boolean {
   const toolchainPatterns = [
     /command not found/i,
     /is not recognized as (an )?internal or external command/i,
     /spawn.*ENOENT/,
+    /attempt to write a readonly database/i,
+    /SQLITE_READONLY/i,
+    /read-only file system/i,
+    /EROFS: read-only file system/i,
   ];
   return toolchainPatterns.some((pattern) => pattern.test(output));
 }

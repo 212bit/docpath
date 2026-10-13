@@ -1,0 +1,8 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-sqlite","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 FR-1 只读环境 SQLite 韧性防御","timestamp":"2026-10-13T14:07:39.145Z","sessionId":"agy-c06e4deb-cb24-4a"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-sqlite","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-13T14:18:21.563Z","sessionId":"agy-c06e4deb-cb24-4a"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-sqlite","step":"S2","status":"in_progress","context":"开始执行: 实现并验证 FR-2 环境失败分流","timestamp":"2026-10-13T14:18:21.884Z","sessionId":"agy-c06e4deb-cb24-4a"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-sqlite","step":"S2","status":"done","context":"step-pass: S2","timestamp":"2026-10-13T14:22:21.724Z","sessionId":"agy-c06e4deb-cb24-4a"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-sqlite","step":"check","status":"blocked","context":"质量检查失败: TypeScript 编译","timestamp":"2026-10-13T14:24:42.041Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-sqlite","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-13T14:27:33.824Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-sqlite","step":"review","status":"done","context":"代码审查: 0 错误, 8 警告, 8 提示","timestamp":"2026-10-13T14:27:34.991Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261013-sqlite","step":"journal","status":"done","context":"知识归档完成 (2/2 步)","timestamp":"2026-10-13T14:27:36.432Z"}

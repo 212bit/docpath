@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, mkdtempSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, mkdtempSync, writeFileSync, chmodSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -236,4 +236,42 @@ describe('init command', () => {
     assert.match(doc, /`next --agent` 是只读的 advisory router/);
     assert.match(doc, /不是授权、锁或所有命令的必需前置/);
   });
+
+  it('handles readonly registry gracefully without failing init and provides clear guidance', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-init-ro-'));
+    const regDir = mkdtempSync(join(tmpdir(), 'dp-reg-ro-'));
+    const registryDb = join(regDir, 'projects.sqlite');
+
+    writeFileSync(registryDb, '');
+    chmodSync(registryDb, 0o444);
+
+    try {
+      const output = execSync(`node ${BIN} init --cwd ${cwd} --level 2 2>&1`, {
+        cwd,
+        encoding: 'utf-8',
+        timeout: 20000,
+        env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
+      });
+
+      assert.match(output, /本地项目中心注册已跳过/);
+      assert.match(output, /DOCPATH_REGISTRY_DB=/);
+      assert.equal(existsSync(join(cwd, '.docpath', 'workspace', 'state.json')), true);
+      assert.equal(existsSync(join(cwd, '.docpath', 'config.yaml')), true);
+
+      // Verify projects command can read without crashing
+      const projectsOut = execSync(`node ${BIN} projects --json`, {
+        cwd,
+        encoding: 'utf-8',
+        timeout: 20000,
+        env: { ...process.env, DOCPATH_REGISTRY_DB: registryDb },
+      });
+      const parsed = JSON.parse(projectsOut);
+      assert.ok(Array.isArray(parsed.projects));
+    } finally {
+      try { chmodSync(registryDb, 0o644); } catch {}
+      rmSync(cwd, { recursive: true, force: true });
+      rmSync(regDir, { recursive: true, force: true });
+    }
+  });
 });
+
