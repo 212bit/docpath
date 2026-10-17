@@ -49,7 +49,7 @@
 触发: 修改任何共享/存储契约(symlink vs copy, tracked vs ignored, 路径布局)。期望行为: 除 R-277 的文档四层外, 额外 grep 代码中以该契约特征做判定的谓词(存在性/文件类型/路径形态检查)与用契约特征搭建 fixture 的测试; 判定逻辑应选择与契约无关的机制信号(如 linked worktree 用 .git 是文件, 而非 symlink 布局), 且全仓库仅保留一份实现。边界: 语义依赖契约的消费方(如 changes-report 的 noise 分类)不能只换判定, 需同步改写语义后再复活(见 R-289)。
 ### Evidence
 - src/utils/git-dirty-guard.ts isLinkedGitWorktree (R-288 修复)
-- src/utils/changes-report.ts:152 遗留重复实现 (R-289 待修)
+- src/utils/changes-report.ts 已复用 isLinkedGitWorktree 单一实现 (R-289 已闭环修复)
 - tests/dirty-worktree-guard.test.mjs 原 symlink 伪造用例已改真实 git worktree add
 
 ## pattern: state.json 变更必须经唯一持锁入口; withLock 不可重入, mutator/持锁段内禁止嵌套锁调用

@@ -199,4 +199,73 @@ describe('DocPath Rule & ADR Doctor Engine', () => {
     assert.ok(parsed.rules);
     assert.equal(parsed.rules.passed, true);
   });
+
+  it('diagnoses stale backlog assertions and split config truth, and self-heals stale markers', async () => {
+    const docpathDir = join(tempDir, '.docpath');
+    const rulesDir = join(docpathDir, 'rules');
+    const backlogDir = join(docpathDir, 'backlog');
+    const srcDir = join(tempDir, 'src');
+
+    await mkdir(rulesDir, { recursive: true });
+    await mkdir(backlogDir, { recursive: true });
+    await mkdir(srcDir, { recursive: true });
+
+    await writeFile(join(srcDir, 'worktree-guard.ts'), 'export const guard = true;');
+
+    // 1. 创建已完成的 backlog R-299
+    const backlogContent = `---
+id: R-299
+title: "已完成的历史需求"
+status: done
+priority: P1
+level: 1
+source: manual
+readiness: confirmed
+evidence:
+  brainstorm: null
+  analysis: null
+  spec: null
+  decision_brief: null
+  user_confirmed: null
+---
+
+# 需求正文
+`;
+    await writeFile(join(backlogDir, 'R-299.md'), backlogContent);
+
+    // 2. 创建规则引用 R-299 并标记为待修
+    const ruleContent = `# Architecture Rules
+
+## pattern: 隔离判定契约
+- rationale: 避免重复实现
+### Evidence
+- src/worktree-guard.ts 判定逻辑 (R-299 待修)
+`;
+    await writeFile(join(rulesDir, 'architecture.md'), ruleContent);
+
+    // 3. 同时放置 config.yaml 与 config.json 制造双真源分裂
+    await writeFile(join(docpathDir, 'config.yaml'), 'project:\n  name: test\n');
+    await writeFile(join(docpathDir, 'config.json'), '{"project": {"name": "test"}}');
+
+    const report = await diagnoseRulesAndDecisions({
+      cwd: tempDir,
+      repoRoot: tempDir,
+    });
+
+    const staleIssue = report.issues.find((i) => i.category === 'stale_backlog_assertion');
+    assert.ok(staleIssue, 'Should detect stale backlog assertion for R-299');
+    assert.equal(staleIssue.details?.backlogId, 'R-299');
+    assert.equal(staleIssue.details?.backlogStatus, 'done');
+
+    const splitConfigIssue = report.issues.find((i) => i.category === 'split_config_truth');
+    assert.ok(splitConfigIssue, 'Should detect split config truth when both yaml and json exist');
+
+    // 4. 测试 fixRuleIssues 自动自愈陈旧需求标记
+    const fixResult = await fixRuleIssues(docpathDir, { repoRoot: tempDir });
+    assert.equal(fixResult.healedBacklogAssertions, 1);
+
+    const healedContent = await readFile(join(rulesDir, 'architecture.md'), 'utf-8');
+    assert.ok(healedContent.includes('(R-299 已闭环修复)'), 'Should heal stale marker to 已闭环修复');
+    assert.ok(!healedContent.includes('R-299 待修'), 'Old stale marker should be gone');
+  });
 });

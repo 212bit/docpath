@@ -1,0 +1,996 @@
+{
+  "taskId": "T-20261017-task",
+  "taskTitle": "T-20261017-task - 规则真源防滞后自愈与规则医生深度体检",
+  "backlogId": "R-499",
+  "profile": "standard",
+  "level": 2,
+  "startedAt": "2026-10-17T01:16:37.669Z",
+  "completedAt": "2026-10-17T01:29:24.225Z",
+  "durationMinutes": 12.8,
+  "firstTimePassRate": 100,
+  "complianceScore": 65,
+  "violations": [
+    {
+      "ruleId": "CR-03",
+      "ruleName": "Flapping Tool / Harness Retry Loops",
+      "severity": "high",
+      "description": "检测到 0 次连续相同工具/命令重试死循环或 9 次工具执行错误",
+      "penalty": 20,
+      "evidence": {
+        "flappingCount": 0,
+        "errorCount": 9
+      }
+    },
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 123, 消耗: 89975 Tokens, 时长: 19237 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 123,
+        "totalTokens": 89975,
+        "durationMinutes": 19237
+      }
+    }
+  ],
+  "totalDiffLines": 1797,
+  "filesChanged": 18,
+  "linesAdded": 1753,
+  "linesDeleted": 44,
+  "engineering": {
+    "turnCount": 7,
+    "retryCount": 0,
+    "firstTimePassRate": 100,
+    "cycleTimeMinutes": 12.8,
+    "filesChanged": 18,
+    "linesAdded": 1753,
+    "linesDeleted": 44,
+    "totalDiffLines": 1797,
+    "speedLinesPerMinute": 140.4
+  },
+  "protocol": {
+    "specTokens": 861,
+    "planTokens": 339,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3000
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 62982,
+    "outputTokens": 26993,
+    "totalTokens": 89975,
+    "costUsd": 0.5938,
+    "toolCallsCount": 119,
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 56,
+        "inputTokens": 2956,
+        "outputTokens": 39369,
+        "totalTokens": 42325,
+        "percentage": 47,
+        "errorCount": 1
+      },
+      {
+        "name": "replace_file_content",
+        "count": 19,
+        "inputTokens": 10396,
+        "outputTokens": 9681,
+        "totalTokens": 20077,
+        "percentage": 22.3,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 44,
+        "inputTokens": 3632,
+        "outputTokens": 16027,
+        "totalTokens": 19659,
+        "percentage": 21.8,
+        "errorCount": 7
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"rule-doctor.test.mjs\"\" 被重复读取了 6 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 4628,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/rule-doctor.test.mjs\"",
+          "readCount": 6,
+          "wastedTokens": 4628
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"rule-doctor.ts\"\" 被重复读取了 27 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 17700,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/rule-doctor.ts\"",
+          "readCount": 27,
+          "wastedTokens": 17700
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"backlog.ts\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1048,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/backlog.ts\"",
+          "readCount": 3,
+          "wastedTokens": 1048
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 7,
+      "errorCalls": 0,
+      "totalTokens": 617,
+      "inputTokens": 210,
+      "outputTokens": 407,
+      "percentageOfSessionTokens": 151.6,
+      "commands": [
+        {
+          "subcommand": "step-pass",
+          "count": 5,
+          "errorCount": 0,
+          "inputTokens": 150,
+          "outputTokens": 255,
+          "totalTokens": 405,
+          "avgTokens": 81
+        },
+        {
+          "subcommand": "go",
+          "count": 2,
+          "errorCount": 0,
+          "inputTokens": 60,
+          "outputTokens": 152,
+          "totalTokens": 212,
+          "avgTokens": 106
+        }
+      ]
+    },
+    "complianceScore": 65,
+    "violations": [
+      {
+        "ruleId": "CR-03",
+        "ruleName": "Flapping Tool / Harness Retry Loops",
+        "severity": "high",
+        "description": "检测到 0 次连续相同工具/命令重试死循环或 9 次工具执行错误",
+        "penalty": 20,
+        "evidence": {
+          "flappingCount": 0,
+          "errorCount": 9
+        }
+      },
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 123, 消耗: 89975 Tokens, 时长: 19237 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 123,
+          "totalTokens": 89975,
+          "durationMinutes": 19237
+        }
+      }
+    ],
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 93,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 3,
+      "redundantTokensWasted": 247,
+      "redundantPatterns": [
+        {
+          "subcommand": "step-pass",
+          "count": 3,
+          "tokensWasted": 247,
+          "reason": "Consecutive `step-pass` polling without intermediate actions"
+        }
+      ],
+      "serialChains": [
+        {
+          "chain": "step-pass -> step-pass",
+          "count": 3,
+          "tokensWasted": 247,
+          "recommendation": "Avoid calling `docpath step-pass` consecutively without intermediate actions."
+        },
+        {
+          "chain": "go -> step-pass",
+          "count": 2,
+          "tokensWasted": 158,
+          "recommendation": "Avoid serial chaining of \"go -> step-pass\" without intervening actions."
+        },
+        {
+          "chain": "step-pass -> go",
+          "count": 1,
+          "tokensWasted": 105,
+          "recommendation": "Avoid serial chaining of \"step-pass -> go\" without intervening actions."
+        }
+      ],
+      "heavyOutputCommands": [],
+      "actionableOptimizations": [
+        "Reduce 3 redundant CLI calls to save ~247 tokens.",
+        "Avoid calling `docpath step-pass` consecutively without intermediate actions.",
+        "Avoid serial chaining of \"go -> step-pass\" without intervening actions.",
+        "Avoid serial chaining of \"step-pass -> go\" without intervening actions."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "bc-1",
+        "timestamp": "2026-10-17T01:16:37.669Z",
+        "stepId": "S1",
+        "subcommand": "go",
+        "rawCommandLine": "docpath go",
+        "directInputTokens": 30,
+        "directOutputTokens": 77,
+        "directTotalTokens": 107,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success"
+      },
+      {
+        "id": "bc-2",
+        "timestamp": "2026-10-17T01:18:55.560Z",
+        "stepId": "S1",
+        "subcommand": "step-pass",
+        "rawCommandLine": "docpath step-pass",
+        "directInputTokens": 30,
+        "directOutputTokens": 49,
+        "directTotalTokens": 79,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "go -> step-pass",
+        "wastedTokens": 0,
+        "status": "success"
+      },
+      {
+        "id": "bc-3",
+        "timestamp": "2026-10-17T01:18:55.837Z",
+        "stepId": "S2",
+        "subcommand": "go",
+        "rawCommandLine": "docpath go",
+        "directInputTokens": 30,
+        "directOutputTokens": 75,
+        "directTotalTokens": 105,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "step-pass -> go",
+        "wastedTokens": 0,
+        "status": "success"
+      },
+      {
+        "id": "bc-4",
+        "timestamp": "2026-10-17T01:26:23.069Z",
+        "stepId": "S2",
+        "subcommand": "step-pass",
+        "rawCommandLine": "docpath step-pass",
+        "directInputTokens": 30,
+        "directOutputTokens": 49,
+        "directTotalTokens": 79,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "go -> step-pass",
+        "wastedTokens": 0,
+        "status": "success"
+      },
+      {
+        "id": "bc-5",
+        "timestamp": "2026-10-17T01:29:22.189Z",
+        "stepId": "check",
+        "subcommand": "step-pass",
+        "rawCommandLine": "docpath step-pass",
+        "directInputTokens": 30,
+        "directOutputTokens": 50,
+        "directTotalTokens": 80,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "step-pass -> step-pass",
+        "wastedTokens": 80,
+        "status": "success"
+      },
+      {
+        "id": "bc-6",
+        "timestamp": "2026-10-17T01:29:22.779Z",
+        "stepId": "review",
+        "subcommand": "step-pass",
+        "rawCommandLine": "docpath step-pass",
+        "directInputTokens": 30,
+        "directOutputTokens": 56,
+        "directTotalTokens": 86,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "step-pass -> step-pass",
+        "wastedTokens": 86,
+        "status": "success"
+      },
+      {
+        "id": "bc-7",
+        "timestamp": "2026-10-17T01:29:24.217Z",
+        "stepId": "journal",
+        "subcommand": "step-pass",
+        "rawCommandLine": "docpath step-pass",
+        "directInputTokens": 30,
+        "directOutputTokens": 51,
+        "directTotalTokens": 81,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "step-pass -> step-pass",
+        "wastedTokens": 81,
+        "status": "success"
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 62982,
+      "outputTokens": 26993,
+      "totalTokens": 89975,
+      "costUsd": 0.5938
+    },
+    "toolCalls": {
+      "total": 119,
+      "byName": {
+        "run_command": 44,
+        "view_file": 56,
+        "replace_file_content": 19
+      },
+      "errorCount": 9
+    },
+    "toolAttributions": [
+      {
+        "name": "view_file",
+        "count": 56,
+        "inputTokens": 2956,
+        "outputTokens": 39369,
+        "totalTokens": 42325,
+        "percentage": 47,
+        "errorCount": 1
+      },
+      {
+        "name": "replace_file_content",
+        "count": 19,
+        "inputTokens": 10396,
+        "outputTokens": 9681,
+        "totalTokens": 20077,
+        "percentage": 22.3,
+        "errorCount": 0
+      },
+      {
+        "name": "run_command",
+        "count": 44,
+        "inputTokens": 3632,
+        "outputTokens": 16027,
+        "totalTokens": 19659,
+        "percentage": 21.8,
+        "errorCount": 7
+      }
+    ],
+    "toolInefficiencies": [
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"rule-doctor.test.mjs\"\" 被重复读取了 6 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 4628,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/tests/rule-doctor.test.mjs\"",
+          "readCount": 6,
+          "wastedTokens": 4628
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "high",
+        "tool": "view_file",
+        "description": "文件 \"rule-doctor.ts\"\" 被重复读取了 27 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 17700,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/rule-doctor.ts\"",
+          "readCount": 27,
+          "wastedTokens": 17700
+        }
+      },
+      {
+        "type": "duplicate_file_reads",
+        "severity": "medium",
+        "tool": "view_file",
+        "description": "文件 \"backlog.ts\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+        "tokensWasted": 1048,
+        "evidence": {
+          "path": "\"/Users/mac/project/docpath/src/engine/backlog.ts\"",
+          "readCount": 3,
+          "wastedTokens": 1048
+        }
+      }
+    ],
+    "docpathCliOverhead": {
+      "totalCalls": 7,
+      "errorCalls": 0,
+      "totalTokens": 617,
+      "inputTokens": 210,
+      "outputTokens": 407,
+      "percentageOfSessionTokens": 151.6,
+      "commands": [
+        {
+          "subcommand": "step-pass",
+          "count": 5,
+          "errorCount": 0,
+          "inputTokens": 150,
+          "outputTokens": 255,
+          "totalTokens": 405,
+          "avgTokens": 81
+        },
+        {
+          "subcommand": "go",
+          "count": 2,
+          "errorCount": 0,
+          "inputTokens": 60,
+          "outputTokens": 152,
+          "totalTokens": 212,
+          "avgTokens": 106
+        }
+      ]
+    },
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 93,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 3,
+      "redundantTokensWasted": 247,
+      "redundantPatterns": [
+        {
+          "subcommand": "step-pass",
+          "count": 3,
+          "tokensWasted": 247,
+          "reason": "Consecutive `step-pass` polling without intermediate actions"
+        }
+      ],
+      "serialChains": [
+        {
+          "chain": "step-pass -> step-pass",
+          "count": 3,
+          "tokensWasted": 247,
+          "recommendation": "Avoid calling `docpath step-pass` consecutively without intermediate actions."
+        },
+        {
+          "chain": "go -> step-pass",
+          "count": 2,
+          "tokensWasted": 158,
+          "recommendation": "Avoid serial chaining of \"go -> step-pass\" without intervening actions."
+        },
+        {
+          "chain": "step-pass -> go",
+          "count": 1,
+          "tokensWasted": 105,
+          "recommendation": "Avoid serial chaining of \"step-pass -> go\" without intervening actions."
+        }
+      ],
+      "heavyOutputCommands": [],
+      "actionableOptimizations": [
+        "Reduce 3 redundant CLI calls to save ~247 tokens.",
+        "Avoid calling `docpath step-pass` consecutively without intermediate actions.",
+        "Avoid serial chaining of \"go -> step-pass\" without intervening actions.",
+        "Avoid serial chaining of \"step-pass -> go\" without intervening actions."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "bc-1",
+        "timestamp": "2026-10-17T01:16:37.669Z",
+        "stepId": "S1",
+        "subcommand": "go",
+        "rawCommandLine": "docpath go",
+        "directInputTokens": 30,
+        "directOutputTokens": 77,
+        "directTotalTokens": 107,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success"
+      },
+      {
+        "id": "bc-2",
+        "timestamp": "2026-10-17T01:18:55.560Z",
+        "stepId": "S1",
+        "subcommand": "step-pass",
+        "rawCommandLine": "docpath step-pass",
+        "directInputTokens": 30,
+        "directOutputTokens": 49,
+        "directTotalTokens": 79,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "go -> step-pass",
+        "wastedTokens": 0,
+        "status": "success"
+      },
+      {
+        "id": "bc-3",
+        "timestamp": "2026-10-17T01:18:55.837Z",
+        "stepId": "S2",
+        "subcommand": "go",
+        "rawCommandLine": "docpath go",
+        "directInputTokens": 30,
+        "directOutputTokens": 75,
+        "directTotalTokens": 105,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "step-pass -> go",
+        "wastedTokens": 0,
+        "status": "success"
+      },
+      {
+        "id": "bc-4",
+        "timestamp": "2026-10-17T01:26:23.069Z",
+        "stepId": "S2",
+        "subcommand": "step-pass",
+        "rawCommandLine": "docpath step-pass",
+        "directInputTokens": 30,
+        "directOutputTokens": 49,
+        "directTotalTokens": 79,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "go -> step-pass",
+        "wastedTokens": 0,
+        "status": "success"
+      },
+      {
+        "id": "bc-5",
+        "timestamp": "2026-10-17T01:29:22.189Z",
+        "stepId": "check",
+        "subcommand": "step-pass",
+        "rawCommandLine": "docpath step-pass",
+        "directInputTokens": 30,
+        "directOutputTokens": 50,
+        "directTotalTokens": 80,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "step-pass -> step-pass",
+        "wastedTokens": 80,
+        "status": "success"
+      },
+      {
+        "id": "bc-6",
+        "timestamp": "2026-10-17T01:29:22.779Z",
+        "stepId": "review",
+        "subcommand": "step-pass",
+        "rawCommandLine": "docpath step-pass",
+        "directInputTokens": 30,
+        "directOutputTokens": 56,
+        "directTotalTokens": 86,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "step-pass -> step-pass",
+        "wastedTokens": 86,
+        "status": "success"
+      },
+      {
+        "id": "bc-7",
+        "timestamp": "2026-10-17T01:29:24.217Z",
+        "stepId": "journal",
+        "subcommand": "step-pass",
+        "rawCommandLine": "docpath step-pass",
+        "directInputTokens": 30,
+        "directOutputTokens": 51,
+        "directTotalTokens": 81,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "step-pass -> step-pass",
+        "wastedTokens": 81,
+        "status": "success"
+      }
+    ],
+    "turnsCount": 123,
+    "errorCount": 9,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-03",
+        "ruleName": "Flapping Tool / Harness Retry Loops",
+        "severity": "high",
+        "description": "检测到 0 次连续相同工具/命令重试死循环或 9 次工具执行错误",
+        "penalty": 20,
+        "evidence": {
+          "flappingCount": 0,
+          "errorCount": 9
+        }
+      },
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 123, 消耗: 89975 Tokens, 时长: 19237 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 123,
+          "totalTokens": 89975,
+          "durationMinutes": 19237
+        }
+      }
+    ],
+    "complianceScore": 65,
+    "durationMs": 1154210000
+  },
+  "toolAttributions": [
+    {
+      "name": "view_file",
+      "count": 56,
+      "inputTokens": 2956,
+      "outputTokens": 39369,
+      "totalTokens": 42325,
+      "percentage": 47,
+      "errorCount": 1
+    },
+    {
+      "name": "replace_file_content",
+      "count": 19,
+      "inputTokens": 10396,
+      "outputTokens": 9681,
+      "totalTokens": 20077,
+      "percentage": 22.3,
+      "errorCount": 0
+    },
+    {
+      "name": "run_command",
+      "count": 44,
+      "inputTokens": 3632,
+      "outputTokens": 16027,
+      "totalTokens": 19659,
+      "percentage": 21.8,
+      "errorCount": 7
+    }
+  ],
+  "toolInefficiencies": [
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"rule-doctor.test.mjs\"\" 被重复读取了 6 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 4628,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/tests/rule-doctor.test.mjs\"",
+        "readCount": 6,
+        "wastedTokens": 4628
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "high",
+      "tool": "view_file",
+      "description": "文件 \"rule-doctor.ts\"\" 被重复读取了 27 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 17700,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/engine/rule-doctor.ts\"",
+        "readCount": 27,
+        "wastedTokens": 17700
+      }
+    },
+    {
+      "type": "duplicate_file_reads",
+      "severity": "medium",
+      "tool": "view_file",
+      "description": "文件 \"backlog.ts\"\" 被重复读取了 3 次，建议派发子代理或在内存中缓存/按行切片读取",
+      "tokensWasted": 1048,
+      "evidence": {
+        "path": "\"/Users/mac/project/docpath/src/engine/backlog.ts\"",
+        "readCount": 3,
+        "wastedTokens": 1048
+      }
+    }
+  ],
+  "docpathCliOverhead": {
+    "totalCalls": 7,
+    "errorCalls": 0,
+    "totalTokens": 617,
+    "inputTokens": 210,
+    "outputTokens": 407,
+    "percentageOfSessionTokens": 151.6,
+    "commands": [
+      {
+        "subcommand": "step-pass",
+        "count": 5,
+        "errorCount": 0,
+        "inputTokens": 150,
+        "outputTokens": 255,
+        "totalTokens": 405,
+        "avgTokens": 81
+      },
+      {
+        "subcommand": "go",
+        "count": 2,
+        "errorCount": 0,
+        "inputTokens": 60,
+        "outputTokens": 152,
+        "totalTokens": 212,
+        "avgTokens": 106
+      }
+    ]
+  },
+  "docpathEfficacy": {
+    "preventedLoopsCount": 0,
+    "deadlockTokensSaved": 0,
+    "contextCompressionRatio": 92.5,
+    "subagentTokensSaved": 0,
+    "gateInterceptionCount": 0,
+    "firstTimePassRate": 93,
+    "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+  },
+  "docpathCliFriction": {
+    "redundantCallsCount": 3,
+    "redundantTokensWasted": 247,
+    "redundantPatterns": [
+      {
+        "subcommand": "step-pass",
+        "count": 3,
+        "tokensWasted": 247,
+        "reason": "Consecutive `step-pass` polling without intermediate actions"
+      }
+    ],
+    "serialChains": [
+      {
+        "chain": "step-pass -> step-pass",
+        "count": 3,
+        "tokensWasted": 247,
+        "recommendation": "Avoid calling `docpath step-pass` consecutively without intermediate actions."
+      },
+      {
+        "chain": "go -> step-pass",
+        "count": 2,
+        "tokensWasted": 158,
+        "recommendation": "Avoid serial chaining of \"go -> step-pass\" without intervening actions."
+      },
+      {
+        "chain": "step-pass -> go",
+        "count": 1,
+        "tokensWasted": 105,
+        "recommendation": "Avoid serial chaining of \"step-pass -> go\" without intervening actions."
+      }
+    ],
+    "heavyOutputCommands": [],
+    "actionableOptimizations": [
+      "Reduce 3 redundant CLI calls to save ~247 tokens.",
+      "Avoid calling `docpath step-pass` consecutively without intermediate actions.",
+      "Avoid serial chaining of \"go -> step-pass\" without intervening actions.",
+      "Avoid serial chaining of \"step-pass -> go\" without intervening actions."
+    ]
+  },
+  "commandInvocations": [
+    {
+      "id": "bc-1",
+      "timestamp": "2026-10-17T01:16:37.669Z",
+      "stepId": "S1",
+      "subcommand": "go",
+      "rawCommandLine": "docpath go",
+      "directInputTokens": 30,
+      "directOutputTokens": 77,
+      "directTotalTokens": 107,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success"
+    },
+    {
+      "id": "bc-2",
+      "timestamp": "2026-10-17T01:18:55.560Z",
+      "stepId": "S1",
+      "subcommand": "step-pass",
+      "rawCommandLine": "docpath step-pass",
+      "directInputTokens": 30,
+      "directOutputTokens": 49,
+      "directTotalTokens": 79,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "go -> step-pass",
+      "wastedTokens": 0,
+      "status": "success"
+    },
+    {
+      "id": "bc-3",
+      "timestamp": "2026-10-17T01:18:55.837Z",
+      "stepId": "S2",
+      "subcommand": "go",
+      "rawCommandLine": "docpath go",
+      "directInputTokens": 30,
+      "directOutputTokens": 75,
+      "directTotalTokens": 105,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "step-pass -> go",
+      "wastedTokens": 0,
+      "status": "success"
+    },
+    {
+      "id": "bc-4",
+      "timestamp": "2026-10-17T01:26:23.069Z",
+      "stepId": "S2",
+      "subcommand": "step-pass",
+      "rawCommandLine": "docpath step-pass",
+      "directInputTokens": 30,
+      "directOutputTokens": 49,
+      "directTotalTokens": 79,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "go -> step-pass",
+      "wastedTokens": 0,
+      "status": "success"
+    },
+    {
+      "id": "bc-5",
+      "timestamp": "2026-10-17T01:29:22.189Z",
+      "stepId": "check",
+      "subcommand": "step-pass",
+      "rawCommandLine": "docpath step-pass",
+      "directInputTokens": 30,
+      "directOutputTokens": 50,
+      "directTotalTokens": 80,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "step-pass -> step-pass",
+      "wastedTokens": 80,
+      "status": "success"
+    },
+    {
+      "id": "bc-6",
+      "timestamp": "2026-10-17T01:29:22.779Z",
+      "stepId": "review",
+      "subcommand": "step-pass",
+      "rawCommandLine": "docpath step-pass",
+      "directInputTokens": 30,
+      "directOutputTokens": 56,
+      "directTotalTokens": 86,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "step-pass -> step-pass",
+      "wastedTokens": 86,
+      "status": "success"
+    },
+    {
+      "id": "bc-7",
+      "timestamp": "2026-10-17T01:29:24.217Z",
+      "stepId": "journal",
+      "subcommand": "step-pass",
+      "rawCommandLine": "docpath step-pass",
+      "directInputTokens": 30,
+      "directOutputTokens": 51,
+      "directTotalTokens": 81,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "step-pass -> step-pass",
+      "wastedTokens": 81,
+      "status": "success"
+    }
+  ],
+  "frictionFindings": [
+    {
+      "id": "FRIC-CMD-ERR",
+      "category": "command_error",
+      "severity": "high",
+      "title": "CLI 命令调用异常与参数拦截 (Command Execution Errors)",
+      "description": "检测到 8 次命令调用失败或参数报错，可能由于命令语法错误或环境不匹配导致",
+      "count": 8,
+      "tokensWasted": 1600,
+      "optimizationHint": "查阅 docpath --help 或 AGENTS.md 规范，确保 CLI 命令与参数格式准确"
+    },
+    {
+      "id": "FRIC-TOOL-WASTE",
+      "category": "tool_waste",
+      "severity": "high",
+      "title": "工具调用低效与上下文浪费 (Tool Waste & Context Bloat)",
+      "description": "检测到 3 处工具低效行为 (重复读大文件、超长命令输出或编辑失真)，造成上下文浪费",
+      "count": 3,
+      "tokensWasted": 23376,
+      "optimizationHint": "精准指定目标行范围切片读写，善用子代理进行大文件调研与探查"
+    }
+  ],
+  "stepPassAnalysis": {
+    "totalStepPassCalls": 5,
+    "productiveCalls": 2,
+    "redundantCalls": 3,
+    "directTokens": 405,
+    "invisibleTurnReplayTokens": 405,
+    "redundantTurnReplayTokens": 247,
+    "frictionTurnRatio": 71.4,
+    "summary": "检测到 5 次 step-pass 调用 (含 3 次空转)，模型隐性重放开销 ~405 (浪费 ~247)"
+  },
+  "lifecycleAnchor": {
+    "sessionId": "agy-c06e4deb-cb24-4a",
+    "baseCommit": "73ef9f57678709cdfbd3fa48b3a242ac9451f4b8",
+    "headCommit": "73ef9f57678709cdfbd3fa48b3a242ac9451f4b8",
+    "startedAt": "2026-10-17T01:16:37.669Z",
+    "completedAt": "2026-10-17T01:29:24.225Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 FR-1 规则真源防滞后自愈",
+      "startedAt": "2026-10-17T01:16:37.669Z",
+      "completedAt": "2026-10-17T01:18:55.560Z",
+      "durationMinutes": 2.3,
+      "totalTokens": 26039,
+      "inputTokens": 18227,
+      "outputTokens": 7812,
+      "costUsd": 0.1719,
+      "toolCallsCount": 32,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 20,
+          "tokens": 18255
+        },
+        {
+          "name": "run_command",
+          "count": 11,
+          "tokens": 3052
+        },
+        {
+          "name": "replace_file_content",
+          "count": 1,
+          "tokens": 822
+        }
+      ]
+    },
+    {
+      "stepId": "S2",
+      "stepTitle": "实现并验证 FR-2 规则医生深度体检",
+      "startedAt": "2026-10-17T01:18:55.837Z",
+      "completedAt": "2026-10-17T01:26:23.069Z",
+      "durationMinutes": 7.5,
+      "totalTokens": 66657,
+      "inputTokens": 46660,
+      "outputTokens": 19997,
+      "costUsd": 0.4399,
+      "toolCallsCount": 91,
+      "topTools": [
+        {
+          "name": "view_file",
+          "count": 40,
+          "tokens": 26142
+        },
+        {
+          "name": "replace_file_content",
+          "count": 19,
+          "tokens": 19351
+        },
+        {
+          "name": "run_command",
+          "count": 32,
+          "tokens": 15859
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 3000,
+    "realModelTokens": 89975,
+    "overheadRatio": 3.33,
+    "complianceScore": 65,
+    "firstTimePassRate": 100,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}

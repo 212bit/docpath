@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { resolveRulePaths, type ResolvedRuleFile, RULE_FILE_LINE_BUDGET } from '../utils/rules.js';
 import { readDecisionJsonl, type DecisionJsonlRecord } from '../utils/decisions.js';
+import { readBacklogItem } from './backlog.js';
 
 export type RuleIssueSeverity = 'error' | 'warning' | 'info';
 
@@ -13,7 +14,9 @@ export type RuleIssueCategory =
   | 'stale_reference'
   | 'budget_exceeded'
   | 'superseded_adr'
-  | 'empty_rule';
+  | 'empty_rule'
+  | 'stale_backlog_assertion'
+  | 'split_config_truth';
 
 export interface RuleDoctorIssue {
   id: string;
@@ -307,6 +310,65 @@ export async function loadWorkspaceDecisions(docpathDir: string): Promise<Decisi
 }
 
 /**
+ * 健壮解析需求条目的状态（支持标准解析与容错降级扫描）
+ */
+export async function resolveBacklogItemStatus(repoRoot: string, backlogId: string): Promise<string | null> {
+  try {
+    const item = await readBacklogItem(repoRoot, backlogId, { readArchived: true });
+    if (item?.status) return item.status;
+  } catch {
+    // 降级扫描
+  }
+
+  try {
+    const docpathDir = join(repoRoot, '.docpath');
+    const dirs = [join(docpathDir, 'backlog'), join(docpathDir, 'backlog', 'archived')];
+    for (const d of dirs) {
+      if (!existsSync(d)) continue;
+      const entries = readdirSync(d);
+      const matchFile = entries.find((f) => f === `${backlogId}.md` || f.startsWith(`${backlogId}-`) || f.startsWith(`${backlogId}.`));
+      if (matchFile) {
+        const raw = await readFile(join(d, matchFile), 'utf-8');
+        const statusMatch = raw.match(/^status:\s*([a-zA-Z0-9_]+)/m);
+        if (statusMatch) return statusMatch[1].toLowerCase();
+      }
+    }
+  } catch {
+    // 容错忽略
+  }
+
+  return null;
+}
+
+const STALE_BACKLOG_PATTERNS = [
+  /\((R-\d+)[^)\n]*?(?:待修|待办|待处理|未修复|\bTODO\b|\bWIP\b)[^)\n]*?\)/gi,
+  /\b(R-\d+)\b\s*[:：\-—]?\s*(?:待修|待办|待处理|未修复|\bTODO\b|\bWIP\b)/gi,
+  /(?:待修|待办|待处理|未修复|\bTODO\b|\bWIP\b)[:\s：\-—]+(?:需求\s*)?(R-\d+)\b/gi,
+];
+
+/**
+ * 提取规则文本中提及的需求断言标记
+ */
+export function extractBacklogAssertions(text: string): Array<{ backlogId: string; rawMatch: string }> {
+  const list: Array<{ backlogId: string; rawMatch: string }> = [];
+  const seenIds = new Set<string>();
+
+  for (const p of STALE_BACKLOG_PATTERNS) {
+    p.lastIndex = 0;
+    const matches = Array.from(text.matchAll(p));
+    for (const m of matches) {
+      const backlogId = m[1].toUpperCase();
+      if (!seenIds.has(backlogId)) {
+        seenIds.add(backlogId);
+        list.push({ backlogId, rawMatch: m[0] });
+      }
+    }
+  }
+
+  return list;
+}
+
+/**
  * 诊断规则与 ADR 健康度
  */
 export async function diagnoseRulesAndDecisions(options: RuleDoctorOptions): Promise<RuleDoctorReport> {
@@ -503,6 +565,50 @@ export async function diagnoseRulesAndDecisions(options: RuleDoctorOptions): Pro
     }
   }
 
+  // 7. 配置双真源分裂体检 (Split Config Truth)
+  const hasConfigYaml = existsSync(join(docpathDir, 'config.yaml')) || existsSync(join(docpathDir, 'config.yml'));
+  const hasConfigJson = existsSync(join(docpathDir, 'config.json'));
+  if (hasConfigYaml && hasConfigJson) {
+    issues.push({
+      id: 'config:split-truth',
+      severity: 'warning',
+      category: 'split_config_truth',
+      target: '.docpath/config.yaml & .docpath/config.json',
+      message: '工作区同时存在 config.yaml 与 config.json，存在配置双真源分裂风险',
+      details: { yamlPath: '.docpath/config.yaml', jsonPath: '.docpath/config.json' },
+      recommendation: '建议归一为单配置真源 (推荐使用 config.yaml)，删除或合并冗余的 config.json',
+      fixable: false,
+    });
+  }
+
+  // 8. 需求状态反向校验 (Stale Backlog Assertion)
+  const backlogCache = new Map<string, any>();
+
+  for (const rule of rules) {
+    const assertions = extractBacklogAssertions(rule.content);
+
+    for (const { backlogId } of assertions) {
+      let status = backlogCache.get(backlogId);
+      if (status === undefined) {
+        status = await resolveBacklogItemStatus(repoRoot, backlogId);
+        backlogCache.set(backlogId, status);
+      }
+
+      if (status === 'done' || status === 'dropped') {
+        issues.push({
+          id: `stale-backlog:${rule.id}:${backlogId}`,
+          severity: 'warning',
+          category: 'stale_backlog_assertion',
+          target: `${rule.file}#${rule.title}`,
+          message: `规则中提及的需求 [${backlogId}] 标注为待修/待办，但实际状态已为 ${status}`,
+          details: { ruleId: rule.id, file: rule.file, backlogId, backlogStatus: status },
+          recommendation: `更新规则描述，将已完成/闭环的需求状态标注为已修复 (或移除待修标记)`,
+          fixable: true,
+        });
+      }
+    }
+  }
+
   const errors = issues.filter((i) => i.severity === 'error').length;
   const warnings = issues.filter((i) => i.severity === 'warning').length;
   const infos = issues.filter((i) => i.severity === 'info').length;
@@ -523,14 +629,20 @@ export async function diagnoseRulesAndDecisions(options: RuleDoctorOptions): Pro
 }
 
 /**
- * 自动修复规则文件中的完全重复项与失效引用
+ * 自动修复规则文件中的完全重复项、失效引用与陈旧需求断言
  */
-export async function fixRuleIssues(docpathDir: string, options?: { repoRoot?: string }): Promise<{ fixedDuplicates: number; cleanedStaleRefs: number }> {
+export async function fixRuleIssues(
+  docpathDir: string,
+  options?: { repoRoot?: string },
+): Promise<{ fixedDuplicates: number; cleanedStaleRefs: number; healedBacklogAssertions: number }> {
   const repoRoot = options?.repoRoot || resolve(docpathDir, '..');
   const rulePaths = resolveRulePaths(docpathDir);
 
   let fixedDuplicates = 0;
   let cleanedStaleRefs = 0;
+  let healedBacklogAssertions = 0;
+
+  const backlogCache = new Map<string, any>();
 
   for (const rFile of rulePaths.allRules) {
     if (!rFile.exists) continue;
@@ -556,12 +668,12 @@ export async function fixRuleIssues(docpathDir: string, options?: { repoRoot?: s
       }
       seenSignatures.add(sig);
 
-      // 清理失效的 Evidence 引用行
+      // 清理失效的 Evidence 引用行与自愈陈旧需求标记
       const lines = rule.raw.split('\n');
       const filteredLines: string[] = [];
       let insideEvidence = false;
 
-      for (const line of lines) {
+      for (let line of lines) {
         if (/^###\s+Evidence/.test(line)) {
           insideEvidence = true;
           filteredLines.push(line);
@@ -581,6 +693,27 @@ export async function fixRuleIssues(docpathDir: string, options?: { repoRoot?: s
             } else if (!existsSync(resolve(repoRoot, rel))) {
               cleanedStaleRefs++;
               continue; // 跳过此失效引用行
+            }
+          }
+        }
+
+        // 自愈陈旧需求标记
+        const lineAssertions = extractBacklogAssertions(line);
+        if (lineAssertions.length > 0) {
+          for (const { backlogId, rawMatch } of lineAssertions) {
+            let status = backlogCache.get(backlogId);
+            if (status === undefined) {
+              status = await resolveBacklogItemStatus(repoRoot, backlogId);
+              backlogCache.set(backlogId, status);
+            }
+
+            if (status === 'done' || status === 'dropped') {
+              const replacement = rawMatch
+                .replace(/待修|待办|待处理|未修复/g, '已闭环修复')
+                .replace(/\bTODO\b/gi, 'DONE')
+                .replace(/\bWIP\b/gi, 'DONE');
+              line = line.replace(rawMatch, replacement);
+              healedBacklogAssertions++;
             }
           }
         }
@@ -609,5 +742,5 @@ export async function fixRuleIssues(docpathDir: string, options?: { repoRoot?: s
     await writeFile(rFile.path, newContent, 'utf-8');
   }
 
-  return { fixedDuplicates, cleanedStaleRefs };
+  return { fixedDuplicates, cleanedStaleRefs, healedBacklogAssertions };
 }

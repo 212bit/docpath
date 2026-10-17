@@ -81,6 +81,17 @@ docpath learn
 
 ---
 
+## 4.1 规则真源健康与规则医生 (`docpath rule doctor` / `docpath doctor --rules`)
+
+为了防止随着工程演进规则正文逐渐滞后于代码事实（例如某历史缺陷早已闭环修复，规则条目却依然声明其为“待修”），DocPath 构建了规则医生体检引擎：
+
+- **需求状态反向校验 (`stale_backlog_assertion`)**：扫描规则正文与 Evidence 中提及的需求断言（如 `R-xxx 待修`、`R-xxx TODO`、`R-xxx 待办`），反向核查对应需求的真实生命周期。若需求实际已处于 `status: done` 或已归档，立即报警提示更新。
+- **配置双真源分裂体检 (`split_config_truth`)**：检查项目根目录是否并存 `.docpath/config.yaml` 与 `.docpath/config.json`，防御双真源导致的配置漂移。
+- **孤立引用与行数预算体检**：检查 Evidence 中的文件路径有效性，并对规则库行数预算（200 行上限）进行守卫。
+- **一键防滞后自愈 (`docpath rule fix` / `docpath rule dedupe`)**：自动将已闭环需求的陈旧标记安全自愈为 `(R-xxx 已闭环修复)`，清理失效引用，实现规则库与真实代码形态的零滞后对齐。
+
+---
+
 ## 5. 智能上下文检索与注入 (Context Injection)
 
 沉淀的知识如果只存不读，就会沦为“知识死库”。DocPath 在 Agent 关键入口建立了**基于相关性的智能上下文注入**机制：
