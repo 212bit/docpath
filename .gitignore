@@ -28,3 +28,9 @@
 /.worktrees/
 .docpath/bin/docpath
 .docpath/tasks/promote-backups/
+
+# tsup 构建临时产物
+tsup.config.bundled_*.mjs
+
+# tsup 构建临时产物
+tsup.config.bundled_*.mjs
