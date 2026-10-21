@@ -49,6 +49,8 @@ export interface LastCheckEvidence {
   check_count: number;
   /** R-331: 代码范围 digest（HEAD + scope status 联合哈希）；scope 缓存复用判定键 */
   code_scope_digest?: string;
+  /** R-502: 计算 digest 时的工具链指纹（node 版本|platform|arch），用于诊断缓存失效原因 */
+  toolchain?: string;
   /** 分门类代码与配置 digest（compile / test / lint 分解缓存，R-403） */
   category_digests?: {
     compile?: string;

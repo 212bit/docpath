@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-21T15:26:12.830Z",
+    "updated_at": "2026-10-21T15:26:12.830Z",
+    "content_sha256": "e3217a60aa441bff356e8a223875ea18d918d4c2f3d047b82a3f562a954a58f0"
+  },
+  "task_id": "T-20261021-check-node",
+  "backlog_id": "R-502",
+  "title": "T-20261021-check-node - check 缓存键纳入工具链指纹：Node 版本变化必须使绿色证据失效",
+  "generated_at": "2026-10-21T15:26:12.830Z",
+  "scope": {
+    "included": [
+      "`src/commands/check/cache.ts`、`src/utils/workspace-evidence.ts`、`src/commands/check/evidence.ts`",
+      "新增单测"
+    ],
+    "excluded": [
+      "编译器/解释器版本探测（如 tsc、gcc 版本）",
+      "依赖树指纹（lockfile 已在 scope 路径内）",
+      "缓存失效原因的 UI 展示（仅落盘字段）"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "API / 数据契约",
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "用户在 2026-10-21 会话中同意先做缓存键工具链指纹",
+    "decision_brief_markdown": "- 当前问题: 缓存键只覆盖代码字节，不覆盖运行时；环境变化（Node 版本）后旧绿色证据仍会被复用，导致门禁假绿。\n- 目标: 把 node 版本 + platform + arch 混入 digest，并把指纹落盘，使环境变化必然 miss 且可诊断。\n- 背景: 来自 backlog R-502；R-501 的 flag 缺陷曾被 `cached: true` 掩盖一轮，属于真实事故。\n- 可选方案:\n  - 方案 A（采纳）: 指纹进哈希前缀 + 证据落盘字段\n  - 方案 B（否决）: 缓存命中前额外比较一次 node 版本 —— 两条缓存路径都要加分支，且无法覆盖 platform/arch\n  - 方案 C（否决）: 提交后清空缓存文件 —— 粗暴且无法区分\"代码没变\"与\"环境变了\"\n  - 方案 D（否决）: 只记录 fingerprint 不参与哈希 —— 只能诊断不能防错，等于没修\n- 推荐方案: 方案 A\n- 决策理由: 缓存键的语义是\"所有影响判定的输入\"，环境本就是输入之一；混入哈希是最小且无法绕过的实现\n- 不做什么: 不做编译器版本探测、不做 UI 展示、不做旧证据迁移\n- 成本: 约 40 行实现 + 70 行测试\n- 风险: 升级后所有既有证据首次必然 miss，用户会看到一次\"缓存失效\"；属一次性成本，需在提交信息里说明\n- 回滚方案: 移除哈希前缀与字段即可恢复旧行为\n- 用户确认: 用户在 2026-10-21 会话中同意先做缓存键工具链指纹"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "把工具链指纹纳入 check 缓存键，并落盘以便诊断",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "指纹不引入子进程探测（直接读 `process.versions` / `process.platform` / `process.arch`）",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "指纹不变时缓存命中率不下降",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "非 git 仓仍返回 `null` 并回落全量，语义不变",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "同一工具链指纹下 digest 稳定，不同指纹（仅 node 版本不同）下 digest 必然不同",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`last-check.json` 写出 `toolchain` 字段，且值与 `computeToolchainFingerprint()` 一致",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "分门类 digest 与全量 digest 都包含指纹前缀（两条缓存路径都不漏）",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "非 git 仓仍返回 `null`，`tryReuse*` 回落全量的语义不变",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "新增单测通过，Node 22 下既有 check 测试不回归",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "缓存键只覆盖代码字节，不覆盖运行时；环境变化（Node 版本）后旧绿色证据仍会被复用，导致门禁假绿。",
+    "options": [
+      "- 方案 A（采纳）: 指纹进哈希前缀 + 证据落盘字段"
+    ],
+    "chosen": "方案 A",
+    "rationale": "缓存键的语义是\"所有影响判定的输入\"，环境本就是输入之一；混入哈希是最小且无法绕过的实现"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "plan",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-21T15:27:20.488Z",
+    "updated_at": "2026-10-21T15:27:20.488Z",
+    "content_sha256": "67622f1049096b0d162132b25e5a68ee0f61501192b92bd362f6bb53c597278a"
+  },
+  "title": "执行计划",
+  "generated_at": "2026-10-21T15:27:20.488Z",
+  "steps": [
+    {
+      "id": "S1",
+      "name": "实现并验证 check 缓存键纳入工具链指纹：Node 版本变化必须使绿色证据失效",
+      "description": "完成 FR-1: check 缓存键纳入工具链指纹：Node 版本变化必须使绿色证据失效，随做随验（level-1 压缩计划，R-306）。",
+      "acceptance": "AC-1: code_scope_digest 与 category_digest 计算时混入工具链指纹（node 版本|platform|arch）；last-check.json 记录 toolchain 字段；指纹变化时缓存必然 miss 并重跑；指纹不变时缓存仍命中（不倒退性能）；单测覆盖同指纹命中/异指纹失效/证据字段落盘。；AC-2: 生成的 spec 可直接进入 `docpath plan`；AC-3: backlog 条目 R-502 与任务 T-20261021-check-node 建立双向关联",
+      "dependencies": "无",
+      "status": "done"
+    }
+  ]
+}

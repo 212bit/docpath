@@ -116,6 +116,25 @@ export const DEFAULT_LINT_SCOPE_PATHS = [
 
 export const CHECK_CODE_SCOPE_PATHS = DEFAULT_CHECK_CODE_SCOPE_PATHS;
 
+/**
+ * 工具链指纹（R-502）：缓存键必须覆盖所有会改变判定的输入。
+ *
+ * 只哈希代码字节时，Node 版本 / 平台变化后旧绿色证据仍会被复用——R-501 的
+ * `--test-isolation` 缺陷正是被 `cached: true` 掩盖了一轮。指纹混入 digest 后，
+ * 环境变化必然 miss，代码不变时仍命中。
+ */
+export function computeToolchainFingerprint(
+  nodeVersion: string = process.versions.node,
+  platform: string = process.platform,
+  arch: string = process.arch,
+): string {
+  return `${nodeVersion}|${platform}|${arch}`;
+}
+
+function hashToolchainPrefix(hash: ReturnType<typeof createHash>, toolchain: string): void {
+  hash.update(`toolchain:${toolchain}\n`);
+}
+
 function runGitOptional(cwd: string, args: string[]): string | null {
   try {
     return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
@@ -131,6 +150,7 @@ export function computeCategoryDigest(
   cwd: string,
   category: 'compile' | 'test' | 'lint',
   customScopePaths?: string[],
+  toolchain: string = computeToolchainFingerprint(),
 ): string | null {
   let basePaths: string[];
   if (category === 'compile') {
@@ -151,6 +171,7 @@ export function computeCategoryDigest(
   if (listing === null) return null;
   const files = listing.split('\n').filter(Boolean).sort();
   const hash = createHash('sha256');
+  hashToolchainPrefix(hash, toolchain);
   for (const file of files) {
     try {
       hash.update(file);
@@ -168,10 +189,11 @@ export function computeCategoryDigest(
 export function computeAllCategoryDigests(
   cwd: string,
   customScopePaths?: string[],
+  toolchain: string = computeToolchainFingerprint(),
 ): { compile?: string; test?: string; lint?: string } {
-  const compile = computeCategoryDigest(cwd, 'compile', customScopePaths) ?? undefined;
-  const test = computeCategoryDigest(cwd, 'test', customScopePaths) ?? undefined;
-  const lint = computeCategoryDigest(cwd, 'lint', customScopePaths) ?? undefined;
+  const compile = computeCategoryDigest(cwd, 'compile', customScopePaths, toolchain) ?? undefined;
+  const test = computeCategoryDigest(cwd, 'test', customScopePaths, toolchain) ?? undefined;
+  const lint = computeCategoryDigest(cwd, 'lint', customScopePaths, toolchain) ?? undefined;
   return { compile, test, lint };
 }
 
@@ -183,7 +205,11 @@ export function computeAllCategoryDigests(
  * 不付第二次全量。文件增删改任何一字节都会改变 digest。
  * 非 git 仓或 git 失败返回 null（调用方回落全量）。
  */
-export function computeCodeScopeDigest(cwd: string, customScopePaths?: string[]): string | null {
+export function computeCodeScopeDigest(
+  cwd: string,
+  customScopePaths?: string[],
+  toolchain: string = computeToolchainFingerprint(),
+): string | null {
   const scopePaths = (customScopePaths && customScopePaths.length > 0)
     ? Array.from(new Set([...customScopePaths, ...DEFAULT_CHECK_CODE_SCOPE_PATHS]))
     : DEFAULT_CHECK_CODE_SCOPE_PATHS;
@@ -193,6 +219,7 @@ export function computeCodeScopeDigest(cwd: string, customScopePaths?: string[])
   if (listing === null) return null;
   const files = listing.split('\n').filter(Boolean).sort();
   const hash = createHash('sha256');
+  hashToolchainPrefix(hash, toolchain);
   for (const file of files) {
     try {
       hash.update(file);

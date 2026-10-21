@@ -237,7 +237,7 @@ export async function writeLastCheckEvidence(
     ...(result.environment_exemptible ? { environment_exemptible: true } : {}),
     ...(result.command ? { command: result.command } : {}),
   }));
-  const { computeCodeScopeDigest, computeAllCategoryDigests } = await import('./cache.js');
+  const { computeCodeScopeDigest, computeAllCategoryDigests, computeToolchainFingerprint } = await import('./cache.js');
   const { readCheckCodeScopePaths } = await import('../../utils/config.js');
   const customScopePaths = await readCheckCodeScopePaths(cwd);
   const categoryDigests = computeAllCategoryDigests(cwd, customScopePaths);
@@ -250,6 +250,7 @@ export async function writeLastCheckEvidence(
     ...(gitBaseline ? { head: gitBaseline.ref } : {}),
     // R-331: scope 缓存判定键 + 复用标记
     code_scope_digest: computeCodeScopeDigest(cwd, customScopePaths) ?? undefined,
+    toolchain: computeToolchainFingerprint(),
     category_digests: categoryDigests,
     ...(meta?.cacheReused ? { cached: true } : {}),
     // R-350: 环境豁免——passed 视为 true（否则收口策略会拦），但显式标记豁免来源
