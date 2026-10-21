@@ -1,0 +1,1575 @@
+{
+  "taskId": "T-20261021-node-24-flag-test-isolation-node-22",
+  "taskTitle": "T-20261021-node-24-flag-test-isolation-node-22 - 修复测试门禁误注入 Node 24+ 专属 flag",
+  "backlogId": "R-501",
+  "profile": "standard",
+  "level": 1,
+  "startedAt": "2026-10-21T15:05:52.322Z",
+  "completedAt": "2026-10-21T15:15:33.047Z",
+  "durationMinutes": 9.7,
+  "firstTimePassRate": 0,
+  "complianceScore": 85,
+  "violations": [
+    {
+      "ruleId": "CR-04",
+      "ruleName": "Unrotated Long Session",
+      "severity": "medium",
+      "description": "会话未及时轮转（轮次: 57, 消耗: 250169 Tokens, 时长: 1461 分钟），存在上下文爆炸风险",
+      "penalty": 15,
+      "evidence": {
+        "turnsCount": 57,
+        "totalTokens": 250169,
+        "durationMinutes": 1461
+      }
+    }
+  ],
+  "totalDiffLines": 20343,
+  "filesChanged": 2,
+  "linesAdded": 20343,
+  "linesDeleted": 0,
+  "engineering": {
+    "turnCount": 7,
+    "retryCount": 1,
+    "firstTimePassRate": 0,
+    "cycleTimeMinutes": 9.7,
+    "filesChanged": 2,
+    "linesAdded": 20343,
+    "linesDeleted": 0,
+    "totalDiffLines": 20343,
+    "speedLinesPerMinute": 2097.2
+  },
+  "protocol": {
+    "specTokens": 1535,
+    "planTokens": 349,
+    "rulesTokens": 1800,
+    "totalInjectedTokens": 3684
+  },
+  "realUsage": {
+    "source": "antigravity",
+    "inputTokens": 220326,
+    "outputTokens": 29843,
+    "totalTokens": 250169,
+    "costUsd": 1.1086,
+    "toolCallsCount": 56,
+    "toolAttributions": [
+      {
+        "name": "run_command",
+        "count": 33,
+        "inputTokens": 4588,
+        "outputTokens": 16596,
+        "totalTokens": 21184,
+        "percentage": 8.5,
+        "errorCount": 1
+      },
+      {
+        "name": "read_file",
+        "count": 15,
+        "inputTokens": 371,
+        "outputTokens": 11543,
+        "totalTokens": 11914,
+        "percentage": 4.8,
+        "errorCount": 0
+      },
+      {
+        "name": "edit_file",
+        "count": 8,
+        "inputTokens": 3646,
+        "outputTokens": 381,
+        "totalTokens": 4027,
+        "percentage": 1.6,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [],
+    "docpathCliOverhead": {
+      "totalCalls": 13,
+      "errorCalls": 0,
+      "totalTokens": 8320,
+      "inputTokens": 3548,
+      "outputTokens": 4772,
+      "percentageOfSessionTokens": 3.3,
+      "commands": [
+        {
+          "subcommand": "write-spec",
+          "count": 3,
+          "errorCount": 0,
+          "inputTokens": 2501,
+          "outputTokens": 1082,
+          "totalTokens": 3583,
+          "avgTokens": 1194
+        },
+        {
+          "subcommand": "start",
+          "count": 3,
+          "errorCount": 0,
+          "inputTokens": 136,
+          "outputTokens": 1566,
+          "totalTokens": 1702,
+          "avgTokens": 567
+        },
+        {
+          "subcommand": "write-plan",
+          "count": 2,
+          "errorCount": 0,
+          "inputTokens": 707,
+          "outputTokens": 272,
+          "totalTokens": 979,
+          "avgTokens": 490
+        },
+        {
+          "subcommand": "next",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 28,
+          "outputTokens": 788,
+          "totalTokens": 816,
+          "avgTokens": 816
+        },
+        {
+          "subcommand": "step-pass",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 85,
+          "outputTokens": 458,
+          "totalTokens": 543,
+          "avgTokens": 543
+        },
+        {
+          "subcommand": "reveal",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 32,
+          "outputTokens": 386,
+          "totalTokens": 418,
+          "avgTokens": 418
+        },
+        {
+          "subcommand": "plan",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 30,
+          "outputTokens": 138,
+          "totalTokens": 168,
+          "avgTokens": 168
+        },
+        {
+          "subcommand": "backlog",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 29,
+          "outputTokens": 82,
+          "totalTokens": 111,
+          "avgTokens": 111
+        }
+      ]
+    },
+    "complianceScore": 85,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 57, 消耗: 250169 Tokens, 时长: 1461 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 57,
+          "totalTokens": 250169,
+          "durationMinutes": 1461
+        }
+      }
+    ],
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 98,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 5,
+      "redundantTokensWasted": 4359,
+      "redundantPatterns": [
+        {
+          "subcommand": "write-spec",
+          "count": 2,
+          "tokensWasted": 2055,
+          "reason": "Consecutive `write-spec` polling without intermediate actions"
+        },
+        {
+          "subcommand": "start",
+          "count": 2,
+          "tokensWasted": 1508,
+          "reason": "Consecutive `start` polling without intermediate actions"
+        },
+        {
+          "subcommand": "write-plan",
+          "count": 1,
+          "tokensWasted": 796,
+          "reason": "Consecutive `write-plan` polling without intermediate actions"
+        }
+      ],
+      "serialChains": [
+        {
+          "chain": "write-spec -> write-spec",
+          "count": 2,
+          "tokensWasted": 2055,
+          "recommendation": "Avoid calling `docpath write-spec` consecutively without intermediate actions."
+        },
+        {
+          "chain": "start -> start",
+          "count": 2,
+          "tokensWasted": 1508,
+          "recommendation": "Avoid calling `docpath start` consecutively without intermediate actions."
+        },
+        {
+          "chain": "reveal -> write-spec",
+          "count": 1,
+          "tokensWasted": 1528,
+          "recommendation": "Avoid serial chaining of \"reveal -> write-spec\" without intervening actions."
+        },
+        {
+          "chain": "backlog -> next",
+          "count": 1,
+          "tokensWasted": 816,
+          "recommendation": "Avoid serial chaining of \"backlog -> next\" without intervening actions."
+        },
+        {
+          "chain": "write-plan -> write-plan",
+          "count": 1,
+          "tokensWasted": 796,
+          "recommendation": "Avoid calling `docpath write-plan` consecutively without intermediate actions."
+        },
+        {
+          "chain": "start -> reveal",
+          "count": 1,
+          "tokensWasted": 418,
+          "recommendation": "Avoid serial chaining of \"start -> reveal\" without intervening actions."
+        },
+        {
+          "chain": "next -> start",
+          "count": 1,
+          "tokensWasted": 194,
+          "recommendation": "Avoid serial chaining of \"next -> start\" without intervening actions."
+        },
+        {
+          "chain": "plan -> write-plan",
+          "count": 1,
+          "tokensWasted": 183,
+          "recommendation": "Avoid serial chaining of \"plan -> write-plan\" without intervening actions."
+        },
+        {
+          "chain": "write-spec -> plan",
+          "count": 1,
+          "tokensWasted": 168,
+          "recommendation": "Avoid serial chaining of \"write-spec -> plan\" without intervening actions."
+        }
+      ],
+      "heavyOutputCommands": [
+        {
+          "subcommand": "start",
+          "avgOutputTokens": 1199,
+          "maxOutputTokens": 1199,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+        },
+        {
+          "subcommand": "next",
+          "avgOutputTokens": 788,
+          "maxOutputTokens": 788,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens)."
+        },
+        {
+          "subcommand": "write-spec",
+          "avgOutputTokens": 709,
+          "maxOutputTokens": 709,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"write-spec\" to reduce output payload (< 300 tokens)."
+        }
+      ],
+      "actionableOptimizations": [
+        "Reduce 5 redundant CLI calls to save ~4,359 tokens.",
+        "Avoid calling `docpath write-spec` consecutively without intermediate actions.",
+        "Avoid calling `docpath start` consecutively without intermediate actions.",
+        "Avoid serial chaining of \"reveal -> write-spec\" without intervening actions.",
+        "Avoid serial chaining of \"backlog -> next\" without intervening actions.",
+        "Avoid calling `docpath write-plan` consecutively without intermediate actions.",
+        "Avoid serial chaining of \"start -> reveal\" without intervening actions.",
+        "Avoid serial chaining of \"next -> start\" without intervening actions.",
+        "Avoid serial chaining of \"plan -> write-plan\" without intervening actions.",
+        "Avoid serial chaining of \"write-spec -> plan\" without intervening actions.",
+        "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens).",
+        "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens).",
+        "Use --agent flag or scoped parameters with \"write-spec\" to reduce output payload (< 300 tokens)."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-21T15:09:47Z",
+        "turnIndex": 3948,
+        "subcommand": "backlog",
+        "rawCommandLine": "\"npx docpath backlog list\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 82,
+        "directTotalTokens": 89,
+        "turnBilledTokens": 3080,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-2",
+        "timestamp": "2026-10-21T15:09:52Z",
+        "turnIndex": 3950,
+        "subcommand": "next",
+        "rawCommandLine": "\"npx docpath next --agent\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 788,
+        "directTotalTokens": 795,
+        "turnBilledTokens": 2334,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "backlog -> next",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-3",
+        "timestamp": "2026-10-21T15:09:57Z",
+        "turnIndex": 3952,
+        "subcommand": "start",
+        "rawCommandLine": "\"npx docpath start --help\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 165,
+        "directTotalTokens": 172,
+        "turnBilledTokens": 3086,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "next -> start",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-4",
+        "timestamp": "2026-10-21T15:10:21Z",
+        "turnIndex": 3956,
+        "subcommand": "start",
+        "rawCommandLine": "\"npx docpath start \\\"契约巡检与海马体自固化（Consolidation）\\\" --draft\"",
+        "directInputTokens": 29,
+        "directOutputTokens": 202,
+        "directTotalTokens": 231,
+        "turnBilledTokens": 2630,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "start -> start",
+        "wastedTokens": 231,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-5",
+        "timestamp": "2026-10-21T15:10:30Z",
+        "turnIndex": 3960,
+        "subcommand": "start",
+        "rawCommandLine": "\"npx docpath start \\\"契约巡检与海马体自固化（Consolidation）\\\" --draft --adopt\"",
+        "directInputTokens": 31,
+        "directOutputTokens": 1199,
+        "directTotalTokens": 1230,
+        "turnBilledTokens": 3920,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "start -> start",
+        "wastedTokens": 1230,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-6",
+        "timestamp": "2026-10-21T15:10:35Z",
+        "turnIndex": 3962,
+        "subcommand": "reveal",
+        "rawCommandLine": "\"npx docpath reveal --topic spec --level 1\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 386,
+        "directTotalTokens": 397,
+        "turnBilledTokens": 3404,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "start -> reveal",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-7",
+        "timestamp": "2026-10-21T15:10:40Z",
+        "turnIndex": 3964,
+        "subcommand": "write-spec",
+        "rawCommandLine": "\"npx docpath write-spec --stdin << 'EOF'\\n{\\n  \\\"title\\\": \\\"契约巡检与海马体自固化（Consolidation）\\\",\\n  \\\"background\\\": \\\"Hippo 积累了五轨记忆（用户画像、全局事实、项目记忆/待审缓冲、项目日志、每日流水）与技能 SOP、会话断点、待办资产。然而目前：1. 资产落盘契约巡检薄弱，doctor.ts 检查了错误的 todos.json 而非真实落盘的 todos.jsonl，缺乏对五轨与技能完整 schema（YAML 语法、必填字段、CCG when/not_when、损坏行过滤）的量化评估与报告；2. 海马体记忆自固化 (Consolidation) 缺失，现有的 consolidateMemories 仅局限于现有项目记忆内部的相似度合并，缺乏将短时 Track 5 每日流水 (daily-logs) 跨周期聚类归纳、按置信度提纯并自动转正为正式长期记忆（Track 3 project-memory）的海马体自固化流水线与状态防重追踪。\\\",\\n  \\\"requirements\\\": [\\n    {\\n      \\\"id\\\": \\\"FR-1\\\",\\n      \\\"title\\\": \\\"资产契约巡检与自愈 (Contract Doctor)\\\",\\n      \\\"description\\\": \\\"修复 doctor.ts 中 todos.jsonl 契约对齐，全面覆盖五轨（Track 1~5）及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈。\\\",\\n      \\\"acceptance_criteria\\\": [\\n        \\\"AC-1: runHippoDoctor 准确校验 todos.jsonl、五轨及技能资产契约，输出 contractComplianceRate 与违规明细，autoFixDoctorIssues 可自动修复脏数据\\\"\\n      ]\\n    },\\n    {\\n      \\\"id\\\": \\\"FR-2\\\",\\n      \\\"title\\\": \\\"跨轨每日流水自固化流水线 (Daily Logs Consolidation Pipeline)\\\",\\n      \\\"description\\\": \\\"实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档。\\\",\\n      \\\"acceptance_criteria\\\": [\\n        \\\"AC-2: consolid\n<truncated 1717 bytes>",
+        "directInputTokens": 771,
+        "directOutputTokens": 709,
+        "directTotalTokens": 1480,
+        "turnBilledTokens": 4987,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "reveal -> write-spec",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 24000
+      },
+      {
+        "id": "inv-8",
+        "timestamp": "2026-10-21T15:11:05Z",
+        "turnIndex": 3966,
+        "subcommand": "write-spec",
+        "rawCommandLine": "\"npx docpath write-spec --stdin << 'EOF'\\n# T-20261021-consolidation - 契约巡检与海马体自固化（Consolidation）\\n\\n> backlog_id: R-022\\n\\n## 1. 背景与动机\\nHippo 积累了五轨记忆（用户画像、全局事实、项目记忆/待审缓冲、项目日志、每日流水）与技能 SOP、会话断点、待办资产。然而目前：\\n1. 资产落盘契约巡检薄弱，`doctor.ts` 检查了错误的 `todos.json` 而非真实落盘的 `todos.jsonl`，缺乏对五轨与技能完整 schema（YAML 语法、必填字段、CCG `when`/`not_when`、损坏行过滤）的量化评估与报告；\\n2. 海马体记忆自固化 (Consolidation) 缺失，现有的 `consolidateMemories` 仅局限于现有项目记忆内部的相似度合并，缺乏将短时 Track 5 每日流水 (`daily-logs`) 跨周期聚类归纳、按置信度提纯并自动转正为正式长期记忆（Track 3 `project-memory`）的海马体自固化流水线与状态防重追踪。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: 资产契约巡检与自愈 (Contract Doctor)：修复 todos.jsonl 契约对齐，全面覆盖五轨及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈\\n- [ ] FR-2: 跨轨每日流水自固化流水线 (Daily Logs Consolidation Pipeline)：实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档\\n- [ ] FR-3: CLI 与 MCP 适配层扩展及单测与活文档收口：扩展 hippo consolidate 命令行与 memory_consolidate MCP 工具，支持 --daily / --contract / --auto-promote / --days 等参数；编写完整单测套件，更新架构活文档，全量单测通过\\n\\n### 非功能需求\\n- [ ] NFR-1: 100% 保持现有 60 项单测向后兼容与受控并发执行\\n- [ ] NFR-2: 坚\n<truncated 1253 bytes>",
+        "directInputTokens": 813,
+        "directOutputTokens": 172,
+        "directTotalTokens": 985,
+        "turnBilledTokens": 4086,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "write-spec -> write-spec",
+        "wastedTokens": 985,
+        "status": "success",
+        "durationMs": 10000
+      },
+      {
+        "id": "inv-9",
+        "timestamp": "2026-10-21T15:11:15Z",
+        "turnIndex": 3968,
+        "subcommand": "write-spec",
+        "rawCommandLine": "\"npx docpath write-spec --stdin --force << 'EOF'\\n# T-20261021-consolidation - 契约巡检与海马体自固化（Consolidation）\\n\\n> backlog_id: R-022\\n\\n## 1. 背景与动机\\nHippo 积累了五轨记忆（用户画像、全局事实、项目记忆/待审缓冲、项目日志、每日流水）与技能 SOP、会话断点、待办资产。然而目前：\\n1. 资产落盘契约巡检薄弱，`doctor.ts` 检查了错误的 `todos.json` 而非真实落盘的 `todos.jsonl`，缺乏对五轨与技能完整 schema（YAML 语法、必填字段、CCG `when`/`not_when`、损坏行过滤）的量化评估与报告；\\n2. 海马体记忆自固化 (Consolidation) 缺失，现有的 `consolidateMemories` 仅局限于现有项目记忆内部的相似度合并，缺乏将短时 Track 5 每日流水 (`daily-logs`) 跨周期聚类归纳、按置信度提纯并自动转正为正式长期记忆（Track 3 `project-memory`）的海马体自固化流水线与状态防重追踪。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: 资产契约巡检与自愈 (Contract Doctor)：修复 todos.jsonl 契约对齐，全面覆盖五轨及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈\\n- [ ] FR-2: 跨轨每日流水自固化流水线 (Daily Logs Consolidation Pipeline)：实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档\\n- [ ] FR-3: CLI 与 MCP 适配层扩展及单测与活文档收口：扩展 hippo consolidate 命令行与 memory_consolidate MCP 工具，支持 --daily / --contract / --auto-promote / --days 等参数；编写完整单测套件，更新架构活文档，全量单测通过\\n\\n### 非功能需求\\n- [ ] NFR-1: 100% 保持现有 60 项单测向后兼容与受控并发执行\\n- [ ] NFR\n<truncated 1260 bytes>",
+        "directInputTokens": 813,
+        "directOutputTokens": 201,
+        "directTotalTokens": 1014,
+        "turnBilledTokens": 4226,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "write-spec -> write-spec",
+        "wastedTokens": 1014,
+        "status": "success",
+        "durationMs": 9000
+      },
+      {
+        "id": "inv-10",
+        "timestamp": "2026-10-21T15:11:25Z",
+        "turnIndex": 3970,
+        "subcommand": "plan",
+        "rawCommandLine": "\"npx docpath plan\"",
+        "directInputTokens": 5,
+        "directOutputTokens": 138,
+        "directTotalTokens": 143,
+        "turnBilledTokens": 3343,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "write-spec -> plan",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-11",
+        "timestamp": "2026-10-21T15:11:29Z",
+        "turnIndex": 3972,
+        "subcommand": "write-plan",
+        "rawCommandLine": "\"npx docpath write-plan --help\"",
+        "directInputTokens": 8,
+        "directOutputTokens": 153,
+        "directTotalTokens": 161,
+        "turnBilledTokens": 2352,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "plan -> write-plan",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 5000
+      },
+      {
+        "id": "inv-12",
+        "timestamp": "2026-10-21T15:11:38Z",
+        "turnIndex": 3976,
+        "subcommand": "write-plan",
+        "rawCommandLine": "\"npx docpath write-plan --stdin << 'EOF'\\n## 执行计划\\n\\n### S1: 实现并验证 FR-1 契约巡检\\n- **描述**: 落地 FR-1: 修复 todos.jsonl 契约对齐，全面覆盖五轨及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈。\\n- **验收条件**: AC-1: runHippoDoctor 准确校验 todos.jsonl、五轨及技能资产契约，输出 contractComplianceRate 与违规明细，autoFixDoctorIssues 可自动修复脏数据\\n- **依赖**: 无\\n\\n### S2: 实现并验证 FR-2 海马体自固化（Consolidation）\\n- **描述**: 落地 FR-2: 实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档。\\n- **验收条件**: AC-2: consolidateDailyLogs 成功从 daily-logs 聚类提纯高频/高质量记忆，幂等记录固化状态，支持 --auto-promote 转正与 --archive 归档\\n- **依赖**: S1\\n\\n### S3: 实现并验证 FR-3 适配层扩展与收口\\n- **描述**: 落地 FR-3: 扩展 hippo consolidate 命令行与 memory_consolidate MCP 工具，支持 --daily / --contract / --auto-promote / --days 等参数；编写完整单测套件，更新架构活文档，全量单测通过。\\n- **验收条件**: AC-3: CLI hippo consolidate 与 MCP memory_consolidate 契约无缝扩展并生效；AC-4: 全量 60+ 项单测通过，docpath docs lint 0 错误 0 漂移\\n- **依赖**: S2\\n\\n## Checklist\\n- [ ] S1\\n- [ ] S2\\n- [ ] S3\\n\\n## 依赖关系图\\nS1 → S2 → S3\\nEOF\\n\"",
+        "directInputTokens": 649,
+        "directOutputTokens": 119,
+        "directTotalTokens": 768,
+        "turnBilledTokens": 3096,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "write-plan -> write-plan",
+        "wastedTokens": 768,
+        "status": "success",
+        "durationMs": 6000
+      },
+      {
+        "id": "inv-13",
+        "timestamp": "2026-10-21T15:15:18Z",
+        "turnIndex": 4026,
+        "stepId": "S1",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"npx docpath step-pass --step S1 --note \\\"完成 todos.jsonl 对齐与五轨/技能资产深度契约巡检，输出 contractComplianceRate，autoFixDoctorIssues 支持脏行自愈\\\"\"",
+        "directInputTokens": 64,
+        "directOutputTokens": 458,
+        "directTotalTokens": 522,
+        "turnBilledTokens": 2974,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      }
+    ]
+  },
+  "sessionRecord": {
+    "source": "antigravity",
+    "sessionId": ".system_generated",
+    "tokens": {
+      "inputTokens": 220326,
+      "outputTokens": 29843,
+      "totalTokens": 250169,
+      "costUsd": 1.1086
+    },
+    "toolCalls": {
+      "total": 56,
+      "byName": {
+        "run_command": 33,
+        "read_file": 15,
+        "edit_file": 8
+      },
+      "errorCount": 1
+    },
+    "toolAttributions": [
+      {
+        "name": "run_command",
+        "count": 33,
+        "inputTokens": 4588,
+        "outputTokens": 16596,
+        "totalTokens": 21184,
+        "percentage": 8.5,
+        "errorCount": 1
+      },
+      {
+        "name": "read_file",
+        "count": 15,
+        "inputTokens": 371,
+        "outputTokens": 11543,
+        "totalTokens": 11914,
+        "percentage": 4.8,
+        "errorCount": 0
+      },
+      {
+        "name": "edit_file",
+        "count": 8,
+        "inputTokens": 3646,
+        "outputTokens": 381,
+        "totalTokens": 4027,
+        "percentage": 1.6,
+        "errorCount": 0
+      }
+    ],
+    "toolInefficiencies": [],
+    "docpathCliOverhead": {
+      "totalCalls": 13,
+      "errorCalls": 0,
+      "totalTokens": 8320,
+      "inputTokens": 3548,
+      "outputTokens": 4772,
+      "percentageOfSessionTokens": 3.3,
+      "commands": [
+        {
+          "subcommand": "write-spec",
+          "count": 3,
+          "errorCount": 0,
+          "inputTokens": 2501,
+          "outputTokens": 1082,
+          "totalTokens": 3583,
+          "avgTokens": 1194
+        },
+        {
+          "subcommand": "start",
+          "count": 3,
+          "errorCount": 0,
+          "inputTokens": 136,
+          "outputTokens": 1566,
+          "totalTokens": 1702,
+          "avgTokens": 567
+        },
+        {
+          "subcommand": "write-plan",
+          "count": 2,
+          "errorCount": 0,
+          "inputTokens": 707,
+          "outputTokens": 272,
+          "totalTokens": 979,
+          "avgTokens": 490
+        },
+        {
+          "subcommand": "next",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 28,
+          "outputTokens": 788,
+          "totalTokens": 816,
+          "avgTokens": 816
+        },
+        {
+          "subcommand": "step-pass",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 85,
+          "outputTokens": 458,
+          "totalTokens": 543,
+          "avgTokens": 543
+        },
+        {
+          "subcommand": "reveal",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 32,
+          "outputTokens": 386,
+          "totalTokens": 418,
+          "avgTokens": 418
+        },
+        {
+          "subcommand": "plan",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 30,
+          "outputTokens": 138,
+          "totalTokens": 168,
+          "avgTokens": 168
+        },
+        {
+          "subcommand": "backlog",
+          "count": 1,
+          "errorCount": 0,
+          "inputTokens": 29,
+          "outputTokens": 82,
+          "totalTokens": 111,
+          "avgTokens": 111
+        }
+      ]
+    },
+    "docpathEfficacy": {
+      "preventedLoopsCount": 0,
+      "deadlockTokensSaved": 0,
+      "contextCompressionRatio": 92.5,
+      "subagentTokensSaved": 0,
+      "gateInterceptionCount": 0,
+      "firstTimePassRate": 98,
+      "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+    },
+    "docpathCliFriction": {
+      "redundantCallsCount": 5,
+      "redundantTokensWasted": 4359,
+      "redundantPatterns": [
+        {
+          "subcommand": "write-spec",
+          "count": 2,
+          "tokensWasted": 2055,
+          "reason": "Consecutive `write-spec` polling without intermediate actions"
+        },
+        {
+          "subcommand": "start",
+          "count": 2,
+          "tokensWasted": 1508,
+          "reason": "Consecutive `start` polling without intermediate actions"
+        },
+        {
+          "subcommand": "write-plan",
+          "count": 1,
+          "tokensWasted": 796,
+          "reason": "Consecutive `write-plan` polling without intermediate actions"
+        }
+      ],
+      "serialChains": [
+        {
+          "chain": "write-spec -> write-spec",
+          "count": 2,
+          "tokensWasted": 2055,
+          "recommendation": "Avoid calling `docpath write-spec` consecutively without intermediate actions."
+        },
+        {
+          "chain": "start -> start",
+          "count": 2,
+          "tokensWasted": 1508,
+          "recommendation": "Avoid calling `docpath start` consecutively without intermediate actions."
+        },
+        {
+          "chain": "reveal -> write-spec",
+          "count": 1,
+          "tokensWasted": 1528,
+          "recommendation": "Avoid serial chaining of \"reveal -> write-spec\" without intervening actions."
+        },
+        {
+          "chain": "backlog -> next",
+          "count": 1,
+          "tokensWasted": 816,
+          "recommendation": "Avoid serial chaining of \"backlog -> next\" without intervening actions."
+        },
+        {
+          "chain": "write-plan -> write-plan",
+          "count": 1,
+          "tokensWasted": 796,
+          "recommendation": "Avoid calling `docpath write-plan` consecutively without intermediate actions."
+        },
+        {
+          "chain": "start -> reveal",
+          "count": 1,
+          "tokensWasted": 418,
+          "recommendation": "Avoid serial chaining of \"start -> reveal\" without intervening actions."
+        },
+        {
+          "chain": "next -> start",
+          "count": 1,
+          "tokensWasted": 194,
+          "recommendation": "Avoid serial chaining of \"next -> start\" without intervening actions."
+        },
+        {
+          "chain": "plan -> write-plan",
+          "count": 1,
+          "tokensWasted": 183,
+          "recommendation": "Avoid serial chaining of \"plan -> write-plan\" without intervening actions."
+        },
+        {
+          "chain": "write-spec -> plan",
+          "count": 1,
+          "tokensWasted": 168,
+          "recommendation": "Avoid serial chaining of \"write-spec -> plan\" without intervening actions."
+        }
+      ],
+      "heavyOutputCommands": [
+        {
+          "subcommand": "start",
+          "avgOutputTokens": 1199,
+          "maxOutputTokens": 1199,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+        },
+        {
+          "subcommand": "next",
+          "avgOutputTokens": 788,
+          "maxOutputTokens": 788,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens)."
+        },
+        {
+          "subcommand": "write-spec",
+          "avgOutputTokens": 709,
+          "maxOutputTokens": 709,
+          "count": 1,
+          "optimizationHint": "Use --agent flag or scoped parameters with \"write-spec\" to reduce output payload (< 300 tokens)."
+        }
+      ],
+      "actionableOptimizations": [
+        "Reduce 5 redundant CLI calls to save ~4,359 tokens.",
+        "Avoid calling `docpath write-spec` consecutively without intermediate actions.",
+        "Avoid calling `docpath start` consecutively without intermediate actions.",
+        "Avoid serial chaining of \"reveal -> write-spec\" without intervening actions.",
+        "Avoid serial chaining of \"backlog -> next\" without intervening actions.",
+        "Avoid calling `docpath write-plan` consecutively without intermediate actions.",
+        "Avoid serial chaining of \"start -> reveal\" without intervening actions.",
+        "Avoid serial chaining of \"next -> start\" without intervening actions.",
+        "Avoid serial chaining of \"plan -> write-plan\" without intervening actions.",
+        "Avoid serial chaining of \"write-spec -> plan\" without intervening actions.",
+        "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens).",
+        "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens).",
+        "Use --agent flag or scoped parameters with \"write-spec\" to reduce output payload (< 300 tokens)."
+      ]
+    },
+    "commandInvocations": [
+      {
+        "id": "inv-1",
+        "timestamp": "2026-10-21T15:09:47Z",
+        "turnIndex": 3948,
+        "subcommand": "backlog",
+        "rawCommandLine": "\"npx docpath backlog list\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 82,
+        "directTotalTokens": 89,
+        "turnBilledTokens": 3080,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-2",
+        "timestamp": "2026-10-21T15:09:52Z",
+        "turnIndex": 3950,
+        "subcommand": "next",
+        "rawCommandLine": "\"npx docpath next --agent\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 788,
+        "directTotalTokens": 795,
+        "turnBilledTokens": 2334,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "backlog -> next",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-3",
+        "timestamp": "2026-10-21T15:09:57Z",
+        "turnIndex": 3952,
+        "subcommand": "start",
+        "rawCommandLine": "\"npx docpath start --help\"",
+        "directInputTokens": 7,
+        "directOutputTokens": 165,
+        "directTotalTokens": 172,
+        "turnBilledTokens": 3086,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "next -> start",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-4",
+        "timestamp": "2026-10-21T15:10:21Z",
+        "turnIndex": 3956,
+        "subcommand": "start",
+        "rawCommandLine": "\"npx docpath start \\\"契约巡检与海马体自固化（Consolidation）\\\" --draft\"",
+        "directInputTokens": 29,
+        "directOutputTokens": 202,
+        "directTotalTokens": 231,
+        "turnBilledTokens": 2630,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "start -> start",
+        "wastedTokens": 231,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-5",
+        "timestamp": "2026-10-21T15:10:30Z",
+        "turnIndex": 3960,
+        "subcommand": "start",
+        "rawCommandLine": "\"npx docpath start \\\"契约巡检与海马体自固化（Consolidation）\\\" --draft --adopt\"",
+        "directInputTokens": 31,
+        "directOutputTokens": 1199,
+        "directTotalTokens": 1230,
+        "turnBilledTokens": 3920,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "start -> start",
+        "wastedTokens": 1230,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-6",
+        "timestamp": "2026-10-21T15:10:35Z",
+        "turnIndex": 3962,
+        "subcommand": "reveal",
+        "rawCommandLine": "\"npx docpath reveal --topic spec --level 1\"",
+        "directInputTokens": 11,
+        "directOutputTokens": 386,
+        "directTotalTokens": 397,
+        "turnBilledTokens": 3404,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "start -> reveal",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      },
+      {
+        "id": "inv-7",
+        "timestamp": "2026-10-21T15:10:40Z",
+        "turnIndex": 3964,
+        "subcommand": "write-spec",
+        "rawCommandLine": "\"npx docpath write-spec --stdin << 'EOF'\\n{\\n  \\\"title\\\": \\\"契约巡检与海马体自固化（Consolidation）\\\",\\n  \\\"background\\\": \\\"Hippo 积累了五轨记忆（用户画像、全局事实、项目记忆/待审缓冲、项目日志、每日流水）与技能 SOP、会话断点、待办资产。然而目前：1. 资产落盘契约巡检薄弱，doctor.ts 检查了错误的 todos.json 而非真实落盘的 todos.jsonl，缺乏对五轨与技能完整 schema（YAML 语法、必填字段、CCG when/not_when、损坏行过滤）的量化评估与报告；2. 海马体记忆自固化 (Consolidation) 缺失，现有的 consolidateMemories 仅局限于现有项目记忆内部的相似度合并，缺乏将短时 Track 5 每日流水 (daily-logs) 跨周期聚类归纳、按置信度提纯并自动转正为正式长期记忆（Track 3 project-memory）的海马体自固化流水线与状态防重追踪。\\\",\\n  \\\"requirements\\\": [\\n    {\\n      \\\"id\\\": \\\"FR-1\\\",\\n      \\\"title\\\": \\\"资产契约巡检与自愈 (Contract Doctor)\\\",\\n      \\\"description\\\": \\\"修复 doctor.ts 中 todos.jsonl 契约对齐，全面覆盖五轨（Track 1~5）及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈。\\\",\\n      \\\"acceptance_criteria\\\": [\\n        \\\"AC-1: runHippoDoctor 准确校验 todos.jsonl、五轨及技能资产契约，输出 contractComplianceRate 与违规明细，autoFixDoctorIssues 可自动修复脏数据\\\"\\n      ]\\n    },\\n    {\\n      \\\"id\\\": \\\"FR-2\\\",\\n      \\\"title\\\": \\\"跨轨每日流水自固化流水线 (Daily Logs Consolidation Pipeline)\\\",\\n      \\\"description\\\": \\\"实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档。\\\",\\n      \\\"acceptance_criteria\\\": [\\n        \\\"AC-2: consolid\n<truncated 1717 bytes>",
+        "directInputTokens": 771,
+        "directOutputTokens": 709,
+        "directTotalTokens": 1480,
+        "turnBilledTokens": 4987,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "reveal -> write-spec",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 24000
+      },
+      {
+        "id": "inv-8",
+        "timestamp": "2026-10-21T15:11:05Z",
+        "turnIndex": 3966,
+        "subcommand": "write-spec",
+        "rawCommandLine": "\"npx docpath write-spec --stdin << 'EOF'\\n# T-20261021-consolidation - 契约巡检与海马体自固化（Consolidation）\\n\\n> backlog_id: R-022\\n\\n## 1. 背景与动机\\nHippo 积累了五轨记忆（用户画像、全局事实、项目记忆/待审缓冲、项目日志、每日流水）与技能 SOP、会话断点、待办资产。然而目前：\\n1. 资产落盘契约巡检薄弱，`doctor.ts` 检查了错误的 `todos.json` 而非真实落盘的 `todos.jsonl`，缺乏对五轨与技能完整 schema（YAML 语法、必填字段、CCG `when`/`not_when`、损坏行过滤）的量化评估与报告；\\n2. 海马体记忆自固化 (Consolidation) 缺失，现有的 `consolidateMemories` 仅局限于现有项目记忆内部的相似度合并，缺乏将短时 Track 5 每日流水 (`daily-logs`) 跨周期聚类归纳、按置信度提纯并自动转正为正式长期记忆（Track 3 `project-memory`）的海马体自固化流水线与状态防重追踪。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: 资产契约巡检与自愈 (Contract Doctor)：修复 todos.jsonl 契约对齐，全面覆盖五轨及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈\\n- [ ] FR-2: 跨轨每日流水自固化流水线 (Daily Logs Consolidation Pipeline)：实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档\\n- [ ] FR-3: CLI 与 MCP 适配层扩展及单测与活文档收口：扩展 hippo consolidate 命令行与 memory_consolidate MCP 工具，支持 --daily / --contract / --auto-promote / --days 等参数；编写完整单测套件，更新架构活文档，全量单测通过\\n\\n### 非功能需求\\n- [ ] NFR-1: 100% 保持现有 60 项单测向后兼容与受控并发执行\\n- [ ] NFR-2: 坚\n<truncated 1253 bytes>",
+        "directInputTokens": 813,
+        "directOutputTokens": 172,
+        "directTotalTokens": 985,
+        "turnBilledTokens": 4086,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "write-spec -> write-spec",
+        "wastedTokens": 985,
+        "status": "success",
+        "durationMs": 10000
+      },
+      {
+        "id": "inv-9",
+        "timestamp": "2026-10-21T15:11:15Z",
+        "turnIndex": 3968,
+        "subcommand": "write-spec",
+        "rawCommandLine": "\"npx docpath write-spec --stdin --force << 'EOF'\\n# T-20261021-consolidation - 契约巡检与海马体自固化（Consolidation）\\n\\n> backlog_id: R-022\\n\\n## 1. 背景与动机\\nHippo 积累了五轨记忆（用户画像、全局事实、项目记忆/待审缓冲、项目日志、每日流水）与技能 SOP、会话断点、待办资产。然而目前：\\n1. 资产落盘契约巡检薄弱，`doctor.ts` 检查了错误的 `todos.json` 而非真实落盘的 `todos.jsonl`，缺乏对五轨与技能完整 schema（YAML 语法、必填字段、CCG `when`/`not_when`、损坏行过滤）的量化评估与报告；\\n2. 海马体记忆自固化 (Consolidation) 缺失，现有的 `consolidateMemories` 仅局限于现有项目记忆内部的相似度合并，缺乏将短时 Track 5 每日流水 (`daily-logs`) 跨周期聚类归纳、按置信度提纯并自动转正为正式长期记忆（Track 3 `project-memory`）的海马体自固化流水线与状态防重追踪。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: 资产契约巡检与自愈 (Contract Doctor)：修复 todos.jsonl 契约对齐，全面覆盖五轨及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈\\n- [ ] FR-2: 跨轨每日流水自固化流水线 (Daily Logs Consolidation Pipeline)：实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档\\n- [ ] FR-3: CLI 与 MCP 适配层扩展及单测与活文档收口：扩展 hippo consolidate 命令行与 memory_consolidate MCP 工具，支持 --daily / --contract / --auto-promote / --days 等参数；编写完整单测套件，更新架构活文档，全量单测通过\\n\\n### 非功能需求\\n- [ ] NFR-1: 100% 保持现有 60 项单测向后兼容与受控并发执行\\n- [ ] NFR\n<truncated 1260 bytes>",
+        "directInputTokens": 813,
+        "directOutputTokens": 201,
+        "directTotalTokens": 1014,
+        "turnBilledTokens": 4226,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "write-spec -> write-spec",
+        "wastedTokens": 1014,
+        "status": "success",
+        "durationMs": 9000
+      },
+      {
+        "id": "inv-10",
+        "timestamp": "2026-10-21T15:11:25Z",
+        "turnIndex": 3970,
+        "subcommand": "plan",
+        "rawCommandLine": "\"npx docpath plan\"",
+        "directInputTokens": 5,
+        "directOutputTokens": 138,
+        "directTotalTokens": 143,
+        "turnBilledTokens": 3343,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "write-spec -> plan",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 3000
+      },
+      {
+        "id": "inv-11",
+        "timestamp": "2026-10-21T15:11:29Z",
+        "turnIndex": 3972,
+        "subcommand": "write-plan",
+        "rawCommandLine": "\"npx docpath write-plan --help\"",
+        "directInputTokens": 8,
+        "directOutputTokens": 153,
+        "directTotalTokens": 161,
+        "turnBilledTokens": 2352,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "chainKey": "plan -> write-plan",
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 5000
+      },
+      {
+        "id": "inv-12",
+        "timestamp": "2026-10-21T15:11:38Z",
+        "turnIndex": 3976,
+        "subcommand": "write-plan",
+        "rawCommandLine": "\"npx docpath write-plan --stdin << 'EOF'\\n## 执行计划\\n\\n### S1: 实现并验证 FR-1 契约巡检\\n- **描述**: 落地 FR-1: 修复 todos.jsonl 契约对齐，全面覆盖五轨及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈。\\n- **验收条件**: AC-1: runHippoDoctor 准确校验 todos.jsonl、五轨及技能资产契约，输出 contractComplianceRate 与违规明细，autoFixDoctorIssues 可自动修复脏数据\\n- **依赖**: 无\\n\\n### S2: 实现并验证 FR-2 海马体自固化（Consolidation）\\n- **描述**: 落地 FR-2: 实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档。\\n- **验收条件**: AC-2: consolidateDailyLogs 成功从 daily-logs 聚类提纯高频/高质量记忆，幂等记录固化状态，支持 --auto-promote 转正与 --archive 归档\\n- **依赖**: S1\\n\\n### S3: 实现并验证 FR-3 适配层扩展与收口\\n- **描述**: 落地 FR-3: 扩展 hippo consolidate 命令行与 memory_consolidate MCP 工具，支持 --daily / --contract / --auto-promote / --days 等参数；编写完整单测套件，更新架构活文档，全量单测通过。\\n- **验收条件**: AC-3: CLI hippo consolidate 与 MCP memory_consolidate 契约无缝扩展并生效；AC-4: 全量 60+ 项单测通过，docpath docs lint 0 错误 0 漂移\\n- **依赖**: S2\\n\\n## Checklist\\n- [ ] S1\\n- [ ] S2\\n- [ ] S3\\n\\n## 依赖关系图\\nS1 → S2 → S3\\nEOF\\n\"",
+        "directInputTokens": 649,
+        "directOutputTokens": 119,
+        "directTotalTokens": 768,
+        "turnBilledTokens": 3096,
+        "isRedundant": true,
+        "isSerialChain": true,
+        "chainKey": "write-plan -> write-plan",
+        "wastedTokens": 768,
+        "status": "success",
+        "durationMs": 6000
+      },
+      {
+        "id": "inv-13",
+        "timestamp": "2026-10-21T15:15:18Z",
+        "turnIndex": 4026,
+        "stepId": "S1",
+        "subcommand": "step-pass",
+        "rawCommandLine": "\"npx docpath step-pass --step S1 --note \\\"完成 todos.jsonl 对齐与五轨/技能资产深度契约巡检，输出 contractComplianceRate，autoFixDoctorIssues 支持脏行自愈\\\"\"",
+        "directInputTokens": 64,
+        "directOutputTokens": 458,
+        "directTotalTokens": 522,
+        "turnBilledTokens": 2974,
+        "isRedundant": false,
+        "isSerialChain": false,
+        "wastedTokens": 0,
+        "status": "success",
+        "durationMs": 4000
+      }
+    ],
+    "turnsCount": 57,
+    "errorCount": 1,
+    "heavyReadsCount": 0,
+    "flappingCount": 0,
+    "violations": [
+      {
+        "ruleId": "CR-04",
+        "ruleName": "Unrotated Long Session",
+        "severity": "medium",
+        "description": "会话未及时轮转（轮次: 57, 消耗: 250169 Tokens, 时长: 1461 分钟），存在上下文爆炸风险",
+        "penalty": 15,
+        "evidence": {
+          "turnsCount": 57,
+          "totalTokens": 250169,
+          "durationMinutes": 1461
+        }
+      }
+    ],
+    "complianceScore": 85,
+    "durationMs": 87670000
+  },
+  "toolAttributions": [
+    {
+      "name": "run_command",
+      "count": 33,
+      "inputTokens": 4588,
+      "outputTokens": 16596,
+      "totalTokens": 21184,
+      "percentage": 8.5,
+      "errorCount": 1
+    },
+    {
+      "name": "read_file",
+      "count": 15,
+      "inputTokens": 371,
+      "outputTokens": 11543,
+      "totalTokens": 11914,
+      "percentage": 4.8,
+      "errorCount": 0
+    },
+    {
+      "name": "edit_file",
+      "count": 8,
+      "inputTokens": 3646,
+      "outputTokens": 381,
+      "totalTokens": 4027,
+      "percentage": 1.6,
+      "errorCount": 0
+    }
+  ],
+  "toolInefficiencies": [],
+  "docpathCliOverhead": {
+    "totalCalls": 13,
+    "errorCalls": 0,
+    "totalTokens": 8320,
+    "inputTokens": 3548,
+    "outputTokens": 4772,
+    "percentageOfSessionTokens": 3.3,
+    "commands": [
+      {
+        "subcommand": "write-spec",
+        "count": 3,
+        "errorCount": 0,
+        "inputTokens": 2501,
+        "outputTokens": 1082,
+        "totalTokens": 3583,
+        "avgTokens": 1194
+      },
+      {
+        "subcommand": "start",
+        "count": 3,
+        "errorCount": 0,
+        "inputTokens": 136,
+        "outputTokens": 1566,
+        "totalTokens": 1702,
+        "avgTokens": 567
+      },
+      {
+        "subcommand": "write-plan",
+        "count": 2,
+        "errorCount": 0,
+        "inputTokens": 707,
+        "outputTokens": 272,
+        "totalTokens": 979,
+        "avgTokens": 490
+      },
+      {
+        "subcommand": "next",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 28,
+        "outputTokens": 788,
+        "totalTokens": 816,
+        "avgTokens": 816
+      },
+      {
+        "subcommand": "step-pass",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 85,
+        "outputTokens": 458,
+        "totalTokens": 543,
+        "avgTokens": 543
+      },
+      {
+        "subcommand": "reveal",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 32,
+        "outputTokens": 386,
+        "totalTokens": 418,
+        "avgTokens": 418
+      },
+      {
+        "subcommand": "plan",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 30,
+        "outputTokens": 138,
+        "totalTokens": 168,
+        "avgTokens": 168
+      },
+      {
+        "subcommand": "backlog",
+        "count": 1,
+        "errorCount": 0,
+        "inputTokens": 29,
+        "outputTokens": 82,
+        "totalTokens": 111,
+        "avgTokens": 111
+      }
+    ]
+  },
+  "docpathEfficacy": {
+    "preventedLoopsCount": 0,
+    "deadlockTokensSaved": 0,
+    "contextCompressionRatio": 92.5,
+    "subagentTokensSaved": 0,
+    "gateInterceptionCount": 0,
+    "firstTimePassRate": 98,
+    "summary": "DocPath 架构通过契约门禁与轻量路由拦截了 0 次潜在死循环，节省约 0 Tokens，上下文压缩比达 92.5%"
+  },
+  "docpathCliFriction": {
+    "redundantCallsCount": 5,
+    "redundantTokensWasted": 4359,
+    "redundantPatterns": [
+      {
+        "subcommand": "write-spec",
+        "count": 2,
+        "tokensWasted": 2055,
+        "reason": "Consecutive `write-spec` polling without intermediate actions"
+      },
+      {
+        "subcommand": "start",
+        "count": 2,
+        "tokensWasted": 1508,
+        "reason": "Consecutive `start` polling without intermediate actions"
+      },
+      {
+        "subcommand": "write-plan",
+        "count": 1,
+        "tokensWasted": 796,
+        "reason": "Consecutive `write-plan` polling without intermediate actions"
+      }
+    ],
+    "serialChains": [
+      {
+        "chain": "write-spec -> write-spec",
+        "count": 2,
+        "tokensWasted": 2055,
+        "recommendation": "Avoid calling `docpath write-spec` consecutively without intermediate actions."
+      },
+      {
+        "chain": "start -> start",
+        "count": 2,
+        "tokensWasted": 1508,
+        "recommendation": "Avoid calling `docpath start` consecutively without intermediate actions."
+      },
+      {
+        "chain": "reveal -> write-spec",
+        "count": 1,
+        "tokensWasted": 1528,
+        "recommendation": "Avoid serial chaining of \"reveal -> write-spec\" without intervening actions."
+      },
+      {
+        "chain": "backlog -> next",
+        "count": 1,
+        "tokensWasted": 816,
+        "recommendation": "Avoid serial chaining of \"backlog -> next\" without intervening actions."
+      },
+      {
+        "chain": "write-plan -> write-plan",
+        "count": 1,
+        "tokensWasted": 796,
+        "recommendation": "Avoid calling `docpath write-plan` consecutively without intermediate actions."
+      },
+      {
+        "chain": "start -> reveal",
+        "count": 1,
+        "tokensWasted": 418,
+        "recommendation": "Avoid serial chaining of \"start -> reveal\" without intervening actions."
+      },
+      {
+        "chain": "next -> start",
+        "count": 1,
+        "tokensWasted": 194,
+        "recommendation": "Avoid serial chaining of \"next -> start\" without intervening actions."
+      },
+      {
+        "chain": "plan -> write-plan",
+        "count": 1,
+        "tokensWasted": 183,
+        "recommendation": "Avoid serial chaining of \"plan -> write-plan\" without intervening actions."
+      },
+      {
+        "chain": "write-spec -> plan",
+        "count": 1,
+        "tokensWasted": 168,
+        "recommendation": "Avoid serial chaining of \"write-spec -> plan\" without intervening actions."
+      }
+    ],
+    "heavyOutputCommands": [
+      {
+        "subcommand": "start",
+        "avgOutputTokens": 1199,
+        "maxOutputTokens": 1199,
+        "count": 1,
+        "optimizationHint": "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens)."
+      },
+      {
+        "subcommand": "next",
+        "avgOutputTokens": 788,
+        "maxOutputTokens": 788,
+        "count": 1,
+        "optimizationHint": "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens)."
+      },
+      {
+        "subcommand": "write-spec",
+        "avgOutputTokens": 709,
+        "maxOutputTokens": 709,
+        "count": 1,
+        "optimizationHint": "Use --agent flag or scoped parameters with \"write-spec\" to reduce output payload (< 300 tokens)."
+      }
+    ],
+    "actionableOptimizations": [
+      "Reduce 5 redundant CLI calls to save ~4,359 tokens.",
+      "Avoid calling `docpath write-spec` consecutively without intermediate actions.",
+      "Avoid calling `docpath start` consecutively without intermediate actions.",
+      "Avoid serial chaining of \"reveal -> write-spec\" without intervening actions.",
+      "Avoid serial chaining of \"backlog -> next\" without intervening actions.",
+      "Avoid calling `docpath write-plan` consecutively without intermediate actions.",
+      "Avoid serial chaining of \"start -> reveal\" without intervening actions.",
+      "Avoid serial chaining of \"next -> start\" without intervening actions.",
+      "Avoid serial chaining of \"plan -> write-plan\" without intervening actions.",
+      "Avoid serial chaining of \"write-spec -> plan\" without intervening actions.",
+      "Use --agent flag or scoped parameters with \"start\" to reduce output payload (< 300 tokens).",
+      "Use --agent flag or scoped parameters with \"next\" to reduce output payload (< 300 tokens).",
+      "Use --agent flag or scoped parameters with \"write-spec\" to reduce output payload (< 300 tokens)."
+    ]
+  },
+  "commandInvocations": [
+    {
+      "id": "inv-1",
+      "timestamp": "2026-10-21T15:09:47Z",
+      "turnIndex": 3948,
+      "subcommand": "backlog",
+      "rawCommandLine": "\"npx docpath backlog list\"",
+      "directInputTokens": 7,
+      "directOutputTokens": 82,
+      "directTotalTokens": 89,
+      "turnBilledTokens": 3080,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-2",
+      "timestamp": "2026-10-21T15:09:52Z",
+      "turnIndex": 3950,
+      "subcommand": "next",
+      "rawCommandLine": "\"npx docpath next --agent\"",
+      "directInputTokens": 7,
+      "directOutputTokens": 788,
+      "directTotalTokens": 795,
+      "turnBilledTokens": 2334,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "backlog -> next",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-3",
+      "timestamp": "2026-10-21T15:09:57Z",
+      "turnIndex": 3952,
+      "subcommand": "start",
+      "rawCommandLine": "\"npx docpath start --help\"",
+      "directInputTokens": 7,
+      "directOutputTokens": 165,
+      "directTotalTokens": 172,
+      "turnBilledTokens": 3086,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "next -> start",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-4",
+      "timestamp": "2026-10-21T15:10:21Z",
+      "turnIndex": 3956,
+      "subcommand": "start",
+      "rawCommandLine": "\"npx docpath start \\\"契约巡检与海马体自固化（Consolidation）\\\" --draft\"",
+      "directInputTokens": 29,
+      "directOutputTokens": 202,
+      "directTotalTokens": 231,
+      "turnBilledTokens": 2630,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "start -> start",
+      "wastedTokens": 231,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-5",
+      "timestamp": "2026-10-21T15:10:30Z",
+      "turnIndex": 3960,
+      "subcommand": "start",
+      "rawCommandLine": "\"npx docpath start \\\"契约巡检与海马体自固化（Consolidation）\\\" --draft --adopt\"",
+      "directInputTokens": 31,
+      "directOutputTokens": 1199,
+      "directTotalTokens": 1230,
+      "turnBilledTokens": 3920,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "start -> start",
+      "wastedTokens": 1230,
+      "status": "success",
+      "durationMs": 3000
+    },
+    {
+      "id": "inv-6",
+      "timestamp": "2026-10-21T15:10:35Z",
+      "turnIndex": 3962,
+      "subcommand": "reveal",
+      "rawCommandLine": "\"npx docpath reveal --topic spec --level 1\"",
+      "directInputTokens": 11,
+      "directOutputTokens": 386,
+      "directTotalTokens": 397,
+      "turnBilledTokens": 3404,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "start -> reveal",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    },
+    {
+      "id": "inv-7",
+      "timestamp": "2026-10-21T15:10:40Z",
+      "turnIndex": 3964,
+      "subcommand": "write-spec",
+      "rawCommandLine": "\"npx docpath write-spec --stdin << 'EOF'\\n{\\n  \\\"title\\\": \\\"契约巡检与海马体自固化（Consolidation）\\\",\\n  \\\"background\\\": \\\"Hippo 积累了五轨记忆（用户画像、全局事实、项目记忆/待审缓冲、项目日志、每日流水）与技能 SOP、会话断点、待办资产。然而目前：1. 资产落盘契约巡检薄弱，doctor.ts 检查了错误的 todos.json 而非真实落盘的 todos.jsonl，缺乏对五轨与技能完整 schema（YAML 语法、必填字段、CCG when/not_when、损坏行过滤）的量化评估与报告；2. 海马体记忆自固化 (Consolidation) 缺失，现有的 consolidateMemories 仅局限于现有项目记忆内部的相似度合并，缺乏将短时 Track 5 每日流水 (daily-logs) 跨周期聚类归纳、按置信度提纯并自动转正为正式长期记忆（Track 3 project-memory）的海马体自固化流水线与状态防重追踪。\\\",\\n  \\\"requirements\\\": [\\n    {\\n      \\\"id\\\": \\\"FR-1\\\",\\n      \\\"title\\\": \\\"资产契约巡检与自愈 (Contract Doctor)\\\",\\n      \\\"description\\\": \\\"修复 doctor.ts 中 todos.jsonl 契约对齐，全面覆盖五轨（Track 1~5）及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈。\\\",\\n      \\\"acceptance_criteria\\\": [\\n        \\\"AC-1: runHippoDoctor 准确校验 todos.jsonl、五轨及技能资产契约，输出 contractComplianceRate 与违规明细，autoFixDoctorIssues 可自动修复脏数据\\\"\\n      ]\\n    },\\n    {\\n      \\\"id\\\": \\\"FR-2\\\",\\n      \\\"title\\\": \\\"跨轨每日流水自固化流水线 (Daily Logs Consolidation Pipeline)\\\",\\n      \\\"description\\\": \\\"实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档。\\\",\\n      \\\"acceptance_criteria\\\": [\\n        \\\"AC-2: consolid\n<truncated 1717 bytes>",
+      "directInputTokens": 771,
+      "directOutputTokens": 709,
+      "directTotalTokens": 1480,
+      "turnBilledTokens": 4987,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "reveal -> write-spec",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 24000
+    },
+    {
+      "id": "inv-8",
+      "timestamp": "2026-10-21T15:11:05Z",
+      "turnIndex": 3966,
+      "subcommand": "write-spec",
+      "rawCommandLine": "\"npx docpath write-spec --stdin << 'EOF'\\n# T-20261021-consolidation - 契约巡检与海马体自固化（Consolidation）\\n\\n> backlog_id: R-022\\n\\n## 1. 背景与动机\\nHippo 积累了五轨记忆（用户画像、全局事实、项目记忆/待审缓冲、项目日志、每日流水）与技能 SOP、会话断点、待办资产。然而目前：\\n1. 资产落盘契约巡检薄弱，`doctor.ts` 检查了错误的 `todos.json` 而非真实落盘的 `todos.jsonl`，缺乏对五轨与技能完整 schema（YAML 语法、必填字段、CCG `when`/`not_when`、损坏行过滤）的量化评估与报告；\\n2. 海马体记忆自固化 (Consolidation) 缺失，现有的 `consolidateMemories` 仅局限于现有项目记忆内部的相似度合并，缺乏将短时 Track 5 每日流水 (`daily-logs`) 跨周期聚类归纳、按置信度提纯并自动转正为正式长期记忆（Track 3 `project-memory`）的海马体自固化流水线与状态防重追踪。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: 资产契约巡检与自愈 (Contract Doctor)：修复 todos.jsonl 契约对齐，全面覆盖五轨及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈\\n- [ ] FR-2: 跨轨每日流水自固化流水线 (Daily Logs Consolidation Pipeline)：实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档\\n- [ ] FR-3: CLI 与 MCP 适配层扩展及单测与活文档收口：扩展 hippo consolidate 命令行与 memory_consolidate MCP 工具，支持 --daily / --contract / --auto-promote / --days 等参数；编写完整单测套件，更新架构活文档，全量单测通过\\n\\n### 非功能需求\\n- [ ] NFR-1: 100% 保持现有 60 项单测向后兼容与受控并发执行\\n- [ ] NFR-2: 坚\n<truncated 1253 bytes>",
+      "directInputTokens": 813,
+      "directOutputTokens": 172,
+      "directTotalTokens": 985,
+      "turnBilledTokens": 4086,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "write-spec -> write-spec",
+      "wastedTokens": 985,
+      "status": "success",
+      "durationMs": 10000
+    },
+    {
+      "id": "inv-9",
+      "timestamp": "2026-10-21T15:11:15Z",
+      "turnIndex": 3968,
+      "subcommand": "write-spec",
+      "rawCommandLine": "\"npx docpath write-spec --stdin --force << 'EOF'\\n# T-20261021-consolidation - 契约巡检与海马体自固化（Consolidation）\\n\\n> backlog_id: R-022\\n\\n## 1. 背景与动机\\nHippo 积累了五轨记忆（用户画像、全局事实、项目记忆/待审缓冲、项目日志、每日流水）与技能 SOP、会话断点、待办资产。然而目前：\\n1. 资产落盘契约巡检薄弱，`doctor.ts` 检查了错误的 `todos.json` 而非真实落盘的 `todos.jsonl`，缺乏对五轨与技能完整 schema（YAML 语法、必填字段、CCG `when`/`not_when`、损坏行过滤）的量化评估与报告；\\n2. 海马体记忆自固化 (Consolidation) 缺失，现有的 `consolidateMemories` 仅局限于现有项目记忆内部的相似度合并，缺乏将短时 Track 5 每日流水 (`daily-logs`) 跨周期聚类归纳、按置信度提纯并自动转正为正式长期记忆（Track 3 `project-memory`）的海马体自固化流水线与状态防重追踪。\\n\\n## 2. 需求清单\\n\\n### 功能需求\\n- [ ] FR-1: 资产契约巡检与自愈 (Contract Doctor)：修复 todos.jsonl 契约对齐，全面覆盖五轨及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈\\n- [ ] FR-2: 跨轨每日流水自固化流水线 (Daily Logs Consolidation Pipeline)：实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档\\n- [ ] FR-3: CLI 与 MCP 适配层扩展及单测与活文档收口：扩展 hippo consolidate 命令行与 memory_consolidate MCP 工具，支持 --daily / --contract / --auto-promote / --days 等参数；编写完整单测套件，更新架构活文档，全量单测通过\\n\\n### 非功能需求\\n- [ ] NFR-1: 100% 保持现有 60 项单测向后兼容与受控并发执行\\n- [ ] NFR\n<truncated 1260 bytes>",
+      "directInputTokens": 813,
+      "directOutputTokens": 201,
+      "directTotalTokens": 1014,
+      "turnBilledTokens": 4226,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "write-spec -> write-spec",
+      "wastedTokens": 1014,
+      "status": "success",
+      "durationMs": 9000
+    },
+    {
+      "id": "inv-10",
+      "timestamp": "2026-10-21T15:11:25Z",
+      "turnIndex": 3970,
+      "subcommand": "plan",
+      "rawCommandLine": "\"npx docpath plan\"",
+      "directInputTokens": 5,
+      "directOutputTokens": 138,
+      "directTotalTokens": 143,
+      "turnBilledTokens": 3343,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "write-spec -> plan",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 3000
+    },
+    {
+      "id": "inv-11",
+      "timestamp": "2026-10-21T15:11:29Z",
+      "turnIndex": 3972,
+      "subcommand": "write-plan",
+      "rawCommandLine": "\"npx docpath write-plan --help\"",
+      "directInputTokens": 8,
+      "directOutputTokens": 153,
+      "directTotalTokens": 161,
+      "turnBilledTokens": 2352,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "chainKey": "plan -> write-plan",
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 5000
+    },
+    {
+      "id": "inv-12",
+      "timestamp": "2026-10-21T15:11:38Z",
+      "turnIndex": 3976,
+      "subcommand": "write-plan",
+      "rawCommandLine": "\"npx docpath write-plan --stdin << 'EOF'\\n## 执行计划\\n\\n### S1: 实现并验证 FR-1 契约巡检\\n- **描述**: 落地 FR-1: 修复 todos.jsonl 契约对齐，全面覆盖五轨及会话资产的语法格式、必填字段与 CCG 条件空间模式巡检，量化输出契约合规率并支持损坏脏行安全自愈。\\n- **验收条件**: AC-1: runHippoDoctor 准确校验 todos.jsonl、五轨及技能资产契约，输出 contractComplianceRate 与违规明细，autoFixDoctorIssues 可自动修复脏数据\\n- **依赖**: 无\\n\\n### S2: 实现并验证 FR-2 海马体自固化（Consolidation）\\n- **描述**: 落地 FR-2: 实现 consolidateDailyLogs，从历史 daily-logs 中按周期扫描、语义聚类并提纯高质量记忆条目；通过 .hippo/consolidation-state.json 记录固化状态与指纹避免重复提纯；支持安全待审提议与高置信度 auto-promote 自动转正，以及已固化日志归档。\\n- **验收条件**: AC-2: consolidateDailyLogs 成功从 daily-logs 聚类提纯高频/高质量记忆，幂等记录固化状态，支持 --auto-promote 转正与 --archive 归档\\n- **依赖**: S1\\n\\n### S3: 实现并验证 FR-3 适配层扩展与收口\\n- **描述**: 落地 FR-3: 扩展 hippo consolidate 命令行与 memory_consolidate MCP 工具，支持 --daily / --contract / --auto-promote / --days 等参数；编写完整单测套件，更新架构活文档，全量单测通过。\\n- **验收条件**: AC-3: CLI hippo consolidate 与 MCP memory_consolidate 契约无缝扩展并生效；AC-4: 全量 60+ 项单测通过，docpath docs lint 0 错误 0 漂移\\n- **依赖**: S2\\n\\n## Checklist\\n- [ ] S1\\n- [ ] S2\\n- [ ] S3\\n\\n## 依赖关系图\\nS1 → S2 → S3\\nEOF\\n\"",
+      "directInputTokens": 649,
+      "directOutputTokens": 119,
+      "directTotalTokens": 768,
+      "turnBilledTokens": 3096,
+      "isRedundant": true,
+      "isSerialChain": true,
+      "chainKey": "write-plan -> write-plan",
+      "wastedTokens": 768,
+      "status": "success",
+      "durationMs": 6000
+    },
+    {
+      "id": "inv-13",
+      "timestamp": "2026-10-21T15:15:18Z",
+      "turnIndex": 4026,
+      "stepId": "S1",
+      "subcommand": "step-pass",
+      "rawCommandLine": "\"npx docpath step-pass --step S1 --note \\\"完成 todos.jsonl 对齐与五轨/技能资产深度契约巡检，输出 contractComplianceRate，autoFixDoctorIssues 支持脏行自愈\\\"\"",
+      "directInputTokens": 64,
+      "directOutputTokens": 458,
+      "directTotalTokens": 522,
+      "turnBilledTokens": 2974,
+      "isRedundant": false,
+      "isSerialChain": false,
+      "wastedTokens": 0,
+      "status": "success",
+      "durationMs": 4000
+    }
+  ],
+  "frictionFindings": [
+    {
+      "id": "FRIC-CMD-ERR",
+      "category": "command_error",
+      "severity": "low",
+      "title": "CLI 命令调用异常与参数拦截 (Command Execution Errors)",
+      "description": "检测到 1 次命令调用失败或参数报错，可能由于命令语法错误或环境不匹配导致",
+      "count": 1,
+      "tokensWasted": 200,
+      "optimizationHint": "查阅 docpath --help 或 AGENTS.md 规范，确保 CLI 命令与参数格式准确"
+    },
+    {
+      "id": "FRIC-GATE-BLOCK",
+      "category": "gate_block",
+      "severity": "low",
+      "title": "质量门禁与构建拦截阻力 (Quality Gate Blockage)",
+      "description": "检测到 1 次质量门禁拦截或测试/构建失败，阻碍了任务顺利推进",
+      "count": 1,
+      "tokensWasted": 400,
+      "optimizationHint": "利用构建感知自愈机制运行定向单测 (node --test)，并在终步统一执行收口门禁"
+    },
+    {
+      "id": "FRIC-STEP-REWORK",
+      "category": "step_rework",
+      "severity": "low",
+      "title": "步骤返工与多次重试阻力 (Step Rework & Retries)",
+      "description": "检测到 1 次步骤受阻、重试或返工，增加了任务执行周期与上下文损耗",
+      "count": 1,
+      "tokensWasted": 500,
+      "optimizationHint": "执行 docpath go --step 原子认领；对复杂长步骤派发 Worker 子代理独立攻坚"
+    }
+  ],
+  "stepPassAnalysis": {
+    "totalStepPassCalls": 1,
+    "productiveCalls": 1,
+    "redundantCalls": 0,
+    "directTokens": 522,
+    "invisibleTurnReplayTokens": 2974,
+    "redundantTurnReplayTokens": 0,
+    "frictionTurnRatio": 14.3,
+    "summary": "1 次 step-pass 调用均为有效推进，无空转重放损耗"
+  },
+  "lifecycleAnchor": {
+    "sessionId": "eb4064ea-e81c-4a7f-86ed-13738290fba2",
+    "baseCommit": "738aa43837e87660fbe5dfea75239c67b1cb5877",
+    "headCommit": "738aa43837e87660fbe5dfea75239c67b1cb5877",
+    "startedAt": "2026-10-21T15:05:52.322Z",
+    "completedAt": "2026-10-21T15:15:33.047Z"
+  },
+  "stepSlices": [
+    {
+      "stepId": "S1",
+      "stepTitle": "实现并验证 修复测试门禁误注入 Node 24+ 专属 flag：",
+      "startedAt": "2026-10-21T15:05:52.322Z",
+      "completedAt": "2026-10-21T15:08:22.387Z",
+      "durationMinutes": 2.5,
+      "totalTokens": 72181,
+      "inputTokens": 70537,
+      "outputTokens": 1644,
+      "costUsd": 0.2363,
+      "toolCallsCount": 7,
+      "topTools": [
+        {
+          "name": "read_file",
+          "count": 3,
+          "tokens": 3304
+        },
+        {
+          "name": "run_command",
+          "count": 4,
+          "tokens": 609
+        }
+      ]
+    }
+  ],
+  "docpathValueRoi": {
+    "protocolTokens": 3684,
+    "realModelTokens": 250169,
+    "overheadRatio": 1.47,
+    "complianceScore": 85,
+    "firstTimePassRate": 0,
+    "summaryText": "以极低 Token 负担 (<3%~5%) 规范 Agent 工作流并阻断试错死循环"
+  }
+}

@@ -18,6 +18,7 @@ import {
   selectTouchedTestFiles,
   testRelatesToFile,
   buildNodeTestCommand,
+  resolveTestIsolationFlag,
 } from './test-scope.js';
 import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
@@ -275,7 +276,8 @@ export async function runStepTargetedVerification(
     await ensureBuildFreshness(cwd);
     const concurrency = Math.min(Math.max(targetTests.length, 1), 4);
     cmd = 'node';
-    args = ['--test', `--test-concurrency=${concurrency}`, '--test-isolation=process', ...targetTests];
+    const isolationFlag = resolveTestIsolationFlag();
+    args = ['--test', `--test-concurrency=${concurrency}`, ...(isolationFlag ? [isolationFlag] : []), ...targetTests];
   } else {
     return {
       executed: false,

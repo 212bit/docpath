@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "kind": "spec",
+  "source": {
+    "kind": "markdown",
+    "created_at": "2026-10-21T15:06:18.847Z",
+    "updated_at": "2026-10-21T15:06:18.847Z",
+    "content_sha256": "be0f14c71546ace59d0e5e803aaa606e05e94cee8a6e6416beddcce66a05efb1"
+  },
+  "task_id": "T-20261021-node-24-flag-test-isolation-node-22",
+  "backlog_id": "R-501",
+  "title": "T-20261021-node-24-flag-test-isolation-node-22 - 修复测试门禁误注入 Node 24+ 专属 flag",
+  "generated_at": "2026-10-21T15:06:18.847Z",
+  "scope": {
+    "included": [
+      "`src/engine/test-scope.ts`、`src/engine/step-verify.ts`",
+      "新增单测文件"
+    ],
+    "excluded": [
+      "修改 Node 版本探测机制（仍以运行 docpath 的 Node 为准）",
+      "处理其他 Node 版本差异导致的 flag 兼容问题",
+      "调整 check 缓存策略（缓存掩盖失败属独立议题）"
+    ]
+  },
+  "major_change_gate": {
+    "required": true,
+    "types": [
+      "工作流 / Agent 行为"
+    ],
+    "user_confirmed": "用户在 2026-10-21 会话中同意先修此门禁缺陷再进 P2",
+    "decision_brief_markdown": "- 当前问题: 测试门禁在 Node 22 上必然失败，原因是两处调用点硬编码了 Node 24 才有的 `--test-isolation=process`；失败还可能被 check 缓存掩盖。\n- 目标: 按 Node 主版本决定是否注入该 flag，并把两处重复逻辑收敛为一个可单测的函数。\n- 背景: 来自 backlog R-501；R-021 在 hippo 仓库收口时实测到 `node: bad option`。\n- 可选方案:\n  - 方案 A（采纳）: 版本感知解析 + 公共函数 + 单测\n  - 方案 B（否决）: 直接删掉 flag —— 显式意图丢失，若未来默认隔离变为 none 会静默退化\n  - 方案 C（否决）: 统一改用 `--experimental-test-isolation=process` —— 该名称在 Node 24 已改名，在 22 与 24 之间反而制造新的分裂\n  - 方案 D（否决）: 捕获 bad option 后自动重试无 flag —— 把真实失败伪装成通过，且失败路径多跑一次全量测试\n- 推荐方案: 方案 A\n- 决策理由: 最小改动、可单测、跨版本语义一致；省略 flag 在 22/24/26 上都等价于 process 隔离，因此不存在遗漏场景\n- 不做什么: 不引入版本探测子进程、不调整缓存策略、不改并发计算\n- 成本: 约 30 行实现 + 60 行测试\n- 风险: 若 docpath 运行时 Node 与执行测试的 `node` 不同版本，判据可能错位；但省略 flag 在所有版本均安全，最坏情况只是少一次显式声明，不会失败\n- 回滚方案: 还原两处调用点即可\n- 用户确认: 用户在 2026-10-21 会话中同意先修此门禁缺陷再进 P2"
+  },
+  "ui_gate": {
+    "state": "exempt"
+  },
+  "functional_requirements": [
+    {
+      "id": "FR-1",
+      "text": "以 Node 主版本为判据解析隔离 flag，并让两处调用点共用同一实现",
+      "done": false
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-1",
+      "text": "不新增依赖，不改变 `--test-concurrency` 的既有计算逻辑",
+      "done": false
+    },
+    {
+      "id": "NFR-2",
+      "text": "Node 22 与 Node 26 两个运行时下，`npm test` 均全绿",
+      "done": false
+    },
+    {
+      "id": "NFR-3",
+      "text": "不改变 check 缓存键语义以外的行为；不得通过\"忽略 bad option 输出\"掩盖失败",
+      "done": false
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "text": "Node 22.x 下不注入 `--test-isolation`，Node 24/26 下注入；非法版本号不抛异常且不注入",
+      "done": false
+    },
+    {
+      "id": "AC-2",
+      "text": "`opts.isolation === false` 时无论版本均不注入",
+      "done": false
+    },
+    {
+      "id": "AC-3",
+      "text": "`test-scope` 与 `step-verify` 两处均调用同一解析函数，仓库内不再出现硬编码的 `--test-isolation=process` 字面量",
+      "done": false
+    },
+    {
+      "id": "AC-4",
+      "text": "新增单测覆盖 22 / 24 / 26 / 非法版本 / isolation=false 五种输入并通过",
+      "done": false
+    },
+    {
+      "id": "AC-5",
+      "text": "Node 22.22.2 下 `docpath check` 的测试项恢复正常通过",
+      "done": false
+    }
+  ],
+  "decision_brief": {
+    "problem": "测试门禁在 Node 22 上必然失败，原因是两处调用点硬编码了 Node 24 才有的 `--test-isolation=process`；失败还可能被 check 缓存掩盖。",
+    "options": [
+      "- 方案 A（采纳）: 版本感知解析 + 公共函数 + 单测"
+    ],
+    "chosen": "方案 A",
+    "rationale": "最小改动、可单测、跨版本语义一致；省略 flag 在 22/24/26 上都等价于 process 隔离，因此不存在遗漏场景"
+  }
+}

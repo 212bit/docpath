@@ -10,7 +10,8 @@
  * 本模块提供两级减载，均为**受控、fail-safe 到慢**（宁慢不放水）：
  *   A. 受控并发 + 进程隔离（默认 full 模式也生效，普适提速）：
  *      给 node --test 注入 `--test-concurrency=<n>`（cpu/2，上限 8）与
- *      `--test-isolation=process`，避免全并发摊薄与 sqlite 竞态重试。
+ *      `--test-isolation=process`（仅 Node >= 24；Node 22 默认即为 process 隔离，
+ *      显式传该 flag 会 `node: bad option`，见 R-501），避免全并发摊薄与 sqlite 竞态重试。
  *   B. 影响面减载（--test-scope=touched 显式开启）：
  *      按当时 git 改动的源文件，粗匹配出**可能受影响**的测试文件子集，只跑它们。
  *      命中"核心路径/超规模"时强制回落全量（沿用 quick-guard 的 RISKY_PATH_PATTERNS）。
@@ -181,9 +182,24 @@ export function selectTouchedTestFiles(
 }
 
 /**
+ * 解析进程隔离 flag（R-501）。
+ *
+ * `--test-isolation` 自 Node 24 才存在，Node 22 上直接传会得到 `node: bad option`
+ * 并以非零码退出，导致测试项必然失败。Node 22 的 `--test` 默认即为 process 隔离，
+ * 因此低版本直接省略该 flag 即可，语义不变。
+ *
+ * 版本号缺失或非法时返回 null（fail-safe 到不注入），保证解析异常不会再次制造 bad option。
+ */
+export function resolveTestIsolationFlag(nodeVersion: string = process.versions.node): string | null {
+  const major = Number.parseInt(String(nodeVersion).split('.')[0] ?? '', 10);
+  if (!Number.isFinite(major) || Number.isNaN(major)) return null;
+  return major >= 24 ? '--test-isolation=process' : null;
+}
+
+/**
  * 构建受控的 node --test 命令。
  *  - files：相对路径测试文件集；空数组表示全量（用 glob 通配）。
- *  - concurrency：注入 --test-concurrency；isolate 时注入 --test-isolation=process。
+ *  - concurrency：注入 --test-concurrency；isolate 时按 Node 主版本决定是否注入 --test-isolation。
  * 返回可直接执行的 shell 命令字符串。
  */
 export function buildNodeTestCommand(
@@ -195,7 +211,8 @@ export function buildNodeTestCommand(
   const isolation = opts.isolation ?? true;
   const argv = ['node', '--test'];
   argv.push(`--test-concurrency=${concurrency}`);
-  if (isolation) argv.push('--test-isolation=process');
+  const isolationFlag = isolation ? resolveTestIsolationFlag() : null;
+  if (isolationFlag) argv.push(isolationFlag);
   if (files.length === 0) {
     argv.push('tests/*.test.mjs');
   } else {
