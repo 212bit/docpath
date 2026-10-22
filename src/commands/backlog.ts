@@ -2156,7 +2156,7 @@ async function backlogPick(options: BacklogCommandOptions): Promise<void> {
     await goCommand({
       cwd: options.cwd,
       step: 'S1',
-      acceptDirty: options.adopt ? 'pick --adopt: claim workspace edits' : undefined,
+      adopt: options.adopt,
     });
     return;
   }

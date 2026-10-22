@@ -70,6 +70,8 @@ describe('docpath adopt and go --adopt', () => {
       assert.ok(existsSync(breadcrumbPath));
       const breadcrumbContent = readFileSync(breadcrumbPath, 'utf-8');
       assert.match(breadcrumbContent, /go --adopt: claimed working tree changes into S1/);
+      assert.doesNotMatch(breadcrumbContent, /accept-dirty/);
+      assert.doesNotMatch(adoptGo.out, /accept-dirty/);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

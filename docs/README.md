@@ -76,7 +76,7 @@ DocPath 严格区分 **4 层文档资产**，避免运行时噪音与知识腐�
 
 ## 文档关联图谱 (docs graph)
 
-> 全部 29 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。
+> 全部 30 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。
 
 ### docs/
 
@@ -108,12 +108,13 @@ DocPath 严格区分 **4 层文档资产**，避免运行时噪音与知识腐�
 - [docs/features/architecture-guard.md](./features/architecture-guard.md) — 架构分层与依赖防腐守卫 (Architecture Layers & Guardrails) — 出 2 / 入 2
 - [docs/features/backlog-lifecycle.md](./features/backlog-lifecycle.md) — Backlog 需求工程与全生命周期管理 (Backlog Lifecycle & Engineering) — 出 2 / 入 4
 - [docs/features/context-budget-governance.md](./features/context-budget-governance.md) — 上下文 Token 预算透视与健康度治理引擎 — 出 2 / 入 1
+- [docs/features/dirty-worktree-guard.md](./features/dirty-worktree-guard.md) — 任务脏路径基线与执行期 dirty guard — 出 2 / 入 0
 - [docs/features/knowledge-accumulation.md](./features/knowledge-accumulation.md) — 经验沉淀与持续学习机制 (Knowledge Accumulation) — 出 2 / 入 4
 - [docs/features/living-docs-workflow.md](./features/living-docs-workflow.md) — DocPath 活文档防腐与 Agent 协议联动系统 — 出 0 / 入 2
 - [docs/features/milestone-lifecycle.md](./features/milestone-lifecycle.md) — Milestone 里程碑目标规划与闭环管理 (Milestone Lifecycle & Management) — 出 2 / 入 0
-- [docs/features/task-stash.md](./features/task-stash.md) — 任务热暂存与上下文恢复 (Task Stash & Switch) — 出 2 / 入 2
+- [docs/features/task-stash.md](./features/task-stash.md) — 任务热暂存与上下文恢复 (Task Stash & Switch) — 出 2 / 入 3
 - [docs/features/test-impact-analysis.md](./features/test-impact-analysis.md) — 测试影响分析与智能门禁加速体系 (Test Impact Analysis & Smart Gates) — 出 2 / 入 2
-- [docs/features/worktree-workflow.md](./features/worktree-workflow.md) — Agent-neutral Git Worktree 并发开发 - 使用指南 — 出 2 / 入 3
+- [docs/features/worktree-workflow.md](./features/worktree-workflow.md) — Agent-neutral Git Worktree 并发开发 - 使用指南 — 出 2 / 入 4
 
 ### docs/guides/
 

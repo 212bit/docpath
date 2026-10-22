@@ -11,6 +11,7 @@ import { parse as parseYaml } from 'yaml';
 import { readCurrentState, readOptionalFile } from '../utils/workspace.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { readBreadcrumb, writeBreadcrumb } from '../engine/breadcrumb.js';
+import { claimTaskDirtyPaths } from '../utils/git-dirty-guard.js';
 import { markPlanStep } from '../utils/plan-sync.js';
 import { generateAgentOutput } from '../engine/agent-output.js';
 import { transitionWorkflow } from '../engine/transitions.js';
@@ -174,6 +175,12 @@ export async function endStepExecution(options: {
     session: options.session,
   });
   const sync = await markPlanStep(options.cwd, options.step, options.status);
+  // 步骤收尾时把这一步留下的脏路径归给当前任务。step-pass 随后调用的 go
+  // 才能放行本任务自己的未提交代码，而不必再传 --accept-dirty。
+  const taskId = (await readCurrentState(options.cwd))?.task_id?.trim();
+  if (taskId) {
+    claimTaskDirtyPaths(options.cwd, taskId, 'step');
+  }
   return { planSynced: sync.updated, planSyncReason: sync.reason };
 }
 

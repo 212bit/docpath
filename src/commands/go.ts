@@ -27,7 +27,7 @@ import { resolveSessionContext, touchSession } from '../utils/session.js';
 import { assertMajorChangeGateReady } from '../utils/major-change.js';
 import { readDocPathConfig } from '../utils/config.js';
 import { emitNextHint } from '../engine/next-hint.js';
-import { assertNoNonDocPathChangesForExecutionStart } from '../utils/git-dirty-guard.js';
+import { assertNoNonDocPathChangesForExecutionStart, claimTaskDirtyPaths, seedTaskDirtyBaseline } from '../utils/git-dirty-guard.js';
 import { exitWithError } from '../utils/error-helpers.js';
 import { renderCloseoutRoute, resolveCloseoutRoute } from '../engine/closeout-route.js';
 import { assertWorktreeContract } from './worktree.js';
@@ -45,9 +45,9 @@ interface GoOptions {
   dryRun?: boolean;
   /** agent/session 标识 */
   session?: string;
-  /** R-334: 首等恢复旗标——记录 breadcrumb 证据后跳过 dirty worktree 拦截 */
+  /** R-334: 显式逃生口——记录 breadcrumb 证据后跳过 dirty worktree 拦截 */
   acceptDirty?: string;
-  /** 轻量认领工作区代码变更并跳过 dirty 拦截 */
+  /** 把当前脏路径记入本任务基线，不再借用 --accept-dirty 记账 */
   adopt?: boolean;
 }
 
@@ -355,28 +355,38 @@ export async function goCommand(options: GoOptions): Promise<void> {
     }
   }
   await assertMajorChangeGateReady(cwd, docpathDir, resolvedTaskId, 'go', agentFlow);
-  if (!status && !options.acceptDirty && !options.adopt) {
+  if (!status && options.adopt) {
+    // 认领当前脏路径进本任务基线。守卫随后只拦基线之外的新路径，
+    // 不再把 --adopt 记成 --accept-dirty。
+    claimTaskDirtyPaths(cwd, resolvedTaskId, 'adopt');
+    await writeBreadcrumb(cwd, {
+      taskId: resolvedTaskId,
+      step: target.id,
+      status: 'in_progress',
+      context: `go --adopt: claimed working tree changes into ${target.id}`,
+      sessionId: session.sessionId,
+    });
+    console.log(`📦  --adopt 已认领工作区变更至步骤 ${target.id}`);
+  }
+  if (!status && options.acceptDirty) {
+    // 显式逃生口：跳过守卫，并把当下脏路径记入基线，后续步骤不必重复传旗标。
+    claimTaskDirtyPaths(cwd, resolvedTaskId, 'adopt');
+    await writeBreadcrumb(cwd, {
+      taskId: resolvedTaskId,
+      step: target.id,
+      status: 'in_progress',
+      context: `go --accept-dirty: ${options.acceptDirty}`,
+      sessionId: session.sessionId,
+    });
+    console.log(`⚠️  --accept-dirty 已记录 breadcrumb 证据: ${options.acceptDirty}`);
+  }
+  if (!status && !options.acceptDirty) {
     assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
       taskId: resolvedTaskId,
       backlogId: current?.backlog_id ?? structuredSpec?.backlog_id,
       step: target.id,
     });
-  }
-  if (!status && (options.acceptDirty || options.adopt)) {
-    // R-334: 首等恢复旗标 / 轻量认领 —— 记录 breadcrumb 证据，替代隐藏的 run start --note 逃生口
-    const reason = options.acceptDirty ?? `claimed working tree changes into ${target.id}`;
-    await writeBreadcrumb(cwd, {
-      taskId: resolvedTaskId,
-      step: target.id,
-      status: 'in_progress',
-      context: options.adopt ? `go --adopt: ${reason}` : `go --accept-dirty: ${reason}`,
-      sessionId: session.sessionId,
-    });
-    if (options.adopt) {
-      console.log(`📦  --adopt 已认领工作区变更至步骤 ${target.id}`);
-    } else {
-      console.log(`⚠️  --accept-dirty 已记录 breadcrumb 证据: ${options.acceptDirty}`);
-    }
+    seedTaskDirtyBaseline(cwd, resolvedTaskId);
   }
   const uiRequirement = !status ? await resolveUiDesignRequirement(cwd) : 'exempt';
   const uiOptInAdvisory = !status && uiRequirement !== 'required'
