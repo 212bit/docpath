@@ -7,11 +7,13 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { registerCommands } from './commands/register.js';
+import { installDirtyGuardBlockHook } from './engine/gate-blocked.js';
 import { renderAdvancedHelp, renderDefaultHelp, renderDeprecatedHelp } from './commands/register/command-metadata.js';
 import { resolveSessionContext, verifySessionCwd } from './utils/session.js';
 import { DocPathError } from './utils/error-helpers.js';
 import { isTraceEnabled, writeTraceEntry, isTraceEnabledSync, writeTraceEntrySync } from './utils/trace.js';
 
+installDirtyGuardBlockHook();
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 

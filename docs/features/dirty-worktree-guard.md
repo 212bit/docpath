@@ -11,6 +11,7 @@ tags:
 related:
   - features/task-stash.md
   - features/worktree-workflow.md
+  - features/lifecycle-hooks.md
 summary: 执行期 dirty guard 按任务基线归属本任务改动，只拦截无法归属的新路径；promote 备份不再触发拦截，--adopt 不再借用 --accept-dirty。
 ---
 
@@ -60,3 +61,7 @@ summary: 执行期 dirty guard 按任务基线归属本任务改动，只拦截�
 ## 4. 验证
 
 `tests/dirty-worktree-guard.test.mjs` 覆盖：本任务未跟踪文件经 `step-pass` 进入下一步且面包屑不含 `accept-dirty`；基线之外的新文件仍被拦截且报错不包含已归属路径；promote 备份不阻断 `go` 与 `quick`；`start --adopt` 认领路径并写入基线，输出与面包屑都不含 `accept-dirty`。
+
+## 5. 阻断通知
+
+守卫在抛出原来的错误之前发出 `on-gate-blocked`（`gate` 为 `git-dirty-guard`，`paths` 为本次拦截的路径）。通知失败或超时不改变抛出的错误。详见 [生命周期 Hook 与门禁阻断通知](./lifecycle-hooks.md)。

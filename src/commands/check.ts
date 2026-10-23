@@ -51,7 +51,28 @@ async function healActiveTaskDrift(docpathDir: string, taskId: string | undefine
  * 入口阶段 2（R-300）：协议共享契约注入区一致性。fail-loud 指向 render——
  * gate 不写手写源；root↔canonical 归 install manifest drift 治理，不重叠。
  */
-async function assertProtocolBlocksInSync(): Promise<void> {
+interface CheckBlockContext {
+  cwd: string;
+  taskId?: string;
+  step?: string;
+}
+
+async function throwCheckBlocked(ctx: CheckBlockContext, reason: string): Promise<never> {
+  try {
+    const { emitGateBlocked } = await import('../engine/hook-runner.js');
+    await emitGateBlocked(ctx.cwd, {
+      gate: 'check',
+      taskId: ctx.taskId,
+      step: ctx.step,
+      reason,
+    });
+  } catch (error) {
+    logger.warn(`on-gate-blocked hook failed (${error instanceof Error ? error.message : String(error)}). Gate outcome unchanged.`);
+  }
+  throw new Error(reason);
+}
+
+async function assertProtocolBlocksInSync(block: CheckBlockContext): Promise<void> {
   const templatesDir = await resolveTemplate();
   const blockReport = await syncProtocolBlocks(templatesDir, { write: false });
   if (!blockReport.available) return;
@@ -62,7 +83,7 @@ async function assertProtocolBlocksInSync(): Promise<void> {
     .join('; ');
   logger.error(`❌  协议共享契约注入区与块源不一致: ${detail}`);
   logger.log('    修复: docpath render --view protocols（重渲染注入区后提交 canonical）');
-  throw new Error('docpath check failed: protocol blocks drift');
+  await throwCheckBlocked(block, 'docpath check failed: protocol blocks drift');
 }
 
 /**
@@ -72,9 +93,9 @@ async function assertProtocolBlocksInSync(): Promise<void> {
  * 仓根独有的正文行（模板缺）→ 视为可能的有意定制，仅提示。参照块注入区治理的
  * 「fail-loud 不自动写盘」，本门禁同样不写盘，仅指向手动同步 / 重装。
  */
-async function assertRepoProtocolsInSync(cwd: string, docpathDir: string): Promise<void> {
-  const projectName = detectProjectName(cwd);
-  const report = await detectRepoProtocolDrift(cwd, projectName);
+async function assertRepoProtocolsInSync(block: CheckBlockContext, docpathDir: string): Promise<void> {
+  const projectName = detectProjectName(block.cwd);
+  const report = await detectRepoProtocolDrift(block.cwd, projectName);
 
   const drifted = report.files.filter((f) => f.drift);
   if (drifted.length === 0) {
@@ -97,7 +118,7 @@ async function assertRepoProtocolsInSync(cwd: string, docpathDir: string): Promi
     }
   }
   logger.log('  修复: 运行 docpath update --reset-protocols 自动同步最新正文（保留项目绑定），或运行 docpath install --target universal --force');
-  throw new Error('docpath check failed: repo protocol text drift');
+  await throwCheckBlocked(block, 'docpath check failed: repo protocol text drift');
 }
 
 /** 从仓库根 AGENTS.md 的 Linked to 行探测项目名，用于替换模板 {{PROJECT_NAME}} 占位。 */
@@ -119,14 +140,14 @@ function detectProjectName(cwd: string): string | null {
  * --only-harness 跳过常规检查路径，此时 runTaskDocumentChecks 不执行，
  * 故前置门须同步跳过，避免对 harness-only 运行引入新失败面。
  */
-async function assertTaskIdentityFatal(cwd: string, docpathDir: string, options: CheckOptions): Promise<void> {
+async function assertTaskIdentityFatal(block: CheckBlockContext, docpathDir: string, options: CheckOptions): Promise<void> {
   if (options.onlyHarness) return;
   const { detectFatalTaskIdentityResults } = await import('./check/validators.js');
-  const failures = await detectFatalTaskIdentityResults(cwd, docpathDir);
+  const failures = await detectFatalTaskIdentityResults(block.cwd, docpathDir);
   if (failures.length === 0) return;
   logger.error(`❌  ${failures[0].name}`);
   logger.log(failures[0].output || '');
-  throw new Error(`docpath check failed: ${failures[0].name}`);
+  await throwCheckBlocked(block, `docpath check failed: ${failures[0].name}`);
 }
 
 function warnWhenOutsideAgentSession(current: Awaited<ReturnType<typeof readCurrentState>>, options: CheckOptions): void {
@@ -160,9 +181,10 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
   //   3. quick→standard 升级判定 —— 依赖已收敛的 spec 真源读取门禁声明。
   // 早退性由 CLI 级契约测试固化（blocks 漂移输出不得含编译检查段落）。
   await healActiveTaskDrift(docpathDir, current?.task_id);
-  await assertProtocolBlocksInSync();
-  await assertRepoProtocolsInSync(cwd, docpathDir);
-  await assertTaskIdentityFatal(cwd, docpathDir, options);
+  const block: CheckBlockContext = { cwd, taskId: current?.task_id, step: current?.current_step };
+  await assertProtocolBlocksInSync(block);
+  await assertRepoProtocolsInSync(block, docpathDir);
+  await assertTaskIdentityFatal(block, docpathDir, options);
 
   // ── R-338 S4: check 期风险复评（所有 profile，只升不降）──
   const { current: reassessedCurrent, riskTier } = await performRiskReassessment(cwd, current);
@@ -265,7 +287,10 @@ export async function checkCommand(options: CheckOptions): Promise<void> {
 
   if (!allPassed && !envExempt) {
     console.log('请修复失败项后重新运行 `docpath check`\n');
-    throw new Error(`docpath check failed: ${results.filter(r => !r.passed && r.severity !== 'warning').map(r => r.name).join(', ')}`);
+    await throwCheckBlocked(
+      { cwd, taskId: current?.task_id, step: current?.current_step },
+      `docpath check failed: ${results.filter(r => !r.passed && r.severity !== 'warning').map(r => r.name).join(', ')}`,
+    );
   } else {
     // ── 执行 post-check 生命周期 Hook ──
     try {
