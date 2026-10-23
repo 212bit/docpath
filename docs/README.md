@@ -44,6 +44,7 @@ docs/
 * [任务热暂存与无缝恢复 (Task Stash)](./features/task-stash.md) — 工作区即时热暂存、弹出与原子切换。
 * [会话隔离设计 (Session Isolation)](./design/session-isolation-mvp.md) — 多会话并发执行与状态隔离。
 * [经验沉淀与持续学习机制](./features/knowledge-accumulation.md) — 经验捕获、候选清洗、规则固化与智能消费闭环。
+* [生命周期 Hook 与门禁阻断通知](./features/lifecycle-hooks.md) — `on-gate-blocked` 在脏工作区、check、review 阻断时尽力通知，失败不改变门禁结论。
 
 ### 3. 工作流与工件策略 (Workflows & Policies)
 * [工件策略与阶段门禁](./workflows/artifact-policy.md) — Spec/Plan/Evidence 工件生命周期与存储规范。
@@ -76,7 +77,7 @@ DocPath 严格区分 **4 层文档资产**，避免运行时噪音与知识腐�
 
 ## 文档关联图谱 (docs graph)
 
-> 全部 30 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。
+> 全部 31 篇文档，按目录分类；出/入为 docs graph 关联计数。孤立 = 无出链且无入链。
 
 ### docs/
 
@@ -108,8 +109,9 @@ DocPath 严格区分 **4 层文档资产**，避免运行时噪音与知识腐�
 - [docs/features/architecture-guard.md](./features/architecture-guard.md) — 架构分层与依赖防腐守卫 (Architecture Layers & Guardrails) — 出 2 / 入 2
 - [docs/features/backlog-lifecycle.md](./features/backlog-lifecycle.md) — Backlog 需求工程与全生命周期管理 (Backlog Lifecycle & Engineering) — 出 2 / 入 4
 - [docs/features/context-budget-governance.md](./features/context-budget-governance.md) — 上下文 Token 预算透视与健康度治理引擎 — 出 2 / 入 1
-- [docs/features/dirty-worktree-guard.md](./features/dirty-worktree-guard.md) — 任务脏路径基线与执行期 dirty guard — 出 2 / 入 0
+- [docs/features/dirty-worktree-guard.md](./features/dirty-worktree-guard.md) — 任务脏路径基线与执行期 dirty guard — 出 3 / 入 1
 - [docs/features/knowledge-accumulation.md](./features/knowledge-accumulation.md) — 经验沉淀与持续学习机制 (Knowledge Accumulation) — 出 2 / 入 4
+- [docs/features/lifecycle-hooks.md](./features/lifecycle-hooks.md) — 生命周期 Hook 与门禁阻断通知 — 出 1 / 入 1
 - [docs/features/living-docs-workflow.md](./features/living-docs-workflow.md) — DocPath 活文档防腐与 Agent 协议联动系统 — 出 0 / 入 2
 - [docs/features/milestone-lifecycle.md](./features/milestone-lifecycle.md) — Milestone 里程碑目标规划与闭环管理 (Milestone Lifecycle & Management) — 出 2 / 入 0
 - [docs/features/task-stash.md](./features/task-stash.md) — 任务热暂存与上下文恢复 (Task Stash & Switch) — 出 2 / 入 3

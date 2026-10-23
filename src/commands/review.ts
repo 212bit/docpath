@@ -473,6 +473,20 @@ async function handleApprove(cwd: string, docpathDir: string, taskId: string): P
   }
 }
 
+async function notifyReviewBlocked(
+  cwd: string,
+  taskId: string | undefined,
+  step: string | undefined,
+  reason: string,
+): Promise<void> {
+  try {
+    const { emitGateBlocked } = await import('../engine/hook-runner.js');
+    await emitGateBlocked(cwd, { gate: 'review', taskId, step, reason });
+  } catch (error) {
+    console.warn(`⚠️  on-gate-blocked hook failed (${error instanceof Error ? error.message : String(error)}). Gate outcome unchanged.`);
+  }
+}
+
 async function persistReviewResult(cwd: string, taskId: string, groups: FindingGroups, approved: boolean): Promise<void> {
   const { errors, warns, infos } = groups;
   await writeBreadcrumb(cwd, {
@@ -602,7 +616,9 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   const taskId = current?.task_id || 'review';
   if (opts.approve) {
     if (!(skillReviewGate.status === 'pass' || skillReviewGate.status === 'pass_with_skips' || skillReviewGate.status === 'not_required' || skillReviewGate.status === 'disabled')) {
-      throw new Error('docpath review --approve cannot bypass Review Skill Gate; use --skip-skill-review <skill> --reason <reason> for explicit skill-level exemption');
+      const reason = 'docpath review --approve cannot bypass Review Skill Gate; use --skip-skill-review <skill> --reason <reason> for explicit skill-level exemption';
+      await notifyReviewBlocked(opts.cwd, current?.task_id, current?.current_step, reason);
+      throw new Error(reason);
     }
     await handleApprove(opts.cwd, docpathDir, taskId);
     await emitNextHint(opts.cwd);
@@ -620,10 +636,12 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     if (!(skillReviewGate.status === 'pass' || skillReviewGate.status === 'pass_with_skips' || skillReviewGate.status === 'not_required' || skillReviewGate.status === 'disabled')) {
       blockers.push(`review skill gate ${skillReviewGate.status}${skillReviewGate.missing_evidence.length > 0 ? `（缺证据: ${skillReviewGate.missing_evidence.join(', ')}）` : ''}`);
     }
-    console.log(`\n❌ 需要修改 — 阻塞原因: ${blockers.join('；') || '未知'}`);
+    const reason = blockers.join('；') || '未知';
+    console.log(`\n❌ 需要修改 — 阻塞原因: ${reason}`);
     if (groups.errors.length === 0 && groups.warns.length > 0) {
       console.log(`   （${groups.warns.length} 项警告不阻塞审批，多为 baseline 整文件风格提示；修复后重跑 docpath review）`);
     }
+    await notifyReviewBlocked(opts.cwd, current?.task_id, current?.current_step, reason);
   }
   await persistReviewResult(opts.cwd, taskId, groups, approved);
   const finding_scope_counts = countFindingScopes(findings);

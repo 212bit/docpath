@@ -36,6 +36,38 @@ interface ExecutionStartDirtyOptions {
   step?: string;
 }
 
+export interface DirtyGuardBlockInfo {
+  gate: 'git-dirty-guard';
+  command: string;
+  mode: 'new-task' | 'execution-start';
+  taskId?: string;
+  step?: string;
+  reason: string;
+  paths: string[];
+}
+
+type DirtyGuardBlockListener = (cwd: string, info: DirtyGuardBlockInfo) => void;
+
+let dirtyGuardBlockListener: DirtyGuardBlockListener | null = null;
+
+/**
+ * Register the best-effort listener invoked immediately before a dirty-guard
+ * throw. The CLI installs this so utils does not import the hook engine.
+ * The listener must not change the thrown error; failures are swallowed.
+ */
+export function setDirtyGuardBlockListener(listener: DirtyGuardBlockListener | null): void {
+  dirtyGuardBlockListener = listener;
+}
+
+function notifyDirtyGuardBlocked(cwd: string, info: DirtyGuardBlockInfo): void {
+  if (!dirtyGuardBlockListener) return;
+  try {
+    dirtyGuardBlockListener(cwd, info);
+  } catch (error) {
+    console.warn(`⚠️  on-gate-blocked hook failed (${error instanceof Error ? error.message : String(error)}). Gate outcome unchanged.`);
+  }
+}
+
 function runGit(cwd: string, args: string[]): string {
   return gitSync(cwd, args);
 }
@@ -220,7 +252,15 @@ export function assertCleanWorktreeForNewTask(cwd: string, command: string, opti
     .filter((file) => !isDocPathGeneratedArtifact(file))
     .filter((file) => !options.allowDirtyPath?.(file));
   if (blockedFiles.length === 0) return;
-  throw buildDirtyWorktreeError(command, report, blockedFiles, 'new-task');
+  const error = buildDirtyWorktreeError(command, report, blockedFiles, 'new-task');
+  notifyDirtyGuardBlocked(cwd, {
+    gate: 'git-dirty-guard',
+    command,
+    mode: 'new-task',
+    reason: error.message.split('\n')[0] || error.message,
+    paths: blockedFiles,
+  });
+  throw error;
 }
 
 /**
@@ -313,7 +353,17 @@ export function assertNoNonDocPathChangesForExecutionStart(
   });
 
   if (blockedFiles.length === 0) return;
-  throw buildDirtyWorktreeError(command, report, blockedFiles, 'execution-start', options);
+  const error = buildDirtyWorktreeError(command, report, blockedFiles, 'execution-start', options);
+  notifyDirtyGuardBlocked(cwd, {
+    gate: 'git-dirty-guard',
+    command,
+    mode: 'execution-start',
+    taskId: options.taskId,
+    step: options.step,
+    reason: error.message.split('\n')[0] || error.message,
+    paths: blockedFiles,
+  });
+  throw error;
 }
 
 export type TaskDirtyBaselineSource = 'adopt' | 'execution' | 'step';

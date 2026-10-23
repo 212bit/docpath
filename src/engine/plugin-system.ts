@@ -8,7 +8,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
-import { resolveDocpathDir } from '../utils/file.js';
+import { resolveDocpathDirSync } from '../utils/file.js';
 
 export type HookEvent =
   | 'pre-step'
@@ -19,7 +19,8 @@ export type HookEvent =
   | 'post-review'
   | 'pre-done'
   | 'post-done'
-  | 'on-major-decision';
+  | 'on-major-decision'
+  | 'on-gate-blocked';
 
 export const VALID_HOOK_EVENTS: HookEvent[] = [
   'pre-step',
@@ -31,6 +32,7 @@ export const VALID_HOOK_EVENTS: HookEvent[] = [
   'pre-done',
   'post-done',
   'on-major-decision',
+  'on-gate-blocked',
 ];
 
 export interface PluginHookConfig {
@@ -159,8 +161,8 @@ export function loadSinglePlugin(pluginDir: string): PluginInfo {
 /**
  * 扫描并加载工作区下的所有插件 (.docpath/plugins/*)
  */
-export async function loadPlugins(cwd: string): Promise<PluginInfo[]> {
-  const docpathDir = await resolveDocpathDir(cwd);
+export function loadPluginsSync(cwd: string): PluginInfo[] {
+  const docpathDir = resolveDocpathDirSync(cwd);
   const pluginsDir = join(docpathDir, 'plugins');
 
   if (!existsSync(pluginsDir)) {
@@ -181,6 +183,10 @@ export async function loadPlugins(cwd: string): Promise<PluginInfo[]> {
   }
 
   return plugins;
+}
+
+export async function loadPlugins(cwd: string): Promise<PluginInfo[]> {
+  return loadPluginsSync(cwd);
 }
 
 /**

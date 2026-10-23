@@ -2,6 +2,7 @@
  * DocPath 文件工具
  */
 
+import { existsSync, readFileSync } from 'node:fs';
 import { readFile, writeFile, mkdir, access, rename, constants } from 'node:fs/promises';
 import { join, dirname, resolve, isAbsolute, relative } from 'node:path';
 
@@ -80,11 +81,17 @@ interface LinkInfo {
  * 如果 .docpath/docpath.json 存在且有 linkedTo 字段，则解析为链接目标
  * 否则返回本地 .docpath/ 路径
  */
-export async function resolveDocpathDir(cwd: string): Promise<string> {
+export function resolveDocpathDirSync(cwd: string): string {
   const localDocpath = join(cwd, '.docpath');
   const linkFile = join(localDocpath, 'docpath.json');
 
-  const linkContent = await readFileSafe(linkFile);
+  let linkContent: string | null = null;
+  try {
+    linkContent = readFileSync(linkFile, 'utf-8');
+  } catch {
+    linkContent = null;
+  }
+
   if (linkContent) {
     try {
       const info: LinkInfo = JSON.parse(linkContent);
@@ -92,7 +99,7 @@ export async function resolveDocpathDir(cwd: string): Promise<string> {
         const targetDir = isAbsolute(info.linkedTo)
           ? info.linkedTo
           : resolve(cwd, info.linkedTo);
-        if (await exists(join(targetDir, '.docpath', 'config.yaml'))) {
+        if (existsSync(join(targetDir, '.docpath', 'config.yaml'))) {
           return join(targetDir, '.docpath');
         }
         console.warn(`⚠️  链接目标 ${targetDir} 的 .docpath/ 不存在，使用本地配置`);
@@ -103,6 +110,10 @@ export async function resolveDocpathDir(cwd: string): Promise<string> {
   }
 
   return localDocpath;
+}
+
+export async function resolveDocpathDir(cwd: string): Promise<string> {
+  return resolveDocpathDirSync(cwd);
 }
 
 /**
