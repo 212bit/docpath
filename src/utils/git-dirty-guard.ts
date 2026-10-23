@@ -1,7 +1,8 @@
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import pc from 'picocolors';
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { gitSync } from './git-run.js';
 
 
@@ -75,6 +76,18 @@ function isDocPathBookkeepingPath(path: string): boolean {
   return file === '.docpath/backlog' || file.startsWith('.docpath/backlog/');
 }
 
+/**
+ * DocPath 自己落盘的生成物。promote 会把上一份 current alias 拷到
+ * `.docpath/tasks/promote-backups/<stamp>/`；该目录在本仓库被 gitignore，
+ * 但真实项目经常没有这条规则，于是备份以未跟踪文件身份触发 dirty guard。
+ * 这些文件不是业务改动，也不属于其它任务的源码。
+ */
+function isDocPathGeneratedArtifact(path: string): boolean {
+  const file = normalizeGitPath(path);
+  return file === '.docpath/tasks/promote-backups'
+    || file.startsWith('.docpath/tasks/promote-backups/');
+}
+
 function previewFiles(files: string[]): string[] {
   const preview = files.slice(0, 12);
   if (files.length > preview.length) preview.push(`... ${files.length - preview.length} more`);
@@ -106,6 +119,7 @@ function isCurrentTaskExecutionPath(path: string, options: ExecutionStartDirtyOp
   // auto docs-index refresh must not block go/agent enter on the same task.
   // R-336: docs.md 已下线不再生成，白名单仅剩 docs-index.json。
   if (file === '.docpath/docs-index.json') return true;
+  if (isDocPathGeneratedArtifact(file)) return true;
   return false;
 }
 
@@ -140,12 +154,15 @@ function buildDirtyWorktreeError(
     const step = options.step?.trim() || '<step>';
     const untrackedSet = new Set(report.untrackedFiles);
     const blockedUntracked = files.filter((file) => untrackedSet.has(file));
+    const claim = `docpath go --step ${step} --adopt (或 docpath adopt)`;
+    const escapeHatch = `docpath go --step ${step} --accept-dirty "<列出文件及原因>"`;
     if (blockedUntracked.length > 0) {
       const gitAddList = blockedUntracked.slice(0, 3).map((f) => `git add ${f}`).join(' && ');
-      lines.push(`   💡 解决方案: 认领归属: docpath go --step ${step} --adopt (或 docpath adopt, 或 ${gitAddList}, 或 docpath go --step ${step} --accept-dirty "recover current-task edits before go") | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>`);
+      lines.push(`   💡 解决方案: 认领归属: ${claim}，或 ${gitAddList} | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>`);
     } else {
-      lines.push(`   💡 解决方案: 认领: docpath go --step ${step} --adopt (或 docpath adopt, 或 docpath go --step ${step} --accept-dirty "recover current-task edits before go", 或 docpath run start --step ${step} --note "recover current-task edits before go") | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>`);
+      lines.push(`   💡 解决方案: 若这些文件属于当前任务，认领: ${claim} | 暂存: docpath task stash | 查看: docpath changes --agent | 隔离: docpath worktree create <slug>`);
     }
+    lines.push(`   若确认是外部并发改动且必须继续，再使用逃生口: ${escapeHatch}`);
   }
 
   return new Error(lines.join('\n'));
@@ -200,6 +217,7 @@ export function assertCleanWorktreeForNewTask(cwd: string, command: string, opti
   if (!report.isGitRepo || !report.dirty) return;
   const blockedFiles = report.files
     .filter((file) => !isDocPathBookkeepingPath(file))
+    .filter((file) => !isDocPathGeneratedArtifact(file))
     .filter((file) => !options.allowDirtyPath?.(file));
   if (blockedFiles.length === 0) return;
   throw buildDirtyWorktreeError(command, report, blockedFiles, 'new-task');
@@ -275,9 +293,16 @@ export function assertNoNonDocPathChangesForExecutionStart(
 
   const inWorktree = report.repoRoot ? isLinkedGitWorktree(report.repoRoot) : false;
   const untrackedSet = new Set(report.untrackedFiles);
+  // 本任务基线里的路径（start/adopt 认领，或上一步收尾时归属）即使 phase
+  // 已离开 executing、即使是未跟踪新文件，也不再当成外部 dirty。
+  const baseline = readTaskDirtyBaseline(report.repoRoot || cwd);
+  const ownedPaths = baseline && options.taskId && baseline.task_id === options.taskId
+    ? new Set(Object.keys(baseline.paths).map((file) => normalizeGitPath(file)))
+    : null;
 
   const blockedFiles = report.files.filter((file) => {
     if (isCurrentTaskExecutionPath(file, options)) return false;
+    if (ownedPaths?.has(normalizeGitPath(file))) return false;
 
     if (isActiveTask) {
       if (inWorktree) return false;
@@ -289,6 +314,131 @@ export function assertNoNonDocPathChangesForExecutionStart(
 
   if (blockedFiles.length === 0) return;
   throw buildDirtyWorktreeError(command, report, blockedFiles, 'execution-start', options);
+}
+
+export type TaskDirtyBaselineSource = 'adopt' | 'execution' | 'step';
+
+/**
+ * 当前任务对脏路径的归属快照。
+ *
+ * - `adopt`：`--adopt` 显式认领调用当下的脏路径，不再借用 `--accept-dirty` 记账。
+ * - `execution`：第一次成功进入执行时种下基线（通常只有 DocPath 簿记）。
+ * - `step`：步骤收尾时把这一步产生的脏路径并入基线，下一步 `go` 不再拦截。
+ *
+ * 路径键是归属依据；值为内容指纹，便于事后核对「认领时的内容」。
+ * 守卫只认路径是否属于本任务，不因后续继续编辑而失效。
+ */
+export interface TaskDirtyBaseline {
+  task_id: string;
+  recorded_at: string;
+  updated_at: string;
+  source: TaskDirtyBaselineSource;
+  paths: Record<string, string>;
+}
+
+function resolveBaselineFile(cwd: string): string {
+  let root = cwd;
+  try {
+    const top = runGit(cwd, ['rev-parse', '--show-toplevel']).trim();
+    if (top) root = top;
+  } catch {
+    // 非 git 仓库时基线仍写在调用方工作区，读取侧同样回退到 cwd。
+  }
+  return join(root, '.docpath', 'workspace', 'task-dirty-baseline.json');
+}
+
+function fingerprintDirtyFile(root: string, relPath: string): string {
+  const abs = join(root, relPath);
+  try {
+    if (!existsSync(abs) || !lstatSync(abs).isFile()) return 'absent';
+    return createHash('sha1').update(readFileSync(abs)).digest('hex');
+  } catch {
+    return 'unreadable';
+  }
+}
+
+function snapshotDirtyFingerprints(cwd: string): Record<string, string> {
+  const report = detectDirtyWorktree(cwd);
+  const root = report.repoRoot || cwd;
+  const paths: Record<string, string> = {};
+  for (const file of report.files) {
+    paths[normalizeGitPath(file)] = fingerprintDirtyFile(root, file);
+  }
+  return paths;
+}
+
+export function readTaskDirtyBaseline(cwd: string): TaskDirtyBaseline | null {
+  try {
+    const file = resolveBaselineFile(cwd);
+    if (!existsSync(file)) return null;
+    const parsed = JSON.parse(readFileSync(file, 'utf-8')) as Partial<TaskDirtyBaseline>;
+    if (!parsed || typeof parsed.task_id !== 'string' || !parsed.task_id.trim()) return null;
+    if (!parsed.paths || typeof parsed.paths !== 'object' || Array.isArray(parsed.paths)) return null;
+    const paths: Record<string, string> = {};
+    for (const [rawPath, fingerprint] of Object.entries(parsed.paths)) {
+      const filePath = normalizeGitPath(rawPath);
+      if (!filePath) continue;
+      paths[filePath] = typeof fingerprint === 'string' ? fingerprint : 'unreadable';
+    }
+    const source: TaskDirtyBaselineSource = parsed.source === 'adopt' || parsed.source === 'step' || parsed.source === 'execution'
+      ? parsed.source
+      : 'execution';
+    return {
+      task_id: parsed.task_id,
+      recorded_at: typeof parsed.recorded_at === 'string' ? parsed.recorded_at : '',
+      updated_at: typeof parsed.updated_at === 'string' ? parsed.updated_at : '',
+      source,
+      paths,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeTaskDirtyBaseline(cwd: string, baseline: TaskDirtyBaseline): void {
+  const file = resolveBaselineFile(cwd);
+  mkdirSync(dirname(file), { recursive: true });
+  const paths: Record<string, string> = {};
+  for (const key of Object.keys(baseline.paths).sort()) {
+    paths[key] = baseline.paths[key];
+  }
+  writeFileSync(file, `${JSON.stringify({ ...baseline, paths }, null, 2)}\n`, 'utf-8');
+}
+
+/**
+ * 把当前脏路径并入该任务的基线。任务 id 变化时丢弃上一任务的路径，
+ * 避免把别的任务的脏文件继承过来。
+ */
+export function claimTaskDirtyPaths(
+  cwd: string,
+  taskId: string,
+  source: TaskDirtyBaselineSource,
+): TaskDirtyBaseline {
+  const id = taskId.trim();
+  const now = new Date().toISOString();
+  const existing = readTaskDirtyBaseline(cwd);
+  const sameTask = existing?.task_id === id;
+  const baseline: TaskDirtyBaseline = {
+    task_id: id,
+    recorded_at: sameTask && existing.recorded_at ? existing.recorded_at : now,
+    updated_at: now,
+    source,
+    paths: sameTask ? { ...existing.paths, ...snapshotDirtyFingerprints(cwd) } : snapshotDirtyFingerprints(cwd),
+  };
+  writeTaskDirtyBaseline(cwd, baseline);
+  return baseline;
+}
+
+/**
+ * 执行入口第一次成功通过守卫时种下基线。已有本任务基线则保持不变，
+ * 以免把守卫放行后才出现的外部文件补记进去。
+ */
+export function seedTaskDirtyBaseline(cwd: string, taskId: string): TaskDirtyBaseline | null {
+  const id = taskId.trim();
+  if (!id) return null;
+  const existing = readTaskDirtyBaseline(cwd);
+  if (existing?.task_id === id) return existing;
+  return claimTaskDirtyPaths(cwd, id, 'execution');
 }
 
 export function detectUncommittedNonDocPathFiles(cwd: string): { nonDocPathFiles: string[]; count: number } {

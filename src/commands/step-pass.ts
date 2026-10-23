@@ -32,7 +32,7 @@ export interface StepPassOptions {
   all?: boolean;
   /** 透传给内部 go 的首等恢复旗标（同 `go --accept-dirty`） */
   acceptDirty?: string;
-  /** 透传给内部 go：轻量认领工作区代码变更并跳过 dirty 拦截 */
+  /** 透传给内部 go：把当前脏路径记入本任务基线后再进入下一步 */
   adopt?: boolean;
   /** 显式指定要随做随验的单测文件路径 */
   test?: string;

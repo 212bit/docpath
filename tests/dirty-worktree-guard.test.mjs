@@ -244,7 +244,9 @@ describe('dirty worktree guard', () => {
       assert.equal(result.code, 1);
       assert.match(result.out, /docpath go: 当前 Git worktree 存在与当前任务无关或无法确认归属的未提交变更/);
       assert.match(result.out, /src\/app\.ts/);
-      assert.match(result.out, /docpath run start --step S1 --note "recover current-task edits before go"/);
+      assert.match(result.out, /docpath go --step S1 --adopt/);
+      assert.match(result.out, /--accept-dirty "<列出文件及原因>"/);
+      assert.doesNotMatch(result.out, /recover current-task edits before go/);
       assert.equal(state.phase, 'planning');
     } finally {
       rmSync(cwd, { recursive: true, force: true });
@@ -470,7 +472,9 @@ describe('dirty worktree guard', () => {
         }),
         (error) => {
           const message = error instanceof Error ? error.message : String(error);
-          assert.match(message, /docpath run start --step S1 --note "recover current-task edits before go"/);
+          assert.match(message, /docpath go --step S1 --adopt/);
+          assert.match(message, /--accept-dirty "<列出文件及原因>"/);
+          assert.doesNotMatch(message, /recover current-task edits before go/);
           assert.doesNotMatch(message, /git add /);
           return true;
         }
@@ -621,6 +625,151 @@ describe('dirty worktree guard', () => {
         taskId: 'T-TEST',
         step: 'S2',
       });
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  function writeTwoStepTask(cwd) {
+    writeExecutableTask(cwd);
+    writeFileSync(join(cwd, '.docpath', 'tasks', 'current', 'plan.md'), [
+      '## 执行计划',
+      '',
+      '### S1: Implement dirty guard',
+      '- [ ] S1: Implement dirty guard',
+      '- **描述**: 进入执行',
+      '- **验收条件**: guard 正确',
+      '- **依赖**: 无',
+      '',
+      '### S2: Cross the step boundary',
+      '- [ ] S2: Cross the step boundary',
+      '- **描述**: 带着本任务未提交代码进入下一步',
+      '- **验收条件**: 下一步直接放行',
+      '- **依赖**: 无',
+      '',
+    ].join('\n'));
+  }
+
+  it('step-pass carries the task\'s own uncommitted file without accept-dirty, then blocks a foreign file', () => {
+    const cwd = mkBaseWorkspace({ phase: 'planning', state: 'planning_done', taskId: 'T-DIRTY', taskTitle: 'Dirty Guard' });
+    try {
+      writeTwoStepTask(cwd);
+      mkdirSync(join(cwd, 'src'), { recursive: true });
+      initGitRepo(cwd);
+      run(['go', '--step', 'S1'], cwd);
+      writeFileSync(join(cwd, 'src', 'own-task.ts'), 'export const own = true;\n');
+
+      const out = run(['step-pass', '--skip-verify'], cwd);
+      const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+      const baseline = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'task-dirty-baseline.json'), 'utf-8'));
+      const crumbs = readFileSync(join(cwd, '.docpath', 'workspace', 'breadcrumb.jsonl'), 'utf-8');
+
+      assert.doesNotMatch(out, /--accept-dirty/);
+      assert.doesNotMatch(out, /拒绝进入执行步骤/);
+      assert.doesNotMatch(crumbs, /accept-dirty/);
+      assert.equal(state.phase, 'executing');
+      assert.equal(state.current_step, 'S2');
+      assert.equal(baseline.task_id, 'T-DIRTY');
+      assert.equal(typeof baseline.paths['src/own-task.ts'], 'string');
+
+      writeFileSync(join(cwd, 'src', 'foreign.ts'), 'export const foreign = true;\n');
+      const blocked = runResult(['go', '--step', 'S2'], cwd);
+      assert.equal(blocked.code, 1);
+      assert.match(blocked.out, /src\/foreign\.ts/);
+      assert.doesNotMatch(blocked.out, /src\/own-task\.ts/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('allows a baseline-owned edit when the task phase is not active, and still blocks a new foreign file', () => {
+    const cwd = mkBaseWorkspace({ phase: 'planning', state: 'planning', taskId: 'T-TEST', taskTitle: 'Test' });
+    try {
+      initGitRepo(cwd);
+      writeFileSync(join(cwd, 'src-app.ts'), 'original\n');
+      git(cwd, ['add', 'src-app.ts']);
+      git(cwd, ['commit', '-m', 'add src-app.ts']);
+      writeFileSync(join(cwd, 'src-app.ts'), 'edited during the task\n');
+      writeFileSync(join(cwd, '.docpath', 'workspace', 'task-dirty-baseline.json'), JSON.stringify({
+        task_id: 'T-TEST',
+        recorded_at: '2026-10-22T00:00:00.000Z',
+        updated_at: '2026-10-22T00:00:00.000Z',
+        source: 'step',
+        paths: { 'src-app.ts': 'owned' },
+      }));
+
+      assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+        taskId: 'T-TEST',
+        step: 'S2',
+      });
+
+      writeFileSync(join(cwd, 'foreign.ts'), 'concurrent edit\n');
+      assert.throws(
+        () => assertNoNonDocPathChangesForExecutionStart(cwd, 'docpath go', {
+          taskId: 'T-TEST',
+          step: 'S2',
+        }),
+        (error) => {
+          const message = error instanceof Error ? error.message : String(error);
+          assert.match(message, /foreign\.ts/);
+          assert.doesNotMatch(message, /src-app\.ts/);
+          return true;
+        },
+      );
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores DocPath promote backups on execution start and new-task start', () => {
+    const cwd = mkBaseWorkspace({ phase: 'planning', state: 'planning_done', taskId: 'T-DIRTY', taskTitle: 'Dirty Guard' });
+    try {
+      writeExecutableTask(cwd);
+      initGitRepo(cwd);
+      const backupDir = join(cwd, '.docpath', 'tasks', 'promote-backups', '2026-10-22T00-00-00-000Z');
+      mkdirSync(backupDir, { recursive: true });
+      writeFileSync(join(backupDir, 'spec.md'), '# promoted alias backup\n');
+
+      const out = run(['go', '--step', 'S1'], cwd);
+      const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+      assert.doesNotMatch(out, /拒绝进入执行步骤/);
+      assert.equal(state.phase, 'executing');
+      assert.equal(state.current_step, 'S1');
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+
+    const fresh = mkBaseWorkspace({ phase: 'completed', state: 'completed' });
+    try {
+      initGitRepo(fresh);
+      const backupDir = join(fresh, '.docpath', 'tasks', 'promote-backups', '2026-10-22T00-00-00-000Z');
+      mkdirSync(backupDir, { recursive: true });
+      writeFileSync(join(backupDir, 'plan.md'), '# backup\n');
+      const result = runResult(['quick', 'Tiny fix'], fresh);
+      assert.doesNotMatch(result.out, /当前 Git worktree 存在未提交变更/);
+    } finally {
+      rmSync(fresh, { recursive: true, force: true });
+    }
+  });
+
+  it('start --adopt claims workspace edits without logging accept-dirty', () => {
+    const cwd = mkBaseWorkspace({ phase: 'completed', state: 'completed' });
+    try {
+      initGitRepo(cwd);
+      writeFileSync(join(cwd, 'uncommitted.ts'), 'export const adopted = true;\n');
+
+      const out = run(['start', '认领已有改动', '--adopt', '--draft'], cwd);
+      const state = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'state.json'), 'utf-8'));
+      const baseline = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'task-dirty-baseline.json'), 'utf-8'));
+      const crumbs = readFileSync(join(cwd, '.docpath', 'workspace', 'breadcrumb.jsonl'), 'utf-8');
+
+      assert.match(out, /--adopt 已认领工作区变更至步骤 S1/);
+      assert.doesNotMatch(out, /accept-dirty/);
+      assert.doesNotMatch(crumbs, /accept-dirty/);
+      assert.match(crumbs, /go --adopt: claimed working tree changes into S1/);
+      assert.equal(state.phase, 'executing');
+      assert.equal(typeof baseline.paths['uncommitted.ts'], 'string');
+      assert.equal(baseline.task_id, state.task_id);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

@@ -171,7 +171,7 @@ export async function startCommand(options: StartOptions): Promise<void> {
   await goCommand({
     cwd: effectiveCwd,
     step: stepToStart,
-    acceptDirty: options.adopt ? 'start --adopt: claim workspace edits' : undefined,
+    adopt: options.adopt,
   });
 
   console.log(`\n🎉  任务 ${targetId} 已拉起并启动步骤 ${stepToStart}！`);
