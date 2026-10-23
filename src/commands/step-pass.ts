@@ -44,6 +44,8 @@ export interface StepPassOptions {
   done?: boolean;
   /** 收口门禁通过后直接提交到本地 Git */
   commit?: boolean;
+  /** P2: 跳过 Hippo 前置自审门禁（仅限应急，会在输出中显式告警） */
+  skipHippoGate?: boolean;
 }
 
 /**
@@ -72,6 +74,30 @@ export async function stepPassCommand(options: StepPassOptions): Promise<void> {
   }
 
   const session = resolveSessionContext(options.session);
+
+  // P2 门禁合一：状态转移前先跑 Hippo 自审（协议优先、依赖可选）
+  if (!options.skipHippoGate) {
+    const { evaluateHippoGate } = await import('../engine/hippo-gate.js');
+    const gate = await evaluateHippoGate({ cwd });
+    if (gate.status === 'blocked') {
+      console.error('\n⛔  Hippo 前置自审未通过，已拒绝状态转移：');
+      for (const v of gate.violations.filter((item) => item.severity === 'error')) {
+        console.error(`   [ERROR] ${v.source}: ${v.reason}`);
+        if (v.rule_text) console.error(`           规约: ${v.rule_text}`);
+      }
+      console.error(`\n   ${gate.reason}`);
+      console.error('   修正后重试；应急可用 --skip-hippo-gate 跳过（不推荐）。\n');
+      const { emitGateBlocked } = await import('../engine/hook-runner.js');
+      await emitGateBlocked(cwd, { gate: 'hippo-gate', taskId, step: options.step, reason: gate.reason });
+      process.exitCode = 1;
+      return;
+    }
+    if (gate.status === 'warn') {
+      console.warn(`⚠️   ${gate.reason}`);
+    }
+  } else {
+    console.warn('⚠️   已通过 --skip-hippo-gate 跳过 Hippo 前置自审，本次状态转移缺少代码层校验。');
+  }
 
   if (options.all) {
     const planSteps = await loadPlanSteps(cwd, taskId);

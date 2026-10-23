@@ -43,7 +43,8 @@ export function registerExecutionCommands(cli: CAC): void {
     .option('--strict-verify', '单步单测验证未通过时阻断收尾')
     .option('--done', '所有步骤完成后直接执行收口门禁序列')
     .option('--commit', '收口门禁通过后自动将改动提交至本地 Git')
-    .action(async (options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; adopt?: boolean; test?: string; skipVerify?: boolean; 'skip-verify'?: boolean; strictVerify?: boolean; 'strict-verify'?: boolean; done?: boolean; commit?: boolean }) => {
+    .option('--skip-hippo-gate', 'P2: 跳过 Hippo 前置自审（应急用，会显式告警）')
+    .action(async (options: { cwd?: string; step?: string; all?: boolean; note?: string; session?: string; acceptDirty?: string; 'accept-dirty'?: string; adopt?: boolean; test?: string; skipVerify?: boolean; 'skip-verify'?: boolean; strictVerify?: boolean; 'strict-verify'?: boolean; done?: boolean; commit?: boolean; skipHippoGate?: boolean; 'skip-hippo-gate'?: boolean }) => {
       await stepPassCommand({
         cwd: options.cwd || process.cwd(),
         step: options.step,
@@ -57,6 +58,7 @@ export function registerExecutionCommands(cli: CAC): void {
         strictVerify: options.strictVerify ?? options['strict-verify'],
         done: options.done,
         commit: options.commit,
+        skipHippoGate: options.skipHippoGate ?? options['skip-hippo-gate'],
       });
     });
 
