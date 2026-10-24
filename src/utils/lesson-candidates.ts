@@ -51,6 +51,42 @@ function isVagueLesson(candidate: CandidateBlock): boolean {
   return /^(待补充|暂无|无|none|n\/a)$/i.test(description);
 }
 
+/** Whole-segment placeholders. `无` is exact so phrases like `无法回滚` stay substantive. */
+const LESSON_PLACEHOLDER_TOKEN = /^(?:待补充|暂无|无|none|n\/a|tbd|todo)$/i;
+
+/**
+ * Lesson text is the value, not the label. Blank values, placeholder tokens,
+ * and empty field shells such as `推荐方案:` do not count. A `title: value`
+ * line counts only when `value` itself is substantive, so a whitespace brief
+ * that falls back to the task title plus an empty field is still empty.
+ */
+function hasSubstantiveLessonText(text: string): boolean {
+  const normalized = text.replace(/[\u00a0\u3000]/g, ' ').replace(/^\s*[-*]\s*/, '').trim();
+  if (!normalized) return false;
+  if (LESSON_PLACEHOLDER_TOKEN.test(normalized)) return false;
+  const labeled = normalized.match(/^(?:推荐方案|推荐|目标|决策|结论)\s*[:：]\s*(.*)$/);
+  if (labeled) return hasSubstantiveLessonText(labeled[1]);
+  const colon = normalized.match(/^([^:：]+)[:：]\s*(.*)$/);
+  if (colon) return hasSubstantiveLessonText(colon[2]);
+  return true;
+}
+
+/**
+ * A generated `### Lesson` body should not be written when it carries no
+ * reusable text: empty, whitespace-only (ASCII space, NBSP, ideographic space),
+ * or only placeholder tokens. Markdown headings are structure, not body text.
+ */
+export function isEmptyOrPlaceholderLessonBody(body: string): boolean {
+  const lines = body
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*#{1,6}\s+\S/.test(line))
+    .map((line) => line.replace(/^\s*[-*]\s*/, '').replace(/[\u00a0\u3000]/g, ' ').trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length === 0) return true;
+  return lines.every((line) => !hasSubstantiveLessonText(line));
+}
+
 function isSeedBoilerplateLesson(candidate: CandidateBlock): boolean {
   const text = [candidate.title, candidate.key, candidate.description]
     .join(' ')
