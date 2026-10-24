@@ -6,8 +6,8 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parse } from 'yaml';
-
-const BIN = new URL('../dist/index.js', import.meta.url).pathname;
+import { runCliSync, runCliSyncOrThrow } from './cli-inprocess.mjs';
+import { installBlankGit } from './git-fixture.mjs';
 
 function mkWorkspace() {
   const cwd = mkdtempSync(join(tmpdir(), 'dp-quick-'));
@@ -31,22 +31,11 @@ function mkWorkspace() {
 }
 
 function run(args, cwd) {
-  return execSync(`node ${BIN} ${args}`, {
-    cwd,
-    encoding: 'utf-8',
-    timeout: 20000,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
+  return runCliSyncOrThrow(args, cwd, { timeout: 20000 });
 }
 
 function runWithInput(args, cwd, input) {
-  return execSync(`node ${BIN} ${args}`, {
-    cwd,
-    encoding: 'utf-8',
-    timeout: 20000,
-    input,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
+  return runCliSyncOrThrow(args, cwd, { input, timeout: 20000 });
 }
 
 function runResult(args, cwd) {
@@ -70,9 +59,7 @@ function git(cwd, args) {
 }
 
 function initGitRepo(cwd) {
-  git(cwd, 'init');
-  git(cwd, 'config user.email test@example.com');
-  git(cwd, 'config user.name Test');
+  installBlankGit(cwd, { email: 'test@example.com', name: 'Test' });
   git(cwd, 'add .');
   git(cwd, 'commit -m initial');
 }
@@ -80,9 +67,7 @@ function initGitRepo(cwd) {
 describe('docpath quick', () => {
   it('quick profile downgrades check to lite when change stays inside quick scope (B1)', () => {
     const cwd = mkWorkspace();
-    execSync('git init -q', { cwd, stdio: 'ignore' });
-    execSync('git config user.email t@example.com', { cwd, stdio: 'ignore' });
-    execSync('git config user.name test', { cwd, stdio: 'ignore' });
+    installBlankGit(cwd, { email: 't@example.com', name: 'test' });
     execSync('git add -A && git commit -qm base', { cwd, stdio: 'ignore' });
     run(`quick "Fix typo in docs" --cwd ${cwd}`, cwd);
     // 改动落在非核心路径且数量在 quick 上限内
@@ -98,9 +83,7 @@ describe('docpath quick', () => {
 
   it('quick profile falls back to full check when change touches a core path (B1 fail-safe)', () => {
     const cwd = mkWorkspace();
-    execSync('git init -q', { cwd, stdio: 'ignore' });
-    execSync('git config user.email t@example.com', { cwd, stdio: 'ignore' });
-    execSync('git config user.name test', { cwd, stdio: 'ignore' });
+    installBlankGit(cwd, { email: 't@example.com', name: 'test' });
     execSync('git add -A && git commit -qm base', { cwd, stdio: 'ignore' });
     run(`quick "Fix typo in docs" --cwd ${cwd}`, cwd);
     // 触碰核心工作流引擎路径 —— 必须回落全量, 不降档
@@ -115,9 +98,7 @@ describe('docpath quick', () => {
 
   it('quick profile falls back to full on a TRACKED-modified core file (R-3xx regression: porcelain slice offset)', () => {
     const cwd = mkWorkspace();
-    execSync('git init -q', { cwd, stdio: 'ignore' });
-    execSync('git config user.email t@example.com', { cwd, stdio: 'ignore' });
-    execSync('git config user.name test', { cwd, stdio: 'ignore' });
+    installBlankGit(cwd, { email: 't@example.com', name: 'test' });
     // base 里就有 core 文件（tracked），随后修改它 → git status 输出 ` M src/...`（前导空格）。
     // 旧 readChangedFiles 先 trim 再 slice(3) 会把 `src/` 错切成 `rc/`，导致核心路径漏判。
     mkdirSync(join(cwd, 'src', 'engine'), { recursive: true });

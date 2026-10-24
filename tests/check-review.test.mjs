@@ -5,6 +5,8 @@ import { execSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkExecWorkspace } from './helpers.mjs';
+import { runCliSync, splitCliArgs } from './cli-inprocess.mjs';
+import { installBlankGit } from './git-fixture.mjs';
 
 // 8 维度齐全、全部具体值的可选设计稿，覆盖 missingDesignPreviewDepth 工具函数夹具。
 const CONCRETE_PREVIEW = [
@@ -55,27 +57,19 @@ function writeValidFrontendStack(tasks) {
   ].join('\n'));
 }
 
-const CLI = new URL('../dist/index.js', import.meta.url).pathname;
 const run = (args, cwd) => {
-  try {
-    return execSync(`node ${CLI} ${args}`, { cwd, encoding: 'utf-8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] });
-  } catch (e) {
-    return (e.stdout || '') + '\n' + (e.stderr || '');
-  }
+  const result = runCliSync(splitCliArgs(args), { cwd, timeout: 30000 });
+  if (result.code === 0) return result.stdout;
+  return `${result.stdout || ''}\n${result.stderr || ''}`;
 };
 
 const runResult = (args, cwd) => {
-  try {
-    return {
-      code: 0,
-      out: execSync(`node ${CLI} ${args}`, { cwd, encoding: 'utf-8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] }),
-    };
-  } catch (e) {
-    return {
-      code: e.status || 1,
-      out: (e.stdout || '') + '\n' + (e.stderr || ''),
-    };
-  }
+  const result = runCliSync(splitCliArgs(args), { cwd, timeout: 30000 });
+  if (result.code === 0) return { code: 0, out: result.stdout };
+  return {
+    code: result.code || 1,
+    out: `${result.stdout || ''}\n${result.stderr || ''}`,
+  };
 };
 
 function writeDoneBreadcrumb(workspace, taskId, steps) {
@@ -368,7 +362,7 @@ describe('check and review commands', () => {
       chmodSync(tscShim, 0o755);
       chmodSync(tsupShim, 0o755);
 
-      execSync('git init', { cwd: main, encoding: 'utf-8' });
+      installBlankGit(main);
       execSync('git config user.email test@example.com', { cwd: main, encoding: 'utf-8' });
       execSync('git config user.name Test', { cwd: main, encoding: 'utf-8' });
       execSync('git add .docpath package.json pnpm-lock.yaml tsconfig.json', { cwd: main, encoding: 'utf-8' });
@@ -518,7 +512,7 @@ describe('check and review commands', () => {
   it('review shows real file names for TODO findings', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-todo-'));
     mkExecWorkspace(cwd);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
     execSync('git add baseline.ts', { cwd, encoding: 'utf-8' });
     execSync('git -c user.email=test@example.com -c user.name=Test commit -m baseline', { cwd, encoding: 'utf-8' });
@@ -536,7 +530,7 @@ describe('check and review commands', () => {
   it('review defaults to current worktree changes instead of last commit', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-worktree-'));
     mkExecWorkspace(cwd);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
@@ -555,7 +549,7 @@ describe('check and review commands', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-task-scope-'));
     mkExecWorkspace(cwd);
     markReadyForReview(cwd);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
@@ -592,7 +586,7 @@ describe('check and review commands', () => {
   it('review --scope last_commit inspects the latest commit without git pretty-format fatal', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-last-commit-'));
     mkExecWorkspace(cwd);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
@@ -617,7 +611,7 @@ describe('check and review commands', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-runtime-session-'));
     mkExecWorkspace(cwd);
     markReadyForReview(cwd);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
@@ -642,7 +636,7 @@ describe('check and review commands', () => {
     mkExecWorkspace(cwd);
     markReadyForReview(cwd);
     writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
@@ -660,7 +654,7 @@ describe('check and review commands', () => {
     mkExecWorkspace(cwd);
     markReadyForReview(cwd);
     writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'baseline.ts'), 'export const baseline = true;\n');
@@ -676,7 +670,7 @@ describe('check and review commands', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-no-decisions-'));
     mkExecWorkspace(cwd);
     markReadyForReview(cwd);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     mkdirSync(join(cwd, '.docpath', 'review-skills', 'typescript'), { recursive: true });
     writeFileSync(join(cwd, '.docpath', 'review-skills', 'typescript', 'SKILL.md'), '# TypeScript Review Skill\n\n## Scope\n\n## Review Checklist\n\n## Evidence Contract\n');
     writeFileSync(join(cwd, 'todo.ts'), '// TODO review evidence stays out of ADR\n');
@@ -702,7 +696,7 @@ describe('check and review commands', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-scope-counts-'));
     mkExecWorkspace(cwd);
     markReadyForReview(cwd);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     mkdirSync(join(cwd, 'src'), { recursive: true });
@@ -740,7 +734,7 @@ describe('check and review commands', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-review-approve-no-decisions-'));
     mkExecWorkspace(cwd);
     markReadyForReview(cwd);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     writeFileSync(join(cwd, '.docpath', 'config.json'), JSON.stringify({ review_skill_gate: { enabled: false, min_diff_lines: 0 } }, null, 2));
     writeFileSync(join(cwd, 'manual.ts'), 'export const manual = true;\n');
 
@@ -762,7 +756,7 @@ describe('check and review commands', () => {
   it('check writes git baseline metadata into last-check evidence', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-git-baseline-'));
     mkExecWorkspace(cwd);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'README.md'), '# baseline\n');
@@ -922,7 +916,7 @@ describe('check and review commands', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-major-decision-'));
     const { tasks, workspace } = mkExecWorkspace(cwd);
     writeDoneBreadcrumb(workspace, 'T-AGENT', ['S1']);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'package.json'), JSON.stringify({
@@ -1008,7 +1002,7 @@ describe('check and review commands', () => {
   it('check accepts --non-interactive and allows programmatic evidence writeback', async () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-interactive-writeback-'));
     const { tasks, workspace } = mkExecWorkspace(cwd);
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'package.json'), JSON.stringify({
@@ -1162,7 +1156,7 @@ describe('check and review commands', () => {
     writeFileSync(join(tasks, 'spec.json'), `${JSON.stringify(specJson, null, 2)}\n`);
     writeFileSync(join(canonical, 'spec.json'), `${JSON.stringify(specJson, null, 2)}\n`);
 
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'package.json'), JSON.stringify({
@@ -1242,7 +1236,7 @@ describe('check and review commands', () => {
     const { tasks, workspace } = mkExecWorkspace(cwd);
     writeDoneBreadcrumb(workspace, 'T-AGENT', ['S1']);
     mkdirSync(join(cwd, 'templates'), { recursive: true });
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'templates', 'AGENTS.md'), '# Agent Protocol\n\nOld rule.\n');
@@ -1322,7 +1316,7 @@ describe('check and review commands', () => {
     const { tasks, workspace } = mkExecWorkspace(cwd);
     writeDoneBreadcrumb(workspace, 'T-AGENT', ['S1']);
     mkdirSync(join(cwd, 'templates'), { recursive: true });
-    execSync('git init', { cwd, encoding: 'utf-8' });
+    installBlankGit(cwd);
     execSync('git config user.email test@example.com', { cwd, encoding: 'utf-8' });
     execSync('git config user.name Test', { cwd, encoding: 'utf-8' });
     writeFileSync(join(cwd, 'templates', 'AGENTS.md'), '# Agent Protocol\n\nOld rule.\n');
@@ -1760,19 +1754,13 @@ describe('check entry stage ordering contract (R-305)', () => {
       '',
     ].join('\n'));
 
-    let out = '';
-    let code = 0;
-    try {
-      out = execSync(`node ${CLI} check --cwd ${cwd} --skip-tests --skip-lint`, {
-        cwd,
-        encoding: 'utf-8',
-        timeout: 20000,
-        env: { ...process.env, DOCPATH_TEMPLATES_DIR: tplDir },
-      });
-    } catch (error) {
-      code = error.status ?? 1;
-      out = `${error.stdout?.toString() || ''}${error.stderr?.toString() || ''}`;
-    }
+    const result = runCliSync(['check', '--cwd', cwd, '--skip-tests', '--skip-lint'], {
+      cwd,
+      timeout: 20000,
+      env: { ...process.env, DOCPATH_TEMPLATES_DIR: tplDir },
+    });
+    const code = result.code;
+    const out = `${result.stdout || ''}${result.stderr || ''}`;
 
     assert.notEqual(code, 0, 'blocks 漂移必须使 check 失败');
     assert.match(out, /协议共享契约注入区与块源不一致/);
@@ -1798,22 +1786,16 @@ describe('check environment failure classification (S4)', () => {
       writeFileSync(join(cwd, 'tsconfig.json'), JSON.stringify({ compilerOptions: {} }, null, 2));
 
       const started = Date.now();
-      let out = '';
-      try {
-        out = execSync(`node ${CLI} check --cwd ${cwd} --skip-tests --skip-lint`, {
-          cwd,
-          encoding: 'utf-8',
-          timeout: 15000,
-          stdio: ['pipe', 'pipe', 'pipe'],
-          env: {
-            ...process.env,
-            npm_config_offline: 'true',
-            npm_config_yes: 'false',
-          },
-        });
-      } catch (error) {
-        out = `${error.stdout || ''}\n${error.stderr || ''}`;
-      }
+      const result = runCliSync(['check', '--cwd', cwd, '--skip-tests', '--skip-lint'], {
+        cwd,
+        timeout: 15000,
+        env: {
+          ...process.env,
+          npm_config_offline: 'true',
+          npm_config_yes: 'false',
+        },
+      });
+      const out = `${result.stdout || ''}${result.stderr || ''}`;
       const elapsed = Date.now() - started;
       assert.ok(elapsed < 12000, `缺少本地 tsc 时 check 不得挂起，实际 ${elapsed}ms，输出:\n${out}`);
 
