@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { gitSync } from './git-run.js';
 
 export interface GitHygieneReport {

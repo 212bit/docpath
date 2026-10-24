@@ -1,6 +1,17 @@
-import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { runShellSyncOrThrow } from './run-tool.js';
+
+function gitOut(cwd: string, command: string): string {
+  return runShellSyncOrThrow(command, {
+    cwd,
+    timeoutMs: 30_000,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
+    offline: false,
+  });
+}
 
 export interface GitSafetyResult {
   safe: boolean;
@@ -39,7 +50,7 @@ export function checkGitSafety(cwd: string, stagingCandidates: readonly string[]
   try {
     // Check if in a git repository
     try {
-      execSync('git rev-parse --git-dir', { cwd, stdio: 'pipe' });
+      gitOut(cwd, 'git rev-parse --git-dir');
     } catch {
       result.safe = false;
       result.errors.push('Not in a git repository');
@@ -48,7 +59,7 @@ export function checkGitSafety(cwd: string, stagingCandidates: readonly string[]
 
     // Check for detached HEAD
     try {
-      const head = execSync('git symbolic-ref -q HEAD', { cwd, stdio: 'pipe', encoding: 'utf-8' }).trim();
+      const head = gitOut(cwd, 'git symbolic-ref -q HEAD').trim();
       result.currentBranch = head.replace('refs/heads/', '');
     } catch {
       result.isDetachedHead = true;
@@ -57,7 +68,7 @@ export function checkGitSafety(cwd: string, stagingCandidates: readonly string[]
     }
 
     // Check for merge in progress
-    const gitDir = execSync('git rev-parse --git-dir', { cwd, stdio: 'pipe', encoding: 'utf-8' }).trim();
+    const gitDir = gitOut(cwd, 'git rev-parse --git-dir').trim();
     const indexLockPath = join(cwd, gitDir, 'index.lock');
     if (existsSync(indexLockPath)) {
       result.safe = false;
@@ -68,10 +79,10 @@ export function checkGitSafety(cwd: string, stagingCandidates: readonly string[]
     let hasUserEmail = false;
     let hasUserName = false;
     try {
-      hasUserEmail = !!execSync('git config user.email', { cwd, stdio: 'pipe', encoding: 'utf-8' }).trim();
+      hasUserEmail = !!gitOut(cwd, 'git config user.email').trim();
     } catch {}
     try {
-      hasUserName = !!execSync('git config user.name', { cwd, stdio: 'pipe', encoding: 'utf-8' }).trim();
+      hasUserName = !!gitOut(cwd, 'git config user.name').trim();
     } catch {}
     if (!hasUserEmail || !hasUserName) {
       result.safe = false;
@@ -106,7 +117,7 @@ export function checkGitSafety(cwd: string, stagingCandidates: readonly string[]
 
     // Check for conflicts
     try {
-      const conflicts = execSync('git ls-files -u', { cwd, stdio: 'pipe', encoding: 'utf-8' }).trim();
+      const conflicts = gitOut(cwd, 'git ls-files -u').trim();
       if (conflicts) {
         result.hasConflicts = true;
         result.safe = false;
@@ -119,7 +130,7 @@ export function checkGitSafety(cwd: string, stagingCandidates: readonly string[]
 
     // Check for important untracked files in src/
     try {
-      const untracked = execSync('git ls-files --others --exclude-standard', { cwd, stdio: 'pipe', encoding: 'utf-8' }).trim();
+      const untracked = gitOut(cwd, 'git ls-files --others --exclude-standard').trim();
       if (untracked) {
         const untrackedLines = untracked.split('\n').filter(Boolean);
         const importantExtensions = ['.ts', '.js', '.tsx', '.jsx', '.go', '.py', '.java', '.rs', '.c', '.cpp', '.h'];

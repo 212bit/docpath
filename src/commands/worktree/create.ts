@@ -1,10 +1,6 @@
 import { existsSync, lstatSync } from 'node:fs';
 import { cp, mkdir, rm, writeFile, readFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const execFileAsync = promisify(execFile);
 import { BREADCRUMB_HEADER } from '../../engine/breadcrumb.js';
 import { mutateCurrentState, readCurrentState } from '../../utils/workspace.js';
 import { gitAsync } from '../../utils/git-run.js';

@@ -11,7 +11,7 @@
  * done    -> run quality gates and mark completion/blocked
  */
 
-import { execFileSync } from 'node:child_process';
+import { runToolSyncOrThrow } from '../utils/run-tool.js';
 import { checkCommand } from './check.js';
 import { journalCommand } from './journal.js';
 import { reviewCommand } from './review.js';
@@ -396,7 +396,14 @@ async function canReuseReviewGate(cwd: string, stateAtStart: Awaited<ReturnType<
 
 function currentGitHeadOptional(cwd: string): string | undefined {
   try {
-    return execFileSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf-8', timeout: 10000 }).trim() || undefined;
+    return runToolSyncOrThrow('git', ['rev-parse', 'HEAD'], {
+      cwd,
+      timeoutMs: 10_000,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'pipe',
+      offline: false,
+    }).trim() || undefined;
   } catch {
     return undefined;
   }

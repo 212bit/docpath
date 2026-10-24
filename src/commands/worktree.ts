@@ -7,8 +7,6 @@
 import { existsSync, lstatSync } from 'node:fs';
 import { cp, mkdir, rm, writeFile, readFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { BREADCRUMB_HEADER, writeBreadcrumb } from '../engine/breadcrumb.js';
 import { mutateCurrentState, readCurrentState } from '../utils/workspace.js';
 import { detectBinaryDrift, renderBinaryDriftWarning } from '../utils/version-drift.js';

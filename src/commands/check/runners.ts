@@ -1,4 +1,3 @@
-import { execSync, execFileSync } from 'child_process';
 import { existsSync, rmSync, writeFileSync, readFileSync } from 'fs';
 import { mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
@@ -7,6 +6,10 @@ import type { CheckResult, NodeCommandConfig, PackageManifest, CheckOptions } fr
 import { resolveTestCommand, listTestFiles, resolveGoTestCommand, resolvePythonTestCommand, resolveRustTestCommand } from './test-scope.js';
 import { errorOutput } from './formatters.js';
 import { looksLikeMissingShellCommand } from '../../utils/shell-missing-command.js';
+import { looksLikeEnvironmentFailure } from '../../utils/environment-failure.js';
+import { runShellSync, runToolSync } from '../../utils/run-tool.js';
+
+export { looksLikeEnvironmentFailure };
 
 export const DEFAULT_CHECK_TIMEOUT_MS = 60000;
 
@@ -27,39 +30,6 @@ export function isTimeoutKill(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
   const record = err as { killed?: boolean; signal?: string };
   return record.killed === true || record.signal === 'SIGTERM' || record.signal === 'SIGKILL';
-}
-
-/**
- * 检测子进程输出是否表明失败原因是环境问题（命令缺失、依赖未装等），而非代码问题。
- * 帮助 Agent 用最廉价的判定先排除工具链问题，避免用昂贵的 token 去诊断代码。
- */
-export function looksLikeEnvironmentFailure(output: string): boolean {
-  // dash/ash 写 `sh: 1: cmd: not found`，bash 写 `command not found`。两者都是命令缺失。
-  if (looksLikeMissingShellCommand(output)) return true;
-  const envPatterns = [
-    /command not found/i,
-    /ENOENT.*node_modules/,
-    /ENOENT.*\.bin/,
-    /Cannot find module/i,
-    /MODULE_NOT_FOUND/,
-    /is not recognized as (an )?internal or external command/i,
-    /no such file or directory.*node_modules/,
-    /spawn.*ENOENT/,
-    /sh: (line \d+: )?.+: command not found/,
-    /pnpm: command not found/i,
-    /npm: command not found/i,
-    /yarn: command not found/i,
-    /npx: command not found/i,
-    /Permission denied.*node_modules/,
-    /EACCES.*node_modules/,
-    /attempt to write a readonly database/i,
-    /SQLITE_READONLY/i,
-    /read-only file system/i,
-    /EROFS/i,
-    /Permission denied.*projects\.sqlite/i,
-    /EACCES.*projects\.sqlite/i,
-  ];
-  return envPatterns.some((pattern) => pattern.test(output));
 }
 
 /**
@@ -92,11 +62,16 @@ export function pathEntries(value: string | undefined): string[] {
 }
 
 export function runGitOptional(cwd: string, args: string[]): string | null {
-  try {
-    return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-  } catch {
-    return null;
-  }
+  const result = runToolSync('git', args, {
+    cwd,
+    timeoutMs: 10_000,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
+    offline: false,
+  });
+  if (result.status !== 'ok') return null;
+  return result.stdout.trim();
 }
 
 export function resolveMainCheckoutBin(cwd: string): string | null {
@@ -188,42 +163,45 @@ export function runCheck(
 ): CheckResult {
   // R-347: 记录到 CheckResult 的命令去掉内部拼接的 stderr 重定向，给 agent 看的是它能照抄的命令。
   const command = cmd.replace(/\s+2>&1\s*$/, '');
-  try {
-    const output = execSync(cmd, {
-      cwd,
-      encoding: 'utf-8',
-      timeout: timeoutMs,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      maxBuffer: 10 * 1024 * 1024,
-      env: checkCommandEnv(cwd),
-    });
-    return { name, passed: true, output: output.slice(0, 500), category, command };
-  } catch (err: unknown) {
-    if (isTimeoutKill(err)) {
-      const seconds = Math.round(timeoutMs / 1000);
-      return {
-        name,
-        passed: false,
-        output: `命令超时（>${seconds}s）被终止，并非检查失败。命令: ${cmd}\n` +
-          `若该命令本身耗时较长，请提高其超时上限或拆分检查。`,
-        category,
-        command,
-      };
-    }
-    const rawOutput = errorOutput(err).slice(0, 500);
-    const isEnvFailure = looksLikeEnvironmentFailure(rawOutput);
-    // R-350: 环境诊断用宽集，环境豁免用收紧集（见 looksLikeToolchainUnavailable 注释）。
-    const isExemptible = isEnvFailure && looksLikeToolchainUnavailable(rawOutput);
+  const result = runShellSync(cmd, {
+    cwd,
+    timeoutMs,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
+    maxBuffer: 10 * 1024 * 1024,
+    env: checkCommandEnv(cwd),
+  });
+  if (result.status === 'ok') {
+    return { name, passed: true, output: result.stdout.slice(0, 500), category, command };
+  }
+  if (result.status === 'timeout') {
+    const seconds = Math.round(timeoutMs / 1000);
     return {
       name,
       passed: false,
-      output: rawOutput,
+      output: `命令超时（>${seconds}s）被终止，并非检查失败。命令: ${cmd}\n` +
+        `若该命令本身耗时较长，请提高其超时上限或拆分检查。`,
       category,
       command,
-      ...(isEnvFailure ? { environment_failure: true } : {}),
-      ...(isExemptible ? { environment_exemptible: true } : {}),
     };
   }
+  const rawOutput = errorOutput(Object.assign(new Error(result.error?.message || 'command failed'), {
+    stdout: result.stdout,
+    stderr: result.stderr,
+  })).slice(0, 500);
+  const isEnvFailure = result.status === 'environment_failure' || looksLikeEnvironmentFailure(rawOutput);
+  // R-350: 环境诊断用宽集，环境豁免用收紧集（见 looksLikeToolchainUnavailable 注释）。
+  const isExemptible = isEnvFailure && looksLikeToolchainUnavailable(rawOutput);
+  return {
+    name,
+    passed: false,
+    output: rawOutput,
+    category,
+    command,
+    ...(isEnvFailure ? { environment_failure: true } : {}),
+    ...(isExemptible ? { environment_exemptible: true } : {}),
+  };
 }
 
 export function detectNodeCommandConfig(cwd: string): NodeCommandConfig {
@@ -304,18 +282,18 @@ async function probeRunnerUsableUncached(cwd: string, pkgRunner: string): Promis
       private: true,
       scripts: { __dp_probe: 'node --version' },
     }));
-    execSync(`${pkgRunner} ${dirFlag} ${JSON.stringify(probeDir)} run __dp_probe 2>&1`, {
+    const result = runShellSync(`${pkgRunner} ${dirFlag} ${JSON.stringify(probeDir)} run __dp_probe 2>&1`, {
       cwd,
-      encoding: 'utf-8',
-      timeout: timeoutMs,
+      timeoutMs,
       killSignal: 'SIGKILL',
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'pipe',
       maxBuffer: 1024 * 1024,
       env: checkCommandEnv(cwd),
     });
-    return { probed: true, usable: true };
-  } catch (err: unknown) {
-    if (isTimeoutKill(err)) {
+    if (result.status === 'ok') return { probed: true, usable: true };
+    if (result.status === 'timeout') {
       return {
         probed: true,
         usable: false,

@@ -13,7 +13,7 @@ workspace.ts, lock.ts, session.ts, pending-done.ts, lifecycle.ts, current-step-i
 task-files.ts, structured-docs.ts, structured-heal.ts, plan-sync.ts, plan-topology.ts, doc-parser.ts, workspace-evidence.ts
 
 ### gates — 门禁与守卫
-git-dirty-guard.ts, ui-gate.ts, major-change.ts, review-skill-router.ts, semantic-verify.ts, auto-format.ts, shell-missing-command.ts
+git-dirty-guard.ts, ui-gate.ts, major-change.ts, review-skill-router.ts, semantic-verify.ts, auto-format.ts, shell-missing-command.ts, environment-failure.ts
 
 ### git — Git 集成与收口
 git-closeout.ts, git-hygiene.ts, git-safety.ts, git-staging.ts, agent-coauthor.ts, changes-report.ts, merge-driver.ts, worktree.ts, worktree-collaboration.ts, worktree-dependency-drift.ts, backlog-registry.ts
@@ -31,7 +31,7 @@ install-core.ts, protocol-blocks.ts, protocol-drift.ts, detect.ts, package-info.
 trace.ts, trace-analyzer.ts, trace-matrix.ts, workspace-cleanup.ts, ceremony.ts, version-drift.ts, git-run.ts, breadcrumb.ts, task-metrics.ts, agent-telemetry-adapter.ts
 
 ### primitives — 真·通用工具（唯一允许"杂"的域）
-file.ts, config.ts, input.ts, stdin.ts
+file.ts, config.ts, input.ts, stdin.ts, run-tool.ts
 
 ## 新代码安置规则
 

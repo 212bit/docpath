@@ -13,7 +13,7 @@
  */
 
 import { createHash } from 'crypto';
-import { execFileSync } from 'child_process';
+import { runToolSyncOrThrow } from '../../utils/run-tool.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CheckResult } from './types.js';
@@ -137,7 +137,14 @@ function hashToolchainPrefix(hash: ReturnType<typeof createHash>, toolchain: str
 
 function runGitOptional(cwd: string, args: string[]): string | null {
   try {
-    return execFileSync('git', args, { cwd, encoding: 'utf-8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    return runToolSyncOrThrow('git', args, {
+      cwd,
+      timeoutMs: 10_000,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'pipe',
+      offline: false,
+    }).trim();
   } catch {
     return null;
   }

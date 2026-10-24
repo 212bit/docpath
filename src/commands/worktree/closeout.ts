@@ -1,11 +1,8 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const execFileAsync = promisify(execFile);
 import { writeBreadcrumb } from '../../engine/breadcrumb.js';
+import { runToolOrThrow } from '../../utils/run-tool.js';
 import { readCurrentState } from '../../utils/workspace.js';
 import { gitAsync } from '../../utils/git-run.js';
 import { isGitRepo, isInWorktree, listWorktrees } from '../../utils/worktree.js';
@@ -20,6 +17,17 @@ import {
   samePath,
   worktreeNameFromPath,
 } from './shared.js';
+
+function gitExec(cwd: string, args: string[], timeoutMs: number) {
+  return runToolOrThrow('git', args, {
+    cwd,
+    timeoutMs,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
+    offline: false,
+  });
+}
 
 export async function worktreeSync(cwd: string): Promise<void> {
   if (!(await isGitRepo(cwd))) {
@@ -122,7 +130,7 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
   // 2. 拉取远端分支
   console.log(`[FR-3] 拉取远端主干分支最新代码...`);
   try {
-    await execFileAsync('git', ['fetch', 'origin'], { cwd });
+    await gitExec(cwd, ['fetch', 'origin'], 120_000);
     console.log(`  ✓ fetch origin 成功`);
   } catch (err) {
     console.log(`⚠️  git fetch 失败，将使用本地已有分支缓存合并: ${err instanceof Error ? err.message : String(err)}`);
@@ -132,7 +140,7 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
   console.log(`[FR-3] 正在合并目标分支 ${targetMergeBranch}...`);
   let hasConflicts = false;
   try {
-    await execFileAsync('git', ['merge', targetMergeBranch, '--no-ff'], { cwd });
+    await gitExec(cwd, ['merge', targetMergeBranch, '--no-ff'], 120_000);
     console.log(`  ✓ 合并 ${targetMergeBranch} 成功`);
   } catch (err) {
     // 检查是否产生了合并冲突
@@ -145,7 +153,7 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
       if (resolution.resolved.length > 0) {
         console.log(`[FR-3] 冲突文件全部为可重建索引，自动消解并完成合并:`);
         resolution.resolved.forEach((file) => console.log(`  - ${file}${resolution.rebuilds.some((r) => r.path === file) ? '（已重建）' : ''}`));
-        await execFileAsync('git', ['commit', '--no-edit'], { cwd });
+        await gitExec(cwd, ['commit', '--no-edit'], 60_000);
         console.log(`  ✓ 同步合并完成（自动消解）`);
       } else {
         console.error(`❌  合并目标分支 ${targetMergeBranch} 时发生冲突!`);
@@ -153,7 +161,7 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
         conflictFiles.forEach((line) => console.error(`  - ${line}`));
         // R-345 FR-3: 不可消解时不再遗留 mid-merge 现场（与 WT-1 哲学一致）
         try {
-          await execFileAsync('git', ['merge', '--abort'], { cwd });
+          await gitExec(cwd, ['merge', '--abort'], 30_000);
           console.error('✅ 已执行 git merge --abort，工作区恢复合并前状态。');
         } catch {
           console.error(`❌ git merge --abort 失败，请手工执行: git -C ${cwd} merge --abort`);
@@ -295,7 +303,7 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
       if (resolution.resolved.length === 0) throw mergeErr;
       console.log(`  冲突文件全部为可重建索引，自动消解:`);
       resolution.resolved.forEach((file) => console.log(`    - ${file}${resolution.rebuilds.some((r) => r.path === file) ? '（已重建）' : ''}`));
-      await execFileAsync('git', ['commit', '--no-edit'], { cwd: repoRoot });
+      await gitExec(repoRoot, ['commit', '--no-edit'], 60_000);
       console.log('  ✓ 合并已完成（自动消解）');
     }
 
@@ -313,7 +321,7 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
     // R-344 WT-1: 主仓不得残留 mid-merge 现场（否则 dirty guard 卡死后续所有任务）
     let midMerge = false;
     try {
-      await execFileAsync('git', ['rev-parse', '--verify', '--quiet', 'MERGE_HEAD'], { cwd: repoRoot });
+      await gitExec(repoRoot, ['rev-parse', '--verify', '--quiet', 'MERGE_HEAD'], 10_000);
       midMerge = true;
     } catch {
       midMerge = false;
@@ -325,7 +333,7 @@ export async function worktreeMerge(cwd: string, branchNameOrTarget?: string, al
         unmerged.split('\n').filter(Boolean).forEach((file) => console.error(`  - ${file}`));
       }
       try {
-        await execFileAsync('git', ['merge', '--abort'], { cwd: repoRoot });
+        await gitExec(repoRoot, ['merge', '--abort'], 30_000);
         console.error('✅ 已执行 git merge --abort，主仓恢复合并前状态。');
         console.error(`   请在 worktree 分支解决与 ${targetBranchEnv} 的冲突后重跑 docpath worktree merge。`);
       } catch (abortErr) {

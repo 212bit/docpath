@@ -9,9 +9,8 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
-import { execFile, exec, spawnSync } from 'node:child_process';
-import { promisify } from 'node:util';
 import { performance } from 'node:perf_hooks';
+import { commandRequestsNpmOffline, runShell, runToolSync } from '../utils/run-tool.js';
 import { resolveDocpathDirSync } from '../utils/file.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { logger } from '../utils/logger.js';
@@ -24,9 +23,6 @@ import {
 } from './plugin-system.js';
 
 export { type HookEvent, VALID_HOOK_EVENTS } from './plugin-system.js';
-
-const execAsync = promisify(exec);
-const execFileAsync = promisify(execFile);
 
 export const DEFAULT_HOOK_TIMEOUT_MS = 15000;
 
@@ -322,23 +318,25 @@ export async function executeLifecycleHook(
     let passed = false;
     let error: string | undefined;
 
-    try {
-      const res = await execAsync(hook.command, {
-        cwd,
-        timeout,
-        env: hookEnv,
-        encoding: 'utf-8',
-      });
-      stdout = res.stdout || '';
-      stderr = res.stderr || '';
+    const res = await runShell(hook.command, {
+      cwd,
+      timeoutMs: timeout,
+      env: hookEnv,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    stdout = res.stdout || '';
+    stderr = res.stderr || '';
+    if (res.status === 'ok') {
       passed = true;
       exitCode = 0;
-    } catch (err: any) {
-      stdout = err.stdout || '';
-      stderr = err.stderr || '';
-      exitCode = typeof err.code === 'number' ? err.code : 1;
+    } else {
+      exitCode = typeof res.exitCode === 'number' ? res.exitCode : 1;
       passed = false;
-      error = err.message || 'Hook execution failed';
+      error = res.timedOut
+        ? `timed out after ${timeout}ms`
+        : (res.error?.message || `exit ${exitCode}`);
     }
 
     const duration = Math.round(performance.now() - start);
@@ -473,8 +471,14 @@ let timeoutBin: string | null | undefined;
 
 function resolveTimeoutBin(): string | null {
   if (timeoutBin !== undefined) return timeoutBin;
-  const probe = spawnSync('timeout', ['--version'], { encoding: 'utf-8' });
-  timeoutBin = probe.status === 0 ? 'timeout' : null;
+  const probe = runToolSync('timeout', ['--version'], {
+    timeoutMs: 2000,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
+    offline: false,
+  });
+  timeoutBin = probe.exitCode === 0 ? 'timeout' : null;
   return timeoutBin;
 }
 
@@ -513,8 +517,9 @@ export function runOnGateBlockedHooks(
     // spawnSync's own timeout only signals the direct shell, which leaves
     // grandchildren (for example `sleep` or `curl`) running.
     const killer = resolveTimeoutBin();
+    const offline = commandRequestsNpmOffline(hook.command) || undefined;
     const res = killer
-      ? spawnSync(killer, [
+      ? runToolSync(killer, [
         '-s', 'KILL',
         '-k', '0.2',
         (timeout / 1000).toFixed(3),
@@ -522,29 +527,29 @@ export function runOnGateBlockedHooks(
       ], {
         cwd,
         env,
-        encoding: 'utf-8',
         input: stdin,
-        timeout: timeout + 1000,
+        timeoutMs: timeout + 1000,
         killSignal: 'SIGKILL',
+        offline,
       })
-      : spawnSync(hook.command, {
+      : runToolSync(hook.command, [], {
         cwd,
         env,
-        encoding: 'utf-8',
         shell: true,
         input: stdin,
-        timeout,
+        timeoutMs: timeout,
         killSignal: 'SIGKILL',
+        offline,
       });
     const stdout = res.stdout || '';
     const stderr = res.stderr || '';
-    const errno = res.error as NodeJS.ErrnoException | undefined;
-    const timedOut = errno?.code === 'ETIMEDOUT'
+    const timedOut = res.timedOut
+      || res.error?.code === 'ETIMEDOUT'
       || Boolean(res.signal)
-      || res.status === 124
-      || res.status === 137;
-    const exitCode = typeof res.status === 'number' ? res.status : 1;
-    const passed = !res.error && exitCode === 0 && !res.signal;
+      || res.exitCode === 124
+      || res.exitCode === 137;
+    const exitCode = typeof res.exitCode === 'number' ? res.exitCode : 1;
+    const passed = res.status === 'ok';
     const error = passed
       ? undefined
       : timedOut

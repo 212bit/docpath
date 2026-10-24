@@ -4,13 +4,24 @@
  * 依据源码依赖拓扑图与 Git 改动影响面，自动推导需要运行的最小单测集合。
  */
 
-import { execSync } from 'node:child_process';
 import { basename } from 'node:path';
+import { runShellSyncOrThrow } from '../utils/run-tool.js';
 import {
   buildDependencyGraph,
   getTransitiveDependents,
   type DependencyGraph,
 } from './dependency-graph.js';
+
+function gitText(cwd: string, command: string): string {
+  return runShellSyncOrThrow(command, {
+    cwd,
+    timeoutMs: 30_000,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'ignore',
+    offline: false,
+  });
+}
 
 export interface TestImpactReport {
   modified_files: string[];
@@ -36,21 +47,13 @@ export function getGitModifiedFiles(cwd: string, sinceRef?: string): string[] {
   const files = new Set<string>();
   try {
     if (sinceRef) {
-      const out = execSync(`git diff --name-only ${sinceRef}..HEAD`, {
-        cwd,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'ignore'],
-      }).trim();
+      const out = gitText(cwd, `git diff --name-only ${sinceRef}..HEAD`).trim();
       for (const f of out.split('\n')) {
         if (f.trim()) files.add(f.trim().replace(/\\/g, '/'));
       }
     } else {
       // 1. 工作区未跟踪与已修改
-      const statusOut = execSync('git status --porcelain', {
-        cwd,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'ignore'],
-      }).trim();
+      const statusOut = gitText(cwd, 'git status --porcelain').trim();
       for (const line of statusOut.split('\n')) {
         if (!line.trim()) continue;
         const filePath = line.slice(3).trim().replace(/\\/g, '/');
@@ -60,11 +63,7 @@ export function getGitModifiedFiles(cwd: string, sinceRef?: string): string[] {
       }
 
       // 2. 暂存区与最新提交差异
-      const diffOut = execSync('git diff --name-only HEAD', {
-        cwd,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'ignore'],
-      }).trim();
+      const diffOut = gitText(cwd, 'git diff --name-only HEAD').trim();
       for (const f of diffOut.split('\n')) {
         if (f.trim()) files.add(f.trim().replace(/\\/g, '/'));
       }

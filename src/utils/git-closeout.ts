@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { gitSync } from './git-run.js';
 import { readFileSafe } from './file.js';

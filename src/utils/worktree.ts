@@ -8,12 +8,11 @@
  * - 冲突消解辅助
  */
 
-import { execFile } from 'node:child_process';
 import { existsSync, lstatSync, statSync } from 'node:fs';
 import { symlink } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve } from 'node:path';
-import { promisify } from 'node:util';
 import { gitAsync } from './git-run.js';
+import { runToolOrThrow } from './run-tool.js';
 import { readCurrentState } from './workspace.js';
 import type {
   WorktreeDiagnostics,
@@ -24,7 +23,20 @@ import type {
 
 export type { WorktreeDiagnostics, WorktreeInfo, WorktreePaths, IndexConflictResolution } from '../types/worktree.js';
 
-const execFileAsync = promisify(execFile);
+const GIT_QUERY_TIMEOUT_MS = 30_000;
+const GIT_MUTATION_TIMEOUT_MS = 120_000;
+
+function gitQuery(cwd: string, args: string[], maxBuffer?: number) {
+  return runToolOrThrow('git', args, {
+    cwd,
+    timeoutMs: GIT_QUERY_TIMEOUT_MS,
+    maxBuffer,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
+    offline: false,
+  });
+}
 
 /**
  * 检测当前是否在 worktree 中
@@ -50,7 +62,7 @@ export function isInWorktree(cwd: string): boolean {
  * 获取当前 Git 仓库 top-level。
  */
 export async function getGitTopLevel(cwd: string): Promise<string> {
-  const { stdout } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], { cwd });
+  const { stdout } = await gitQuery(cwd, ['rev-parse', '--show-toplevel']);
   return stdout.trim();
 }
 
@@ -92,7 +104,7 @@ function parseWorktreeList(output: string): WorktreeInfo[] {
  */
 export async function listWorktrees(cwd: string): Promise<WorktreeInfo[]> {
   try {
-    const { stdout } = await execFileAsync('git', ['worktree', 'list', '--porcelain'], { cwd });
+    const { stdout } = await gitQuery(cwd, ['worktree', 'list', '--porcelain']);
     return parseWorktreeList(stdout);
   } catch (error) {
     throw new Error(`列出 worktrees 失败: ${error instanceof Error ? error.message : String(error)}`);
@@ -122,7 +134,7 @@ export async function createSymlink(target: string, linkPath: string, type: 'dir
  */
 export async function isGitRepo(cwd: string): Promise<boolean> {
   try {
-    await execFileAsync('git', ['rev-parse', '--git-dir'], { cwd });
+    await gitQuery(cwd, ['rev-parse', '--git-dir']);
     return true;
   } catch {
     return false;
@@ -206,7 +218,15 @@ export async function resolveWorktreePaths(cwd: string, name: string): Promise<W
 
 export async function runGit(cwd: string, args: string[]): Promise<void> {
   try {
-    const { stdout, stderr } = await execFileAsync('git', args, { cwd, maxBuffer: 10 * 1024 * 1024 });
+    const { stdout, stderr } = await runToolOrThrow('git', args, {
+      cwd,
+      timeoutMs: GIT_MUTATION_TIMEOUT_MS,
+      maxBuffer: 10 * 1024 * 1024,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'pipe',
+      offline: false,
+    });
     if (stdout) process.stdout.write(stdout);
     if (stderr) process.stderr.write(stderr);
   } catch (error) {
@@ -226,7 +246,7 @@ export async function runGitCapture(cwd: string, args: string[]): Promise<string
 }
 
 export async function hasTrackedFiles(repoRoot: string, path: string): Promise<boolean> {
-  const { stdout } = await execFileAsync('git', ['ls-files', '--', path], { cwd: repoRoot });
+  const { stdout } = await gitQuery(repoRoot, ['ls-files', '--', path]);
   return stdout.trim().length > 0;
 }
 
@@ -267,7 +287,7 @@ export function worktreeNameFromPath(worktreesDir: string, wtPath: string): stri
 export async function resolveMergeTarget(cwd: string, branchNameOrTarget?: string): Promise<string> {
   const verify = async (ref: string): Promise<boolean> => {
     try {
-      await execFileAsync('git', ['rev-parse', '--verify', '--quiet', ref], { cwd });
+      await gitQuery(cwd, ['rev-parse', '--verify', '--quiet', ref]);
       return true;
     } catch {
       return false;
@@ -317,7 +337,7 @@ export async function getWorktreeDiagnostics(
     }
     try {
       const head = (await runGitCapture(wtPath, ['rev-parse', 'HEAD'])).trim();
-      await execFileAsync('git', ['merge-base', '--is-ancestor', head, mergeTarget], { cwd: repoRoot });
+      await gitQuery(repoRoot, ['merge-base', '--is-ancestor', head, mergeTarget]);
       mergedToMain = true;
     } catch {
       mergedToMain = false;

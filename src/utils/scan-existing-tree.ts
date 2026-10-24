@@ -12,7 +12,6 @@
  */
 
 import { readdir, stat } from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
 import { gitSync } from './git-run.js';
 import { join, relative, sep } from 'node:path';
 

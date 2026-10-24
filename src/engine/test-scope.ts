@@ -20,7 +20,7 @@
 import { readFileSync } from 'fs';
 import { readdirSync, statSync } from 'fs';
 import { join, basename, dirname, relative, sep } from 'path';
-import { execFileSync } from 'child_process';
+import { runToolSyncOrThrow } from '../utils/run-tool.js';
 import { availableParallelism } from 'os';
 import { minimatch } from 'minimatch';
 
@@ -80,10 +80,13 @@ export const TEST_SCOPE_RATIO_THRESHOLD = 0.75;
 /** 获取当时 git 改动的源文件（staged + unstaged + untracked）。非 git 仓返回 null。 */
 export function getChangedSourceFiles(cwd: string): string[] | null {
   try {
-    const out = execFileSync('git', ['status', '--porcelain=v1', '--untracked-files=all'], {
+    const out = runToolSyncOrThrow('git', ['status', '--porcelain=v1', '--untracked-files=all'], {
       cwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
+      timeoutMs: 30_000,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'ignore',
+      offline: false,
     });
     return out
       .split('\n')

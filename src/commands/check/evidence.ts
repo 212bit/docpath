@@ -1,7 +1,6 @@
 import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { execFileSync } from 'child_process';
 import { gitSyncOptional } from '../../utils/git-run.js';
 import type { CheckResult, GitBaseline, CheckOptions } from './types.js';
 import { readCurrentState, syncCurrentDocument } from '../../utils/workspace.js';
