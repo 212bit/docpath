@@ -61,9 +61,22 @@ const LESSON_PLACEHOLDER_TOKEN = /^(?:待补充|暂无|无|none|n\/a|tbd|todo)$/
  */
 const BARE_OPTION_LABEL = /^(?:方案\s*[A-Za-z]|Option\s*[A-Za-z])$/i;
 
+/** Compare ADR labels ignoring case and inner whitespace (`方案 B` === `方案B`). */
+function lessonLabelKey(text: string): string {
+  return text.replace(/[\u00a0\u3000]/g, ' ').replace(/\s+/g, '').toLowerCase();
+}
+
+function isTautologicalLessonField(label: string, value: string): boolean {
+  const normalizedLabel = label.trim();
+  const normalizedValue = value.trim();
+  if (!normalizedLabel || !normalizedValue) return false;
+  return lessonLabelKey(normalizedLabel) === lessonLabelKey(normalizedValue);
+}
+
 /**
  * Lesson text is the value, not the label. Blank values, placeholder tokens,
- * bare option labels, and empty field shells such as `推荐方案:` do not count.
+ * bare option labels, tautological `label: label` lines (`方案 B: 方案 B`,
+ * `待补充: 待补充`), and empty field shells such as `推荐方案:` do not count.
  * A `title: value` line counts only when `value` itself is substantive, so a
  * whitespace brief that falls back to the task title plus an empty field is
  * still empty.
@@ -73,19 +86,25 @@ function hasSubstantiveLessonText(text: string): boolean {
   if (!normalized) return false;
   if (LESSON_PLACEHOLDER_TOKEN.test(normalized)) return false;
   if (BARE_OPTION_LABEL.test(normalized)) return false;
-  const labeled = normalized.match(/^(?:推荐方案|推荐|目标|决策|结论)\s*[:：]\s*(.*)$/);
-  if (labeled) return hasSubstantiveLessonText(labeled[1]);
+  const labeled = normalized.match(/^(推荐方案|推荐|目标|决策|结论)\s*[:：]\s*(.*)$/);
+  if (labeled) {
+    if (isTautologicalLessonField(labeled[1], labeled[2])) return false;
+    return hasSubstantiveLessonText(labeled[2]);
+  }
   const colon = normalized.match(/^([^:：]+)[:：]\s*(.*)$/);
-  if (colon) return hasSubstantiveLessonText(colon[2]);
+  if (colon) {
+    if (isTautologicalLessonField(colon[1], colon[2])) return false;
+    return hasSubstantiveLessonText(colon[2]);
+  }
   return true;
 }
 
 /**
  * A generated `### Lesson` body should not be written when it carries no
  * reusable text: empty, whitespace-only (ASCII space, NBSP, ideographic space),
- * placeholder tokens, or only a bare option label. Markdown headings are
- * structure, not body text. A described recommendation, ADR summary, or
- * blocked-step note still counts.
+ * placeholder tokens, only a bare option label, or only tautological ADR
+ * lines. Markdown headings are structure, not body text. A described
+ * recommendation, ADR summary, or blocked-step note still counts.
  */
 export function isEmptyOrPlaceholderLessonBody(body: string): boolean {
   const lines = body
@@ -116,11 +135,51 @@ function isSeedBoilerplateLesson(candidate: CandidateBlock): boolean {
   ].some((pattern) => pattern.test(text));
 }
 
-function lessonQualityReasons(candidate: CandidateBlock): string[] {
-  const normalized = candidate.description
-    .replace(/[✅⚠️📋🏗️]/g, '')
+const BLOCKED_STEP_HEADING = /^\s*#{1,6}\s*阻塞步骤(?:\s*[（(][^）)]*[）)])?\s*$/;
+const AUTO_BLOCKED_STEP_LINE = /^\s*[-*]?\s*(?:check\s*[:：]\s*质量检查失败\s*[:：]|review\s*[:：]\s*代码审查\s*[:：])/i;
+
+/**
+ * Drop the `### 阻塞步骤（踩坑点）` section and auto-generated check/review
+ * lines. Those records explain a gate failure; they are not reusable lesson text.
+ */
+function lessonTextExcludingBlockedSteps(text: string): string {
+  const kept: string[] = [];
+  let skipping = false;
+  for (const line of text.split(/\r?\n/)) {
+    if (BLOCKED_STEP_HEADING.test(line)) {
+      skipping = true;
+      continue;
+    }
+    if (skipping && /^\s*#{1,6}\s+\S/.test(line)) skipping = false;
+    if (skipping || AUTO_BLOCKED_STEP_LINE.test(line)) continue;
+    kept.push(line);
+  }
+  return kept.join('\n');
+}
+
+function hasBlockedStepRecord(text: string): boolean {
+  return text.split(/\r?\n/).some((line) => BLOCKED_STEP_HEADING.test(line) || AUTO_BLOCKED_STEP_LINE.test(line));
+}
+
+/** Headings and placeholder/tautological lines do not contribute quality keywords. */
+function reusableLessonProse(text: string): string {
+  return lessonTextExcludingBlockedSteps(text)
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*#{1,6}\s+\S/.test(line))
+    .map((line) => line.replace(/[✅⚠️📋🏗️]/g, '').trim())
+    .filter((line) => line.length > 0 && hasSubstantiveLessonText(line))
+    .join(' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function lessonQualityReasons(candidate: CandidateBlock): string[] {
+  const reusableBody = lessonTextExcludingBlockedSteps(candidate.description);
+  if (isEmptyOrPlaceholderLessonBody(reusableBody) && hasBlockedStepRecord(candidate.description)) {
+    return ['仅有阻塞步骤记录，无可复用经验'];
+  }
+
+  const normalized = reusableLessonProse(candidate.description);
   const reasons: string[] = [];
 
   const hasTrigger = /当|在|若|如果|遇到|默认|执行|运行|新增|修改|处理|模式|场景|入口|CLI|Agent|任务|工作流|候选|输出|命令|文件|状态|规则|lesson|journal|learn|check|next|go|plan/i.test(normalized);
