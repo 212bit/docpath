@@ -119,6 +119,48 @@ describe('isEmptyOrPlaceholderLessonBody', () => {
     assert.equal(isEmptyOrPlaceholderLessonBody('### 架构决策摘要\n\n- 待补充: 待补充\n'), true);
   });
 
+  it('treats a bare option label as skippable', () => {
+    for (const label of ['方案 A', '方案A', '方案 B', '方案  B', 'Option A', 'option a', 'OptionA']) {
+      assert.equal(isEmptyOrPlaceholderLessonBody(`### 推荐方案\n\n${label}\n`), true, label);
+      assert.equal(isEmptyOrPlaceholderLessonBody(`  ${label}  `), true, label);
+    }
+    assert.equal(isEmptyOrPlaceholderLessonBody(`方案${'\u3000'}A`), true);
+    assert.equal(isEmptyOrPlaceholderLessonBody('### 推荐方案\n\n方案 A\n\n### 架构决策摘要\n\n- 方案 A: 方案 A\n'), true);
+    assert.equal(isEmptyOrPlaceholderLessonBody('### 推荐方案\n\n方案 B\n\n### 架构决策摘要\n\n- 方案 B: 方案 B\n'), true);
+    assert.equal(isEmptyOrPlaceholderLessonBody('### 推荐方案\n\nOption A\n\n### 架构决策摘要\n\n- Option A: Option A\n'), true);
+  });
+
+  it('keeps a described option and any ADR or blocked-step text', () => {
+    assert.equal(
+      isEmptyOrPlaceholderLessonBody('### 推荐方案\n\n方案 A：引入基于 Git diff 的 Guard\n'),
+      false,
+    );
+    assert.equal(
+      isEmptyOrPlaceholderLessonBody('采用方案 A 作为默认，并在 diff 上加 Guard'),
+      false,
+    );
+    const withAdr = [
+      '### 推荐方案',
+      '',
+      '方案 A',
+      '',
+      '### 架构决策摘要',
+      '',
+      '- Guard: 引入基于 Git diff 的检查',
+    ].join('\n');
+    assert.equal(isEmptyOrPlaceholderLessonBody(withAdr), false);
+    const withBlocked = [
+      '### 推荐方案',
+      '',
+      '方案 A',
+      '',
+      '### 阻塞步骤（踩坑点）',
+      '',
+      '- S1: 遇到 X 阻塞',
+    ].join('\n');
+    assert.equal(isEmptyOrPlaceholderLessonBody(withBlocked), false);
+  });
+
   it('keeps a lesson body that contains substantive text', () => {
     const body = [
       '',
@@ -177,6 +219,91 @@ describe('journal lesson candidate generation', () => {
       assert.doesNotMatch(out, /Lesson 候选已更新/);
       assert.equal(readFileSync(path, 'utf-8'), seeded);
       assert.match(out, /决策日志已更新/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('skips writing when the only recommendation is bare 方案 A', () => {
+    const cwd = mkWorkspace({ specMd: specWithBrief('方案 A') });
+    const path = lessonsPath(cwd);
+    const seeded = '# Lesson Candidates\n\n## keep me\n';
+    writeFileSync(path, seeded);
+    try {
+      const out = runJournal(cwd);
+      assert.match(out, /Lesson 正文为空或仅为占位，跳过 lesson 候选写入/);
+      assert.doesNotMatch(out, /Lesson 候选已更新/);
+      assert.equal(readFileSync(path, 'utf-8'), seeded);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('skips writing when the only recommendation is 方案A', () => {
+    const cwd = mkWorkspace({ specMd: specWithBrief('方案A') });
+    const path = lessonsPath(cwd);
+    const seeded = '# Lesson Candidates\n\n## keep me\n';
+    writeFileSync(path, seeded);
+    try {
+      const out = runJournal(cwd);
+      assert.match(out, /Lesson 正文为空或仅为占位，跳过 lesson 候选写入/);
+      assert.doesNotMatch(out, /Lesson 候选已更新/);
+      assert.equal(readFileSync(path, 'utf-8'), seeded);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('skips writing when the only recommendation is 方案 B or Option A', () => {
+    for (const label of ['方案 B', 'Option A']) {
+      const cwd = mkWorkspace({ specMd: specWithBrief(label) });
+      const path = lessonsPath(cwd);
+      const seeded = '# Lesson Candidates\n\n## keep me\n';
+      writeFileSync(path, seeded);
+      try {
+        const out = runJournal(cwd);
+        assert.match(out, /Lesson 正文为空或仅为占位，跳过 lesson 候选写入/, label);
+        assert.doesNotMatch(out, /Lesson 候选已更新/);
+        assert.equal(readFileSync(path, 'utf-8'), seeded);
+      } finally {
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it('writes a candidate when 方案 A includes a real description', () => {
+    const recommended = '方案 A：引入基于 Git diff 的 Guard';
+    const cwd = mkWorkspace({ specMd: specWithBrief(recommended) });
+    try {
+      const out = runJournal(cwd);
+      assert.match(out, /Lesson 候选已更新/);
+      assert.equal(existsSync(lessonsPath(cwd)), true);
+      const lessons = readFileSync(lessonsPath(cwd), 'utf-8');
+      assert.match(lessons, new RegExp(`- key: ${TASK_ID}-workflow`));
+      assert.match(lessons, /### Lesson/);
+      assert.match(lessons, /推荐方案/);
+      assert.match(lessons, /方案 A：引入基于 Git diff 的 Guard/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('writes a candidate when bare 方案 A is accompanied by blocked steps', () => {
+    const cwd = mkWorkspace({
+      specMd: specWithBrief('方案 A'),
+      breadcrumbContext: '遇到 X 阻塞',
+      breadcrumbStatus: 'blocked',
+    });
+    try {
+      const out = runJournal(cwd);
+      assert.match(out, /Lesson 候选已更新/);
+      assert.equal(existsSync(lessonsPath(cwd)), true);
+      const lessons = readFileSync(lessonsPath(cwd), 'utf-8');
+      assert.match(lessons, /### Lesson/);
+      assert.match(lessons, /推荐方案/);
+      assert.match(lessons, /方案 A/);
+      assert.match(lessons, /阻塞步骤/);
+      assert.match(lessons, /遇到 X 阻塞/);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }

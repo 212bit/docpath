@@ -55,15 +55,24 @@ function isVagueLesson(candidate: CandidateBlock): boolean {
 const LESSON_PLACEHOLDER_TOKEN = /^(?:待补充|暂无|无|none|n\/a|tbd|todo)$/i;
 
 /**
+ * Seed/default option labels with no description. Only the whole segment counts,
+ * so `方案 A：引入…` stays substantive: the colon split checks the description alone.
+ * Optional whitespace covers `方案 A`, `方案A`, `方案 B`, and `Option A`.
+ */
+const BARE_OPTION_LABEL = /^(?:方案\s*[A-Za-z]|Option\s*[A-Za-z])$/i;
+
+/**
  * Lesson text is the value, not the label. Blank values, placeholder tokens,
- * and empty field shells such as `推荐方案:` do not count. A `title: value`
- * line counts only when `value` itself is substantive, so a whitespace brief
- * that falls back to the task title plus an empty field is still empty.
+ * bare option labels, and empty field shells such as `推荐方案:` do not count.
+ * A `title: value` line counts only when `value` itself is substantive, so a
+ * whitespace brief that falls back to the task title plus an empty field is
+ * still empty.
  */
 function hasSubstantiveLessonText(text: string): boolean {
   const normalized = text.replace(/[\u00a0\u3000]/g, ' ').replace(/^\s*[-*]\s*/, '').trim();
   if (!normalized) return false;
   if (LESSON_PLACEHOLDER_TOKEN.test(normalized)) return false;
+  if (BARE_OPTION_LABEL.test(normalized)) return false;
   const labeled = normalized.match(/^(?:推荐方案|推荐|目标|决策|结论)\s*[:：]\s*(.*)$/);
   if (labeled) return hasSubstantiveLessonText(labeled[1]);
   const colon = normalized.match(/^([^:：]+)[:：]\s*(.*)$/);
@@ -74,7 +83,9 @@ function hasSubstantiveLessonText(text: string): boolean {
 /**
  * A generated `### Lesson` body should not be written when it carries no
  * reusable text: empty, whitespace-only (ASCII space, NBSP, ideographic space),
- * or only placeholder tokens. Markdown headings are structure, not body text.
+ * placeholder tokens, or only a bare option label. Markdown headings are
+ * structure, not body text. A described recommendation, ADR summary, or
+ * blocked-step note still counts.
  */
 export function isEmptyOrPlaceholderLessonBody(body: string): boolean {
   const lines = body
@@ -87,6 +98,7 @@ export function isEmptyOrPlaceholderLessonBody(body: string): boolean {
   return lines.every((line) => !hasSubstantiveLessonText(line));
 }
 
+/** Learn-time seed/template noise. Write-time bare option labels stay in {@link isEmptyOrPlaceholderLessonBody}. */
 function isSeedBoilerplateLesson(candidate: CandidateBlock): boolean {
   const text = [candidate.title, candidate.key, candidate.description]
     .join(' ')
