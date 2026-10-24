@@ -11,7 +11,6 @@ import { existsSync, readFileSync } from 'fs';
 import { gitSync } from '../utils/git-run.js';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { execFileSync } from 'child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { writeBreadcrumb } from '../engine/breadcrumb.js';
 import { readCurrentState } from '../utils/workspace.js';

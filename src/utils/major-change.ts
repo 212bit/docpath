@@ -1,4 +1,3 @@
-import { execFileSync } from 'child_process';
 import { readActiveStructuredSpecDocument, readActiveTaskFile } from './task-files.js';
 import { gitSyncOptional } from './git-run.js';
 

@@ -9,9 +9,8 @@
 
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { performance } from 'node:perf_hooks';
+import { runTool, runToolOrThrow } from '../utils/run-tool.js';
 import {
   getChangedSourceFiles,
   listTestFiles,
@@ -23,8 +22,6 @@ import {
 import { readFileSafe, resolveDocpathDir } from '../utils/file.js';
 import { readActiveTaskFile } from '../utils/task-files.js';
 import { analyzeTestImpact } from './tia.js';
-
-const execFileAsync = promisify(execFile);
 
 export interface StepVerifyOptions {
   step?: string;
@@ -212,7 +209,7 @@ export async function ensureBuildFreshness(cwd: string): Promise<{ built: boolea
     }
 
     if (needsBuild) {
-      await execFileAsync('npm', ['run', 'build'], { cwd, timeout: 30000 });
+      await runToolOrThrow('npm', ['run', 'build'], { cwd, timeoutMs: 30000, stdin: 'ignore' });
       return { built: true };
     }
   } catch (err: unknown) {
@@ -298,26 +295,22 @@ export async function runStepTargetedVerification(
   let stderr = '';
   let passed = false;
 
-  try {
-    const testEnv: Record<string, string | undefined> = { ...process.env, FORCE_COLOR: '0' };
-    delete testEnv.NODE_TEST_CONTEXT;
-    delete testEnv.NODE_TEST_PARENT;
-    delete testEnv.NODE_TEST_REPORTER;
+  const testEnv: Record<string, string | undefined> = { ...process.env, FORCE_COLOR: '0' };
+  delete testEnv.NODE_TEST_CONTEXT;
+  delete testEnv.NODE_TEST_PARENT;
+  delete testEnv.NODE_TEST_REPORTER;
 
-    const res = await execFileAsync(cmd, args, {
-      cwd,
-      timeout: effectiveTimeoutMs,
-      encoding: 'utf-8',
-      env: testEnv,
-    });
-    stdout = res.stdout || '';
-    stderr = res.stderr || '';
-    passed = true;
-  } catch (err: any) {
-    stdout = err.stdout || '';
-    stderr = err.stderr || '';
-    passed = false;
-  }
+  const res = await runTool(cmd, args, {
+    cwd,
+    timeoutMs: effectiveTimeoutMs,
+    env: testEnv,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
+  stdout = res.stdout || '';
+  stderr = res.stderr || '';
+  passed = res.status === 'ok';
 
   const durationMs = Math.round(performance.now() - start);
   const fullOutput = [stdout, stderr].filter(Boolean).join('\n');

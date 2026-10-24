@@ -8,13 +8,10 @@
  * 3. 契约固定为 `hippo self-review --json -f <diff>`：stdout 即 JSON，退出码 1 表示未通过。
  */
 
-import { execFile, execFileSync } from 'node:child_process';
-import { promisify } from 'node:util';
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-
-const execFileAsync = promisify(execFile);
+import { runTool, runToolSync } from '../utils/run-tool.js';
 
 export type HippoGateMode = 'block' | 'warn' | 'off';
 
@@ -105,14 +102,18 @@ export function detectHippoBinary(cwd: string): string | null {
  * 收集未提交改动（已暂存 + 未暂存）。无改动返回 null，便于调用方直接跳过。
  */
 export function collectUncommittedDiff(cwd: string, maxDiffBytes: number): string | null {
+  const diffResult = runToolSync('git', ['diff', 'HEAD', '--unified=3'], {
+    cwd,
+    timeoutMs: 20_000,
+    maxBuffer: 8 * 1024 * 1024,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'ignore',
+    offline: false,
+  });
   try {
-    const diff = execFileSync('git', ['diff', 'HEAD', '--unified=3'], {
-      cwd,
-      encoding: 'utf-8',
-      timeout: 20_000,
-      maxBuffer: 8 * 1024 * 1024,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
+    if (diffResult.status !== 'ok') return null;
+    const diff = diffResult.stdout;
     const trimmed = diff.trim();
     if (!trimmed) return null;
     return trimmed.length > maxDiffBytes ? trimmed.slice(0, maxDiffBytes) : trimmed;
@@ -178,24 +179,22 @@ export async function evaluateHippoGate(options: HippoGateOptions): Promise<Hipp
   const tempFile = join(tmpdir(), `docpath-hippo-gate-${process.pid}-${Date.now()}.diff`);
   try {
     writeFileSync(tempFile, diff, 'utf-8');
-    let stdout = '';
-    try {
-      const result = await execFileAsync(binary, ['self-review', '--json', '-f', tempFile, '--cwd', cwd], {
-        cwd,
-        timeout,
-        maxBuffer: 8 * 1024 * 1024,
-      });
-      stdout = result.stdout;
-    } catch (error) {
-      const failure = error as { stdout?: string; code?: number; killed?: boolean; signal?: string };
-      if (failure.killed || failure.signal) {
-        return { status: 'warn', reason: `hippo 自审超时（>${timeout}ms），已放行但请人工确认`, violations: [] };
-      }
-      if (typeof failure.code === 'number' && failure.code > 1) {
-        return { status: 'warn', reason: `hippo 自审异常退出 (code=${failure.code})，已放行但请人工确认`, violations: [] };
-      }
-      stdout = failure.stdout ?? '';
+    const result = await runTool(binary, ['self-review', '--json', '-f', tempFile, '--cwd', cwd], {
+      cwd,
+      timeoutMs: timeout,
+      maxBuffer: 8 * 1024 * 1024,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    if (result.status === 'timeout') {
+      return { status: 'warn', reason: `hippo 自审超时（>${timeout}ms），已放行但请人工确认`, violations: [] };
     }
+    // 退出码 1 是「自审未通过」的契约，JSON 在 stdout。更高退出码、ENOENT、空输出都 fail-open。
+    if (typeof result.exitCode === 'number' && result.exitCode > 1) {
+      return { status: 'warn', reason: `hippo 自审异常退出 (code=${result.exitCode})，已放行但请人工确认`, violations: [] };
+    }
+    const stdout = result.stdout;
 
     const payload = parseReviewPayload(stdout);
     if (!payload) {

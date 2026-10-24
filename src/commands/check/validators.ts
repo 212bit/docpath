@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { runShellSyncOrThrow } from '../../utils/run-tool.js';
 import { existsSync, readdirSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 import { checkCommandEnv, runCheck, DEFAULT_CHECK_TIMEOUT_MS } from './runners.js';
@@ -387,7 +387,14 @@ export async function syncCurrentChecklistView(cwd: string): Promise<CheckResult
 
 export function productUiChangedFiles(cwd: string): string[] {
   try {
-    const output = execSync('git status --porcelain', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+    const output = runShellSyncOrThrow('git status --porcelain', {
+      cwd,
+      timeoutMs: 30_000,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'ignore',
+      offline: false,
+    });
     return output.split('\n')
       .map((line) => line.trim().slice(3).trim())
       .filter(Boolean)

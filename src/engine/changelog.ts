@@ -8,7 +8,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { execSync } from 'node:child_process';
+import { runShellSyncOrThrow } from '../utils/run-tool.js';
 import { readFileSafe, resolveDocpathDir, ensureDir } from '../utils/file.js';
 import { readDecisionJsonl } from '../utils/decisions.js';
 import { listBacklogItems } from '../engine/backlog.js';
@@ -148,10 +148,13 @@ export function collectGitCommits(cwd: string, sinceRef?: string): CategorizedCh
   const items: CategorizedChangeItem[] = [];
   try {
     const range = sinceRef ? `${sinceRef}..HEAD` : '-n 30';
-    const out = execSync(`git log ${range} --pretty=format:"%h%x09%s%x09%an" --no-merges`, {
+    const out = runShellSyncOrThrow(`git log ${range} --pretty=format:"%h%x09%s%x09%an" --no-merges`, {
       cwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
+      timeoutMs: 30_000,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'ignore',
+      offline: false,
     }).trim();
 
     if (!out) return items;

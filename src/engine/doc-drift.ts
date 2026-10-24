@@ -8,7 +8,7 @@
  * 4. 给出智能补齐建议与段落更新指导
  */
 
-import { execSync } from 'node:child_process';
+import { runShellSyncOrThrow } from '../utils/run-tool.js';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { traceDocAndCode, type DocTraceResult } from './doc-trace.js';
@@ -56,10 +56,13 @@ export function getChangedFilesFromGit(cwd: string, stagedOnly = false): string[
   try {
     const flag = stagedOnly ? '--cached' : 'HEAD';
     // If not a git repo or no commits yet, fallback to status
-    const output = execSync('git status --porcelain', {
+    const output = runShellSyncOrThrow('git status --porcelain', {
       cwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
+      timeoutMs: 30_000,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'ignore',
+      offline: false,
     });
 
     const lines = output.split('\n').map((l) => l.trim()).filter(Boolean);

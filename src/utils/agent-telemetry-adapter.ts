@@ -13,6 +13,7 @@ import { homedir } from 'node:os';
 import { estimateTokens } from './document-index.js';
 import { resolveDocpathDir } from './file.js';
 import { gitSyncOptional } from './git-run.js';
+import { runShellSync } from './run-tool.js';
 
 export interface LifecycleAnchor {
   sessionId?: string;
@@ -1754,17 +1755,19 @@ export class ZCodeTelemetryAdapter {
     } catch {
       // 2. 降级尝试 sqlite3 CLI 执行
       try {
-        const { execSync } = await import('node:child_process');
         let formattedSql = sql;
         for (const p of params) {
           const val = typeof p === 'number' ? p : `'${String(p).replace(/'/g, "''")}'`;
           formattedSql = formattedSql.replace('?', String(val));
         }
-        const output = execSync(`sqlite3 "${dbPath}" "${formattedSql.replace(/"/g, '\\"')}" -json`, {
-          encoding: 'utf-8',
-          stdio: ['ignore', 'pipe', 'ignore'],
-          timeout: 5000,
+        const queried = runShellSync(`sqlite3 "${dbPath}" "${formattedSql.replace(/"/g, '\\"')}" -json`, {
+          timeoutMs: 5000,
+          stdin: 'ignore',
+          stdout: 'pipe',
+          stderr: 'ignore',
         });
+        if (queried.status !== 'ok') return [];
+        const output = queried.stdout;
         if (!output || !output.trim()) return [];
         return JSON.parse(output.trim());
       } catch {

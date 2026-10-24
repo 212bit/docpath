@@ -10,7 +10,7 @@
 
 import { readFile, writeFile, readdir, mkdir, rename, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { runToolSyncOrThrow } from '../utils/run-tool.js';
 import { join, dirname, resolve, isAbsolute } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -584,10 +584,13 @@ export async function writeBacklogItem(cwd: string, item: BacklogItem): Promise<
  */
 function resolveMainCheckoutDocpathDir(cwd: string): string | null {
   try {
-    const gitCommonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
+    const gitCommonDir = runToolSyncOrThrow('git', ['rev-parse', '--git-common-dir'], {
       cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
+      timeoutMs: 30_000,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'ignore',
+      offline: false,
     }).trim();
     if (!gitCommonDir) return null;
     const absGitDir = isAbsolute(gitCommonDir) ? gitCommonDir : resolve(cwd, gitCommonDir);

@@ -21,7 +21,18 @@
  *     真正的兜底仍是「实时扫兄弟 worktree」。
  */
 
-import { execFileSync } from 'node:child_process';
+import { runToolSyncOrThrow } from './run-tool.js';
+
+function gitText(cwd: string, args: string[]): string {
+  return runToolSyncOrThrow('git', args, {
+    cwd,
+    timeoutMs: 30_000,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'ignore',
+    offline: false,
+  });
+}
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
@@ -51,21 +62,13 @@ const REGISTRY_FILENAME = 'docpath-backlog-registry.json';
  */
 export function resolveSharedGitDir(cwd: string): string | null {
   try {
-    const out = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
+    const out = gitText(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']).trim();
     if (!out) return null;
     return isAbsolute(out) ? out : resolve(cwd, out);
   } catch {
     // `--path-format` 属 git 2.31+；旧版本回退到相对路径解析
     try {
-      const out = execFileSync('git', ['rev-parse', '--git-common-dir'], {
-        cwd,
-        encoding: 'utf-8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim();
+      const out = gitText(cwd, ['rev-parse', '--git-common-dir']).trim();
       if (!out) return null;
       return isAbsolute(out) ? out : resolve(cwd, out);
     } catch {
@@ -221,11 +224,7 @@ export async function findRegistryTitleHolders(
  */
 export function listWorktreeDocpathDirs(cwd: string): string[] {
   try {
-    const out = execFileSync('git', ['worktree', 'list', '--porcelain'], {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
+    const out = gitText(cwd, ['worktree', 'list', '--porcelain']);
     const dirs: string[] = [];
     const seen = new Set<string>();
     for (const line of out.split('\n')) {

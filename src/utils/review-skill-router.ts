@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { gitSync } from './git-run.js';
 import { join } from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { readDocPathConfig } from './config.js';
 
 export type ReviewScope = 'all' | 'staged' | 'last_commit' | 'task';

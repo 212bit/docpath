@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { runToolSyncOrThrow } from '../utils/run-tool.js';
 import { checkGitSafety, formatSafetyResult } from '../utils/git-safety.js';
 import { stageRecommendedFiles, formatStageResult, getStagedFiles } from '../utils/git-staging.js';
 import { buildChangesReport } from '../utils/changes-report.js';
@@ -162,16 +162,23 @@ export async function commitCommand(options: CommitOptions): Promise<void> {
       : message.trim();
 
     try {
-      execFileSync('git', ['commit', '-m', commitMessage], {
+      runToolSyncOrThrow('git', ['commit', '-m', commitMessage], {
         cwd,
-        stdio: 'pipe',
+        timeoutMs: 60_000,
+        stdin: 'ignore',
+        stdout: 'pipe',
+        stderr: 'pipe',
+        offline: false,
       });
 
       // Get commit hash
-      const commitHash = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      const commitHash = runToolSyncOrThrow('git', ['rev-parse', '--short', 'HEAD'], {
         cwd,
-        encoding: 'utf-8',
-        stdio: 'pipe',
+        timeoutMs: 10_000,
+        stdin: 'ignore',
+        stdout: 'pipe',
+        stderr: 'pipe',
+        offline: false,
       }).trim();
 
       console.log('\n📝 Commit created successfully\n');

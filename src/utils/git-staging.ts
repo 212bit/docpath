@@ -1,6 +1,17 @@
-import { execFileSync, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { gitSync } from './git-run.js';
+import { runShellSyncOrThrow } from './run-tool.js';
+
+function gitText(cwd: string, command: string): string {
+  return runShellSyncOrThrow(command, {
+    cwd,
+    timeoutMs: 30_000,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
+    offline: false,
+  });
+}
 import { join } from 'node:path';
 import { minimatch } from 'minimatch';
 import { buildChangesReport } from './changes-report.js';
@@ -64,11 +75,7 @@ async function getRecommendedFiles(cwd: string): Promise<StageCandidate[]> {
     return uniqueCandidates([...normalCandidates, ...canonicalEvidenceCandidates]);
   } catch {
     try {
-      const modifiedFiles = execSync('git diff --name-only HEAD', {
-        cwd,
-        encoding: 'utf-8',
-        stdio: 'pipe',
-      }).trim().split('\n').filter(Boolean);
+      const modifiedFiles = gitText(cwd, 'git diff --name-only HEAD').trim().split('\n').filter(Boolean);
 
       return modifiedFiles
         .filter((file) => file.startsWith('.docpath/') && !isTaskCurrentAlias(file))
@@ -85,17 +92,9 @@ async function getRecommendedFiles(cwd: string): Promise<StageCandidate[]> {
 function getIncludedFiles(cwd: string, patterns: string[]): string[] {
   try {
     // Get all modified and untracked files
-    const modifiedFiles = execSync('git diff --name-only HEAD', {
-      cwd,
-      encoding: 'utf-8',
-      stdio: 'pipe',
-    }).trim().split('\n').filter(Boolean);
+    const modifiedFiles = gitText(cwd, 'git diff --name-only HEAD').trim().split('\n').filter(Boolean);
 
-    const untrackedFiles = execSync('git ls-files --others --exclude-standard', {
-      cwd,
-      encoding: 'utf-8',
-      stdio: 'pipe',
-    }).trim().split('\n').filter(Boolean);
+    const untrackedFiles = gitText(cwd, 'git ls-files --others --exclude-standard').trim().split('\n').filter(Boolean);
 
     const allFiles = [...modifiedFiles, ...untrackedFiles];
 
@@ -213,11 +212,7 @@ export async function stageRecommendedFiles(options: StageOptions): Promise<Stag
  */
 export function getStagedFiles(cwd: string): string[] {
   try {
-    const output = execSync('git diff --cached --name-only', {
-      cwd,
-      encoding: 'utf-8',
-      stdio: 'pipe',
-    }).trim();
+    const output = gitText(cwd, 'git diff --cached --name-only').trim();
 
     return output ? output.split('\n').filter(Boolean) : [];
   } catch {

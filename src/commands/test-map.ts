@@ -5,9 +5,25 @@
  */
 
 import { existsSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { runToolSync } from '../utils/run-tool.js';
 import { resolveDocpathDir } from '../utils/file.js';
 import { analyzeTestImpact, type TestImpactReport } from '../engine/tia.js';
+
+const TEST_MAP_TIMEOUT_MS = 600_000;
+
+function runInherited(command: string, args: string[], cwd: string): number | null {
+  const result = runToolSync(command, args, {
+    cwd,
+    timeoutMs: TEST_MAP_TIMEOUT_MS,
+    stdin: 'inherit',
+    stdout: 'inherit',
+    stderr: 'inherit',
+  });
+  if (result.timedOut) {
+    console.error(`\n命令超时（>${TEST_MAP_TIMEOUT_MS}ms）被终止: ${command}`);
+  }
+  return result.exitCode;
+}
 
 export interface TestMapOptions {
   cwd: string;
@@ -93,15 +109,13 @@ export async function testMapCommand(options: TestMapOptions): Promise<void> {
     // 1. Python
     if (pyTests.length > 0) {
       console.log(`🚀  正在定向运行 Python 受影响单测: pytest ${pyTests.join(' ')}\n`);
-      const res = spawnSync('pytest', pyTests, { cwd, stdio: 'inherit' });
-      if (res.status !== 0) allPassed = false;
+      if (runInherited('pytest', pyTests, cwd) !== 0) allPassed = false;
     }
 
     // 2. Go
     if (goTests.length > 0) {
       console.log(`🚀  正在定向运行 Go 受影响单测: go test ${goTests.join(' ')}\n`);
-      const res = spawnSync('go', ['test', ...goTests], { cwd, stdio: 'inherit' });
-      if (res.status !== 0) allPassed = false;
+      if (runInherited('go', ['test', ...goTests], cwd) !== 0) allPassed = false;
     }
 
     // 3. Rust
@@ -109,15 +123,13 @@ export async function testMapCommand(options: TestMapOptions): Promise<void> {
       const targets = rsTests.map((t) => t.replace(/^tests\//, '').replace(/\.rs$/, ''));
       const args = ['test', ...targets.map((t) => `--test=${t}`)];
       console.log(`🚀  正在定向运行 Rust 受影响单测: cargo ${args.join(' ')}\n`);
-      const res = spawnSync('cargo', args, { cwd, stdio: 'inherit' });
-      if (res.status !== 0) allPassed = false;
+      if (runInherited('cargo', args, cwd) !== 0) allPassed = false;
     }
 
     // 4. Node / TypeScript
     if (nodeTests.length > 0) {
       console.log(`🚀  正在定向运行 Node/TS 受影响单测: node --test ${nodeTests.join(' ')}\n`);
-      const res = spawnSync('node', ['--test', ...nodeTests], { cwd, stdio: 'inherit' });
-      if (res.status !== 0) allPassed = false;
+      if (runInherited('node', ['--test', ...nodeTests], cwd) !== 0) allPassed = false;
     }
 
     if (!allPassed) {

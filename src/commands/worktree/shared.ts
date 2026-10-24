@@ -3,9 +3,8 @@
  * (Re-exported from Layer 1 utils/worktree.js and Layer 0 types/worktree.js)
  */
 
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { refreshBacklogIndex } from '../../engine/backlog.js';
+import { runToolOrThrow } from '../../utils/run-tool.js';
 import { resolveDocpathDir } from '../../utils/file.js';
 import { refreshProjectDocumentIndex } from '../../utils/document-index.js';
 import {
@@ -16,8 +15,6 @@ import type { IndexConflictResolution } from '../../types/worktree.js';
 
 export * from '../../types/worktree.js';
 export * from '../../utils/worktree.js';
-
-const execFileAsync = promisify(execFile);
 
 export async function resolveIndexConflicts(
   cwd: string,
@@ -31,7 +28,12 @@ export async function resolveIndexConflicts(
   }
 
   for (const file of unmergedFiles) {
-    await execFileAsync('git', ['checkout', '--theirs', '--', file], { cwd });
+    await runToolOrThrow('git', ['checkout', '--theirs', '--', file], {
+      cwd,
+      timeoutMs: 30_000,
+      stdin: 'ignore',
+      offline: false,
+    });
   }
 
   const rebuilds: Array<{ path: string; kind: 'backlog' | 'docs' }> = [];
@@ -47,6 +49,11 @@ export async function resolveIndexConflicts(
     }
   }
 
-  await execFileAsync('git', ['add', '--', ...unmergedFiles], { cwd });
+  await runToolOrThrow('git', ['add', '--', ...unmergedFiles], {
+    cwd,
+    timeoutMs: 30_000,
+    stdin: 'ignore',
+    offline: false,
+  });
   return { resolved: [...unmergedFiles], rebuilds };
 }

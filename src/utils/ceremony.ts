@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { gitSyncOptional } from './git-run.js';
-import { spawnSync } from 'child_process';
+import { runToolSync } from './run-tool.js';
 import { readTraceEntries, TraceEntry } from './trace.js';
 
 /**
@@ -246,12 +246,20 @@ export async function buildCeremonyReport(cwd: string): Promise<CeremonyReport> 
   // git 历史 taskId → 文件集合（单次调用）
   let gitFileMap = new Map<string, Set<string>>();
   try {
-    const res = spawnSync(
+    const res = runToolSync(
       'git',
       ['log', '--all', '--name-only', '--pretty=format:@@%H %s'],
-      { cwd, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 },
+      {
+        cwd,
+        timeoutMs: 120_000,
+        maxBuffer: 64 * 1024 * 1024,
+        stdin: 'ignore',
+        stdout: 'pipe',
+        stderr: 'pipe',
+        offline: false,
+      },
     );
-    if (res.status === 0 && typeof res.stdout === 'string') {
+    if (res.status === 'ok') {
       gitFileMap = parseGitLogSegments(res.stdout);
     }
   } catch {

@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { resolveDocpathDir } from '../utils/file.js';
 import { gitSync } from '../utils/git-run.js';
 import { readStdin } from '../utils/stdin.js';

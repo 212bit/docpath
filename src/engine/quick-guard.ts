@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { runShellSyncOrThrow } from '../utils/run-tool.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { minimatch } from 'minimatch';
@@ -41,10 +41,13 @@ const RISKY_PATH_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
 
 function readChangedFiles(cwd: string): string[] {
   try {
-    const output = execSync('git status --porcelain --untracked-files=all', {
+    const output = runShellSyncOrThrow('git status --porcelain --untracked-files=all', {
       cwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
+      timeoutMs: 30_000,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'ignore',
+      offline: false,
     });
     return output
       .split('\n')

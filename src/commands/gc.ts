@@ -3,7 +3,7 @@
  */
 
 import { existsSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { runToolSyncOrThrow } from '../utils/run-tool.js';
 import { lstatSync } from 'node:fs';
 import { mkdir, readdir, rename, rm } from 'node:fs/promises';
 import { isAbsolute, join, relative } from 'node:path';
@@ -57,7 +57,14 @@ async function collectProtectedTaskIds(cwd: string): Promise<Set<string>> {
 }
 
 function runGitText(cwd: string, args: string[]): string {
-  return execFileSync('git', args, { cwd, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  return runToolSyncOrThrow('git', args, {
+    cwd,
+    timeoutMs: 30_000,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'ignore',
+    offline: false,
+  }).trim();
 }
 
 function inferMainWorktree(worktrees: Awaited<ReturnType<typeof listWorktrees>>): string | null {
@@ -97,7 +104,14 @@ async function collectWorktreeGcCandidates(cwd: string): Promise<WorktreeGcCandi
       let mergedToMain = false;
       try {
         const head = runGitText(wt.path, ['rev-parse', 'HEAD']);
-        execFileSync('git', ['merge-base', '--is-ancestor', head, 'HEAD'], { cwd: mainRoot, stdio: 'ignore' });
+        runToolSyncOrThrow('git', ['merge-base', '--is-ancestor', head, 'HEAD'], {
+          cwd: mainRoot,
+          timeoutMs: 30_000,
+          stdin: 'ignore',
+          stdout: 'ignore',
+          stderr: 'ignore',
+          offline: false,
+        });
         mergedToMain = true;
       } catch {
         mergedToMain = false;

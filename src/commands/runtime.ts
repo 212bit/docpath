@@ -3,10 +3,9 @@
  * lightweight discovery, and next-action routing.
  */
 
-import { execFile } from 'node:child_process';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
-import { promisify } from 'node:util';
+import { runToolOrThrow } from '../utils/run-tool.js';
 import { parse as parseYaml } from 'yaml';
 import { readCurrentState, readOptionalFile } from '../utils/workspace.js';
 import { resolveDocpathDir } from '../utils/file.js';
@@ -25,8 +24,6 @@ import {
   resolveSessionContext,
   touchSession,
 } from '../utils/session.js';
-
-const execFileAsync = promisify(execFile);
 
 type RuntimeState = NonNullable<Awaited<ReturnType<typeof readCurrentState>>>;
 
@@ -314,7 +311,12 @@ function buildReadiness(state: RuntimeState, view: CompactedContextView): { stat
 
 async function summarizeChangeScope(cwd: string): Promise<string[]> {
   try {
-    const { stdout } = await execFileAsync('git', ['status', '--short'], { cwd, timeout: 5000 });
+    const { stdout } = await runToolOrThrow('git', ['status', '--short'], {
+      cwd,
+      timeoutMs: 5000,
+      stdin: 'ignore',
+      offline: false,
+    });
     const lines = stdout
       .split('\n')
       .map((line) => line.trimEnd())
