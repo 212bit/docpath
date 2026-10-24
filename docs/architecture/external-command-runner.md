@@ -34,14 +34,16 @@ summary: 外部命令只经 run-tool 执行。每次调用都有超时，stdin �
 - 命令名是 `npm` / `npx`，或 shell 字符串在命令位置调用它们时，默认设置 `npm_config_offline=true`。argv 形式的 `npx` 还会在参数前加上 `--offline`（`--no-install` 的现行语义：缺包直接失败，不访问 registry）。`offline: false` 可以关掉。已经设置的 `npm_config_offline` 不会被自动覆盖。
 - 非零退出且不属于上面两类时，`status: 'error'`。`runToolSyncOrThrow` / `runToolOrThrow` 抛 `RunToolError`，带 `stdout`、`stderr`、`code`、`status`，原有 `try/catch` 仍把失败当失败。
 
-`tests/run-tool.test.mjs` 扫描 `src`。除 `src/utils/run-tool.ts` 和 `RAW_CHILD_PROCESS_ALLOWLIST` 外，再出现 `child_process` 的 `exec` / `execSync` / `execFile` / `execFileSync` / `spawn` / `spawnSync` 导入（含动态 `import()`）即失败。
+`tests/run-tool.test.mjs` 扫描 `src`。除 `src/utils/run-tool.ts` 外，再出现 `child_process` 的 `exec` / `execSync` / `execFile` / `execFileSync` / `spawn` / `spawnSync` 导入（含动态 `import()`）即失败。允许名单已清空并删除，没有剩余例外。
 
 ## 3. 边界
 
-当前允许名单只有 `src/utils/docs-doctor.ts`：另一处改动正在占用该文件，其中 `git diff --cached` 与 `git add` 仍走 `promisify(exec)` 且没有超时。迁入 `run-tool` 之前不得在该文件新增 `child_process` 调用。
+`src` 不再保留 raw `child_process` 例外。`src/utils/docs-doctor.ts` 的 `runDocsDoctorGit` 执行两条原先的 git 命令：暂存列表是 `git diff --cached --name-only`，自愈后重新暂存是 `git add -- <paths>`（argv 形式，对应原来 shell 引号包住的路径）。这两处原先没有超时，现在显式使用 `DEFAULT_RUN_TIMEOUT_MS`。stdin 为 `ignore`。`git` 不是 npm/npx，调用显式 `offline: false`，不注入 `npm_config_offline`。
 
-`git diff` / `git status` 等原本就没有 `core.quotePath=false` 的调用点，迁移时保持原来的参数，只补上超时和 stdin 策略，避免 CJK 路径的输出格式变化。需要 quotePath 的调用继续走 `gitSync`。
+命令缺失时结果是 `environment_failure`（argv 下为 `ENOENT`），超时是 `timeout`。docs-doctor 仍把这两种失败当成「读不到暂存区 / 重新暂存失败」：`getStagedFiles` 返回空列表，重新暂存失败被吞掉。体检报告正文不变。
+
+`git diff` 保持原来的参数，不追加 `core.quotePath=false`，避免 CJK 路径的输出格式变化。需要 quotePath 的调用继续走 `gitSync`。
 
 ## 4. 验证
 
-`tests/run-tool.test.mjs` 覆盖超时、ENOENT、dash 的 `not found`、离线环境变量，以及 allowlist 扫描。检查 runner、Hippo 门禁和 hook runner 的原有超时与失败分支保持不变。
+`tests/run-tool.test.mjs` 覆盖超时、ENOENT、dash 的 `not found`、离线环境变量，并禁止 `run-tool` 之外的 `child_process` 导入。`tests/docs-doctor-git.test.mjs` 覆盖 docs-doctor 的超时与命令缺失。检查 runner、Hippo 门禁和 hook runner 的原有超时与失败分支保持不变。

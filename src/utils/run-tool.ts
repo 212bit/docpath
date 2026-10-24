@@ -4,8 +4,8 @@ import { looksLikeEnvironmentFailure } from './environment-failure.js';
 /**
  * 全仓外部命令的唯一出口。
  *
- * 新代码不得直接 import `child_process` 的 exec/spawn。例外登记在
- * {@link RAW_CHILD_PROCESS_ALLOWLIST}，并由 tests/run-tool.test.mjs 扫描 src。
+ * 新代码不得直接 import `child_process`。`tests/run-tool.test.mjs` 扫描 `src`，
+ * 除本文件外一律失败。
  *
  * 不变量：
  * - 每次执行都有超时（缺省 {@link DEFAULT_RUN_TIMEOUT_MS}，调用方可覆盖，不能关掉）。
@@ -18,15 +18,6 @@ import { looksLikeEnvironmentFailure } from './environment-failure.js';
 
 export const DEFAULT_RUN_TIMEOUT_MS = 30_000;
 export const DEFAULT_MAX_BUFFER = 1024 * 1024;
-
-/**
- * 仍允许直接引用 child_process 的源文件。新增条目必须写明原因。
- * 本模块自身是唯一实现，不在此表里。
- */
-export const RAW_CHILD_PROCESS_ALLOWLIST: Readonly<Record<string, string>> = {
-  'src/utils/docs-doctor.ts':
-    '并发改动占用该文件。getStagedFiles（git diff --cached）与 reStage（git add）仍用 promisify(exec)，且没有超时。本次不改 docs-doctor；迁入 run-tool 之前不得在该文件新增 child_process 调用。',
-};
 
 const NPM_COMMAND = /(?:^|&&|\|\||[;&|`(\n])\s*(?:npm|npx)(?:\s|$)/;
 
