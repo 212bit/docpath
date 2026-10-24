@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { execSync } from 'child_process';
+import { execSync as nodeExecSync } from 'child_process';
+import { runCliSync, splitCliArgs } from './cli-inprocess.mjs';
+import { copyPreparedRepo } from './git-fixture.mjs';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -29,8 +31,26 @@ import {
 
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 
-function mkWorkspaceWithTasks(tasks = []) {
-  const cwd = mkdtempSync(join(tmpdir(), 'dp-monitor-'));
+function execSync(command, options = {}) {
+  if (typeof command === 'string' && command.includes(BIN) && command.includes(' monitor ')) {
+    const rest = command.slice(command.indexOf(' monitor ') + ' monitor '.length);
+    const args = ['monitor', ...splitCliArgs(rest)];
+    const cwdFlag = args.indexOf('--cwd');
+    const cwd = options.cwd || (cwdFlag >= 0 ? args[cwdFlag + 1] : process.cwd());
+    const result = runCliSync(args, { cwd, timeout: options.timeout ?? 30000, env: options.env });
+    if (result.code !== 0) {
+      const error = new Error(`Command failed: ${command}\n${result.stderr || ''}${result.stdout || ''}`);
+      error.status = result.code;
+      error.stdout = result.stdout;
+      error.stderr = result.stderr;
+      throw error;
+    }
+    return options.encoding ? result.stdout : Buffer.from(result.stdout);
+  }
+  return nodeExecSync(command, options);
+}
+
+function prepareMonitorTasksRepo(cwd) {
   const dp = join(cwd, '.docpath');
   mkdirSync(join(dp, 'workspace'), { recursive: true });
   mkdirSync(join(dp, 'rules'), { recursive: true });
@@ -48,6 +68,11 @@ function mkWorkspaceWithTasks(tasks = []) {
   } catch {
     // 容错
   }
+}
+
+function mkWorkspaceWithTasks(tasks = []) {
+  const cwd = copyPreparedRepo('monitor-tasks', prepareMonitorTasksRepo);
+  const dp = join(cwd, '.docpath');
 
   const jsonlContent = tasks.map((t) => JSON.stringify(t)).join('\n') + (tasks.length > 0 ? '\n' : '');
   writeFileSync(join(dp, 'workspace', 'task-metrics.jsonl'), jsonlContent);
@@ -77,24 +102,24 @@ function mkWorkspaceWithActiveTask({
   ],
   idle = false,
 } = {}) {
-  const cwd = mkdtempSync(join(tmpdir(), 'dp-monitor-active-'));
+  const cwd = copyPreparedRepo('monitor-active', (dir) => {
+    const dp = join(dir, '.docpath');
+    mkdirSync(join(dp, 'workspace'), { recursive: true });
+    mkdirSync(join(dp, 'rules'), { recursive: true });
+    mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
+    mkdirSync(join(dp, 'tasks', 'done'), { recursive: true });
+    writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: active-task-test\n');
+    try {
+      execSync('git init -b main', { cwd: dir, stdio: 'ignore' });
+      execSync('git config user.name "Tester"', { cwd: dir, stdio: 'ignore' });
+      execSync('git config user.email "test@example.com"', { cwd: dir, stdio: 'ignore' });
+      writeFileSync(join(dir, 'sample.txt'), 'line1\nline2\n');
+      execSync('git add . && git commit -m "initial commit"', { cwd: dir, stdio: 'ignore' });
+    } catch {
+      // ignore
+    }
+  });
   const dp = join(cwd, '.docpath');
-  mkdirSync(join(dp, 'workspace'), { recursive: true });
-  mkdirSync(join(dp, 'rules'), { recursive: true });
-  mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
-  mkdirSync(join(dp, 'tasks', 'done'), { recursive: true });
-
-  writeFileSync(join(dp, 'config.yaml'), 'project:\n  name: active-task-test\n');
-
-  try {
-    execSync('git init -b main', { cwd, stdio: 'ignore' });
-    execSync('git config user.name "Tester"', { cwd, stdio: 'ignore' });
-    execSync('git config user.email "test@example.com"', { cwd, stdio: 'ignore' });
-    writeFileSync(join(cwd, 'sample.txt'), 'line1\nline2\n');
-    execSync('git add . && git commit -m "initial commit"', { cwd, stdio: 'ignore' });
-  } catch {
-    // ignore
-  }
 
   if (idle) {
     writeFileSync(

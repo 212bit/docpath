@@ -20,4 +20,5 @@ if (!existsSync(distEntry)) {
   process.exit(1);
 }
 
-await import('../dist/index.js');
+const { runCli } = await import('../dist/index.js');
+process.exit(await runCli(process.argv));

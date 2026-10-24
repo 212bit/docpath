@@ -3,9 +3,10 @@
 /** DocPath CLI — 文径工作流引擎 */
 
 import { cac } from 'cac';
+import { realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { registerCommands } from './commands/register.js';
 import { installDirtyGuardBlockHook } from './engine/gate-blocked.js';
 import { renderAdvancedHelp, renderDefaultHelp, renderDeprecatedHelp } from './commands/register/command-metadata.js';
@@ -21,11 +22,56 @@ const pkg = JSON.parse(
   await readFile(join(__dirname, '..', 'package.json'), 'utf-8')
 );
 
-const cli = cac('docpath');
+function createCli() {
+  const cli = cac('docpath');
+  cli.version(pkg.version);
+  cli.help();
+  registerCommands(cli);
+  return cli;
+}
 
-cli.version(pkg.version);
-cli.help();
-registerCommands(cli);
+/** 进程内复用 CLI 时，把 process.exit 变成可捕获的控制流，避免拖垮宿主进程。 */
+class CliExit extends Error {
+  readonly code: number;
+  constructor(code: number) {
+    super(`process.exit(${code})`);
+    this.name = 'CliExit';
+    this.code = code;
+  }
+}
+
+/**
+ * 执行一次 CLI。argv 形态与 process.argv 相同：`[node, entry, ...args]`。
+ * 直接 `node dist/index.js` 与 `bin/docpath.js` 都会走到这里；测试 worker 复用同一入口，
+ * 从而省掉每个用例冷启动 Node 的成本。每次调用使用新的 cac 实例。
+ */
+export async function runCli(argv: string[]): Promise<number> {
+  const originalExit = process.exit;
+  const previousArgv = process.argv;
+  const previousExitCode = process.exitCode;
+  process.argv = argv.slice();
+  process.exitCode = undefined;
+  process.exit = ((code?: number) => {
+    throw new CliExit(typeof code === 'number' ? code : 0);
+  }) as typeof process.exit;
+
+  try {
+    if (process.env.DOCPATH_RESET_RUNNER_PROBE === '1') {
+      delete process.env.DOCPATH_RESET_RUNNER_PROBE;
+      const { resetRunnerProbeCacheForTest } = await import('./commands/check/runners.js');
+      resetRunnerProbeCacheForTest();
+    }
+    return await executeCli();
+  } catch (err) {
+    if (err instanceof CliExit) return err.code;
+    console.error(err instanceof Error ? (err.stack || err.message) : String(err));
+    return 1;
+  } finally {
+    process.exit = originalExit;
+    process.argv = previousArgv;
+    process.exitCode = previousExitCode;
+  }
+}
 
 function handleCuratedHelp(argv: string[]): boolean {
   const args = argv.slice(2);
@@ -67,7 +113,9 @@ function getPositionalAllowance(
 // - 未知 flag / 缺失必填参数：cac 在 runMatchedCommand 内抛 CACError → 被捕获并清晰报错
 // - 未知命令：给了位置参数却没有命令匹配 → 显式报错
 // 任何一种都以非零码退出，绝不静默忽略。
-try {
+async function executeCli(): Promise<number> {
+  const cli = createCli();
+  try {
   if (handleCuratedHelp(process.argv)) {
     process.exit(0);
   }
@@ -169,6 +217,7 @@ try {
     await cli.runMatchedCommand();
     writeTraceBeforeExit(0);
   } catch (err) {
+    if (err instanceof CliExit) throw err;
     const exitCode = err instanceof DocPathError ? err.getExitCode() : 1;
     writeTraceBeforeExit(exitCode);
     runError = err;
@@ -177,7 +226,9 @@ try {
   if (runError) {
     throw runError;
   }
+  return typeof process.exitCode === 'number' ? process.exitCode : 0;
 } catch (err) {
+  if (err instanceof CliExit) throw err;
   // DocPath 结构化错误
   if (err instanceof DocPathError) {
     console.error(err.message);
@@ -199,4 +250,20 @@ try {
   }
 
   process.exit(1);
+  }
+}
+
+function launchedAsCli(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return pathToFileURL(realpathSync(entry)).href === pathToFileURL(realpathSync(fileURLToPath(import.meta.url))).href;
+  } catch {
+    return false;
+  }
+}
+
+if (launchedAsCli()) {
+  const code = await runCli(process.argv);
+  process.exit(code);
 }

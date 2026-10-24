@@ -1,7 +1,9 @@
 import './registry-isolation.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
+import { runCliSync } from './cli-inprocess.mjs';
+import { copyPreparedRepo } from './git-fixture.mjs';
 import {
   existsSync,
   lstatSync,
@@ -13,12 +15,9 @@ import {
   readFileSync,
   readdirSync,
 } from 'node:fs';
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const CLI = new URL('../dist/index.js', import.meta.url).pathname;
 const WORKTREE_UTIL = pathToFileURL(new URL('../dist/utils/worktree.js', import.meta.url).pathname).href;
 
 function git(cwd, args) {
@@ -26,73 +25,72 @@ function git(cwd, args) {
 }
 
 function run(args, cwd, { expectFailure = false, env = {} } = {}) {
-  const result = spawnSync(process.execPath, [CLI, ...args], {
+  const result = runCliSync(args, {
     cwd,
-    encoding: 'utf-8',
     env: { ...process.env, ...env },
     timeout: 30000,
   });
   const output = `${result.stdout || ''}${result.stderr || ''}`;
-  if (!expectFailure && result.status !== 0) {
-    throw new Error(`command failed (${result.status}): docpath ${args.join(' ')}\n${output}`);
+  if (!expectFailure && result.code !== 0) {
+    throw new Error(`command failed (${result.code}): docpath ${args.join(' ')}\n${output}`);
   }
-  if (expectFailure && result.status === 0) {
+  if (expectFailure && result.code === 0) {
     throw new Error(`command unexpectedly succeeded: docpath ${args.join(' ')}\n${output}`);
   }
-  return { ...result, output };
+  return { status: result.code, stdout: result.stdout, stderr: result.stderr, output };
 }
 
 function mkRepo() {
-  const cwd = mkdtempSync(join(tmpdir(), 'dp-worktree-'));
-  git(cwd, ['init']);
-  git(cwd, ['config', 'user.email', 'test@example.com']);
-  git(cwd, ['config', 'user.name', 'DocPath Test']);
+  return copyPreparedRepo('worktree-base', (cwd) => {
+    git(cwd, ['init']);
+    git(cwd, ['config', 'user.email', 'test@example.com']);
+    git(cwd, ['config', 'user.name', 'DocPath Test']);
 
-  const dp = join(cwd, '.docpath');
-  mkdirSync(join(dp, 'workspace'), { recursive: true });
-  mkdirSync(join(dp, 'backlog'), { recursive: true });
-  mkdirSync(join(dp, 'rules'), { recursive: true });
-  mkdirSync(join(dp, 'tasks', 'done', 'T-OLD'), { recursive: true });
-  mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
-  mkdirSync(join(dp, 'journal'), { recursive: true });
+    const dp = join(cwd, '.docpath');
+    mkdirSync(join(dp, 'workspace'), { recursive: true });
+    mkdirSync(join(dp, 'backlog'), { recursive: true });
+    mkdirSync(join(dp, 'rules'), { recursive: true });
+    mkdirSync(join(dp, 'tasks', 'done', 'T-OLD'), { recursive: true });
+    mkdirSync(join(dp, 'tasks', 'current'), { recursive: true });
+    mkdirSync(join(dp, 'journal'), { recursive: true });
 
-  // Match the real hybrid contract (R-238 Option B, R-273):
-  //   backlog        merge-mediated (tracked copy)
-  //   rules          merge-mediated (tracked)
-  //   tasks/done     merge-mediated (tracked)
-  //   workspace      isolated (gitignored)
-  //   tasks/current  isolated (gitignored)
-  //   journal        isolated (untracked runtime)
-  writeFileSync(join(cwd, '.gitignore'), [
-    '/.docpath/workspace/',
-    '/.docpath/tasks/current/',
-    '/.worktrees/',
-    '',
-  ].join('\n'));
-  writeFileSync(join(dp, 'config.yaml'), 'default_level: 2\n');
-  writeFileSync(join(dp, 'backlog', 'backlog.md'), '# Backlog\n');
-  writeFileSync(join(dp, 'rules', 'style.md'), '# Style\n');
-  writeFileSync(join(dp, 'docs.md'), '# Docs Index\n');
-  writeFileSync(join(dp, 'docs-index.json'), '{"version":1,"entries":[]}\n');
-  writeFileSync(join(dp, 'tasks', 'done', 'T-OLD', 'spec.md'), '# T-OLD - Old task\n');
-  writeFileSync(join(dp, 'tasks', 'done', 'T-OLD', 'plan.md'), '## 执行计划\n');
-  writeFileSync(join(dp, 'workspace', 'breadcrumb.md'), '# breadcrumb\n');
-  writeFileSync(join(dp, 'workspace', 'current.md'), '# current\n');
-  writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
-    level: 2,
-    task_id: '',
-    task_title: 'Main repo',
-    phase: 'idle',
-    gate: 'none',
-    current_step: '等待下一步',
-    started_at: '2026-06-15T00:00:00.000Z',
-    updated_at: '2026-06-15T00:00:00.000Z',
-  }, null, 2));
-  writeFileSync(join(cwd, 'README.md'), '# Test repo\n');
+    // Match the real hybrid contract (R-238 Option B, R-273):
+    //   backlog        merge-mediated (tracked copy)
+    //   rules          merge-mediated (tracked)
+    //   tasks/done     merge-mediated (tracked)
+    //   workspace      isolated (gitignored)
+    //   tasks/current  isolated (gitignored)
+    //   journal        isolated (untracked runtime)
+    writeFileSync(join(cwd, '.gitignore'), [
+      '/.docpath/workspace/',
+      '/.docpath/tasks/current/',
+      '/.worktrees/',
+      '',
+    ].join('\n'));
+    writeFileSync(join(dp, 'config.yaml'), 'default_level: 2\n');
+    writeFileSync(join(dp, 'backlog', 'backlog.md'), '# Backlog\n');
+    writeFileSync(join(dp, 'rules', 'style.md'), '# Style\n');
+    writeFileSync(join(dp, 'docs.md'), '# Docs Index\n');
+    writeFileSync(join(dp, 'docs-index.json'), '{"version":1,"entries":[]}\n');
+    writeFileSync(join(dp, 'tasks', 'done', 'T-OLD', 'spec.md'), '# T-OLD - Old task\n');
+    writeFileSync(join(dp, 'tasks', 'done', 'T-OLD', 'plan.md'), '## 执行计划\n');
+    writeFileSync(join(dp, 'workspace', 'breadcrumb.md'), '# breadcrumb\n');
+    writeFileSync(join(dp, 'workspace', 'current.md'), '# current\n');
+    writeFileSync(join(dp, 'workspace', 'state.json'), JSON.stringify({
+      level: 2,
+      task_id: '',
+      task_title: 'Main repo',
+      phase: 'idle',
+      gate: 'none',
+      current_step: '等待下一步',
+      started_at: '2026-06-15T00:00:00.000Z',
+      updated_at: '2026-06-15T00:00:00.000Z',
+    }, null, 2));
+    writeFileSync(join(cwd, 'README.md'), '# Test repo\n');
 
-  git(cwd, ['add', '.']);
-  git(cwd, ['commit', '-m', 'init']);
-  return cwd;
+    git(cwd, ['add', '.']);
+    git(cwd, ['commit', '-m', 'init']);
+  });
 }
 
 // Under R-238 Option B, backlog is tracked by default (mkRepo already commits

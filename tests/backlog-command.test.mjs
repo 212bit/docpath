@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile, execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import { runCliSyncOrThrow } from './cli-inprocess.mjs';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -32,11 +33,7 @@ function mkWorkspace() {
 }
 
 function run(args, cwd) {
-  return execFileSync('node', [BIN, ...args.match(/(?:[^\s"]+|"[^"]*")+/g).map((part) => part.replace(/^"|"$/g, ''))], {
-    cwd,
-    encoding: 'utf-8',
-    timeout: 20000,
-  }).trim();
+  return runCliSyncOrThrow(args, cwd, { timeout: 20000 }).trim();
 }
 
 describe('backlog commands', () => {
