@@ -1787,23 +1787,49 @@ describe('check entry stage ordering contract (R-305)', () => {
 describe('check environment failure classification (S4)', () => {
   it('tags runner failures as environment_failure when command is not found', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'docpath-check-env-'));
-    mkExecWorkspace(cwd);
-    // 写一个 tsconfig.json 触发 typecheck，但没有 node_modules/.bin/tsc
-    // 直接用 npx 调不存在的包，模拟环境失败
-    writeFileSync(join(cwd, 'package.json'), JSON.stringify({
-      scripts: {},
-    }, null, 2) + '\n');
-    writeFileSync(join(cwd, 'tsconfig.json'), JSON.stringify({ compilerOptions: {} }, null, 2));
-    // 不安装 node_modules，npx tsc 会失败且输出包含 ENOENT 或 command not found
+    try {
+      mkExecWorkspace(cwd);
+      // tsconfig 触发编译检查，但没有 node_modules/.bin/tsc，也没有 typecheck 脚本。
+      // 以前默认命令是 `npx tsc`：npm 会把 tsc 当成包名联网安装，负载高时挂起到本用例 30s 超时，
+      // 进程在打印编译段落前被杀掉。现在必须立即记为 environment_failure，且不调用 npx。
+      writeFileSync(join(cwd, 'package.json'), JSON.stringify({
+        scripts: {},
+      }, null, 2) + '\n');
+      writeFileSync(join(cwd, 'tsconfig.json'), JSON.stringify({ compilerOptions: {} }, null, 2));
 
-    const result = runResult(`check --cwd ${cwd} --skip-tests --skip-lint`, cwd);
+      const started = Date.now();
+      let out = '';
+      try {
+        out = execSync(`node ${CLI} check --cwd ${cwd} --skip-tests --skip-lint`, {
+          cwd,
+          encoding: 'utf-8',
+          timeout: 15000,
+          stdio: ['pipe', 'pipe', 'pipe'],
+          env: {
+            ...process.env,
+            npm_config_offline: 'true',
+            npm_config_yes: 'false',
+          },
+        });
+      } catch (error) {
+        out = `${error.stdout || ''}\n${error.stderr || ''}`;
+      }
+      const elapsed = Date.now() - started;
+      assert.ok(elapsed < 12000, `缺少本地 tsc 时 check 不得挂起，实际 ${elapsed}ms，输出:\n${out}`);
 
-    // 编译检查应该失败
-    assert.match(result.out, /编译检查|TypeScript/);
-    // last-check.json 应该写入检查结果
-    const lastCheckJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.json'), 'utf-8'));
-    assert.ok(lastCheckJson.checks.length > 0, 'last-check.json 应有检查项');
-    rmSync(cwd, { recursive: true, force: true });
+      assert.match(out, /编译检查|TypeScript/);
+      assert.match(out, /环境诊断/);
+      const lastCheckJson = JSON.parse(readFileSync(join(cwd, '.docpath', 'workspace', 'last-check.json'), 'utf-8'));
+      assert.ok(lastCheckJson.checks.length > 0, 'last-check.json 应有检查项');
+      const typecheck = lastCheckJson.checks.find((check) => check.name === 'TypeScript 编译');
+      assert.ok(typecheck, `last-check.json 应记录 TypeScript 编译: ${JSON.stringify(lastCheckJson.checks)}`);
+      assert.equal(typecheck.passed, false);
+      assert.equal(typecheck.environment_failure, true);
+      assert.match(typecheck.command || '', /tsc --noEmit/);
+      assert.doesNotMatch(typecheck.command || '', /\bnpx\b/);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
   });
 
   it('looksLikeEnvironmentFailure detects common patterns', async () => {
