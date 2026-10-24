@@ -663,8 +663,10 @@ async function writeLessonCandidate(
       lessonBody.push('', '### 阻塞步骤（踩坑点）', '', ...blockedSteps);
     }
 
-    // 有 brief/ADR/blocked 信号时仍可能没有可复用正文（空白、NBSP，或「待补充」/TBD/none）。
+    // 有 brief/ADR/blocked 信号时仍可能没有可复用正文（空白、NBSP、「待补充」/TBD/none，
+    // 或单独的「方案 A」「方案A」「Option A」这类裸选项标签）。
     // 这类候选的 `### Lesson` 正文为空或只剩占位，写入后只会污染 lesson-candidates.md。
+    // 推荐方案若带具体说明，或正文里还有架构决策 / 阻塞步骤，仍照常写入。
     if (isEmptyOrPlaceholderLessonBody(lessonBody.join('\n'))) {
       console.log('📝  Lesson 正文为空或仅为占位，跳过 lesson 候选写入');
       return;
