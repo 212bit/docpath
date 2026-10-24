@@ -2,7 +2,7 @@
 id: R-503
 title: 门禁合一：step-pass 前置挂载 Hippo 自审（协议优先、依赖可选）
 kind: feature
-status: proposed
+status: done
 priority: P1
 level: 2
 source: docpath backlog add
@@ -11,7 +11,8 @@ evidence:
   brainstorm: null
   analysis: null
   spec: null
-  decision_brief: R-352 去重提示（2026-10-21）：检测到 1 条重复候选，已提示合并/skip；用户放行确认待补 --user-confirmed。
+  decision_brief: 已随 cc025ea 落地（step-pass 前置 hippo 自审）。R-504 为同标题重复登记，保持 dropped。无
+    task 证据，旁路 edit --status done。
   user_confirmed: 用户在 2026-10-21 会话中同意进入 P2 门禁合一
 links:
   task: null
@@ -26,3 +27,7 @@ created_at: 2026-10-21
 ## 验收
 
 .hippo/ 存在且找到 hippo 时激活；无改动/未接入/mode=off 时 skipped；passed=false 且 mode=block 时阻断并返回码 1；基础设施异常（超时/非预期退出/输出不可解析）fail-open 为 warn；--skip-hippo-gate 可应急跳过；单测覆盖 8 种路径。
+
+## 收口
+
+已随 commit cc025ea（feat: step-pass 前置挂载 hippo 自审门禁，拦截时触发 on-gate-blocked）落地。同标题重复登记 R-504 保持 dropped。本条目没有独立 task 目录，因此不能走 `docpath backlog done`（该命令要求任务证据）；使用 `docpath backlog edit --status done` 旁路收口。

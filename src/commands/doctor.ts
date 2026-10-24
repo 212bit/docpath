@@ -10,6 +10,10 @@ import { readCurrentState, type CurrentState } from '../utils/workspace.js';
 import { checkArchitectureLayers, type ArchitectureReport } from '../engine/arch-guard.js';
 import { diagnoseDocumentHealth, type DocHealthReport } from '../utils/docs-doctor.js';
 import { collectContextBudget, type BudgetReport } from '../utils/budget.js';
+import {
+  diagnoseBacklogCommitDrift,
+  type BacklogCommitDriftReport,
+} from '../engine/backlog-commit-drift.js';
 
 export interface DoctorOptions {
   cwd: string;
@@ -70,6 +74,7 @@ function printJson(
   archReport?: ArchitectureReport,
   docReport?: DocHealthReport,
   budgetReport?: BudgetReport,
+  backlogDrift?: BacklogCommitDriftReport,
 ): void {
   console.log(JSON.stringify({
     passed: !hasErrors(report, ruleReport, taskReport, archReport, docReport),
@@ -132,6 +137,13 @@ function printJson(
           total_tokens: budgetReport.totalTokens,
         }
       : undefined,
+    backlog_commit_drift: backlogDrift
+      ? {
+          available: backlogDrift.available,
+          scanned_commits: backlogDrift.scannedCommits,
+          warnings: backlogDrift.warnings,
+        }
+      : undefined,
   }, null, 2));
 }
 
@@ -178,6 +190,19 @@ function printNonRuntimeWarning(report: GitHygieneReport): void {
   console.log('  Review .gitignore rules before untracking these files.');
 }
 
+function printBacklogCommitDrift(drift?: BacklogCommitDriftReport): void {
+  if (!drift?.available) return;
+  console.log('\n📌  Backlog 提交引用:');
+  if (drift.warnings.length === 0) {
+    console.log(`  ✅  已扫描 ${drift.scannedCommits} 条本地提交，没有引用仍开放的 backlog 条目`);
+    return;
+  }
+  for (const warning of drift.warnings) {
+    console.log(`  ⚠️  ${warning.message}`);
+    console.log(`      ${warning.suggestion}`);
+  }
+}
+
 function printHuman(
   report: GitHygieneReport,
   cleanup?: GitHygieneCleanupResult,
@@ -186,6 +211,7 @@ function printHuman(
   archReport?: ArchitectureReport,
   docReport?: DocHealthReport,
   budgetReport?: BudgetReport,
+  backlogDrift?: BacklogCommitDriftReport,
 ): void {
   console.log('\n🩺  DocPath doctor: 全景健康度与逻辑一致性体检\n');
 
@@ -260,6 +286,8 @@ function printHuman(
     console.log(`  ${statusIcon} 全仓上下文健康度: ${budgetReport.overallStatus} (~${budgetReport.totalTokens} tokens)`);
   }
 
+  printBacklogCommitDrift(backlogDrift);
+
   const gitErrors = report.trackedIgnoredRuntimeFiles.length;
   const ruleErrors = ruleReport ? ruleReport.errors : 0;
   const taskErrors = taskReport && !taskReport.passed ? taskReport.issues.length : 0;
@@ -269,7 +297,8 @@ function printHuman(
   const totalWarnings =
     report.trackedIgnoredNonRuntimeFiles.length +
     (ruleReport ? ruleReport.warnings : 0) +
-    (docReport ? docReport.stats.brokenLinks + docReport.stats.unindexed : 0);
+    (docReport ? docReport.stats.brokenLinks + docReport.stats.unindexed : 0) +
+    (backlogDrift?.warnings.length ?? 0);
 
   if (totalErrors > 0) {
     console.log(`\n❌  doctor failed (${totalErrors} errors, ${totalWarnings} warnings)`);
@@ -289,11 +318,18 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
   const archReport = runDeep ? await checkArchitectureLayers(options.cwd) : undefined;
   const docReport = runDeep ? await diagnoseDocumentHealth(options.cwd) : undefined;
   const budgetReport = runDeep ? await collectContextBudget(options.cwd) : undefined;
+  const backlogDrift = report.isGitRepo
+    ? await diagnoseBacklogCommitDrift(options.cwd).catch(() => ({
+        available: false,
+        scannedCommits: 0,
+        warnings: [],
+      }))
+    : { available: false, scannedCommits: 0, warnings: [] };
 
   if (options.json) {
-    printJson(report, cleanup, ruleReport, taskReport, archReport, docReport, budgetReport);
+    printJson(report, cleanup, ruleReport, taskReport, archReport, docReport, budgetReport, backlogDrift);
   } else {
-    printHuman(report, cleanup, ruleReport, taskReport, archReport, docReport, budgetReport);
+    printHuman(report, cleanup, ruleReport, taskReport, archReport, docReport, budgetReport, backlogDrift);
   }
 
   if (hasErrors(report, ruleReport, taskReport, archReport, docReport)) {
