@@ -31,6 +31,7 @@ flowchart LR
 在运行 `docpath done` 或 `docpath journal` 时，系统自动完成：
 - **架构决策提取**：从 `spec.md` 的 `## 决策简报` 与 `key-decisions` 中提取高置信度 ADR，写入 `.docpath/workspace/decisions.md`。
 - **踩坑点提取**：从 `breadcrumb.jsonl` 中识别 `status: blocked` 的步骤及原因，生成初步候选。
+- **空正文不入池**：生成候选时，若 `### Lesson` 正文为空、仅空白，或只含占位文本（如「待补充」「TBD」「none」），则不写入 `lesson-candidates.md`。有实质推荐方案、架构决策或阻塞原因的候选仍按原格式写入。
 
 ### 2.2 快车道轻量经验捕获 (`quick-done --gotcha`)
 针对微型改动与即时排错（Quick Profile），提供零仪式感的一键捕获通道：

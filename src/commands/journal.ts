@@ -30,6 +30,7 @@ import type { StructuredSpecDocument } from '../utils/structured-docs.js';
 import { emitNextHint } from '../engine/next-hint.js';
 import { gitSync } from '../utils/git-run.js';
 import { collectTaskMetrics, persistTaskMetrics } from '../utils/task-metrics.js';
+import { isEmptyOrPlaceholderLessonBody } from '../utils/lesson-candidates.js';
 
 interface JournalOptions {
   cwd: string;
@@ -660,6 +661,13 @@ async function writeLessonCandidate(
     }
     if (blockedSteps.length > 0) {
       lessonBody.push('', '### 阻塞步骤（踩坑点）', '', ...blockedSteps);
+    }
+
+    // 有 brief/ADR/blocked 信号时仍可能没有可复用正文（空白、NBSP，或「待补充」/TBD/none）。
+    // 这类候选的 `### Lesson` 正文为空或只剩占位，写入后只会污染 lesson-candidates.md。
+    if (isEmptyOrPlaceholderLessonBody(lessonBody.join('\n'))) {
+      console.log('📝  Lesson 正文为空或仅为占位，跳过 lesson 候选写入');
+      return;
     }
 
     const lessonLines = [
