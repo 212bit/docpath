@@ -117,6 +117,8 @@ describe('isEmptyOrPlaceholderLessonBody', () => {
       assert.equal(isEmptyOrPlaceholderLessonBody(`### 推荐方案\n\n${token}\n`), true, token);
     }
     assert.equal(isEmptyOrPlaceholderLessonBody('### 架构决策摘要\n\n- 待补充: 待补充\n'), true);
+    assert.equal(isEmptyOrPlaceholderLessonBody('### 架构决策摘要\n\n- 下载配置: 下载配置\n'), true);
+    assert.equal(isEmptyOrPlaceholderLessonBody('### 架构决策摘要\n\n- 方案B: 方案 B\n'), true);
   });
 
   it('treats a bare option label as skippable', () => {
