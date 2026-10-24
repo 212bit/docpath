@@ -1,0 +1,5 @@
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261024-check-tsc-npx","step":"S1","status":"in_progress","context":"开始执行: 实现并验证 修复 check 缺少本地 tsc 时 npx 挂起","timestamp":"2026-10-24T12:47:55.272Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261024-check-tsc-npx","step":"S1","status":"done","context":"step-pass: S1","timestamp":"2026-10-24T12:56:12.098Z","sessionId":"default"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261024-check-tsc-npx","step":"check","status":"done","context":"质量检查通过 (14 项)","timestamp":"2026-10-24T12:57:51.711Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261024-check-tsc-npx","step":"review","status":"done","context":"代码审查: 0 错误, 4 警告, 8 提示","timestamp":"2026-10-24T12:57:51.918Z"}
+{"schema_version":1,"kind":"breadcrumb","taskId":"T-20261024-check-tsc-npx","step":"journal","status":"done","context":"知识归档完成 (1/1 步)","timestamp":"2026-10-24T12:57:52.285Z"}
