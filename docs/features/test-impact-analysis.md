@@ -37,7 +37,7 @@ flowchart LR
 ```
 
 ### 影响范围识别算法：
-1. **直接关联**：修改 `src/commands/backlog.ts` 时，直接推导关联 `tests/backlog.test.mjs`。
+1. **直接关联**：修改 `src/commands/backlog.ts` 时，直接推导关联 `tests/backlog.test.mjs`。命令实现按职责拆在 `src/commands/backlog/`，公共入口仍是 `src/commands/backlog.ts`。
 2. **传递依赖**：修改 `src/engine/backlog.ts` 时，逆向遍历导入图，提取所有依赖该引擎的测试用例。
 3. **单向过滤**：非代码文件（如 `.md`, `.json`, `.yaml` 资产）自动豁免单元测试运行，避免无意义的编译开销。
 
