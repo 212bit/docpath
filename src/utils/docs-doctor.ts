@@ -15,6 +15,12 @@ import { join, relative, extname, basename, dirname, resolve, isAbsolute } from 
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { resolveDocpathDir, readFileSafe, writeFileAtomic } from './file.js';
 import {
+  DEFAULT_MAX_BUFFER,
+  DEFAULT_RUN_TIMEOUT_MS,
+  runTool,
+  type RunToolResult,
+} from './run-tool.js';
+import {
   readProjectDocumentIndex,
   normalizeDocPath,
   refreshProjectDocumentIndex,
@@ -323,15 +329,43 @@ async function collectSourceFiles(dir: string): Promise<string[]> {
   return results;
 }
 
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+/** 覆盖 docs-doctor 的 git 调用。生产路径不传，超时用 run-tool 缺省值。 */
+export interface DocsDoctorGitOptions {
+  timeoutMs?: number;
+  env?: NodeJS.ProcessEnv;
+  killSignal?: NodeJS.Signals;
+}
 
-const execAsync = promisify(exec);
+/**
+ * docs-doctor 的 git 出口（`git diff --cached` 与 `git add`）。
+ *
+ * 不走 gitSync：这两处原先没有 `core.quotePath=false`，补上会改变 CJK 路径的 stdout。
+ * 参数保持原命令，只补上显式超时和 stdin ignore。命令缺失为 `environment_failure`，
+ * 超时为 `timeout`；调用方继续沿用原来的失败语义（空列表 / 吞掉重新暂存错误）。
+ */
+export async function runDocsDoctorGit(
+  cwd: string,
+  args: string[],
+  options: DocsDoctorGitOptions = {},
+): Promise<RunToolResult> {
+  return runTool('git', args, {
+    cwd,
+    timeoutMs: options.timeoutMs ?? DEFAULT_RUN_TIMEOUT_MS,
+    maxBuffer: DEFAULT_MAX_BUFFER,
+    env: options.env,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
+    offline: false,
+    killSignal: options.killSignal,
+  });
+}
 
-export async function getStagedFiles(cwd: string): Promise<string[]> {
+export async function getStagedFiles(cwd: string, options: DocsDoctorGitOptions = {}): Promise<string[]> {
   try {
-    const { stdout } = await execAsync('git diff --cached --name-only', { cwd });
-    return stdout
+    const result = await runDocsDoctorGit(cwd, ['diff', '--cached', '--name-only'], options);
+    if (result.status !== 'ok') return [];
+    return result.stdout
       .split('\n')
       .map((l) => l.trim())
       .filter(Boolean);
@@ -1259,9 +1293,14 @@ export async function diagnoseDocumentHealth(
  */
 export async function fixDocumentHealth(
   cwd: string,
-  options: { dryRun?: boolean; stagedOnly?: boolean; reStage?: boolean } = {},
+  options: {
+    dryRun?: boolean;
+    stagedOnly?: boolean;
+    reStage?: boolean;
+    gitCall?: DocsDoctorGitOptions;
+  } = {},
 ): Promise<DocFixResult> {
-  const { dryRun = false, stagedOnly = false, reStage = false } = options;
+  const { dryRun = false, stagedOnly = false, reStage = false, gitCall } = options;
   const docpathDir = await resolveDocpathDir(cwd);
   const projectRoot = dirname(resolve(docpathDir));
   const report = await diagnoseDocumentHealth(cwd, { stagedOnly });
@@ -1514,11 +1553,12 @@ export async function fixDocumentHealth(
     fixedCount += report.stats.unindexed + report.stats.staleIndex;
   }
 
-  // 若启用了 reStage 且发生了自愈修改，自动将修复后的文件重新加入 Git 暂存区
+  // 若启用了 reStage 且发生了自愈修改，自动将修复后的文件重新加入 Git 暂存区。
+  // 失败（含命令缺失与超时）保持原语义：修文件已经完成，重新暂存失败不外抛。
   if (reStage && !dryRun && modifiedAbsFiles.size > 0) {
     try {
-      const relPaths = Array.from(modifiedAbsFiles).map((abs) => `"${relative(projectRoot, abs)}"`);
-      await execAsync(`git add ${relPaths.join(' ')}`, { cwd: projectRoot });
+      const relPaths = Array.from(modifiedAbsFiles).map((abs) => relative(projectRoot, abs));
+      await runDocsDoctorGit(projectRoot, ['add', '--', ...relPaths], gitCall);
     } catch {
       // 容错
     }

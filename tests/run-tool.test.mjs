@@ -5,7 +5,6 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   DEFAULT_RUN_TIMEOUT_MS,
-  RAW_CHILD_PROCESS_ALLOWLIST,
   commandRequestsNpmOffline,
   prepareInvocation,
   runShellSync,
@@ -154,8 +153,8 @@ describe('run-tool', () => {
   });
 });
 
-describe('raw child_process allowlist', () => {
-  it('fails when src imports child_process outside run-tool and the allowlist', () => {
+describe('raw child_process ban', () => {
+  it('fails when src imports child_process outside run-tool', () => {
     const files = listSourceFiles(join(ROOT, 'src'));
     const violations = [];
     let helperSeen = false;
@@ -167,19 +166,9 @@ describe('raw child_process allowlist', () => {
         helperSeen = usesChildProcess;
         continue;
       }
-      if (!usesChildProcess) continue;
-      if (!RAW_CHILD_PROCESS_ALLOWLIST[rel]) violations.push(rel);
+      if (usesChildProcess) violations.push(rel);
     }
     assert.equal(helperSeen, true, `${HELPER} must stay the implementation of child_process`);
     assert.deepEqual(violations, []);
-
-    for (const [rel, reason] of Object.entries(RAW_CHILD_PROCESS_ALLOWLIST)) {
-      assert.equal(typeof reason, 'string');
-      assert.ok(reason.trim().length > 0, `${rel} allowlist entry needs a reason`);
-      const full = join(ROOT, rel);
-      assert.equal(existsSync(full), true, `${rel} is allowlisted but missing`);
-      const source = stripComments(readFileSync(full, 'utf8'));
-      assert.match(source, CHILD_PROCESS_USE, `${rel} no longer imports child_process; drop it from the allowlist`);
-    }
   });
 });
