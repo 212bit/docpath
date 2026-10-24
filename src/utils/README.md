@@ -13,7 +13,7 @@ workspace.ts, lock.ts, session.ts, pending-done.ts, lifecycle.ts, current-step-i
 task-files.ts, structured-docs.ts, structured-heal.ts, plan-sync.ts, plan-topology.ts, doc-parser.ts, workspace-evidence.ts
 
 ### gates — 门禁与守卫
-git-dirty-guard.ts, ui-gate.ts, major-change.ts, review-skill-router.ts, semantic-verify.ts, auto-format.ts
+git-dirty-guard.ts, ui-gate.ts, major-change.ts, review-skill-router.ts, semantic-verify.ts, auto-format.ts, shell-missing-command.ts
 
 ### git — Git 集成与收口
 git-closeout.ts, git-hygiene.ts, git-safety.ts, git-staging.ts, agent-coauthor.ts, changes-report.ts, merge-driver.ts, worktree.ts, worktree-collaboration.ts, worktree-dependency-drift.ts, backlog-registry.ts

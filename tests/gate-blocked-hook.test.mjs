@@ -16,6 +16,15 @@ import { checkCommand } from '../dist/commands/check.js';
 import { reviewCommand } from '../dist/commands/review.js';
 import { mkExecWorkspace } from './helpers.mjs';
 
+// node --test 默认每个文件一个子进程，stdout 与 v8 序列化结果走同一条 IPC。
+// check/review 会打印大段横幅；全量并发时父进程分帧会错位，报
+// "Unable to deserialize cloned data due to invalid or unsupported version"
+// （nodejs/node#56802），文件被记成未捕获异常，尽管断言本身可以通过。
+// 本文件断言抛错、hook 落盘和 console.warn，不依赖 console.log/error。
+console.log = () => {};
+console.info = () => {};
+console.error = () => {};
+
 const BIN = new URL('../dist/index.js', import.meta.url).pathname;
 const EXAMPLE = new URL('../docs/examples/hooks/on-gate-blocked.sh', import.meta.url).pathname;
 const INSTALLED_EXAMPLE = new URL('../.docpath/hooks/on-gate-blocked.sh', import.meta.url).pathname;

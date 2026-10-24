@@ -1810,6 +1810,8 @@ describe('check environment failure classification (S4)', () => {
     const { looksLikeEnvironmentFailure } = await import('../dist/commands/check/runners.js');
     // 环境失败模式
     assert.equal(looksLikeEnvironmentFailure('sh: line 1: pnpm: command not found'), true);
+    assert.equal(looksLikeEnvironmentFailure('/bin/sh: 1: dp-missing-docker: not found'), true);
+    assert.equal(looksLikeEnvironmentFailure('sh: 1: pytest: not found'), true);
     assert.equal(looksLikeEnvironmentFailure('Error: Cannot find module /path/to/node_modules/.bin/tsc'), true);
     assert.equal(looksLikeEnvironmentFailure('spawn /bin/sh ENOENT'), true);
     assert.equal(looksLikeEnvironmentFailure('npm: command not found'), true);
@@ -1820,16 +1822,21 @@ describe('check environment failure classification (S4)', () => {
     assert.equal(looksLikeEnvironmentFailure('Type error: Property foo does not exist'), false);
     assert.equal(looksLikeEnvironmentFailure('AssertionError: expected true to be false'), false);
     assert.equal(looksLikeEnvironmentFailure('FAIL tests/foo.test.ts'), false);
+    assert.equal(looksLikeEnvironmentFailure('Error: file not found'), false);
   });
 
   it('looksLikeToolchainUnavailable detects readonly database and sandbox constraints for check_env_exempt', async () => {
     const { looksLikeToolchainUnavailable } = await import('../dist/commands/check/runners.js');
     assert.equal(looksLikeToolchainUnavailable('command not found: tsc'), true);
+    assert.equal(looksLikeToolchainUnavailable('/bin/sh: 1: docker: not found'), true);
+    assert.equal(looksLikeToolchainUnavailable('sh: docker: not found'), true);
     assert.equal(looksLikeToolchainUnavailable('spawn /bin/sh ENOENT'), true);
     assert.equal(looksLikeToolchainUnavailable('Error: attempt to write a readonly database'), true);
     assert.equal(looksLikeToolchainUnavailable('SQLITE_READONLY'), true);
     assert.equal(looksLikeToolchainUnavailable('EROFS: read-only file system'), true);
     assert.equal(looksLikeToolchainUnavailable('AssertionError: expected 1 to equal 2'), false);
+    assert.equal(looksLikeToolchainUnavailable('Error: file not found'), false);
+    assert.equal(looksLikeToolchainUnavailable('Cannot find module \'left-pad\''), false);
   });
 });
 

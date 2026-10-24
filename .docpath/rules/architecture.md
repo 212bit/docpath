@@ -122,7 +122,7 @@
 
 ## gotcha: errorOutput 在 `cmd 2>&1` 形态下丢真实输出：stderr 为空时返回通用文案，环境类失败识别全链路失效
 - rationale: runCheck 统一用 `${cmd} 2>&1` 执行，子进程把 stderr 折进 stdout，err.stderr 为空字符串。旧 errorOutput 先判 'stderr' in err 即 return（空串回落 err.message），于是每条失败都退化成 'Command failed: <cmd>'——looksLikeEnvironmentFailure 永远匹配不到，环境诊断与（新增的）豁免判定都成了死代码。这解释了为何 R-023 的 docker 缺失从未被识别为环境问题。
-触发：check 的 runner 失败且命令带 2>&1（runCheck 的全部路径）。期望行为：按「哪个流有内容用哪个」取失败输出（stderr 非空优先，否则 stdout，两者皆空才回退 err.message）。边界：不要改成拼接两个流——检查项 output 会写入 last-check 证据与报告，重复文本会让 evidence 膨胀；也不要只取 stdout（无重定向的调用方 stderr 才是有效内容）。验证：用 dp-missing-<tool> 这类不存在的命令即可复现（修复前 output='Command failed: ...'，修复后 output='sh: 1: ...: command not found'）。
+触发：check 的 runner 失败且命令带 2>&1（runCheck 的全部路径）。期望行为：按「哪个流有内容用哪个」取失败输出（stderr 非空优先，否则 stdout，两者皆空才回退 err.message）。边界：不要改成拼接两个流——检查项 output 会写入 last-check 证据与报告，重复文本会让 evidence 膨胀；也不要只取 stdout（无重定向的调用方 stderr 才是有效内容）。验证：用 dp-missing-<tool> 这类不存在的命令即可复现（修复前 output='Command failed: ...'，修复后 bash 为 `command not found`，dash/Ubuntu `/bin/sh` 为 `/bin/sh: 1: ...: not found`；两种文案都必须识别为工具链缺失）。
 ### Evidence
 - src/commands/check/formatters.ts errorOutput（R-350 修复）
 - src/commands/check/runners.ts runCheck 的 `${cmd} 2>&1` 拼接

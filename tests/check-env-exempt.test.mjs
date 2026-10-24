@@ -43,7 +43,7 @@ function writePackageScripts(dir, scripts) {
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'fixture', version: '0.0.0', scripts }, null, 2));
 }
 
-/** 脚手本体：单 token 的**不存在**命令 → shell 输出 "…: command not found"（工具链不可用类）。 */
+/** 脚手本体：单 token 的不存在命令。bash 输出 command not found，dash 输出 `: not found`，两者都应判为工具链不可用。 */
 function missingToolScript(tool) {
   return `dp-missing-${tool}`;
 }
