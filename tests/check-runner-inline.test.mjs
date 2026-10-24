@@ -1,5 +1,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
+import { execSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -145,6 +146,100 @@ describe('runPackageScriptChecks end-to-end (inline 直连执行)', () => {
     } finally {
       rmSync(cwd, { recursive: true, force: true });
       runners.resetRunnerProbeCacheForTest();
+    }
+  });
+
+  it('missing local tsc is an immediate environment_failure and does not run PATH tsc or npx', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-no-tsc-'));
+    const pathBin = join(cwd, 'path-bin');
+    mkdirSync(pathBin, { recursive: true });
+    const pathTsc = join(pathBin, 'tsc');
+    writeFileSync(pathTsc, '#!/bin/sh\necho PATH_TSC\nexit 0\n');
+    chmodSync(pathTsc, 0o755);
+    writeFileSync(join(cwd, 'package.json'), JSON.stringify({ name: 'no-tsc', scripts: {} }));
+    writeFileSync(join(cwd, 'tsconfig.json'), '{}\n');
+    const savedPath = process.env.PATH;
+    process.env.PATH = `${pathBin}${savedPath ? `:${savedPath}` : ''}`;
+    try {
+      const started = Date.now();
+      const results = await runners.runCompileChecks(cwd, join(cwd, 'package.json'), runners.detectNodeCommandConfig(cwd));
+      const elapsed = Date.now() - started;
+      assert.ok(elapsed < 2000, `missing tsc must fail immediately, took ${elapsed}ms`);
+      assert.equal(results.length, 1);
+      assert.equal(results[0].name, 'TypeScript 编译');
+      assert.equal(results[0].passed, false);
+      assert.equal(results[0].environment_failure, true);
+      assert.equal(results[0].environment_exemptible, true);
+      assert.equal(results[0].command, 'tsc --noEmit');
+      assert.match(results[0].output, /未找到本地 tsc/);
+      assert.doesNotMatch(results[0].output, /PATH_TSC/);
+      assert.doesNotMatch(results[0].command, /\bnpx\b/);
+    } finally {
+      process.env.PATH = savedPath;
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('runs project-local tsc instead of a PATH tsc', async () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dp-local-tsc-'));
+    const pathBin = join(cwd, 'path-bin');
+    const localBin = join(cwd, 'node_modules', '.bin');
+    mkdirSync(pathBin, { recursive: true });
+    mkdirSync(localBin, { recursive: true });
+    writeFileSync(join(pathBin, 'tsc'), '#!/bin/sh\necho PATH_TSC\nexit 1\n');
+    writeFileSync(join(localBin, 'tsc'), '#!/bin/sh\necho LOCAL_TSC\nexit 0\n');
+    chmodSync(join(pathBin, 'tsc'), 0o755);
+    chmodSync(join(localBin, 'tsc'), 0o755);
+    writeFileSync(join(cwd, 'package.json'), JSON.stringify({ name: 'local-tsc' }));
+    writeFileSync(join(cwd, 'tsconfig.json'), '{}\n');
+    const savedPath = process.env.PATH;
+    process.env.PATH = `${pathBin}${savedPath ? `:${savedPath}` : ''}`;
+    try {
+      const results = await runners.runCompileChecks(cwd, join(cwd, 'package.json'), runners.detectNodeCommandConfig(cwd));
+      assert.equal(results.length, 1);
+      assert.equal(results[0].passed, true, results[0].output);
+      assert.match(results[0].output, /LOCAL_TSC/);
+      assert.doesNotMatch(results[0].output, /PATH_TSC/);
+      assert.equal(results[0].command, 'tsc --noEmit');
+    } finally {
+      process.env.PATH = savedPath;
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('uses the main checkout tsc when a git worktree has no local node_modules', async () => {
+    const main = mkdtempSync(join(tmpdir(), 'dp-tsc-main-'));
+    const sibling = mkdtempSync(join(tmpdir(), 'dp-tsc-wt-'));
+    const worktree = join(sibling, 'feature');
+    try {
+      mkdirSync(join(main, 'node_modules', '.bin'), { recursive: true });
+      const tsc = join(main, 'node_modules', '.bin', 'tsc');
+      writeFileSync(tsc, '#!/bin/sh\necho MAIN_TSC\nexit 0\n');
+      chmodSync(tsc, 0o755);
+      writeFileSync(join(main, 'package.json'), JSON.stringify({ name: 'main' }));
+      writeFileSync(join(main, 'tsconfig.json'), '{}\n');
+      execSync('git init', { cwd: main, encoding: 'utf-8' });
+      execSync('git config user.email t@example.com', { cwd: main, encoding: 'utf-8' });
+      execSync('git config user.name t', { cwd: main, encoding: 'utf-8' });
+      execSync('git add package.json tsconfig.json', { cwd: main, encoding: 'utf-8' });
+      execSync('git commit -m baseline', { cwd: main, encoding: 'utf-8' });
+      execSync(`git worktree add ${JSON.stringify(worktree)} HEAD`, { cwd: main, encoding: 'utf-8' });
+      rmSync(join(worktree, 'node_modules'), { recursive: true, force: true });
+
+      const results = await runners.runCompileChecks(
+        worktree,
+        join(worktree, 'package.json'),
+        runners.detectNodeCommandConfig(worktree),
+      );
+      assert.equal(results.length, 1);
+      assert.equal(results[0].passed, true, results[0].output);
+      assert.match(results[0].output, /MAIN_TSC/);
+      assert.equal(results[0].command, 'tsc --noEmit');
+      assert.equal(results[0].environment_failure, undefined);
+    } finally {
+      try { execSync(`git worktree remove --force ${JSON.stringify(worktree)}`, { cwd: main, encoding: 'utf-8' }); } catch { /* ignore cleanup */ }
+      rmSync(main, { recursive: true, force: true });
+      rmSync(sibling, { recursive: true, force: true });
     }
   });
 

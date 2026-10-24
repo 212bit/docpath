@@ -92,13 +92,60 @@ export function resolveMainCheckoutBin(cwd: string): string | null {
   return null;
 }
 
-export function checkCommandEnv(cwd: string): NodeJS.ProcessEnv {
-  const env = { ...process.env };
-  delete env.DOCPATH_SESSION;
+/**
+ * 项目本地可执行目录：当前工作区 `node_modules/.bin`，以及 git worktree 主检出的 `.bin`。
+ * 不包含 PATH 上的全局命令。check 的 PATH 注入与 tsc 探测必须用同一份目录，避免一边找得到、一边执行到别的二进制。
+ */
+export function projectLocalBinDirs(cwd: string): string[] {
   const candidates = [
     join(cwd, 'node_modules', '.bin'),
     resolveMainCheckoutBin(cwd),
   ].filter((value): value is string => Boolean(value && existsSync(value)));
+  return [...new Set(candidates)];
+}
+
+/** Windows 的 npm shim 是 `tsc.cmd`；POSIX 是无扩展名的 `tsc`。 */
+const TSC_BIN_NAMES = process.platform === 'win32' ? ['tsc.cmd', 'tsc.exe', 'tsc'] : ['tsc'];
+
+/**
+ * 只解析项目本地 tsc。
+ *
+ * 不查 PATH，也不调用 npx。`npx tsc` 在缺少 typescript 时会把命令名当成 npm 包 `tsc`
+ * 去联网安装（该包不是 TypeScript 编译器，只打印 “not the tsc command you are looking for”）。
+ * 注册表慢、无缓存或无 TTY 时，这条命令会一直挂起到 check / 测试超时。
+ */
+export function resolveLocalTscBin(cwd: string): string | null {
+  for (const dir of projectLocalBinDirs(cwd)) {
+    for (const name of TSC_BIN_NAMES) {
+      const candidate = join(dir, name);
+      if (existsSync(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+function missingLocalTscResult(): CheckResult {
+  return {
+    name: 'TypeScript 编译',
+    passed: false,
+    output: [
+      '未找到本地 tsc（node_modules/.bin/tsc 不存在，git worktree 主检出的 node_modules/.bin 中也不存在）。',
+      '已立即记为环境失败，未调用 npx。',
+      'npx tsc 在缺少 typescript 时会按包名 tsc 联网安装一个同名占位包，而不是 TypeScript 编译器；无缓存或网络慢时会一直挂起到超时。',
+      '修复: 在项目中安装 typescript（例如 pnpm add -D typescript）后重试。',
+    ].join('\n'),
+    category: 'compile',
+    environment_failure: true,
+    // 与 shell `command not found` 同一类：工具链不可用，可进入环境豁免。
+    environment_exemptible: true,
+    command: 'tsc --noEmit',
+  };
+}
+
+export function checkCommandEnv(cwd: string): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  delete env.DOCPATH_SESSION;
+  const candidates = projectLocalBinDirs(cwd);
   const existingPath = pathEntries(env.PATH);
   const prepend = candidates.filter((entry) => !existingPath.includes(entry));
   if (prepend.length > 0) {
@@ -416,15 +463,16 @@ export async function runCompileChecks(cwd: string, pkgPath: string, nodeCommand
   if (existsSync(tsconfigPath)) {
     const pkg = await readPackageManifest(pkgPath);
     const scripts = pkg?.scripts || {};
-    let typecheckCmd = 'npx tsc --noEmit 2>&1';
     if (scripts.typecheck) {
       const resolved = await resolveRunnerScriptCommand('typecheck', scripts, nodeCommands, cwd);
       if (resolved.cmd === null) {
         return [runnerUnavailableResult('TypeScript 编译', 'typecheck', nodeCommands, resolved.runnerBroken!, 'compile')];
       }
-      typecheckCmd = `${resolved.cmd} 2>&1`;
+      return [runCheck('TypeScript 编译', `${resolved.cmd} 2>&1`, cwd, 'compile')];
     }
-    return [runCheck('TypeScript 编译', typecheckCmd, cwd, 'compile')];
+    // 没有 typecheck 脚本时只跑项目本地 tsc。缺失则立即 environment_failure，禁止 npx 联网安装。
+    if (!resolveLocalTscBin(cwd)) return [missingLocalTscResult()];
+    return [runCheck('TypeScript 编译', 'tsc --noEmit 2>&1', cwd, 'compile')];
   }
 
   if (existsSync(cargoPath)) return [runCheck('Rust 编译', 'cargo check 2>&1', cwd)];
