@@ -6,6 +6,7 @@ import { delimiter, dirname, isAbsolute, join, resolve, sep } from 'path';
 import type { CheckResult, NodeCommandConfig, PackageManifest, CheckOptions } from './types.js';
 import { resolveTestCommand, listTestFiles, resolveGoTestCommand, resolvePythonTestCommand, resolveRustTestCommand } from './test-scope.js';
 import { errorOutput } from './formatters.js';
+import { looksLikeMissingShellCommand } from '../../utils/shell-missing-command.js';
 
 export const DEFAULT_CHECK_TIMEOUT_MS = 60000;
 
@@ -33,6 +34,8 @@ export function isTimeoutKill(err: unknown): boolean {
  * 帮助 Agent 用最廉价的判定先排除工具链问题，避免用昂贵的 token 去诊断代码。
  */
 export function looksLikeEnvironmentFailure(output: string): boolean {
+  // dash/ash 写 `sh: 1: cmd: not found`，bash 写 `command not found`。两者都是命令缺失。
+  if (looksLikeMissingShellCommand(output)) return true;
   const envPatterns = [
     /command not found/i,
     /ENOENT.*node_modules/,
@@ -68,8 +71,10 @@ export function looksLikeEnvironmentFailure(output: string): boolean {
  *
  * 这里只保留**语义上只可能是工具链不可用或只读沙箱环境限制**的模式：命令不存在 / 无法派生进程 /
  * 二进制不可执行 / 只读数据库 / 只读文件系统。其余一律不豁免（其恢复动作是 pnpm install 或修代码，不是豁免）。
+ * POSIX sh（dash）的缺失命令文案是 `: not found`，与 bash 的 `command not found` 同义，一并豁免。
  */
 export function looksLikeToolchainUnavailable(output: string): boolean {
+  if (looksLikeMissingShellCommand(output)) return true;
   const toolchainPatterns = [
     /command not found/i,
     /is not recognized as (an )?internal or external command/i,

@@ -2,6 +2,7 @@
 
 import { appendDecision } from '../utils/decisions.js';
 import { resolveDocpathDir } from '../utils/file.js';
+import { looksLikeMissingShellCommand } from '../utils/shell-missing-command.js';
 import { readCurrentState } from '../utils/workspace.js';
 import { readLastCheckEvidence } from '../utils/workspace-evidence.js';
 
@@ -68,7 +69,8 @@ export async function recordEnvExemption(
 ): Promise<void> {
   const details = failures.map((failure) => {
     const firstLine = (failure.output || '').split('\n').map((line) => line.trim()).find((line) => line.length > 0);
-    const origin = /command not found|not recognized as|spawn.*ENOENT|Permission denied|EACCES/i.test(failure.output || '')
+    const output = failure.output || '';
+    const origin = (looksLikeMissingShellCommand(output) || /spawn.*ENOENT|Permission denied|EACCES/i.test(output))
       ? 'toolchain-output'
       : 'runner-probe';
     return `- ${failure.name} [${origin}]${failure.command ? ` (${failure.command})` : ''}: ${firstLine || '无输出'}`;
