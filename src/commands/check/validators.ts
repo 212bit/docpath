@@ -25,6 +25,7 @@ import { readFile, stat, readdir } from 'fs/promises';
 import { refreshBacklogIndex } from '../../engine/backlog.js';
 import { select, isCancel } from '@clack/prompts';
 import { diagnoseDocumentHealth } from '../../utils/docs-doctor.js';
+import { diagnoseBacklogCommitDrift } from '../../engine/backlog-commit-drift.js';
 import type { CheckOptions, CheckResult, TaskPlanProgress } from './types.js';
 import {
   formatValidationFailure,
@@ -1030,6 +1031,23 @@ export async function checkContextHealth(cwd: string, docpathDir: string): Promi
   ];
 }
 
+export async function checkBacklogCommitDrift(cwd: string): Promise<CheckResult[]> {
+  try {
+    const report = await diagnoseBacklogCommitDrift(cwd);
+    if (!report.available || report.warnings.length === 0) return [];
+    const lines = report.warnings.slice(0, 5).map((warning) => `  - ${warning.message}`);
+    return [{
+      name: 'Backlog 提交引用漂移',
+      passed: true,
+      severity: 'warning',
+      category: 'plan',
+      output: `最近提交引用了仍开放的 backlog 条目（告警，不阻断）:\n${lines.join('\n')}\n建议运行 docpath backlog groom 查看收口提示。`,
+    }];
+  } catch {
+    return [];
+  }
+}
+
 export async function runTaskDocumentChecks(cwd: string, docpathDir: string, options: CheckOptions): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
   const driftResults = await checkTaskFileDrift(cwd, docpathDir, options);
@@ -1042,5 +1060,6 @@ export async function runTaskDocumentChecks(cwd: string, docpathDir: string, opt
   results.push(...await checkPlanBreadcrumbDrift(cwd));
   results.push(...await checkDeliverablesIndex(cwd));
   results.push(...await checkContextHealth(cwd, docpathDir));
+  results.push(...await checkBacklogCommitDrift(cwd));
   return results;
 }

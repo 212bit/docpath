@@ -186,6 +186,8 @@ docpath backlog groom --fix
 docpath backlog merge R-006,R-007,R-008 --target R-006 --title "采购申请数据持久层与服务契约"
 ```
 
+提交说明若写了 backlog ID（`R-###`），而该条目仍是 `proposed` / `accepted` / `planned` / `active`，`docpath backlog groom`、`docpath doctor` 与 `docpath check` 会给出**告警**（不阻断）。扫描最近 50 条提交，并在 200 条本地历史上限内补上“自条目 `created_at` 以来”的引用；`done` / `dropped` 与仓库里不存在的 ID 不告警。实现见 `diagnoseBacklogCommitDrift`（`src/engine/backlog-commit-drift.ts`）。没有 git、不是仓库或没有提交时静默跳过，不访问网络。
+
 ### 4.6 推进与提升 (Promote & Done)
 ```bash
 # 提升需求至活跃任务（自动生成 spec.md seed 与隔离工作流）

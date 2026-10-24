@@ -51,6 +51,7 @@ import {
   autoFixBacklogHygiene,
   type BacklogGroomIssue,
 } from '../engine/backlog-groom.js';
+import { diagnoseBacklogCommitDrift } from '../engine/backlog-commit-drift.js';
 import { mergeBacklogItems } from '../engine/backlog-merge.js';
 import { computeBacklogStats } from '../engine/backlog-stats.js';
 import { today, resolveDocpathDir } from '../utils/file.js';
@@ -574,6 +575,22 @@ async function collectBacklogGroomIssues(options: BacklogCommandOptions): Promis
   const hygiene = auditBacklogHygiene(items);
   issues.push(...hygiene.issues);
   warnings.push(...hygiene.warnings);
+
+  // 提交说明引用了仍开放的条目：告警，不计入 issues（不让 groom 失败）。
+  try {
+    const drift = await diagnoseBacklogCommitDrift(options.cwd);
+    for (const warning of drift.warnings) {
+      warnings.push({
+        id: warning.id,
+        severity: 'warning',
+        field: 'git.commit',
+        message: warning.message,
+        suggestion: warning.suggestion,
+      });
+    }
+  } catch {
+    // 无 git 或日志不可读：保持 groom 原有结论。
+  }
 
   return { issues, warnings };
 }
